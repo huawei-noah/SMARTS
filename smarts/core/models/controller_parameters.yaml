@@ -1,0 +1,14 @@
+final_heading_gain: 0.1
+final_lateral_gain: 3.65
+final_steering_filter_constant: 23.5
+throttle_filter_constant: 3
+velocity_gain: 5.1
+velocity_integral_gain: 0
+traction_gain: 8
+final_lateral_error_derivative_gain: 0.25
+final_heading_error_derivative_gain: 3.4
+initial_look_ahead_distant: 3
+derivative_activation: 1
+speed_reduction_activation: 1
+velocity_damping_gain: 0.001
+windup_gain: 0.01

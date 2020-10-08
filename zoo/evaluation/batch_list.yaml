@@ -1,0 +1,85 @@
+# TODO: Commented out scenarios + agents are broken.
+
+result_path:
+  .
+
+evaluation_items:
+  diversity
+  offroad
+  collision
+  kinematics
+
+scenarios_root:
+  # Could be pointed to other scenarios path.
+  # For example, scenarios under smarts project root,
+  ./scenarios
+
+agent_list:
+  group_1:
+    - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+    - locator: zoo.policies:keep-lane-agent-v0
+
+  group_2:
+   - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+     name: open_agent_default
+   - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+     name: open_agent_stable
+     params:
+       N: 10
+       SV_N: 5
+       WP_N: 30
+       ts: 0.3
+       Q_theta: 0
+       Q_position: 30
+       Q_obstacle: 300
+       Q_u_accel: 100
+       Q_u_yaw_rate: 1
+       Q_n: 0.01
+       Q_impatience: 0.2
+
+
+   - locator: zoo.open_agent.open_agent:open_agent-v0
+     name: open_agent_safe
+     params:
+        N: 10
+        SV_N: 5
+        WP_N: 30
+        ts: 0.3
+        Q_theta: 0
+        Q_position: 100
+        Q_obstacle: 2000
+        Q_u_accel: 100
+        Q_u_yaw_rate: 1
+        Q_n: 0.01
+        Q_impatience: 0.01
+
+# ../ syntax is not supported. All scenarios must start from `scenaros_root`
+scenario_list:
+  cross:
+    step_num: 100
+  merge:
+    step_num: 250
+  cutin_escape:
+    step_num: 450
+  cutin_speed:
+    step_num: 700
+  straight_pick_lane:
+    step_num: 300
+  turnleft_pick_lane:
+    step_num: 300
+  cross_1:
+    step_num: 150
+  merge_1:
+    step_num: 240
+  cutin_escape_1:
+    step_num: 550
+  cutin_speed_1:
+    step_num: 850
+  cross_2:
+    step_num: 80
+  merge_2:
+    step_num: 200
+  cutin_escape_2:
+    step_num: 350
+  cutin_speed_2:
+    step_num: 850

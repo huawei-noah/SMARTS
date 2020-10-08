@@ -1,0 +1,4 @@
+include smarts/core/glsl/*.vert smarts/core/glsl/*.frag
+include smarts/core/models/*.glb smarts/core/models/*.urdf
+include smarts/core/models/controller_parameters.yaml
+include envision/web/dist/*

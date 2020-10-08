@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on Fri 03 Jul 2020 07:32:26 PM EDT by Eclipse SUMO netedit Version 1.6.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <output>
+        <output-file value="/home/dev/Desktop/repos/SMARTS/scenarios/tests/congestion/map.net.xml"/>
+    </output>
+
+    <processing>
+        <offset.disable-normalization value="true"/>
+    </processing>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+    </junctions>
+
+    <report>
+        <aggregate-warnings value="5"/>
+    </report>
+
+</configuration>
+-->
+
+<net version="1.6" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="-94.64,52.42,112.86,52.48" origBoundary="10000000000.00,10000000000.00,-10000000000.00,-10000000000.00" projParameter="!"/>
+
+    <edge id=":junction-mid_0" function="internal">
+        <lane id=":junction-mid_0_0" index="0" speed="13.89" length="0.10" shape="-78.33,54.07 -78.33,54.07"/>
+    </edge>
+
+    <edge id="edge-east" from="gneJ0" to="junction-mid" priority="-1">
+        <lane id="edge-east_0" index="0" speed="13.89" length="191.19" shape="112.86,54.02 -78.33,54.07"/>
+    </edge>
+    <edge id="edge-west" from="junction-mid" to="gneJ2" priority="-1">
+        <lane id="edge-west_0" index="0" speed="13.89" length="16.31" shape="-78.33,54.07 -94.64,54.08"/>
+    </edge>
+
+    <junction id="gneJ0" type="dead_end" x="112.86" y="52.42" incLanes="" intLanes="" shape="112.86,52.42 112.86,55.62"/>
+    <junction id="gneJ2" type="dead_end" x="-94.64" y="52.48" incLanes="edge-west_0" intLanes="" shape="-94.64,55.68 -94.64,52.48"/>
+    <junction id="junction-mid" type="priority" x="-78.33" y="52.47" incLanes="edge-east_0" intLanes=":junction-mid_0_0" shape="-78.33,55.67 -78.33,52.47 -78.33,55.67">
+        <request index="0" response="0" foes="0" cont="0"/>
+    </junction>
+
+    <connection from="edge-east" to="edge-west" fromLane="0" toLane="0" via=":junction-mid_0_0" dir="s" state="M"/>
+
+    <connection from=":junction-mid_0" to="edge-west" fromLane="0" toLane="0" dir="s" state="M"/>
+
+</net>

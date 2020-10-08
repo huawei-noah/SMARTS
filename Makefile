@@ -1,0 +1,108 @@
+.PHONY: test
+test: build-all-scenarios
+	# sstudio uses hash(...) as part of some of its type IDs. To make the tests
+	# repeatable we fix the seed.
+	PYTHONHASHSEED=42 pytest -v \
+		--cov=smarts \
+		--doctest-modules \
+		--forked \
+		--dist=loadscope \
+		-n `nproc --ignore 1` \
+		./tests ./smarts/core ./smarts/env ./smarts/contrib ./envision ./smarts/sstudio \
+		--ignore=./smarts/env/tests/test_learning.py \
+		--ignore=./smarts/env/tests/test_benchmark.py
+
+.PHONY: benchmark
+benchmark: build-all-scenarios
+	pytest -v ./smarts/env/tests/test_benchmark.py
+
+.PHONY: test-learning
+test-learning: build-all-scenarios
+	pytest -v -s -o log_cli=1 -o log_cli_level=INFO ./smarts/env/tests/test_learning.py
+
+.PHONY: test-zoo
+test-zoo: build-all-scenarios
+	cd smarts/zoo/policies && make test
+
+.PHONY: run
+run: build-scenario
+	python $(script) $(scenario)
+
+.PHONY: build-all-scenarios
+build-all-scenarios:
+	scl scenario build-all scenarios
+
+.PHONY: build-scenario
+build-scenario:
+	scl scenario build $(scenario)
+
+.PHONY: flamegraph
+flamegraph: $(scenario)/flamegraph.svg
+	# We want the default browser to open this flamegraph since it's an
+	# interactive SVG, browsers will accept anything you throw at
+	# them with a .html extension so lets just rename this svg so that
+	# `open` will open the file with the browser.
+	mv $(scenario)/flamegraph.svg $(scenario)/flamegraph.html
+
+	# Python's webbrowser module is a cross-platform way of opening a webpage using a preferred browser
+	python -m webbrowser $(scenario)/flamegraph.html
+
+.PHONY: $(scenario)/flamegraph.svg
+$(scenario)/flamegraph.svg: $(scenario)/flamegraph-perf.log
+	./third_party/tools/flamegraph.pl --title "HiWay CPU ($(scenario))" $(scenario)/flamegraph-perf.log > $(scenario)/flamegraph.svg
+
+.PHONY: $(scenario)/flamegraph-perf.log
+$(scenario)/flamegraph-perf.log: build-scenario $(script) smarts/core/* smarts/env/*
+	# pip install git+https://github.com/asokoloski/python-flamegraph.git
+	python -m flamegraph -i 0.001 -o $(scenario)/flamegraph-perf.log $(script) $(scenario)
+
+.PHONY: pview
+pview: $(scenario)/map.egg
+	# !!! READ THE pview MANUAL !!!
+	# https://www.panda3d.org/manual/?title=Previewing_3D_Models_in_Pview
+	pview -c -l $(scenario)/map.egg
+
+.PHONY: sumo-gui
+sumo-gui: $(scenario)/map.net.xml
+	sumo-gui \
+		-n ./$(scenario)/map.net.xml
+
+.PHONY: clean
+clean:
+	# we use `rm -f` for discard errors when the file does not exist
+	rm -f ./$(scenario)/map.egg
+	rm -f ./$(scenario)/map.glb
+	rm -f ./$(scenario)/bubbles.pkl
+	rm -f ./$(scenario)/missions.pkl
+	rm -f ./$(scenario)/friction_map.pkl
+	rm -f ./$(scenario)/flamegraph-perf.log
+	rm -f ./$(scenario)/flamegraph.svg
+	rm -f ./$(scenario)/flamegraph.html
+	rm -f ./$(scenario)/*.rou.xml
+	rm -f ./$(scenario)/*.rou.alt.xml
+	rm -rf ./$(scenario)/traffic
+	rm -rf ./$(scenario)/social_agents
+
+.PHONY: format
+format:
+	# pip install black==19.10b0
+	black .
+	# npm install prettier
+	# Make sure to install Node.js 14.x before running `prettier`
+	npx prettier --write envision/web/src
+
+.PHONY: docs
+docs:
+	(cd docs; make clean html)
+
+.PHONY: wheel
+wheel: docs
+	python setup.py clean --all
+	python setup.py bdist_wheel
+	@echo
+	@echo "ls ./dist:"
+	@ls -l1 ./dist | sed 's/^/  /'
+
+.PHONY: rm-pycache
+rm-pycache:
+	find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete

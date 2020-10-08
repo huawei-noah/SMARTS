@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on Sat 26 Sep 2020 02:38:27 PM EDT by Eclipse SUMO netedit Version v1_5_0+1104-53a79c6
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="/home/kyber/MainProjectSMARTS/SMARTS/smarts/core/tests/maps/turning_radius/map60.net.xml"/>
+    </input>
+
+    <output>
+        <output-file value="/home/kyber/MainProjectSMARTS/SMARTS/smarts/core/tests/maps/turning_radius/map60.net.xml"/>
+    </output>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="true"/>
+        <lefthand value="false"/>
+    </processing>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="5.5"/>
+        <rectangular-lane-cut value="false"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="false"/>
+    </pedestrian>
+
+    <report>
+        <aggregate-warnings value="5"/>
+    </report>
+
+</configuration>
+-->
+
+<net version="1.6" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="0.00,50.00,200.00,100.00" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
+
+    <edge id=":junction-intersection_0" function="internal">
+        <lane id=":junction-intersection_0_0" index="0" speed="6.16" length="10.83" shape="101.60,94.82 101.17,98.00 99.86,99.78 97.69,100.15 94.65,99.12"/>
+    </edge>
+    <edge id=":junction-intersection_1" function="internal">
+        <lane id=":junction-intersection_1_0" index="0" speed="3.95" length="3.61" shape="96.08,96.25 97.10,96.60 97.82,96.47 98.26,95.88 98.40,94.82"/>
+    </edge>
+    <edge id=":junction-south_0" function="internal">
+        <lane id=":junction-south_0_0" index="0" speed="6.16" length="10.83" shape="98.40,55.18 98.83,52.00 100.14,50.22 102.31,49.85 105.35,50.88"/>
+    </edge>
+    <edge id=":junction-south_1" function="internal">
+        <lane id=":junction-south_1_0" index="0" speed="3.95" length="3.61" shape="103.92,53.75 102.90,53.40 102.18,53.53 101.74,54.12 101.60,55.18"/>
+    </edge>
+
+    <edge id="edge-east-SE" from="junction-south" to="gneJ0" priority="-1">
+        <lane id="edge-east-SE_0" index="0" speed="13.89" length="106.63" shape="105.35,50.88 200.72,98.57"/>
+    </edge>
+    <edge id="edge-south-NS" from="junction-intersection" to="junction-south" priority="-1">
+        <lane id="edge-south-NS_0" index="0" speed="13.89" length="39.64" shape="98.40,94.82 98.40,55.18"/>
+    </edge>
+    <edge id="edge-south-SN" from="junction-south" to="junction-intersection" priority="-1">
+        <lane id="edge-south-SN_0" index="0" speed="13.89" length="39.64" shape="101.60,55.18 101.60,94.82"/>
+    </edge>
+    <edge id="edge-west-EW" from="junction-intersection" to="junction-west" priority="-1">
+        <lane id="edge-west-EW_0" index="0" speed="13.89" length="106.63" shape="94.65,99.12 -0.72,51.43"/>
+    </edge>
+    <edge id="edge-west-WE" from="junction-west" to="junction-intersection" priority="-1">
+        <lane id="edge-west-WE_0" index="0" speed="13.89" length="106.63" shape="0.72,48.57 96.08,96.25"/>
+    </edge>
+    <edge id="gneE0" from="gneJ0" to="junction-south" priority="-1">
+        <lane id="gneE0_0" index="0" speed="13.89" length="106.63" shape="199.28,101.43 103.92,53.75"/>
+    </edge>
+
+    <junction id="gneJ0" type="dead_end" x="200.00" y="100.00" incLanes="edge-east-SE_0" intLanes="" shape="200.00,100.00 201.43,97.14 200.00,100.00"/>
+    <junction id="junction-intersection" type="priority" x="100.00" y="100.00" incLanes="edge-south-SN_0 edge-west-WE_0" intLanes=":junction-intersection_0_0 :junction-intersection_1_0" shape="103.20,94.82 96.80,94.82 93.94,100.55 96.77,101.67 99.08,101.97 100.88,101.43 102.17,100.06 102.94,97.86">
+        <request index="0" response="00" foes="00" cont="0"/>
+        <request index="1" response="00" foes="00" cont="0"/>
+    </junction>
+    <junction id="junction-south" type="priority" x="100.00" y="50.00" incLanes="edge-south-NS_0 gneE0_0" intLanes=":junction-south_0_0 :junction-south_1_0" shape="96.80,55.18 103.20,55.18 106.06,49.45 103.23,48.33 100.92,48.03 99.12,48.57 97.83,49.94 97.06,52.14">
+        <request index="0" response="00" foes="00" cont="0"/>
+        <request index="1" response="00" foes="00" cont="0"/>
+    </junction>
+    <junction id="junction-west" type="dead_end" x="0.00" y="50.00" incLanes="edge-west-EW_0" intLanes="" shape="-0.00,50.00 -1.43,52.86 0.00,50.00"/>
+
+    <connection from="edge-south-NS" to="edge-east-SE" fromLane="0" toLane="0" via=":junction-south_0_0" dir="l" state="M"/>
+    <connection from="edge-south-SN" to="edge-west-EW" fromLane="0" toLane="0" via=":junction-intersection_0_0" dir="l" state="M"/>
+    <connection from="edge-west-WE" to="edge-south-NS" fromLane="0" toLane="0" via=":junction-intersection_1_0" dir="r" state="M"/>
+    <connection from="gneE0" to="edge-south-SN" fromLane="0" toLane="0" via=":junction-south_1_0" dir="r" state="M"/>
+
+    <connection from=":junction-intersection_0" to="edge-west-EW" fromLane="0" toLane="0" dir="l" state="M"/>
+    <connection from=":junction-intersection_1" to="edge-south-NS" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from=":junction-south_0" to="edge-east-SE" fromLane="0" toLane="0" dir="l" state="M"/>
+    <connection from=":junction-south_1" to="edge-south-SN" fromLane="0" toLane="0" dir="r" state="M"/>
+
+</net>
