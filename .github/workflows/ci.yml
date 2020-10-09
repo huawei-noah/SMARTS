@@ -1,0 +1,110 @@
+name: SMARTS CI Workflow
+
+on: [push]
+
+env:
+  venv_dir: .venv/bin/activate
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    container: gamenotcore/smarts-base
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Package Setup
+        run: |
+          /usr/bin/Xorg \
+            -noreset \
+            +extension GLX \
+            +extension RANDR \
+            +extension RENDER \
+            -logfile ./xdummy.log \
+            -config /etc/X11/xorg.conf :1 &
+          cd $GITHUB_WORKSPACE
+          python3.7 -m venv "${venv_dir}"
+          . "${venv_dir}"
+          pip install --upgrade pip
+          pip install wheel
+          pip install -r requirements.txt
+          pip install -e .
+          pip install -e .[train]
+      - name: Run smoke tests
+        run: |
+          cd $GITHUB_WORKSPACE
+          . "${venv_dir}"
+          make test
+
+#   test-formatting:
+#     runs-on: ubuntu-latest
+#     container: 
+#       image: gamenotcore/smarts-base
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v2
+#       - name: Run Black code formatter
+#         run: |
+#           cd $GITHUB_WORKSPACE
+#           pip install --upgrade pip
+#           pip install black==19.10b0
+#           apt-get update && apt-get install -y curl
+#           curl -sL https://deb.nodesource.com/setup_14.x | bash -
+#           apt-get install -y nodejs
+#           black --check .
+#           npx prettier --check envision/web/src
+
+#   test-requirements:
+#     runs-on: ubuntu-latest
+#     container: 
+#       image: gamenotcore/smarts-base
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v2
+#       - name: Test Pip Packages
+#         run: |
+#           cd $GITHUB_WORKSPACE
+#           ./test_pip_packages.sh
+
+    # test-learning:
+    #   - name: Test Learning
+    #     run:
+    #       cd $GITHUB_WORKSPACE
+    #       make test-learning
+
+  test-benchmark:
+    runs-on: ubuntu-18.04
+    container:
+      image: gamenotcore/smarts-base
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1.2.0
+      - name: Install SMARTS package
+        run: |
+          /usr/bin/Xorg \
+            -noreset \
+            +extension GLX \
+            +extension RANDR \
+            +extension RENDER \
+            -logfile ./xdummy.log \
+            -config /etc/X11/xorg.conf :1 &
+          cd $GITHUB_WORKSPACE
+          python3.7 -m venv "${venv_dir}"
+          . "${venv_dir}"
+          pip install --upgrade pip
+          pip install wheel
+          pip install -r requirements.txt
+          pip install -e .[train]
+      - name: SMARTS Benchmark
+        run: |
+          cd $GITHUB_WORKSPACE
+          ls -a
+          . "${venv_dir}"
+          apt-get update && apt-get -y install git
+          git checkout $(git log --merges -n 1 --format=format:"%H")
+          ls -a
+          scl scenario build-all --clean ./scenarios
+          pytest --benchmark-save=previous --benchmark-min-rounds=10 --benchmark-timer=time.process_time ./smarts/env/tests/test_benchmark.py
+          ls -a
+          git checkout -
+          pip install -e .[train]
+          scl scenario build-all --clean ./scenarios
+          pytest --benchmark-compare=0001_previous --benchmark-compare-fail=mean:10% --benchmark-min-rounds=10 --benchmark-timer=time.process_time ./smarts/env/tests/test_benchmark.py
