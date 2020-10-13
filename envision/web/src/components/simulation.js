@@ -14,6 +14,8 @@ import {
   Mesh,
   Color4,
   BoundingInfo,
+  UniversalCamera,
+  TransformNode,
 } from "@babylonjs/core";
 
 import { GLTFLoader } from "@babylonjs/loaders/glTF/2.0/glTFLoader";
@@ -31,9 +33,11 @@ import {
 // Required by Babylon.js
 window.earcut = earcut;
 
-export default ({ simulationId, client, showScores, canvasRef }) => {
+export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
   const [scene, setScene] = useState(null);
   const [camera, setCamera] = useState(null);
+  const [thirdPersonCamera, setThirdPersonCamera] = useState(null);
+  const [egoCamRoot, setEgoCamRoot] = useState(null);
   const [egoWaypointModel, setEgoWaypointModel] = useState(null);
   const [socialWaypointModel, setSocialWaypointModel] = useState(null);
   const [egoDrivenPathModel, setEgoDrivenPathModel] = useState(null);
@@ -95,19 +99,32 @@ export default ({ simulationId, client, showScores, canvasRef }) => {
       canvasRef.current = canvas;
     }
 
-    // Camera
-    let camera_ = new ArcRotateCamera(
-      "camera",
+    // Default third-person camera
+    let thirdPersonCamera_ = new ArcRotateCamera(
+      "third-person-camera",
       -Math.PI / 2, // alpha
       0, // beta
       200, // radius
       new Vector3(0, 0, 0), // target
       scene_
     );
-    camera_.attachControl(canvas, true);
-    camera_.panningSensibility = 50;
-    camera_.lowerRadiusLimit = 5;
-    setCamera(camera_);
+    thirdPersonCamera_.attachControl(canvas, true);
+    thirdPersonCamera_.panningSensibility = 50;
+    thirdPersonCamera_.lowerRadiusLimit = 5;
+    setThirdPersonCamera(thirdPersonCamera_);
+    setCamera(thirdPersonCamera_);
+    scene_.activeCamera = thirdPersonCamera_; // default camera
+
+    // Ego-centric camera
+    let egoCamRoot_ = new TransformNode("ego-camera-root");
+    egoCamRoot_.position = new Vector3.Zero(); // Set to the ego vehicle position during update
+    let egoCamera_ = new UniversalCamera(
+      "ego-camera",
+      new Vector3(0, 5, -15), // Relative to camera root position
+      scene
+    );
+    egoCamera_.parent = egoCamRoot_;
+    setEgoCamRoot(egoCamRoot_);
 
     // Waypoint cylinder
     let cylinder_ = MeshBuilder.CreateCylinder(
@@ -147,6 +164,44 @@ export default ({ simulationId, client, showScores, canvasRef }) => {
 
     setScene(scene_);
   };
+
+  // State subscription
+  useEffect(() => {
+    let stopPolling = false;
+    (async () => {
+      for await (let wstate of client.worldstate(simulationId)) {
+        if (!stopPolling) {
+          setWorldState(wstate);
+        }
+      }
+    })();
+
+    // Called when simulation ID changes
+    return () => (stopPolling = true);
+  }, [simulationId]);
+
+  // Set camera
+  useEffect(() => {
+    if (egoCamRoot == null || thirdPersonCamera == null) {
+      return;
+    }
+
+    let canvas = scene.getEngine().getRenderingCanvas();
+    if (egoView) {
+      let egoCamera = egoCamRoot.getChildren()[0];
+      egoCamera.rotation = new Vector3.Zero();
+      scene.activeCamera = egoCamera;
+
+      // Disable mouse input to the third person camera during ego view
+      thirdPersonCamera.detachControl(canvas);
+
+      setCamera(egoCamRoot);
+    } else {
+      thirdPersonCamera.attachControl(canvas, true);
+      scene.activeCamera = thirdPersonCamera;
+      setCamera(thirdPersonCamera);
+    }
+  }, [egoView]);
 
   // Load mesh asynchronously
   useEffect(() => {
@@ -215,27 +270,28 @@ export default ({ simulationId, client, showScores, canvasRef }) => {
     // This useEffect is triggered when the vehicleMeshTemplate's keys() change
   }, [scene, Object.keys(vehicleMeshTemplates).sort().join("-")]);
 
-  // Update camera's pointing target and radius
+  // Update third person camera's pointing target and radius
   useEffect(() => {
     if (
       scene == null ||
-      camera == null ||
+      thirdPersonCamera == null ||
       worldState.scenario_id == null ||
       roadNetworkBbox.length != 4
     ) {
       return;
     }
+
     let mapCenter = [
       (roadNetworkBbox[0] + roadNetworkBbox[2]) / 2,
       (roadNetworkBbox[1] + roadNetworkBbox[3]) / 2,
     ];
-    camera.target.x = mapCenter[0];
-    camera.target.z = mapCenter[1];
-    camera.radius = Math.max(
+    thirdPersonCamera.target.x = mapCenter[0];
+    thirdPersonCamera.target.z = mapCenter[1];
+    thirdPersonCamera.radius = Math.max(
       Math.abs(roadNetworkBbox[0] - roadNetworkBbox[2]),
       Math.abs(roadNetworkBbox[1] - roadNetworkBbox[3])
     );
-  }, [scene, camera, JSON.stringify(roadNetworkBbox)]);
+  }, [scene, thirdPersonCamera, JSON.stringify(roadNetworkBbox)]);
 
   // Load map
   useEffect(() => {
@@ -329,21 +385,6 @@ export default ({ simulationId, client, showScores, canvasRef }) => {
 
     setEdgeDividerGeometry(newEdgeDividers);
   }, [scene, JSON.stringify(edgeDividerPos)]);
-
-  // State subscription
-  useEffect(() => {
-    let stopPolling = false;
-    (async () => {
-      for await (let wstate of client.worldstate(simulationId)) {
-        if (!stopPolling) {
-          setWorldState(wstate);
-        }
-      }
-    })();
-
-    // Called when simulation ID changes
-    return () => (stopPolling = true);
-  }, [simulationId]);
 
   // Vehicles and agent labels
   useEffect(() => {
@@ -459,6 +500,7 @@ export default ({ simulationId, client, showScores, canvasRef }) => {
       nextAgentLabelGeometry[meshId] = label;
     }
 
+    let firstEgoAgent = true;
     // Set mesh positions and orientations
     for (const meshId of nextVehicleMeshIds) {
       let state = worldState.traffic[meshId];
@@ -479,6 +521,15 @@ export default ({ simulationId, client, showScores, canvasRef }) => {
       let label = nextAgentLabelGeometry[meshId];
       if (label) {
         label.position = new Vector3(pos[0], pos[2] + 2, pos[1] - 4);
+        label.isVisible = true;
+      }
+
+      // Ego camera follows the first ego agent in multi-agent case
+      if (egoView && state.actor_type == ActorTypes.AGENT && firstEgoAgent) {
+        label.isVisible = false;
+        firstEgoAgent = false;
+        camera.position = new Vector3(pos[0], pos[2], pos[1]);
+        camera.rotation = new Vector3(0, 2 * Math.PI - state.heading, 0);
       }
     }
 
