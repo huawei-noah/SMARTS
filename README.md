@@ -25,18 +25,24 @@ agent_spec = AgentSpec(
     policy_builder=Policy,
 )
 
+agent_specs = {"Agent-007": agent_spec, "Agent-008": agent_spec}
+
 env = gym.make(
-    "smarts.env:hiway-v0",
-    scenarios="./scenarios",
-    agent_specs={"Agent-007": agent_spec},
+    "smarts.env:hiway-v0", scenarios=["scenarios/loop"], agent_specs=agent_specs,
 )
 
 for episode in range(100):
-    agent = agent_spec.build_agent()
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
     observations = env.reset()
     dones = {"__all__": False}
     while not dones["__all__"]:
-        agent_actions = {"Agent-007": agent.act(observations["Agent-007"])}
+        agent_actions = {
+            a_id: agents[a_id].act(agent_obs)
+            for a_id, agent_obs in observations.items()
+        }
         observations, _reward, dones, _infos = env.step(agent_actions)
 ```
 
