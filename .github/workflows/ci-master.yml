@@ -34,7 +34,7 @@ jobs:
           pip install -e .
           pip install -e .[train]
       - name: Test Learning
-        run:
+        run: |
           cd $GITHUB_WORKSPACE
           . "${venv_dir}"
           make test-learning
