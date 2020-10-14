@@ -72,5 +72,6 @@ traffic = {
 }
 
 gen_scenario(
-    t.Scenario(missions=missions, traffic=traffic,), output_dir=Path(__file__).parent,
+    t.Scenario(ego_missions=missions, traffic=traffic,),
+    output_dir=Path(__file__).parent,
 )
