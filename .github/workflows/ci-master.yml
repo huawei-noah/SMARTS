@@ -36,4 +36,5 @@ jobs:
       - name: Test Learning
         run:
           cd $GITHUB_WORKSPACE
+          . "${venv_dir}"
           make test-learning
