@@ -8,7 +8,7 @@ test: build-all-scenarios
 		--forked \
 		--dist=loadscope \
 		-n `nproc --ignore 1` \
-		./tests ./smarts/core ./smarts/env ./smarts/contrib ./envision ./smarts/sstudio \
+		./tests ./smarts/core ./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
 		--ignore=./smarts/env/tests/test_learning.py \
 		--ignore=./smarts/env/tests/test_benchmark.py
 

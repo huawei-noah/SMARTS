@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import os
+import sys
 import pickle
 import random
 import uuid
@@ -248,6 +249,15 @@ class Scenario:
                     social_agents=concrete_social_agents,
                     surface_patches=surface_patches,
                 )
+
+    @staticmethod
+    def discover_agent_missions_count(scenario_root):
+        missions_file = os.path.join(scenario_root, "missions.pkl")
+        if os.path.exists(missions_file):
+            with open(missions_file, "rb") as f:
+                return len(pickle.load(f))
+
+        return 0
 
     @staticmethod
     def discover_agent_missions(scenario_root, agents_to_be_briefed):
