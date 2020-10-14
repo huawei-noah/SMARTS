@@ -17,22 +17,32 @@ RUN_NAME = Path(__file__).stem
 EXPERIMENT_NAME = "{scenario}-{n_agent}"
 
 
-def main(args):
-    if args.cluster:
+def main(
+    scenario,
+    config_file,
+    log_dir,
+    restore_path=None,
+    num_workers=1,
+    horizon=1000,
+    paradigm="decentralized",
+    headless=False,
+    cluster=False,
+):
+    if cluster:
         ray.init(address="auto", redis_password="5241590000000000")
         print(
             "--------------- Ray startup ------------\n{}".format(
                 ray.state.cluster_resources()
             )
         )
-    scenario_path = Path(args.scenario).absolute()
+    scenario_path = Path(scenario).absolute()
     agent_missions_count = Scenario.discover_agent_missions_count(scenario_path)
     if agent_missions_count == 0:
         agent_ids = ["default_policy"]
     else:
         agent_ids = [f"AGENT-{i}" for i in range(agent_missions_count)]
 
-    config = load_config(args.config_file)
+    config = load_config(config_file)
     agents = {
         agent_id: AgentSpec(
             **config["agent"], interface=AgentInterface(**config["interface"])
@@ -44,7 +54,7 @@ def main(args):
         {
             "seed": 42,
             "scenarios": [str(scenario_path)],
-            "headless": args.headless,
+            "headless": headless,
             "agent_specs": agents,
         }
     )
@@ -52,11 +62,11 @@ def main(args):
     obs_space, act_space = config["policy"][1:3]
     tune_config = config["run"]["config"]
 
-    if args.paradigm == "centralized":
+    if paradigm == "centralized":
         config["env_config"].update(
             {
-                "obs_space": Tuple([obs_space] * agent_mission_num),
-                "act_space": Tuple([act_space] * agent_mission_num),
+                "obs_space": Tuple([obs_space] * agent_missions_count),
+                "act_space": Tuple([act_space] * agent_missions_count),
                 "groups": {"group": agent_ids},
             }
         )
@@ -82,8 +92,8 @@ def main(args):
         {
             "env_config": config["env_config"],
             "callbacks": SimpleCallbacks,
-            "num_workers": args.num_workers,
-            "horizon": args.horizon,
+            "num_workers": num_workers,
+            "horizon": horizon,
         }
     )
 
@@ -91,14 +101,12 @@ def main(args):
         scenario=scenario_path.stem, n_agent=len(agents),
     )
 
-    log_dir = Path(args.log_dir).expanduser().absolute() / RUN_NAME
+    log_dir = Path(log_dir).expanduser().absolute() / RUN_NAME
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    if args.restore:
-        restore_path = Path(args.restore).expanduser()
+    if restore_path is not None:
+        restore_path = Path(restore_path).expanduser()
         print(f"Loading model from {restore_path}")
-    else:
-        restore_path = None
 
     # run experiments
     config["run"].update(
@@ -115,18 +123,15 @@ def main(args):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser("Benchmarking learning")
+    parser = argparse.ArgumentParser("Benchmark learning")
+    parser.add_argument(
+        "scenario", type=str, help="Scenario name",
+    )
     parser.add_argument(
         "--paradigm",
         type=str,
         default="decentralized",
         help="Algorithm paradigm, decentralized (default) or centralized",
-    )
-    parser.add_argument(
-        "--scenario",
-        type=str,
-        default="benchmark/scenarios/intersections/4lane",
-        help="Scenario name",
     )
     parser.add_argument(
         "--headless", default=False, action="store_true", help="Turn on headless mode"
@@ -135,15 +140,14 @@ def parse_args():
         "--log_dir",
         default="./log/results",
         type=str,
-        help="path to store rllib log and checkpoints, default is ./log/results",
+        help="Path to store RLlib log and checkpoints, default is ./log/results",
     )
-    parser.add_argument("--config_file", "-f", type=str)
-    parser.add_argument("--restore", type=str)
-    parser.add_argument("--address", type=str)
-    parser.add_argument("--num_workers", type=int, default=1, help="rllib num workers")
+    parser.add_argument("--config_file", "-f", type=str, required=True)
+    parser.add_argument("--restore_path", type=str, default=None)
+    parser.add_argument("--num_workers", type=int, default=1, help="RLlib num workers")
     parser.add_argument("--cluster", action="store_true")
     parser.add_argument(
-        "--horizon", type=int, default=1000, help="horizon for a episode"
+        "--horizon", type=int, default=1000, help="Horizon for a episode"
     )
 
     return parser.parse_args()
@@ -151,4 +155,14 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    main(args)
+    main(
+        scenario=args.scenario,
+        config_file=args.config_file,
+        log_dir=args.log_dir,
+        restore_path=args.restore_path,
+        num_workers=args.num_workers,
+        horizon=args.horizon,
+        paradigm=args.paradigm,
+        headless=args.headless,
+        cluster=args.cluster,
+    )

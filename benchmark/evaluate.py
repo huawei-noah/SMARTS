@@ -21,7 +21,10 @@ from benchmark.metrics import basic_metrics as metrics
 
 
 def parse_args():
-    parser = argparse.ArgumentParser("Run evaluation.")
+    parser = argparse.ArgumentParser("Run evaluation")
+    parser.add_argument(
+        "scenario", type=str, help="Scenario name",
+    )
     parser.add_argument("--checkpoint", type=str, required=True)
     parser.add_argument("--num_steps", type=int, default=1000)
     parser.add_argument("--num_episodes", type=int, default=10)
@@ -32,27 +35,29 @@ def parse_args():
         help="Algorithm paradigm, decentralized (default) or centralized",
     )
     parser.add_argument(
-        "--scenario",
-        type=str,
-        default="benchmark/scenarios/intersections/4lane",
-        help="Scenario name",
-    )
-    parser.add_argument(
         "--headless", default=False, action="store_true", help="Turn on headless mode"
     )
-    parser.add_argument("--config_file", "-f", type=str)
+    parser.add_argument("--config_file", "-f", type=str, required=True)
     return parser.parse_args()
 
 
-def main(args):
-    scenario_path = Path(args.scenario).absolute()
+def main(
+    scenario,
+    config_file,
+    checkpoint,
+    num_steps=1000,
+    num_episodes=10,
+    paradigm="decentralized",
+    headless=False,
+):
+    scenario_path = Path(scenario).absolute()
     agent_missions_count = Scenario.discover_agent_missions_count(scenario_path)
     if agent_missions_count == 0:
         agent_ids = ["default_policy"]
     else:
         agent_ids = [f"AGENT-{i}" for i in range(agent_missions_count)]
 
-    config = load_config(args.config_file, mode="evaluate")
+    config = load_config(config_file, mode="evaluate")
     agents = {
         agent_id: AgentSpec(
             **config["agent"], interface=AgentInterface(**config["interface"])
@@ -64,7 +69,7 @@ def main(args):
         {
             "seed": 42,
             "scenarios": [str(scenario_path)],
-            "headless": args.headless,
+            "headless": headless,
             "agent_specs": agents,
         }
     )
@@ -72,11 +77,11 @@ def main(args):
     obs_space, act_space = config["policy"][1:3]
     tune_config = config["run"]["config"]
 
-    if args.paradigm == "centralized":
+    if paradigm == "centralized":
         config["env_config"].update(
             {
-                "obs_space": gym.spaces.Tuple([obs_space] * agent_mission_num),
-                "act_space": gym.spaces.Tuple([act_space] * agent_mission_num),
+                "obs_space": gym.spaces.Tuple([obs_space] * agent_missions_count),
+                "act_space": gym.spaces.Tuple([act_space] * agent_missions_count),
                 "groups": {"group": agent_ids},
             }
         )
@@ -99,15 +104,15 @@ def main(args):
     ray.init()
     trainer_cls = config["trainer"]
     trainer_config = {"env_config": config["env_config"]}
-    if args.paradigm != "centralized":
+    if paradigm != "centralized":
         trainer_config.update({"multiagent": tune_config["multiagent"]})
     else:
         trainer_config.update({"model": tune_config["model"]})
 
     trainer = trainer_cls(env=tune_config["env"], config=trainer_config)
 
-    trainer.restore(args.checkpoint)
-    rollout(trainer, None, args.num_steps, args.num_episodes)
+    trainer.restore(checkpoint)
+    rollout(trainer, None, num_steps, num_episodes)
     trainer.stop()
 
 
@@ -218,4 +223,13 @@ def rollout(trainer, env_name, num_steps, num_episodes=0):
 
 
 if __name__ == "__main__":
-    main(parse_args())
+    args = parse_args()
+    main(
+        scenario=args.scenario,
+        config_file=args.config_file,
+        checkpoint=args.checkpoint,
+        num_steps=args.checkpoint,
+        num_episodes=args.num_episodes,
+        paradigm=args.paradigm,
+        headless=args.headless,
+    )
