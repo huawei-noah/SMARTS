@@ -8,16 +8,6 @@ function check_python_version_gte_3_7 {
     || hash python3.9 2>/dev/null;
 }
 
-function install_rustup {
-    read -p "Install Rust via rustup (https://rustup.rs/)? [Yn]" should_install_rust
-
-    if [[ $should_install_rust =~ ^[yY\w]*$ ]]; then
-	echo "Installing Rust..."
-	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-	echo "Done installing Rust."
-    fi
-}
-
 function do_install_for_linux {
     echo "Installing sumo (used for traffic simulation and road network)"
     sudo add-apt-repository ppa:sumo/stable
@@ -46,8 +36,6 @@ function do_install_for_linux {
          fi
     fi
 
-    install_rustup;
-
     echo ""
     echo "-- dependencies have been installed --"
     echo ""
@@ -62,8 +50,6 @@ function do_install_for_macos {
     echo "Installing sumo (used for traffic simulation and road network)"
     brew tap dlr-ts/sumo
     brew install sumo spatialindex
-
-    install_rustup;
 
     # start X11 manually the first time, logging in/out will also do the trick
     open -g -a XQuartz.app
