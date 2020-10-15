@@ -12,7 +12,7 @@ from .policy import RLPolicy
 from smarts.zoo.registry import register
 
 
-VERSION = 1
+VERSION = 0.1
 CHECKPOINT_PATH = Path(__file__).resolve().parent / "checkpoint" / "checkpoint"
 
 

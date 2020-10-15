@@ -1,5 +1,5 @@
 """
-This file contains RLlib policy reload for evaluation usage, not for training.
+This file contains an RLlib-trained policy evaluation usage (not for training).
 """
 import pickle
 from pathlib import Path
