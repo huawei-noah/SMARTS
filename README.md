@@ -197,12 +197,15 @@ make flamegraph scenario=scenarios/loop script=examples/single_agent.py
 # TODO: Update this to our fork
 git clone git@gitlab.smartsai.xyz:smarts/pymarl.git
 cd pymarl
+
 # or wherever you have placed your pymarl repo
 ln -s $(PWD)/scenarios ../pymarl/scenarios
+
 # setup virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
 python src/main.py --config=qmix --env-config=smarts
 ```
 
