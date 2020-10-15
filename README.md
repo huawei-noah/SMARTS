@@ -5,8 +5,6 @@ This is the HiWay Edition of Scalable Multi-Agent Training School (SMARTS). It c
 
 ![](media/envision_video.gif)
 
-[[_TOC_]]
-
 ## Multi-Agent environment as simple as...
 
 ```python
