@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name="smarts",
     description="Scalable Multi-Agent RL Training School",
-    version="0.4.1",
+    version="0.4.2",
     packages=find_packages(exclude="tests"),
     include_package_data=True,
     zip_safe=True,
