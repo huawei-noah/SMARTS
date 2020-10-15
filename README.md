@@ -31,6 +31,7 @@ env = gym.make(
     "smarts.env:hiway-v0",
     scenarios=["scenarios/loop"],
     agent_specs=agent_specs,
+    visdom=True,
 )
 
 agents = {
@@ -160,7 +161,7 @@ Please read [Contributing](doc/CONTRIBUTING.md)
 ## Extras
 
 ### Visualizing Agent Observations
-If you want to easily visualize image-based observations you can use our [Visdom](https://github.com/facebookresearch/visdom) integration. Start the visdom server before running your scenario,
+If you want to easily visualize observations you can use our [Visdom](https://github.com/facebookresearch/visdom) integration. Start the visdom server before running your scenario,
 
 ```bash
 visdom
@@ -168,6 +169,7 @@ visdom
 ```
 
 ### Building Docs Locally
+Assuming you have run `pip install .[dev]`.
 
 ```bash
 make docs
