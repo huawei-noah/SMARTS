@@ -12,7 +12,7 @@ jobs:
   test_learning:
     runs-on: ubuntu-18.04
     container:
-      image: https://gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
+      image: gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
     steps:
       - name: Checkout
         uses: actions/checkout@v2
