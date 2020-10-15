@@ -59,9 +59,6 @@ cd <project>
 # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
 sumo
 
-# test sumo installation, make sure you see a window displaying a curvy loop road network.
-make sumo-gui scenario=./scenarios/loop
-
 # setup virtual environment; presently only Python 3.7.x is officially supported
 python3.7 -m venv .venv
 
@@ -237,16 +234,6 @@ cd /src
 pip install -e .[train]
 
 $ python examples/single_agent.py scenarios/loop
-```
-
-# TODO: once we've moved our docker images to github, update this:
-
-If you want to push new images to our **public** GitLab container registry (e.g. to update the environment that our GitLab CI tests use) run,
-
-```bash
-docker login gitlab.smartsai.xyz:5050
-docker build -t gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base .
-docker push gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
 ```
 
 ### SUMO Troubleshooting
