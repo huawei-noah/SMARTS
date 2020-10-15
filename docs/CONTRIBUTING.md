@@ -51,14 +51,14 @@ You are encouraged to review other people's pull requests and tag in relevant re
 2. Raise specific, single-topic issues. If you find yourself having to use "and" in the issue title, you most likely want to create more than one.
 
 ### Reporting Bugs
-Before reporting a bug please check the [list](https://gitlab.smartsai.xyz/smarts/SMARTS/issues) of current issues to see if there are issues already open that match what you are experiencing.
+Before reporting a bug please check the list of current issues to see if there are issues already open that match what you are experiencing.
 
 When reporting a bug, include as much info as necessary for reproducing it. If you find a closed issue that appears to be the same problem you are experiencing; please open up a new issue referencing the original issue in the body of the new issue.
 
 Tag the issue as a `bug`.
 
 ### Feature Requests
-Before requesting a feature please check the [list](https://gitlab.smartsai.xyz/smarts/SMARTS/issues) of current issues to see if there is already a feature request similar to yours. Also, make sure that the feature you are requesting is not a bug. If it a bug see [Reporting Bugs](Reporting-Bugs).
+Before requesting a feature please check the list of current issues to see if there is already a feature request similar to yours. Also, make sure that the feature you are requesting is not a bug. If it a bug see [Reporting Bugs](Reporting-Bugs).
 
 Describe as best you can what the feature does and why it is useful. Visual aids help with understanding more complex features.
 
