@@ -10,7 +10,6 @@ This is the HiWay Edition of Scalable Multi-Agent Training School (SMARTS). It c
 ```python
 import gym
 
-from smarts.core.utils.episodes import episodes
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.agent import AgentSpec, AgentPolicy
 
@@ -23,10 +22,15 @@ agent_spec = AgentSpec(
     policy_builder=Policy,
 )
 
-agent_specs = {"Agent-007": agent_spec, "Agent-008": agent_spec}
+agent_specs = {
+    "Agent-007": agent_spec,
+    "Agent-008": agent_spec,
+}
 
 env = gym.make(
-    "smarts.env:hiway-v0", scenarios=["scenarios/loop"], agent_specs=agent_specs,
+    "smarts.env:hiway-v0",
+    scenarios=["scenarios/loop"],
+    agent_specs=agent_specs,
 )
 
 agents = {
@@ -37,8 +41,8 @@ observations = env.reset()
 
 for _ in range(1000):
     agent_actions = {
-        a_id: agents[a_id].act(agent_obs)
-        for a_id, agent_obs in observations.items()
+        agent_id: agents[agent_id].act(agent_obs)
+        for agent_id, agent_obs in observations.items()
     }
     observations, _, _, _ = env.step(agent_actions)
 ```
