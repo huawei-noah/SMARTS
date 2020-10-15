@@ -178,7 +178,7 @@ python -m http.server -d docs/_build/html
 
 ### Generating Flame Graphs (Profiling)
 
-Things inevitably become slow, when this happens, Flame Graphs are a great tool to for finding hot spots in your code.
+Things inevitably become slow, when this happens, Flame Graph is a great tool to find hot spots in your code.
 
 ```bash
 # You will need python-flamegraph to generate flamegraphs
