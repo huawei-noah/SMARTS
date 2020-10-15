@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  venv_dir: .venv/bin/activate
+  venv_dir: .venv
 jobs:
   test-benchmark:
     runs-on: ubuntu-18.04
@@ -27,7 +27,7 @@ jobs:
             -config /etc/X11/xorg.conf :1 &
           cd $GITHUB_WORKSPACE
           python3.7 -m venv "${venv_dir}"
-          . "${venv_dir}"
+          . "${venv_dir}/bin/activate"
           pip install --upgrade pip
           pip install wheel
           pip install -r requirements.txt
@@ -35,7 +35,7 @@ jobs:
       - name: SMARTS Benchmark
         run: |
           cd $GITHUB_WORKSPACE
-          . "${venv_dir}"
+          . "${venv_dir}/bin/activate"
           apt-get update && apt-get -y install git
           git checkout $(git log --merges -n 1 --format=format:"%H")
           scl scenario build-all --clean ./scenarios
