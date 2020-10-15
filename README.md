@@ -1,5 +1,5 @@
 # SMARTS
-![Pipeline status](https://gitlab.smartsai.xyz/smarts/smarts/badges/master/pipeline.svg) ![Code coverage](https://gitlab.smartsai.xyz/smarts/smarts/badges/master/coverage.svg?style=flat) ![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)
+![Pipeline status](TODO/pipeline.svg) ![Code coverage](TODO/coverage.svg?style=flat) ![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)
 
 This is the HiWay Edition of Scalable Multi-Agent Training School (SMARTS). It consists of a suite of autonomous driving tasks and support for population based evaluation and training.
 
