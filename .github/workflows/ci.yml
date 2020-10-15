@@ -30,7 +30,7 @@ jobs:
       - name: Run smoke tests
         run: |
           cd $GITHUB_WORKSPACE
-          . "${venv_dir}"
+          . "${venv_dir}/bin/activate"
           make test
 
   test-formatting:
