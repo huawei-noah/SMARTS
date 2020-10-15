@@ -189,7 +189,7 @@ pip install git+https://github.com/asokoloski/python-flamegraph.git
 make flamegraph scenario=scenarios/loop script=examples/single_agent.py
 ```
 
-
+<!--
 ### Interfacing w/ PyMARL and malib
 
 [PyMARL](https://github.com/oxwhirl/pymarl) and [malib](https://github.com/ying-wen/malib) presently live under the contrib package. You can run them via,
@@ -226,6 +226,7 @@ ln -s $(PWD)/scenarios ../malib/scenarios
 
 python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 5
 ```
+-->
 
 ### Using Docker
 
