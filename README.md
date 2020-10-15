@@ -210,12 +210,15 @@ python src/main.py --config=qmix --env-config=smarts
 # somewhere on your machine, outside the HiWay directory
 git clone git@github.com:ying-wen/malib.git
 cd malib
+
 # setup virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
 # or wherever you have placed your malib repo
 ln -s $(PWD)/scenarios ../malib/scenarios
+
 python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 5
 ```
 
