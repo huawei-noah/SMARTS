@@ -48,10 +48,10 @@ social_agent_missions = {
     "all": (
         [
             t.SocialAgentActor.from_zoo(
-                name="open-agent",
-                url="http://localhost:8080/open-agent",
-                package="open_agent",
-                version="0.168",
+                name="rl-agent",
+                url="http://localhost:8080/rl-agent",
+                package="rl_agent",
+                version="0.1",
             )
         ],
         [
