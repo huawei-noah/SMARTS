@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-18.04
     
     container:
-      image: gamenotcore/smarts-base
+      image: https://gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
     steps:
       - name: Checkout
         uses: actions/checkout@v1.2.0
