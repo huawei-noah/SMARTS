@@ -1,6 +1,6 @@
 # OpEn Agent
 
-This package provides a classical, MPC based solution to the autonomous driving problem. We use [OpEn](https://alphaville.github.io/optimization-engine/), a fast, nonconvex optimizer to encode our MPC problem. OpEn generates a Rust solver to this problem, which we then query to derive a Trajectory to follow.
+This package provides a classical, MPC based solution to the autonomous driving problem. We use [OpEn](https://alphaville.github.io/optimization-engine/), a fast, nonconvex optimizer to encode our MPC problem. OpEn generates a Rust solver to this problem which we then query to derive a trajectory to follow.
 
 ## Setup
 
