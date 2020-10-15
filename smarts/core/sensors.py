@@ -480,7 +480,7 @@ class CameraSensor(Sensor):
         fb_props.setRgbaBits(8, 8, 8, 1)
         # XXX: Though we don't need the depth buffer returned, setting this to 0
         #      causes undefined behaviour where the ordering of meshes is random.
-        fb_props.setDepthBits(1)
+        fb_props.setDepthBits(8)
 
         buffer = self._showbase.win.engine.makeOutput(
             self._showbase.pipe,
