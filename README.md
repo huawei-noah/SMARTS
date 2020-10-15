@@ -78,9 +78,6 @@ pip install -e .[train]
 # make sure you can run tests (and verify they are passing)
 make test
 
-# if you wish to contribute to SMARTS, also install the [dev] dependencies.
-pip install .[dev]
-
 # then you can run a scenario, see following section for more details
 ```
 
@@ -156,7 +153,7 @@ See the provided ready-to-go scripts under the [examples/](./examples) directory
 
 ## Contributing
 
-Please read [Contributing](doc/CONTRIBUTING.md)
+Please read [Contributing](CONTRIBUTING.md)
 
 ## Extras
 
@@ -176,17 +173,6 @@ make docs
 
 python -m http.server -d docs/_build/html
 # Open http://localhost:8000 in your browser
-```
-
-### Generating Flame Graphs (Profiling)
-
-Things inevitably become slow, when this happens, Flame Graph is a great tool to find hot spots in your code.
-
-```bash
-# You will need python-flamegraph to generate flamegraphs
-pip install git+https://github.com/asokoloski/python-flamegraph.git
-
-make flamegraph scenario=scenarios/loop script=examples/single_agent.py
 ```
 
 <!--
@@ -235,7 +221,7 @@ If you're comfortable using docker or are on a platform without suitable support
 
 ```bash
 docker build -t smarts .
-docker run --rm -it -v $(PWD):/src smarts
+docker run --rm -it -v $(pwd):/src smarts
 cd /src
 pip install -e .[train]
 

@@ -1,4 +1,4 @@
-## Contributing to SMARTS
+# Contributing to SMARTS
 
 We encourage all forms of contributions to SMARTS, not limited to:
 
@@ -8,6 +8,16 @@ We encourage all forms of contributions to SMARTS, not limited to:
 * Feature requests
 * Patches
 * Test cases
+
+## Setting up your dev environment
+
+In addition to following the setup steps in the README, you'll need to install the [dev] dependencies.
+
+```bash
+pip install -e .[dev]
+```
+
+Once done, you're all set to make your first contribution!
 
 ## Where to get started
 
@@ -25,3 +35,15 @@ Please take a look at the current open issues to see if any of them interest you
 ## Formatting
 
 We use `black` as our formatter. If you do not already have it please install it via `pip install black`.
+
+
+## Generating Flame Graphs (Profiling)
+
+Things inevitably become slow, when this happens, Flame Graph is a great tool to find hot spots in your code.
+
+```bash
+# You will need python-flamegraph to generate flamegraphs
+pip install git+https://github.com/asokoloski/python-flamegraph.git
+
+make flamegraph scenario=scenarios/loop script=examples/single_agent.py
+```
