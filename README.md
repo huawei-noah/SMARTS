@@ -5,7 +5,7 @@ This is the HiWay Edition of Scalable Multi-Agent Training School (SMARTS). It c
 
 ![](media/envision_video.gif)
 
-## Multi-Agent environment as simple as...
+## Multi-Agent experiment as simple as...
 
 ```python
 import gym
@@ -29,19 +29,18 @@ env = gym.make(
     "smarts.env:hiway-v0", scenarios=["scenarios/loop"], agent_specs=agent_specs,
 )
 
-for episode in range(100):
-    agents = {
-        agent_id: agent_spec.build_agent()
-        for agent_id, agent_spec in agent_specs.items()
+agents = {
+    agent_id: agent_spec.build_agent()
+    for agent_id, agent_spec in agent_specs.items()
+}
+observations = env.reset()
+
+for _ in range(1000):
+    agent_actions = {
+        a_id: agents[a_id].act(agent_obs)
+        for a_id, agent_obs in observations.items()
     }
-    observations = env.reset()
-    dones = {"__all__": False}
-    while not dones["__all__"]:
-        agent_actions = {
-            a_id: agents[a_id].act(agent_obs)
-            for a_id, agent_obs in observations.items()
-        }
-        observations, _reward, dones, _infos = env.step(agent_actions)
+    observations, _, _, _ = env.step(agent_actions)
 ```
 
 ## Setup
