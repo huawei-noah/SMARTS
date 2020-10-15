@@ -1,0 +1,52 @@
+name: a2c-baseline-lane-controller
+
+agent:
+  state:
+    wrapper:
+      name: Simple
+    features:
+      distance_to_center: True
+      speed: True
+      steering: True
+      heading_errors: [20, continuous]
+      neighbor: 8
+  action:
+    type: 1   # 0 for continuous, 1 for discrete
+
+interface:
+  max_episode_steps: 1000
+  neighborhood_vehicles:
+    radius: 50
+  waypoints:
+    lookahead: 50   # larger than size of heading errors
+
+policy:
+  framework: rllib
+  trainer:
+    path: ray.rllib.agents.a3c
+    name: A2CTrainer
+
+run:
+  checkpoint_freq: 40
+  checkpoint_at_end: True
+  max_failures: 1000
+  resume: False
+  export_formats: [model, checkpoint]
+  stop:
+    time_total_s: 14400
+  config:
+    log_level: WARN
+    num_workers: 1
+    num_gpus: 0
+    horizon: 1000
+    # learning
+    use_critic: True
+    use_gae: True
+    rollout_fragment_length: 10
+    grad_clip: 40.0
+    lr: 1e-4
+    vf_loss_coeff: 0.5
+    entropy_coeff: 0.01
+    min_iter_time_s: 5
+    sample_async: True
+    lambda: 1.0

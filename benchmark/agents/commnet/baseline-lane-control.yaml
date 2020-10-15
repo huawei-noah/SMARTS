@@ -1,0 +1,51 @@
+name: commnet-baseline-lane-control
+
+agent:
+  state:
+    wrapper:
+      name: Group
+    features:
+#      distance_to_center: True
+      speed: True
+#      steering: True
+      heading_errors: [20, continuous]
+#      neighbor: 8
+  action:
+    type: 1
+
+interface:
+  max_episode_steps: 1000
+  neighborhood_vehicles:
+    radius: 50
+  waypoints:
+    lookahead: 50
+
+policy:
+  framework: rllib
+  config:
+    model:
+      custom_model_config:
+        agent_number: 4
+        communicate_level: 2
+        rnn_hidden_dim: 32
+  trainer:
+    path: benchmark.agents.commnet.tf_policy
+    name: CommNetTrainer
+
+run:
+  checkpoint_freq: 40
+  checkpoint_at_end: True
+  max_failures: 1000
+  resume: False
+  export_formats: [model, checkpoint]
+  stop:
+    time_total_s: 14400
+  config:
+    log_level: WARN
+    num_workers: 1
+    num_gpus: 0
+    horizon: 1000
+    rollout_fragment_length: 10
+    lr: 1e-4
+    min_iter_time_s: 5
+    gamma: 0.99

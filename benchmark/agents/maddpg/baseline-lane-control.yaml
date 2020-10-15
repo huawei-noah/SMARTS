@@ -1,0 +1,46 @@
+name: maddpg-baseline-lane-controller
+
+agent:
+  state:
+    wrapper:
+      name: EarlyDone
+    features:
+      goal_relative_pos: True
+      distance_to_center: True
+      speed: True
+      steering: True
+      heading_errors: [20, continuous]
+      neighbor: 8
+  action:
+    type: 1   # 0 for continuous, 1 for discrete
+
+interface:
+  max_episode_steps: 1000
+  neighborhood_vehicles:
+    radius: 50
+  waypoints:
+    lookahead: 50   # larger than size of heading errors
+
+policy:
+  framework: rllib
+  trainer:
+    path: benchmark.agents.maddpg.maddpg
+    name: MADDPGTrainer
+
+run:
+  checkpoint_freq: 40
+  checkpoint_at_end: True
+  max_failures: 1000
+  resume: False
+  export_formats: [model, checkpoint]
+  stop:
+    time_total_s: 14400
+  config:
+    log_level: WARN
+    num_workers: 1
+    num_gpus: 0
+    horizon: 1000
+    # learning
+    learning_starts: 8196
+    # buffer_size: 1024
+    train_batch_size: 1024
