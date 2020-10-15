@@ -155,16 +155,6 @@ See the provided ready-to-go scripts under the [examples/](./examples) directory
 
 Please read [Contributing](CONTRIBUTING.md)
 
-## Extras
-
-### Visualizing Agent Observations
-If you want to easily visualize observations you can use our [Visdom](https://github.com/facebookresearch/visdom) integration. Start the visdom server before running your scenario,
-
-```bash
-visdom
-# Open the printed URL in your browser
-```
-
 ### Building Docs Locally
 Assuming you have run `pip install .[dev]`.
 
@@ -173,6 +163,16 @@ make docs
 
 python -m http.server -d docs/_build/html
 # Open http://localhost:8000 in your browser
+```
+
+## Extras
+
+### Visualizing Agent Observations
+If you want to easily visualize observations you can use our [Visdom](https://github.com/facebookresearch/visdom) integration. Start the visdom server before running your scenario,
+
+```bash
+visdom
+# Open the printed URL in your browser
 ```
 
 <!--
