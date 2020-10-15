@@ -1,0 +1,64 @@
+name: SMARTS CI
+
+on: [push]
+
+env:
+  venv_dir: .venv
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    container: gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Package Setup
+        run: |
+          /usr/bin/Xorg \
+            -noreset \
+            +extension GLX \
+            +extension RANDR \
+            +extension RENDER \
+            -logfile ./xdummy.log \
+            -config /etc/X11/xorg.conf :1 &
+          cd $GITHUB_WORKSPACE
+          python3.7 -m venv "${venv_dir}"
+          . "${venv_dir}/bin/activate"
+          pip install --upgrade pip
+          pip install wheel
+          pip install -r requirements.txt
+          pip install -e .[train]
+      - name: Run smoke tests
+        run: |
+          cd $GITHUB_WORKSPACE
+          . "${venv_dir}/bin/activate"
+          make test
+
+  test-formatting:
+    runs-on: ubuntu-latest
+    container: 
+      image: gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Run Black code formatter
+        run: |
+          cd $GITHUB_WORKSPACE
+          pip install --upgrade pip
+          pip install black==19.10b0
+          apt-get update && apt-get install -y curl
+          curl -sL https://deb.nodesource.com/setup_14.x | bash -
+          apt-get install -y nodejs
+          black --check .
+          npx prettier --check envision/web/src
+
+  test-requirements:
+    runs-on: ubuntu-latest
+    container: 
+      image: gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Test Pip Packages
+        run: |
+          cd $GITHUB_WORKSPACE
+          ./test_pip_packages.sh
