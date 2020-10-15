@@ -1,9 +1,14 @@
 from setuptools import setup, find_packages
 
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
     name="smarts",
     description="Scalable Multi-Agent RL Training School",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     version="0.4.2",
     packages=find_packages(exclude="tests"),
     include_package_data=True,
@@ -61,11 +66,7 @@ setup(
     ],
     extras_require={
         "train": ["tensorflow==1.15", "torch==1.3.0", "torchvision==0.4.1"],
-        "docs": [
-            "sphinx",
-            "sphinx-rtd-theme",
-            "sphinxcontrib-apidoc",
-        ],  # TODO: add reference in readme to run `pip install -e .[dev]`
+        "dev": ["black", "sphinx", "sphinx-rtd-theme", "sphinxcontrib-apidoc",],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
