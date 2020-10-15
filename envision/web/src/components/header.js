@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Route, Switch } from "react-router-dom";
-import { Layout, Select, Button, Space } from "antd";
+import { Layout, Select, Space, Button, Checkbox } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 const { Option, OptGroup } = Select;
 const { Header } = Layout;
@@ -11,9 +11,11 @@ export default function Header_({
   onStartRecording,
   onStopRecording,
   onToggleShowScores,
+  onToggleEgoView,
   onSelectSimulation,
 }) {
   const [showScores, setShowScores] = useState(true);
+  const [egoView, setEgoView] = useState(false);
   const [recording, setRecording] = useState(false);
 
   function toggleRecording() {
@@ -31,6 +33,12 @@ export default function Header_({
     let showScores_ = !showScores;
     onToggleShowScores(showScores_);
     setShowScores(showScores_);
+  }
+
+  function toggleEgoView() {
+    let egoView_ = !egoView;
+    onToggleEgoView(egoView_);
+    setEgoView(egoView_);
   }
 
   let selectValue = "";
@@ -57,7 +65,6 @@ export default function Header_({
             ))}
           </OptGroup>
         </Select>
-        <Button onClick={toggleShowScores}>Show/Hide Scores</Button>
 
         <Switch>
           <Route exact={true} path="/all"></Route>
@@ -72,6 +79,13 @@ export default function Header_({
             </Button>
           </Route>
         </Switch>
+      </Space>
+
+      <Space style={{ float: "right" }}>
+        <Checkbox defaultChecked onClick={toggleShowScores}>
+          Show Scores
+        </Checkbox>
+        <Checkbox onClick={toggleEgoView}>Egocentric View</Checkbox>
       </Space>
     </Header>
   );

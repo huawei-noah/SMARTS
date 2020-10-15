@@ -22,6 +22,7 @@ window.html2canvas = html2canvas;
 function App(props) {
   const [simulationIds, setSimulationIds] = useState([]);
   const [showScores, setShowScores] = useState(true);
+  const [egoView, setEgoView] = useState(false);
   const simulationCanvasRef = useRef(null);
   const recorderRef = useRef(null);
   const history = useHistory();
@@ -72,6 +73,7 @@ function App(props) {
         onStartRecording={onStartRecording}
         onStopRecording={onStopRecording}
         onToggleShowScores={(show) => setShowScores(show)}
+        onToggleEgoView={(view) => setEgoView(view)}
       />
       <Content>
         <Switch>
@@ -80,6 +82,7 @@ function App(props) {
               client={props.client}
               simulationIds={simulationIds}
               showScores={showScores}
+              egoView={egoView}
             />
           </Route>
           <Route
@@ -91,6 +94,7 @@ function App(props) {
                   client={props.client}
                   simulationId={matchedSimulationId}
                   showScores={showScores}
+                  egoView={egoView}
                 />
               );
             }}
