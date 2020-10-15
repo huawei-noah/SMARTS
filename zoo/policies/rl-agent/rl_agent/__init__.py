@@ -16,6 +16,7 @@ from smarts.zoo.registry import register
 
 VERSION = 0.1
 
+
 def entrypoint(
     goal_is_nearby_threshold=40,
     lane_end_threshold=51,
@@ -46,7 +47,7 @@ def entrypoint(
                 observation_space=OBSERVATION_SPACE,
                 action_space=ACTION_SPACE,
             ),
-    )
+        )
 
 
 register(locator="rl-agent-v0", entry_point=entrypoint)
