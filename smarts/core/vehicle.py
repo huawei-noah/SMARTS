@@ -136,6 +136,11 @@ class Vehicle:
 
         node_path.setName("vehicle-%s" % self._id)
         node_path.setColor(self._color)
+        # HACK: There seems to be a Panda3D(?) bug where the zbuffer ordering of
+        #       vehicles to plane is random. This is a heavy handed solution for now.
+        node_path.setBin("fixed", 0)
+        node_path.setDepthTest(False)
+        node_path.setDepthWrite(False)
 
         pos, heading = pose.as_panda3d()
         node_path.setPosHpr(*pos, heading, 0, 0)
