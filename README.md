@@ -221,11 +221,18 @@ If you're comfortable using docker or are on a platform without suitable support
 
 ```bash
 docker build -t smarts .
-docker run --rm -it -v $(pwd):/src smarts
+docker run --rm -it -v $(PWD):/src -p 8081:8081 smarts
+# <press enter>
+
 cd /src
 pip install -e .[train]
 
+# Run Envision server in the background
+$ scl envision start -s ./scenarios -p 8081 &
 $ python examples/single_agent.py scenarios/loop
+
+# On your most machine visit http://localhost:8081 to see the running simulation in
+# Envision.
 ```
 
 ### SUMO Troubleshooting

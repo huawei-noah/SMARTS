@@ -136,7 +136,6 @@ class Vehicle:
 
         node_path.setName("vehicle-%s" % self._id)
         node_path.setColor(self._color)
-
         pos, heading = pose.as_panda3d()
         node_path.setPosHpr(*pos, heading, 0, 0)
         node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
