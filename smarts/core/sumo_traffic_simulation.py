@@ -574,16 +574,13 @@ class SumoTrafficSimulation:
 
         sub_results = self._traci_conn.trafficlight.getSubscriptionResults(None)
 
-        if not sub_results:
-            return {}
-
         tlss = []
+        if not sub_results:
+            return tlss
+
         for tls_id in sub_results:
             light_states = sub_results[tls_id][tc.TL_RED_YELLOW_GREEN_STATE]
             links = sub_results[tls_id][tc.TL_CONTROLLED_LINKS]
-            assert len(links) == len(
-                light_states
-            ), "TLS light states must be 1:1 with links"
 
             traffic_lights = []
             for link, state in zip(links, light_states):
