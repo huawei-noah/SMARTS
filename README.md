@@ -3,7 +3,7 @@
 
 This is the HiWay Edition of Scalable Multi-Agent Training School (SMARTS). It consists of a suite of autonomous driving tasks and support for population based evaluation and training.
 
-![](media/smarts_envision.gif)
+![](docs/_static/smarts_envision.gif)
 
 ## Multi-Agent experiment as simple as...
 
