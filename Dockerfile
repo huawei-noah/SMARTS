@@ -63,6 +63,9 @@ ENV SUMO_HOME /usr/share/sumo
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
+# For Envision
+EXPOSE 8081
+
 # TODO: Find a better place to put this (e.g. through systemd). As it stands now ctrl-c
 #       could close x-server. Even though it's "running in the background".
 RUN echo "/usr/bin/Xorg " \
