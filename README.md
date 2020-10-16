@@ -1,7 +1,7 @@
 # SMARTS
 ![SMARTS CI](https://github.com/junluo-huawei/SMARTS/workflows/SMARTS%20CI/badge.svg?branch=master) ![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)
 
-This is the HiWay Edition of Scalable Multi-Agent Training School (SMARTS). It consists of a suite of autonomous driving tasks and support for population based evaluation and training.
+SMARTS (Scalable Multi-Agent RL Training School) is a simulaton platform for reinforcement learning and multi-agent research on autonomous driving. Its focus is on realistic and diverse interactions. It is part of the [XingTian](https://github.com/huawei-noah/xingtian/) suite of RL platforms from Huawei Noah's Ark Lab.
 
 ![](docs/_static/smarts_envision.gif)
 
