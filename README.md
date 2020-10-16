@@ -31,7 +31,6 @@ env = gym.make(
     "smarts.env:hiway-v0",
     scenarios=["scenarios/loop"],
     agent_specs=agent_specs,
-    visdom=True,
 )
 
 agents = {
@@ -173,6 +172,17 @@ If you want to easily visualize observations you can use our [Visdom](https://gi
 ```bash
 visdom
 # Open the printed URL in your browser
+```
+
+And in your experiment, start your environment with `visdom=True`
+
+```python
+env = gym.make(
+    "smarts.env:hiway-v0",
+    scenarios=["scenarios/loop"],
+    agent_specs=agent_specs,
+    visdom=True,
+)
 ```
 
 <!--
