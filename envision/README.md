@@ -2,7 +2,7 @@
 
 Envision is a visualization front-end for SMARTS providing real-time view of environment state. It's built on web-technologies (including [React](https://reactjs.org/), [WebGL](https://www.khronos.org/webgl/), and [websockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)) allowing it to run easily in your browser. Envision is composed of a few parts: a client which SMARTS uses directly; a server used for state broadcasting; and the web application where all the visualization and rendering happens.
 
-![](../media/envision_screenshot.png)
+![](../docs/_static/envision_video.gif)
 
 ## Running
 
