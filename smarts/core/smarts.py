@@ -653,18 +653,13 @@ class SMARTS(ShowBase):
                         agent_id, include_shadowers=True
                     )
                 ]
-                if agent_interface.action_space == ActionSpaceType.MultiTargetPose:
+
+                if self._agent_manager.is_boid_agent(self, agent_id):
                     for vehicle_id, vehicle_action in action.items():
-                        assert vehicle_id in vehicle_ids, (
-                            "MultiTargetPose actions "
-                            "can only control the vehicles the Agent owns"
-                        )
+                        assert vehicle_id in vehicle_ids
                         provider_actions[vehicle_id] = vehicle_action
                 else:
-                    assert len(vehicle_ids) == 1, (
-                        "Only ActionSpaceType.MultiTargetPose supports "
-                        "controlling > 1 vehicles"
-                    )
+                    assert len(vehicle_ids) == 1
                     provider_actions[vehicle_ids[0]] = action
 
         provider_state = provider.step(provider_actions, dt, elapsed_sim_time)
@@ -776,8 +771,11 @@ class SMARTS(ShowBase):
                 agent_interface = self._agent_manager.agent_interface_for_agent_id(
                     agent_id
                 )
-                vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
-                for vehicle in vehicles:
+                is_boid_agent = self._agent_manager.is_boid_agent(self, agent_id)
+
+                for vehicle in agent_vehicles:
+                    vehicle_action = action[vehicle.id] if is_boid_agent else action
+
                     controller_state = self._vehicle_index.controller_state_for_vehicle_id(
                         vehicle.id
                     )
@@ -789,7 +787,7 @@ class SMARTS(ShowBase):
                         self,
                         agent_id,
                         vehicle,
-                        action,
+                        vehicle_action,
                         controller_state,
                         sensor_state,
                         agent_interface.action_space,
@@ -846,10 +844,7 @@ class SMARTS(ShowBase):
                 # this is an agent controlled vehicle
                 agent_id = self._vehicle_index.actor_id_from_vehicle_id(v.vehicle_id)
                 agent_obs = obs[agent_id]
-
-                # TODO: find a more robust way of telling whether an agent id refers to a boid agent
-                # boid agent observations are a dict mapping vehicle ids to that vehicle's observation
-                is_boid_agent = isinstance(agent_obs, dict)
+                is_boid_agent = self._agent_manager.is_boid_agent(self, agent_id)
                 vehicle_obs = agent_obs[v.vehicle_id] if is_boid_agent else agent_obs
 
                 if self._agent_manager.is_ego(agent_id):
@@ -894,10 +889,6 @@ class SMARTS(ShowBase):
                     position=list(v.pose.position),
                     heading=v.pose.heading,
                     speed=v.speed,
-                )
-            else:
-                self._log.info(
-                    "Vehicle is not a social vehicle and not controlled by agent: ", v
                 )
 
         bubble_geometry = [
