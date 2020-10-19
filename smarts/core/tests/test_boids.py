@@ -25,7 +25,7 @@ def bubble():
         actor=t.BoidAgentActor(
             # TODO: Provide a more self-contained way to build agent locators for tests
             name="hive-mind",
-            agent_locator="scenarios.straight.agent_prefabs:boid-agent-v0",
+            agent_locator="scenarios.straight.agent_prefabs:pose-boid-agent-v0",
         ),
     )
 
