@@ -39,6 +39,8 @@ from panda3d.core import (
 from sklearn.metrics.pairwise import euclidean_distances
 
 from envision import types as envision_types
+from envision.client import Client as EnvisionClient
+from .utils.visdom_client import VisdomClient
 
 from . import glsl
 from . import models
@@ -85,7 +87,8 @@ class SMARTS(ShowBase):
         self,
         agent_interfaces,
         traffic_sim,
-        envision=None,
+        envision: EnvisionClient = None,
+        visdom: VisdomClient = None,
         timestep_sec=0.1,
         reset_agents_only=False,
         should_teardown_done_social_agents=True,
@@ -107,7 +110,8 @@ class SMARTS(ShowBase):
         self._should_teardown_done_social_agents = should_teardown_done_social_agents
         self._is_setup = False
         self._scenario: Scenario = None
-        self._envision = envision
+        self._envision: EnvisionClient = envision
+        self._visdom: VisdomClient = visdom
         self._timestep_sec = timestep_sec
         self._traffic_sim = traffic_sim
         self._motion_planner_provider = MotionPlannerProvider()
@@ -241,6 +245,7 @@ class SMARTS(ShowBase):
 
         # 7. Perform visualization
         self._try_emit_envision_state(provider_state, observations, scores)
+        self._try_emit_visdom_obs(observations)
 
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
@@ -266,6 +271,9 @@ class SMARTS(ShowBase):
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
         observations, _, _, _ = self._agent_manager.observe(self)
         observations_for_ego = self._agent_manager.reset_agents(observations)
+
+        # Visualization
+        self._try_emit_visdom_obs(observations)
 
         if len(self._agent_manager.ego_agent_ids):
             while len(observations_for_ego) < 1:
@@ -375,6 +383,9 @@ class SMARTS(ShowBase):
 
         if self._envision:
             self._envision.teardown()
+
+        if self._visdom:
+            self._visdom.teardown()
 
         self._agent_manager.destroy()
         self._bullet_client.disconnect()
@@ -902,3 +913,9 @@ class SMARTS(ShowBase):
             scores=scores,
         )
         self._envision.send(state)
+
+    def _try_emit_visdom_obs(self, obs):
+        if not self._visdom:
+            return
+
+        self._visdom.send(obs)
