@@ -181,7 +181,8 @@ class Client:
 
     def send(self, state: types.State):
         self._state_queue.put(state)
-        self._logging_queue.put(state)
+        if self._logging_thread:
+            self._logging_queue.put(state)
 
     def _send_raw(self, state: str):
         """Skip serialization if we already have serialized data. This is useful if
