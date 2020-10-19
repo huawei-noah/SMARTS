@@ -38,7 +38,7 @@ Scenario Studio is a flexible tool to help you generate different traffics in a 
 different attributes, generate routes file for social vehicles and missions file for agents relatively.
 See `Scenario Studio <sections/Sstudio.md>`_ for details.
 
-.. image:: _static/envision_video.gif
+.. image:: _static/smarts_envision.gif
 
 ====================================
 4. Build Your First Training Program
