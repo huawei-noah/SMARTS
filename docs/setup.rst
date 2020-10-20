@@ -11,29 +11,34 @@ To setup the simulator, which is called SMARTS, run the following commands,
 
 .. code-block:: bash
 
-    # unzip the starter_kit and place somewhere convenient on your machine. (e.x. ~/src/starter_kit)
+    # For Mac OS X users, make sure XQuartz is pre-installed as SUMO's dependency
 
-    cd ~/src/starter_kit
+    # git clone ...
+    cd <project>
+
+    # Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
     ./install_deps.sh
-    # ...and, follow any on-screen instructions
 
-    # test that the sumo installation worked
-    sumo-gui
+    # verify sumo is >= 1.5.0
+    # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
+    sumo
 
-    # setup virtual environment (Python 3.7 is required)
-    # or you can use conda environment if you like.
+    # setup virtual environment; presently only Python 3.7.x is officially supported
     python3.7 -m venv .venv
+
+    # enter virtual environment to install all dependencies
     source .venv/bin/activate
+
+    # upgrade pip, a recent version of pip is needed for the version of tensorflow we depend on
     pip install --upgrade pip
 
-    # install the dependencies
-    pip install smarts-<version>-py3-none-any.whl
-    pip install smarts-<version>-py3-none-any.whl[train]
+    # install [train] version of python package with the rllib dependencies
+    pip install -e .[train]
 
-    # download the public datasets from Codalab to ./dataset_public
+    # make sure you can run tests (and verify they are passing)
+    make test
 
-    # test that the sim works
-    python random_example/run.py
+    # then you can run a scenario, see following section for more details
 
 ================
 Common Questions
@@ -78,14 +83,21 @@ Usage
     scl COMMAND SUBCOMMAND [OPTIONS] [ARGS]...
 
 Commands:
-* envision
-* scenario
-* docs
+
+- envision
+- scenario
+- zoo
 
 Subcommands of scenario:
-* build-all: Generate all scenarios under the given directories
-* build: Generate a single scenario
-* clean: Clean generated artifacts
+
+- build-all: Generate all scenarios under the given directories
+- build: Generate a single scenario
+- clean: Clean generated artifacts
 
 Subcommands of envision:
-* start: start envision server
+
+- start: Start envision server
+
+Subcommands of zoo:
+
+- build: Build a policy
