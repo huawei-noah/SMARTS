@@ -132,10 +132,10 @@ def sample_vehicle_pos(
     #     and np.count_nonzero(next_rgb.data[next_rgb_x, next_rgb_y, :] != ROAD_COLOR)
     # )
 
-    # OGM
-    assert np.count_nonzero(ogm.data[ogm_x, ogm_y, :]) or np.count_nonzero(
-        next_ogm.data[next_ogm_x, next_ogm_y, :]
-    )
+    # # OGM
+    # assert np.count_nonzero(ogm.data[ogm_x, ogm_y, :]) or np.count_nonzero(
+    #     next_ogm.data[next_ogm_x, next_ogm_y, :]
+    # )
 
     # Check if vehicles are within drivable area
     # Drivable area grid map
