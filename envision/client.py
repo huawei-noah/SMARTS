@@ -120,9 +120,9 @@ class Client:
     def read_and_send(
         path: str,
         endpoint: str = "ws://localhost:8081",
+        timestep_sec: float = 0.1,
         num_retries: int = 5,
         wait_between_retries: float = 0.5,
-        timestep_sec: float = 0.1,
     ):
         client = Client(
             endpoint=endpoint,
