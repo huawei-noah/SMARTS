@@ -298,8 +298,6 @@ class Vehicle:
         controller_filepath,
         initial_speed=None,
     ):
-        # TODO: See TODO in AgentManager._add_agent(...)
-
         # Agents can currently only control passenger vehicles
         vehicle_type = "passenger"
         chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions

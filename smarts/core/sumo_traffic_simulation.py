@@ -326,6 +326,9 @@ class SumoTrafficSimulation:
         vehicles_that_have_become_external = (
             traffic_vehicle_ids & external_vehicle_ids - self._non_sumo_vehicle_ids
         )
+        # XXX: They may have become internal because they've been relinquished or
+        #      because they've been destroyed from a collision. Presently we're not
+        #      differentiating and will take over as social vehicles regardless.
         vehicles_that_have_become_internal = (
             self._non_sumo_vehicle_ids - external_vehicle_ids
         ) & traffic_vehicle_ids
