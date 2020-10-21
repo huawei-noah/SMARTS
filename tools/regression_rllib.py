@@ -29,13 +29,13 @@ class RLlibTFSavedModelPolicy(AgentPolicy):
         self._path_to_model = path_to_model
 
     def setup(self):
-        self._sess = tf.Session(graph=tf.Graph())
+        self._sess = tf.compat.v1.Session(graph=tf.Graph())
         self._sess.__enter__()
-        tf.saved_model.load(self._sess, export_dir=self._path_to_model, tags=["serve"])
+        tf.compat.v1.saved_model.load(self._sess, export_dir=self._path_to_model, tags=["serve"])
 
     def act(self, obs):
         obs = self._prep.transform(obs)
-        graph = tf.get_default_graph()
+        graph = tf.compat.v1.get_default_graph()
         # These tensor names were found by inspecting the trained model
         output_node = graph.get_tensor_by_name("default_policy/add:0")
         input_node = graph.get_tensor_by_name("default_policy/observation:0")

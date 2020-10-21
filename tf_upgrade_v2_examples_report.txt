@@ -1,0 +1,115 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 12 files
+Detected 2 issues that require attention
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+File: ./examples/multi_instance.py
+--------------------------------------------------------------------------------
+./examples/multi_instance.py:48:8: WARNING: *.save requires manual check. (This warning is only applicable if the code saves a tf.Keras model) Keras model.save now saves to the Tensorflow SavedModel format by default, instead of HDF5. To continue saving to HDF5, add the argument save_format='h5' to the save() function.
+./examples/multi_instance.py:107:16: WARNING: *.save requires manual check. (This warning is only applicable if the code saves a tf.Keras model) Keras model.save now saves to the Tensorflow SavedModel format by default, instead of HDF5. To continue saving to HDF5, add the argument save_format='h5' to the save() function.
+================================================================================
+Detailed log follows:
+
+================================================================================
+================================================================================
+Input tree: './examples'
+================================================================================
+--------------------------------------------------------------------------------
+Processing file './examples/multi_agent.py'
+ outputting to './examples-copy/multi_agent.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/trajectory_tracking_agent.py'
+ outputting to './examples-copy/trajectory_tracking_agent.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/__init__.py'
+ outputting to './examples-copy/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/history_vehicles_replacement_for_imitation_learning.py'
+ outputting to './examples-copy/history_vehicles_replacement_for_imitation_learning.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/egoless.py'
+ outputting to './examples-copy/egoless.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/multi_instance.py'
+ outputting to './examples-copy/multi_instance.py'
+--------------------------------------------------------------------------------
+
+48:8: WARNING: *.save requires manual check. (This warning is only applicable if the code saves a tf.Keras model) Keras model.save now saves to the Tensorflow SavedModel format by default, instead of HDF5. To continue saving to HDF5, add the argument save_format='h5' to the save() function.
+107:16: WARNING: *.save requires manual check. (This warning is only applicable if the code saves a tf.Keras model) Keras model.save now saves to the Tensorflow SavedModel format by default, instead of HDF5. To continue saving to HDF5, add the argument save_format='h5' to the save() function.
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/rllib.py'
+ outputting to './examples-copy/rllib.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/ego_open_agent.py'
+ outputting to './examples-copy/ego_open_agent.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/human_in_the_loop.py'
+ outputting to './examples-copy/human_in_the_loop.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/observation_collection_for_imitation_learning.py'
+ outputting to './examples-copy/observation_collection_for_imitation_learning.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/rllib_agent.py'
+ outputting to './examples-copy/rllib_agent.py'
+--------------------------------------------------------------------------------
+
+59:21: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+60:8: INFO: Renamed 'tf.saved_model.load' to 'tf.compat.v1.saved_model.load'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './examples/single_agent.py'
+ outputting to './examples-copy/single_agent.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+

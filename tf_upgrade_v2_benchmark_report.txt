@@ -1,0 +1,349 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 39 files
+Detected 0 issues that require attention
+--------------------------------------------------------------------------------
+================================================================================
+Detailed log follows:
+
+================================================================================
+================================================================================
+Input tree: './benchmark'
+================================================================================
+--------------------------------------------------------------------------------
+Processing file './benchmark/evaluate.py'
+ outputting to './benchmark-copy/evaluate.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/run.py'
+ outputting to './benchmark-copy/run.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/default_model.py'
+ outputting to './benchmark-copy/default_model.py'
+--------------------------------------------------------------------------------
+
+67:21: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+67:38: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+69:13: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+69:13: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+73:27: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+98:32: INFO: Added keywords to args of function 'tf.argmax'
+108:32: INFO: Added keywords to args of function 'tf.argmax'
+118:32: INFO: Added keywords to args of function 'tf.argmax'
+127:32: INFO: Added keywords to args of function 'tf.argmax'
+146:21: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+147:8: INFO: Renamed 'tf.saved_model.load' to 'tf.compat.v1.saved_model.load'
+166:32: INFO: Added keywords to args of function 'tf.argmax'
+176:32: INFO: Added keywords to args of function 'tf.argmax'
+208:21: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+210:13: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+210:13: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+235:32: INFO: Added keywords to args of function 'tf.argmax'
+245:32: INFO: Added keywords to args of function 'tf.argmax'
+267:21: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+268:8: INFO: Renamed 'tf.saved_model.load' to 'tf.compat.v1.saved_model.load'
+286:32: INFO: Added keywords to args of function 'tf.argmax'
+296:32: INFO: Added keywords to args of function 'tf.argmax'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/scenarios/two_ways/bid/scenario.py'
+ outputting to './benchmark-copy/scenarios/two_ways/bid/scenario.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/scenarios/two_ways/bid_sv/scenario.py'
+ outputting to './benchmark-copy/scenarios/two_ways/bid_sv/scenario.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/scenarios/double_merge/cross/scenario.py'
+ outputting to './benchmark-copy/scenarios/double_merge/cross/scenario.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/scenarios/double_merge/nocross/scenario.py'
+ outputting to './benchmark-copy/scenarios/double_merge/nocross/scenario.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/scenarios/intersections/4lane/scenario.py'
+ outputting to './benchmark-copy/scenarios/intersections/4lane/scenario.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/scenarios/intersections/4lane_sv/scenario.py'
+ outputting to './benchmark-copy/scenarios/intersections/4lane_sv/scenario.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/wrappers/__init__.py'
+ outputting to './benchmark-copy/wrappers/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/wrappers/rllib/frame_stack.py'
+ outputting to './benchmark-copy/wrappers/rllib/frame_stack.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/wrappers/rllib/early_done.py'
+ outputting to './benchmark-copy/wrappers/rllib/early_done.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/wrappers/rllib/__init__.py'
+ outputting to './benchmark-copy/wrappers/rllib/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/wrappers/rllib/group.py'
+ outputting to './benchmark-copy/wrappers/rllib/group.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/wrappers/rllib/simple.py'
+ outputting to './benchmark-copy/wrappers/rllib/simple.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/wrappers/rllib/wrapper.py'
+ outputting to './benchmark-copy/wrappers/rllib/wrapper.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/common.py'
+ outputting to './benchmark-copy/agents/common.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/__init__.py'
+ outputting to './benchmark-copy/agents/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/networked_pg/__init__.py'
+ outputting to './benchmark-copy/agents/networked_pg/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/networked_pg/tf_policy.py'
+ outputting to './benchmark-copy/agents/networked_pg/tf_policy.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/maddpg/__init__.py'
+ outputting to './benchmark-copy/agents/maddpg/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/maddpg/maddpg.py'
+ outputting to './benchmark-copy/agents/maddpg/maddpg.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/maddpg/tf_policy.py'
+ outputting to './benchmark-copy/agents/maddpg/tf_policy.py'
+--------------------------------------------------------------------------------
+
+178:22: INFO: Added keywords to args of function 'tf.reduce_mean'
+217:22: INFO: Added keywords to args of function 'tf.reduce_mean'
+219:56: INFO: Added keywords to args of function 'tf.reduce_mean'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/commnet/__init__.py'
+ outputting to './benchmark-copy/agents/commnet/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/commnet/tf_policy.py'
+ outputting to './benchmark-copy/agents/commnet/tf_policy.py'
+--------------------------------------------------------------------------------
+
+64:12: INFO: Added keywords to args of function 'tf.reduce_mean'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/maac/__init__.py'
+ outputting to './benchmark-copy/agents/maac/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/maac/tf_policy.py'
+ outputting to './benchmark-copy/agents/maac/tf_policy.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/ppo/__init__.py'
+ outputting to './benchmark-copy/agents/ppo/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/a2c/__init__.py'
+ outputting to './benchmark-copy/agents/a2c/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/mfac/__init__.py'
+ outputting to './benchmark-copy/agents/mfac/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/mfac/tf_policy.py'
+ outputting to './benchmark-copy/agents/mfac/tf_policy.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/agents/dqn/__init__.py'
+ outputting to './benchmark-copy/agents/dqn/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/metrics/basic_metrics.py'
+ outputting to './benchmark-copy/metrics/basic_metrics.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/metrics/__init__.py'
+ outputting to './benchmark-copy/metrics/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/networks/commnet.py'
+ outputting to './benchmark-copy/networks/commnet.py'
+--------------------------------------------------------------------------------
+
+98:20: INFO: Added keywords to args of function 'tf.reduce_mean'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/networks/communicate.py'
+ outputting to './benchmark-copy/networks/communicate.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/networks/__init__.py'
+ outputting to './benchmark-copy/networks/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/networks/centralized_ac.py'
+ outputting to './benchmark-copy/networks/centralized_ac.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file './benchmark/tests/__init__.py'
+ outputting to './benchmark-copy/tests/__init__.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+

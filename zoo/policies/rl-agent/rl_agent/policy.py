@@ -32,10 +32,10 @@ class RLPolicy(AgentPolicy):
             return
 
         self._prep = ModelCatalog.get_preprocessor_for_space(self._observation_space)
-        self._sess = tf.Session(graph=tf.Graph())
+        self._sess = tf.compat.v1.Session(graph=tf.Graph())
         self._sess.__enter__()
 
-        with tf.name_scope(self._policy_name):
+        with tf.compat.v1.name_scope(self._policy_name):
             # obs_space need to be flattened before passed to PPOTFPolicy
             flat_obs_space = self._prep.observation_space
             self.policy = LoadPolicy(flat_obs_space, self._action_space, {})
