@@ -199,7 +199,8 @@ class Client:
         )
 
     def send(self, state: types.State):
-        self._state_queue.put(state)
+        if self._thread.is_alive():
+            self._state_queue.put(state)
         if self._logging_thread:
             self._logging_queue.put(state)
 
