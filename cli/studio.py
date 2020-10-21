@@ -66,8 +66,7 @@ def _build_single_scenario(clean, scenario):
             # Serve policies through the static file server, then kill after the
             # scenario has been created
             proc = subprocess.Popen(
-                f"twistd -n web --path {path}",
-                shell=True,
+                ["twistd", "-n", "web", "--path", path],
                 # Hide output to keep display simple
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
