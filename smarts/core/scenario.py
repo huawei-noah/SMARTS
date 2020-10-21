@@ -699,3 +699,11 @@ class Scenario:
     @property
     def scenario_hash(self):
         return self._scenario_hash
+
+    @property
+    def bounding_box(self):
+        # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
+        # which describe x-minimum, y-minimum, x-maximum, and y-maximum
+        net_file = os.path.join(self._root, "map.net.xml")
+        road_network = SumoRoadNetwork.from_file(net_file)
+        return road_network.graph.getBoundary()
