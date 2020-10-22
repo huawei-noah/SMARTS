@@ -230,7 +230,6 @@ class VehicleIndex:
         self, sim, vehicle_id, agent_id, boid=False, recreate=False
     ):
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
-        vehicle = None
         if recreate:
             # XXX: Recreate is presently broken for bubbles because it impacts the
             #      sumo traffic sim sync(...) logic in how it detects a vehicle as
@@ -240,9 +239,7 @@ class VehicleIndex:
             )
 
         vehicle = self._vehicles[vehicle_id]
-        ackermann_chassis = AckermannChassis(
-            pose=vehicle.pose, bullet_client=sim.bc
-        )
+        ackermann_chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
         vehicle.swap_chassis(ackermann_chassis)
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
