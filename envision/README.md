@@ -2,7 +2,7 @@
 
 Envision is a visualization front-end for SMARTS providing real-time view of environment state. It's built on web-technologies (including [React](https://reactjs.org/), [WebGL](https://www.khronos.org/webgl/), and [websockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)) allowing it to run easily in your browser. Envision is composed of a few parts: a client which SMARTS uses directly; a server used for state broadcasting; and the web application where all the visualization and rendering happens.
 
-![](../docs/_static/envision_video.gif)
+![](../docs/_static/smarts_envision.gif)
 
 ## Running
 
@@ -68,10 +68,7 @@ then run with `supervisord` (currently Envision server needs to be up for data r
 For replay make sure you have Envision server running then use the following tool - passing in your replay files,
 
 ```bash
-$ python tools/envision_replay_data.py ./data_replay/1590892375a ./data_replay/1590892375b
+scl scenario replay -d ./data_replay/1590892375a -t 0.1
 
-INFO:root:Replaying 4 record(s) at path=./data_replay/1590892375a with timestep=0.0s
-INFO:root:Finished Envision data replay
-...
-INFO:root:Data replay complete!
+INFO:root:Replaying 1 record(s) at path=data_replay/1590892375a with timestep=0.1s
 ```
