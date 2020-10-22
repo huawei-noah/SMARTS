@@ -192,6 +192,16 @@ class SumoTrafficSimulation:
             "--time-to-teleport=%s" % -1,
             "--collision.check-junctions=true",
             "--collision.action=none",
+            "--lanechange.duration=3.0",
+            # TODO: 1--lanechange.duration1 or 1--lateral-resolution`, in combination with `route_id`,
+            # causes lane change crashes as of SUMO 1.6.0.
+            # Controlling vehicles that have been added to the simulation with a route causes
+            # lane change related crashes.
+            # "--lateral-resolution=100",  # smooth lane changes
+            "--step-length=%f" % self._time_resolution,
+            "--default.action-step-length=%f" % self._time_resolution,
+            "--begin=0",  # start simulation at time=0
+            "--end=31536000",  # keep the simulation running for a year
         ]
 
         if self._auto_start:
@@ -218,23 +228,6 @@ class SumoTrafficSimulation:
         self._initialize_traci_conn()
 
         assert self._traci_conn is not None, "No active traci conn"
-
-        # XXX: Can likely move more params into `_base_sumo...`
-        load_params = [
-            # TODO: [Warning] 1--lanechange.duration1 or 1--lateral-resolution`, in combination with `route_id`,
-            #   causes lane change crashes as of SUMO 1.6.0.
-            # Controlling vehicles that have been added to the simulation with a route causes
-            #   lane change related crashes.
-            "--lanechange.duration=3.0",
-            # "--lateral-resolution=100",  # smooth lane changes
-            "--step-length=%f" % self._time_resolution,
-            "--default.action-step-length=%f" % self._time_resolution,
-            "--begin=0",  # start simulation at time=0
-            "--end=31536000",  # keep the simulation running for a year
-            *self._base_sumo_load_params(),
-        ]
-
-        self._traci_conn.load(load_params)
 
         self._traci_conn.simulation.subscribe(
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
