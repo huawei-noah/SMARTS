@@ -238,26 +238,24 @@ class VehicleIndex:
             return self._switch_control_to_agent_recreate(
                 sim, vehicle_id, agent_id, boid
             )
-        else:
-            vehicle = self._vehicles[vehicle_id]
-            ackermann_chassis = AckermannChassis(
-                pose=vehicle.pose, bullet_client=sim.bc
-            )
-            vehicle.swap_chassis(ackermann_chassis)
 
-            v_index = self._controlled_by["vehicle_id"] == vehicle_id
-            entity = _ControlEntity(*self._controlled_by[v_index][0])
-            self._controlled_by[v_index] = tuple(
-                entity._replace(
-                    actor_type=_ActorType.Agent,
-                    actor_id=agent_id,
-                    shadow_actor_id="",
-                    is_boid=boid,
-                )
-            )
-        sim._traffic_sim.reserve_traffic_location_for_vehicle(
-            vehicle_id, vehicle.chassis.to_polygon
+        vehicle = self._vehicles[vehicle_id]
+        ackermann_chassis = AckermannChassis(
+            pose=vehicle.pose, bullet_client=sim.bc
         )
+        vehicle.swap_chassis(ackermann_chassis)
+
+        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        entity = _ControlEntity(*self._controlled_by[v_index][0])
+        self._controlled_by[v_index] = tuple(
+            entity._replace(
+                actor_type=_ActorType.Agent,
+                actor_id=agent_id,
+                shadow_actor_id="",
+                is_boid=boid,
+            )
+        )
+
         return vehicle
 
     def _switch_control_to_agent_recreate(self, sim, vehicle_id, agent_id, boid):
@@ -391,6 +389,11 @@ class VehicleIndex:
             controller_state,
             sensor_state,
             boid,
+        )
+
+        # Reserve space inside the traffic sim
+        sim._traffic_sim.reserve_traffic_location_for_vehicle(
+            vehicle_id, vehicle.chassis.to_polygon
         )
 
         return vehicle
