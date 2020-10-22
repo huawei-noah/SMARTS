@@ -11,8 +11,6 @@ To setup the simulator, which is called SMARTS, run the following commands,
 
 .. code-block:: bash
 
-    # For Mac OS X users, make sure XQuartz is pre-installed as SUMO's dependency
-
     # git clone ...
     cd <project>
 
