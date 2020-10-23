@@ -1,12 +1,6 @@
 """Contributed port of MADDPG from OpenAI baselines.
 
-The implementation has a couple assumptions:
-- The number of agents is fixed and known upfront.
-- Each agent is bound to a policy of the same name.
-- Discrete actions are sent as logits (pre-softmax).
-
-For a minimal example, see rllib/examples/two_step_game.py,
-and the README for how to run with the multi-agent particle envs.
+Reference: https://github.com/ray-project/ray/blob/master/rllib/contrib/maddpg/maddpg.py
 """
 
 import logging
