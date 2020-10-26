@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import math
 import logging
 from enum import Enum
 from collections import defaultdict
@@ -24,6 +25,7 @@ from dataclasses import dataclass, field, replace
 from typing import Sequence, Tuple, Dict
 
 from shapely.geometry import Polygon, Point
+from shapely.affinity import translate, rotate
 
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import Mission, MissionPlanner, Start
@@ -51,6 +53,7 @@ class Bubble:
     def __init__(self, bubble: SSBubble, sumo_road_network: SumoRoadNetwork):
         geometry = bubble.zone.to_geometry(sumo_road_network)
 
+        self._bubble_heading = 0
         self._bubble = bubble
         self._limit = bubble.limit
         self._cached_inner_geometry = geometry
@@ -67,10 +70,6 @@ class Bubble:
         )
 
     @property
-    def geometry(self) -> Polygon:
-        return self._cached_inner_geometry
-
-    @property
     def exclusion_prefixes(self):
         return self._exclusion_prefixes
 
@@ -79,24 +78,30 @@ class Bubble:
         return self._bubble.id
 
     @property
-    def zone(self):
-        return self._bubble.zone
-
-    @property
     def actor(self) -> SocialAgentActor:
         return self._bubble.actor
 
     @property
+    def pinned_actor_id(self) -> str:
+        return self._bubble.pinned_actor_id
+
+    @property
     def limit(self):
         self._limit
+
+    # XXX: In the case of travelling bubbles, the geometry and zone are moving
+    #      according to the pinned vehicle.
+    @property
+    def geometry(self) -> Polygon:
+        return self._cached_inner_geometry
 
     @property
     def airlock_geometry(self) -> Polygon:
         return self._cached_airlock_geometry
 
     def is_admissible(self, vehicle_id: str, other_vehicle_ids: Sequence[int]):
-        """The vehicle_id we are querying for and the other_vehicle_ids _presently in
-        this `sstudio.types.Bubble_`.
+        """The vehicle_id we are querying for and the `other_vehicle_ids` _presently in
+        this `sstudio.types.Bubble`_.
         """
 
         for prefix in self.exclusion_prefixes:
@@ -108,6 +113,30 @@ class Bubble:
 
         return True
 
+    @property
+    def is_travelling(self):
+        return self._bubble.pinned_actor_id is not None
+
+    # TODO: Make this more efficient
+    def move_to_pinned_vehicle(self, vehicle: Vehicle):
+        x, y, _ = vehicle.position
+        def _transform(geom):
+            centroid = geom.centroid
+
+            # Bring back to origin
+            geom = translate(geom, xoff=-centroid.x, yoff=-centroid.y)
+            geom = rotate(geom, -self._bubble_heading, "centroid", use_radians=True)
+
+            # Now apply new transformation in "vehicle coordinate space"
+            geom = translate(geom, xoff=self._bubble.pinned_offset[0], yoff=self._bubble.pinned_offset[1])
+            geom = rotate(geom, vehicle.heading, (0, 0), use_radians=True)
+            geom = translate(geom, xoff=x, yoff=y)
+            return geom
+
+        self._cached_inner_geometry = _transform(self._cached_inner_geometry)
+        self._cached_airlock_geometry = _transform(self._cached_airlock_geometry)
+
+        self._bubble_heading = vehicle.heading
 
 @dataclass
 class Cursor:
@@ -215,7 +244,7 @@ class BubbleManager:
             sim.vehicle_index.vehicle_by_id(id_)
             for id_ in sim.vehicle_index.social_vehicle_ids
         ]
-        state_change = self.step_bubble_state(social_vehicles, social_agent_vehicles)
+        state_change = self.step_bubble_state(sim, social_vehicles, social_agent_vehicles)
 
         for vehicle_id, actor in state_change.entered_airlock_1:
             self._airlock_social_vehicle_with_social_agent(sim, vehicle_id, actor)
@@ -231,9 +260,12 @@ class BubbleManager:
 
     def step_bubble_state(
         self,
+        sim,
         social_vehicles: Sequence[Vehicle],
         social_agent_vehicles: Sequence[Vehicle],
     ) -> BubbleStateChange:
+        self._move_travelling_bubbles(sim)
+
         # Detect social vehicles entering bubbles (and airlocks)
         for sv in social_vehicles:
             cursor = self._find_cursor(sv.id)
@@ -289,6 +321,21 @@ class BubbleManager:
             exited_bubble=exited_bubble,
             exited_airlock_2=exited_airlock_2,
         )
+
+    def _move_travelling_bubbles(self, sim):
+        for bubble in self._bubbles:
+            if not bubble.is_travelling:
+                pass
+
+
+            # TODO: Handle if actor is terminated on not spawned yet. In those
+            #       circumstances the bubble should not be present.
+            vehicles = sim.vehicle_index.vehicles_by_actor_id(bubble.pinned_actor_id)
+            assert len(vehicles) <= 1, \
+                "Travelling bubbles only support pinning to a single vehicle"
+
+            if len(vehicles) == 1:
+                bubble.move_to_pinned_vehicle(vehicles[0])
 
     def _airlock_social_vehicle_with_social_agent(
         self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor,
