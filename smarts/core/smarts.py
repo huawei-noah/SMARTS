@@ -372,7 +372,7 @@ class SMARTS(ShowBase):
             plane_path,
             useFixedBase=True,
             basePosition=bounding_box_center,
-            globalScaling=1.2 * plane_scale,
+            globalScaling=plane_scale,
         )
 
     def teardown(self):
