@@ -1,11 +1,10 @@
+from typing import Sequence
+
 import logging
-import os
 import math
 import json
-import time
-from typing import Sequence
+import shutil
 from pathlib import Path
-
 from dataclasses import dataclass
 
 import casadi.casadi as cs
@@ -14,10 +13,10 @@ import opengen as og
 
 from smarts.core.agent import AgentPolicy
 from smarts.core.coordinates import Heading
-from smarts.core.utils import networking
 
+from .version import VERSION
 
-VERSION = 175
+CONFIG_PATH = Path(__file__).parent / "config.json"
 
 
 def angle_error(a, b):
@@ -54,12 +53,12 @@ class Gain:
         from matplotlib.widgets import Slider
 
         gains = [
-            ("theta", self.theta, 0, 500),
-            ("position", self.position, 0, 500),
-            ("obstacle", self.obstacle, 0, 3000),
-            ("u_accel", self.u_accel, 0, 500),
-            ("u_yaw_rate", self.u_yaw_rate, 0, 500),
-            ("terminal", self.terminal, 0, 10),
+            ("theta", self.theta, 0, 5),
+            ("position", self.position, 0, 5),
+            ("obstacle", self.obstacle, 0, 5),
+            ("u_accel", self.u_accel, 0, 5),
+            ("u_yaw_rate", self.u_yaw_rate, 0, 5),
+            ("terminal", self.terminal, 0, 5),
             ("impatience", self.impatience, 0, 5),
             ("speed", self.speed, 0, 5),
         ]
@@ -227,49 +226,157 @@ class UTrajectory:
         return cost
 
 
+def build_problem(N, SV_N, WP_N, ts):
+    # Assumptions
+    assert N >= 2, f"Must generate at least 2 trajectory points, got: {N}"
+    assert SV_N >= 0, f"Must have non-negative # of sv's, got: {SV_N}"
+    assert WP_N >= 1, f"Must have at lest 1 trajectory reference"
+
+    z0_schema = [
+        (1, Gain),
+        (1, VehicleModel),  # Ego
+        (SV_N, VehicleModel),  # SV's
+        (WP_N, XRef),  # reference trajectory
+        (1, Number),  # impatience
+        (1, Number),  # target_speed
+    ]
+
+    z0_dimensions = sum(n * feature.DOF for n, feature in z0_schema)
+    z0 = cs.SX.sym("z0", z0_dimensions)
+    u_traj = UTrajectory(N)
+
+    # parse z0 into features
+    position = 0
+    parsed = []
+    for n, feature, in z0_schema:
+        feature_group = []
+        for i in range(n):
+            feature_group.append(
+                feature(*z0[position : position + feature.DOF].elements())
+            )
+            position += feature.DOF
+        if n > 1:
+            parsed.append(feature_group)
+        else:
+            assert len(feature_group) == 1
+            parsed += feature_group
+
+    assert position == len(z0.elements())
+    assert position == z0_dimensions
+
+    gain, ego, social_vehicles, xref_traj, impatience, target_speed = parsed
+
+    cost = 0
+
+    for t in range(N):
+        # Integrate the ego vehicle forward to the next trajectory point
+        ego.step(u_traj[t], ts)
+
+        # For the current pose, compute the smallest cost to any xref
+        cost += min_cost_by_distance(xref_traj, ego.as_xref, gain)
+
+        cost += gain.speed * (ego.speed - target_speed.value) ** 2 / t
+
+        for sv in social_vehicles:
+            # step the social vehicle assuming no change in velocity or heading
+            sv.step(U(accel=0, yaw_rate=0), ts)
+
+            min_dist = VehicleModel.LENGTH
+            cost += gain.obstacle * cs.fmax(
+                -1, min_dist ** 2 - ((ego.x - sv.x) ** 2 + (ego.y - sv.y) ** 2),
+            )
+
+    # To stabilize the trajectory, we attach a higher weight to the final x_ref
+    cost += gain.terminal * xref_traj[-1].weighted_distance_to(ego.as_xref, gain)
+
+    cost += u_traj.integration_cost(gain)
+
+    # force acceleration when we become increasingly impatient
+    cost += gain.impatience * ((u_traj[0].accel - 1.0) * impatience.value ** 2 * -(1.0))
+
+    bounds = og.constraints.Rectangle(
+        xmin=[-1, -math.pi * 0.3] * N, xmax=[1, math.pi * 0.3] * N
+    )
+
+    return og.builder.Problem(u_traj.symbolic, z0, cost).with_constraints(bounds)
+
+
+def compile_solver(output_dir, N=6, SV_N=4, WP_N=15, ts=0.1):
+    build_dir = Path(output_dir)
+    solver_name = "open_agent_solver"
+    path_to_solver = build_dir / solver_name
+    problem = build_problem(N, SV_N, WP_N, ts)
+    build_config = (
+        og.config.BuildConfiguration()
+        .with_build_directory(build_dir)
+        .with_build_mode("release")
+        .with_build_python_bindings()
+    )
+    meta = og.config.OptimizerMeta().with_optimizer_name(solver_name)
+    solver_config = og.config.SolverConfiguration()
+    builder = og.builder.OpEnOptimizerBuilder(
+        problem, meta, build_config, solver_config
+    ).with_verbosity_level(3)
+    builder.build()
+
+    potentially_built_libs = [
+        path_to_solver / f"{solver_name}.{ext}" for ext in ["so", "pyd"]
+    ]
+    built_libs = [lib.absolute() for lib in potentially_built_libs if lib.exists()]
+    for built_lib in built_libs:
+        shutil.copyfile(built_lib, Path(__file__).parent / built_lib.name)
+
+    persist_config({"version": VERSION, "N": N, "SV_N": SV_N, "WP_N": WP_N, "ts": ts})
+
+    return built_libs
+
+
+def persist_config(config):
+    with open(CONFIG_PATH, "w") as config_fp:
+        json.dump(config, config_fp)
+
+
+def load_config():
+    with open(CONFIG_PATH, "r") as config_fp:
+        return json.load(config_fp)
+
+
 class Policy(AgentPolicy):
     def __init__(
         self,
-        N=11,
-        SV_N=4,
-        WP_N=15,
-        ts=0.1,
-        Q_theta=10,
-        Q_position=10,
-        Q_obstacle=100,
-        Q_u_accel=10,
-        Q_u_yaw_rate=4,
-        Q_n=4,
-        Q_impatience=1,
-        Q_speed=0,
+        gains={
+            "theta": 3.0,
+            "position": 4.0,
+            "obstacle": 3.0,
+            "u_accel": 0.1,
+            "u_yaw_rate": 1.0,
+            "terminal": 0.01,
+            "impatience": 0.01,
+            "speed": 0.01,
+        },
         debug=False,
-        retries=5,
     ):
         self.log = logging.getLogger(self.__class__.__name__)
         self.debug = debug
         self.last_position = None
         self.steps_without_moving = 0
-        self.N = N
-        self.SV_N = SV_N
-        self.WP_N = WP_N
-        self.ts = ts
-        self.gain_save_path = Path("gain.json")
+        config = load_config()
+
+        assert (
+            config["version"] == VERSION
+        ), f'Extension not compiled for current version {config["version"]} != {VERSION}'
+
+        self.N = config["N"]
+        self.SV_N = config["SV_N"]
+        self.WP_N = config["WP_N"]
+        self.ts = config["ts"]
+
+        self.gain_save_path = Path("gains.json")
         if self.gain_save_path.exists():
             print(f"Loading gains from {self.gain_save_path.absolute()}")
             self.gain = Gain.load(self.gain_save_path)
         else:
-            self.gain = Gain(
-                theta=Q_theta,
-                position=Q_position,
-                obstacle=Q_obstacle,
-                u_accel=Q_u_accel,
-                u_yaw_rate=Q_u_yaw_rate,
-                terminal=Q_n,
-                impatience=Q_impatience,
-                speed=Q_speed,
-            )
-        self.retries = retries
-        self.mng = None
+            self.gain = Gain(**gains)
 
         if self.debug:
             self._setup_debug_pannel()
@@ -277,184 +384,46 @@ class Policy(AgentPolicy):
         self.init_planner()
 
     def init_planner(self):
+        try:
+            from . import open_agent_solver
+        except ImportError:
+            raise "Can't import the solver, have you compiled it?"
+
         self.prev_solution = None
-        build_dir = "OpEn_build"
-        planner_name = "trajectory_optimizer"
-        build_mode = "release"  # use "debug" for faster compilation times
+        self.solver = open_agent_solver.solver()
 
-        planner_name = f"{planner_name}_v{VERSION}"
-        versioned_params = [
-            self.N,
-            self.SV_N,
-            self.WP_N,
-            self.ts,
-        ]
-        params_str = "_".join(str(p) for p in versioned_params)
-        build_dir = f"{build_dir}/{params_str}"
-        path_to_planner = f"{build_dir}/{planner_name}"
-
-        if not os.path.exists(path_to_planner):
-            problem = self.build_problem()
-            build_config = (
-                og.config.BuildConfiguration()
-                .with_build_directory(build_dir)
-                .with_build_mode(build_mode)
-                .with_tcp_interface_config()
-            )
-            meta = og.config.OptimizerMeta().with_optimizer_name(planner_name)
-            solver_config = (
-                og.config.SolverConfiguration()
-                # TODO: hire interns to tune these values
-                # .with_tolerance(1e-6)
-                # .with_initial_tolerance(1e-4)
-                # .with_max_outer_iterations(10)
-                # .with_delta_tolerance(1e-2)
-                # .with_penalty_weight_update_factor(10.0)
-            )
-            builder = og.builder.OpEnOptimizerBuilder(
-                problem, meta, build_config, solver_config
-            ).with_verbosity_level(1)
-            builder.build()
-
-        for i in range(self.retries):
-            try:
-                self.mng = og.tcp.OptimizerTcpManager(
-                    path_to_planner, port=networking.find_free_port()
-                )
-                self.mng.start()
-                break
-            except Exception as e:
-                self.log.warn(
-                    f"Failed to start optimizer, attempt: {i + 1} / {self.retries}"
-                )
-
-        assert self.is_planner_running()
-
-    def build_problem(self):
-        # Assumptions
-        assert self.N >= 2, f"Must generate at least 2 trajectory points, got: {self.N}"
-        assert self.SV_N >= 0, f"Must have non-negative # of sv's, got: {self.SV_N}"
-        assert self.WP_N >= 1, f"Must have at lest 1 trajectory reference"
-        # TODO: rename WP_N to xref_n
-
-        z0_schema = [
-            (1, Gain),
-            (1, VehicleModel),  # Ego
-            (self.SV_N, VehicleModel),  # SV's
-            (self.WP_N, XRef),  # reference trajectory
-            (1, Number),  # impatience
-            (1, Number),  # target_speed
-        ]
-
-        z0_dimensions = sum(n * feature.DOF for n, feature in z0_schema)
-        z0 = cs.SX.sym("z0", z0_dimensions)
-        u_traj = UTrajectory(self.N)
-
-        # parse z0 into features
-        position = 0
-        parsed = []
-        for n, feature, in z0_schema:
-            feature_group = []
-            for i in range(n):
-                feature_group.append(
-                    feature(*z0[position : position + feature.DOF].elements())
-                )
-                position += feature.DOF
-            if n > 1:
-                parsed.append(feature_group)
-            else:
-                assert len(feature_group) == 1
-                parsed += feature_group
-
-        assert position == len(z0.elements())
-        assert position == z0_dimensions
-
-        gain, ego, social_vehicles, xref_traj, impatience, target_speed = parsed
-
-        cost = 0
-
-        for t in range(self.N):
-            # Integrate the ego vehicle forward to the next trajectory point
-            ego.step(u_traj[t], self.ts)
-
-            # For the current pose, compute the smallest cost to any xref
-            cost += min_cost_by_distance(xref_traj, ego.as_xref, gain)
-
-            cost += gain.speed * target_speed.value / t
-
-            for sv in social_vehicles:
-                # step the social vehicle assuming no change in velocity or heading
-                sv.step(U(accel=0, yaw_rate=0), self.ts)
-
-                min_dist = VehicleModel.LENGTH
-                cost += gain.obstacle * cs.fmax(
-                    -1, min_dist ** 2 - ((ego.x - sv.x) ** 2 + (ego.y - sv.y) ** 2),
-                )
-
-        # To stabilize the trajectory, we attach a higher weight to the final x_ref
-        cost += gain.terminal * xref_traj[-1].weighted_distance_to(ego.as_xref, gain)
-
-        cost += u_traj.integration_cost(gain)
-
-        # force acceleration when we become increasingly impatient
-        cost += gain.impatience * (
-            (u_traj[0].accel - 1.0) * impatience.value ** 2 * -(1.0)
-        )
-
-        bounds = og.constraints.Rectangle(
-            xmin=[-1, -math.pi * 0.3] * self.N, xmax=[1, math.pi * 0.3] * self.N
-        )
-
-        return og.builder.Problem(u_traj.symbolic, z0, cost).with_constraints(bounds)
-
-    def is_planner_running(self) -> bool:
-        return self.mng and self.mng._OptimizerTcpManager__check_if_server_is_running()
-
-    def stop_planner(self):
-        if self.is_planner_running():
-            # If the manager has already been killed through other means
-            self.mng.kill()
-
-            while self.is_planner_running():
-                # wait for the optimizer to die
-                time.sleep(0.1)
-
-    def reinit_planner(self):
-        self.prev_solution = None
-        self.stop_planner()
-        self.init_planner()
-
-    def __del__(self):
-        self.stop_planner()
-
-    def act(self, obs):
-        ego = obs.ego_vehicle_state
+    def update_impatience(self, ego_state):
         if (
             self.last_position is not None
-            and np.linalg.norm(ego.position - self.last_position) < 1e-1
+            and np.linalg.norm(ego_state.position - self.last_position) < 1e-1
         ):
             self.steps_without_moving += 1
         else:
             self.steps_without_moving = 0
 
-        wps = min(obs.waypoint_paths, key=lambda wps: wps[0].dist_to(ego.position))
+        return self.steps_without_moving
 
-        # drop the first few waypoint to get the vehicle to move
-        wps_to_skip = 0  # TODO: remove this if we end up not fixing it at 0
-        wps = wps[min(wps_to_skip, len(wps) - 1) : self.WP_N + wps_to_skip]
+    def act(self, obs):
+        ego = obs.ego_vehicle_state
+        wps = obs.waypoint_paths[len(obs.waypoint_paths) // 2]
+        # wps = min(
+        #     obs.waypoint_paths,
+        #     key=lambda wps: abs(wps[0].signed_lateral_error(ego.position)),
+        # )
+        wps = wps[: self.WP_N]
 
         # repeat the last waypoint to fill out self.WP_N waypoints
         wps += [wps[-1]] * (self.WP_N - len(wps))
-        wps_params = [
+        flat_wps = [
             wp_param
             for wp in wps
             for wp_param in [wp.pos[0], wp.pos[1], float(wp.heading) + math.pi * 0.5]
         ]
         if self.SV_N == 0:
-            sv_params = []
+            flat_svs = []
         elif len(obs.neighborhood_vehicle_states) == 0 and self.SV_N > 0:
             # We have no social vehicles in the scene, create placeholders far away
-            sv_params = [
+            flat_svs = [
                 ego.position[0] + 100000,
                 ego.position[1] + 100000,
                 0,
@@ -471,7 +440,7 @@ class Policy(AgentPolicy):
             social_vehicles += [social_vehicles[-1]] * (
                 self.SV_N - len(social_vehicles)
             )
-            sv_params = [
+            flat_svs = [
                 sv_param
                 for sv in social_vehicles
                 for sv_param in [
@@ -489,19 +458,21 @@ class Policy(AgentPolicy):
             ego.speed,
         ]
 
-        impatience = self.steps_without_moving
-        planner_params = (
+        impatience = self.update_impatience(ego)
+        solver_params = (
             list(self.gain)
             + ego_params
-            + sv_params
-            + wps_params
+            + flat_svs
+            + flat_wps
             + [impatience, wps[0].speed_limit]
         )
 
-        resp = self.mng.call(planner_params, initial_guess=self.prev_solution)
+        resp = self.solver.run(solver_params, initial_guess=self.prev_solution)
 
-        if resp.is_ok():
-            u_star = resp["solution"]
+        self.last_position = ego.position
+
+        if resp is not None:
+            u_star = resp.solution
             self.prev_solution = u_star
             ego_model = VehicleModel(*ego_params)
             xs = []
@@ -517,17 +488,14 @@ class Policy(AgentPolicy):
 
             traj = [xs, ys, headings, speeds]
             if self.debug:
-                self._draw_debug_panel(xs, ys, wps, sv_params, ego, u_star)
+                self._draw_debug_panel(xs, ys, wps, flat_svs, ego, u_star)
 
-            act = traj
+            return traj
         else:
-            print("Bad resp. from planner:", resp.get().code)
+            # Failed to find a solution.
             # re-init the planner and stay still, hopefully once we've re-initialized, we can recover
-            self.reinit_planner()
-            act = None
-
-        self.last_position = ego.position
-        return act
+            self.init_planner()
+            return None
 
     def _setup_debug_pannel(self):
         import matplotlib.pyplot as plt
@@ -537,7 +505,7 @@ class Policy(AgentPolicy):
         self.gain.setup_debug(plt)
         self.plt.ion()
 
-    def _draw_debug_panel(self, xs, ys, wps, sv_params, ego, u_star):
+    def _draw_debug_panel(self, xs, ys, wps, flat_svs, ego, u_star):
         self.gain.persist(self.gain_save_path)
 
         subplot = self.plt.subplot(221)
@@ -548,8 +516,8 @@ class Policy(AgentPolicy):
         wp_y = [wp.pos[1] for wp in wps]
         self.plt.scatter(wp_x, wp_y, color="red", label="waypoint")
 
-        sv_x = [sv_x for sv_x in sv_params[:: VehicleModel.DOF]]
-        sv_y = [sv_y for sv_y in sv_params[1 :: VehicleModel.DOF]]
+        sv_x = [sv_x for sv_x in flat_svs[:: VehicleModel.DOF]]
+        sv_y = [sv_y for sv_y in flat_svs[1 :: VehicleModel.DOF]]
         self.plt.scatter(sv_x, sv_y, label="social vehicles")
         plt_radius = 50
         self.plt.axis(

@@ -21,7 +21,7 @@ AGENT_ID = "Agent-007"
 
 
 def main(scenarios, headless, num_episodes, seed):
-    open_agent_spec = open_agent.entrypoint(N=10, SV_N=7, WP_N=50, ts=0.2, debug=True,)
+    open_agent_spec = open_agent.make_agent_spec(debug=False,)
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
