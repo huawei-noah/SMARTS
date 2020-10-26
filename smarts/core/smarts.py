@@ -349,29 +349,18 @@ class SMARTS(ShowBase):
 
         plane_path = self._scenario.plane_filepath
 
-        bounding_box_lenght = (
-            self._scenario.bounding_box[2] - self._scenario.bounding_box[0]
-        )
-        bounding_box_width = (
-            self._scenario.bounding_box[3] - self._scenario.bounding_box[1]
-        )
-        bounding_box_center = [
-            (self._scenario.bounding_box[0] + self._scenario.bounding_box[2]) / 2,
-            (self._scenario.bounding_box[1] + self._scenario.bounding_box[3]) / 2,
-            0,
-        ]
         # 1e6 is the default value for plane length and width.
-        plane_scale = max(bounding_box_lenght, bounding_box_width) / 1e6
+        plane_scale = (
+            max(self._scenario.bounding_box[0], self._scenario.bounding_box[1]) / 1e6
+        )
         if not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
 
-        # The plane_scale is multiplied by 1.2 to ensure that plane
-        # is completely covering the map.
         self._ground_bullet_id = client.loadURDF(
             plane_path,
             useFixedBase=True,
-            basePosition=bounding_box_center,
+            basePosition=self._scenario.bounding_box[2],
             globalScaling=plane_scale,
         )
 

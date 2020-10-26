@@ -700,8 +700,17 @@ class Scenario:
 
     @property
     def bounding_box(self):
-        # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
-        # which describe x-minimum, y-minimum, x-maximum, and y-maximum
+        # This function returns the following tuple:
+        # (bbox length, bbox width,bbox center)
         net_file = os.path.join(self._root, "map.net.xml")
         road_network = SumoRoadNetwork.from_file(net_file)
-        return road_network.graph.getBoundary()
+        # 2D bbox in format (xmin, ymin, xmax, ymax)
+        bounding_box = road_network.graph.getBoundary()
+        bounding_box_length = bounding_box[2] - bounding_box[0]
+        bounding_box_width = bounding_box[3] - bounding_box[1]
+        bounding_box_center = [
+            (bounding_box[0] + bounding_box[2]) / 2,
+            (bounding_box[1] + bounding_box[3]) / 2,
+            0,
+        ]
+        return (bounding_box_length, bounding_box_width, bounding_box_center)
