@@ -520,7 +520,6 @@ class Bubble:
 
     zone: Zone
     """The zone which to capture vehicles."""
-    # TODO: Generalize to any `Actor`
     actor: SocialAgentActor
     """The actor specification that this bubble works for."""
     margin: float = 2  # Used for "airlocking"; must be > 0
@@ -533,10 +532,23 @@ class Bubble:
     exclusion_prefixes: Tuple[str, ...] = field(default_factory=tuple)
     """Used to exclude social actors from capture."""
     id: str = field(default_factory=lambda: f"bubble-{gen_id()}")
+    pinned_actor_id: str = None
+    """Actor ID of agent we want to pin to. Doing so makes this a "travelling bubble"
+    which means it moves to follow the `pinned_actor_id`'s vehicle. Offset is from the
+    pinned vehicle's center position to the bubble's center position.
+    """
+    pinned_offset: Tuple[float, float] = None
+    """Maintained offset to place the travelling bubble relative to the pinned
+    vehicle if it were facing north.
+    """
 
     def __post_init__(self):
         if self.margin <= 0:
             raise ValueError("Airlocking margin must be greater than 0")
+
+        if self.pinned_actor_id is not None and self.pinned_offset is None:
+            raise ValueError(
+                "A pinned offset must be set if this is a travelling bubble")
 
 
 @dataclass(frozen=True)

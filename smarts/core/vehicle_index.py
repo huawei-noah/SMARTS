@@ -475,7 +475,6 @@ class VehicleIndex:
             self._controlled_by,
             self._controlled_by.dtype.names,
             style="round",
-            width=[90, 90, 15, 90, 10],
             out=io,
         )
         return io.getvalue()
