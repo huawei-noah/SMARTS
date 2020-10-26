@@ -29,9 +29,7 @@ actor = t.SocialAgentActor(
 gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
-        social_agent_missions={
-            "all": ([actor], [t.Mission(route=t.RandomRoute())]),
-        },
+        social_agent_missions={"all": ([actor], [t.Mission(route=t.RandomRoute())]),},
         bubbles=[
             t.Bubble(
                 zone=t.PositionalZone(pos=(50, 0), size=(10, 15)),
@@ -40,9 +38,9 @@ gen_scenario(
                 # TODO: We either need a better API around ID or or use something
                 #       other than ID...
                 pinned_actor_id="social-agent-all-keep-lane-agent",
-                pinned_offset=(-7, 10)
+                pinned_offset=(-7, 10),
             ),
         ],
     ),
-    output_dir=Path(__file__).parent
+    output_dir=Path(__file__).parent,
 )

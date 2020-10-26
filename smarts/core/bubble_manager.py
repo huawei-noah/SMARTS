@@ -120,6 +120,7 @@ class Bubble:
     # TODO: Make this more efficient
     def move_to_pinned_vehicle(self, vehicle: Vehicle):
         x, y, _ = vehicle.position
+
         def _transform(geom):
             centroid = geom.centroid
 
@@ -128,7 +129,11 @@ class Bubble:
             geom = rotate(geom, -self._bubble_heading, "centroid", use_radians=True)
 
             # Now apply new transformation in "vehicle coordinate space"
-            geom = translate(geom, xoff=self._bubble.pinned_offset[0], yoff=self._bubble.pinned_offset[1])
+            geom = translate(
+                geom,
+                xoff=self._bubble.pinned_offset[0],
+                yoff=self._bubble.pinned_offset[1],
+            )
             geom = rotate(geom, vehicle.heading, (0, 0), use_radians=True)
             geom = translate(geom, xoff=x, yoff=y)
             return geom
@@ -137,6 +142,7 @@ class Bubble:
         self._cached_airlock_geometry = _transform(self._cached_airlock_geometry)
 
         self._bubble_heading = vehicle.heading
+
 
 @dataclass
 class Cursor:
@@ -244,7 +250,9 @@ class BubbleManager:
             sim.vehicle_index.vehicle_by_id(id_)
             for id_ in sim.vehicle_index.social_vehicle_ids
         ]
-        state_change = self.step_bubble_state(sim, social_vehicles, social_agent_vehicles)
+        state_change = self.step_bubble_state(
+            sim, social_vehicles, social_agent_vehicles
+        )
 
         for vehicle_id, actor in state_change.entered_airlock_1:
             self._airlock_social_vehicle_with_social_agent(sim, vehicle_id, actor)
@@ -327,12 +335,12 @@ class BubbleManager:
             if not bubble.is_travelling:
                 pass
 
-
             # TODO: Handle if actor is terminated on not spawned yet. In those
             #       circumstances the bubble should not be present.
             vehicles = sim.vehicle_index.vehicles_by_actor_id(bubble.pinned_actor_id)
-            assert len(vehicles) <= 1, \
-                "Travelling bubbles only support pinning to a single vehicle"
+            assert (
+                len(vehicles) <= 1
+            ), "Travelling bubbles only support pinning to a single vehicle"
 
             if len(vehicles) == 1:
                 bubble.move_to_pinned_vehicle(vehicles[0])

@@ -472,9 +472,6 @@ class VehicleIndex:
     def __repr__(self):
         io = StringIO("")
         table = tp.table(
-            self._controlled_by,
-            self._controlled_by.dtype.names,
-            style="round",
-            out=io,
+            self._controlled_by, self._controlled_by.dtype.names, style="round", out=io,
         )
         return io.getvalue()

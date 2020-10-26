@@ -548,7 +548,8 @@ class Bubble:
 
         if self.pinned_actor_id is not None and self.pinned_offset is None:
             raise ValueError(
-                "A pinned offset must be set if this is a travelling bubble")
+                "A pinned offset must be set if this is a travelling bubble"
+            )
 
 
 @dataclass(frozen=True)
