@@ -20,7 +20,7 @@
 import logging
 from io import StringIO
 from enum import IntEnum
-from collections import namedtuple
+from typing import NamedTuple
 
 import numpy as np
 import tableprint as tp
@@ -37,15 +37,19 @@ class _ActorType(IntEnum):
     Agent = 1
 
 
-ControlEntity = namedtuple(
-    "ControlEntity", ["vehicle_id", "actor_id", "actor_type", "shadow_actor_id",],
-)
+class _ControlEntity(NamedTuple):
+    vehicle_id: str
+    actor_id: str
+    actor_type: _ActorType
+    shadow_actor_id: str
+    # Applies to shadowing and controlling actor
+    # TODO: Consider moving this to an _ActorType field
+    is_boid: bool
 
 
 class VehicleIndex:
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
-        # XXX: Potentially the beginnings of "Multi-Index" data structure concept.
         self._controlled_by = self._build_empty_controlled_by()
 
         # {vehicle_id: <Vehicle>}
@@ -70,6 +74,18 @@ class VehicleIndex:
             self._controlled_by["actor_type"] == _ActorType.Social
         ]["vehicle_id"]
         return set(vehicle_ids)
+
+    def actor_is_boid(self, actor_id):
+        v_index = (self._controlled_by["actor_id"] == actor_id) | (
+            self._controlled_by["shadow_actor_id"] == actor_id
+        )
+        is_boids = self._controlled_by[v_index]["is_boid"]
+        if len(is_boids) == 0:
+            return False
+
+        # If a boid actor (or not) all vehicles should have the same is_boid value
+        assert all(x == is_boids[0] for x in is_boids)
+        return is_boids[0]
 
     @property
     def vehicles(self):
@@ -166,7 +182,7 @@ class VehicleIndex:
         return shadow_actor_ids[0] if shadow_actor_ids else None
 
     def prepare_for_agent_control(
-        self, sim, vehicle_id, agent_id, agent_interface, mission_planner
+        self, sim, vehicle_id, agent_id, agent_interface, mission_planner, boid=False
     ):
         vehicle = self._vehicles[vehicle_id]
 
@@ -183,8 +199,10 @@ class VehicleIndex:
         )
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
-        entity = ControlEntity(*self._controlled_by[v_index][0])
-        self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=agent_id))
+        entity = _ControlEntity(*self._controlled_by[v_index][0])
+        self._controlled_by[v_index] = tuple(
+            entity._replace(shadow_actor_id=agent_id, is_boid=boid)
+        )
 
         # XXX: We are not giving the vehicle an AckermannChassis here but rather later
         #      when we switch_to_agent_control. This means when control that requires
@@ -208,29 +226,36 @@ class VehicleIndex:
             agent_interface.action_space, vehicle.position, sim
         )
 
-    def switch_control_to_agent(self, sim, vehicle_id, agent_id, recreate=False):
+    def switch_control_to_agent(
+        self, sim, vehicle_id, agent_id, boid=False, recreate=False
+    ):
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
         if recreate:
             # XXX: Recreate is presently broken for bubbles because it impacts the
             #      sumo traffic sim sync(...) logic in how it detects a vehicle as
             #      being hijacked vs joining. Presently it's still used for trapping.
-            return self._switch_control_to_agent_recreate(sim, vehicle_id, agent_id)
+            return self._switch_control_to_agent_recreate(
+                sim, vehicle_id, agent_id, boid
+            )
 
         vehicle = self._vehicles[vehicle_id]
         ackermann_chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
         vehicle.swap_chassis(ackermann_chassis)
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
-        entity = ControlEntity(*self._controlled_by[v_index][0])
+        entity = _ControlEntity(*self._controlled_by[v_index][0])
         self._controlled_by[v_index] = tuple(
             entity._replace(
-                actor_type=_ActorType.Agent, actor_id=agent_id, shadow_actor_id=""
+                actor_type=_ActorType.Agent,
+                actor_id=agent_id,
+                shadow_actor_id="",
+                is_boid=boid,
             )
         )
 
         return vehicle
 
-    def _switch_control_to_agent_recreate(self, sim, vehicle_id, agent_id):
+    def _switch_control_to_agent_recreate(self, sim, vehicle_id, agent_id, boid):
         # TODO: There existed a SUMO connection error bug
         #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occured
         #       during lange changing when we hijacked/trapped a SUMO vehicle. Forcing
@@ -285,6 +310,7 @@ class VehicleIndex:
             new_vehicle,
             controller_state,
             sensor_state,
+            boid,
         )
 
         return new_vehicle
@@ -305,12 +331,13 @@ class VehicleIndex:
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = self._controlled_by[v_index][0]
-        entity = ControlEntity(*entity)
+        entity = _ControlEntity(*entity)
         self._controlled_by[v_index] = tuple(
             entity._replace(
                 actor_type=_ActorType.Social,
                 actor_id=social_vehicle_id,
                 shadow_actor_id="",
+                is_boid=False,
             )
         )
 
@@ -329,6 +356,7 @@ class VehicleIndex:
         surface_patches,
         controller_filepath,
         initial_speed=None,
+        boid=False,
     ):
         vehicle_id = f"{agent_id}-{str(gen_id())[:8]}"
         vehicle = Vehicle.build_agent_vehicle(
@@ -362,6 +390,7 @@ class VehicleIndex:
             vehicle,
             controller_state,
             sensor_state,
+            boid,
         )
 
         return vehicle
@@ -375,6 +404,7 @@ class VehicleIndex:
         vehicle,
         controller_state,
         sensor_state,
+        boid=False,
     ):
         Vehicle.attach_sensors_to_vehicle(
             sim, vehicle, agent_interface, sensor_state.mission_planner
@@ -384,9 +414,14 @@ class VehicleIndex:
         self._sensor_states[vehicle.id] = sensor_state
         self._controller_states[vehicle.id] = controller_state
         self._vehicles[vehicle.id] = vehicle
-        self._controlled_by = np.insert(
-            self._controlled_by, 0, (vehicle.id, agent_id, _ActorType.Agent, "")
+        entity = _ControlEntity(
+            vehicle_id=vehicle.id,
+            actor_id=agent_id,
+            actor_type=_ActorType.Agent,
+            shadow_actor_id="",
+            is_boid=boid,
         )
+        self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
     def build_social_vehicle(
         self, sim, vehicle_state, actor_id, vehicle_type, vehicle_id=None
@@ -400,9 +435,14 @@ class VehicleIndex:
         vehicle.np.reparentTo(sim._root_np)
 
         self._vehicles[vehicle.id] = vehicle
-        self._controlled_by = np.insert(
-            self._controlled_by, 0, (vehicle.id, actor_id, _ActorType.Social, ""),
+        entity = _ControlEntity(
+            vehicle_id=vehicle.id,
+            actor_id=actor_id,
+            actor_type=_ActorType.Social,
+            shadow_actor_id="",
+            is_boid=False,
         )
+        self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
         return vehicle
 
@@ -425,12 +465,17 @@ class VehicleIndex:
                 # XXX: Keeping things simple, this is always assumed to be an agent.
                 #      We can add an shadow_actor_type when needed
                 ("shadow_actor_id", "O"),
+                ("is_boid", "B"),
             ],
         )
 
     def __repr__(self):
         io = StringIO("")
         table = tp.table(
-            self._controlled_by, self._controlled_by.dtype.names, style="round", out=io,
+            self._controlled_by,
+            self._controlled_by.dtype.names,
+            style="round",
+            width=[90, 90, 15, 90, 10],
+            out=io,
         )
         return io.getvalue()

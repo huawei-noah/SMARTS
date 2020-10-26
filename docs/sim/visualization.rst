@@ -7,7 +7,7 @@ Visualization
 Envision
 ========
 
-SMARTS includes a visualizer called *Envision* that runs on a process separate from the main simulation process. To manage these processes we use *supervisord* (available as a *pip* dependency). Supervisord knows what processes to run by reading a `supervisord.conf` file which is included with your Starter Kit. Instead of running `python random_example/run.py` directly, simply call,
+SMARTS includes a visualizer called *Envision* that runs on a process separate from the main simulation process. To manage these processes we use *supervisord* (available as a *pip* dependency). Supervisord knows what processes to run by reading a `supervisord.conf` file. Instead of running `python random_example/run.py` directly, simply call,
 
 .. code-block:: bash
 
@@ -35,10 +35,6 @@ Visdom
 We also have built-in support for `Visdom <https://github.com/facebookresearch/visdom>`_ so you can see the image-based observation outputs in real-time. Start the visdom server before running your scenario and open the server URL in your browser `http://localhost:8097`.
 
 .. code-block:: bash
-
-    # (optional) source your virtual environment
-    cd ~/src/starter_kit
-    source .venv/bin/activate
 
     # install visdom
     pip install visdom

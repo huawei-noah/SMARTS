@@ -208,10 +208,8 @@ class Scenario:
                 scenario_roots.extend(Scenario.discover_scenarios(root))
         np.random.shuffle(scenario_roots)
 
-        return cycle(
-            Scenario.variations_for_all_scenario_roots(
-                scenario_roots, agents_to_be_briefed
-            )
+        return Scenario.variations_for_all_scenario_roots(
+            cycle(scenario_roots), agents_to_be_briefed
         )
 
     @staticmethod

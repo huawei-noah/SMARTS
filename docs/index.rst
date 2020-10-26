@@ -18,8 +18,6 @@ Scalable Multi-Agent RL Training School (**SMARTS**) is an autonomous driving pl
 
    quickstart
 
-   readme.rst
-
    setup.rst
 
    sim/agent.rst

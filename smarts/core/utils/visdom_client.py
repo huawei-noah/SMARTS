@@ -18,8 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import json
-import multiprocessing
+import logging
 import threading
+import multiprocessing
 from collections import defaultdict
 
 import numpy as np
@@ -30,28 +31,55 @@ except ImportError:
     raise ImportError("Visdom is required for visualizations.")
 
 
-def build_visdom_watcher_queue():
-    # Set queue size to 1 so that we don't hang on too old observations
-    obs_queue = multiprocessing.Queue(1)
+class VisdomClient:
+    def __init__(self, hostname="http://localhost", port=8097):
+        self._log = logging.getLogger(self.__class__.__name__)
+        self._port = port
+        self._hostname = hostname
+        self._visdom_obs_queue = self._build_visdom_watcher_queue()
 
-    queue_watcher = threading.Thread(
-        target=_watcher_loop,
-        args=(obs_queue,),
-        daemon=True,  # If False, the proc will not terminate until this thread stops
-    )
+    def send(self, obs):
+        try:
+            self._visdom_obs_queue.put(obs, block=False)
+        except Exception:
+            self._log.debug("Dropped visdom frame instead of blocking")
 
-    queue_watcher.start()
+    def teardown(self):
+        pass
 
-    return obs_queue
+    def _build_visdom_watcher_queue(self):
+        # Set queue size to 1 so that we don't hang on too old observations
+        obs_queue = multiprocessing.Queue(1)
 
+        queue_watcher = threading.Thread(
+            target=self._watcher_loop,
+            args=(obs_queue,),
+            daemon=True,  # If False, the proc will not terminate until this thread stops
+        )
 
-def _watcher_loop(obs_queue):
-    def _vis_sim_obs(sim_obs):
+        queue_watcher.start()
+        return obs_queue
+
+    def _watcher_loop(self, obs_queue):
+        vis = visdom.Visdom(port=self._port, server=self._hostname)
+
+        while True:
+            obs = obs_queue.get()
+
+            for key, images in self._vis_sim_obs(obs).items():
+                title = json.dumps({"Type:": key})
+                images = np.stack(images, axis=0)
+                vis.images(images, win=key, opts={"title": title})
+                vis.images(images[0], win=key, opts={"title": title})
+
+            for key, readings in self._vis_sim_text(obs).items():
+                title = json.dumps({"Type:": key})
+                vis.text(readings, win=key, opts={"title": title})
+
+    def _vis_sim_obs(self, sim_obs):
         vis_images = defaultdict(list)
-        for agent_id, agent_obs in sim_obs.items():
-            if agent_obs is None:
-                continue
 
+        for agent_id, agent_obs in self._flatten_obs(sim_obs):
             # Visdom image format: Channel x Height x Width
             drivable_area = getattr(agent_obs, "drivable_area_grid_map", None)
             if drivable_area is not None:
@@ -77,12 +105,10 @@ def _watcher_loop(obs_queue):
 
         return vis_images
 
-    def _vis_sim_text(sim_obs):
+    def _vis_sim_text(self, sim_obs):
         vis_texts = defaultdict(list)
-        for agent_id, agent_obs in sim_obs.items():
-            if agent_obs is None:
-                continue
 
+        for agent_id, agent_obs in self._flatten_obs(sim_obs):
             vehicle_state = getattr(agent_obs, "ego_vehicle_state", None)
             throttle = getattr(vehicle_state, "throttle", None)
             if throttle is not None:
@@ -100,17 +126,14 @@ def _watcher_loop(obs_queue):
 
         return vis_texts
 
-    vis = visdom.Visdom()
-
-    while True:
-        obs = obs_queue.get()
-
-        for key, images in _vis_sim_obs(obs).items():
-            title = json.dumps({"Type:": key})
-            images = np.stack(images, axis=0)
-            vis.images(images, win=key, opts={"title": title})
-            vis.images(images[0], win=key, opts={"title": title})
-
-        for key, readings in _vis_sim_text(obs).items():
-            title = json.dumps({"Type:": key})
-            vis.text(readings, win=key, opts={"title": title})
+    def _flatten_obs(self, sim_obs):
+        obs = []
+        for agent_id, agent_obs in sim_obs.items():
+            if agent_obs is None:
+                continue
+            elif isinstance(agent_obs, dict):  # is_boid_agent
+                for vehicle_id, vehicle_obs in agent_obs.items():
+                    obs.append((vehicle_id, vehicle_obs))
+            else:
+                obs.append((agent_id, agent_obs))
+        return obs

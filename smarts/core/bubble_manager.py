@@ -315,8 +315,9 @@ class BubbleManager:
         mission_planner = MissionPlanner(
             sim.scenario.waypoints, sim.scenario.road_network
         )
+        is_boid = isinstance(social_agent_actor, BoidAgentActor)
         vehicle = sim.vehicle_index.prepare_for_agent_control(
-            sim, vehicle_id, agent_id, interface, mission_planner
+            sim, vehicle_id, agent_id, interface, mission_planner, boid=is_boid
         )
 
         # Setup mission (also used for observations)
@@ -353,8 +354,9 @@ class BubbleManager:
         self._log.debug(f"Hijack vehicle={vehicle_id} with actor={social_agent_actor}")
         agent_id = BubbleManager._make_social_agent_id(vehicle_id, social_agent_actor)
 
+        is_boid = isinstance(social_agent_actor, BoidAgentActor)
         vehicle = sim.vehicle_index.switch_control_to_agent(
-            sim, vehicle_id, agent_id, recreate=False
+            sim, vehicle_id, agent_id, boid=is_boid, recreate=False
         )
         self._update_cursor(vehicle_id, vehicle=vehicle)
 

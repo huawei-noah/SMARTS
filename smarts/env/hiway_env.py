@@ -26,9 +26,8 @@ import smarts
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.scenario import Scenario
+from smarts.core.utils.visdom_client import VisdomClient
 from envision.client import Client as Envision
-
-from .visualization import build_visdom_watcher_queue
 
 
 class HiWayEnv(gym.Env):
@@ -39,10 +38,10 @@ class HiWayEnv(gym.Env):
             a list of directories of the scenarios that will be run
         agent_specs:
             a list of agents that will run in the environment
-        visdom:
-            true|false visdom integration
         headless:
             true|false envision disabled
+        visdom:
+            true|false visdom integration
         timestep_sec:
             the step length for all components of the simulation
         seed:
@@ -68,8 +67,8 @@ class HiWayEnv(gym.Env):
         self,
         scenarios: Sequence[str],
         agent_specs,
-        visdom=False,
         headless=False,
+        visdom=False,
         timestep_sec=0.1,
         seed=42,
         num_external_sumo_clients=0,
@@ -83,11 +82,6 @@ class HiWayEnv(gym.Env):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts.core.seed(seed)
 
-        self._visdom_obs_queue = None
-        if visdom:
-            self._log.debug("Running with visdom")
-            self._visdom_obs_queue = build_visdom_watcher_queue()
-
         self._agent_specs = agent_specs
         self._dones_registered = 0
 
@@ -99,11 +93,15 @@ class HiWayEnv(gym.Env):
             agent_id: agent.interface for agent_id, agent in agent_specs.items()
         }
 
-        envision = None
+        envision_client = None
         if not headless:
-            envision = Envision(
+            envision_client = Envision(
                 endpoint=envision_endpoint, output_dir=envision_record_data_replay_path
             )
+
+        visdom_client = None
+        if visdom:
+            visdom_client = VisdomClient()
 
         self._smarts = SMARTS(
             agent_interfaces=agent_interfaces,
@@ -115,7 +113,8 @@ class HiWayEnv(gym.Env):
                 auto_start=sumo_auto_start,
                 endless_traffic=endless_traffic,
             ),
-            envision=envision,
+            envision=envision_client,
+            visdom=visdom_client,
             timestep_sec=timestep_sec,
         )
 
@@ -151,8 +150,6 @@ class HiWayEnv(gym.Env):
 
         observations, rewards, agent_dones, extras = self._smarts.step(agent_actions)
 
-        self._try_emit_visdom_obs(observations)
-
         infos = {
             agent_id: {"score": value, "env_obs": observations[agent_id]}
             for agent_id, value in extras["scores"].items()
@@ -181,8 +178,6 @@ class HiWayEnv(gym.Env):
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
 
-        self._try_emit_visdom_obs(env_observations)
-
         observations = {
             agent_id: self._agent_specs[agent_id].observation_adapter(obs)
             for agent_id, obs in env_observations.items()
@@ -197,10 +192,3 @@ class HiWayEnv(gym.Env):
     def close(self):
         if self._smarts is not None:
             self._smarts.destroy()
-
-    def _try_emit_visdom_obs(self, obs):
-        try:
-            if self._visdom_obs_queue:
-                self._visdom_obs_queue.put(obs, block=False)
-        except Exception:
-            self._log.debug("Dropped visdom frame instead of blocking")
