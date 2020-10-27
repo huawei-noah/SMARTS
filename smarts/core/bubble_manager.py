@@ -212,14 +212,28 @@ class BubbleStateChange:
 
 
 class BubbleManager:
-    def __init__(self, bubbles: Sequence[SSBubble], road_network: SumoRoadNetwork):
+    def __init__(self, sim, bubbles: Sequence[SSBubble]):
         self._log = logging.getLogger(self.__class__.__name__)
         self._cursors = []
-        self._bubbles = [Bubble(b, road_network) for b in bubbles]
+        self._sim = sim
+        self._bubbles = [Bubble(b, sim.scenario.road_network) for b in bubbles]
 
     @property
     def bubbles(self) -> Sequence[Bubble]:
-        return self._bubbles
+        return self._active_bubbles()
+
+    def _active_bubbles(self) -> Sequence[Bubble]:
+        # Filter out travelling bubbles that are missing their pinned vehicle
+        def is_active(bubble):
+            if not bubble.is_travelling:
+                return True
+
+            vehicles = self._sim.vehicle_index.vehicles_by_actor_id(
+                bubble.pinned_actor_id
+            )
+            return len(vehicles) == 1
+
+        return [bubble for bubble in self._bubbles if is_active(bubble)]
 
     @property
     def tracked_vehicle_ids(self):
@@ -241,7 +255,9 @@ class BubbleManager:
         """Removes any tracking information for the given vehicle ids"""
         self._cursors = [c for c in self._cursors if c.vehicle.id not in vehicle_ids]
 
-    def step(self, sim):
+    def step(self):
+        sim = self._sim
+
         social_agent_vehicles = []
         for agent_id in sim.agent_manager.social_agent_ids:
             social_agent_vehicles += sim.vehicle_index.vehicles_by_actor_id(agent_id)
@@ -250,29 +266,26 @@ class BubbleManager:
             sim.vehicle_index.vehicle_by_id(id_)
             for id_ in sim.vehicle_index.social_vehicle_ids
         ]
-        state_change = self.step_bubble_state(
-            sim, social_vehicles, social_agent_vehicles
-        )
+        state_change = self.step_bubble_state(social_vehicles, social_agent_vehicles)
 
         for vehicle_id, actor in state_change.entered_airlock_1:
-            self._airlock_social_vehicle_with_social_agent(sim, vehicle_id, actor)
+            self._airlock_social_vehicle_with_social_agent(vehicle_id, actor)
 
         for vehicle_id, actor in state_change.entered_bubble:
-            self._hijack_social_vehicle_with_social_agent(sim, vehicle_id, actor)
+            self._hijack_social_vehicle_with_social_agent(vehicle_id, actor)
 
         # XXX: Some vehicles only go through the airlocks and never make it through
         #      the bubble; that's why we relinquish on airlock exit. This is something
         #      we'll likely want to revisit in the future.
         for vehicle_id in state_change.exited_airlock_2:
-            self._relinquish_vehicle_to_traffic_sim(sim, vehicle_id)
+            self._relinquish_vehicle_to_traffic_sim(vehicle_id)
 
     def step_bubble_state(
         self,
-        sim,
         social_vehicles: Sequence[Vehicle],
         social_agent_vehicles: Sequence[Vehicle],
     ) -> BubbleStateChange:
-        self._move_travelling_bubbles(sim)
+        self._move_travelling_bubbles()
 
         # Detect social vehicles entering bubbles (and airlocks)
         for sv in social_vehicles:
@@ -330,14 +343,16 @@ class BubbleManager:
             exited_airlock_2=exited_airlock_2,
         )
 
-    def _move_travelling_bubbles(self, sim):
-        for bubble in self._bubbles:
+    def _move_travelling_bubbles(self):
+        for bubble in self._active_bubbles():
             if not bubble.is_travelling:
                 pass
 
             # TODO: Handle if actor is terminated on not spawned yet. In those
             #       circumstances the bubble should not be present.
-            vehicles = sim.vehicle_index.vehicles_by_actor_id(bubble.pinned_actor_id)
+            vehicles = self._sim.vehicle_index.vehicles_by_actor_id(
+                bubble.pinned_actor_id
+            )
             assert (
                 len(vehicles) <= 1
             ), "Travelling bubbles only support pinning to a single vehicle"
@@ -346,7 +361,7 @@ class BubbleManager:
                 bubble.move_to_pinned_vehicle(vehicles[0])
 
     def _airlock_social_vehicle_with_social_agent(
-        self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor,
+        self, vehicle_id: str, social_agent_actor: SocialAgentActor,
     ) -> str:
         """When airlocked. The social agent will receive observations and execute
         its policy, however it won't actually operate the vehicle's controller.
@@ -355,6 +370,7 @@ class BubbleManager:
             f"Airlocked vehicle={vehicle_id} with actor={social_agent_actor}"
         )
 
+        sim = self._sim
         agent_id = BubbleManager._make_social_agent_id(vehicle_id, social_agent_actor)
 
         if agent_id in sim.agent_manager.social_agent_ids:
@@ -399,7 +415,7 @@ class BubbleManager:
         return agent_id
 
     def _hijack_social_vehicle_with_social_agent(
-        self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor,
+        self, vehicle_id: str, social_agent_actor: SocialAgentActor,
     ) -> str:
         """Upon hijacking the social agent is now in control of the vehicle. It will
         initialize the vehicle chassis (and by extension the controller) with a
@@ -407,6 +423,7 @@ class BubbleManager:
         front-end common to both source and destination policies during airlock.
         """
         self._log.debug(f"Hijack vehicle={vehicle_id} with actor={social_agent_actor}")
+        sim = self._sim
         agent_id = BubbleManager._make_social_agent_id(vehicle_id, social_agent_actor)
 
         is_boid = isinstance(social_agent_actor, BoidAgentActor)
@@ -431,7 +448,8 @@ class BubbleManager:
                     )
                 )
 
-    def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str) -> str:
+    def _relinquish_vehicle_to_traffic_sim(self, vehicle_id: str) -> str:
+        sim = self._sim
         agent_id = sim.vehicle_index.actor_id_from_vehicle_id(vehicle_id)
         shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
 
@@ -459,7 +477,7 @@ class BubbleManager:
         according to the provided order.
         """
         pos = Point(vehicle.position)
-        for bubble in self._bubbles:
+        for bubble in self._active_bubbles():
             all_bubble_vehicle_ids = self._group_cursors_by_bubble()[bubble]
             # Admissibility needs to be considered upon Bubble entry since some
             # admission reasons (like bubble capacity/limit) could change at any time,
@@ -524,5 +542,6 @@ class BubbleManager:
         return False
 
     def teardown(self):
+        self._sim = None
         self._cursors = []
         self._bubbles = []
