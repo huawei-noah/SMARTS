@@ -254,7 +254,9 @@ class AgentInterface:
                 action=ActionSpaceType.ActuatorDynamic,
             )
         elif requested_type == AgentType.Laner:  # The lane-following agent
-            interface = AgentInterface(waypoints=True, action=ActionSpaceType.Lane,)
+            interface = AgentInterface(
+                waypoints=True, rgb=True, ogm=True, action=ActionSpaceType.Lane,
+            )
         # The lane-following agent with speed and relative lane change direction
         elif requested_type == AgentType.LanerWithSpeed:
             interface = AgentInterface(

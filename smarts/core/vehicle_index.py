@@ -231,11 +231,38 @@ class VehicleIndex:
     ):
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
         if recreate:
+            # TODO: Fix the SUMO lane changing issue
+            # There exists a SUMO connection error bug that occurs
+            #       during lange changing when we hijack/trap a SUMO vehicle. Forcing
+            #       vehicle recreation seems to address the problem. Ideally we discover
+            #       the underlaying problem and can go back to the preferred implementation
+            #       of simply swapping control of a persistent vehicle.
+            # Get the old state values from the shadowed vehicle
+            agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+            assert (
+                agent_interface is not None
+            ), f"Missing agent_interface for agent_id={agent_id}"
+            sensor_state = self._sensor_states[vehicle_id]
+            controller_state = self._controller_states[vehicle_id]
+            mission_planner = sensor_state.mission_planner
             # XXX: Recreate is presently broken for bubbles because it impacts the
             #      sumo traffic sim sync(...) logic in how it detects a vehicle as
             #      being hijacked vs joining. Presently it's still used for trapping.
-            return self._switch_control_to_agent_recreate(
-                sim, vehicle_id, agent_id, boid
+            trainable = True
+            return self.build_agent_vehicle(
+                sim,
+                agent_id,
+                agent_interface,
+                mission_planner,
+                sim.scenario.vehicle_filepath,
+                sim.scenario.tire_parameters_filepath,
+                # BUG: Both the TrapManager and BubbleManager call into this method but the
+                #      trainable field below always assumes trainable=True
+                trainable,
+                sim.scenario.surface_patches,
+                sim.scenario.controller_parameters_filepath,
+                boid=boid,
+                vehicle_id=vehicle_id,
             )
 
         vehicle = self._vehicles[vehicle_id]
@@ -254,61 +281,6 @@ class VehicleIndex:
         )
 
         return vehicle
-
-    def _switch_control_to_agent_recreate(self, sim, vehicle_id, agent_id, boid):
-        # TODO: There existed a SUMO connection error bug
-        #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occured
-        #       during lange changing when we hijacked/trapped a SUMO vehicle. Forcing
-        #       vehicle recreation seems to address the problem. Ideally we discover
-        #       the underlaying problem and can go back to the preferred implementation
-        #       of simply swapping control of a persistent vehicle.
-        # Get the old state values from the shadowed vehicle
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        assert (
-            agent_interface is not None
-        ), f"Missing agent_interface for agent_id={agent_id}"
-        vehicle = self._vehicles[vehicle_id]
-        sensor_state = self._sensor_states[vehicle_id]
-        controller_state = self._controller_states[vehicle_id]
-        mission_planner = sensor_state.mission_planner
-
-        # Create a new vehicle to replace the old one
-        new_vehicle_id = vehicle_id
-        new_vehicle = Vehicle.build_agent_vehicle(
-            sim,
-            new_vehicle_id,
-            agent_interface,
-            mission_planner,
-            sim.scenario.vehicle_filepath,
-            sim.scenario.tire_parameters_filepath,
-            # BUG: Both the TrapManager and BubbleManager call into this method but the
-            #      trainable field below always assumes trainable=True
-            True,
-            sim.scenario.surface_patches,
-            sim.scenario.controller_parameters_filepath,
-        )
-
-        # Apply the physical values from the old vehicle chassis to the new one
-        new_vehicle.chassis.inherit_physical_values(vehicle.chassis)
-
-        # Remove the old vehicle
-        self.teardown_vehicles_by_vehicle_ids([vehicle_id])
-        # HACK: Directly remove the vehicle from the traffic provider
-        sim._traffic_sim.remove_traffic_vehicle(vehicle_id)
-
-        # Take control of the new vehicle
-        self._enfranchise_actor(
-            sim,
-            agent_id,
-            agent_interface,
-            new_vehicle_id,
-            new_vehicle,
-            controller_state,
-            sensor_state,
-            boid,
-        )
-
-        return new_vehicle
 
     def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
         self._log.debug(
@@ -350,10 +322,13 @@ class VehicleIndex:
         trainable,
         surface_patches,
         controller_filepath,
+        vehicle_id=None,
         initial_speed=None,
         boid=False,
     ):
-        vehicle_id = f"{agent_id}-{str(gen_id())[:8]}"
+        vehicle_exists = vehicle_id and vehicle_id in self._vehicles
+
+        vehicle_id = vehicle_id or f"{agent_id}-{str(gen_id())[:8]}"
         vehicle = Vehicle.build_agent_vehicle(
             sim,
             vehicle_id,
@@ -367,7 +342,17 @@ class VehicleIndex:
             initial_speed,
         )
 
-        waypoint_paths = sim.waypoints.waypoint_paths_at(vehicle.position, lookahead=1)
+        if vehicle_exists:
+            old_vehicle = self._vehicles[vehicle_id]
+            sensor_state = self._sensor_states[vehicle_id]
+            mission_planner = mission_planner or sensor_state.mission_planner
+            # Apply the physical values from the old vehicle chassis to the new one
+            vehicle.chassis.inherit_physical_values(old_vehicle.chassis)
+
+            # Remove the old vehicle
+            self.teardown_vehicles_by_vehicle_ids([vehicle_id])
+            # HACK: Directly remove the vehicle from the traffic provider
+            sim._traffic_sim.remove_traffic_vehicle(vehicle_id)
 
         sensor_state = SensorState(
             agent_interface.max_episode_steps, mission_planner=mission_planner,
