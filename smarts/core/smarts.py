@@ -227,7 +227,7 @@ class SMARTS(ShowBase):
         self._agent_manager.step_agent_sensors(self)
 
         # Panda3D
-        self.taskMgr.mgr.poll() # update camera position in the render pipeline
+        self.taskMgr.mgr.poll()  # update camera position in the render pipeline
 
         observations, rewards, scores, dones = self._agent_manager.observe(self)
 

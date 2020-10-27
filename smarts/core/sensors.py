@@ -598,7 +598,6 @@ class DrivableAreaGridMapSensor(CameraSensor):
         task = partial(self._follow_vehicle, camera_np=self._camera.camera_np)
         self._showbase.taskMgr.add(task, self._task_id, sort=0, priority=100)
 
-
     def __call__(self) -> DrivableAreaGridMap:
         assert (
             self._camera is not None
