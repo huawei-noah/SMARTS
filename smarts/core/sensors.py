@@ -904,17 +904,11 @@ class RoadWaypointsSensor(Sensor):
                     lane, start_offset
                 )
 
-                wps_to_lookahead = int(
-                    (end_offset - start_offset) / self._sim.waypoints.spacing
-                )
+                wps_to_lookahead = self._horizon * 2
                 paths = self._sim.waypoints.waypoint_paths_on_lane_at(
-                    point=wp_start,
-                    lane_id=lane.getID(),
-                    lookahead=wps_to_lookahead,
-                    filter_edge_ids=[edge.getID()],
+                    point=wp_start, lane_id=lane.getID(), lookahead=wps_to_lookahead,
                 )
-                assert len(paths) == 1
-                lane_paths[lane.getID()] = paths[0]
+                lane_paths[lane.getID()] = paths
 
         return RoadWaypoints(lanes=lane_paths)
 

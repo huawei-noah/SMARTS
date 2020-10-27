@@ -876,6 +876,13 @@ class SMARTS(ShowBase):
                     v.vehicle_id
                 ).driven_path_sensor()
 
+                road_waypoints = []
+                if vehicle_obs.road_waypoints:
+                    road_waypoints = [
+                        path
+                        for paths in vehicle_obs.road_waypoints.lanes.values()
+                        for path in paths
+                    ]
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     name=self._agent_manager.name_for_agent(agent_id),
                     actor_type=actor_type,
@@ -887,7 +894,7 @@ class SMARTS(ShowBase):
                         agent_id, v.vehicle_id, is_multi=is_boid_agent,
                     ),
                     events=vehicle_obs.events,
-                    waypoint_paths=vehicle_obs.waypoint_paths or [],
+                    waypoint_paths=(vehicle_obs.waypoint_paths or []) + road_waypoints,
                     point_cloud=point_cloud,
                     driven_path=driven_path,
                     mission_route_geometry=mission_route_geometry,
