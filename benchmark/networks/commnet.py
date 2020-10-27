@@ -1,4 +1,5 @@
-# Reference: https://github.com/starry-sky6688/StarCraft/blob/master/network/commnet.py
+# ----- License Problem -----
+# Original version: https://github.com/starry-sky6688/StarCraft/blob/master/network/commnet.py
 import numpy as np
 import gym
 
