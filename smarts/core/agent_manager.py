@@ -213,10 +213,6 @@ class AgentManager:
             sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle_id)
             Sensors.step(self, sensor_state)
 
-            vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
-            for sensor in vehicle.sensors.values():
-                sensor.step()
-
     def _filter_for_active_ego(self, dict_):
         return {
             id_: dict_[id_]

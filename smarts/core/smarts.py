@@ -226,6 +226,9 @@ class SMARTS(ShowBase):
         # Agents
         self._agent_manager.step_agent_sensors(self)
 
+        # Panda3D
+        self.taskMgr.mgr.poll() # update camera position in the render pipeline
+
         observations, rewards, scores, dones = self._agent_manager.observe(self)
 
         response_for_ego = self._agent_manager.filter_response_for_ego(
@@ -600,9 +603,6 @@ class SMARTS(ShowBase):
 
     def _step_providers(self, actions, dt) -> List[VehicleState]:
         accumulated_provider_state = ProviderState()
-
-        # Panda3D
-        self.taskMgr.mgr.poll()  # runs through the render pipeline
 
         def agent_controls_vehicles(agent_id):
             vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
