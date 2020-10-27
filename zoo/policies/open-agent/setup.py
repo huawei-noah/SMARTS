@@ -8,6 +8,9 @@ try:
 
     compiled_extensions = compile_solver("./build")
 except ImportError:
+    print(
+        "WARNING: missing depencencies caused us to fail to compile the solver, rerun once the dependencies have installed"
+    )
     compiled_extensions = []
 
 try:
