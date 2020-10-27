@@ -701,7 +701,7 @@ class Scenario:
     @property
     def bounding_box(self):
         # This function returns the following tuple:
-        # (bbox length, bbox width,bbox center)
+        # (bbox length, bbox width ,bbox center)
         net_file = os.path.join(self._root, "map.net.xml")
         road_network = SumoRoadNetwork.from_file(net_file)
         # 2D bbox in format (xmin, ymin, xmax, ymax)

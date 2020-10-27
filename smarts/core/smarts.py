@@ -361,7 +361,7 @@ class SMARTS(ShowBase):
             plane_path,
             useFixedBase=True,
             basePosition=self._scenario.bounding_box[2],
-            globalScaling=plane_scale,
+            globalScaling=1.2 * plane_scale,
         )
 
     def teardown(self):
