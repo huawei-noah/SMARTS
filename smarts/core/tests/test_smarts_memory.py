@@ -129,41 +129,46 @@ def test_smarts_repeated_runs_memory_cleanup(
     gc.collect()
 
     for i in range(100):
-        try:
-            _memory_buildup(agent_id, seed, social_agent_scenarios, 1, *agent_type)
-        except Exception:
-            # Not testing for crashes
-            pass
+        _memory_buildup(agent_id, seed, social_agent_scenarios, 1, *agent_type)
 
     gc.collect()
     all_objects = muppy.get_objects()
     end_size = muppy.get_size(all_objects)
 
     # Check for a major leak
-    assert end_size - initial_size < 5e4
+    assert end_size - initial_size < 5e5
 
 
-def test_smarts_fast_reset_memory_cleanup(
-    agent_id, seed, social_agent_scenarios, agent_type
-):
+def test_smarts_fast_reset_memory_cleanup(agent_id, seed, social_agent_scenarios):
+    agent_type = AgentType.Buddha
     # Run once to initialize globals and test to see if smarts is working
-    _memory_buildup(agent_id, seed, social_agent_scenarios, 1, *agent_type)
+    _memory_buildup(agent_id, seed, social_agent_scenarios, 1, None, agent_type)
 
     gc.collect()
     initial_size = muppy.get_size(muppy.get_objects())
     gc.collect()
 
-    for i in range(1000):
-        _memory_buildup(
-            agent_id, seed, social_agent_scenarios, 1, *agent_type, max_episode_steps=2
-        )
+    for _ in range(200):
+        try:
+            _memory_buildup(
+                agent_id,
+                seed,
+                social_agent_scenarios,
+                1,
+                None,
+                agent_type,
+                max_episode_steps=2,
+            )
+        except Exception:
+            # Not testing for crashes
+            pass
+        gc.collect()
 
-    gc.collect()
     all_objects = muppy.get_objects()
     end_size = muppy.get_size(all_objects)
 
     # Check for a major leak
-    assert end_size - initial_size < 5e4
+    assert end_size - initial_size < 5e5
 
 
 def test_smarts_social_agent_scenario_memory_cleanup(
@@ -176,14 +181,10 @@ def test_smarts_social_agent_scenario_memory_cleanup(
     initial_size = muppy.get_size(muppy.get_objects())
     gc.collect()
 
-    try:
-        _memory_buildup(agent_id, seed, social_agent_scenarios, 100, *agent_type)
-    except Exception:
-        # Not testing for crashes
-        pass
+    _memory_buildup(agent_id, seed, social_agent_scenarios, 100, *agent_type)
 
     gc.collect()
     all_objects = muppy.get_objects()
     end_size = muppy.get_size(all_objects)
 
-    assert 1 - initial_size / end_size < 1e-2
+    assert end_size - initial_size < 5e5
