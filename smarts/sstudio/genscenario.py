@@ -34,6 +34,7 @@ from typing import Any, Sequence, Tuple, Union
 from urllib.parse import urlparse
 
 import sh
+from yattag import Doc, indent
 
 from smarts.core.utils.class_factory import is_valid_url_locator
 
@@ -62,6 +63,15 @@ def gen_scenario(
             gen_traffic(
                 scenario=output_dir,
                 traffic=traffic,
+                name=name,
+                seed=seed,
+                overwrite=ovewrite,
+            )
+    if scenario.preserved:
+        for name, preserved in scenario.preserved.items():
+            gen_preserved(
+                scenario=output_dir,
+                preserved=preserved,
                 name=name,
                 seed=seed,
                 overwrite=ovewrite,
@@ -137,6 +147,44 @@ def gen_traffic(
 
     if saved_path:
         logger.debug(f"Generated traffic for scenario={scenario}")
+
+
+def gen_preserved(
+    scenario: str,
+    preserved: types.Preserved,
+    name: str = None,
+    output_dir: str = None,
+    seed: int = 42,
+    overwrite: bool = False,
+):
+    doc = Doc()
+    doc.asis('<?xml version="1.0" encoding="UTF-8"?>')
+    with doc.tag(
+        "routes",
+        ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+        ("xsi:noNamespaceSchemaLocation", "http://sumo.sf.net/xsd/routes_file.xsd"),
+    ):
+        for v_type in preserved.vehicle_types:
+            doc.stag(
+                "vType",
+                id=v_type.type_id,
+                accel=v_type.accel,
+                decel=v_type.decel,
+                vClass=v_type.vehicle_type,
+                minGap=v_type.min_gap,
+            )
+
+        for route in preserved.routes:
+            doc.stag(
+                "route", id=route.id, edges=" ".join(route.edges),
+            )
+
+    output_dir = os.path.join(output_dir or scenario, "traffic")
+    route_path = os.path.join(output_dir, "{}.rou.xml".format(name))
+    with open(route_path, "w") as f:
+        f.write(
+            indent(doc.getvalue(), indentation="    ", newline="\r\n", indent_text=True)
+        )
 
 
 def gen_social_agent_missions(
