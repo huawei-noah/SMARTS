@@ -1,9 +1,9 @@
 # SMARTS
 ![SMARTS CI](https://github.com/junluo-huawei/SMARTS/workflows/SMARTS%20CI/badge.svg?branch=master) ![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)
 
-This is the HiWay Edition of Scalable Multi-Agent Training School (SMARTS). It consists of a suite of autonomous driving tasks and support for population based evaluation and training.
+SMARTS (Scalable Multi-Agent RL Training School) is a simulaton platform for reinforcement learning and multi-agent research on autonomous driving. Its focus is on realistic and diverse interactions. It is part of the [XingTian](https://github.com/huawei-noah/xingtian/) suite of RL platforms from Huawei Noah's Ark Lab.
 
-![](media/smarts_envision.gif)
+![](docs/_static/smarts_envision.gif)
 
 ## Multi-Agent experiment as simple as...
 
@@ -76,9 +76,6 @@ pip install -e .[train]
 
 # make sure you can run tests (and verify they are passing)
 make test
-
-# if you wish to contribute to SMARTS, also install the [dev] dependencies.
-pip install .[dev]
 
 # then you can run a scenario, see following section for more details
 ```
@@ -155,19 +152,10 @@ See the provided ready-to-go scripts under the [examples/](./examples) directory
 
 ## Contributing
 
-Please read [Contributing](doc/CONTRIBUTING.md)
-
-## Extras
-
-### Visualizing Agent Observations
-If you want to easily visualize image-based observations you can use our [Visdom](https://github.com/facebookresearch/visdom) integration. Start the visdom server before running your scenario,
-
-```bash
-visdom
-# Open the printed URL in your browser
-```
+Please read [Contributing](CONTRIBUTING.md)
 
 ### Building Docs Locally
+Assuming you have run `pip install .[dev]`.
 
 ```bash
 make docs
@@ -176,18 +164,28 @@ python -m http.server -d docs/_build/html
 # Open http://localhost:8000 in your browser
 ```
 
-### Generating Flame Graphs (Profiling)
+## Extras
 
-Things inevitably become slow, when this happens, Flame Graph is a great tool to find hot spots in your code.
+### Visualizing Agent Observations
+If you want to easily visualize observations you can use our [Visdom](https://github.com/facebookresearch/visdom) integration. Start the visdom server before running your scenario,
 
 ```bash
-# You will need python-flamegraph to generate flamegraphs
-pip install git+https://github.com/asokoloski/python-flamegraph.git
-
-make flamegraph scenario=scenarios/loop script=examples/single_agent.py
+visdom
+# Open the printed URL in your browser
 ```
 
+And in your experiment, start your environment with `visdom=True`
 
+```python
+env = gym.make(
+    "smarts.env:hiway-v0",
+    scenarios=["scenarios/loop"],
+    agent_specs=agent_specs,
+    visdom=True,
+)
+```
+
+<!--
 ### Interfacing w/ PyMARL and malib
 
 [PyMARL](https://github.com/oxwhirl/pymarl) and [malib](https://github.com/ying-wen/malib) presently live under the contrib package. You can run them via,
@@ -224,6 +222,7 @@ ln -s $(PWD)/scenarios ../malib/scenarios
 
 python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 5
 ```
+-->
 
 ### Using Docker
 
@@ -232,11 +231,18 @@ If you're comfortable using docker or are on a platform without suitable support
 
 ```bash
 docker build -t smarts .
-docker run --rm -it -v $(PWD):/src smarts
+docker run --rm -it -v $(PWD):/src -p 8081:8081 smarts
+# <press enter>
+
 cd /src
 pip install -e .[train]
 
+# Run Envision server in the background
+$ scl envision start -s ./scenarios -p 8081 &
 $ python examples/single_agent.py scenarios/loop
+
+# On your most machine visit http://localhost:8081 to see the running simulation in
+# Envision.
 ```
 
 ### SUMO Troubleshooting

@@ -9,7 +9,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.4.1",
+    version="0.4.2",
     packages=find_packages(exclude="tests"),
     include_package_data=True,
     zip_safe=True,

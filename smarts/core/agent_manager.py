@@ -1,3 +1,22 @@
+# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 import logging
 from typing import Set
 
@@ -80,6 +99,9 @@ class AgentManager:
     def active_agents(self):
         return self.agent_ids - self.pending_agent_ids
 
+    def is_boid_agent(self, sim, agent_id):
+        return sim.vehicle_index.actor_is_boid(agent_id)
+
     def is_ego(self, agent_id):
         return agent_id in self.ego_agent_ids
 
@@ -122,7 +144,7 @@ class AgentManager:
                 agent_id, columns=["vehicle_id", "shadow_actor_id"],
             )
 
-            if agent_interface.action_space == ActionSpaceType.MultiTargetPose:
+            if self.is_boid_agent(sim, agent_id):
                 vehicles = [
                     sim.vehicle_index.vehicle_by_id(vehicle_id)
                     for vehicle_id in indices["vehicle_id"]
@@ -153,9 +175,9 @@ class AgentManager:
                 }
             else:
                 assert len(indices["vehicle_id"]) == 1, (
-                    "Unless the action space is MultiTargetPose we "
-                    f"should only have a single vehicle under agent_id={agent_id}\n"
-                    f"vehicle_ids={indices['vehicle_id']}"
+                    "Unless this vehicle is part of a boid then we should only have a"
+                    f"single vehicle under agent_id={agent_id}\n "
+                    f"(vehicle_ids={indices['vehicle_id']})"
                 )
 
                 vehicle = sim.vehicle_index.vehicle_by_id(indices["vehicle_id"][0])
@@ -252,7 +274,7 @@ class AgentManager:
         # Handle boids where some vehicles are hijacked and some have not yet been
         for agent_id, actions in social_agent_actions.items():
             agent_interface = self._agent_interfaces[agent_id]
-            if agent_interface.action_space == ActionSpaceType.MultiTargetPose:
+            if self.is_boid_agent(sim, agent_id):
                 controlled_vehicle_ids = sim.vehicle_index.vehicle_ids_by_actor_id(
                     agent_id, include_shadowers=False
                 )
@@ -296,13 +318,17 @@ class AgentManager:
                 social_agent_model,
                 sim,
                 trainable=False,
+                # XXX: Currently boids can only be run from bubbles
+                boid=False,
             )
             self._social_agent_ids.add(agent_id)
 
         for social_agent_id, remote_social_agent in self._remote_social_agents.items():
             remote_social_agent.start(social_agents[social_agent_id][0])
 
-    def _add_agent(self, agent_id, agent_interface, agent_model, sim, trainable=True):
+    def _add_agent(
+        self, agent_id, agent_interface, agent_model, sim, boid=False, trainable=True
+    ):
         # TODO: Disentangle what is entangled below into:
         # 1. AgentState initialization,
         # 2. Agent vehicle initialization, which should live elsewhere, and
@@ -339,6 +365,7 @@ class AgentManager:
             scenario.surface_patches,
             scenario.controller_parameters_filepath,
             agent_model.initial_speed,
+            boid=boid,
         )
 
         for provider in sim.providers:
