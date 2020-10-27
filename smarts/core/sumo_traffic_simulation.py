@@ -32,6 +32,7 @@ import traci.constants as tc
 from traci.exceptions import FatalTraCIError
 
 from smarts.core import gen_id
+from smarts.core.utils.id import Id, SocialAgentId
 from .colors import SceneColors
 from .coordinates import Heading, Pose
 from .provider import ProviderState, ProviderTLS, ProviderTrafficLight
@@ -364,7 +365,8 @@ class SumoTrafficSimulation:
                 routeID="",  # we don't care which route this vehicle is on
             )
 
-            if vehicle_id.startswith("social-agent"):
+            # TODO: Vehicle Id should not be using prefixes this way
+            if Id.parse(vehicle_id).dtype == SocialAgentId.DTYPE:
                 # This is based on ID convention
                 vehicle_color = social_agent_color
             else:

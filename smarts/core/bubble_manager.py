@@ -27,6 +27,7 @@ from typing import Sequence, Tuple, Dict
 from shapely.geometry import Polygon, Point
 from shapely.affinity import translate, rotate
 
+from smarts.core.utils.id import SocialAgentId
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import Mission, MissionPlanner, Start
 from smarts.core.scenario import PositionalGoal
@@ -401,7 +402,7 @@ class BubbleManager:
 
         if agent_id not in sim.agent_manager.social_agent_ids:
             social_agent_data_model = SocialAgent(
-                id=f"social-agent-{social_agent_actor.name}",
+                id=SocialAgentId.new(social_agent_actor.name),
                 name=social_agent_actor.name,
                 mission=mission,
                 agent_locator=social_agent_actor.agent_locator,

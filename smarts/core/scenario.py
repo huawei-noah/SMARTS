@@ -42,6 +42,7 @@ from .waypoints import Waypoints
 from .coordinates import Heading
 from .utils.math import vec_to_radians
 from .utils.file import path2hash
+from .utils.id import SocialAgentId
 from .route import ShortestRoute
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import Zone, PositionalZone, RoadSurfacePatch, EntryTactic
@@ -394,7 +395,7 @@ class Scenario:
 
                 setdefault(agent_bucketer, count, []).append(
                     SocialAgent(
-                        id=f"social-agent-{namespace}-{actor.name}",
+                        id=SocialAgentId.new(actor.name, group=namespace),
                         name=actor.name,
                         mission=extracted_mission,
                         agent_locator=actor.agent_locator,

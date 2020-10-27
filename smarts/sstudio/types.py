@@ -31,6 +31,7 @@ from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
+from smarts.core.utils.id import SocialAgentId
 from smarts.core.waypoints import Waypoint, Waypoints
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
@@ -551,6 +552,10 @@ class Bubble:
                 "A pinned offset must be set if this is a travelling bubble"
             )
 
+    @staticmethod
+    def to_actor_id(actor, mission_group):
+        return SocialAgentId.new(actor.name, group=mission_group)
+
 
 @dataclass(frozen=True)
 class RoadSurfacePatch:
@@ -580,6 +585,10 @@ class Scenario:
     social_agent_missions: Optional[
         Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]
     ] = None
+    """Every dictionary item {group: (actors, missions)} gets run simultaneously. If
+    actors > 1 and missions = 0 or actors = 1 and missions > 0 we cycle through them
+    every episode. Otherwise actors must be the same length as missions.
+    """
     bubbles: Optional[Sequence[Bubble]] = None
     friction_maps: Optional[Sequence[RoadSurfacePatch]] = None
     traffic_histories: Optional[Sequence[str]] = None

@@ -22,22 +22,28 @@ traffic = t.Traffic(
     ]
 )
 
-actor = t.SocialAgentActor(
+laner_actor = t.SocialAgentActor(
     name="keep-lane-agent", agent_locator="zoo.policies:keep-lane-agent-v0",
+)
+
+slow_actor = t.SocialAgentActor(
+    name=f"slow-agent",
+    agent_locator="zoo.policies:non-interactive-agent-v0",
+    policy_kwargs={"speed": 10},
 )
 
 gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
-        social_agent_missions={"all": ([actor], [t.Mission(route=t.RandomRoute())]),},
+        social_agent_missions={
+            "all": ([laner_actor], [t.Mission(route=t.RandomRoute())])
+        },
         bubbles=[
             t.Bubble(
                 zone=t.PositionalZone(pos=(50, 0), size=(10, 15)),
                 margin=5,
-                actor=actor,
-                # TODO: We either need a better API around ID or or use something
-                #       other than ID...
-                pinned_actor_id="social-agent-all-keep-lane-agent",
+                actor=slow_actor,
+                pinned_actor_id=t.Bubble.to_actor_id(laner_actor, mission_group="all"),
                 pinned_offset=(-7, 10),
             ),
         ],
