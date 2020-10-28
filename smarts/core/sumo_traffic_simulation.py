@@ -192,6 +192,16 @@ class SumoTrafficSimulation:
             "--time-to-teleport=%s" % -1,
             "--collision.check-junctions=true",
             "--collision.action=none",
+            "--lanechange.duration=3.0",
+            # TODO: 1--lanechange.duration1 or 1--lateral-resolution`, in combination with `route_id`,
+            # causes lane change crashes as of SUMO 1.6.0.
+            # Controlling vehicles that have been added to the simulation with a route causes
+            # lane change related crashes.
+            # "--lateral-resolution=100",  # smooth lane changes
+            "--step-length=%f" % self._time_resolution,
+            "--default.action-step-length=%f" % self._time_resolution,
+            "--begin=0",  # start simulation at time=0
+            "--end=31536000",  # keep the simulation running for a year
         ]
 
         if self._auto_start:
@@ -218,23 +228,6 @@ class SumoTrafficSimulation:
         self._initialize_traci_conn()
 
         assert self._traci_conn is not None, "No active traci conn"
-
-        # XXX: Can likely move more params into `_base_sumo...`
-        load_params = [
-            # TODO: [Warning] 1--lanechange.duration1 or 1--lateral-resolution`, in combination with `route_id`,
-            #   causes lane change crashes as of SUMO 1.6.0.
-            # Controlling vehicles that have been added to the simulation with a route causes
-            #   lane change related crashes.
-            "--lanechange.duration=3.0",
-            # "--lateral-resolution=100",  # smooth lane changes
-            "--step-length=%f" % self._time_resolution,
-            "--default.action-step-length=%f" % self._time_resolution,
-            "--begin=0",  # start simulation at time=0
-            "--end=31536000",  # keep the simulation running for a year
-            *self._base_sumo_load_params(),
-        ]
-
-        self._traci_conn.load(load_params)
 
         self._traci_conn.simulation.subscribe(
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
@@ -326,6 +319,9 @@ class SumoTrafficSimulation:
         vehicles_that_have_become_external = (
             traffic_vehicle_ids & external_vehicle_ids - self._non_sumo_vehicle_ids
         )
+        # XXX: They may have become internal because they've been relinquished or
+        #      because they've been destroyed from a collision. Presently we're not
+        #      differentiating and will take over as social vehicles regardless.
         vehicles_that_have_become_internal = (
             self._non_sumo_vehicle_ids - external_vehicle_ids
         ) & traffic_vehicle_ids
@@ -593,16 +589,13 @@ class SumoTrafficSimulation:
 
         sub_results = self._traci_conn.trafficlight.getSubscriptionResults(None)
 
-        if not sub_results:
-            return {}
-
         tlss = []
+        if not sub_results:
+            return tlss
+
         for tls_id in sub_results:
             light_states = sub_results[tls_id][tc.TL_RED_YELLOW_GREEN_STATE]
             links = sub_results[tls_id][tc.TL_CONTROLLED_LINKS]
-            assert len(links) == len(
-                light_states
-            ), "TLS light states must be 1:1 with links"
 
             traffic_lights = []
             for link, state in zip(links, light_states):

@@ -3,49 +3,34 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import register
 
-from .policy import Policy
 
-
-def entrypoint(
-    N=15,
-    SV_N=7,
-    WP_N=20,
-    ts=1.0,
-    Q_theta=0,
-    Q_position=12,
-    Q_obstacle=1500,
-    Q_u_accel=30,
-    Q_u_yaw_rate=1,
-    Q_n=30,
-    Q_impatience=0.1,
+def make_agent_spec(
+    gains={
+        "theta": 3.0,
+        "position": 4.0,
+        "obstacle": 3.0,
+        "u_accel": 0.1,
+        "u_yaw_rate": 1.0,
+        "terminal": 0.01,
+        "impatience": 0.01,
+        "speed": 0.01,
+    },
     debug=False,
-    retries=5,
+    max_episode_steps=600,
 ):
+    from .policy import Policy
+
     return AgentSpec(
         interface=AgentInterface(
             action=ActionSpaceType.Trajectory,
             waypoints=True,
             neighborhood_vehicles=True,
-            max_episode_steps=None,
+            max_episode_steps=max_episode_steps,
         ),
-        policy_params={
-            "N": N,
-            "SV_N": SV_N,
-            "WP_N": WP_N,
-            "ts": ts,
-            "Q_theta": Q_theta,
-            "Q_position": Q_position,
-            "Q_obstacle": Q_obstacle,
-            "Q_u_accel": Q_u_accel,
-            "Q_u_yaw_rate": Q_u_yaw_rate,
-            "Q_n": Q_n,
-            "Q_impatience": Q_impatience,
-            "debug": debug,
-            "retries": retries,
-        },
+        policy_params={"gains": gains, "debug": debug,},
         policy_builder=Policy,
         perform_self_test=False,
     )
 
 
-register(locator="open_agent-v0", entry_point=entrypoint)
+register(locator="open_agent-v0", entry_point=make_agent_spec)
