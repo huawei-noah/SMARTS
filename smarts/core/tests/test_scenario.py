@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from smarts.core.scenario import Scenario
+from smarts.core.utils.id import SocialAgentId
 from smarts.sstudio import gen_social_agent_missions, gen_missions
 from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
 from smarts.sstudio.types import Mission, Route, SocialAgentActor
@@ -85,7 +86,7 @@ def temp_scenario_variations_of_social_agents(scenario_root):
     groups = ["group-1", "group-2", "group-3", "group-4"]
     speeds = [10, 30, 80]
     expected_social_agent_ids = {
-        f"social-agent-{group}-non-interactive-agent-{speed}-v0"
+        SocialAgentId.new(f"non-interactive-agent-{speed}-v0", group=group)
         for group, speed in itertools.product(groups, speeds)
     }
 

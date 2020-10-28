@@ -213,7 +213,7 @@ class SMARTS(ShowBase):
         provider_state = self._step_providers(all_agent_actions, dt)
 
         # 3. Step bubble manager and trap manager
-        self._bubble_manager.step(self)
+        self._bubble_manager.step()
         self._trap_manager.step(self)
 
         # 4. Calculate observation and reward
@@ -304,7 +304,7 @@ class SMARTS(ShowBase):
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
 
         bubbles = scenario.discover_bubbles()
-        self._bubble_manager = BubbleManager(bubbles, self.scenario.road_network)
+        self._bubble_manager = BubbleManager(self, bubbles)
         self._trap_manager = TrapManager(scenario)
 
         self._setup_bullet_client(self._bullet_client)

@@ -3,6 +3,8 @@ from dataclasses import replace
 
 import pytest
 
+from smarts.core.smarts import SMARTS
+from smarts.core.scenario import Scenario
 from smarts.core.coordinates import Pose, Heading
 from smarts.core.vehicle import Vehicle
 from smarts.core.bubble_manager import BubbleManager
@@ -23,13 +25,18 @@ def bubble():
 
 
 @pytest.fixture
-def road_network():
-    return SumoRoadNetwork.from_file("scenarios/intersections/4lane_t/map.net.xml")
+def smarts():
+    smarts_ = SMARTS(agent_interfaces={}, traffic_sim=mock.Mock(),)
+    scenario = next(
+        Scenario.scenario_variations(["scenarios/intersections/4lane_t"], ["Agent-007"])
+    )
+    smarts_.reset(scenario)
+    return smarts_
 
 
 @mock.patch.object(Vehicle, "position")
-def test_bubble_manager_state_change(vehicle, bubble):
-    manager = BubbleManager([bubble], road_network)
+def test_bubble_manager_state_change(smarts, bubble):
+    manager = BubbleManager(smarts, [bubble])
 
     # Outside airlock and bubble
     vehicle = Vehicle(
@@ -68,10 +75,10 @@ def test_bubble_manager_state_change(vehicle, bubble):
 
 
 @mock.patch.object(Vehicle, "position")
-def test_bubble_manager_limit(vehicle, bubble):
+def test_bubble_manager_limit(smarts, bubble):
     limit = 2
     bubble = replace(bubble, limit=limit)
-    manager = BubbleManager([bubble], road_network)
+    manager = BubbleManager(smarts, [bubble])
 
     vehicles_captured = [
         Vehicle(
@@ -111,8 +118,8 @@ def test_bubble_manager_limit(vehicle, bubble):
 
 
 @mock.patch.object(Vehicle, "position")
-def test_vehicle_spawned_in_bubble_is_not_captured(vehicle, bubble):
-    manager = BubbleManager([bubble], road_network)
+def test_vehicle_spawned_in_bubble_is_not_captured(smarts, bubble):
+    manager = BubbleManager(smarts, [bubble])
 
     # Spawned inside bubble, didn't "drive through" airlocking region, so should _not_
     # get captured

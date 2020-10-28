@@ -31,6 +31,7 @@ from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
+from smarts.core.utils.id import SocialAgentId
 from smarts.core.waypoints import Waypoint, Waypoints
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
@@ -520,7 +521,6 @@ class Bubble:
 
     zone: Zone
     """The zone which to capture vehicles."""
-    # TODO: Generalize to any `Actor`
     actor: SocialAgentActor
     """The actor specification that this bubble works for."""
     margin: float = 2  # Used for "airlocking"; must be > 0
@@ -533,10 +533,28 @@ class Bubble:
     exclusion_prefixes: Tuple[str, ...] = field(default_factory=tuple)
     """Used to exclude social actors from capture."""
     id: str = field(default_factory=lambda: f"bubble-{gen_id()}")
+    follow_actor_id: str = None
+    """Actor ID of agent we want to pin to. Doing so makes this a "travelling bubble"
+    which means it moves to follow the `follow_actor_id`'s vehicle. Offset is from the
+    vehicle's center position to the bubble's center position.
+    """
+    follow_offset: Tuple[float, float] = None
+    """Maintained offset to place the travelling bubble relative to the follow
+    vehicle if it were facing north.
+    """
 
     def __post_init__(self):
         if self.margin <= 0:
             raise ValueError("Airlocking margin must be greater than 0")
+
+        if self.follow_actor_id is not None and self.follow_offset is None:
+            raise ValueError(
+                "A follow offset must be set if this is a travelling bubble"
+            )
+
+    @staticmethod
+    def to_actor_id(actor, mission_group):
+        return SocialAgentId.new(actor.name, group=mission_group)
 
 
 @dataclass(frozen=True)
@@ -567,6 +585,10 @@ class Scenario:
     social_agent_missions: Optional[
         Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]
     ] = None
+    """Every dictionary item {group: (actors, missions)} gets run simultaneously. If
+    actors > 1 and missions = 0 or actors = 1 and missions > 0 we cycle through them
+    every episode. Otherwise actors must be the same length as missions.
+    """
     bubbles: Optional[Sequence[Bubble]] = None
     friction_maps: Optional[Sequence[RoadSurfacePatch]] = None
     traffic_histories: Optional[Sequence[str]] = None
