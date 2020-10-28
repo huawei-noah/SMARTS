@@ -699,7 +699,7 @@ class Scenario:
         return self._scenario_hash
 
     @property
-    def bounding_box(self):
+    def map_bounding_box(self):
         # This function returns the following tuple:
         # (bbox length, bbox width ,bbox center)
         net_file = os.path.join(self._root, "map.net.xml")
