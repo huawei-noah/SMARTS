@@ -456,11 +456,6 @@ class Sensors:
         return False
 
 
-class Sensor:
-    def step(self):
-        pass
-
-
 class SensorState:
     def __init__(self, max_episode_steps, mission_planner):
         self._max_episode_steps = max_episode_steps
@@ -482,7 +477,7 @@ class SensorState:
         return self._mission_planner
 
 
-class CameraSensor(Sensor):
+class CameraSensor:
     def __init__(self, vehicle, scene_np: NodePath, showbase: ShowBase):
         self._log = logging.getLogger(self.__class__.__name__)
         self._vehicle = vehicle
@@ -497,7 +492,9 @@ class CameraSensor(Sensor):
         fb_props = FrameBufferProperties()
         fb_props.setRgbColor(True)
         fb_props.setRgbaBits(8, 8, 8, 1)
-        fb_props.setDepthBits(0)
+        # XXX: Though we don't need the depth buffer returned, setting this to 0
+        #      causes undefined behaviour where the ordering of meshes is random.
+        fb_props.setDepthBits(8)
 
         buffer = self._showbase.win.engine.makeOutput(
             self._showbase.pipe,
@@ -532,12 +529,13 @@ class CameraSensor(Sensor):
 
         return OffscreenCamera(camera_np, buffer, tex)
 
-    def _follow_vehicle(self, camera_np):
+    def _follow_vehicle(self, task, camera_np):
         center = self._vehicle.position
         largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
         camera_np.setPos(center[0], center[1], 20 * largest_dim)
         camera_np.lookAt(*center)
         camera_np.setH(self._vehicle._np.getH())
+        return task.cont
 
     def _wait_for_ram_image(self, format, retries=100):
         # Rarely, we see dropped frames where an image is not available
@@ -596,9 +594,9 @@ class DrivableAreaGridMapSensor(CameraSensor):
         )
 
         self._resolution = resolution
-
-    def step(self):
-        self._follow_vehicle(camera_np=self._camera.camera_np)
+        self._task_id = f"{self._vehicle.id}-drivable-area-grid-map-camera-follow"
+        task = partial(self._follow_vehicle, camera_np=self._camera.camera_np)
+        self._showbase.taskMgr.add(task, self._task_id, sort=0, priority=100)
 
     def __call__(self) -> DrivableAreaGridMap:
         assert (
@@ -622,6 +620,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
         return DrivableAreaGridMap(data=image, metadata=metadata)
 
     def teardown(self):
+        self._showbase.taskMgr.remove(self._task_id)
         self._camera.teardown(self._showbase)
 
 
@@ -641,9 +640,9 @@ class OGMSensor(CameraSensor):
         )
 
         self._resolution = resolution
-
-    def step(self):
-        self._follow_vehicle(camera_np=self._camera.camera_np)
+        self._task_id = f"{self._vehicle.id}-ogm-camera-follow"
+        task = partial(self._follow_vehicle, camera_np=self._camera.camera_np)
+        self._showbase.taskMgr.add(task, self._task_id, sort=0, priority=100)
 
     def __call__(self) -> OccupancyGridMap:
         assert self._camera is not None, "OGM has not been initialized"
@@ -667,6 +666,7 @@ class OGMSensor(CameraSensor):
         return OccupancyGridMap(data=grid, metadata=metadata)
 
     def teardown(self):
+        self._showbase.taskMgr.remove(self._task_id)
         self._camera.teardown(self._showbase)
 
 
@@ -686,9 +686,9 @@ class RGBSensor(CameraSensor):
         )
 
         self._resolution = resolution
-
-    def step(self):
-        self._follow_vehicle(camera_np=self._camera.camera_np)
+        self._task_id = f"{self._vehicle.id}-rgb-camera-follow"
+        task = partial(self._follow_vehicle, camera_np=self._camera.camera_np)
+        self._showbase.taskMgr.add(task, self._task_id, sort=0, priority=100)
 
     def __call__(self) -> TopDownRGB:
         assert self._camera is not None, "RGB has not been initialized"
@@ -710,10 +710,11 @@ class RGBSensor(CameraSensor):
         return TopDownRGB(data=image, metadata=metadata)
 
     def teardown(self):
+        self._showbase.taskMgr.remove(self._task_id)
         self._camera.teardown(self._showbase)
 
 
-class LidarSensor(Sensor):
+class LidarSensor:
     def __init__(
         self,
         vehicle,
@@ -726,27 +727,29 @@ class LidarSensor(Sensor):
         self._bullet_client = bullet_client
         self._lidar_offset = np.array(lidar_offset)
         self._showbase = showbase
+        self._task_id = f"{self._vehicle.id}-lidar-follow"
 
         self._lidar = Lidar(
             self._vehicle.position + self._lidar_offset,
             sensor_params,
             self._bullet_client,
         )
+        self._showbase.taskMgr.add(
+            self._follow_vehicle, self._task_id, sort=0, priority=100
+        )
 
-    def step(self):
-        self._follow_vehicle()
-
-    def _follow_vehicle(self):
+    def _follow_vehicle(self, task):
         self._lidar.origin = self._vehicle.position + self._lidar_offset
+        return task.cont
 
     def __call__(self):
         return self._lidar.compute_point_cloud()
 
     def teardown(self):
-        pass
+        self._showbase.taskMgr.remove(self._task_id)
 
 
-class DrivenPathSensor(Sensor):
+class DrivenPathSensor:
     """Tracks the driven path as a series of positions (regardless if the vehicle is
     following the route or not). For performance reasons it only keeps the last
     N=max_path_length path segments.
@@ -791,7 +794,7 @@ class DrivenPathSensor(Sensor):
         return np.sum(np.sqrt(dist_array))
 
 
-class TripMeterSensor(Sensor):
+class TripMeterSensor:
     """Tracks distance travelled along the route (in KM). Kilometeres driven while
     off-route are not counted as part of the total.
     """
@@ -848,7 +851,7 @@ class TripMeterSensor(Sensor):
         pass
 
 
-class NeighborhoodVehiclesSensor(Sensor):
+class NeighborhoodVehiclesSensor:
     def __init__(self, vehicle, sim, radius=None):
         self._vehicle = vehicle
         self._sim = sim
@@ -867,7 +870,7 @@ class NeighborhoodVehiclesSensor(Sensor):
         pass
 
 
-class WaypointsSensor(Sensor):
+class WaypointsSensor:
     def __init__(self, vehicle, mission_planner, lookahead=50):
         self._vehicle = vehicle
         self._mission_planner = mission_planner
@@ -882,7 +885,7 @@ class WaypointsSensor(Sensor):
         pass
 
 
-class RoadWaypointsSensor(Sensor):
+class RoadWaypointsSensor:
     def __init__(self, vehicle, sim, horizon=50):
         self._vehicle = vehicle
         self._sim = sim
