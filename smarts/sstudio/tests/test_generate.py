@@ -4,7 +4,8 @@ import tempfile
 from xml.etree.ElementTree import ElementTree
 from typing import Sequence
 
-from smarts.sstudio import gen_traffic, gen_missions
+from smarts.core.tests.helpers.scenario import temp_scenario
+from smarts.sstudio import gen_traffic, gen_missions, gen_scenario
 from smarts.sstudio.types import (
     Traffic,
     Flow,
@@ -14,6 +15,9 @@ from smarts.sstudio.types import (
     LaneChangingModel,
     JunctionModel,
     Mission,
+    Scenario,
+    PredefinedType,
+    VehicleType,
 )
 
 
@@ -67,3 +71,25 @@ def test_generate_traffic(traffic: Traffic):
         print(sorted(items))
         print(sorted(generated_items))
         assert sorted(items) == sorted(generated_items)
+
+
+TEST_VEHICLE_ID = "test-vehicle-id"
+
+
+@pytest.fixture
+def predefined_type() -> PredefinedType:
+    return PredefinedType(vehicle_types=[VehicleType(TEST_VEHICLE_ID)])
+
+
+def test_generate_scenario_with_predefined_types(traffic, predefined_type):
+    with temp_scenario(name="straight", map="maps/6lane.net.xml") as scenario_root:
+        gen_scenario(
+            Scenario(traffic={"basic": traffic}, predefined_type=predefined_type),
+            output_dir=scenario_root,
+        )
+        with open(os.path.join(scenario_root, "traffic", "basic.rou.xml")) as f:
+            generated_items = [x for x in ElementTree(file=f).iter()]
+            ids_of_vehicle_type = [
+                e.attrib["id"] for e in generated_items if e.tag == "vType"
+            ]
+            assert TEST_VEHICLE_ID in ids_of_vehicle_type

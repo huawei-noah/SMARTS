@@ -270,18 +270,11 @@ class Route:
     via: Tuple[str, ...] = field(default_factory=tuple)
     """The ids of edges that must be included in the route between `begin` and `end`."""
 
-    route_id: str = None
-
     @property
     def id(self) -> str:
-        if self.route_id is not None:
-            return self.route_id
-        else:
-            return "route-{}-{}-{}-".format(
-                "_".join(map(str, self.begin)),
-                "_".join(map(str, self.end)),
-                hash(self),
-            )
+        return "route-{}-{}-{}-".format(
+            "_".join(map(str, self.begin)), "_".join(map(str, self.end)), hash(self),
+        )
 
     @property
     def edges(self):
@@ -570,38 +563,37 @@ class _ActorAndMission:
 class VehicleType:
     type_id: str
     """The id of the vehicle type."""
+    color: tuple = (0, 0, 1)
+    """The color of the vehicle type."""
     accel: float = 2.6
-    """The acceleration value of the actor."""
+    """The acceleration value of the vehicle type."""
     decel: float = 4.5
-    """The deceleration value of the actor."""
+    """The deceleration value of the vehicle type."""
     min_gap: float = 2.5
     """Minimum gap in meters."""
-    vehicle_type: str = "passenger"
+    gui_shape: str = "passenger"
     """The type of vehicle this actor uses. ("passenger", "bus", "coach", "truck", "trailer")"""
-    # tau: float = 1.0
-    # """The minimum time headway"""
-    # sigma: float = 0.5
-    # """The driver imperfection"""
-    # depart_speed: Union[float, str] = "max"
-    # """The starting speed of the actor"""
-    # emergency_decel: float = 4.5
-    # """maximum deceleration ability of vehicle in case of emergency"""
-    # speed: Distribution = Distribution(mean=1.0, sigma=0.1)
-    # """The speed distribution of this actor in m/s."""
-    # imperfection: Distribution = Distribution(mean=0.5, sigma=0)
-    # """Imperfection within range [0..1]"""
+    sigma: float = 0.5
+    """The driver imperfection."""
+    max_speed: float = 3
+    """The max speed."""
+    height: float = 1.5
+    """The vehicle's height [m]."""
+    length: float = 5
+    """The vehicle's length [m]."""
+    width: float = 2
+    """The vehicle's width [m]."""
 
 
 @dataclass
-class Preserved:
+class PredefinedType:
     vehicle_types: Sequence[VehicleType]
-    routes: Sequence[Route]
 
 
 @dataclass(frozen=True)
 class Scenario:
     traffic: Optional[Dict[str, Traffic]] = None
-    preserved: Optional[Dict[str, Preserved]] = None
+    predefined_type: Optional[PredefinedType] = None
     ego_missions: Optional[Sequence[Mission]] = None
     # e.g. { "turning_agents": ([actors], [missions]), ... }
     social_agent_missions: Optional[

@@ -175,7 +175,6 @@ class TrafficGenerator:
             # Remove the rou.alt.xml file
             if os.path.exists(route_alt_path):
                 os.remove(route_alt_path)
-
         return route_path
 
     def _writexml(self, traffic: types.Traffic, route_path: str):

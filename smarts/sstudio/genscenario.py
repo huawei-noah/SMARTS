@@ -32,6 +32,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Sequence, Tuple, Union
 from urllib.parse import urlparse
+from xml.etree.ElementTree import parse, Element, fromstring
 
 import sh
 from yattag import Doc, indent
@@ -58,24 +59,25 @@ def gen_scenario(
 
     output_dir = str(output_dir)
 
+    traffic_routes_files = []
     if scenario.traffic:
         for name, traffic in scenario.traffic.items():
-            gen_traffic(
+            path = gen_traffic(
                 scenario=output_dir,
                 traffic=traffic,
                 name=name,
                 seed=seed,
                 overwrite=ovewrite,
             )
-    if scenario.preserved:
-        for name, preserved in scenario.preserved.items():
-            gen_preserved(
-                scenario=output_dir,
-                preserved=preserved,
-                name=name,
-                seed=seed,
-                overwrite=ovewrite,
-            )
+            if path:
+                traffic_routes_files.append(path)
+
+    if scenario.predefined_type:
+        gen_predefined_type(
+            scenario=output_dir,
+            predefined_type=scenario.predefined_type,
+            merge_into=traffic_routes_files,
+        )
 
     if scenario.ego_missions:
         missions = []
@@ -148,14 +150,11 @@ def gen_traffic(
     if saved_path:
         logger.debug(f"Generated traffic for scenario={scenario}")
 
+    return saved_path
 
-def gen_preserved(
-    scenario: str,
-    preserved: types.Preserved,
-    name: str = None,
-    output_dir: str = None,
-    seed: int = 42,
-    overwrite: bool = False,
+
+def gen_predefined_type(
+    scenario: str, predefined_type: types.PredefinedType, merge_into: list,
 ):
     doc = Doc()
     doc.asis('<?xml version="1.0" encoding="UTF-8"?>')
@@ -164,27 +163,44 @@ def gen_preserved(
         ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
         ("xsi:noNamespaceSchemaLocation", "http://sumo.sf.net/xsd/routes_file.xsd"),
     ):
-        for v_type in preserved.vehicle_types:
+        for v_type in predefined_type.vehicle_types:
             doc.stag(
                 "vType",
                 id=v_type.type_id,
+                color=",".join(map(str, v_type.color)),
                 accel=v_type.accel,
                 decel=v_type.decel,
-                vClass=v_type.vehicle_type,
                 minGap=v_type.min_gap,
+                guiShape=v_type.gui_shape,
+                sigma=v_type.sigma,
+                maxSpeed=v_type.max_speed,
+                height=v_type.height,
+                length=v_type.length,
+                width=v_type.width,
             )
 
-        for route in preserved.routes:
-            doc.stag(
-                "route", id=route.id, edges=" ".join(route.edges),
-            )
+    vehicle_types = indent(
+        doc.getvalue(), indentation="    ", newline="\r\n", indent_text=True
+    )
+    if merge_into:
+        for f in merge_into:
+            _merge_predefined_types(f, vehicle_types)
+    else:
+        output_dir = os.path.join(scenario, "traffic")
+        route_path = os.path.join(output_dir, "{}.rou.xml".format("basic"))
+        with open(route_path, "w") as f:
+            f.write(vehicle_types)
 
-    output_dir = os.path.join(output_dir or scenario, "traffic")
-    route_path = os.path.join(output_dir, "{}.rou.xml".format(name))
-    with open(route_path, "w") as f:
-        f.write(
-            indent(doc.getvalue(), indentation="    ", newline="\r\n", indent_text=True)
-        )
+
+def _merge_predefined_types(f, vehicle_types):
+    doc = parse(f)
+    root = doc.getroot()
+    assert root.tag == "routes"
+
+    types = fromstring(vehicle_types).getchildren()
+    for v_type in types:
+        root.insert(0, v_type)
+    doc.write(f)
 
 
 def gen_social_agent_missions(
