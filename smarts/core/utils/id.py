@@ -36,7 +36,7 @@ class Id(str):
 class SocialAgentId(Id):
     """
     >>> SocialAgentId.new("keep-lane", group="all")
-    "social-agent-all-keep-lane"
+    'social-agent-all-keep-lane'
     >>> isinstance(SocialAgentId.new("keep-lane"), str)
     True
     """
