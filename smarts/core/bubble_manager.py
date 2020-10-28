@@ -83,15 +83,15 @@ class Bubble:
         return self._bubble.actor
 
     @property
-    def pinned_actor_id(self) -> str:
-        return self._bubble.pinned_actor_id
+    def follow_actor_id(self) -> str:
+        return self._bubble.follow_actor_id
 
     @property
     def limit(self):
         self._limit
 
     # XXX: In the case of travelling bubbles, the geometry and zone are moving
-    #      according to the pinned vehicle.
+    #      according to the follow vehicle.
     @property
     def geometry(self) -> Polygon:
         return self._cached_inner_geometry
@@ -116,10 +116,9 @@ class Bubble:
 
     @property
     def is_travelling(self):
-        return self._bubble.pinned_actor_id is not None
+        return self._bubble.follow_actor_id is not None
 
-    # TODO: Make this more efficient
-    def move_to_pinned_vehicle(self, vehicle: Vehicle):
+    def move_to_follow_vehicle(self, vehicle: Vehicle):
         x, y, _ = vehicle.position
 
         def _transform(geom):
@@ -132,8 +131,8 @@ class Bubble:
             # Now apply new transformation in "vehicle coordinate space"
             geom = translate(
                 geom,
-                xoff=self._bubble.pinned_offset[0],
-                yoff=self._bubble.pinned_offset[1],
+                xoff=self._bubble.follow_offset[0],
+                yoff=self._bubble.follow_offset[1],
             )
             geom = rotate(geom, vehicle.heading, (0, 0), use_radians=True)
             geom = translate(geom, xoff=x, yoff=y)
@@ -224,13 +223,13 @@ class BubbleManager:
         return self._active_bubbles()
 
     def _active_bubbles(self) -> Sequence[Bubble]:
-        # Filter out travelling bubbles that are missing their pinned vehicle
+        # Filter out travelling bubbles that are missing their follow vehicle
         def is_active(bubble):
             if not bubble.is_travelling:
                 return True
 
             vehicles = self._sim.vehicle_index.vehicles_by_actor_id(
-                bubble.pinned_actor_id
+                bubble.follow_actor_id
             )
             return len(vehicles) == 1
 
@@ -347,19 +346,19 @@ class BubbleManager:
     def _move_travelling_bubbles(self):
         for bubble in self._active_bubbles():
             if not bubble.is_travelling:
-                pass
+                continue
 
             # TODO: Handle if actor is terminated on not spawned yet. In those
             #       circumstances the bubble should not be present.
             vehicles = self._sim.vehicle_index.vehicles_by_actor_id(
-                bubble.pinned_actor_id
+                bubble.follow_actor_id
             )
             assert (
                 len(vehicles) <= 1
             ), "Travelling bubbles only support pinning to a single vehicle"
 
             if len(vehicles) == 1:
-                bubble.move_to_pinned_vehicle(vehicles[0])
+                bubble.move_to_follow_vehicle(vehicles[0])
 
     def _airlock_social_vehicle_with_social_agent(
         self, vehicle_id: str, social_agent_actor: SocialAgentActor,
