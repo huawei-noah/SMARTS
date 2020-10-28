@@ -366,7 +366,7 @@ class SumoTrafficSimulation:
             )
 
             # TODO: Vehicle Id should not be using prefixes this way
-            if Id.parse(vehicle_id).dtype == SocialAgentId.DTYPE:
+            if vehicle_id.startswith("social-agent"):
                 # This is based on ID convention
                 vehicle_color = social_agent_color
             else:
