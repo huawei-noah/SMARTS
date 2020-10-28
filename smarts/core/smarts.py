@@ -351,7 +351,8 @@ class SMARTS(ShowBase):
 
         # 1e6 is the default value for plane length and width.
         plane_scale = (
-            max(self._scenario.map_bounding_box[0], self._scenario.map_bounding_box[1]) / 1e6
+            max(self._scenario.map_bounding_box[0], self._scenario.map_bounding_box[1])
+            / 1e6
         )
         if not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
