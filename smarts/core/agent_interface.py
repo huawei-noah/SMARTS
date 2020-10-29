@@ -88,7 +88,7 @@ class RoadWaypoints:
     """
 
     # The distance in meters to include waypoints for (both behind and infront of the agent)
-    horizon: int = 50
+    horizon: int = 20
 
 
 @dataclass

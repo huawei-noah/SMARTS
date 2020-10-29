@@ -346,7 +346,7 @@ class SumoRoadNetwork:
         Returns:
             offset_into_lane: meters from start of lane
         """
-        lane_shape = lane.getShape(True)
+        lane_shape = lane.getShape(False)
 
         offset_into_lane = 0
         # SUMO geomhelper.polygonOffset asserts when the point is part of the shape.
@@ -360,7 +360,7 @@ class SumoRoadNetwork:
                 )
         else:
             offset_into_lane = sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
-                point, lane_shape, perpendicular=True
+                point, lane_shape, perpendicular=False
             )
 
         return offset_into_lane
