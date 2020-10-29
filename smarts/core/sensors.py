@@ -908,12 +908,14 @@ class RoadWaypointsSensor(Sensor):
         else:
             start_offset = lane.getLength() + overflow_offset
 
-        if start_offset < 0:
+        incoming_lanes = lane.getIncoming(onlyDirect=True)
+        if start_offset < 0 and len(incoming_lanes) > 0:
             paths = []
-            for lane in lane.getIncoming(onlyDirect=True):
+            for lane in incoming_lanes:
                 paths += self.paths_for_lane(lane, start_offset)
             return paths
         else:
+            start_offset = max(0, start_offset)
             wp_start = self._sim.road_network.world_coord_from_offset(
                 lane, start_offset
             )
