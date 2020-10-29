@@ -1,3 +1,4 @@
+# Reference: https://github.com/ray-project/ray/blob/master/rllib/contrib/maddpg/maddpg_policy.py
 import logging
 import gym
 import numpy as np
@@ -341,7 +342,7 @@ class MADDPG2TFPolicy(MADDPGPostprocessing, TFPolicy):
         activation=None,
         scope=None,
     ):
-        """ Build critic network
+        """Build critic network
 
         Args:
             obs_n: list, the observation placeholder list contains at least one.
@@ -404,7 +405,10 @@ class MADDPG2TFPolicy(MADDPGPostprocessing, TFPolicy):
         with tf1.variable_scope(scope, reuse=tf1.AUTO_REUSE) as scope:
             if use_state_preprocessor:
                 model = ModelCatalog.get_model(
-                    {"obs": obs, "is_training": self._get_is_training_placeholder(),},
+                    {
+                        "obs": obs,
+                        "is_training": self._get_is_training_placeholder(),
+                    },
                     obs_space,
                     act_space,
                     1,

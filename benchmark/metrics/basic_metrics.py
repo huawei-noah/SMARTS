@@ -133,7 +133,12 @@ class Metric:
 
             for i in range(len(collision)):
                 table(
-                    (agent_ids[i], collision[i], goal_distances[i], reach_goal_rate[i],)
+                    (
+                        agent_ids[i],
+                        collision[i],
+                        goal_distances[i],
+                        reach_goal_rate[i],
+                    )
                 )
 
         return res

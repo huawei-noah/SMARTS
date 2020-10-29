@@ -52,7 +52,10 @@ def postprocess_trajectory(
     last_r = 0.0
 
     train_batch = compute_advantages(
-        sample_batch, last_r, use_gae=False, use_critic=False,
+        sample_batch,
+        last_r,
+        use_gae=False,
+        use_critic=False,
     )
     return train_batch
 

@@ -32,7 +32,7 @@ def _get_policy_observation_space(wrapper, observation_space, config):
 
 
 def _make_rllib_config(config, mode="train"):
-    """ Generate agent configuration. `mode` can be `train` or 'evaluation', and the
+    """Generate agent configuration. `mode` can be `train` or 'evaluation', and the
     only difference on the generated configuration is the agent info adapter.
     """
 
@@ -131,7 +131,7 @@ def load_config(config_file, mode="train", framework="rllib"):
         ),
         list(u"-+0123456789."),
     )
-    base_dir = Path(__file__).absolute().parent.parent
+    base_dir = Path(__file__).expanduser().absolute().parent.parent.parent
     with open(base_dir / config_file, "r") as f:
         raw_config = yaml.safe_load(f)
 

@@ -34,8 +34,8 @@ class FrameStack(Wrapper):
         return res
 
     def _get_observations(self, frames):
-        """ Update frame stack with given single frames, 
-        then return nested array with given agent ids 
+        """Update frame stack with given single frames,
+        then return nested array with given agent ids
         """
 
         for k, frame in frames.items():

@@ -15,5 +15,6 @@ missions = [
 ]
 
 gen_scenario(
-    Scenario(ego_missions=missions), output_dir=Path(__file__).parent,
+    Scenario(ego_missions=missions),
+    output_dir=Path(__file__).parent,
 )

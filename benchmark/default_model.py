@@ -3,7 +3,6 @@ This file contain default network for rllib training,
 and can be used for policy evaluation
 """
 import pickle
-import tensorflow as tf
 
 from pathlib import Path
 
@@ -22,7 +21,7 @@ BASE_DIR = Path(__file__).expanduser().absolute().parent.parent
 
 
 class RLLibTFCheckpointPolicy(AgentPolicy):
-    def __init__(self, load_path, algorithm, policy_name, yaml_path):
+    def __init__(self, load_path, algorithm, agent_id, yaml_path):
         load_path = str(load_path)
         if algorithm == "ppo":
             from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy as LoadPolicy
@@ -53,7 +52,6 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
             raise ValueError(f"Unsupported algorithm: {algorithm}")
 
         yaml_path = BASE_DIR / yaml_path
-        load_path = BASE_DIR / f"log/results/run/{load_path}"
 
         config = load_config(yaml_path)
         observation_space = config["policy"][1]
@@ -61,12 +59,12 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
         pconfig = DEFAULT_CONFIG
 
         pconfig["model"].update(config["policy"][-1].get("model", {}))
-        pconfig["agent_id"] = policy_name
+        pconfig["agent_id"] = agent_id
 
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._sess = tf.Session(graph=tf.get_default_graph())
 
-        with tf.name_scope(policy_name):
+        with tf.name_scope(agent_id):
             # Observation space needs to be flattened before passed to the policy
             flat_obs_space = self._prep.observation_space
             policy = LoadPolicy(flat_obs_space, action_space, pconfig)
@@ -74,7 +72,7 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
             objs = pickle.load(open(load_path, "rb"))
             objs = pickle.loads(objs["worker"])
             state = objs["state"]
-            weights = state[policy_name]
+            weights = state[agent_id]
             policy.set_weights(weights)
 
         # for op in tf.get_default_graph().get_operations():
@@ -86,46 +84,43 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
             #   We use Tensor("split") instead of Tensor("add") to force
             #   PPO to be deterministic.
             self._input_node = self._sess.graph.get_tensor_by_name(
-                f"{policy_name}/observation:0"
+                f"{agent_id}/observation:0"
             )
             self._output_node = self._sess.graph.get_tensor_by_name(
-                f"{policy_name}/split:0"
+                f"{agent_id}/split:0"
             )
         elif algorithm == "dqn":
             self._input_node = self._sess.graph.get_tensor_by_name(
-                f"{policy_name}/observations:0"
+                f"{agent_id}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(
-                    f"{policy_name}/value_out/BiasAdd:0"
-                ),
+                self._sess.graph.get_tensor_by_name(f"{agent_id}/value_out/BiasAdd:0"),
                 axis=1,
             )
         elif algorithm == "maac":
             self._input_node = self._sess.graph.get_tensor_by_name(
-                f"{policy_name}/policy-inputs:0"
+                f"{agent_id}/policy-inputs:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(
-                    f"{policy_name}/logits_out/BiasAdd:0"
-                ),
+                self._sess.graph.get_tensor_by_name(f"{agent_id}/logits_out/BiasAdd:0"),
                 axis=1,
             )
         elif algorithm == "maddpg":
+            agent_idx = agent_id.split("_")[-1]
             self._input_node = self._sess.graph.get_tensor_by_name(
-                f"{policy_name}/obs_2:0"
+                f"{agent_id}/obs_{agent_idx}:0"
             )
             self._output_node = tf.argmax(
                 self._sess.graph.get_tensor_by_name(
-                    f"{policy_name}/actor/AGENT_2_actor_RelaxedOneHotCategorical_1/sample/AGENT_2_actor_exp/forward/Exp:0"
+                    f"{agent_id}/actor/AGENT_{agent_idx}_actor_RelaxedOneHotCategorical_1/sample/AGENT_2_actor_exp/forward/Exp:0"
                 )
             )
         else:
             self._input_node = self._sess.graph.get_tensor_by_name(
-                f"{policy_name}/observations:0"
+                f"{agent_id}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(f"{policy_name}/fc_out/BiasAdd:0"),
+                self._sess.graph.get_tensor_by_name(f"{agent_id}/fc_out/BiasAdd:0"),
                 axis=1,
             )
 
@@ -145,7 +140,10 @@ class RLLibTFSavedModelPolicy(AgentPolicy):
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._sess = tf.Session(graph=tf.Graph())
         tf.saved_model.load(
-            self._sess, export_dir=load_path, tags=["serve"], clear_devices=True,
+            self._sess,
+            export_dir=load_path,
+            tags=["serve"],
+            clear_devices=True,
         )
         # These tensor names were found by inspecting the trained model
         if algorithm == "PPO":
@@ -266,7 +264,10 @@ class BatchRLLibTFSavedModelPolicy(AgentPolicy):
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._sess = tf.Session(graph=tf.Graph())
         tf.saved_model.load(
-            self._sess, export_dir=load_path, tags=["serve"], clear_devices=True,
+            self._sess,
+            export_dir=load_path,
+            tags=["serve"],
+            clear_devices=True,
         )
         # These tensor names were found by inspecting the trained model
         if algorithm == "PPO":
