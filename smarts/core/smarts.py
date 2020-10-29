@@ -348,10 +348,22 @@ class SMARTS(ShowBase):
         client.setGravity(0, 0, -9.8)
 
         plane_path = self._scenario.plane_filepath
+
+        # 1e6 is the default value for plane length and width.
+        plane_scale = (
+            max(self._scenario.map_bounding_box[0], self._scenario.map_bounding_box[1])
+            / 1e6
+        )
         if not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
-        self._ground_bullet_id = client.loadURDF(plane_path, useFixedBase=True)
+
+        self._ground_bullet_id = client.loadURDF(
+            plane_path,
+            useFixedBase=True,
+            basePosition=self._scenario.map_bounding_box[2],
+            globalScaling=1.1 * plane_scale,
+        )
 
     def teardown(self):
         self._agent_manager.teardown()
