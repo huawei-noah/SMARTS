@@ -85,7 +85,7 @@ class TrajectoryTrackingController:
         if raw_throttle > 0:
             brake_norm, throttle_norm = 0, np.clip(raw_throttle, 0, 1)
         else:
-            brake_norm, throttle_norm = np.clip(raw_throttle, 0, 1), 0
+            brake_norm, throttle_norm = np.clip(-raw_throttle, 0, 1), 0
         longitudinal_velocity = vehicle.chassis.longitudinal_lateral_speed[0]
         # If longitudinal speed is less than 0.1 (m/s) then use 0.1 (m/s) as
         # the speed for state and input matrix calculations.
