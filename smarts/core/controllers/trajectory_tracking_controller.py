@@ -25,8 +25,6 @@ from numpy.linalg import matrix_power
 import numpy as np
 
 from scipy import signal
-from cvxopt import matrix, solvers
-from qpsolvers import solve_qp
 
 from smarts.core.chassis import AckermannChassis
 from smarts.core.utils.math import (
@@ -72,17 +70,22 @@ class TrajectoryTrackingController:
 
         raw_throttle = TrajectoryTrackingController.calculate_raw_throttle_feedback(
             vehicle=vehicle,
+            state=state,
             trajectory=trajectory,
-            velocity_gain=7.3,
+            velocity_gain=1,
             velocity_integral_gain=0,
             integral_velocity_error=0,
+            velocity_damping_gain=0,
+            windup_gain=0,
             traction_gain=8,
             speed_reduction_activation=True,
+            throttle_filter_constant=10,
+            dt_sec=dt_sec,
         )[0]
         if raw_throttle > 0:
             brake_norm, throttle_norm = 0, np.clip(raw_throttle, 0, 1)
         else:
-            brake_norm, throttle_norm = np.clip(-raw_throttle, 0, 1), 0
+            brake_norm, throttle_norm = np.clip(raw_throttle, 0, 1), 0
         longitudinal_velocity = vehicle.chassis.longitudinal_lateral_speed[0]
         # If longitudinal speed is less than 0.1 (m/s) then use 0.1 (m/s) as
         # the speed for state and input matrix calculations.
@@ -531,7 +534,7 @@ class TrajectoryTrackingController:
         # gains are as [lateral_error,lateral_velocity,heading_error,yaw_rate].
         # Increasing the lateral_error weight can cause oscillations which can
         # be damped out by increasing yaw_rate weight.
-        Q_tilde = np.kron(np.eye(prediction_horizon), 0.1 * np.diag([154, 0, 14, 150]))
+        Q_tilde = np.kron(np.eye(prediction_horizon), 0.1 * np.diag([354, 0, 14, 250]))
         # R_tilde contain the steering input weight.
         R_tilde = np.kron(np.eye(prediction_horizon), np.eye(1))
         matrix_H = (np.transpose(matrix_C)).dot(Q_tilde).dot(matrix_C) + R_tilde
@@ -539,17 +542,12 @@ class TrajectoryTrackingController:
 
         matrix_F1 = (np.transpose(matrix_C)).dot(Q_tilde).dot(matrix_T_tilde)
 
-        matrix_U = solvers.qp(
-            matrix(matrix_H),
-            matrix(
-                2
-                * np.matmul(
-                    matrix_F, np.array([[lateral_error], [0], [heading_error], [0]])
-                )
-                + 2 * np.reshape(matrix_F1, (-1, 1))
-            ),
-            matrix(np.eye(matrix_H.shape[0])),
-            matrix(np.ones((matrix_H.shape[0], 1))),
-        )
+        # This is the solution to the unconstrained optimization problem
+        # for the MPC.
+        unconstrained_optimal_solution = np.matmul(
+            np.linalg.inv(2 * matrix_H),
+            np.matmul(matrix_F, np.array([[lateral_error], [0], [heading_error], [0]]))
+            + np.reshape(matrix_F1, (-1, 1)),
+        )[0][0]
 
-        return np.clip(matrix_U["x"][0], -1, 1)
+        return np.clip(-unconstrained_optimal_solution, -1, 1)

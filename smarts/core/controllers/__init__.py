@@ -145,5 +145,8 @@ class ControllerState:
         if action_space == ActionSpaceType.Trajectory:
             return TrajectoryTrackingControllerState()
 
+        if action_space == ActionSpaceType.MPC:
+            return TrajectoryTrackingControllerState()
+
         # Other action spaces do not need a controller state object
         return None
