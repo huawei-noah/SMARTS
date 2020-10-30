@@ -1,3 +1,4 @@
+# Reference: https://github.com/starry-sky6688/StarCraft/blob/master/network/commnet.py
 import numpy as np
 import gym
 
@@ -91,7 +92,6 @@ class CommNet(TFModelV2):
                 mask = tf.tile(mask, [1, self.rnn_hidden_dim])
                 mask = tf.reshape(mask, (self.agent_num, -1))
                 c = c * tf.expand_dims(mask, 0)
-                # 因为现在所有agent的h都在最后一维，不能直接加。所以先扩展一维，相加后再去掉
                 c = tf.reshape(
                     c, (-1, self.agent_num, self.agent_num, self.rnn_hidden_dim)
                 )

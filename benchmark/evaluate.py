@@ -117,6 +117,8 @@ def main(
 
 
 def rollout(trainer, env_name, num_steps, num_episodes=0):
+    """ Reference: https://github.com/ray-project/ray/blob/master/rllib/rollout.py
+    """
     policy_agent_mapping = default_policy_agent_mapping
     if hasattr(trainer, "workers") and isinstance(trainer.workers, WorkerSet):
         env = trainer.workers.local_worker().env
