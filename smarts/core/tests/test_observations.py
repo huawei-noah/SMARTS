@@ -227,32 +227,37 @@ def test_observations(env, agent_spec):
         )
 
     # Check for roads
-    for lane_wps in observations[AGENT_ID].road_waypoints.lanes.values():
-        first_wp = lane_wps[0]
-        last_wp = lane_wps[-1]
+    for paths in observations[AGENT_ID].road_waypoints.lanes.values():
+        for path in paths:
+            first_wp = path[0]
+            last_wp = path[-1]
 
-        first_wp_pos = np.array([first_wp.pos[0], first_wp.pos[1], 0])
-        last_wp_pos = np.array([last_wp.pos[0], last_wp.pos[1], 0])
+            first_wp_pos = np.array([first_wp.pos[0], first_wp.pos[1], 0])
+            last_wp_pos = np.array([last_wp.pos[0], last_wp.pos[1], 0])
 
-        rgb_first_wp_x, rgb_first_wp_y = project_2d(lens, rgb.metadata, first_wp_pos)
-        rgb_last_wp_x, rgb_last_wp_y = project_2d(lens, rgb.metadata, last_wp_pos)
+            rgb_first_wp_x, rgb_first_wp_y = project_2d(
+                lens, rgb.metadata, first_wp_pos
+            )
+            rgb_last_wp_x, rgb_last_wp_y = project_2d(lens, rgb.metadata, last_wp_pos)
 
-        drivable_area_first_wp_x, drivable_area_first_wp_y = project_2d(
-            lens, drivable_area.metadata, first_wp_pos
-        )
-        drivable_area_last_wp_x, drivable_area_last_wp_y = project_2d(
-            lens, drivable_area.metadata, last_wp_pos
-        )
+            drivable_area_first_wp_x, drivable_area_first_wp_y = project_2d(
+                lens, drivable_area.metadata, first_wp_pos
+            )
+            drivable_area_last_wp_x, drivable_area_last_wp_y = project_2d(
+                lens, drivable_area.metadata, last_wp_pos
+            )
 
-        # Check if roads are rendered at the start and end of road waypoint paths
-        # RGB
-        assert np.count_nonzero(rgb.data[rgb_first_wp_x, rgb_first_wp_y, :])
-        assert np.count_nonzero(rgb.data[rgb_last_wp_x, rgb_last_wp_y, :])
+            # Check if roads are rendered at the start and end of road waypoint paths
+            # RGB
+            assert np.count_nonzero(rgb.data[rgb_first_wp_x, rgb_first_wp_y, :])
+            assert np.count_nonzero(rgb.data[rgb_last_wp_x, rgb_last_wp_y, :])
 
-        # Drivable Area Grid Map
-        assert np.count_nonzero(
-            drivable_area.data[drivable_area_first_wp_x, drivable_area_first_wp_y, :]
-        )
-        assert np.count_nonzero(
-            drivable_area.data[drivable_area_last_wp_x, drivable_area_last_wp_y, :]
-        )
+            # Drivable Area Grid Map
+            assert np.count_nonzero(
+                drivable_area.data[
+                    drivable_area_first_wp_x, drivable_area_first_wp_y, :
+                ]
+            )
+            assert np.count_nonzero(
+                drivable_area.data[drivable_area_last_wp_x, drivable_area_last_wp_y, :]
+            )

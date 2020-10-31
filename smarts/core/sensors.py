@@ -497,7 +497,9 @@ class CameraSensor(Sensor):
         fb_props = FrameBufferProperties()
         fb_props.setRgbColor(True)
         fb_props.setRgbaBits(8, 8, 8, 1)
-        fb_props.setDepthBits(0)
+        # XXX: Though we don't need the depth buffer returned, setting this to 0
+        #      causes undefined behaviour where the ordering of meshes is random.
+        fb_props.setDepthBits(8)
 
         buffer = self._showbase.win.engine.makeOutput(
             self._showbase.pipe,
@@ -895,28 +897,36 @@ class RoadWaypointsSensor(Sensor):
         lane_paths = {}
         for edge in road_edges.forward_edges + road_edges.oncoming_edges:
             for lane in edge.getLanes():
-                offset = self._sim.road_network.offset_into_lane(
-                    lane, self._vehicle.position[:2]
-                )
-                start_offset = max(0 + 1e-3, offset - self._horizon)
-                end_offset = min(lane.getLength() - 1e-3, offset + self._horizon)
-                wp_start = self._sim.road_network.world_coord_from_offset(
-                    lane, start_offset
-                )
-
-                wps_to_lookahead = int(
-                    (end_offset - start_offset) / self._sim.waypoints.spacing
-                )
-                paths = self._sim.waypoints.waypoint_paths_on_lane_at(
-                    point=wp_start,
-                    lane_id=lane.getID(),
-                    lookahead=wps_to_lookahead,
-                    filter_edge_ids=[edge.getID()],
-                )
-                assert len(paths) == 1
-                lane_paths[lane.getID()] = paths[0]
+                lane_paths[lane.getID()] = self.paths_for_lane(lane)
 
         return RoadWaypoints(lanes=lane_paths)
+
+    def paths_for_lane(self, lane, overflow_offset=None):
+        if overflow_offset is None:
+            offset = self._sim.road_network.offset_into_lane(
+                lane, self._vehicle.position[:2]
+            )
+            start_offset = offset - self._horizon
+        else:
+            start_offset = lane.getLength() + overflow_offset
+
+        incoming_lanes = lane.getIncoming(onlyDirect=True)
+        if start_offset < 0 and len(incoming_lanes) > 0:
+            paths = []
+            for lane in incoming_lanes:
+                paths += self.paths_for_lane(lane, start_offset)
+            return paths
+        else:
+            start_offset = max(0, start_offset)
+            wp_start = self._sim.road_network.world_coord_from_offset(
+                lane, start_offset
+            )
+
+            wps_to_lookahead = self._horizon * 2
+            paths = self._sim.waypoints.waypoint_paths_on_lane_at(
+                point=wp_start, lane_id=lane.getID(), lookahead=wps_to_lookahead,
+            )
+            return paths
 
     def teardown(self):
         pass
