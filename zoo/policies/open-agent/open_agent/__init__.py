@@ -4,7 +4,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import register
 
 
-def make_agent_spec(
+def entrypoint(
     gains={
         "theta": 3.0,
         "position": 4.0,
@@ -33,4 +33,4 @@ def make_agent_spec(
     )
 
 
-register(locator="open_agent-v0", entry_point=make_agent_spec)
+register(locator="open_agent-v0", entry_point=entrypoint)

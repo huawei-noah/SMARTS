@@ -33,7 +33,7 @@ setup(
     description="An Autonomous Vehicle Agent for SMARTS built using OpEn",
     version=VERSION,
     packages=["open_agent"],
-    install_requires=["opengen==0.6.4", "smarts"],
-    package_data={"open_agent": ["hyper_params.json"]},
+    install_requires=["opengen==0.6.4", "smarts", "wheel"],
+    package_data={"open_agent": ["config.json", "open_agent_solver.so"]},
     cmdclass={"bdist_wheel": bdist_wheel},
 )
