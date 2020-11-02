@@ -126,7 +126,7 @@ def test_lane_following_controller(smarts, agent_spec, scenarios):
     assert agent_obs.events.reached_goal, "Didn't reach goal"
     assert min(speed) > 5 / 3.6, "Speed dropped below minimum (5)"
     assert sum(speed) / len(speed) > 5, "Average speed below maximum (5)"
-    assert max(lateral_error) < 2, "Lateral error exceeded maximum (2)"
+    assert max(lateral_error) < 2.01, "Lateral error exceeded maximum (2)"
     assert (
         sum(lateral_error) / len(lateral_error) < 1
     ), "Average lateral error exceeded maximum (1)"
