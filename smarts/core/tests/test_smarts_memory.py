@@ -2,12 +2,14 @@ import gc
 import time
 
 import gym
-from pympler import tracker, muppy, summary, classtracker
+from pympler import muppy
 import pytest
 
 from smarts.core.utils.episodes import episodes
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.agent import AgentSpec, AgentPolicy
+
+MEMORY_GROWTH_LIMIT = 5e4
 
 
 @pytest.fixture
@@ -17,12 +19,15 @@ def agent_id():
 
 @pytest.fixture
 def primative_scenarios():
-    return ["scenarios/intersections/2lane", "scenarios/cloverleaf"]
+    return ["scenarios/intersections/2lane"]
 
 
 @pytest.fixture
 def social_agent_scenarios():
-    return ["scenarios/intersections/4lane", "scenarios/intersections/6lane"]
+    return [
+        "scenarios/intersections/4lane",
+        # "scenarios/intersections/6lane",
+    ]
 
 
 @pytest.fixture
@@ -103,40 +108,37 @@ def test_smarts_basic_memory_cleanup(agent_id, seed, primative_scenarios, agent_
     gc.collect()
     initial_size = muppy.get_size(muppy.get_objects())
 
-    gc.collect()
-    try:
-        _memory_buildup(agent_id, seed, primative_scenarios, *agent_params)
-    except Exception:
-        # Not testing for crashes
-        pass
+    _memory_buildup(agent_id, seed, primative_scenarios, *agent_params)
 
     gc.collect()
     all_objects = muppy.get_objects()
     end_size = muppy.get_size(all_objects)
-
     # Check for a major leak
-    assert end_size - initial_size < 5e4
+    assert (
+        end_size - initial_size < MEMORY_GROWTH_LIMIT
+    ), f"End size delta {end_size - initial_size}"
 
 
 def test_smarts_repeated_runs_memory_cleanup(
-    agent_id, seed, social_agent_scenarios, agent_type
+    agent_id, seed, primative_scenarios, agent_type
 ):
     # Run once to initialize globals and test to see if smarts is working
-    _memory_buildup(agent_id, seed, social_agent_scenarios, 1, *agent_type)
+    _memory_buildup(agent_id, seed, primative_scenarios, 1, *agent_type)
 
     gc.collect()
     initial_size = muppy.get_size(muppy.get_objects())
-    gc.collect()
 
     for i in range(100):
-        _memory_buildup(agent_id, seed, social_agent_scenarios, 1, *agent_type)
+        _memory_buildup(agent_id, seed, primative_scenarios, 1, *agent_type)
 
     gc.collect()
     all_objects = muppy.get_objects()
     end_size = muppy.get_size(all_objects)
 
-    # Check for a major leak
-    assert end_size - initial_size < 5e5
+    # This "should" be roughly the same as `test_smarts_basic_memory_cleanup`
+    assert (
+        end_size - initial_size < MEMORY_GROWTH_LIMIT
+    ), f"End size delta {end_size - initial_size}"
 
 
 def test_smarts_fast_reset_memory_cleanup(agent_id, seed, social_agent_scenarios):
@@ -146,29 +148,26 @@ def test_smarts_fast_reset_memory_cleanup(agent_id, seed, social_agent_scenarios
 
     gc.collect()
     initial_size = muppy.get_size(muppy.get_objects())
+
+    for _ in range(100):
+        _memory_buildup(
+            agent_id,
+            seed,
+            social_agent_scenarios,
+            1,
+            None,
+            agent_type,
+            max_episode_steps=2,
+        )
+
     gc.collect()
-
-    for _ in range(200):
-        try:
-            _memory_buildup(
-                agent_id,
-                seed,
-                social_agent_scenarios,
-                1,
-                None,
-                agent_type,
-                max_episode_steps=2,
-            )
-        except Exception:
-            # Not testing for crashes
-            pass
-        gc.collect()
-
     all_objects = muppy.get_objects()
     end_size = muppy.get_size(all_objects)
 
     # Check for a major leak
-    assert end_size - initial_size < 5e5
+    assert (
+        end_size - initial_size < MEMORY_GROWTH_LIMIT
+    ), f"End size delta {end_size - initial_size}"
 
 
 def test_smarts_social_agent_scenario_memory_cleanup(
@@ -179,7 +178,6 @@ def test_smarts_social_agent_scenario_memory_cleanup(
 
     gc.collect()
     initial_size = muppy.get_size(muppy.get_objects())
-    gc.collect()
 
     _memory_buildup(agent_id, seed, social_agent_scenarios, 100, *agent_type)
 
@@ -187,4 +185,6 @@ def test_smarts_social_agent_scenario_memory_cleanup(
     all_objects = muppy.get_objects()
     end_size = muppy.get_size(all_objects)
 
-    assert end_size - initial_size < 5e5
+    assert (
+        end_size - initial_size < MEMORY_GROWTH_LIMIT
+    ), f"End size delta {end_size - initial_size}"
