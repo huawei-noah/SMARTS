@@ -29,7 +29,7 @@ bubbles = [
         zone=t.MapZone(start=("edge-west-WE", 0, 50), length=10, n_lanes=1),
         margin=2,
         actor=t.SocialAgentActor(
-            name="zoo-agent", agent_locator=f"{agent_prefabs}:zoo-agent-v0",
+            name="open-agent", agent_locator="open_agent:open_agent-v0"
         ),
     ),
     t.Bubble(
@@ -47,11 +47,8 @@ ego_missions = [t.EndlessMission(begin=("edge-south-SN", 1, 20))]
 social_agent_missions = {
     "all": (
         [
-            t.SocialAgentActor.from_zoo(
-                name="rl-agent",
-                url="http://localhost:8080/rl-agent",
-                package="rl_agent",
-                version="0.1",
+            t.SocialAgentActor(
+                name="open-agent", agent_locator="open_agent:open_agent-v0"
             )
         ],
         [

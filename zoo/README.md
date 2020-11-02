@@ -11,15 +11,20 @@ scl zoo build <policy>
 ```
 
 **Use** (in scenarios)
+Under your scenario directory, create a requirements.txt
+```
+# we'll be serving packages from a local pip index
+--extra-index-url http://localhost:8080
+open-agent==0.1.186
+```
 
+Then in your scenario.py:
 ```python
 # */scenario.py (example)
 # ...
-t.SocialAgentActor.from_zoo(
-    name="open_agent",
-    url="http://localhost:8080/open_agent",
-    package="open_agent",
-    version="0.1",
+t.SocialAgentActor(
+    name="my-open-agent",
+    agent_locator="open_agent:open_agent-v0"
 )
 # ...
 ```

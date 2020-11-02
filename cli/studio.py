@@ -54,27 +54,47 @@ def _build_single_scenario(clean, scenario):
     if clean:
         _clean(scenario)
 
-    map_net = f"{scenario}/map.net.xml"
-    map_glb = f"{scenario}/map.glb"
-    generate_glb_from_sumo_network(map_net, map_glb)
+    scenario_root = Path(scenario)
+    map_net = scenario_root / "map.net.xml"
+    map_glb = scenario_root / "map.glb"
+    generate_glb_from_sumo_network(str(map_net), str(map_glb))
 
-    scenario_py = f"{scenario}/scenario.py"
-    if Path(scenario_py).exists():
+    requirements_txt = scenario_root / "requirements.txt"
+    if requirements_txt.exists():
         import zoo.policies
 
         with pkg_resources.path(zoo.policies, "") as path:
             # Serve policies through the static file server, then kill after the
-            # scenario has been created
-            proc = subprocess.Popen(
+            # we've installed scenario requirements
+            pip_index_proc = subprocess.Popen(
                 ["twistd", "-n", "web", "--path", path],
                 # Hide output to keep display simple
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
             )
+
+            pip_install_cmd = [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "-r",
+                str(requirements_txt),
+            ]
+
+            click.echo(
+                f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'"
+            )
+
             try:
-                subprocess.check_call([sys.executable, scenario_py])
+                subprocess.check_call(pip_install_cmd, stdout=subprocess.DEVNULL)
             finally:
-                proc.terminate()
+                pip_index_proc.terminate()
+                pip_index_proc.wait()
+
+    scenario_py = scenario_root / "scenario.py"
+    if scenario_py.exists():
+        subprocess.check_call([sys.executable, scenario_py])
 
 
 @scenario_cli.command(

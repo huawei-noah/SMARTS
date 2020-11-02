@@ -26,7 +26,6 @@ from dataclasses import dataclass, field
 from typing import Sequence, Tuple, Dict, Any, Union, Optional
 
 import numpy as np
-from scipy.stats import truncnorm
 from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 
@@ -129,6 +128,8 @@ class TruncatedDistribution:
             self.a, self.b = self.b, self.a
 
     def sample(self):
+        from scipy.stats import truncnorm
+
         return truncnorm.rvs(self.a, self.b, loc=self.loc, scale=self.scale)
 
 
@@ -201,26 +202,6 @@ class SocialAgentActor(Actor):
     """
     initial_speed: float = None
     """Set the initial speed, defaults to 0."""
-
-    @classmethod
-    def from_zoo(
-        cls, name, url, package, version, initial_speed=None, policy_kwargs=None
-    ):
-        """A convenience factory method for using policies from the policy zoo. Example,
-
-        SocialAgentActor.from_zoo(
-            name="open-agent",
-            url="http://localhost:8080/open-agent",
-            package="open_agent",
-            version="0.1",
-        )
-        """
-        return cls(
-            name=name,
-            agent_locator=f"{package}:{url}?v={version}",
-            initial_speed=initial_speed,
-            policy_kwargs=policy_kwargs or {},
-        )
 
 
 @dataclass(frozen=True)
