@@ -18,8 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # =========================
-# Derived from rllib maddpg_policy
 # Original version: https://github.com/ray-project/ray/blob/master/rllib/contrib/maddpg/maddpg_policy.py
+# See ray in THIRD_PARTY_OPEN_SOURCE_SOFTWARE_NOTICE
 import logging
 import gym
 import numpy as np
