@@ -1,9 +1,9 @@
 import gc
-import time
 
 import gym
-from pympler import muppy
 import pytest
+
+from pympler import muppy
 
 from smarts.core.utils.episodes import episodes
 from smarts.core.agent_interface import AgentInterface, AgentType
