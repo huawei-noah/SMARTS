@@ -231,39 +231,13 @@ class VehicleIndex:
     ):
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
         if recreate:
-            # TODO: Fix the SUMO lane changing issue
-            # There exists a SUMO connection error bug that occurs
+            # TODO: Fix the SUMO lane changing issue:
+            #       There exists a SUMO connection error bug that occurs
             #       during lange changing when we hijack/trap a SUMO vehicle. Forcing
             #       vehicle recreation seems to address the problem. Ideally we discover
             #       the underlaying problem and can go back to the preferred implementation
             #       of simply swapping control of a persistent vehicle.
-            # Get the old state values from the shadowed vehicle
-            agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-            assert (
-                agent_interface is not None
-            ), f"Missing agent_interface for agent_id={agent_id}"
-            sensor_state = self._sensor_states[vehicle_id]
-            controller_state = self._controller_states[vehicle_id]
-            mission_planner = sensor_state.mission_planner
-            # XXX: Recreate is presently broken for bubbles because it impacts the
-            #      sumo traffic sim sync(...) logic in how it detects a vehicle as
-            #      being hijacked vs joining. Presently it's still used for trapping.
-            trainable = True
-            return self.build_agent_vehicle(
-                sim,
-                agent_id,
-                agent_interface,
-                mission_planner,
-                sim.scenario.vehicle_filepath,
-                sim.scenario.tire_parameters_filepath,
-                # BUG: Both the TrapManager and BubbleManager call into this method but the
-                #      trainable field below always assumes trainable=True
-                trainable,
-                sim.scenario.surface_patches,
-                sim.scenario.controller_parameters_filepath,
-                boid=boid,
-                vehicle_id=vehicle_id,
-            )
+            return self.recreate_agent_vehicle(sim, agent_id, vehicle_id, boid)
 
         vehicle = self._vehicles[vehicle_id]
         ackermann_chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
@@ -310,6 +284,41 @@ class VehicleIndex:
 
         return vehicle
 
+    def recreate_agent_vehicle(
+        self,
+        sim,
+        agent_id,
+        vehicle_id,
+        boid,
+    ):
+        # Get the old state values from the shadowed vehicle
+        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+        assert (
+            agent_interface is not None
+        ), f"Missing agent_interface for agent_id={agent_id}"
+        sensor_state = self._sensor_states[vehicle_id]
+        controller_state = self._controller_states[vehicle_id]
+        mission_planner = sensor_state.mission_planner
+        # XXX: Recreate is presently broken for bubbles because it impacts the
+        #      sumo traffic sim sync(...) logic in how it detects a vehicle as
+        #      being hijacked vs joining. Presently it's still used for trapping.
+        trainable = True
+        return self.build_agent_vehicle(
+            sim,
+            agent_id,
+            agent_interface,
+            mission_planner,
+            sim.scenario.vehicle_filepath,
+            sim.scenario.tire_parameters_filepath,
+            # BUG: Both the TrapManager and BubbleManager call into this method but the
+            #      trainable field below always assumes trainable=True
+            trainable,
+            sim.scenario.surface_patches,
+            sim.scenario.controller_parameters_filepath,
+            boid=boid,
+            vehicle_id=vehicle_id,
+        )
+
     # TODO: Collapse build_social_vehicle and build_agent_vehicle
     def build_agent_vehicle(
         self,
@@ -322,9 +331,9 @@ class VehicleIndex:
         trainable,
         surface_patches,
         controller_filepath,
-        vehicle_id=None,
         initial_speed=None,
         boid=False,
+        vehicle_id=None,
     ):
         vehicle_exists = vehicle_id and vehicle_id in self._vehicles
 
