@@ -287,7 +287,6 @@ class BubbleManager:
         # Calculate latest cursors
         cursors = []
         for vehicle_id, vehicle in index_new.vehicleitems():
-            # TODO: This position is the current position
             for bubble in self._bubbles:
                 cursors.append(
                     Cursor.from_pos(
