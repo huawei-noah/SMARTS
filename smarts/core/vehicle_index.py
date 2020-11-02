@@ -285,11 +285,7 @@ class VehicleIndex:
         return vehicle
 
     def recreate_agent_vehicle(
-        self,
-        sim,
-        agent_id,
-        vehicle_id,
-        boid,
+        self, sim, agent_id, vehicle_id, boid,
     ):
         # Get the old state values from the shadowed vehicle
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
