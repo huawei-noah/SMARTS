@@ -47,17 +47,25 @@ import cloudpickle
 
 # front-load some expensive imports as to not block the simulation
 
-import pybullet
-import smarts.core.utils.sumo
-import smarts.core.sumo_road_network
-import numpy
-import sklearn
-import shapely
-import scipy
-import trimesh
-import panda3d
-import gym
-import ray
+modules = [
+    "pybullet",
+    "smarts.core.utils.sumo",
+    "smarts.core.sumo_road_network",
+    "numpy",
+    "sklearn",
+    "shapely",
+    "scipy",
+    "trimesh",
+    "panda3d",
+    "gym",
+    "ray",
+]
+
+for mod in modules:
+    try:
+        __import__(mod)
+    except ImportError:
+        pass
 
 # end front-loaded imports
 
