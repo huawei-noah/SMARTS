@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+from copy import copy, deepcopy
 from io import StringIO
 from enum import IntEnum
 from typing import NamedTuple
@@ -45,8 +46,12 @@ class _ControlEntity(NamedTuple):
     # Applies to shadowing and controlling actor
     # TODO: Consider moving this to an _ActorType field
     is_boid: bool
+    position: np.ndarray
 
 
+# TODO: Consider wrapping the controlled_by recarry into a sep state object
+#       VehicleIndex can perform operations on. Then we can do diffs of that
+#       recarray with subset queries.
 class VehicleIndex:
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -60,6 +65,64 @@ class VehicleIndex:
 
         # {vehicle_id: <SensorState>}
         self._sensor_states = {}
+
+    @classmethod
+    def identity(cls):
+        return cls()
+
+    def __sub__(self, other: "VehicleIndex") -> "VehicleIndex":
+        vehicle_ids = set(self._controlled_by["vehicle_id"]) - set(
+            other._controlled_by["vehicle_id"]
+        )
+        return self._subset(vehicle_ids)
+
+    def __and__(self, other: "VehicleIndex") -> "VehicleIndex":
+        vehicle_ids = set(self._controlled_by["vehicle_id"]) & set(
+            other._controlled_by["vehicle_id"]
+        )
+        return self._subset(vehicle_ids)
+
+    def _subset(self, vehicle_ids):
+        index = VehicleIndex()
+        assert self.vehicle_ids.issuperset(vehicle_ids)
+
+        indices = np.isin(
+            self._controlled_by["vehicle_id"], list(vehicle_ids), assume_unique=True
+        )
+        index._controlled_by = self._controlled_by[indices]
+        index._vehicles = {id_: self._vehicles[id_] for id_ in vehicle_ids}
+        index._controller_states = {
+            id_: self._controller_states[id_]
+            for id_ in vehicle_ids
+            if id_ in self._controller_states
+        }
+        index._sensor_states = {
+            id_: self._sensor_states[id_]
+            for id_ in vehicle_ids
+            if id_ in self._sensor_states
+        }
+        return index
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+
+        dict_ = copy(self.__dict__)
+        shallow = ["_vehicles", "_sensor_states", "_controller_states"]
+        for k in shallow:
+            v = dict_.pop(k)
+            setattr(result, k, copy(v))
+
+        for k, v in dict_.items():
+            setattr(result, k, deepcopy(v, memo))
+
+        return result
+
+    @property
+    def vehicle_ids(self):
+        vehicle_ids = self._controlled_by["vehicle_id"]
+        return set(vehicle_ids)
 
     @property
     def agent_vehicle_ids(self):
@@ -90,6 +153,9 @@ class VehicleIndex:
     @property
     def vehicles(self):
         return list(self._vehicles.values())
+
+    def vehicleitems(self):
+        return self._vehicles.items()
 
     def vehicle_by_id(self, vehicle_id):
         return self._vehicles[vehicle_id]
@@ -125,6 +191,14 @@ class VehicleIndex:
 
         return vehicle_ids
 
+    def sync(self):
+        for vehicle_id, vehicle in self._vehicles.items():
+            v_index = self._controlled_by["vehicle_id"] == vehicle_id
+            entity = _ControlEntity(*self._controlled_by[v_index][0])
+            self._controlled_by[v_index] = tuple(
+                entity._replace(position=vehicle.position)
+            )
+
     def teardown(self):
         self._controlled_by = self._build_empty_controlled_by()
 
@@ -135,6 +209,8 @@ class VehicleIndex:
         self._controller_states = {}
         self._sensor_states = {}
 
+    # TODO: We should not be supporting this column-interface. That's leaking an
+    #       implementation detail and means a very brittle API.
     def vehicle_indices_by_actor_id(self, actor_id, columns):
         """Returns given vehicle index values for the given actor ID as list of columns.
 
@@ -180,6 +256,13 @@ class VehicleIndex:
         ]["shadow_actor_id"]
 
         return shadow_actor_ids[0] if shadow_actor_ids else None
+
+    def vehicle_position(self, vehicle_id):
+        positions = self._controlled_by[
+            self._controlled_by["vehicle_id"] == vehicle_id
+        ]["position"]
+
+        return positions[0] if len(positions) > 0 else None
 
     def prepare_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, mission_planner, boid=False
@@ -420,6 +503,7 @@ class VehicleIndex:
             actor_type=_ActorType.Agent,
             shadow_actor_id="",
             is_boid=boid,
+            position=vehicle.position,
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
@@ -441,6 +525,7 @@ class VehicleIndex:
             actor_type=_ActorType.Social,
             shadow_actor_id="",
             is_boid=False,
+            position=vehicle.position,
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
@@ -466,6 +551,7 @@ class VehicleIndex:
                 #      We can add an shadow_actor_type when needed
                 ("shadow_actor_id", "O"),
                 ("is_boid", "B"),
+                ("position", "O"),
             ],
         )
 
