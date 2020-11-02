@@ -213,7 +213,8 @@ class SMARTS(ShowBase):
         provider_state = self._step_providers(all_agent_actions, dt)
 
         # 3. Step bubble manager and trap manager
-        self._bubble_manager.step()
+        self.vehicle_index.sync()
+        self._bubble_manager.step(self)
         self._trap_manager.step(self)
 
         # 4. Calculate observation and reward

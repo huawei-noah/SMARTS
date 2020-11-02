@@ -175,7 +175,7 @@ class AgentManager:
                 }
             else:
                 assert len(indices["vehicle_id"]) == 1, (
-                    "Unless this vehicle is part of a boid then we should only have a"
+                    "Unless this vehicle is part of a boid then we should only have a "
                     f"single vehicle under agent_id={agent_id}\n "
                     f"(vehicle_ids={indices['vehicle_id']})"
                 )

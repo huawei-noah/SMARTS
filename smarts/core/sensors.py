@@ -422,7 +422,7 @@ class Sensors:
         return closest_edges[on_route_edge_index]
 
     @staticmethod
-    @lru_cache(maxsize=100)
+    @lru_cache(maxsize=128)
     def _oncoming_traffic_edge(instance_id, edge):
         from_node = edge.getFromNode()
         to_node = edge.getToNode()
