@@ -40,7 +40,7 @@ import {
 import { GLTFLoader } from "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import SceneComponent from "babylonjs-hook";
 
-import { Camera } from "./components.js";
+import { Camera, Vehicles } from "./components.js";
 
 import { ActorTypes } from "../enums.js";
 import AgentScores from "./agent_scores";
@@ -66,13 +66,13 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
   const [socialDrivenPathModel, setSocialDrivenPathModel] = useState(null);
 
   const [mapMeshes, setMapMeshes] = useState([]);
-  const [vehicleMeshes, setVehicleMeshes] = useState({}); // {<id>: <mesh>}
-  const [agentLabelGeometry, setAgentLabelGeometry] = useState({});
+  // const [vehicleMeshes, setVehicleMeshes] = useState({}); // {<id>: <mesh>}
+  // const [agentLabelGeometry, setAgentLabelGeometry] = useState({});
   const [bubbleGeometry, setBubbleGeometry] = useState([]); // List of mesh objects
   const [missionGeometry, setMissionGeometry] = useState([]);
   const [waypointGeometries, setWaypointGeometries] = useState([]);
   const [drivenPathGeometries, setDrivenPathGeometries] = useState({});
-  const [vehicleMeshTemplates, setVehicleMeshTemplates] = useState({});
+  // const [vehicleMeshTemplates, setVehicleMeshTemplates] = useState({});
 
   const [roadNetworkBbox, setRoadNetworkBbox] = useState([]);
   const [laneDividerPos, setLaneDividerPos] = useState([]);
@@ -88,14 +88,14 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
     scores: [],
   });
 
-  let meshesLoaded = () => {
-    for (const [_, mesh] of Object.entries(vehicleMeshTemplates)) {
-      if (mesh == null) {
-        return false;
-      }
-    }
-    return true;
-  };
+  // let meshesLoaded = () => {
+  //   for (const [_, mesh] of Object.entries(vehicleMeshTemplates)) {
+  //     if (mesh == null) {
+  //       return false;
+  //     }
+  //   }
+  //   return true;
+  // };
 
   // Parse extra data attached in glb file
   function LoadGLTFExtras(loader) {
@@ -225,72 +225,72 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
   //   }
   // }, [egoView]);
 
-  // Load mesh asynchronously
-  useEffect(() => {
-    if (scene == null) {
-      return;
-    }
+  // // Load mesh asynchronously
+  // useEffect(() => {
+  //   if (scene == null) {
+  //     return;
+  //   }
 
-    let vehicleRootUrl = `${client.endpoint.origin}/assets/models/`;
+  //   let vehicleRootUrl = `${client.endpoint.origin}/assets/models/`;
 
-    for (const [vehicleFilename, meshTemplate] of Object.entries(
-      vehicleMeshTemplates
-    )) {
-      if (meshTemplate != null) {
-        continue;
-      }
+  //   for (const [vehicleFilename, meshTemplate] of Object.entries(
+  //     vehicleMeshTemplates
+  //   )) {
+  //     if (meshTemplate != null) {
+  //       continue;
+  //     }
 
-      SceneLoader.ImportMesh(
-        "",
-        vehicleRootUrl,
-        vehicleFilename,
-        scene,
-        (meshes) => {
-          let rootMesh = meshes[0];
-          rootMesh.isVisible = false;
-          let rootMeshMin = new Vector3();
-          let rootMeshMax = new Vector3();
-          let childMeshes = rootMesh.getChildMeshes();
-          for (let i = 0; i < childMeshes.length; i++) {
-            let child = childMeshes[i];
-            child.isVisible = false;
+  //     SceneLoader.ImportMesh(
+  //       "",
+  //       vehicleRootUrl,
+  //       vehicleFilename,
+  //       scene,
+  //       (meshes) => {
+  //         let rootMesh = meshes[0];
+  //         rootMesh.isVisible = false;
+  //         let rootMeshMin = new Vector3();
+  //         let rootMeshMax = new Vector3();
+  //         let childMeshes = rootMesh.getChildMeshes();
+  //         for (let i = 0; i < childMeshes.length; i++) {
+  //           let child = childMeshes[i];
+  //           child.isVisible = false;
 
-            let material = new StandardMaterial(
-              `material-${vehicleFilename}`,
-              scene
-            );
-            material.backFaceCulling = false;
-            material.specularColor = new Color3(0, 0, 0);
-            if (child.material) {
-              // Currently only use flat shading, replace imported pbr material with standard material
-              material.id = child.material.id;
-              material.diffuseColor = child.material.albedoColor;
-            }
-            child.material = material;
+  //           let material = new StandardMaterial(
+  //             `material-${vehicleFilename}`,
+  //             scene
+  //           );
+  //           material.backFaceCulling = false;
+  //           material.specularColor = new Color3(0, 0, 0);
+  //           if (child.material) {
+  //             // Currently only use flat shading, replace imported pbr material with standard material
+  //             material.id = child.material.id;
+  //             material.diffuseColor = child.material.albedoColor;
+  //           }
+  //           child.material = material;
 
-            let childMin = child.getBoundingInfo().boundingBox.minimumWorld;
-            let childMax = child.getBoundingInfo().boundingBox.maximumWorld;
+  //           let childMin = child.getBoundingInfo().boundingBox.minimumWorld;
+  //           let childMax = child.getBoundingInfo().boundingBox.maximumWorld;
 
-            if (i == 0) {
-              rootMeshMin = childMin;
-              rootMeshMax = childMax;
-            } else {
-              rootMeshMin = Vector3.Minimize(rootMeshMin, childMin);
-              rootMeshMax = Vector3.Maximize(rootMeshMax, childMax);
-            }
-          }
+  //           if (i == 0) {
+  //             rootMeshMin = childMin;
+  //             rootMeshMax = childMax;
+  //           } else {
+  //             rootMeshMin = Vector3.Minimize(rootMeshMin, childMin);
+  //             rootMeshMax = Vector3.Maximize(rootMeshMax, childMax);
+  //           }
+  //         }
 
-          rootMesh.setBoundingInfo(new BoundingInfo(rootMeshMin, rootMeshMax));
+  //         rootMesh.setBoundingInfo(new BoundingInfo(rootMeshMin, rootMeshMax));
 
-          setVehicleMeshTemplates((vehicleMeshTemplates) => ({
-            ...vehicleMeshTemplates,
-            [vehicleFilename]: rootMesh,
-          }));
-        }
-      );
-    }
-    // This useEffect is triggered when the vehicleMeshTemplate's keys() change
-  }, [scene, Object.keys(vehicleMeshTemplates).sort().join("-")]);
+  //         setVehicleMeshTemplates((vehicleMeshTemplates) => ({
+  //           ...vehicleMeshTemplates,
+  //           [vehicleFilename]: rootMesh,
+  //         }));
+  //       }
+  //     );
+  //   }
+  //   // This useEffect is triggered when the vehicleMeshTemplate's keys() change
+  // }, [scene, Object.keys(vehicleMeshTemplates).sort().join("-")]);
 
   // // Update third person camera's pointing target and radius
   // useEffect(() => {
@@ -408,156 +408,156 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
     setEdgeDividerGeometry(newEdgeDividers);
   }, [scene, JSON.stringify(edgeDividerPos)]);
 
-  // Vehicles and agent labels
-  useEffect(() => {
-    if (!meshesLoaded()) {
-      return;
-    }
+  // // Vehicles and agent labels
+  // useEffect(() => {
+  //   if (!meshesLoaded()) {
+  //     return;
+  //   }
 
-    let nextVehicleMeshes = {};
-    let nextAgentLabelGeometry = {};
+  //   let nextVehicleMeshes = {};
+  //   let nextAgentLabelGeometry = {};
 
-    let nextVehicleMeshIds = new Set(Object.keys(worldState.traffic));
-    let vehicleMeshIds = new Set(Object.keys(vehicleMeshes));
+  //   let nextVehicleMeshIds = new Set(Object.keys(worldState.traffic));
+  //   let vehicleMeshIds = new Set(Object.keys(vehicleMeshes));
 
-    let vehicleMeshIdsToRemove = difference(vehicleMeshIds, nextVehicleMeshIds);
-    let vehicleMeshIdsToKeep = intersection(vehicleMeshIds, nextVehicleMeshIds);
-    let vehicleMeshIdsToAdd = difference(nextVehicleMeshIds, vehicleMeshIds);
+  //   let vehicleMeshIdsToRemove = difference(vehicleMeshIds, nextVehicleMeshIds);
+  //   let vehicleMeshIdsToKeep = intersection(vehicleMeshIds, nextVehicleMeshIds);
+  //   let vehicleMeshIdsToAdd = difference(nextVehicleMeshIds, vehicleMeshIds);
 
-    // Vehicle model and color need to be updated when its agent actor type changes
-    let meshIds = new Set(vehicleMeshIdsToKeep);
-    for (const meshId of meshIds) {
-      if (
-        worldState.traffic[meshId].actor_type !=
-        vehicleMeshes[meshId].metadata.actorType
-      ) {
-        vehicleMeshIdsToRemove.add(meshId);
-        vehicleMeshIdsToKeep.delete(meshId);
-        vehicleMeshIdsToAdd.add(meshId);
-      }
-    }
+  //   // Vehicle model and color need to be updated when its agent actor type changes
+  //   let meshIds = new Set(vehicleMeshIdsToKeep);
+  //   for (const meshId of meshIds) {
+  //     if (
+  //       worldState.traffic[meshId].actor_type !=
+  //       vehicleMeshes[meshId].metadata.actorType
+  //     ) {
+  //       vehicleMeshIdsToRemove.add(meshId);
+  //       vehicleMeshIdsToKeep.delete(meshId);
+  //       vehicleMeshIdsToAdd.add(meshId);
+  //     }
+  //   }
 
-    // Dispose of stale meshes
-    for (const meshId of vehicleMeshIdsToRemove) {
-      vehicleMeshes[meshId].dispose();
+  //   // Dispose of stale meshes
+  //   for (const meshId of vehicleMeshIdsToRemove) {
+  //     vehicleMeshes[meshId].dispose();
 
-      let label = agentLabelGeometry[meshId];
-      if (label) {
-        label.dispose();
-      }
-    }
+  //     let label = agentLabelGeometry[meshId];
+  //     if (label) {
+  //       label.dispose();
+  //     }
+  //   }
 
-    // Add back kept meshes
-    for (const meshId of vehicleMeshIdsToKeep) {
-      nextVehicleMeshes[meshId] = vehicleMeshes[meshId];
-      nextAgentLabelGeometry[meshId] = agentLabelGeometry[meshId];
-    }
+  //   // Add back kept meshes
+  //   for (const meshId of vehicleMeshIdsToKeep) {
+  //     nextVehicleMeshes[meshId] = vehicleMeshes[meshId];
+  //     nextAgentLabelGeometry[meshId] = agentLabelGeometry[meshId];
+  //   }
 
-    // Create new meshes
-    for (const meshId of vehicleMeshIdsToAdd) {
-      let state = worldState.traffic[meshId];
-      // Vehicle mesh
-      let filename = vehicleMeshFilename(state.actor_type, state.vehicle_type);
-      if (!vehicleMeshTemplates[filename]) {
-        // Triggers loading the mesh according through the useEffect
-        setVehicleMeshTemplates((vehicleMeshTemplates) => ({
-          ...vehicleMeshTemplates,
-          [filename]: null,
-        }));
-        continue;
-      }
+  //   // Create new meshes
+  //   for (const meshId of vehicleMeshIdsToAdd) {
+  //     let state = worldState.traffic[meshId];
+  //     // Vehicle mesh
+  //     let filename = vehicleMeshFilename(state.actor_type, state.vehicle_type);
+  //     if (!vehicleMeshTemplates[filename]) {
+  //       // Triggers loading the mesh according through the useEffect
+  //       setVehicleMeshTemplates((vehicleMeshTemplates) => ({
+  //         ...vehicleMeshTemplates,
+  //         [filename]: null,
+  //       }));
+  //       continue;
+  //     }
 
-      let color = vehicleMeshColor(state.actor_type, worldState.scene_colors);
-      let rootMesh = new Mesh(`root-mesh-${meshId}`, scene);
-      let childMeshes = vehicleMeshTemplates[filename].getChildMeshes();
-      for (const child of childMeshes) {
-        let instancedSubMesh = child.createInstance(`${child.name}-${meshId}`);
-        if (
-          state.actor_type == ActorTypes.SOCIAL_VEHICLE ||
-          instancedSubMesh.material.id == "body" || // Change the car body color based on actor type
-          childMeshes.length == 1
-        ) {
-          instancedSubMesh.material.diffuseColor = new Color3(...color);
-        }
-        rootMesh.addChild(instancedSubMesh);
-      }
+  //     let color = vehicleMeshColor(state.actor_type, worldState.scene_colors);
+  //     let rootMesh = new Mesh(`root-mesh-${meshId}`, scene);
+  //     let childMeshes = vehicleMeshTemplates[filename].getChildMeshes();
+  //     for (const child of childMeshes) {
+  //       let instancedSubMesh = child.createInstance(`${child.name}-${meshId}`);
+  //       if (
+  //         state.actor_type == ActorTypes.SOCIAL_VEHICLE ||
+  //         instancedSubMesh.material.id == "body" || // Change the car body color based on actor type
+  //         childMeshes.length == 1
+  //       ) {
+  //         instancedSubMesh.material.diffuseColor = new Color3(...color);
+  //       }
+  //       rootMesh.addChild(instancedSubMesh);
+  //     }
 
-      // Render bounding box for social vehicle
-      if (state.actor_type == ActorTypes.SOCIAL_VEHICLE) {
-        let boundingInfo = vehicleMeshTemplates[filename].getBoundingInfo();
-        let boxSize = boundingInfo.boundingBox.extendSize.scale(2);
-        let box = MeshBuilder.CreateBox(
-          `boundingbox-${meshId}`,
-          {
-            height: boxSize.y + 0.1,
-            width: boxSize.x + 0.1,
-            depth: boxSize.z + 0.1,
-          },
-          scene
-        );
-        box.position = boundingInfo.boundingBox.center;
+  //     // Render bounding box for social vehicle
+  //     if (state.actor_type == ActorTypes.SOCIAL_VEHICLE) {
+  //       let boundingInfo = vehicleMeshTemplates[filename].getBoundingInfo();
+  //       let boxSize = boundingInfo.boundingBox.extendSize.scale(2);
+  //       let box = MeshBuilder.CreateBox(
+  //         `boundingbox-${meshId}`,
+  //         {
+  //           height: boxSize.y + 0.1,
+  //           width: boxSize.x + 0.1,
+  //           depth: boxSize.z + 0.1,
+  //         },
+  //         scene
+  //       );
+  //       box.position = boundingInfo.boundingBox.center;
 
-        let boxMaterial = new StandardMaterial(
-          `boundingbox-${meshId}-material`,
-          scene
-        );
-        boxMaterial.diffuseColor = new Color4(...color);
-        boxMaterial.specularColor = new Color3(0, 0, 0);
-        boxMaterial.alpha = 0.75;
-        box.material = boxMaterial;
-        rootMesh.addChild(box);
-      }
+  //       let boxMaterial = new StandardMaterial(
+  //         `boundingbox-${meshId}-material`,
+  //         scene
+  //       );
+  //       boxMaterial.diffuseColor = new Color4(...color);
+  //       boxMaterial.specularColor = new Color3(0, 0, 0);
+  //       boxMaterial.alpha = 0.75;
+  //       box.material = boxMaterial;
+  //       rootMesh.addChild(box);
+  //     }
 
-      rootMesh.metadata = {};
-      rootMesh.metadata.actorType = state.actor_type;
+  //     rootMesh.metadata = {};
+  //     rootMesh.metadata.actorType = state.actor_type;
 
-      nextVehicleMeshes[meshId] = rootMesh;
+  //     nextVehicleMeshes[meshId] = rootMesh;
 
-      // Agent label
-      // Only show labels on agents
-      let label = null;
-      if (state.actor_type == ActorTypes.AGENT) {
-        label = buildLabel(meshId, state.actor_id, scene);
-      }
-      nextAgentLabelGeometry[meshId] = label;
-    }
+  //     // Agent label
+  //     // Only show labels on agents
+  //     let label = null;
+  //     if (state.actor_type == ActorTypes.AGENT) {
+  //       label = buildLabel(meshId, state.actor_id, scene);
+  //     }
+  //     nextAgentLabelGeometry[meshId] = label;
+  //   }
 
-    let firstEgoAgent = true;
-    // Set mesh positions and orientations
-    for (const meshId of nextVehicleMeshIds) {
-      let state = worldState.traffic[meshId];
-      let mesh = nextVehicleMeshes[meshId];
-      // Unavailable until the mesh template has been loaded
-      if (!mesh) {
-        continue;
-      }
+  //   let firstEgoAgent = true;
+  //   // Set mesh positions and orientations
+  //   for (const meshId of nextVehicleMeshIds) {
+  //     let state = worldState.traffic[meshId];
+  //     let mesh = nextVehicleMeshes[meshId];
+  //     // Unavailable until the mesh template has been loaded
+  //     if (!mesh) {
+  //       continue;
+  //     }
 
-      let pos = state.position;
-      mesh.position = new Vector3(pos[0], pos[2], pos[1]);
+  //     let pos = state.position;
+  //     mesh.position = new Vector3(pos[0], pos[2], pos[1]);
 
-      let axis = new Vector3(0, 1, 0);
-      let angle = Math.PI - state.heading;
-      let quaternion = new Quaternion.RotationAxis(axis, angle);
-      mesh.rotationQuaternion = quaternion;
+  //     let axis = new Vector3(0, 1, 0);
+  //     let angle = Math.PI - state.heading;
+  //     let quaternion = new Quaternion.RotationAxis(axis, angle);
+  //     mesh.rotationQuaternion = quaternion;
 
-      let label = nextAgentLabelGeometry[meshId];
-      if (label) {
-        label.position = new Vector3(pos[0], pos[2] + 2, pos[1] - 4);
-        label.isVisible = true;
-      }
+  //     let label = nextAgentLabelGeometry[meshId];
+  //     if (label) {
+  //       label.position = new Vector3(pos[0], pos[2] + 2, pos[1] - 4);
+  //       label.isVisible = true;
+  //     }
 
-      // // Ego camera follows the first ego agent in multi-agent case
-      // if (egoView && state.actor_type == ActorTypes.AGENT && firstEgoAgent) {
-      //   label.isVisible = false;
-      //   firstEgoAgent = false;
-      //   camera.position = new Vector3(pos[0], pos[2], pos[1]);
-      //   camera.rotation = new Vector3(0, 2 * Math.PI - state.heading, 0);
-      // }
-    }
+  //     // // Ego camera follows the first ego agent in multi-agent case
+  //     // if (egoView && state.actor_type == ActorTypes.AGENT && firstEgoAgent) {
+  //     //   label.isVisible = false;
+  //     //   firstEgoAgent = false;
+  //     //   camera.position = new Vector3(pos[0], pos[2], pos[1]);
+  //     //   camera.rotation = new Vector3(0, 2 * Math.PI - state.heading, 0);
+  //     // }
+  //   }
 
-    setVehicleMeshes(nextVehicleMeshes);
-    setAgentLabelGeometry(nextAgentLabelGeometry);
-  }, [scene, worldState.traffic]);
+  //   setVehicleMeshes(nextVehicleMeshes);
+  //   setAgentLabelGeometry(nextAgentLabelGeometry);
+  // }, [scene, worldState.traffic]);
 
   // Bubble geometry
   useEffect(() => {
@@ -855,6 +855,12 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
       <Camera
         scene={scene}
         roadNetworkBbox={roadNetworkBbox}
+        egoView={egoView}
+      />
+      <Vehicles
+        scene={scene}
+        worldState={worldState}
+        vehicleRootUrl={`${client.endpoint.origin}/assets/models/`}
         egoView={egoView}
       />
 
