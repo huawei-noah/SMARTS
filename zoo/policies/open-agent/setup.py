@@ -16,8 +16,22 @@ try:
     ).absolute()
     assert python_bindings_src.is_dir()
     subprocess.call(
-        ["maturin", "build", "--release", "-i", "python3.7"],
-        cwd=str(python_bindings_src),
+        [
+            # "sudo",
+            "docker",
+            "run",
+            "--rm",
+            "-v",
+            f"{str(python_bindings_src.parent)}:/io",
+            "--entrypoint",
+            "/bin/bash",
+            "konstin2/maturin",
+            "-c",
+            "cd /io/python_bindings_open_agent_solver && maturin build --release -i python3.7",
+        ],
+        cwd=str(python_bindings_src.parent),
+        # ["maturin", "build", "--release", "-i", "python3.7"],
+        # cwd=str(python_bindings_src),
     )
 
     generated_wheels = python_bindings_src / "target" / "wheels"
