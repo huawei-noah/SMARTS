@@ -61,7 +61,7 @@ def env(agent_spec):
         headless=True,
         visdom=False,
         timestep_sec=0.1,
-        seed=2,
+        seed=42,
     )
 
     yield env
