@@ -1,6 +1,6 @@
-# How to contribute to policy zoo
+# How to Contribute to the Policy Zoo
 
-Welcome to contribute to the policy zoo. There are a few guidelines to help you to submit your work.
+Contained in this file are a few guidelines to help you contribute. As always, contributions of all kinds are welcome and, in particular, the utility of SMARTS is greatly enhanced by contributions to the diversity of the SMARTS policy zoo.
 
 ## Getting Started
 
@@ -11,7 +11,7 @@ Welcome to contribute to the policy zoo. There are a few guidelines to help you 
 
 * Place your work under `zoo/policies`.
     * Create a new folder for your work.
-    * You should include your training code.
+    * Preferably include your training code.
 * Check the code style by running `make format`.
 * Commit your changes.
 
@@ -20,4 +20,4 @@ Welcome to contribute to the policy zoo. There are a few guidelines to help you 
 * Sign the [Contributor License Agreement](https://cla-assistant.io/huawei-noah/SMARTS) for huawei-noah/SMARTS.
 * Push your changes to your fork of the repository.
 * Create a pull request to the repository.
-* The developer team reviews the pull request and gives review comments.
+* The community and development team will review the request and provide feedback.
