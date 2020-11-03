@@ -219,14 +219,19 @@ class SumoTrafficSimulation:
             "Can't setup twice, %s, see teardown()" % self._is_setup
         )
 
+        # restart sumo process only when map file changes
+        if self._scenario and self._scenario.net_filepath == scenario.net_filepath:
+            restart_sumo = False
+        else:
+            restart_sumo = True
+
         self._scenario = scenario
         self._log_file = scenario.unique_sumo_log_file()
 
-        # We force reinitialization of TRACI and the underlying SUMO process.
-        # This incurs ~50ms of overhead on an i9 Ubuntu desktop. But it prevents
-        # the simulation from freezing at a call to self._traci_conn.simulationStep()
-        # after dozens of scenario swapping. Issue #353.
-        self._initialize_traci_conn()
+        if restart_sumo:
+            self._initialize_traci_conn()
+        else:
+            self._traci_conn.load(self._base_sumo_load_params())
 
         assert self._traci_conn is not None, "No active traci conn"
 
@@ -266,7 +271,6 @@ class SumoTrafficSimulation:
             return
 
         assert self._is_setup
-        self._close_traci_and_pipes()
 
         self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
