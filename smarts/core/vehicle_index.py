@@ -237,7 +237,7 @@ class VehicleIndex:
             #       vehicle recreation seems to address the problem. Ideally we discover
             #       the underlaying problem and can go back to the preferred implementation
             #       of simply swapping control of a persistent vehicle.
-            return self.recreate_agent_vehicle(sim, agent_id, vehicle_id, boid)
+            return self._switch_control_to_agent_recreate(sim, agent_id, vehicle_id, boid)
 
         vehicle = self._vehicles[vehicle_id]
         ackermann_chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
@@ -284,7 +284,7 @@ class VehicleIndex:
 
         return vehicle
 
-    def recreate_agent_vehicle(
+    def _switch_control_to_agent_recreate(
         self, sim, agent_id, vehicle_id, boid,
     ):
         # Get the old state values from the shadowed vehicle
