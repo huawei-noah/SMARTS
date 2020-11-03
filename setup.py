@@ -23,8 +23,6 @@ setup(
         "panda3d",
         "panda3d-gltf",
         "numpy",
-        "qpsolvers",
-        "cvxopt",
         "shapely",
         "networkx",
         "trimesh",  # Used for writing .glb files

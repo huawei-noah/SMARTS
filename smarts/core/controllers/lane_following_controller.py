@@ -25,8 +25,6 @@ from numpy.linalg import matrix_power
 import numpy as np
 
 from scipy import signal
-from cvxopt import matrix, solvers
-from qpsolvers import solve_qp
 from smarts.core.controllers.trajectory_tracking_controller import (
     TrajectoryTrackingControllerState,
     TrajectoryTrackingController,

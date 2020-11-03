@@ -15,7 +15,6 @@ colorama==0.4.3
 commonmark==0.9.1
 constantly==15.1.0
 coverage==5.2.1
-cvxopt==1.2.5
 cycler==0.10.0
 Cython==0.29.21
 decorator==4.4.2
@@ -81,7 +80,6 @@ pytz==2019.3
 PyWavelets==1.1.1
 PyYAML==5.3.1
 pyzmq==19.0.0
-qpsolvers==1.4
 quadprog==0.1.7
 ray==0.8.3
 redis==3.4.1

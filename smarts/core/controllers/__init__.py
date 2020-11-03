@@ -25,8 +25,6 @@ from numpy.linalg import matrix_power
 import numpy as np
 
 from scipy import signal
-from cvxopt import matrix, solvers
-from qpsolvers import solve_qp
 
 from smarts.core.chassis import AckermannChassis
 from smarts.core.utils.math import (
@@ -143,6 +141,9 @@ class ControllerState:
             return ActuatorDynamicControllerState()
 
         if action_space == ActionSpaceType.Trajectory:
+            return TrajectoryTrackingControllerState()
+
+        if action_space == ActionSpaceType.MPC:
             return TrajectoryTrackingControllerState()
 
         # Other action spaces do not need a controller state object
