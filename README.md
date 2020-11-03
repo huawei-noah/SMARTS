@@ -185,19 +185,17 @@ env = gym.make(
 )
 ```
 
-<!--
+
 ### Interfacing w/ PyMARL and malib
 
-[PyMARL](https://github.com/oxwhirl/pymarl) and [malib](https://github.com/ying-wen/malib) presently live under the contrib package. You can run them via,
+[PyMARL](https://github.com/oxwhirl/pymarl) and [malib](https://github.com/ying-wen/malib) have been open-sourced. You can run them via,
 
 ```bash
-# somewhere on your machine, outside the HiWay directory
-# TODO: Update this to our fork
-git clone git@gitlab.smartsai.xyz:smarts/pymarl.git
-cd pymarl
+git clone git@github.com:ying-wen/pymarl.git
 
-# or wherever you have placed your pymarl repo
-ln -s $(PWD)/scenarios ../pymarl/scenarios
+ln -s your-project/scenarios ./pymarl/scenarios
+
+cd pymarl
 
 # setup virtual environment
 python3 -m venv .venv
@@ -208,8 +206,10 @@ python src/main.py --config=qmix --env-config=smarts
 ```
 
 ```bash
-# somewhere on your machine, outside the HiWay directory
 git clone git@github.com:ying-wen/malib.git
+
+ln -s your-project/scenarios ./malib/scenarios
+
 cd malib
 
 # setup virtual environment
@@ -217,12 +217,9 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# or wherever you have placed your malib repo
-ln -s $(PWD)/scenarios ../malib/scenarios
-
 python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 5
 ```
--->
+
 
 ### Using Docker
 

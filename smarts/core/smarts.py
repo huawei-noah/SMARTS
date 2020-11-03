@@ -213,7 +213,7 @@ class SMARTS(ShowBase):
         provider_state = self._step_providers(all_agent_actions, dt)
 
         # 3. Step bubble manager and trap manager
-        self._bubble_manager.step(self)
+        self._bubble_manager.step()
         self._trap_manager.step(self)
 
         # 4. Calculate observation and reward
@@ -225,6 +225,12 @@ class SMARTS(ShowBase):
 
         # Agents
         self._agent_manager.step_agent_sensors(self)
+
+        # Panda3D
+        # runs through the render pipeline
+        # MUST perform this after step_agent_sensors() above, and before observe() below,
+        # so that all updates are ready before rendering happens per frame
+        self.taskMgr.mgr.poll()
 
         observations, rewards, scores, dones = self._agent_manager.observe(self)
 
@@ -304,7 +310,7 @@ class SMARTS(ShowBase):
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
 
         bubbles = scenario.discover_bubbles()
-        self._bubble_manager = BubbleManager(bubbles, self.scenario.road_network)
+        self._bubble_manager = BubbleManager(self, bubbles)
         self._trap_manager = TrapManager(scenario)
 
         self._setup_bullet_client(self._bullet_client)
@@ -348,10 +354,22 @@ class SMARTS(ShowBase):
         client.setGravity(0, 0, -9.8)
 
         plane_path = self._scenario.plane_filepath
+
+        # 1e6 is the default value for plane length and width.
+        plane_scale = (
+            max(self._scenario.map_bounding_box[0], self._scenario.map_bounding_box[1])
+            / 1e6
+        )
         if not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
-        self._ground_bullet_id = client.loadURDF(plane_path, useFixedBase=True)
+
+        self._ground_bullet_id = client.loadURDF(
+            plane_path,
+            useFixedBase=True,
+            basePosition=self._scenario.map_bounding_box[2],
+            globalScaling=1.1 * plane_scale,
+        )
 
     def teardown(self):
         self._agent_manager.teardown()
@@ -600,9 +618,6 @@ class SMARTS(ShowBase):
 
     def _step_providers(self, actions, dt) -> List[VehicleState]:
         accumulated_provider_state = ProviderState()
-
-        # Panda3D
-        self.taskMgr.mgr.poll()  # runs through the render pipeline
 
         def agent_controls_vehicles(agent_id):
             vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
@@ -864,6 +879,13 @@ class SMARTS(ShowBase):
                     v.vehicle_id
                 ).driven_path_sensor()
 
+                road_waypoints = []
+                if vehicle_obs.road_waypoints:
+                    road_waypoints = [
+                        path
+                        for paths in vehicle_obs.road_waypoints.lanes.values()
+                        for path in paths
+                    ]
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     name=self._agent_manager.name_for_agent(agent_id),
                     actor_type=actor_type,
@@ -875,7 +897,7 @@ class SMARTS(ShowBase):
                         agent_id, v.vehicle_id, is_multi=is_boid_agent,
                     ),
                     events=vehicle_obs.events,
-                    waypoint_paths=vehicle_obs.waypoint_paths or [],
+                    waypoint_paths=(vehicle_obs.waypoint_paths or []) + road_waypoints,
                     point_cloud=point_cloud,
                     driven_path=driven_path,
                     mission_route_geometry=mission_route_geometry,
