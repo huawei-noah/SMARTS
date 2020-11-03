@@ -16,6 +16,13 @@ jobs:
         uses: actions/checkout@v1.2.0
       - name: Install SMARTS package
         run: |
+          /usr/bin/Xorg \
+            -noreset \
+            +extension GLX \
+            +extension RANDR \
+            +extension RENDER \
+            -logfile ./xdummy.log \
+            -config /etc/X11/xorg.conf :1 &
           cd $GITHUB_WORKSPACE
           python3.7 -m venv "${venv_dir}"
           . "${venv_dir}/bin/activate"
