@@ -385,7 +385,7 @@ class Policy(AgentPolicy):
 
     def init_planner(self):
         try:
-            from . import open_agent_solver
+            import open_agent_solver
         except ImportError:
             raise "Can't import the solver, have you compiled it?"
 
