@@ -65,7 +65,10 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 ENV PYTHONPATH=/src
 COPY . /src
-RUN cd /usr/local/lib/python3.7/dist-packages && python /src/setup.py develop
+RUN cd /usr/local/lib/python3.7 && \
+    mkdir site-packages && \
+    cd site-packages && \
+    python /src/setup.py develop
 WORKDIR /src
 
 # For Envision

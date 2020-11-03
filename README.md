@@ -226,7 +226,8 @@ python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 
 If you're comfortable using docker or are on a platform without suitable support to easily run SMARTS (e.g. an older version of Ubuntu) you can run the following,
 
 ```bash
-docker run --rm -it -v $(PWD):/src -p 8081:8081 huaweinoah/smarts
+docker run --rm -it -v $(PWD):/src -p 8081:8081 huaweinoah/smarts:<version>
+# E.g. docker run --rm -it -v $(PWD):/src -p 8081:8081 huaweinoah/smarts:v0.4.3-pre
 # <press enter>
 
 # Run Envision server in the background
