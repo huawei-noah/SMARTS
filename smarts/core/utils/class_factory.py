@@ -17,7 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# Heavily based on gym/envs/registration.py (but more generic)
+# ====================
+# Heavily derived from https://github.com/openai/gym/blob/v0.10.5/gym/envs/registration.py
+# See gym license in THIRD_PARTY_OPEN_SOURCE_SOFTWARE_NOTICE
 import re
 from urllib.parse import urlparse
 import importlib
