@@ -185,19 +185,17 @@ env = gym.make(
 )
 ```
 
-<!--
+
 ### Interfacing w/ PyMARL and malib
 
-[PyMARL](https://github.com/oxwhirl/pymarl) and [malib](https://github.com/ying-wen/malib) presently live under the contrib package. You can run them via,
+[PyMARL](https://github.com/oxwhirl/pymarl) and [malib](https://github.com/ying-wen/malib) have been open-sourced. You can run them via,
 
 ```bash
-# somewhere on your machine, outside the HiWay directory
-# TODO: Update this to our fork
-git clone git@gitlab.smartsai.xyz:smarts/pymarl.git
-cd pymarl
+git clone git@github.com:ying-wen/pymarl.git
 
-# or wherever you have placed your pymarl repo
-ln -s $(PWD)/scenarios ../pymarl/scenarios
+ln -s your-project/scenarios ./pymarl/scenarios
+
+cd pymarl
 
 # setup virtual environment
 python3 -m venv .venv
@@ -208,8 +206,10 @@ python src/main.py --config=qmix --env-config=smarts
 ```
 
 ```bash
-# somewhere on your machine, outside the HiWay directory
 git clone git@github.com:ying-wen/malib.git
+
+ln -s your-project/scenarios ./malib/scenarios
+
 cd malib
 
 # setup virtual environment
@@ -217,12 +217,9 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# or wherever you have placed your malib repo
-ln -s $(PWD)/scenarios ../malib/scenarios
-
 python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 5
 ```
--->
+
 
 ### Using Docker
 
@@ -251,3 +248,18 @@ $ python examples/single_agent.py scenarios/loop
 * If you wish to find binaries: **[SUMO Download Page](https://sumo.dlr.de/docs/Downloads.php)**
 * If you wish to compile from source see: **[SUMO Build Instructions](https://sumo.dlr.de/docs/Developer/Main.html#build_instructions)**
 * If you build from the git repository use: **[SUMO version 1.7.0](https://github.com/eclipse/sumo/commits/v1_7_0)** or higher
+
+### Citing SMARTS
+
+If you use SMARTS in your research, please cite the [paper](https://arxiv.org/abs/2010.09776). In BibTeX format:
+
+```bibtex
+@misc{zhou2020smarts,
+      title={SMARTS: Scalable Multi-Agent Reinforcement Learning Training School for Autonomous Driving}, 
+      author={Ming Zhou and Jun Luo and Julian Villela and Yaodong Yang and David Rusu and Jiayu Miao and Weinan Zhang and Montgomery Alban and Iman Fadakar and Zheng Chen and Aurora Chongxi Huang and Ying Wen and Kimia Hassanzadeh and Daniel Graves and Dong Chen and Zhengbang Zhu and Nhat Nguyen and Mohamed Elsayed and Kun Shao and Sanjeevan Ahilan and Baokuan Zhang and Jiannan Wu and Zhengang Fu and Kasra Rezaee and Peyman Yadmellat and Mohsen Rohani and Nicolas Perez Nieves and Yihan Ni and Seyedershad Banijamali and Alexander Cowen Rivers and Zheng Tian and Daniel Palenicek and Haitham bou Ammar and Hongbo Zhang and Wulong Liu and Jianye Hao and Jun Wang},
+      year={2020},
+      eprint={2010.09776},
+      archivePrefix={arXiv},
+      primaryClass={cs.MA}
+}
+```

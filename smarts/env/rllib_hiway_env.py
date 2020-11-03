@@ -56,8 +56,6 @@ class RLlibHiWayEnv(MultiAgentEnv):
                 used to specify a specific sumo port (default None)
             timestep_sec:
                 the step length for all components of the simulation (default 0.1)
-            visdom:
-                true|false visdom integration (default False)
     """
 
     def __init__(self, config):

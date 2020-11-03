@@ -4,10 +4,6 @@
 
 The following is a set of concise guidelines for contributing to SMARTS and its packages. Feel free to propose changes to this document in a pull request.
 
-## Table of Contents
-
-[[_TOC_]]
-
 ## Code of Conduct
 - Be respectful. 
 - Keep criticism strictly to code.

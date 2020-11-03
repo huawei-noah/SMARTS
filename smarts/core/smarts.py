@@ -39,6 +39,8 @@ from panda3d.core import (
 from sklearn.metrics.pairwise import euclidean_distances
 
 from envision import types as envision_types
+from envision.client import Client as EnvisionClient
+from .utils.visdom_client import VisdomClient
 
 from . import glsl
 from . import models
@@ -85,7 +87,8 @@ class SMARTS(ShowBase):
         self,
         agent_interfaces,
         traffic_sim,
-        envision=None,
+        envision: EnvisionClient = None,
+        visdom: VisdomClient = None,
         timestep_sec=0.1,
         reset_agents_only=False,
         should_teardown_done_social_agents=True,
@@ -107,7 +110,8 @@ class SMARTS(ShowBase):
         self._should_teardown_done_social_agents = should_teardown_done_social_agents
         self._is_setup = False
         self._scenario: Scenario = None
-        self._envision = envision
+        self._envision: EnvisionClient = envision
+        self._visdom: VisdomClient = visdom
         self._timestep_sec = timestep_sec
         self._traffic_sim = traffic_sim
         self._motion_planner_provider = MotionPlannerProvider()
@@ -209,7 +213,7 @@ class SMARTS(ShowBase):
         provider_state = self._step_providers(all_agent_actions, dt)
 
         # 3. Step bubble manager and trap manager
-        self._bubble_manager.step(self)
+        self._bubble_manager.step()
         self._trap_manager.step(self)
 
         # 4. Calculate observation and reward
@@ -221,6 +225,12 @@ class SMARTS(ShowBase):
 
         # Agents
         self._agent_manager.step_agent_sensors(self)
+
+        # Panda3D
+        # runs through the render pipeline
+        # MUST perform this after step_agent_sensors() above, and before observe() below,
+        # so that all updates are ready before rendering happens per frame
+        self.taskMgr.mgr.poll()
 
         observations, rewards, scores, dones = self._agent_manager.observe(self)
 
@@ -241,6 +251,7 @@ class SMARTS(ShowBase):
 
         # 7. Perform visualization
         self._try_emit_envision_state(provider_state, observations, scores)
+        self._try_emit_visdom_obs(observations)
 
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
@@ -266,6 +277,9 @@ class SMARTS(ShowBase):
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
         observations, _, _, _ = self._agent_manager.observe(self)
         observations_for_ego = self._agent_manager.reset_agents(observations)
+
+        # Visualization
+        self._try_emit_visdom_obs(observations)
 
         if len(self._agent_manager.ego_agent_ids):
             while len(observations_for_ego) < 1:
@@ -296,7 +310,7 @@ class SMARTS(ShowBase):
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
 
         bubbles = scenario.discover_bubbles()
-        self._bubble_manager = BubbleManager(bubbles, self.scenario.road_network)
+        self._bubble_manager = BubbleManager(self, bubbles)
         self._trap_manager = TrapManager(scenario)
 
         self._setup_bullet_client(self._bullet_client)
@@ -340,10 +354,22 @@ class SMARTS(ShowBase):
         client.setGravity(0, 0, -9.8)
 
         plane_path = self._scenario.plane_filepath
+
+        # 1e6 is the default value for plane length and width.
+        plane_scale = (
+            max(self._scenario.map_bounding_box[0], self._scenario.map_bounding_box[1])
+            / 1e6
+        )
         if not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
-        self._ground_bullet_id = client.loadURDF(plane_path, useFixedBase=True)
+
+        self._ground_bullet_id = client.loadURDF(
+            plane_path,
+            useFixedBase=True,
+            basePosition=self._scenario.map_bounding_box[2],
+            globalScaling=1.1 * plane_scale,
+        )
 
     def teardown(self):
         self._agent_manager.teardown()
@@ -375,6 +401,9 @@ class SMARTS(ShowBase):
 
         if self._envision:
             self._envision.teardown()
+
+        if self._visdom:
+            self._visdom.teardown()
 
         self._agent_manager.destroy()
         self._bullet_client.disconnect()
@@ -590,9 +619,6 @@ class SMARTS(ShowBase):
     def _step_providers(self, actions, dt) -> List[VehicleState]:
         accumulated_provider_state = ProviderState()
 
-        # Panda3D
-        self.taskMgr.mgr.poll()  # runs through the render pipeline
-
         def agent_controls_vehicles(agent_id):
             vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
             return len(vehicles) > 0
@@ -642,18 +668,13 @@ class SMARTS(ShowBase):
                         agent_id, include_shadowers=True
                     )
                 ]
-                if agent_interface.action_space == ActionSpaceType.MultiTargetPose:
+
+                if self._agent_manager.is_boid_agent(self, agent_id):
                     for vehicle_id, vehicle_action in action.items():
-                        assert vehicle_id in vehicle_ids, (
-                            "MultiTargetPose actions "
-                            "can only control the vehicles the Agent owns"
-                        )
+                        assert vehicle_id in vehicle_ids
                         provider_actions[vehicle_id] = vehicle_action
                 else:
-                    assert len(vehicle_ids) == 1, (
-                        "Only ActionSpaceType.MultiTargetPose supports "
-                        "controlling > 1 vehicles"
-                    )
+                    assert len(vehicle_ids) == 1
                     provider_actions[vehicle_ids[0]] = action
 
         provider_state = provider.step(provider_actions, dt, elapsed_sim_time)
@@ -765,8 +786,11 @@ class SMARTS(ShowBase):
                 agent_interface = self._agent_manager.agent_interface_for_agent_id(
                     agent_id
                 )
-                vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
-                for vehicle in vehicles:
+                is_boid_agent = self._agent_manager.is_boid_agent(self, agent_id)
+
+                for vehicle in agent_vehicles:
+                    vehicle_action = action[vehicle.id] if is_boid_agent else action
+
                     controller_state = self._vehicle_index.controller_state_for_vehicle_id(
                         vehicle.id
                     )
@@ -778,7 +802,7 @@ class SMARTS(ShowBase):
                         self,
                         agent_id,
                         vehicle,
-                        action,
+                        vehicle_action,
                         controller_state,
                         sensor_state,
                         agent_interface.action_space,
@@ -835,10 +859,7 @@ class SMARTS(ShowBase):
                 # this is an agent controlled vehicle
                 agent_id = self._vehicle_index.actor_id_from_vehicle_id(v.vehicle_id)
                 agent_obs = obs[agent_id]
-
-                # TODO: find a more robust way of telling whether an agent id refers to a boid agent
-                # boid agent observations are a dict mapping vehicle ids to that vehicle's observation
-                is_boid_agent = isinstance(agent_obs, dict)
+                is_boid_agent = self._agent_manager.is_boid_agent(self, agent_id)
                 vehicle_obs = agent_obs[v.vehicle_id] if is_boid_agent else agent_obs
 
                 if self._agent_manager.is_ego(agent_id):
@@ -858,6 +879,13 @@ class SMARTS(ShowBase):
                     v.vehicle_id
                 ).driven_path_sensor()
 
+                road_waypoints = []
+                if vehicle_obs.road_waypoints:
+                    road_waypoints = [
+                        path
+                        for paths in vehicle_obs.road_waypoints.lanes.values()
+                        for path in paths
+                    ]
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     name=self._agent_manager.name_for_agent(agent_id),
                     actor_type=actor_type,
@@ -869,7 +897,7 @@ class SMARTS(ShowBase):
                         agent_id, v.vehicle_id, is_multi=is_boid_agent,
                     ),
                     events=vehicle_obs.events,
-                    waypoint_paths=vehicle_obs.waypoint_paths or [],
+                    waypoint_paths=(vehicle_obs.waypoint_paths or []) + road_waypoints,
                     point_cloud=point_cloud,
                     driven_path=driven_path,
                     mission_route_geometry=mission_route_geometry,
@@ -883,10 +911,6 @@ class SMARTS(ShowBase):
                     position=list(v.pose.position),
                     heading=v.pose.heading,
                     speed=v.speed,
-                )
-            else:
-                self._log.info(
-                    "Vehicle is not a social vehicle and not controlled by agent: ", v
                 )
 
         bubble_geometry = [
@@ -902,3 +926,9 @@ class SMARTS(ShowBase):
             scores=scores,
         )
         self._envision.send(state)
+
+    def _try_emit_visdom_obs(self, obs):
+        if not self._visdom:
+            return
+
+        self._visdom.send(obs)
