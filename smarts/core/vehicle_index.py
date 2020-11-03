@@ -237,7 +237,9 @@ class VehicleIndex:
             #       vehicle recreation seems to address the problem. Ideally we discover
             #       the underlaying problem and can go back to the preferred implementation
             #       of simply swapping control of a persistent vehicle.
-            return self._switch_control_to_agent_recreate(sim, agent_id, vehicle_id, boid)
+            return self._switch_control_to_agent_recreate(
+                sim, agent_id, vehicle_id, boid
+            )
 
         vehicle = self._vehicles[vehicle_id]
         ackermann_chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
@@ -251,34 +253,6 @@ class VehicleIndex:
                 actor_id=agent_id,
                 shadow_actor_id="",
                 is_boid=boid,
-            )
-        )
-
-        return vehicle
-
-    def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
-        self._log.debug(
-            f"Relinquishing agent control v_id={vehicle_id} sv_id={social_vehicle_id}"
-        )
-        vehicle = self._vehicles[vehicle_id]
-        box_chassis = BoxChassis(
-            pose=vehicle.chassis.pose,
-            speed=vehicle.chassis.speed,
-            dimensions=vehicle.chassis.dimensions,
-            bullet_client=sim.bc,
-        )
-        vehicle.swap_chassis(box_chassis)
-        Vehicle.detach_all_sensors_from_vehicle(vehicle)
-
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
-        entity = self._controlled_by[v_index][0]
-        entity = _ControlEntity(*entity)
-        self._controlled_by[v_index] = tuple(
-            entity._replace(
-                actor_type=_ActorType.Social,
-                actor_id=social_vehicle_id,
-                shadow_actor_id="",
-                is_boid=False,
             )
         )
 
@@ -314,6 +288,34 @@ class VehicleIndex:
             boid=boid,
             vehicle_id=vehicle_id,
         )
+
+    def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
+        self._log.debug(
+            f"Relinquishing agent control v_id={vehicle_id} sv_id={social_vehicle_id}"
+        )
+        vehicle = self._vehicles[vehicle_id]
+        box_chassis = BoxChassis(
+            pose=vehicle.chassis.pose,
+            speed=vehicle.chassis.speed,
+            dimensions=vehicle.chassis.dimensions,
+            bullet_client=sim.bc,
+        )
+        vehicle.swap_chassis(box_chassis)
+        Vehicle.detach_all_sensors_from_vehicle(vehicle)
+
+        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        entity = self._controlled_by[v_index][0]
+        entity = _ControlEntity(*entity)
+        self._controlled_by[v_index] = tuple(
+            entity._replace(
+                actor_type=_ActorType.Social,
+                actor_id=social_vehicle_id,
+                shadow_actor_id="",
+                is_boid=False,
+            )
+        )
+
+        return vehicle
 
     # TODO: Collapse build_social_vehicle and build_agent_vehicle
     def build_agent_vehicle(
