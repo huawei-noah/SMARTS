@@ -92,7 +92,7 @@ def proximity_detection(OGM):
 
 def heading_to_degree(heading):
     # +y = 0 rad. Note the 0 means up direction
-    return np.degrees((heading + math.pi) % (2 * math.pi))
+    return np.degrees(heading % (2 * math.pi))
 
 
 def heading_to_vec(heading):
