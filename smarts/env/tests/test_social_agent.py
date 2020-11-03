@@ -5,7 +5,7 @@ from smarts.core.utils.episodes import episodes
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.agent import AgentSpec, AgentPolicy
 
-AGENT_ID = "Agent-006"
+AGENT_ID = "Agent-007"
 SOCIAL_AGENT_ID = "Alec Trevelyan"
 
 MAX_EPISODES = 3
