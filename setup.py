@@ -19,6 +19,7 @@ setup(
         #   tensorboard needs >=41
         #   50.0 is broken: https://github.com/pypa/setupatools/issues/2353
         "setuptools>=41.0.0,!=50.0",
+        "click",  # used in scl
         "gym",
         "panda3d",
         "panda3d-gltf",
@@ -61,10 +62,16 @@ setup(
         "scikit-image",
         # The following are for /smarts/zoo
         "twisted",
+        "PyYAML",
     ],
     extras_require={
         "train": ["tensorflow==1.15", "torch==1.3.0", "torchvision==0.4.1"],
-        "dev": ["black", "sphinx", "sphinx-rtd-theme", "sphinxcontrib-apidoc",],
+        "dev": [
+            "black==19.10b0",
+            "sphinx",
+            "sphinx-rtd-theme",
+            "sphinxcontrib-apidoc",
+        ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )

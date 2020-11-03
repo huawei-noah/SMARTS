@@ -36,28 +36,36 @@ The protocal is as follows:
 7. run_agent.py listens for observations and responds with actions
 """
 
-
-import logging
 import argparse
-import time
+import importlib
+import logging
 import os
-
+import time
 from multiprocessing.connection import Listener
+
 import cloudpickle
 
 # front-load some expensive imports as to not block the simulation
 
-import pybullet
-import smarts.core.utils.sumo
-import smarts.core.sumo_road_network
-import numpy
-import sklearn
-import shapely
-import scipy
-import trimesh
-import panda3d
-import gym
-import ray
+modules = [
+    "pybullet",
+    "smarts.core.utils.sumo",
+    "smarts.core.sumo_road_network",
+    "numpy",
+    "sklearn",
+    "shapely",
+    "scipy",
+    "trimesh",
+    "panda3d",
+    "gym",
+    "ray",
+]
+
+for mod in modules:
+    try:
+        importlib.import_module(mod)
+    except ImportError:
+        pass
 
 # end front-loaded imports
 

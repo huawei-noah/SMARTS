@@ -35,8 +35,6 @@ from urllib.parse import urlparse
 
 import sh
 
-from smarts.core.utils.class_factory import is_valid_url_locator
-
 from . import types
 from .generators import TrafficGenerator
 from .utils import prompt_yes_no
@@ -169,9 +167,6 @@ def gen_social_agent_missions(
     actors = social_agent_actor
     if not isinstance(actors, collections.Sequence):
         actors = [actors]
-
-    # Resolve remotely located actors
-    _resolve_actors(actors)
 
     # This doesn't support BoidAgentActor. Here we make that explicit
     if any(isinstance(actor, types.BoidAgentActor) for actor in actors):
@@ -373,50 +368,3 @@ def gen_traffic_histories(scenario: str, histories):
     output_path = os.path.join(scenario, "traffic_histories.pkl")
     with open(output_path, "wb") as f:
         pickle.dump(histories, f)
-
-
-def _resolve_actors(actors: Sequence):
-    """Downloads remote packaged policies via pip."""
-    packages = []
-    for actor in actors:
-        if is_valid_url_locator(actor.agent_locator):
-            url = actor.agent_locator.split(":", 1)[1]
-            url = urlparse(url)
-
-            version = url.query.split("=")[1]
-            index_url = f"{url.scheme}://{url.netloc}"
-            package_with_version = f"{url.path[1:]}=={version}"
-            packages.append((index_url, package_with_version))
-
-    if len(packages) == 0:
-        # Nothing to download
-        return
-
-    newline, tab = "\n", "\t"  # syntax error if used directly in f-string braces
-    choice = prompt_yes_no(
-        f"""
-We will be installing the following packages to your local Python
-environment via pip (make sure you're using a conda or virtualenv
-to not pollute your global environment):
-
-{newline.join([f"{tab}{p[1]}" for p in packages])}
-
-Please confirm if you'd like to proceed?
-"""
-    )
-    if not choice:
-        sys.stdout.write(f"Not installing policy zoo packages")
-        return
-
-    for index_url, package_with_version in packages:
-        cmd = [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--extra-index-url",
-            index_url,
-            package_with_version,
-        ]
-        sys.stdout.write(f"Installing policy zoo package via %s" % " ".join(cmd))
-        subprocess.check_call(cmd, stdout=subprocess.DEVNULL)

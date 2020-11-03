@@ -248,7 +248,7 @@ def build_problem(N, SV_N, WP_N, ts):
     # parse z0 into features
     position = 0
     parsed = []
-    for n, feature, in z0_schema:
+    for n, feature in z0_schema:
         feature_group = []
         for i in range(n):
             feature_group.append(
@@ -385,7 +385,7 @@ class Policy(AgentPolicy):
 
     def init_planner(self):
         try:
-            from . import open_agent_solver
+            import open_agent_solver
         except ImportError:
             raise "Can't import the solver, have you compiled it?"
 
