@@ -64,7 +64,7 @@ def _build_single_scenario(clean, scenario):
         import zoo.policies
 
         with pkg_resources.path(zoo.policies, "") as path:
-            # Serve policies through the static file server, then kill after the
+            # Serve policies through the static file server, then kill after
             # we've installed scenario requirements
             pip_index_proc = subprocess.Popen(
                 ["twistd", "-n", "web", "--path", path],

@@ -36,13 +36,13 @@ The protocal is as follows:
 7. run_agent.py listens for observations and responds with actions
 """
 
-
-import logging
 import argparse
-import time
+import importlib
+import logging
 import os
-
+import time
 from multiprocessing.connection import Listener
+
 import cloudpickle
 
 # front-load some expensive imports as to not block the simulation
@@ -63,7 +63,7 @@ modules = [
 
 for mod in modules:
     try:
-        __import__(mod)
+        importlib.import_module(mod)
     except ImportError:
         pass
 
