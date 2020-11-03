@@ -10,21 +10,12 @@ env:
 jobs:
   test-benchmark:
     runs-on: ubuntu-18.04
-    
-    container:
-      image: gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
+    container: huaweinoah/smarts:v0.4.3-pre
     steps:
       - name: Checkout
         uses: actions/checkout@v1.2.0
       - name: Install SMARTS package
         run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
           cd $GITHUB_WORKSPACE
           python3.7 -m venv "${venv_dir}"
           . "${venv_dir}/bin/activate"
