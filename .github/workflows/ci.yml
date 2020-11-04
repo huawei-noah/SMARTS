@@ -7,7 +7,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-18.04
-    container: gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
+    container: huaweinoah/smarts:v0.4.3-pre
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -34,9 +34,8 @@ jobs:
           make test
 
   test-formatting:
-    runs-on: ubuntu-latest
-    container: 
-      image: gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
+    runs-on: ubuntu-18.04
+    container: huaweinoah/smarts:v0.4.3-pre
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -52,9 +51,8 @@ jobs:
           npx prettier --check envision/web/src
 
   test-requirements:
-    runs-on: ubuntu-latest
-    container: 
-      image: gitlab.smartsai.xyz:5050/smarts/smarts-dockerfiles/smarts-base
+    runs-on: ubuntu-18.04
+    container: huaweinoah/smarts:v0.4.3-pre
     steps:
       - name: Checkout
         uses: actions/checkout@v2
