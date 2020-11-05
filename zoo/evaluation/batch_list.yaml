@@ -25,33 +25,29 @@ agent_list:
    - locator: zoo.policies.open-agent.open_agent:open_agent-v0
      name: open_agent_stable
      params:
-       N: 10
-       SV_N: 5
-       WP_N: 30
-       ts: 0.3
-       Q_theta: 0
-       Q_position: 30
-       Q_obstacle: 300
-       Q_u_accel: 100
-       Q_u_yaw_rate: 1
-       Q_n: 0.01
-       Q_impatience: 0.2
+       gains:
+         theta: 0
+         position: 0.1
+         obstacle: 1
+         u_accel: 1
+         u_yaw_rate: 1
+         terminal: 0
+         impatience: 0.2
+         speed: 1
 
 
-   - locator: zoo.open_agent.open_agent:open_agent-v0
+   - locator: zoo.policies.open-agent.open_agent:open_agent-v0
      name: open_agent_safe
      params:
-        N: 10
-        SV_N: 5
-        WP_N: 30
-        ts: 0.3
-        Q_theta: 0
-        Q_position: 100
-        Q_obstacle: 2000
-        Q_u_accel: 100
-        Q_u_yaw_rate: 1
-        Q_n: 0.01
-        Q_impatience: 0.01
+       gains:
+         theta: 0
+         position: 0.1
+         obstacle: 5
+         u_accel: 1
+         u_yaw_rate: 1
+         terminal: 0
+         impatience: 0.01
+         speed: 1
 
   group_3:
     - locator: rl_agent:rl-agent-v0
