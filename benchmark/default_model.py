@@ -125,7 +125,9 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                input=self._sess.graph.get_tensor_by_name(f"{policy_name}/fc_out/BiasAdd:0"),
+                input=self._sess.graph.get_tensor_by_name(
+                    f"{policy_name}/fc_out/BiasAdd:0"
+                ),
                 axis=1,
             )
 
@@ -174,7 +176,9 @@ class RLLibTFSavedModelPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                input=self._sess.graph.get_tensor_by_name(f"{policy_name}/fc_out/BiasAdd:0"),
+                input=self._sess.graph.get_tensor_by_name(
+                    f"{policy_name}/fc_out/BiasAdd:0"
+                ),
                 axis=1,
             )
 
@@ -243,7 +247,9 @@ class BatchRLLibTFCheckpointPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                input=self._sess.graph.get_tensor_by_name(f"{policy_name}/fc_out/BiasAdd:0"),
+                input=self._sess.graph.get_tensor_by_name(
+                    f"{policy_name}/fc_out/BiasAdd:0"
+                ),
                 axis=1,
             )
 
@@ -294,7 +300,9 @@ class BatchRLLibTFSavedModelPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                input=self._sess.graph.get_tensor_by_name(f"{policy_name}/fc_out/BiasAdd:0"),
+                input=self._sess.graph.get_tensor_by_name(
+                    f"{policy_name}/fc_out/BiasAdd:0"
+                ),
                 axis=1,
             )
 

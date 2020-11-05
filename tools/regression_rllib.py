@@ -31,7 +31,9 @@ class RLlibTFSavedModelPolicy(AgentPolicy):
     def setup(self):
         self._sess = tf.compat.v1.Session(graph=tf.Graph())
         self._sess.__enter__()
-        tf.compat.v1.saved_model.load(self._sess, export_dir=self._path_to_model, tags=["serve"])
+        tf.compat.v1.saved_model.load(
+            self._sess, export_dir=self._path_to_model, tags=["serve"]
+        )
 
     def act(self, obs):
         obs = self._prep.transform(obs)
