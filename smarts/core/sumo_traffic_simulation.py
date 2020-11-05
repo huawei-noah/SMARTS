@@ -39,6 +39,7 @@ from .provider import ProviderState, ProviderTLS, ProviderTrafficLight
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 # We need to import .utils.sumo before we can use traci
+from .utils.file import have_same_hash
 from .utils.sumo import SUMO_PATH, sumolib, traci
 from .utils import networking
 
@@ -220,7 +221,9 @@ class SumoTrafficSimulation:
         )
 
         # restart sumo process only when map file changes
-        if self._scenario and self._scenario.net_filepath == scenario.net_filepath:
+        if self._scenario and have_same_hash(
+            self._scenario.net_filepath, scenario.net_filepath
+        ):
             restart_sumo = False
         else:
             restart_sumo = True

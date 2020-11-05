@@ -74,3 +74,14 @@ def path2hash(file_path: str):
     m = hashlib.md5()
     m.update(bytes(file_path, "utf-8"))
     return m.hexdigest()
+
+
+def have_same_hash(file_a: str, file_b: str) -> bool:
+    hasher_a = hashlib.md5()
+    hasher_b = hashlib.md5()
+    with open(file_a) as f:
+        hasher_a.update(f.read().encode())
+    with open(file_b) as f:
+        hasher_b.update(f.read().encode())
+
+    return str(hasher_a.hexdigest()) == str(hasher_b.hexdigest())
