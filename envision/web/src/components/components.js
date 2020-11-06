@@ -44,15 +44,6 @@ import {
   buildLabel,
 } from "../render_helpers.js";
 
-let meshesLoaded = (vehicleMeshTemplates) => {
-  for (const [_, mesh] of Object.entries(vehicleMeshTemplates)) {
-    if (mesh == null) {
-      return false;
-    }
-  }
-  return true;
-};
-
 export function Camera({ scene, roadNetworkBbox, egoView }) {
   if (scene == null) {
     return null;
@@ -101,9 +92,10 @@ export function Camera({ scene, roadNetworkBbox, egoView }) {
       (roadNetworkBbox[0] + roadNetworkBbox[2]) / 2,
       (roadNetworkBbox[1] + roadNetworkBbox[3]) / 2,
     ];
-    thirdPersonCameraRef.current.target.x = mapCenter[0];
-    thirdPersonCameraRef.current.target.z = mapCenter[1];
-    thirdPersonCameraRef.current.radius = Math.max(
+    let thirdPersonCamera = thirdPersonCameraRef.current;
+    thirdPersonCamera.target.x = mapCenter[0];
+    thirdPersonCamera.target.z = mapCenter[1];
+    thirdPersonCamera.radius = Math.max(
       Math.abs(roadNetworkBbox[0] - roadNetworkBbox[2]),
       Math.abs(roadNetworkBbox[1] - roadNetworkBbox[3])
     );
@@ -116,7 +108,6 @@ export function Camera({ scene, roadNetworkBbox, egoView }) {
 
     if (egoView) {
       let egoCamera = egoCamRoot.getChildren()[0];
-      egoCamera.rotation = new Vector3.Zero(); //TODO: Not needed?
       scene.activeCamera = egoCamera;
 
       // Disable mouse input to the third person camera during ego view
@@ -130,20 +121,33 @@ export function Camera({ scene, roadNetworkBbox, egoView }) {
   return null;
 }
 
+let meshesLoaded = (vehicleMeshTemplates) => {
+  for (const [_, mesh] of Object.entries(vehicleMeshTemplates)) {
+    if (mesh == null) {
+      return false;
+    }
+  }
+  return true;
+};
+
 // Vehicles and agent labels
 export function Vehicles({ scene, worldState, vehicleRootUrl, egoView }) {
   if (scene == null) {
     return null;
   }
 
+  const vehicleMeshTemplatesRef = useRef({});
   const vehicleMeshesRef = useRef({});
   const agentLabelGeometryRef = useRef({});
-  const vehicleMeshTemplatesRef = useRef({});
+
+  let vehicleMeshTemplates = vehicleMeshTemplatesRef.current;
+  let vehicleMeshes = vehicleMeshesRef.current;
+  let agentLabelGeometry = agentLabelGeometryRef.current;
 
   // Load mesh asynchronously
   useEffect(() => {
     for (const [vehicleFilename, meshTemplate] of Object.entries(
-      vehicleMeshTemplatesRef.current
+      vehicleMeshTemplates
     )) {
       if (meshTemplate != null) {
         continue;
@@ -191,23 +195,17 @@ export function Vehicles({ scene, worldState, vehicleRootUrl, egoView }) {
 
           rootMesh.setBoundingInfo(new BoundingInfo(rootMeshMin, rootMeshMax));
 
-          vehicleMeshTemplatesRef.current[vehicleFilename] = rootMesh;
+          vehicleMeshTemplates[vehicleFilename] = rootMesh;
         }
       );
     }
     // This useEffect is triggered when the vehicleMeshTemplate's keys() change
-  }, [Object.keys(vehicleMeshTemplatesRef.current).sort().join("-")]);
+  }, [Object.keys(vehicleMeshTemplates).sort().join("-")]);
 
   useEffect(() => {
-    if (!meshesLoaded(vehicleMeshTemplatesRef.current)) {
+    if (!meshesLoaded(vehicleMeshTemplates)) {
       return;
     }
-
-    let vehicleMeshes = vehicleMeshesRef.current;
-    let agentLabelGeometry = agentLabelGeometryRef.current;
-
-    let nextVehicleMeshes = {};
-    let nextAgentLabelGeometry = {};
 
     let nextVehicleMeshIds = new Set(Object.keys(worldState.traffic));
     let vehicleMeshIds = new Set(Object.keys(vehicleMeshes));
@@ -232,17 +230,12 @@ export function Vehicles({ scene, worldState, vehicleRootUrl, egoView }) {
     // Dispose of stale meshes
     for (const meshId of vehicleMeshIdsToRemove) {
       vehicleMeshes[meshId].dispose();
+      delete vehicleMeshes[meshId]; // remove key from dict
 
-      let label = agentLabelGeometry[meshId];
-      if (label) {
-        label.dispose();
+      if (agentLabelGeometry[meshId]) {
+        agentLabelGeometry[meshId].dispose();
       }
-    }
-
-    // Add back kept meshes
-    for (const meshId of vehicleMeshIdsToKeep) {
-      nextVehicleMeshes[meshId] = vehicleMeshes[meshId];
-      nextAgentLabelGeometry[meshId] = agentLabelGeometry[meshId];
+      delete agentLabelGeometry[meshId]; // remove key from dict
     }
 
     // Create new meshes
@@ -250,17 +243,15 @@ export function Vehicles({ scene, worldState, vehicleRootUrl, egoView }) {
       let state = worldState.traffic[meshId];
       // Vehicle mesh
       let filename = vehicleMeshFilename(state.actor_type, state.vehicle_type);
-      if (!vehicleMeshTemplatesRef.current[filename]) {
+      if (!vehicleMeshTemplates[filename]) {
         // Triggers loading the mesh according through the useEffect
-        vehicleMeshTemplatesRef.current[filename] = null;
+        vehicleMeshTemplates[filename] = null;
         continue;
       }
 
       let color = vehicleMeshColor(state.actor_type, worldState.scene_colors);
       let rootMesh = new Mesh(`root-mesh-${meshId}`, scene);
-      let childMeshes = vehicleMeshTemplatesRef.current[
-        filename
-      ].getChildMeshes();
+      let childMeshes = vehicleMeshTemplates[filename].getChildMeshes();
       for (const child of childMeshes) {
         let instancedSubMesh = child.createInstance(`${child.name}-${meshId}`);
         if (
@@ -275,9 +266,7 @@ export function Vehicles({ scene, worldState, vehicleRootUrl, egoView }) {
 
       // Render bounding box for social vehicle
       if (state.actor_type == ActorTypes.SOCIAL_VEHICLE) {
-        let boundingInfo = vehicleMeshTemplatesRef.current[
-          filename
-        ].getBoundingInfo();
+        let boundingInfo = vehicleMeshTemplates[filename].getBoundingInfo();
         let boxSize = boundingInfo.boundingBox.extendSize.scale(2);
         let box = MeshBuilder.CreateBox(
           `boundingbox-${meshId}`,
@@ -304,7 +293,7 @@ export function Vehicles({ scene, worldState, vehicleRootUrl, egoView }) {
       rootMesh.metadata = {};
       rootMesh.metadata.actorType = state.actor_type;
 
-      nextVehicleMeshes[meshId] = rootMesh;
+      vehicleMeshes[meshId] = rootMesh;
 
       // Agent label
       // Only show labels on agents
@@ -312,14 +301,14 @@ export function Vehicles({ scene, worldState, vehicleRootUrl, egoView }) {
       if (state.actor_type == ActorTypes.AGENT) {
         label = buildLabel(meshId, state.actor_id, scene);
       }
-      nextAgentLabelGeometry[meshId] = label;
+      agentLabelGeometry[meshId] = label;
     }
 
     let firstEgoAgent = true;
     // Set mesh positions and orientations
     for (const meshId of nextVehicleMeshIds) {
       let state = worldState.traffic[meshId];
-      let mesh = nextVehicleMeshes[meshId];
+      let mesh = vehicleMeshes[meshId];
       // Unavailable until the mesh template has been loaded
       if (!mesh) {
         continue;
@@ -333,7 +322,7 @@ export function Vehicles({ scene, worldState, vehicleRootUrl, egoView }) {
       let quaternion = new Quaternion.RotationAxis(axis, angle);
       mesh.rotationQuaternion = quaternion;
 
-      let label = nextAgentLabelGeometry[meshId];
+      let label = agentLabelGeometry[meshId];
       if (label) {
         label.position = new Vector3(pos[0], pos[2] + 2, pos[1] - 4);
         label.isVisible = true;
@@ -348,9 +337,6 @@ export function Vehicles({ scene, worldState, vehicleRootUrl, egoView }) {
         egoCamRoot.rotation = new Vector3(0, 2 * Math.PI - state.heading, 0);
       }
     }
-
-    vehicleMeshesRef.current = nextVehicleMeshes;
-    agentLabelGeometryRef.current = nextAgentLabelGeometry;
   }, [worldState.traffic]);
 
   return null;
