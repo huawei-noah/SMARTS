@@ -76,12 +76,9 @@ def path2hash(file_path: str):
     return m.hexdigest()
 
 
-def have_same_hash(file_a: str, file_b: str) -> bool:
-    hasher_a = hashlib.md5()
-    hasher_b = hashlib.md5()
-    with open(file_a) as f:
-        hasher_a.update(f.read().encode())
-    with open(file_b) as f:
-        hasher_b.update(f.read().encode())
+def file_md5_hash(file_path: str) -> str:
+    hasher = hashlib.md5()
+    with open(file_path) as f:
+        hasher.update(f.read().encode())
 
-    return str(hasher_a.hexdigest()) == str(hasher_b.hexdigest())
+    return str(hasher.hexdigest())
