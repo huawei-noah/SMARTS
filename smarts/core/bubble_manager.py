@@ -23,13 +23,12 @@ import logging
 from enum import Enum
 from collections import defaultdict
 from functools import lru_cache
-from dataclasses import dataclass, field, replace
-from typing import Sequence, Tuple, Dict
+from dataclasses import dataclass, field
+from typing import Sequence, Dict
 
 from shapely.geometry import Polygon, Point
 from shapely.affinity import translate, rotate
 
-from smarts.core.provider import ProviderState
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.data_model import SocialAgent
 from smarts.core.vehicle_index import VehicleIndex
@@ -178,7 +177,7 @@ class Cursor:
         self.tracking_id = self.vehicle.id
 
     @classmethod
-    def from_pos(cls, prev_pos, pos, vehicle, bubble):
+    def from_pos(cls, prev_pos, pos, vehicle, bubble, index):
         @lru_cache(maxsize=2)
         def in_bubble(pos_):
             return bubble.in_bubble(pos_)
@@ -189,22 +188,29 @@ class Cursor:
 
         prev_pos, pos = tuple(prev_pos), tuple(pos)
 
+        is_social = vehicle.id in index.social_vehicle_ids
+        is_hijacked = index.vehicle_is_hijacked(vehicle.id)
+
         transition = None
         # TODO: Depending on step size, we could potentially skip transitions (e.g.
         #       go straight to relinquish w/o hijacking first). This may be solved by
         #       time-based airlocking.
-        if in_airlock(prev_pos) and in_bubble(pos):
-            transition = BubbleTransition.Entered
-        elif in_bubble(prev_pos) and in_airlock(pos):
-            transition = BubbleTransition.Exited
-        elif in_airlock(pos) and not (in_airlock(prev_pos) or in_bubble(prev_pos)):
+        if (
+            is_social
+            and in_airlock(pos)
+            and not (in_airlock(prev_pos) or in_bubble(prev_pos))
+        ):
             transition = BubbleTransition.AirlockEntered
-        elif in_airlock(prev_pos) and not (in_airlock(pos) or in_bubble(pos)):
+        elif is_social and in_airlock(prev_pos) and in_bubble(pos):
+            transition = BubbleTransition.Entered
+        elif is_hijacked and in_bubble(prev_pos) and in_airlock(pos):
+            transition = BubbleTransition.Exited
+        elif (
+            is_hijacked
+            and in_airlock(prev_pos)
+            and not (in_airlock(pos) or in_bubble(pos))
+        ):
             transition = BubbleTransition.AirlockExited
-        else:
-            assert (bubble.in_airlock(prev_pos) == bubble.in_airlock(pos)) or (
-                bubble.in_bubble(prev_pos) == bubble.in_bubble(pos)
-            )
 
         state = None
         if in_bubble(pos):
@@ -212,9 +218,7 @@ class Cursor:
         elif in_airlock(pos):
             state = BubbleState.InAirlock
 
-        return Cursor(
-            vehicle=vehicle, transition=transition, state=state, bubble=bubble,
-        )
+        return cls(vehicle=vehicle, transition=transition, state=state, bubble=bubble,)
 
     def __repr__(self):
         return f"""Cursor(
@@ -294,12 +298,12 @@ class BubbleManager:
                         pos=vehicle.position,
                         vehicle=vehicle,
                         bubble=bubble,
+                        index=vehicle_index,
                     )
                 )
 
         # TODO: Handle add_index and del_index
         # TODO: We have cursors tracking every vehicle x every bubble...
-
         return cursors
 
     def _handle_transitions(self, sim, cursors):
@@ -307,30 +311,19 @@ class BubbleManager:
         for agent_id in sim.agent_manager.social_agent_ids:
             social_agent_vehicles += sim.vehicle_index.vehicles_by_actor_id(agent_id)
 
-        social_vehicles = [
-            sim.vehicle_index.vehicle_by_id(id_)
-            for id_ in sim.vehicle_index.social_vehicle_ids
-        ]
-
         transitioned = [c for c in cursors if c.transition is not None]
         for cursor in transitioned:
-            is_social = cursor.tracking_id in sim.vehicle_index.social_vehicle_ids
-            is_agent = cursor.tracking_id in sim.vehicle_index.agent_vehicle_ids
-
-            if is_social and cursor.transition == BubbleTransition.AirlockEntered:
+            if cursor.transition == BubbleTransition.AirlockEntered:
                 self._airlock_social_vehicle_with_social_agent(
                     sim, cursor.tracking_id, cursor.bubble.actor
                 )
-            elif is_social and cursor.transition == BubbleTransition.Entered:
+            elif cursor.transition == BubbleTransition.Entered:
                 self._hijack_social_vehicle_with_social_agent(
                     sim, cursor.tracking_id, cursor.bubble.actor
                 )
-            # TODO: Diff approach presently has no way of knowing if this was a
-            #       previously hijacked vehicle or a regular agent, so we end up
-            #       destroying all agents that pass through the bubble.
-            elif is_agent and cursor.transition == BubbleTransition.Exited:
+            elif cursor.transition == BubbleTransition.Exited:
                 continue
-            elif is_agent and cursor.transition == BubbleTransition.AirlockExited:
+            elif cursor.transition == BubbleTransition.AirlockExited:
                 # XXX: Some vehicles only go through the airlocks and never make it
                 #      through the bubble; that's why we relinquish on airlock exit.
                 #      This is something we'll likely want to revisit in the future.
@@ -398,6 +391,7 @@ class BubbleManager:
                 policy_kwargs=social_agent_actor.policy_kwargs,
                 initial_speed=social_agent_actor.initial_speed,
             )
+            # BUG: `social_agent` may not have been defined
             sim.agent_manager.start_social_agent(
                 agent_id, social_agent, social_agent_data_model
             )
@@ -417,10 +411,11 @@ class BubbleManager:
 
         is_boid = isinstance(social_agent_actor, BoidAgentActor)
         vehicle = sim.vehicle_index.switch_control_to_agent(
-            sim, vehicle_id, agent_id, boid=is_boid, recreate=False
+            sim, vehicle_id, agent_id, boid=is_boid, hijacking=True, recreate=False
         )
 
         for provider in sim.providers:
+            # TODO: Crashes if we didn't airlock before hijacking
             if (
                 sim.agent_manager.agent_interface_for_agent_id(agent_id).action_space
                 in provider.action_spaces

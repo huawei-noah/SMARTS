@@ -112,7 +112,7 @@ class SumoTrafficSimulation:
         # the retries are to deal with port collisions
         #   since the way we start sumo here has a race condition on
         #   each spawned process claiming a port
-        for i in range(num_retries):
+        for _ in range(num_retries):
             self._close_traci_and_pipes()
 
             sumo_port = self._sumo_port

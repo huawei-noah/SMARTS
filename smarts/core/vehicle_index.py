@@ -28,7 +28,7 @@ import tableprint as tp
 
 from smarts.core import gen_id
 from .chassis import AckermannChassis, BoxChassis
-from .vehicle import Vehicle, VehicleState
+from .vehicle import Vehicle
 from .sensors import SensorState
 from .controllers import ControllerState
 
@@ -46,6 +46,7 @@ class _ControlEntity(NamedTuple):
     # Applies to shadowing and controlling actor
     # TODO: Consider moving this to an _ActorType field
     is_boid: bool
+    is_hijacked: bool
     position: np.ndarray
 
 
@@ -148,7 +149,27 @@ class VehicleIndex:
 
         # If a boid actor (or not) all vehicles should have the same is_boid value
         assert all(x == is_boids[0] for x in is_boids)
-        return is_boids[0]
+        return bool(is_boids[0])
+
+    def vehicle_is_hijacked(self, vehicle_id):
+        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        if not np.any(v_index):
+            return False
+
+        entities = self._controlled_by[v_index]
+        assert len(entities) == 1
+
+        return bool(_ControlEntity(*entities[0]).is_hijacked)
+
+    def vehicle_is_shadowed(self, vehicle_id):
+        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        if not np.any(v_index):
+            return False
+
+        entities = self._controlled_by[v_index]
+        assert len(entities) == 1
+
+        return bool(_ControlEntity(*entities[0]).shadow_actor_id)
 
     @property
     def vehicles(self):
@@ -310,7 +331,7 @@ class VehicleIndex:
         )
 
     def switch_control_to_agent(
-        self, sim, vehicle_id, agent_id, boid=False, recreate=False
+        self, sim, vehicle_id, agent_id, boid=False, hijacking=False, recreate=False
     ):
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
         if recreate:
@@ -318,7 +339,7 @@ class VehicleIndex:
             #      sumo traffic sim sync(...) logic in how it detects a vehicle as
             #      being hijacked vs joining. Presently it's still used for trapping.
             return self._switch_control_to_agent_recreate(
-                sim, vehicle_id, agent_id, boid
+                sim, vehicle_id, agent_id, boid, hijacking
             )
 
         vehicle = self._vehicles[vehicle_id]
@@ -333,12 +354,15 @@ class VehicleIndex:
                 actor_id=agent_id,
                 shadow_actor_id="",
                 is_boid=boid,
+                is_hijacked=hijacking,
             )
         )
 
         return vehicle
 
-    def _switch_control_to_agent_recreate(self, sim, vehicle_id, agent_id, boid):
+    def _switch_control_to_agent_recreate(
+        self, sim, vehicle_id, agent_id, boid, hijacking
+    ):
         # TODO: There existed a SUMO connection error bug
         #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occured
         #       during lange changing when we hijacked/trapped a SUMO vehicle. Forcing
@@ -389,11 +413,11 @@ class VehicleIndex:
             sim,
             agent_id,
             agent_interface,
-            new_vehicle_id,
             new_vehicle,
             controller_state,
             sensor_state,
             boid,
+            hijacking,
         )
 
         return new_vehicle
@@ -421,6 +445,7 @@ class VehicleIndex:
                 actor_id=social_vehicle_id,
                 shadow_actor_id="",
                 is_boid=False,
+                is_hijacked=False,
             )
         )
 
@@ -455,8 +480,6 @@ class VehicleIndex:
             initial_speed,
         )
 
-        waypoint_paths = sim.waypoints.waypoint_paths_at(vehicle.position, lookahead=1)
-
         sensor_state = SensorState(
             agent_interface.max_episode_steps, mission_planner=mission_planner,
         )
@@ -469,11 +492,11 @@ class VehicleIndex:
             sim,
             agent_id,
             agent_interface,
-            vehicle_id,
             vehicle,
             controller_state,
             sensor_state,
             boid,
+            hijacking=False,
         )
 
         return vehicle
@@ -483,11 +506,11 @@ class VehicleIndex:
         sim,
         agent_id,
         agent_interface,
-        vehicle_id,
         vehicle,
         controller_state,
         sensor_state,
         boid=False,
+        hijacking=False,
     ):
         Vehicle.attach_sensors_to_vehicle(
             sim, vehicle, agent_interface, sensor_state.mission_planner
@@ -503,6 +526,7 @@ class VehicleIndex:
             actor_type=_ActorType.Agent,
             shadow_actor_id="",
             is_boid=boid,
+            is_hijacked=hijacking,
             position=vehicle.position,
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
@@ -525,6 +549,7 @@ class VehicleIndex:
             actor_type=_ActorType.Social,
             shadow_actor_id="",
             is_boid=False,
+            is_hijacked=False,
             position=vehicle.position,
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
@@ -551,6 +576,7 @@ class VehicleIndex:
                 #      We can add an shadow_actor_type when needed
                 ("shadow_actor_id", "O"),
                 ("is_boid", "B"),
+                ("is_hijacked", "B"),
                 ("position", "O"),
             ],
         )
