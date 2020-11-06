@@ -415,7 +415,6 @@ class SMARTS(ShowBase):
         torndown_vehicles = self._vehicle_index.teardown_vehicles_by_actor_ids(
             agent_ids
         )
-        self._bubble_manager.forget_vehicles(torndown_vehicles)
         self._clear_collisions(agent_ids)
 
     def attach_sensors_to_vehicles(self, agent_spec, vehicle_ids):
@@ -496,7 +495,6 @@ class SMARTS(ShowBase):
                 shadow_and_controlling_agents.add(shadow_agent_id)
 
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
-        self._bubble_manager.forget_vehicles(vehicle_ids)
 
         self.teardown_agents_without_vehicles(shadow_and_controlling_agents)
 

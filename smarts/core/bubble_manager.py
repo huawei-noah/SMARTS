@@ -17,26 +17,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import math
-from copy import deepcopy
 import logging
-from enum import Enum
 from collections import defaultdict
-from functools import lru_cache
+from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Sequence, Dict
+from enum import Enum
+from functools import lru_cache
+from typing import Dict, Sequence
 
-from shapely.geometry import Polygon, Point
-from shapely.affinity import translate, rotate
+from shapely.affinity import rotate, translate
+from shapely.geometry import Point, Polygon
 
-from smarts.core.utils.id import SocialAgentId
 from smarts.core.data_model import SocialAgent
-from smarts.core.vehicle_index import VehicleIndex
 from smarts.core.mission_planner import Mission, MissionPlanner, Start
 from smarts.core.scenario import PositionalGoal
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import Vehicle, VehicleState
-from smarts.sstudio.types import Bubble as SSBubble, BoidAgentActor
+from smarts.core.vehicle_index import VehicleIndex
+from smarts.sstudio.types import BoidAgentActor
+from smarts.sstudio.types import Bubble as SSBubble
 from smarts.sstudio.types import SocialAgentActor
 from smarts.zoo.registry import make as make_social_agent
 
@@ -194,7 +194,8 @@ class Cursor:
         transition = None
         # TODO: Depending on step size, we could potentially skip transitions (e.g.
         #       go straight to relinquish w/o hijacking first). This may be solved by
-        #       time-based airlocking.
+        #       time-based airlocking. For robust code we'll want to handle these
+        #       scenarios (e.g. hijacking if didn't airlock first)
         if (
             is_social
             and in_airlock(pos)
@@ -245,7 +246,6 @@ class BubbleManager:
             if not bubble.is_travelling:
                 return True
 
-            # TODO: Should we use the active?
             vehicles = self._last_vehicle_index.vehicles_by_actor_id(
                 bubble.follow_actor_id
             )
@@ -265,11 +265,6 @@ class BubbleManager:
 
         raise ValueError("Bubble does not exist")
 
-    # TODO: Get rid of this...
-    def forget_vehicles(self, vehicle_ids):
-        """Removes any tracking information for the given vehicle ids"""
-        self._cursors = [c for c in self._cursors if c.vehicle.id not in vehicle_ids]
-
     def step(self, sim):
         self._move_travelling_bubbles(sim)
         self._cursors = self._sync_cursors(self._last_vehicle_index, sim.vehicle_index)
@@ -277,10 +272,15 @@ class BubbleManager:
         self._last_vehicle_index = deepcopy(sim.vehicle_index)
 
     def _sync_cursors(self, last_vehicle_index, vehicle_index):
+        # TODO: Not handling newly added vehicles means we require an additional step
+        #       before we trigger hijacking.
         # Newly added vehicles
-        add_index = vehicle_index - last_vehicle_index
+        # add_index = vehicle_index - last_vehicle_index
+        # TODO: Not handling deleted vehicles at this point should be fine because we're
+        #       stateless.
         # Recently terminated vehicles
-        del_index = last_vehicle_index - vehicle_index
+        # del_index = last_vehicle_index - vehicle_index
+
         # Vehicles that stuck around
         index_pre = last_vehicle_index & vehicle_index
         index_new = vehicle_index & last_vehicle_index
@@ -302,8 +302,6 @@ class BubbleManager:
                     )
                 )
 
-        # TODO: Handle add_index and del_index
-        # TODO: We have cursors tracking every vehicle x every bubble...
         return cursors
 
     def _handle_transitions(self, sim, cursors):
@@ -334,8 +332,6 @@ class BubbleManager:
             if not bubble.is_travelling:
                 continue
 
-            # TODO: Handle if actor is terminated on not spawned yet. In those
-            #       circumstances the bubble should not be present.
             vehicles = sim.vehicle_index.vehicles_by_actor_id(bubble.follow_actor_id)
             assert (
                 len(vehicles) <= 1
@@ -356,6 +352,7 @@ class BubbleManager:
 
         agent_id = BubbleManager._make_social_agent_id(vehicle_id, social_agent_actor)
 
+        social_agent = None
         if agent_id in sim.agent_manager.social_agent_ids:
             # E.g. if agent is a boid and was being re-used
             interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
@@ -382,7 +379,7 @@ class BubbleManager:
         )
         mission_planner.plan(mission=mission)
 
-        if agent_id not in sim.agent_manager.social_agent_ids:
+        if social_agent and agent_id not in sim.agent_manager.social_agent_ids:
             social_agent_data_model = SocialAgent(
                 id=SocialAgentId.new(social_agent_actor.name),
                 name=social_agent_actor.name,
@@ -391,7 +388,6 @@ class BubbleManager:
                 policy_kwargs=social_agent_actor.policy_kwargs,
                 initial_speed=social_agent_actor.initial_speed,
             )
-            # BUG: `social_agent` may not have been defined
             sim.agent_manager.start_social_agent(
                 agent_id, social_agent, social_agent_data_model
             )
@@ -415,7 +411,6 @@ class BubbleManager:
         )
 
         for provider in sim.providers:
-            # TODO: Crashes if we didn't airlock before hijacking
             if (
                 sim.agent_manager.agent_interface_for_agent_id(agent_id).action_space
                 in provider.action_spaces
