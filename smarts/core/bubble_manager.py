@@ -160,6 +160,17 @@ class Bubble:
 
         self._bubble_heading = vehicle.heading
 
+    def __repr__(self):
+        return f"""Bubble(
+  id={self.id},
+  travelling={self.is_travelling},
+  actor={self.actor},
+  follow_actor_id={self.follow_actor_id},
+  limit={self.limit},
+  geometry={self.geometry},
+  airlock_geometry={self.airlock_geometry},
+)"""
+
 
 @dataclass
 class Cursor:
@@ -230,11 +241,11 @@ class Cursor:
 
 
 class BubbleManager:
-    def __init__(self, sim, bubbles: Sequence[SSBubble]):
+    def __init__(self, bubbles: Sequence[SSBubble], road_network: SumoRoadNetwork):
         self._log = logging.getLogger(self.__class__.__name__)
         self._cursors = []
         self._last_vehicle_index = VehicleIndex.identity()
-        self._bubbles = [Bubble(b, sim.scenario.road_network) for b in bubbles]
+        self._bubbles = [Bubble(b, road_network) for b in bubbles]
 
     @property
     def bubbles(self) -> Sequence[Bubble]:

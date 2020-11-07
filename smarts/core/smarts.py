@@ -311,7 +311,7 @@ class SMARTS(ShowBase):
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
 
         bubbles = scenario.discover_bubbles()
-        self._bubble_manager = BubbleManager(self, bubbles)
+        self._bubble_manager = BubbleManager(bubbles, self.scenario.road_network)
         self._trap_manager = TrapManager(scenario)
 
         self._setup_bullet_client(self._bullet_client)
@@ -321,6 +321,9 @@ class SMARTS(ShowBase):
         self._last_provider_state = provider_state
 
         self._is_setup = True
+
+    def add_provider(self, provider):
+        self._providers.append(provider)
 
     def _setup_road_network(self):
         glb_path = self.scenario.map_glb_filepath

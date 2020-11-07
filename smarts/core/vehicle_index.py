@@ -583,7 +583,13 @@ class VehicleIndex:
 
     def __repr__(self):
         io = StringIO("")
-        table = tp.table(
-            self._controlled_by, self._controlled_by.dtype.names, style="round", out=io,
-        )
+
+        by = self._controlled_by.copy()
+        by["position"] = [f"({', '.join(map(str, tuple(p)))})" for p in by["position"]]
+
+        # XXX: tableprint crashes when there's no data
+        if by.size == 0:
+            by = [[""] * len(self._controlled_by.dtype.names)]
+
+        tp.table(by, self._controlled_by.dtype.names, style="round", out=io)
         return io.getvalue()

@@ -17,18 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import json
-import math
-import random
 from itertools import cycle
-from typing import Set, Dict
-
-import numpy as np
+from typing import Set
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Pose, Heading
+from .coordinates import Pose, Heading
 from .provider import ProviderState
-from .scenario import Mission, EndlessGoal, Start
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
