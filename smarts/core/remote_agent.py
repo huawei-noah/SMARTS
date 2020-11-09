@@ -60,7 +60,7 @@ class RemoteAgent:
         self._agent_proc = subprocess.Popen(cmd)
         self._conn = None
         self._tp_exec = futures.ThreadPoolExecutor()
-        self._action = self._tp_exec.submit(lambda :None)
+        self._action = self._tp_exec.submit(lambda: None)
 
         for i in range(connection_retries):
             # Waiting on agent to open it's socket.
@@ -98,7 +98,7 @@ class RemoteAgent:
 
     def act(self, obs, timeout=None):
         # Run task asynchronously and store the returned Future
-        self._action = self._tp_exec.submit(self._act, obs, timeout) 
+        self._action = self._tp_exec.submit(self._act, obs, timeout)
 
     def start(self, agent_spec: AgentSpec):
         # Send the AgentSpec to the agent runner
@@ -117,5 +117,5 @@ class RemoteAgent:
                 self._agent_proc.wait()
             self._agent_proc = None
 
-        # Shutdown thread pool executor    
+        # Shutdown thread pool executor
         self._tp_exec.shutdown()

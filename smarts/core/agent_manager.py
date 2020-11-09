@@ -230,12 +230,12 @@ class AgentManager:
     def fetch_agent_actions(self, sim, ego_agent_actions):
         try:
             social_agent_actions = {
-                agent_id: remote_agent.action.result() 
+                agent_id: remote_agent.action.result()
                 for agent_id, remote_agent in self._remote_social_agents.items()
             }
         except Exception as e:
             self._log.error(
-                "Remote Agent: Resolving the remote agent's action (a Future object) generated this exception."
+                "RemoteAgent: Resolving the remote agent's action (a Future object) generated exception."
             )
             self._log.exception(e)
             raise e
