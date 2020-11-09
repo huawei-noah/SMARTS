@@ -214,9 +214,9 @@ class Client:
         self._state_queue.put(Client.QueueDone())
         self._logging_queue.put(Client.QueueDone())
         if self._thread:
-            self._thread.join()
+            self._thread.join(timeout=3)
             self._thread = None
 
         if self._logging_thread:
-            self._logging_thread.join()
+            self._logging_thread.join(timeout=3)
             self._logging_thread = None
