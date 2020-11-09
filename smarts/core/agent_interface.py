@@ -97,6 +97,11 @@ class NeighborhoodVehicles:
     radius: float = None
 
 
+@dataclass
+class Accelerometer:
+    ...
+
+
 class AgentType(IntEnum):
     Buddha = 0
     """Agent sees nothing and does nothing"""
@@ -202,6 +207,8 @@ class AgentInterface:
     The choice of action space, this action space also decides the controller that will be enabled.
     """
 
+    accelerometer: Union[Accelerometer, bool] = True
+
     def __post_init__(self):
         self.neighborhood_vehicles = AgentInterface._resolve_config(
             self.neighborhood_vehicles, NeighborhoodVehicles
@@ -216,6 +223,9 @@ class AgentInterface:
         self.ogm = AgentInterface._resolve_config(self.ogm, OGM)
         self.rgb = AgentInterface._resolve_config(self.rgb, RGB)
         self.lidar = AgentInterface._resolve_config(self.lidar, Lidar)
+        self.accelerometer = AgentInterface._resolve_config(
+            self.accelerometer, Accelerometer
+        )
 
     @staticmethod
     def from_type(requested_type: AgentType, **kwargs):

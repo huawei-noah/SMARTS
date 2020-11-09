@@ -31,6 +31,7 @@ from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
 from .masks import RenderMasks
 from .sensors import (
+    AccelerometerSensor,
     DrivenPathSensor,
     DrivableAreaGridMapSensor,
     LidarSensor,
@@ -367,6 +368,11 @@ class Vehicle:
                 )
             )
 
+        if agent_interface.accelerometer:
+            vehicle.attach_accelerometer_sensor(
+                AccelerometerSensor(vehicle=vehicle, sim=sim,)
+            )
+
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
                 WaypointsSensor(
@@ -480,6 +486,7 @@ class Vehicle:
             "mission_planner_sensor",
             "waypoints_sensor",
             "road_waypoints_sensor",
+            "accelerometer_sensor",
         ]
         for sensor_name in sensor_names:
 

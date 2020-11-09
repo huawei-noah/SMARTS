@@ -71,6 +71,10 @@ class EgoVehicleObservation(NamedTuple):
     mission: Mission
     linear_velocity: np.ndarray
     angular_velocity: np.ndarray
+    linear_acceleration: np.ndarray
+    angular_acceleration: np.ndarray
+    linear_jerk: np.ndarray
+    angular_jerk: np.ndarray
 
 
 class RoadWaypoints(NamedTuple):
@@ -186,6 +190,31 @@ class Sensors:
         ego_lane_index = closest_waypoint.lane_index
         ego_edge_id = sim.road_network.edge_by_lane_id(ego_lane_id).getID()
         ego_vehicle_state = vehicle.state
+
+        acceleration_params = {
+            "linear_acceleration": None,
+            "angular_acceleration": None,
+            "linear_jerk": None,
+            "angular_jerk": None,
+        }
+        if vehicle.subscribed_to_accelerometer_sensor:
+            (
+                linear_acc,
+                angular_acc,
+                linear_jerk,
+                angular_jerk,
+            ) = vehicle.accelerometer_sensor(
+                ego_vehicle_state.linear_velocity, ego_vehicle_state.angular_velocity
+            )
+            acceleration_params.update(
+                {
+                    "linear_acceleration": linear_acc,
+                    "angular_acceleration": angular_acc,
+                    "linear_jerk": linear_jerk,
+                    "angular_jerk": angular_jerk,
+                }
+            )
+
         ego_vehicle_observation = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
             position=ego_vehicle_state.pose.position,
@@ -200,7 +229,9 @@ class Sensors:
             mission=sensor_state.mission_planner.mission,
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,
+            **acceleration_params,
         )
+
         road_waypoints = (
             vehicle.road_waypoints_sensor()
             if vehicle.subscribed_to_road_waypoints_sensor
@@ -930,3 +961,36 @@ class RoadWaypointsSensor(Sensor):
 
     def teardown(self):
         pass
+
+
+class AccelerometerSensor(Sensor):
+    def __init__(self, vehicle, sim):
+        self.linear_accelerations = deque(maxlen=3)
+        self.angular_accelerations = deque(maxlen=3)
+
+    list()
+
+    def __call__(self, linear_velocity, angular_velocity):
+        if not linear_velocity is None:
+            self.linear_accelerations.append(linear_velocity)
+        if not angular_velocity is None:
+            self.angular_accelerations.append(angular_velocity)
+
+        if len(self.linear_accelerations) < 2 or len(self.angular_accelerations):
+            return (None, None, None, None)
+
+        linear_acc = self.linear_accelerations[0] - self.linear_accelerations[1]
+        last_linear_acc = self.linear_accelerations[1] - self.linear_accelerations[2]
+        angular_acc = self.angular_accelerations[0] - self.angular_accelerations[1]
+        last_angular_acc = self.angular_accelerations[1] - self.angular_accelerations[2]
+
+        if len(self.linear_accelerations) < 3 or len(self.angular_accelerations) < 3:
+            return (linear_acc, angular_acc, None, None)
+
+        linear_jerk = linear_acc - last_linear_acc
+        angular_jerk = angular_acc - last_angular_acc
+
+        return (linear_acc, angular_acc, linear_jerk, angular_jerk)
+
+    def teardown(self):
+        ...
