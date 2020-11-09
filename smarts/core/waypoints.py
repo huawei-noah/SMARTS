@@ -22,7 +22,7 @@ import random
 from typing import Sequence
 from dataclasses import dataclass
 from collections import namedtuple, defaultdict
-
+from scipy.interpolate import interp1d
 import numpy as np
 from sklearn.neighbors import KDTree
 
@@ -256,7 +256,81 @@ class Waypoints:
 
             waypoint_paths = next_waypoint_paths
 
-        return waypoint_paths
+        ref_waypoints_coordinates = {
+            "ref_wp_positions_x": [],
+            "ref_wp_positions_y": [],
+            "ref_wp_headings": [],
+        }
+
+        for waypoint in waypoint_paths[0]:
+            ref_waypoints_coordinates["ref_wp_positions_x"].append(waypoint.wp.pos[0])
+            ref_waypoints_coordinates["ref_wp_positions_y"].append(waypoint.wp.pos[1])
+            ref_waypoints_coordinates["ref_wp_headings"].append(
+                waypoint.wp.heading.as_bullet
+            )
+
+        # To ensure that the distance between waypoints are equal, we used
+        # interpolation approach inspired by:
+        # https://stackoverflow.com/questions/51512197/python-equidistant-points-along-a-line-joining-set-of-points/51515357
+        distance_list = np.cumsum(
+            np.sqrt(
+                np.ediff1d(ref_waypoints_coordinates["ref_wp_positions_x"], to_begin=0)
+                ** 2
+                + np.ediff1d(
+                    ref_waypoints_coordinates["ref_wp_positions_y"], to_begin=0
+                )
+                ** 2
+            )
+        )
+
+        distance_list /= distance_list[-1]
+
+        ref_wp_x_interp, ref_wp_y_interp, ref_wp_heading_interp = (
+            interp1d(distance_list, ref_waypoints_coordinates["ref_wp_positions_x"]),
+            interp1d(distance_list, ref_waypoints_coordinates["ref_wp_positions_y"]),
+            interp1d(distance_list, ref_waypoints_coordinates["ref_wp_headings"]),
+        )
+
+        normalized_distant = np.linspace(0, 1, lookahead + 1)
+
+        (
+            ref_waypoints_coordinates["ref_wp_positions_x"],
+            ref_waypoints_coordinates["ref_wp_positions_y"],
+            ref_waypoints_coordinates["ref_wp_headings"],
+        ) = (
+            ref_wp_x_interp(normalized_distant),
+            ref_wp_y_interp(normalized_distant),
+            ref_wp_heading_interp(normalized_distant),
+        )
+
+        ref_waypoints = [[]]
+
+        for idx, waypoint in enumerate(waypoint_paths[0]):
+
+            ref_waypoints[0].append(
+                LinkedWaypoint(
+                    wp=Waypoint(
+                        id=waypoint.wp.id,
+                        pos=np.array(
+                            [
+                                ref_waypoints_coordinates["ref_wp_positions_x"][idx],
+                                ref_waypoints_coordinates["ref_wp_positions_y"][idx],
+                            ]
+                        ),
+                        heading=Heading(
+                            ref_waypoints_coordinates["ref_wp_headings"][idx]
+                        ),
+                        lane_width=waypoint.wp.lane_width,
+                        speed_limit=waypoint.wp.speed_limit,
+                        lane_id=waypoint.wp.lane_id,
+                        lane_index=waypoint.wp.lane_index,
+                        right_of_way=waypoint.wp.right_of_way,
+                    ),
+                    nexts=waypoint.nexts,
+                )
+            )
+
+        return ref_waypoints
 
     def _interpolate_shape_waypoints(self, shape_waypoints, spacing):
         # memoize interpolated waypoints on the shape waypoint at start of
