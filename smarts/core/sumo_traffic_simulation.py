@@ -220,7 +220,7 @@ class SumoTrafficSimulation:
         )
 
         # restart sumo process only when map file changes
-        if self._scenario and self._scenario.net_filepath == scenario.net_filepath:
+        if self._scenario and self._scenario.net_file_hash == scenario.net_file_hash:
             restart_sumo = False
         else:
             restart_sumo = True
