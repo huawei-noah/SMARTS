@@ -249,6 +249,35 @@ class AgentManager:
 
         return {**ego_agent_actions, **social_agent_actions}
 
+    def fetch_agent_actions_with_futures(self, sim, ego_agent_actions):
+        try:
+            social_agent_actions = {
+                agent_id: remote_agent.action.result() if remote_agent.action else None 
+                for agent_id, remote_agent in self._remote_social_agents.items()
+            }
+        except Exception as e:
+            self._log.error(
+                "Remote Agent: Resolving the remote agent's action (a Future object) generated this exception."
+            )
+            self._log.exception(e)
+            raise
+
+        agents_without_actions = [
+            agent_id
+            for (agent_id, action) in social_agent_actions.items()
+            if action is None
+        ]
+        if len(agents_without_actions) > 0:
+            self._log.debug(
+                f"social_agents=({', '.join(agents_without_actions)}) returned no action"
+            )
+
+        social_agent_actions = self._filter_social_agent_actions_for_controlled_vehicles(
+            sim, social_agent_actions
+        )
+
+        return {**ego_agent_actions, **social_agent_actions}
+
     def _filter_social_agent_actions_for_controlled_vehicles(
         self, sim, social_agent_actions
     ):
@@ -292,6 +321,13 @@ class AgentManager:
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
             remote_agent.send_observation(obs)
+
+    def send_observations_to_social_agents_with_futures(self, observations):
+        # TODO: Don't send observations (or receive actions) from agents that have done
+        #       vehicles.
+        for agent_id, remote_agent in self._remote_social_agents.items():
+            obs = observations[agent_id]
+            remote_agent.act(obs, timeout=5)
 
     def setup_agents(self, sim):
         self.init_ego_agents(sim)

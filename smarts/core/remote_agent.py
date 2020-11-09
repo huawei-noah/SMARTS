@@ -17,17 +17,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import sys
+import atexit
+import cloudpickle
 import logging
 import pathlib
 import subprocess
+import sys
 import tempfile
 import time
-import atexit
 
+from concurrent import futures
 from multiprocessing.connection import Client
-
-import cloudpickle
 
 from .agent import AgentSpec
 
@@ -59,6 +59,8 @@ class RemoteAgent:
 
         self._agent_proc = subprocess.Popen(cmd)
         self._conn = None
+        self._tp_exec = futures.ThreadPoolExecutor()
+        self._action = 0
 
         for i in range(connection_retries):
             # Waiting on agent to open it's socket.
@@ -90,8 +92,29 @@ class RemoteAgent:
         else:
             return None
 
+    @property
+    def action(self):
+        return self._action
+
+    def _act(self, obs, timeout):
+        # Send observation
+        self._conn.send({"type": "obs", "payload": obs})
+        # Receive action
+        if self._conn.poll(timeout):
+            try:
+                return self._conn.recv()
+            except ConnectionResetError as e:
+                self.terminate()
+                raise e
+        else:
+            return None
+
+    def act(self, obs, timeout=None):
+        # Run task asynchronously and store the returned Future
+        self._action = self._tp_exec.submit(self._act, obs, timeout) 
+
     def start(self, agent_spec: AgentSpec):
-        # send the AgentSpec to the agent runner
+        # Send the AgentSpec to the agent runner
         self._conn.send(
             # We use cloudpickle only for the agent_spec to allow for serialization of lambdas
             {"type": "agent_spec", "payload": cloudpickle.dumps(agent_spec)}
@@ -106,3 +129,6 @@ class RemoteAgent:
                 self._agent_proc.kill()
                 self._agent_proc.wait()
             self._agent_proc = None
+
+        # Shutdown thread pool executor    
+        self._tp_exec.shutdown()

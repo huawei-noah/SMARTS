@@ -207,7 +207,8 @@ class SMARTS(ShowBase):
         self._elapsed_sim_time = self.taskMgr.clock.get_frame_time()
 
         # 1. Fetch agent actions
-        all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
+        # all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
+        all_agent_actions = self._agent_manager.fetch_agent_actions_with_futures(self, agent_actions)
 
         # 2. Step all providers and harmonize state
         provider_state = self._step_providers(all_agent_actions, dt)
@@ -239,7 +240,8 @@ class SMARTS(ShowBase):
         )
 
         # 5. Send observations to social agents
-        self._agent_manager.send_observations_to_social_agents(observations)
+        # self._agent_manager.send_observations_to_social_agents(observations)
+        self._agent_manager.send_observations_to_social_agents_with_futures(observations)
 
         # 6. Clear done agents
         done_agents = {id_ for id_ in dones if dones[id_]}
