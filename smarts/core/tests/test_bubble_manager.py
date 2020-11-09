@@ -43,8 +43,7 @@ def mock_provider():
 @pytest.fixture
 def smarts(scenarios, mock_provider):
     smarts_ = SMARTS(
-        agent_interfaces={},
-        traffic_sim=SumoTrafficSimulation(time_resolution=0.01, headless=False),
+        agent_interfaces={}, traffic_sim=SumoTrafficSimulation(time_resolution=0.1),
     )
     smarts_.add_provider(mock_provider)
     smarts_.reset(next(scenarios))

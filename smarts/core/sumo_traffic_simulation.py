@@ -371,6 +371,10 @@ class SumoTrafficSimulation:
                 # Likely as a result of https://github.com/eclipse/sumo/issues/3993
                 # the vehicle got removed because we skipped a moveToXY call between
                 # internal stepSimulations, so we add the vehicle back here.
+                self._log.warning(
+                    "Attempted to (TraCI) SUMO.moveToXY(...) on missing "
+                    f"vehicle(id={vehicle_id})"
+                )
                 self._create_vehicle(vehicle_id, provider_vehicle.dimensions)
                 self._move_vehicle(
                     provider_vehicle.vehicle_id,

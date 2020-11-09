@@ -23,7 +23,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
-from typing import Dict, Sequence, Set
+from typing import Dict, Sequence
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import Point, Polygon
@@ -218,6 +218,7 @@ class Cursor:
         prev_pos, pos = tuple(prev_pos), tuple(pos)
 
         is_social = vehicle.id in index.social_vehicle_ids
+        is_shadowed = index.vehicle_is_shadowed(vehicle.id)
         is_hijacked = index.vehicle_is_hijacked(vehicle.id)
         is_admissible = bubble.is_admissible(
             vehicle.id, index, prev_cursors, running_cursors
@@ -230,17 +231,19 @@ class Cursor:
         #       scenarios (e.g. hijacking if didn't airlock first)
         if (
             is_social
+            and not is_shadowed
             and is_admissible
             and in_airlock(pos)
             and not (in_airlock(prev_pos) or in_bubble(prev_pos))
         ):
             transition = BubbleTransition.AirlockEntered
-        elif is_social and is_admissible and in_airlock(prev_pos) and in_bubble(pos):
+        elif is_shadowed and is_admissible and in_airlock(prev_pos) and in_bubble(pos):
             transition = BubbleTransition.Entered
         elif is_hijacked and in_bubble(prev_pos) and in_airlock(pos):
             transition = BubbleTransition.Exited
         elif (
-            is_hijacked
+            # AirlockEntered --> AirlockExited or Entered --> AirlockExited
+            (is_shadowed or is_hijacked)
             and in_airlock(prev_pos)
             and not (in_airlock(pos) or in_bubble(pos))
         ):
@@ -362,10 +365,10 @@ class BubbleManager:
             elif cursor.transition == BubbleTransition.Exited:
                 continue
             elif cursor.transition == BubbleTransition.AirlockExited:
-                # XXX: Some vehicles only go through the airlocks and never make it
-                #      through the bubble; that's why we relinquish on airlock exit.
-                #      This is something we'll likely want to revisit in the future.
-                self._relinquish_vehicle_to_traffic_sim(sim, cursor.tracking_id)
+                if sim.vehicle_index.vehicle_is_hijacked(cursor.tracking_id):
+                    self._relinquish_vehicle_to_traffic_sim(sim, cursor.tracking_id)
+                else:
+                    self._stop_shadowing_vehicle(sim, cursor.tracking_id)
 
     def _move_travelling_bubbles(self, sim):
         for bubble in self._active_bubbles():
@@ -432,8 +435,6 @@ class BubbleManager:
                 agent_id, social_agent, social_agent_data_model
             )
 
-        return agent_id
-
     def _hijack_social_vehicle_with_social_agent(
         self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor,
     ) -> str:
@@ -466,7 +467,7 @@ class BubbleManager:
                     )
                 )
 
-    def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str) -> str:
+    def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str):
         agent_id = sim.vehicle_index.actor_id_from_vehicle_id(vehicle_id)
         shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
 
@@ -479,7 +480,13 @@ class BubbleManager:
         )
         sim.vehicle_index.relinquish_agent_control(sim, vehicle_id, social_vehicle_id)
         sim.teardown_agents_without_vehicles([agent_id, shadow_agent_id])
-        return social_vehicle_id
+
+    def _stop_shadowing_vehicle(self, sim, vehicle_id: str):
+        shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
+        self._log.debug(
+            f"Stop shadowing vehicle={vehicle_id} (shadow_agent={shadow_agent_id}"
+        )
+        sim.teardown_agents_without_vehicles([shadow_agent_id])
 
     @staticmethod
     def _make_social_agent_id(vehicle_id, social_agent_actor):
