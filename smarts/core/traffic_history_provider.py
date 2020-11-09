@@ -96,8 +96,22 @@ class TrafficHistoryProvider:
                         [*vehicle_state["position"][:2], 0,],
                         Heading(vehicle_state["heading"]),
                     ),
-                    # TODO: specify dimensions
-                    dimensions=VEHICLE_CONFIGS[vehicle_type].dimensions,
+                    dimensions=BoundingBox(
+                        length=vehicle_state.get(
+                            "vehicle_length",
+                            VEHICLE_CONFIGS[vehicle_type].dimensions.length,
+                        ),
+                        width=vehicle_state.get(
+                            "vehicle_width",
+                            VEHICLE_CONFIGS[vehicle_type].dimensions.width,
+                        ),
+                        # Note: Neither NGSIM nor INTERACTION provide
+                        #       the height of the vehicles.
+                        height=vehicle_state.get(
+                            "vehicle_height",
+                            VEHICLE_CONFIGS[vehicle_type].dimensions.height,
+                        ),
+                    ),
                     speed=vehicle_state["speed"],
                     source="HISTORY",
                 )
