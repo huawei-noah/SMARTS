@@ -60,7 +60,7 @@ class RemoteAgent:
         self._agent_proc = subprocess.Popen(cmd)
         self._conn = None
         self._tp_exec = futures.ThreadPoolExecutor()
-        self._action = 0
+        self._action = self._tp_exec.submit(lambda :None)
 
         for i in range(connection_retries):
             # Waiting on agent to open it's socket.
@@ -78,19 +78,6 @@ class RemoteAgent:
 
     def __del__(self):
         self.terminate()
-
-    def send_observation(self, obs):
-        self._conn.send({"type": "obs", "payload": obs})
-
-    def recv_action(self, timeout=None):
-        if self._conn.poll(timeout):
-            try:
-                return self._conn.recv()
-            except ConnectionResetError as e:
-                self.terminate()
-                raise e
-        else:
-            return None
 
     @property
     def action(self):
