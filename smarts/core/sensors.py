@@ -968,15 +968,13 @@ class AccelerometerSensor(Sensor):
         self.linear_accelerations = deque(maxlen=3)
         self.angular_accelerations = deque(maxlen=3)
 
-    list()
-
     def __call__(self, linear_velocity, angular_velocity):
-        if not linear_velocity is None:
+        if linear_velocity is not None:
             self.linear_accelerations.append(linear_velocity)
-        if not angular_velocity is None:
+        if angular_velocity is not None:
             self.angular_accelerations.append(angular_velocity)
 
-        if len(self.linear_accelerations) < 2 or len(self.angular_accelerations):
+        if len(self.linear_accelerations) < 3 or len(self.angular_accelerations) < 3:
             return (None, None, None, None)
 
         linear_acc = self.linear_accelerations[0] - self.linear_accelerations[1]
@@ -984,13 +982,10 @@ class AccelerometerSensor(Sensor):
         angular_acc = self.angular_accelerations[0] - self.angular_accelerations[1]
         last_angular_acc = self.angular_accelerations[1] - self.angular_accelerations[2]
 
-        if len(self.linear_accelerations) < 3 or len(self.angular_accelerations) < 3:
-            return (linear_acc, angular_acc, None, None)
-
         linear_jerk = linear_acc - last_linear_acc
         angular_jerk = angular_acc - last_angular_acc
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)
 
     def teardown(self):
-        ...
+        pass

@@ -99,7 +99,7 @@ class NeighborhoodVehicles:
 
 @dataclass
 class Accelerometer:
-    ...
+    pass
 
 
 class AgentType(IntEnum):
