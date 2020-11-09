@@ -230,25 +230,6 @@ class VehicleIndex:
         self._controller_states = {}
         self._sensor_states = {}
 
-    # TODO: We should not be supporting this column-interface. That's leaking an
-    #       implementation detail and means a very brittle API.
-    def vehicle_indices_by_actor_id(self, actor_id, columns):
-        """Returns given vehicle index values for the given actor ID as list of columns.
-
-        Args:
-            actor_id:
-                The id of the actor to query for.
-            columns:
-                The columns for the vehicles associated with the actor to retrieve.
-        Returns:
-            The columns of vehicle information related to the queried actor.
-        """
-
-        v_index = (self._controlled_by["actor_id"] == actor_id) | (
-            self._controlled_by["shadow_actor_id"] == actor_id
-        )
-        return self._controlled_by[v_index][columns]
-
     def vehicle_ids_by_actor_id(self, actor_id, include_shadowers=False):
         """Returns all vehicles for the given actor ID as a list. This is most
         applicable when an agent is controlling multiple vehicles (e.g. with boids).

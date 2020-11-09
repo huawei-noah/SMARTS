@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+from smarts.core import agent
 from typing import Set
 
 from envision.types import format_actor_id
@@ -137,17 +138,15 @@ class AgentManager:
         }
 
         for agent_id in self.active_agents:
-            agent_interface = self._agent_interfaces[agent_id]
             # An agent may be pointing to its own vehicle or observing a social vehicle
-
-            indices = sim.vehicle_index.vehicle_indices_by_actor_id(
-                agent_id, columns=["vehicle_id", "shadow_actor_id"],
+            vehicle_ids = sim.vehicle_index.vehicle_ids_by_actor_id(
+                agent_id, include_shadowers=True
             )
 
             if self.is_boid_agent(sim, agent_id):
                 vehicles = [
                     sim.vehicle_index.vehicle_by_id(vehicle_id)
-                    for vehicle_id in indices["vehicle_id"]
+                    for vehicle_id in vehicle_ids
                 ]
                 # returns format of {<agent_id>: {<vehicle_id>: {...}}}
                 sensor_states = {
@@ -174,26 +173,26 @@ class AgentManager:
                     for (vehicle_id, sensor_state) in sensor_states.items()
                 }
             else:
-                assert len(indices["vehicle_id"]) == 1, (
+                assert len(vehicle_ids) == 1, (
                     "Unless this vehicle is part of a boid then we should only have a "
                     f"single vehicle under agent_id={agent_id}\n "
-                    f"(vehicle_ids={indices['vehicle_id']})"
+                    f"(vehicle_ids={vehicle_ids})"
                 )
 
-                vehicle = sim.vehicle_index.vehicle_by_id(indices["vehicle_id"][0])
+                vehicle = sim.vehicle_index.vehicle_by_id(vehicle_ids[0])
                 sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
                 observations[agent_id], dones[agent_id] = Sensors.observe(
                     sim, agent_id, sensor_state, vehicle
                 )
 
-                # It is not a shadow agent's fault if it is done
-                if indices["shadow_actor_id"][0] == agent_id:
-                    dones[agent_id] = False
-                else:
+                if sim.vehicle_index.vehicle_is_hijacked(vehicle.id):
                     logging.log(
                         logging.DEBUG,
                         f"Agent `{agent_id}` has raised done with {observations[agent_id].events}",
                     )
+                else:
+                    # It is not a shadowing agent's fault if it is done
+                    dones[agent_id] = False
 
                 rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
                 scores[agent_id] = vehicle.trip_meter_sensor()

@@ -29,17 +29,16 @@ from shapely.geometry import Polygon, box as shapely_box
 from shapely.affinity import rotate as shapely_rotate
 
 import traci.constants as tc
-from traci.exceptions import FatalTraCIError
+from traci.exceptions import FatalTraCIError, TraCIException
 
 from smarts.core import gen_id
-from smarts.core.utils.id import Id, SocialAgentId
 from .colors import SceneColors
 from .coordinates import Heading, Pose
 from .provider import ProviderState, ProviderTLS, ProviderTrafficLight
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 # We need to import .utils.sumo before we can use traci
-from .utils.sumo import SUMO_PATH, sumolib, traci
+from .utils.sumo import SUMO_PATH, traci
 from .utils import networking
 
 
@@ -342,53 +341,14 @@ class SumoTrafficSimulation:
         if log:
             self._log.debug(log)
 
-        ego_agent_color = np.array(SceneColors.Agent.value[:3]) * 255
-        social_agent_color = np.array(SceneColors.SocialAgent.value[:3]) * 255
-        social_vehicle_color = np.array(SceneColors.SocialVehicle.value[:3]) * 255
-
         for vehicle_id in external_vehicles_that_have_left:
             self._log.debug("Non SUMO vehicle %s left simulation", vehicle_id)
             self._non_sumo_vehicle_ids.remove(vehicle_id)
             self._traci_conn.vehicle.remove(vehicle_id)
 
         for vehicle_id in external_vehicles_that_have_joined:
-            provider_vehicle = provider_vehicles[vehicle_id]
-
-            assert (
-                type(vehicle_id) == str
-            ), f"SUMO expects string ids: {vehicle_id} is a {type(vehicle_id)}"
-
-            self._log.debug("Non SUMO vehicle %s joined simulation", vehicle_id)
-            self._non_sumo_vehicle_ids.add(vehicle_id)
-            self._traci_conn.vehicle.add(
-                vehID=vehicle_id,
-                routeID="",  # we don't care which route this vehicle is on
-            )
-
-            # TODO: Vehicle Id should not be using prefixes this way
-            if vehicle_id.startswith("social-agent"):
-                # This is based on ID convention
-                vehicle_color = social_agent_color
-            else:
-                vehicle_color = ego_agent_color
-
-            self._traci_conn.vehicle.setColor(vehicle_id, vehicle_color)
-
-            # Directly below are two of the main factors that affect vehicle secure gap for
-            # purposes of determining the safety gaps that SUMO vehicles will abide by. The
-            # remaining large factor is vehicle speed.
-            # See:
-            # http://sumo-user-mailing-list.90755.n8.nabble.com/sumo-user-Questions-on-SUMO-Built-In-Functions-getSecureGap-amp-brakeGap-td3254.html
-            # Set the controlled vehicle's time headway in seconds
-            self._traci_conn.vehicle.setTau(vehicle_id, 4)
-            # Set the controlled vehicle's maximum natural deceleration in m/s
-            self._traci_conn.vehicle.setDecel(vehicle_id, 6)
-
-            # setup the vehicle size
-            dimensions = provider_vehicle.dimensions
-            self._traci_conn.vehicle.setLength(vehicle_id, dimensions.length)
-            self._traci_conn.vehicle.setWidth(vehicle_id, dimensions.width)
-            self._traci_conn.vehicle.setHeight(vehicle_id, dimensions.height)
+            dimensions = provider_vehicles[vehicle_id].dimensions
+            self._create_vehicle(vehicle_id, dimensions)
 
         # update the state of all current managed vehicles
         for vehicle_id in self._non_sumo_vehicle_ids:
@@ -397,29 +357,38 @@ class SumoTrafficSimulation:
             pos, sumo_heading = provider_vehicle.pose.as_sumo(
                 provider_vehicle.dimensions.length, Heading(0)
             )
-            x, y, _ = pos
 
             # See https://sumo.dlr.de/docs/TraCI/Change_Vehicle_State.html#move_to_xy_0xb4
             # for flag values
-            self._traci_conn.vehicle.moveToXY(
-                vehID=provider_vehicle.vehicle_id,
-                edgeID="",  # let sumo choose the edge
-                lane=-1,  # let sumo choose the lane
-                x=x,
-                y=y,
-                angle=sumo_heading,  # only used for visualizing in sumo-gui
-                keepRoute=0b010,  # gives vehicle freedom to move off road
-            )
-            self._traci_conn.vehicle.setSpeed(
-                provider_vehicle.vehicle_id, provider_vehicle.speed
-            )
+            try:
+                self._move_vehicle(
+                    provider_vehicle.vehicle_id,
+                    pos,
+                    sumo_heading,
+                    provider_vehicle.speed,
+                )
+            except TraCIException as e:
+                # Likely as a result of https://github.com/eclipse/sumo/issues/3993
+                # the vehicle got removed because we skipped a moveToXY call between
+                # internal stepSimulations, so we add the vehicle back here.
+                self._create_vehicle(vehicle_id, provider_vehicle.dimensions)
+                self._move_vehicle(
+                    provider_vehicle.vehicle_id,
+                    pos,
+                    sumo_heading,
+                    provider_vehicle.speed,
+                )
 
         for vehicle_id in vehicles_that_have_become_external:
-            self._traci_conn.vehicle.setColor(vehicle_id, social_agent_color)
+            self._traci_conn.vehicle.setColor(
+                vehicle_id, SumoTrafficSimulation._social_agent_vehicle_color()
+            )
             self._non_sumo_vehicle_ids.add(vehicle_id)
 
         for vehicle_id in vehicles_that_have_become_internal:
-            self._traci_conn.vehicle.setColor(vehicle_id, social_vehicle_color)
+            self._traci_conn.vehicle.setColor(
+                vehicle_id, SumoTrafficSimulation._social_vehicle_color()
+            )
             self._non_sumo_vehicle_ids.remove(vehicle_id)
             # Let sumo take over speed again
             self._traci_conn.vehicle.setSpeed(vehicle_id, -1)
@@ -427,6 +396,67 @@ class SumoTrafficSimulation:
         if self._endless_traffic:
             self._reroute_vehicles(traffic_vehicle_states)
             self._teleport_exited_vehicles()
+
+    @staticmethod
+    def _ego_agent_vehicle_color():
+        return np.array(SceneColors.Agent.value[:3]) * 255
+
+    @staticmethod
+    def _social_agent_vehicle_color():
+        return np.array(SceneColors.SocialAgent.value[:3]) * 255
+
+    @staticmethod
+    def _social_vehicle_color():
+        return np.array(SceneColors.SocialVehicle.value[:3]) * 255
+
+    def _move_vehicle(self, vehicle_id, position, heading, speed):
+        x, y, _ = position
+        self._traci_conn.vehicle.moveToXY(
+            vehID=vehicle_id,
+            edgeID="",  # let sumo choose the edge
+            lane=-1,  # let sumo choose the lane
+            x=x,
+            y=y,
+            angle=heading,  # only used for visualizing in sumo-gui
+            keepRoute=0b010,  # gives vehicle freedom to move off road
+        )
+        self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
+
+    def _create_vehicle(self, vehicle_id, dimensions):
+        assert (
+            type(vehicle_id) == str
+        ), f"SUMO expects string ids: {vehicle_id} is a {type(vehicle_id)}"
+
+        self._log.debug("Non SUMO vehicle %s joined simulation", vehicle_id)
+        self._non_sumo_vehicle_ids.add(vehicle_id)
+        self._traci_conn.vehicle.add(
+            vehID=vehicle_id,
+            routeID="",  # we don't care which route this vehicle is on
+        )
+
+        # TODO: Vehicle Id should not be using prefixes this way
+        if vehicle_id.startswith("social-agent"):
+            # This is based on ID convention
+            vehicle_color = SumoTrafficSimulation._social_agent_vehicle_color()
+        else:
+            vehicle_color = SumoTrafficSimulation._ego_agent_vehicle_color()
+
+        self._traci_conn.vehicle.setColor(vehicle_id, vehicle_color)
+
+        # Directly below are two of the main factors that affect vehicle secure gap for
+        # purposes of determining the safety gaps that SUMO vehicles will abide by. The
+        # remaining large factor is vehicle speed.
+        # See:
+        # http://sumo-user-mailing-list.90755.n8.nabble.com/sumo-user-Questions-on-SUMO-Built-In-Functions-getSecureGap-amp-brakeGap-td3254.html
+        # Set the controlled vehicle's time headway in seconds
+        self._traci_conn.vehicle.setTau(vehicle_id, 4)
+        # Set the controlled vehicle's maximum natural deceleration in m/s
+        self._traci_conn.vehicle.setDecel(vehicle_id, 6)
+
+        # setup the vehicle size
+        self._traci_conn.vehicle.setLength(vehicle_id, dimensions.length)
+        self._traci_conn.vehicle.setWidth(vehicle_id, dimensions.width)
+        self._traci_conn.vehicle.setHeight(vehicle_id, dimensions.height)
 
     def _compute_provider_state(self) -> ProviderState:
         return ProviderState(
@@ -458,6 +488,7 @@ class SumoTrafficSimulation:
                     break
 
             if violates_reserved_area:
+                print("---> self._traci_conn.vehicle.remove(vehicle_id)", vehicle_id)
                 self._traci_conn.vehicle.remove(vehicle_id)
                 continue
 
@@ -637,6 +668,7 @@ class SumoTrafficSimulation:
         self._reserved_areas[vehicle_id] = reserved_location
 
     def remove_traffic_vehicle(self, vehicle_id: str):
+        print("---> self._traci_conn.vehicle.remove(vehicle_id)", vehicle_id)
         self._traci_conn.vehicle.remove(vehicle_id)
         self._sumo_vehicle_ids.remove(vehicle_id)
 
@@ -678,6 +710,7 @@ class SumoTrafficSimulation:
             vehicle_id, "", departPos=offset_in_lane, departLane=wp.lane_index,
         )
 
+        print("MOVE TO XY", vehicle_id)
         self._traci_conn.vehicle.moveToXY(
             vehID=vehicle_id,
             edgeID="",  # let sumo choose the edge
