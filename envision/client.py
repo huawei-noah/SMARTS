@@ -160,6 +160,7 @@ class Client:
 
         def on_error(ws, error):
             self._log.warning("Unable to connect to Envision")
+            self._log.debug(error)
 
         def on_open(ws):
             setattr(threadlocal, "connection_established", True)
