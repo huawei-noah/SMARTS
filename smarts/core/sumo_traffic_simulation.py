@@ -492,7 +492,6 @@ class SumoTrafficSimulation:
                     break
 
             if violates_reserved_area:
-                print("---> self._traci_conn.vehicle.remove(vehicle_id)", vehicle_id)
                 self._traci_conn.vehicle.remove(vehicle_id)
                 continue
 
@@ -672,7 +671,6 @@ class SumoTrafficSimulation:
         self._reserved_areas[vehicle_id] = reserved_location
 
     def remove_traffic_vehicle(self, vehicle_id: str):
-        print("---> self._traci_conn.vehicle.remove(vehicle_id)", vehicle_id)
         self._traci_conn.vehicle.remove(vehicle_id)
         self._sumo_vehicle_ids.remove(vehicle_id)
 
@@ -714,7 +712,6 @@ class SumoTrafficSimulation:
             vehicle_id, "", departPos=offset_in_lane, departLane=wp.lane_index,
         )
 
-        print("MOVE TO XY", vehicle_id)
         self._traci_conn.vehicle.moveToXY(
             vehID=vehicle_id,
             edgeID="",  # let sumo choose the edge
