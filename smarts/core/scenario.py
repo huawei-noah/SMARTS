@@ -226,8 +226,11 @@ class Scenario:
             social_agent_infos = Scenario._discover_social_agents_info(scenario_root)
             social_agents = [
                 {
-                    agent_id: (agent.to_agent_spec(), agent)
-                    for agent_id, agent in per_episode_social_agent_infos.items()
+                    agent_id: (agent.to_agent_spec(), (agent, mission))
+                    for agent_id, (
+                        agent,
+                        mission,
+                    ) in per_episode_social_agent_infos.items()
                 }
                 for per_episode_social_agent_infos in social_agent_infos
             ]
@@ -252,8 +255,16 @@ class Scenario:
                 np.roll(social_agents, roll_social_agents, 0),
             ):
                 concrete_social_agent_missions = {
-                    agent_id: social_agent.mission
-                    for agent_id, (_agent_spec, social_agent) in (
+                    agent_id: mission
+                    for agent_id, (_, (_, mission)) in (
+                        concrete_social_agents or {}
+                    ).items()
+                }
+
+                # Filter out mission
+                concrete_social_agents = {
+                    agent_id: (_agent_spec, social_agent)
+                    for agent_id, (_agent_spec, (social_agent, _)) in (
                         concrete_social_agents or {}
                     ).items()
                 }
@@ -387,25 +398,33 @@ class Scenario:
                 )
 
                 actor = mission_and_actor.actor
+                extracted_mission = Scenario._extract_mission(
+                    mission_and_actor.mission, road_network
+                )
                 namespace = os.path.basename(missions_file_path)
                 namespace = os.path.splitext(namespace)[0]
 
                 setdefault(agent_bucketer, count, []).append(
-                    SocialAgent(
-                        id=SocialAgentId.new(actor.name, group=namespace),
-                        name=actor.name,
-                        is_boid=False,
-                        is_boid_keep_alive=False,
-                        agent_locator=actor.agent_locator,
-                        policy_kwargs=actor.policy_kwargs,
-                        initial_speed=actor.initial_speed,
+                    (
+                        SocialAgent(
+                            id=SocialAgentId.new(actor.name, group=namespace),
+                            name=actor.name,
+                            is_boid=False,
+                            is_boid_keep_alive=False,
+                            agent_locator=actor.agent_locator,
+                            policy_kwargs=actor.policy_kwargs,
+                            initial_speed=actor.initial_speed,
+                        ),
+                        extracted_mission,
                     )
                 )
                 count += 1
 
         social_agents_info = []
         for l in agent_bucketer:
-            social_agents_info.append({agent.id: agent for agent in l})
+            social_agents_info.append(
+                {agent.id: (agent, mission) for agent, mission in l}
+            )
 
         return social_agents_info
 
