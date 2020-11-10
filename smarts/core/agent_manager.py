@@ -59,8 +59,9 @@ class AgentManager:
         # Agent interfaces are interfaces for _all_ active agents
         self._agent_interfaces = {}
 
-        # Agent data models
-        self._agent_data_models = {}
+        # TODO: This field is only for social agents, but is being used as if it were
+        #       for any agent. Revisit the accessors.
+        self._social_agent_data_models = {}
 
         # We send observations and receive actions for all values in this dictionary
         self._remote_social_agents = {}
@@ -102,12 +103,6 @@ class AgentManager:
     @property
     def active_agents(self):
         return self.agent_ids - self.pending_agent_ids
-
-    def is_boid_agent(self, agent_id):
-        return self._agent_data_models[agent_id].is_boid
-
-    def is_boid_keep_alive_agent(self, agent_id):
-        return self._agent_data_models[agent_id].is_boid_keep_alive
 
     def is_ego(self, agent_id):
         return agent_id in self.ego_agent_ids
@@ -421,7 +416,7 @@ class AgentManager:
                 )
 
         self._agent_interfaces[agent_id] = agent_interface
-        self._agent_data_models[agent_id] = agent_model
+        self._social_agent_data_models[agent_id] = agent_model
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
         remote_agent = self._remote_agent_buffer.acquire_remote_agent()
@@ -429,7 +424,7 @@ class AgentManager:
         self._remote_social_agents[agent_id] = remote_agent
         self._agent_interfaces[agent_id] = social_agent.interface
         self._social_agent_ids.add(agent_id)
-        self._agent_data_models[agent_id] = agent_model
+        self._social_agent_data_models[agent_id] = agent_model
 
     def teardown_ego_agents(self, filter_ids: Set = None):
         ids_ = self._teardown_agents_by_ids(self._ego_agent_ids, filter_ids)
@@ -442,7 +437,7 @@ class AgentManager:
         for id_ in ids_:
             self._remote_social_agents[id_].terminate()
             del self._remote_social_agents[id_]
-            del self._agent_data_models[id_]
+            del self._social_agent_data_models[id_]
 
         self._social_agent_ids -= ids_
         return ids_
@@ -471,15 +466,26 @@ class AgentManager:
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)
 
-    def name_for_agent(self, agent_id):
-        if agent_id not in self._agent_data_models:
+    def agent_name(self, agent_id):
+        if agent_id not in self._social_agent_data_models:
             return ""
 
-        return self._agent_data_models[agent_id].name
+        return self._social_agent_data_models[agent_id].name
+
+    def is_boid_agent(self, agent_id):
+        if agent_id not in self._social_agent_data_models:
+            return False
+
+        return self._social_agent_data_models[agent_id].is_boid
+
+    def is_boid_keep_alive_agent(self, agent_id):
+        if agent_id not in self._social_agent_data_models:
+            return False
+
+        return self._social_agent_data_models[agent_id].is_boid_keep_alive
 
     def attach_sensors_to_vehicles(self, sim, agent_interface, vehicle_ids):
         for sv_id in vehicle_ids:
-
             if sv_id in self._vehicle_with_sensors:
                 continue
 

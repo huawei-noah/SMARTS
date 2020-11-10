@@ -905,7 +905,7 @@ class SMARTS(ShowBase):
                         for path in paths
                     ]
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
-                    name=self._agent_manager.name_for_agent(agent_id),
+                    name=self._agent_manager.agent_name(agent_id),
                     actor_type=actor_type,
                     vehicle_type=envision_types.VehicleType.Car,
                     position=v.pose.position,
