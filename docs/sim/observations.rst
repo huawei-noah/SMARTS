@@ -31,6 +31,10 @@ is a Python `NamedTuple` with the following fields:
     * `lane_index` - index of the lane under this vehicle, right most lane has index 0 and the index increments to the left
     * `linear_velocity` - A 3D numpy array of vehicle velocities in body coordinate frame
     * `angular_velocity` - A 3D numpy array of angular velocity vector
+    * `linear_acceleration` - A 3D numpy array of linear acceleration vector (requires accelerometer sensor)
+    * `angular_acceleration` - A 3D numpy array of angular acceleration vector (requires accelerometer sensor)
+    * `linear_jerk` - A 3D numpy array of linear jerk vector (requires accelerometer sensor)
+    * `angular_jerk` - A 3D numpy array of angular jerk vector (requires accelerometer sensor)
 * `neighborhood_vehicle_states` - a list of `VehicleObservation` `NamedTuple`s, each with the following fields:
     * `position`, `bounding_box`, `heading`, `speed`, `lane_id`, `lane_index` - the same as with `ego_vehicle_state`
 * `GridMapMetadata` - Metadata for the observation maps with the following information,
