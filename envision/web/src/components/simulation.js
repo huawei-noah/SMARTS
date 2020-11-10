@@ -40,7 +40,8 @@ import {
 import { GLTFLoader } from "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import SceneComponent from "babylonjs-hook";
 
-import { Camera, Vehicles } from "./components.js";
+import Camera from "./camera.js";
+import Vehicles from "./vehicles.js";
 
 import { ActorTypes } from "../enums.js";
 import AgentScores from "./agent_scores";
