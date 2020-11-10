@@ -192,10 +192,10 @@ class Sensors:
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
-            "linear_acceleration": None,
-            "angular_acceleration": None,
-            "linear_jerk": None,
-            "angular_jerk": None,
+            "linear_acceleration": 0.0,
+            "angular_acceleration": 0.0,
+            "linear_jerk": 0.0,
+            "angular_jerk": 0.0,
         }
         if vehicle.subscribed_to_accelerometer_sensor:
             acceleration_values = vehicle.accelerometer_sensor(
@@ -975,7 +975,7 @@ class AccelerometerSensor(Sensor):
             self.angular_accelerations.append(angular_velocity)
 
         if len(self.linear_accelerations) < 3 or len(self.angular_accelerations) < 3:
-            return (None, None, None, None)
+            return (0.0, 0.0, 0.0, 0.0)
 
         linear_acc = self.linear_accelerations[0] - self.linear_accelerations[1]
         last_linear_acc = self.linear_accelerations[1] - self.linear_accelerations[2]
