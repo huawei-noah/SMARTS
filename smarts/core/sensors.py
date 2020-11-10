@@ -192,10 +192,10 @@ class Sensors:
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
-            "linear_acceleration": 0.0,
-            "angular_acceleration": 0.0,
-            "linear_jerk": 0.0,
-            "angular_jerk": 0.0,
+            "linear_acceleration": None,
+            "angular_acceleration": None,
+            "linear_jerk": None,
+            "angular_jerk": None,
         }
         if vehicle.subscribed_to_accelerometer_sensor:
             acceleration_values = vehicle.accelerometer_sensor(
