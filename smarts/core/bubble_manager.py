@@ -488,7 +488,8 @@ class BubbleManager:
             return
 
         sim.vehicle_index.relinquish_agent_control(sim, vehicle_id, social_vehicle_id)
-        sim.teardown_agents_without_vehicles([agent_id, shadow_agent_id])
+        teardown_agent_ids = [agent_id] + ([shadow_agent_id] if shadow_agent_id else [])
+        sim.teardown_agents_without_vehicles(teardown_agent_ids)
 
     def _stop_shadowing_vehicle(self, sim, vehicle_id: str):
         shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)

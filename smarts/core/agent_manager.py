@@ -170,13 +170,13 @@ class AgentManager:
 
                 rewards[agent_id] = {
                     vehicle_id: self._vehicle_reward(vehicle_id, sim)
-                    for vehicle_id, sensor_state in sensor_states.items()
+                    for vehicle_id in sensor_states.keys()
                 }
                 scores[agent_id] = {
                     format_actor_id(
                         agent_id, vehicle_id, is_multi=True
                     ): self._vehicle_score(vehicle_id, sim)
-                    for (vehicle_id, sensor_state) in sensor_states.items()
+                    for vehicle_id in sensor_states.keys()
                 }
             else:
                 assert len(vehicle_ids) == 1, (
