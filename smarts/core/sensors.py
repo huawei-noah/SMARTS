@@ -198,21 +198,21 @@ class Sensors:
             "angular_jerk": None,
         }
         if vehicle.subscribed_to_accelerometer_sensor:
-            (
-                linear_acc,
-                angular_acc,
-                linear_jerk,
-                angular_jerk,
-            ) = vehicle.accelerometer_sensor(
+            acceleration_values = vehicle.accelerometer_sensor(
                 ego_vehicle_state.linear_velocity, ego_vehicle_state.angular_velocity
             )
             acceleration_params.update(
-                {
-                    "linear_acceleration": linear_acc,
-                    "angular_acceleration": angular_acc,
-                    "linear_jerk": linear_jerk,
-                    "angular_jerk": angular_jerk,
-                }
+                dict(
+                    zip(
+                        [
+                            "linear_acceleration",
+                            "angular_acceleration",
+                            "linear_jerk",
+                            "angular_jerk",
+                        ],
+                        acceleration_values,
+                    )
+                )
             )
 
         ego_vehicle_observation = EgoVehicleObservation(
