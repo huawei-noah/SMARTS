@@ -29,8 +29,9 @@ from smarts.zoo.registry import make
 class SocialAgent:
     id: str
     name: str
+    is_boid: bool
+    is_boid_keep_alive: bool
     agent_locator: str
-    mission: Mission
     policy_kwargs: Dict[str, Any] = field(default_factory=dict)
     initial_speed: float = None
 

@@ -523,6 +523,11 @@ class Bubble:
     """Maintained offset to place the travelling bubble relative to the follow
     vehicle if it were facing north.
     """
+    keep_alive: bool = False
+    """If enabled, the social agent actor will be spawned upon first vehicle airlock
+    and be reused for every subsequent vehicle entering the bubble until the episode
+    is over.
+    """
 
     def __post_init__(self):
         if self.margin <= 0:
