@@ -328,7 +328,7 @@ class SMARTS(ShowBase):
                 "road_network={} already exists. Removing and adding a new "
                 "one from glb_path={}".format(self._road_network_np, glb_path)
             )
-        model_np = self.loader.loadModel(glb_path)
+        model_np = self.loader.loadModel(glb_path, noCache=True)
 
         np = self._root_np.attachNewNode("road_network")
         model_np.reparent_to(np)
