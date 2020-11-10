@@ -98,6 +98,14 @@ class Bubble:
     def limit(self):
         return self._limit
 
+    @property
+    def is_boid(self):
+        return isinstance(self._bubble.actor, BoidAgentActor)
+
+    @property
+    def keep_alive(self):
+        return self._bubble.keep_alive
+
     # XXX: In the case of travelling bubbles, the geometry and zone are moving
     #      according to the follow vehicle.
     @property
@@ -356,17 +364,19 @@ class BubbleManager:
         for cursor in transitioned:
             if cursor.transition == BubbleTransition.AirlockEntered:
                 self._airlock_social_vehicle_with_social_agent(
-                    sim, cursor.tracking_id, cursor.bubble.actor
+                    sim, cursor.tracking_id, cursor.bubble.actor, cursor.bubble
                 )
             elif cursor.transition == BubbleTransition.Entered:
                 self._hijack_social_vehicle_with_social_agent(
-                    sim, cursor.tracking_id, cursor.bubble.actor
+                    sim, cursor.tracking_id, cursor.bubble.actor, cursor.bubble
                 )
             elif cursor.transition == BubbleTransition.Exited:
                 continue
             elif cursor.transition == BubbleTransition.AirlockExited:
                 if sim.vehicle_index.vehicle_is_hijacked(cursor.tracking_id):
-                    self._relinquish_vehicle_to_traffic_sim(sim, cursor.tracking_id)
+                    self._relinquish_vehicle_to_traffic_sim(
+                        sim, cursor.tracking_id, cursor.bubble
+                    )
                 else:
                     self._stop_shadowing_vehicle(sim, cursor.tracking_id)
 
@@ -384,7 +394,7 @@ class BubbleManager:
                 bubble.move_to_follow_vehicle(vehicles[0])
 
     def _airlock_social_vehicle_with_social_agent(
-        self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor,
+        self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor, bubble: Bubble
     ) -> str:
         """When airlocked. The social agent will receive observations and execute
         its policy, however it won't actually operate the vehicle's controller.
@@ -393,10 +403,13 @@ class BubbleManager:
             f"Airlocked vehicle={vehicle_id} with actor={social_agent_actor}"
         )
 
-        agent_id = BubbleManager._make_social_agent_id(vehicle_id, social_agent_actor)
+        if bubble.is_boid:
+            agent_id = BubbleManager._make_boid_social_agent_id(social_agent_actor)
+        else:
+            agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
         social_agent = None
-        if agent_id in sim.agent_manager.social_agent_ids:
+        if bubble.keep_alive or agent_id in sim.agent_manager.social_agent_ids:
             # E.g. if agent is a boid and was being re-used
             interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         else:
@@ -406,37 +419,19 @@ class BubbleManager:
             )
             interface = social_agent.interface
 
-        mission_planner = MissionPlanner(
-            sim.scenario.waypoints, sim.scenario.road_network
-        )
-        is_boid = isinstance(social_agent_actor, BoidAgentActor)
-        vehicle = sim.vehicle_index.prepare_for_agent_control(
-            sim, vehicle_id, agent_id, interface, mission_planner, boid=is_boid
+        self._prepare_sensors_for_agent_control(
+            sim, vehicle_id, agent_id, interface, bubble
         )
 
-        # Setup mission (also used for observations)
-        route = sim.traffic_sim.vehicle_route(vehicle_id=vehicle.id)
-        mission = Mission(
-            start=Start(vehicle.position[:2], vehicle.heading),
-            goal=PositionalGoal.fromedge(route[-1], sim.scenario.road_network),
-        )
-        mission_planner.plan(mission=mission)
+        if social_agent is None:
+            return
 
-        if social_agent and agent_id not in sim.agent_manager.social_agent_ids:
-            social_agent_data_model = SocialAgent(
-                id=SocialAgentId.new(social_agent_actor.name),
-                name=social_agent_actor.name,
-                mission=mission,
-                agent_locator=social_agent_actor.agent_locator,
-                policy_kwargs=social_agent_actor.policy_kwargs,
-                initial_speed=social_agent_actor.initial_speed,
-            )
-            sim.agent_manager.start_social_agent(
-                agent_id, social_agent, social_agent_data_model
-            )
+        self._start_social_agent(
+            sim, agent_id, social_agent, social_agent_actor, bubble
+        )
 
     def _hijack_social_vehicle_with_social_agent(
-        self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor,
+        self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor, bubble: Bubble
     ) -> str:
         """Upon hijacking the social agent is now in control of the vehicle. It will
         initialize the vehicle chassis (and by extension the controller) with a
@@ -444,11 +439,18 @@ class BubbleManager:
         front-end common to both source and destination policies during airlock.
         """
         self._log.debug(f"Hijack vehicle={vehicle_id} with actor={social_agent_actor}")
-        agent_id = BubbleManager._make_social_agent_id(vehicle_id, social_agent_actor)
+        if bubble.is_boid:
+            agent_id = BubbleManager._make_boid_social_agent_id(social_agent_actor)
+        else:
+            agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
-        is_boid = isinstance(social_agent_actor, BoidAgentActor)
         vehicle = sim.vehicle_index.switch_control_to_agent(
-            sim, vehicle_id, agent_id, boid=is_boid, hijacking=True, recreate=False
+            sim,
+            vehicle_id,
+            agent_id,
+            boid=bubble.is_boid,
+            hijacking=True,
+            recreate=False,
         )
 
         for provider in sim.providers:
@@ -467,7 +469,7 @@ class BubbleManager:
                     )
                 )
 
-    def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str):
+    def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str, bubble: Bubble):
         agent_id = sim.vehicle_index.actor_id_from_vehicle_id(vehicle_id)
         shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
 
@@ -475,25 +477,72 @@ class BubbleManager:
         #       not have to be equal to vehicle_id.
         social_vehicle_id = vehicle_id
         self._log.debug(
-            f"Relinquish vehicle={vehicle_id} to traffic simulation (agent={agent_id} "
+            f"Relinquish vehicle={vehicle_id} to traffic simulation (agent={agent_id}) "
             f"shadow_agent={shadow_agent_id} sv_id={social_vehicle_id})"
         )
+
+        if bubble.is_boid and bubble.keep_alive:
+            sim.vehicle_index.relinquish_agent_control(
+                sim, vehicle_id, social_vehicle_id
+            )
+            return
+
         sim.vehicle_index.relinquish_agent_control(sim, vehicle_id, social_vehicle_id)
         sim.teardown_agents_without_vehicles([agent_id, shadow_agent_id])
 
     def _stop_shadowing_vehicle(self, sim, vehicle_id: str):
         shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
         self._log.debug(
-            f"Stop shadowing vehicle={vehicle_id} (shadow_agent={shadow_agent_id}"
+            f"Stop shadowing vehicle={vehicle_id} (shadow_agent={shadow_agent_id})"
         )
         sim.teardown_agents_without_vehicles([shadow_agent_id])
 
-    @staticmethod
-    def _make_social_agent_id(vehicle_id, social_agent_actor):
-        if isinstance(social_agent_actor, BoidAgentActor):
-            return social_agent_actor.id
+    def _prepare_sensors_for_agent_control(
+        self, sim, vehicle_id, agent_id, agent_interface, bubble
+    ):
+        mission_planner = MissionPlanner(
+            sim.scenario.waypoints, sim.scenario.road_network
+        )
+        vehicle = sim.vehicle_index.prepare_for_agent_control(
+            sim,
+            vehicle_id,
+            agent_id,
+            agent_interface,
+            mission_planner,
+            boid=bubble.is_boid,
+        )
 
+        # Setup mission (also used for observations)
+        route = sim.traffic_sim.vehicle_route(vehicle_id=vehicle.id)
+        mission = Mission(
+            start=Start(vehicle.position[:2], vehicle.heading),
+            goal=PositionalGoal.fromedge(route[-1], sim.scenario.road_network),
+        )
+        mission_planner.plan(mission=mission)
+
+    def _start_social_agent(
+        self, sim, agent_id, social_agent, social_agent_actor, bubble
+    ):
+        social_agent_data_model = SocialAgent(
+            id=SocialAgentId.new(social_agent_actor.name),
+            name=social_agent_actor.name,
+            is_boid=bubble.is_boid,
+            is_boid_keep_alive=bubble.keep_alive,
+            agent_locator=social_agent_actor.agent_locator,
+            policy_kwargs=social_agent_actor.policy_kwargs,
+            initial_speed=social_agent_actor.initial_speed,
+        )
+        sim.agent_manager.start_social_agent(
+            agent_id, social_agent, social_agent_data_model
+        )
+
+    @staticmethod
+    def _make_social_agent_id(vehicle_id):
         return f"BUBBLE-AGENT-{vehicle_id}"
+
+    @staticmethod
+    def _make_boid_social_agent_id(social_agent_actor):
+        return f"BUBBLE-AGENT-{social_agent_actor.id}"
 
     def teardown(self):
         self._cursors = []

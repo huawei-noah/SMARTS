@@ -22,6 +22,11 @@ from typing import Set
 
 from envision.types import format_actor_id
 
+from smarts.core.bubble_manager import BubbleManager
+from smarts.core.data_model import SocialAgent
+from smarts.core.utils.id import SocialAgentId
+from smarts.zoo.registry import make as make_social_agent
+
 from .mission_planner import MissionPlanner
 from .remote_agent_buffer import RemoteAgentBuffer
 from .sensors import Sensors
@@ -144,7 +149,7 @@ class AgentManager:
                 agent_id, include_shadowers=True
             )
 
-            if self.is_boid_agent(sim, agent_id):
+            if self.is_boid_agent(agent_id):
                 vehicles = [
                     sim.vehicle_index.vehicle_by_id(vehicle_id)
                     for vehicle_id in vehicle_ids
@@ -284,8 +289,7 @@ class AgentManager:
 
         # Handle boids where some vehicles are hijacked and some have not yet been
         for agent_id, actions in social_agent_actions.items():
-            agent_interface = self._agent_interfaces[agent_id]
-            if self.is_boid_agent(sim, agent_id):
+            if self.is_boid_agent(agent_id):
                 controlled_vehicle_ids = sim.vehicle_index.vehicle_ids_by_actor_id(
                     agent_id, include_shadowers=False
                 )
@@ -310,6 +314,7 @@ class AgentManager:
     def setup_agents(self, sim):
         self.init_ego_agents(sim)
         self.setup_social_agents(sim)
+        self.start_keep_alive_boid_agents(sim)
 
     def init_ego_agents(self, sim):
         for agent_id, agent_interface in self._initial_interfaces.items():
@@ -339,6 +344,29 @@ class AgentManager:
 
         for social_agent_id, remote_social_agent in self._remote_social_agents.items():
             remote_social_agent.start(social_agents[social_agent_id][0])
+
+    def start_keep_alive_boid_agents(self, sim):
+        for bubble in filter(lambda b: b.keep_alive, sim.scenario.bubbles):
+            actor = bubble.actor
+            agent_id = BubbleManager._make_boid_social_agent_id(actor)
+
+            social_agent = make_social_agent(
+                locator=actor.agent_locator, **actor.policy_kwargs,
+            )
+
+            actor = bubble.actor
+            social_agent_data_model = SocialAgent(
+                id=SocialAgentId.new(actor.name),
+                name=actor.name,
+                is_boid=True,
+                is_boid_keep_alive=True,
+                agent_locator=actor.agent_locator,
+                policy_kwargs=actor.policy_kwargs,
+                initial_speed=actor.initial_speed,
+            )
+            self.start_social_agent(
+                agent_id, social_agent, social_agent_data_model
+            )
 
     def _add_agent(
         self, agent_id, agent_interface, agent_model, sim, boid=False, trainable=True
