@@ -98,8 +98,11 @@ class AgentManager:
     def active_agents(self):
         return self.agent_ids - self.pending_agent_ids
 
-    def is_boid_agent(self, sim, agent_id):
-        return sim.vehicle_index.actor_is_boid(agent_id)
+    def is_boid_agent(self, agent_id):
+        return self._agent_data_models[agent_id].is_boid
+
+    def is_boid_keep_alive_agent(self, agent_id):
+        return self._agent_data_models[agent_id].is_boid_keep_alive
 
     def is_ego(self, agent_id):
         return agent_id in self.ego_agent_ids

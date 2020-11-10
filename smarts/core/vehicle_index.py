@@ -139,18 +139,6 @@ class VehicleIndex:
         ]["vehicle_id"]
         return set(vehicle_ids)
 
-    def actor_is_boid(self, actor_id):
-        v_index = (self._controlled_by["actor_id"] == actor_id) | (
-            self._controlled_by["shadow_actor_id"] == actor_id
-        )
-        is_boids = self._controlled_by[v_index]["is_boid"]
-        if len(is_boids) == 0:
-            return False
-
-        # If a boid actor (or not) all vehicles should have the same is_boid value
-        assert all(x == is_boids[0] for x in is_boids)
-        return bool(is_boids[0])
-
     def vehicle_is_hijacked(self, vehicle_id):
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         if not np.any(v_index):
@@ -423,7 +411,7 @@ class VehicleIndex:
         self._controlled_by[v_index] = tuple(
             entity._replace(
                 actor_type=_ActorType.Social,
-                actor_id=social_vehicle_id,
+                actor_id="",
                 shadow_actor_id="",
                 is_boid=False,
                 is_hijacked=False,
