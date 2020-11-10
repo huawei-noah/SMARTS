@@ -118,6 +118,9 @@ class Chassis:
     def inherit_physical_values(self, other: "Chassis"):
         raise NotImplementedError
 
+    def reset_speed(self, speed: float):
+        raise NotImplementedError
+
     @property
     def to_polygon(self) -> Polygon:
         p = self.pose.position
@@ -204,6 +207,9 @@ class BoxChassis(Chassis):
         self._pose = other.pose
         self.speed = other.speed
         # ignore physics
+
+    def reset_speed(self, speed: float):
+        self.speed = speed
 
     def teardown(self):
         self._bullet_constraint.teardown()
@@ -509,9 +515,11 @@ class AckermannChassis(Chassis):
 
     def inherit_physical_values(self, other: BoxChassis):
         self.set_pose(other.pose)
-        # bullet wants m/s
-        velocity = radians_to_vec(self.pose.heading) * other.speed
-        self.speed = other.speed
+        self.reset_speed(other.speed)
+
+    def reset_speed(self, speed: float):
+        velocity = radians_to_vec(self.pose.heading) * speed
+        self.speed = speed
         self._client.resetBaseVelocity(self._bullet_id, [*velocity, 0])
 
     def teardown(self):

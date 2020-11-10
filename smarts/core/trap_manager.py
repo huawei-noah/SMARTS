@@ -45,6 +45,7 @@ class Trap:
     reactivation_time: float
     remaining_time_to_reactivation: float
     patience: float
+    default_entry_speed: float
 
     def step_trigger(self, dt: float):
         self.remaining_time_to_reactivation -= dt
@@ -83,7 +84,6 @@ class TrapManager:
 
     def init_traps(self, scenario):
         self._traps.clear()
-        trap_configs: Sequence[TrapConfig] = []
 
         for agent_id in scenario.missions:
             mission = scenario.missions[agent_id]
@@ -102,18 +102,7 @@ class TrapManager:
 
             mission_planner.plan(mission)
 
-            trap_config = self._mission2trap(scenario.road_network, mission)
-            trap_configs.append((agent_id, trap_config))
-
-        for agent_id, tc in trap_configs:
-            trap = Trap(
-                geometry=tc.zone.to_geometry(scenario.road_network),
-                mission=tc.mission,
-                exclusion_prefixes=tc.exclusion_prefixes,
-                reactivation_time=tc.reactivation_time,
-                remaining_time_to_reactivation=tc.activation_delay,
-                patience=tc.patience,
-            )
+            trap = self._mission2trap(scenario.road_network, mission)
             self.add_trap_for_agent_id(agent_id, trap)
 
     def add_trap_for_agent_id(self, agent_id, trap: Trap):
@@ -174,7 +163,7 @@ class TrapManager:
                 vehicle = vehicles[v_id]
                 point = Point(vehicle.position)
 
-                if any(v.startswith(prefix) for prefix in trap.exclusion_prefixes):
+                if any(v_id.startswith(prefix) for prefix in trap.exclusion_prefixes):
                     continue
 
                 if not point.within(trap.geometry):
@@ -215,20 +204,19 @@ class TrapManager:
                     sim, vehicle_id, agent_id, mission
                 )
             elif trap.patience_expired:
+                mission = trap.mission
                 if len(agent_vehicle_comp) > 0:
                     agent_vehicle_comp.sort(
-                        key=lambda v: squared_dist(v[0], trap.mission.start.position)
+                        key=lambda v: squared_dist(v[0], mission.start.position)
                     )
 
                     # Make sure there is not an agent vehicle in the same location
                     pos, largest_dimension, _ = agent_vehicle_comp[0]
-                    if (
-                        squared_dist(pos, trap.mission.start.position)
-                        < largest_dimension
-                    ):
+                    if squared_dist(pos, mission.start.position) < largest_dimension:
                         continue
 
                 vehicle = TrapManager._make_vehicle(sim, agent_id, trap.mission)
+                vehicle.chassis.reset_speed(trap.default_entry_speed)
             else:
                 continue
 
@@ -306,22 +294,25 @@ class TrapManager:
         self._traps.clear()
 
     def _mission2trap(self, road_network, mission, default_zone_dist=6):
-        out_config = None
         if not (hasattr(mission, "start") and hasattr(mission, "goal")):
             raise ValueError(f"Value {mission} is not a mission!")
 
         activation_delay = mission.start_time
         patience = mission.entry_tactic.wait_to_hijack_limit_s
         zone = mission.entry_tactic.zone
+        default_entry_speed = mission.entry_tactic.default_entry_speed
+        n_lane = None
 
-        if not zone:
-            n_lane = road_network.nearest_lane(mission.start.position)
+        if default_entry_speed is None:
+            n_lane = n_lane or road_network.nearest_lane(mission.start.position)
+            default_entry_speed = n_lane.getSpeed()
 
+        if zone is None:
+            n_lane = n_lane or road_network.nearest_lane(mission.start.position)
+            lane_speed = n_lane.getSpeed()
             start_edge_id = n_lane.getEdge().getID()
             start_lane = n_lane.getIndex()
             lane_length = n_lane.getLength()
-            lane_speed = n_lane.getSpeed()
-
             start_pos = mission.start.position
             vehicle_offset_into_lane = road_network.offset_into_lane(
                 n_lane, (start_pos[0], start_pos[1])
@@ -342,15 +333,16 @@ class TrapManager:
                 n_lanes=1,
             )
 
-        out_config = TrapConfig(
-            zone=zone,
+        trap = Trap(
+            geometry=zone.to_geometry(road_network),
             # TODO: Make reactivation and activation delay configurable through
             #   scenario studio
             reactivation_time=-1,
-            activation_delay=activation_delay,
+            remaining_time_to_reactivation=activation_delay,
             patience=patience,
             mission=mission,
             exclusion_prefixes=mission.entry_tactic.exclusion_prefixes,
+            default_entry_speed=default_entry_speed,
         )
 
-        return out_config
+        return trap
