@@ -364,9 +364,7 @@ class AgentManager:
                 policy_kwargs=actor.policy_kwargs,
                 initial_speed=actor.initial_speed,
             )
-            self.start_social_agent(
-                agent_id, social_agent, social_agent_data_model
-            )
+            self.start_social_agent(agent_id, social_agent, social_agent_data_model)
 
     def _add_agent(
         self, agent_id, agent_interface, agent_model, sim, boid=False, trainable=True
