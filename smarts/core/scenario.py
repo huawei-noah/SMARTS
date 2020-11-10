@@ -343,7 +343,7 @@ class Scenario:
         return surface_patches
 
     @staticmethod
-    @lru_cache(maxsize=10)
+    @lru_cache(maxsize=16)
     def _discover_social_agents_info(scenario,) -> Sequence[Dict[str, SocialAgent]]:
         """Loops through the social agent mission pickles, instantiating corresponding
         implementations for the given types. The output is a list of

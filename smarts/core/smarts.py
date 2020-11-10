@@ -213,7 +213,8 @@ class SMARTS(ShowBase):
         provider_state = self._step_providers(all_agent_actions, dt)
 
         # 3. Step bubble manager and trap manager
-        self._bubble_manager.step()
+        self.vehicle_index.sync()
+        self._bubble_manager.step(self)
         self._trap_manager.step(self)
 
         # 4. Calculate observation and reward
@@ -310,7 +311,7 @@ class SMARTS(ShowBase):
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
 
         bubbles = scenario.discover_bubbles()
-        self._bubble_manager = BubbleManager(self, bubbles)
+        self._bubble_manager = BubbleManager(bubbles, self.scenario.road_network)
         self._trap_manager = TrapManager(scenario)
 
         self._setup_bullet_client(self._bullet_client)
@@ -320,6 +321,9 @@ class SMARTS(ShowBase):
         self._last_provider_state = provider_state
 
         self._is_setup = True
+
+    def add_provider(self, provider):
+        self._providers.append(provider)
 
     def _setup_road_network(self):
         glb_path = self.scenario.map_glb_filepath
@@ -414,7 +418,6 @@ class SMARTS(ShowBase):
         torndown_vehicles = self._vehicle_index.teardown_vehicles_by_actor_ids(
             agent_ids
         )
-        self._bubble_manager.forget_vehicles(torndown_vehicles)
         self._clear_collisions(agent_ids)
 
     def attach_sensors_to_vehicles(self, agent_spec, vehicle_ids):
@@ -495,7 +498,6 @@ class SMARTS(ShowBase):
                 shadow_and_controlling_agents.add(shadow_agent_id)
 
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
-        self._bubble_manager.forget_vehicles(vehicle_ids)
 
         self.teardown_agents_without_vehicles(shadow_and_controlling_agents)
 
