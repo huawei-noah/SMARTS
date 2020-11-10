@@ -826,7 +826,7 @@ class TripMeterSensor(Sensor):
             or wp_edge in self._mission_planner.route.edges
         )
 
-        if most_recent_wp.id != new_wp.id and should_count_wp:
+        if hash(most_recent_wp) != hash(new_wp) and should_count_wp:
             self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
                 most_recent_wp, new_wp
             )
