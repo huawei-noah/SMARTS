@@ -34,7 +34,6 @@ from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
-from shapely.geometry import Polygon, MultiPolygon
 
 from .data_model import SocialAgent
 from .sumo_road_network import SumoRoadNetwork
@@ -45,7 +44,7 @@ from .utils.file import path2hash, file_md5_hash
 from .utils.id import SocialAgentId
 from .route import ShortestRoute
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import Zone, PositionalZone, RoadSurfacePatch, EntryTactic
+from smarts.sstudio.types import EntryTactic
 
 
 @dataclass(frozen=True)
@@ -171,6 +170,7 @@ class Scenario:
         self._root = scenario_root
         self._route = route
         self._missions = missions or {}
+        self._bubbles = Scenario._discover_bubbles(scenario_root)
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
         self._log_dir = os.path.abspath(log_dir)
@@ -387,10 +387,6 @@ class Scenario:
                 )
 
                 actor = mission_and_actor.actor
-                extracted_mission = Scenario._extract_mission(
-                    mission_and_actor.mission, road_network
-                )
-
                 namespace = os.path.basename(missions_file_path)
                 namespace = os.path.splitext(namespace)[0]
 
@@ -398,7 +394,8 @@ class Scenario:
                     SocialAgent(
                         id=SocialAgentId.new(actor.name, group=namespace),
                         name=actor.name,
-                        mission=extracted_mission,
+                        is_boid=False,
+                        is_boid_keep_alive=False,
                         agent_locator=actor.agent_locator,
                         policy_kwargs=actor.policy_kwargs,
                         initial_speed=actor.initial_speed,
@@ -447,8 +444,9 @@ class Scenario:
             ]
         )
 
-    def discover_bubbles(self):
-        path = os.path.join(self._root, "bubbles.pkl")
+    @staticmethod
+    def _discover_bubbles(scenario_root):
+        path = os.path.join(scenario_root, "bubbles.pkl")
         if not os.path.exists(path):
             return []
 
@@ -690,6 +688,10 @@ class Scenario:
     @property
     def social_agents(self):
         return self._social_agents
+
+    @property
+    def bubbles(self):
+        return self._bubbles
 
     def mission(self, agent_id):
         return self._missions.get(agent_id, None)
