@@ -172,8 +172,7 @@ class TrapManager:
                 vehicle = vehicles[v_id]
                 point = Point(vehicle.position)
 
-                # BUG: v is not defined
-                if any(v.startswith(prefix) for prefix in trap.exclusion_prefixes):
+                if any(v_id.startswith(prefix) for prefix in trap.exclusion_prefixes):
                     continue
 
                 if not point.within(trap.geometry):

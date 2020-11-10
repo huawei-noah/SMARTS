@@ -1,14 +1,16 @@
-from smarts.core import vehicle
-import time
 import pytest
+import smarts.sstudio.types as t
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.providers import MockProvider
-import smarts.sstudio.types as t
 from smarts.sstudio import gen_scenario
+
 from helpers.scenario import temp_scenario
+
+
+# TODO: Add test for travelling bubbles
 
 
 @pytest.fixture

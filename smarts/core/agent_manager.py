@@ -18,17 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-from smarts.core import agent
 from typing import Set
 
 from envision.types import format_actor_id
 
 from .mission_planner import MissionPlanner
-from .scenario import Scenario
-from .sensors import Sensors
-from .vehicle import VehicleState, Vehicle
-from .controllers import ActionSpaceType
 from .remote_agent_buffer import RemoteAgentBuffer
+from .sensors import Sensors
+from .vehicle import VehicleState
 
 
 class AgentManager:
