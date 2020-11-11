@@ -112,6 +112,13 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 @dataclass
+class Trajectory:
+    pos: np.ndarray
+    heading: Heading
+    desired_speed: float = None
+
+
+@dataclass
 class Observation:
     events: Events
     ego_vehicle_state: EgoVehicleObservation
@@ -128,6 +135,7 @@ class Observation:
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
+    desired_trajectory: List[Trajectory] = None
 
 
 @dataclass
@@ -255,6 +263,8 @@ class Sensors:
         rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
         lidar = vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
 
+        desired_trajectory = vehicle.desired_trajectory_sensor()
+
         done, events = Sensors._is_done_with_events(sim, agent_id, sensor_state)
         return (
             Observation(
@@ -268,6 +278,7 @@ class Sensors:
                 drivable_area_grid_map=drivable_area_grid_map,
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
+                desired_trajectory=desired_trajectory,
             ),
             done,
         )
@@ -895,6 +906,19 @@ class NeighborhoodVehiclesSensor(Sensor):
         return self._sim.neighborhood_vehicles_around_vehicle(
             self._vehicle, radius=self._radius
         )
+
+    def teardown(self):
+        pass
+
+
+class UTurnDesiredTrajectorySensor(Sensor):
+    def __init__(self, vehicle, sim):
+        self._vehicle = vehicle
+        self._sim = sim
+
+    def __call__(self):
+        # TODO
+        return []
 
     def teardown(self):
         pass

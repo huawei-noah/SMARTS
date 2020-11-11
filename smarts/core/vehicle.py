@@ -26,6 +26,7 @@ from direct.showbase.ShowBase import ShowBase
 from pybullet_utils.bullet_client import BulletClient
 
 from . import models
+from .agent_interface import Task
 from .chassis import Chassis, AckermannChassis, BoxChassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
@@ -41,6 +42,7 @@ from .sensors import (
     RoadWaypointsSensor,
     TripMeterSensor,
     WaypointsSensor,
+    UTurnDesiredTrajectorySensor,
 )
 from .utils.math import rotate_around_point
 
@@ -434,6 +436,11 @@ class Vehicle:
                 )
             )
 
+        if agent_interface.task is not None:
+            if agent_interface.task == Task.UTurn:
+                sensor = UTurnDesiredTrajectorySensor(vehicle=vehicle, sim=sim,)
+                vehicle.attach_desired_trajectory_sensor(sensor)
+
     def step(self, current_simulation_time):
         self._chassis.step(current_simulation_time)
 
@@ -487,6 +494,7 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
+            "desired_trajectory_sensor",
         ]
         for sensor_name in sensor_names:
 

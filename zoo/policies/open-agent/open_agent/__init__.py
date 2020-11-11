@@ -2,6 +2,7 @@ from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import register
+from smarts.core.agent_interface import Task
 
 
 def entrypoint(
@@ -26,6 +27,7 @@ def entrypoint(
             waypoints=True,
             neighborhood_vehicles=True,
             max_episode_steps=max_episode_steps,
+            task=Task.UTurn,
         ),
         policy_params={"gains": gains, "debug": debug,},
         policy_builder=Policy,
