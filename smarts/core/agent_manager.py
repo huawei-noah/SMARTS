@@ -182,14 +182,14 @@ class AgentManager:
                     sim, agent_id, sensor_state, vehicle
                 )
 
-                if sim.vehicle_index.vehicle_is_hijacked(vehicle.id):
+                if sim.vehicle_index.vehicle_is_shadowed(vehicle.id):
+                    # It is not a shadowing agent's fault if it is done
+                    dones[agent_id] = False
+                else:
                     logging.log(
                         logging.DEBUG,
                         f"Agent `{agent_id}` has raised done with {observations[agent_id].events}",
                     )
-                else:
-                    # It is not a shadowing agent's fault if it is done
-                    dones[agent_id] = False
 
                 rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
                 scores[agent_id] = vehicle.trip_meter_sensor()
