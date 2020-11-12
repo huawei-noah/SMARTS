@@ -15,15 +15,11 @@ from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.sstudio import gen_scenario
 
 
-MAX_BOID_LIMIT = 3
-
-
 @pytest.fixture
 def bubble():
     return t.Bubble(
         zone=t.PositionalZone(pos=(100, 0), size=(20, 20)),
         margin=10,
-        limit=MAX_BOID_LIMIT,
         actor=t.BoidAgentActor(
             # TODO: Provide a more self-contained way to build agent locators for tests
             name="hive-mind",
@@ -58,7 +54,7 @@ def scenarios(bubble):
 
 @pytest.fixture
 def smarts():
-    smarts = SMARTS({}, traffic_sim=SumoTrafficSimulation())
+    smarts = SMARTS({}, traffic_sim=SumoTrafficSimulation(headless=False))
     yield smarts
     smarts.destroy()
 
