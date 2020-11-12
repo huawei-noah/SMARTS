@@ -54,7 +54,7 @@ def scenarios(bubble):
 
 @pytest.fixture
 def smarts():
-    smarts = SMARTS({}, traffic_sim=SumoTrafficSimulation(headless=False))
+    smarts = SMARTS({}, traffic_sim=SumoTrafficSimulation())
     yield smarts
     smarts.destroy()
 
