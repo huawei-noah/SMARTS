@@ -341,7 +341,9 @@ class AgentManager:
             remote_social_agent.start(social_agents[social_agent_id][0])
 
     def start_keep_alive_boid_agents(self, sim):
-        for bubble in filter(lambda b: b.keep_alive, sim.scenario.bubbles):
+        for bubble in filter(
+            lambda b: b.is_boid and b.keep_alive, sim.scenario.bubbles
+        ):
             actor = bubble.actor
             agent_id = BubbleManager._make_boid_social_agent_id(actor)
 

@@ -542,6 +542,10 @@ class Bubble:
     def to_actor_id(actor, mission_group):
         return SocialAgentId.new(actor.name, group=mission_group)
 
+    @property
+    def is_boid(self):
+        return isinstance(self.actor, BoidAgentActor)
+
 
 @dataclass(frozen=True)
 class RoadSurfacePatch:

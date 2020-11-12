@@ -100,7 +100,7 @@ class Bubble:
 
     @property
     def is_boid(self):
-        return isinstance(self._bubble.actor, BoidAgentActor)
+        return self._bubble.is_boid
 
     @property
     def keep_alive(self):
