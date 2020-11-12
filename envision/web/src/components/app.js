@@ -27,7 +27,11 @@ import {
 } from "react-router-dom";
 import ReactDOM from "react-dom";
 import html2canvas from "html2canvas";
-import { RecordRTCPromisesHandler, invokeSaveAsDialog } from "recordrtc";
+import {
+  RecordRTCPromisesHandler,
+  invokeSaveAsDialog,
+  getSeekableBlob,
+} from "recordrtc";
 import { Layout } from "antd";
 const { Content } = Layout;
 
@@ -76,7 +80,13 @@ function App(props) {
   async function onStopRecording() {
     await recorderRef.current.stopRecording();
     let blob = await recorderRef.current.getBlob();
-    invokeSaveAsDialog(blob, `envision-${Math.round(Date.now() / 1000)}.webm`);
+
+    getSeekableBlob(blob, function (seekableBlob) {
+      invokeSaveAsDialog(
+        seekableBlob,
+        `envision-${Math.round(Date.now() / 1000)}.webm`
+      );
+    });
   }
 
   function onSelectSimulation(simulationId) {
