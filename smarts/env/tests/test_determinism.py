@@ -138,7 +138,7 @@ def test_short_length_determinism(agent_spec):
             agent_obs.waypoint_paths, orig_agent_obs.waypoint_paths
         ):
             for now, prev in zip(w_paths_now, w_paths_prev):
-                assert hash(now) == hash(prev)
+                assert now == prev
                 # np.array is requiring this
                 assert all(
                     [
