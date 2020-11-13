@@ -408,17 +408,21 @@ class AgentManager:
             boid=boid,
         )
 
-        for provider in sim.providers:
-            if agent_interface.action_space in provider.action_spaces:
-                provider.create_vehicle(
-                    VehicleState(
-                        vehicle_id=vehicle.id,
-                        vehicle_type=vehicle.vehicle_type,
-                        pose=vehicle.pose,
-                        dimensions=vehicle.chassis.dimensions,
-                        source="NEW-AGENT",
-                    )
-                )
+        matching_providers = [
+            provider for provider in sim.providers
+            if agent_interface.action_space in provider.action_spaces
+        ]
+        assert len(matching_providers) == 1
+        provider = matching_providers[0]
+        provider.create_vehicle(
+            VehicleState(
+                vehicle_id=vehicle.id,
+                vehicle_type=vehicle.vehicle_type,
+                pose=vehicle.pose,
+                dimensions=vehicle.chassis.dimensions,
+                source="NEW-AGENT",
+            )
+        )
 
         self._agent_interfaces[agent_id] = agent_interface
         self._social_agent_data_models[agent_id] = agent_model
