@@ -438,7 +438,9 @@ class Vehicle:
 
         if agent_interface.task is not None:
             if agent_interface.task == Task.UTurn:
-                sensor = UTurnDesiredTrajectorySensor(vehicle=vehicle, sim=sim,)
+                sensor = UTurnDesiredTrajectorySensor(
+                    vehicle=vehicle, sim=sim, mission_planner=mission_planner
+                )
                 vehicle.attach_desired_trajectory_sensor(sensor)
 
     def step(self, current_simulation_time):
