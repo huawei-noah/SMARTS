@@ -37,7 +37,6 @@ import sh
 
 from . import types
 from .generators import TrafficGenerator
-from .utils import prompt_yes_no
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__file__)

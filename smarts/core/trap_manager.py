@@ -125,9 +125,7 @@ class TrapManager:
             if not trap.reactivates:
                 del self._traps[agent_id]
 
-    def step(
-        self, sim,
-    ):
+    def step(self, sim):
         captures_by_agent_id = defaultdict(list)
 
         # Do an optimization to only check if there are pending agents.
@@ -174,7 +172,7 @@ class TrapManager:
                 vehicle = vehicles[v_id]
                 point = Point(vehicle.position)
 
-                if any(v.startswith(prefix) for prefix in trap.exclusion_prefixes):
+                if any(v_id.startswith(prefix) for prefix in trap.exclusion_prefixes):
                     continue
 
                 if not point.within(trap.geometry):
@@ -274,7 +272,7 @@ class TrapManager:
             sim, vehicle_id, agent_id, agent_interface, planner
         )
         vehicle = sim.vehicle_index.switch_control_to_agent(
-            sim, vehicle_id, agent_id, recreate=True
+            sim, vehicle_id, agent_id, recreate=True, hijacking=False
         )
         return vehicle
 

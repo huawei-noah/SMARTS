@@ -41,7 +41,7 @@ from .sumo_road_network import SumoRoadNetwork
 from .waypoints import Waypoints
 from .coordinates import Heading
 from .utils.math import vec_to_radians
-from .utils.file import path2hash
+from .utils.file import path2hash, file_md5_hash
 from .utils.id import SocialAgentId
 from .route import ShortestRoute
 from smarts.sstudio import types as sstudio_types
@@ -177,6 +177,7 @@ class Scenario:
 
         self._validate_assets_exist()
         self._road_network = SumoRoadNetwork.from_file(self.net_filepath)
+        self._net_file_hash = file_md5_hash(self.net_filepath)
         self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
 
@@ -342,7 +343,7 @@ class Scenario:
         return surface_patches
 
     @staticmethod
-    @lru_cache(maxsize=10)
+    @lru_cache(maxsize=16)
     def _discover_social_agents_info(scenario,) -> Sequence[Dict[str, SocialAgent]]:
         """Loops through the social agent mission pickles, instantiating corresponding
         implementations for the given types. The output is a list of
@@ -634,6 +635,10 @@ class Scenario:
     @property
     def net_filepath(self):
         return os.path.join(self._root, "map.net.xml")
+
+    @property
+    def net_file_hash(self):
+        return self._net_file_hash
 
     @property
     def plane_filepath(self):

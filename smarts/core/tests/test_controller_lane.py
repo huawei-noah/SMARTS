@@ -1,9 +1,4 @@
-import math
-import os
 import pytest
-import numpy as np
-
-import gym
 
 
 from smarts.core.agent_interface import AgentInterface, AgentType

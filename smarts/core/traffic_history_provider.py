@@ -17,18 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import json
-import math
-import random
 from itertools import cycle
-from typing import Set, Dict
-
-import numpy as np
+from typing import Set
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Pose, Heading
+from .coordinates import Pose, Heading
 from .provider import ProviderState
-from .scenario import Mission, EndlessGoal, Start
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -96,8 +90,22 @@ class TrafficHistoryProvider:
                         [*vehicle_state["position"][:2], 0,],
                         Heading(vehicle_state["heading"]),
                     ),
-                    # TODO: specify dimensions
-                    dimensions=VEHICLE_CONFIGS[vehicle_type].dimensions,
+                    dimensions=BoundingBox(
+                        length=vehicle_state.get(
+                            "vehicle_length",
+                            VEHICLE_CONFIGS[vehicle_type].dimensions.length,
+                        ),
+                        width=vehicle_state.get(
+                            "vehicle_width",
+                            VEHICLE_CONFIGS[vehicle_type].dimensions.width,
+                        ),
+                        # Note: Neither NGSIM nor INTERACTION provide
+                        #       the height of the vehicles.
+                        height=vehicle_state.get(
+                            "vehicle_height",
+                            VEHICLE_CONFIGS[vehicle_type].dimensions.height,
+                        ),
+                    ),
                     speed=vehicle_state["speed"],
                     source="HISTORY",
                 )

@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "Agent-007"
 
-NUM_STEPS = 15
+NUM_STEPS = 30
 MAP_WIDTH = 1536
 MAP_HEIGHT = 1536
 HALF_WIDTH = MAP_WIDTH / 2
@@ -104,69 +104,25 @@ def project_2d(lens, img_metadata, pos):
     return x, y
 
 
-def sample_vehicle_pos(
-    lens, rgb, next_rgb, ogm, next_ogm, drivable_area, next_drivable_area, vehicle_pos
-):
+def sample_vehicle_pos(lens, rgb, ogm, drivable_area, vehicle_pos):
     rgb_x, rgb_y = project_2d(lens, rgb.metadata, vehicle_pos)
     ogm_x, ogm_y = project_2d(lens, ogm.metadata, vehicle_pos)
     drivable_area_x, drivable_area_y = project_2d(
         lens, drivable_area.metadata, vehicle_pos
     )
 
-    # Sometimes grid maps are one frame/step behind current positions of the vehicles
-    next_rgb_x, next_rgb_y = project_2d(lens, next_rgb.metadata, vehicle_pos)
-    next_ogm_x, next_ogm_y = project_2d(lens, next_ogm.metadata, vehicle_pos)
-    next_drivable_area_x, next_drivable_area_y = project_2d(
-        lens, next_drivable_area.metadata, vehicle_pos
+    # Check if vehicles are rendered at the expected position
+    # RGB
+    assert np.count_nonzero(rgb.data[rgb_x, rgb_y, :]) and np.count_nonzero(
+        rgb.data[rgb_x, rgb_y, :] != ROAD_COLOR
     )
 
-    # HACK: There seems to be a Panda3D(?) bug where the zbuffer ordering of
-    #       vehicles to plane is random. We'll get back to this. #smartsgate
-    # # Check if vehicles are rendered at the expected position
-    # # RGB
-    # assert (
-    #     np.count_nonzero(rgb.data[rgb_x, rgb_y, :])
-    #     and np.count_nonzero(rgb.data[rgb_x, rgb_y, :] != ROAD_COLOR)
-    # ) or (
-    #     np.count_nonzero(next_rgb.data[next_rgb_x, next_rgb_y, :])
-    #     and np.count_nonzero(next_rgb.data[next_rgb_x, next_rgb_y, :] != ROAD_COLOR)
-    # )
-
-    # # OGM
-    # assert np.count_nonzero(ogm.data[ogm_x, ogm_y, :]) or np.count_nonzero(
-    #     next_ogm.data[next_ogm_x, next_ogm_y, :]
-    # )
+    # OGM
+    assert np.count_nonzero(ogm.data[ogm_x, ogm_y, :])
 
     # Check if vehicles are within drivable area
     # Drivable area grid map
-
-    # Temporary debug code: log the following info to understand sporadic test failure on gitlab
-    # Will be removed when failure no longer occurs
-    x_min = max(drivable_area_x - SAMPLE_RANGE, 0)
-    x_max = min(drivable_area_x + SAMPLE_RANGE, MAP_HEIGHT)
-    y_min = max(drivable_area_y - SAMPLE_RANGE, 0)
-    y_max = min(drivable_area_y + SAMPLE_RANGE, MAP_WIDTH)
-    print(drivable_area_x, drivable_area_y, np.count_nonzero(drivable_area.data))
-    print(drivable_area.data[x_min:x_max, drivable_area_y])
-    print(drivable_area.data[drivable_area_x, y_min:y_max])
-
-    next_x_min = max(next_drivable_area_x - SAMPLE_RANGE, 0)
-    next_x_max = min(next_drivable_area_x + SAMPLE_RANGE, MAP_HEIGHT)
-    next_y_min = max(next_drivable_area_y - SAMPLE_RANGE, 0)
-    next_y_max = min(next_drivable_area_y + SAMPLE_RANGE, MAP_WIDTH)
-    print(
-        next_drivable_area_x,
-        next_drivable_area_y,
-        np.count_nonzero(next_drivable_area.data),
-    )
-    print(next_drivable_area.data[next_x_min:next_x_max, next_drivable_area_y])
-    print(next_drivable_area.data[next_drivable_area_x, next_y_min:next_y_max])
-
-    assert np.count_nonzero(
-        drivable_area.data[drivable_area_x, drivable_area_y, :]
-    ) or np.count_nonzero(
-        next_drivable_area.data[next_drivable_area_x, next_drivable_area_y, :]
-    )
+    assert np.count_nonzero(drivable_area.data[drivable_area_x, drivable_area_y, :])
 
 
 def test_observations(env, agent_spec):
@@ -179,23 +135,14 @@ def test_observations(env, agent_spec):
         agent_action = agent.act(agent_obs)
         observations, _, _, _ = env.step({AGENT_ID: agent_action})
 
-    # Store observations for an additional step,
-    # because sometimes grid maps are one frame/step behind current positions of the vehicles
-    next_agent_obs = observations[AGENT_ID]
-    next_agent_action = agent.act(next_agent_obs)
-    next_observations, _, _, _ = env.step({AGENT_ID: next_agent_action})
-
     # RGB
     rgb = observations[AGENT_ID].top_down_rgb
-    next_rgb = next_observations[AGENT_ID].top_down_rgb
 
     # OGM
     ogm = observations[AGENT_ID].occupancy_grid_map
-    next_ogm = next_observations[AGENT_ID].occupancy_grid_map
 
     # Drivable area
     drivable_area = observations[AGENT_ID].drivable_area_grid_map
-    next_drivable_area = next_observations[AGENT_ID].drivable_area_grid_map
 
     lens = OrthographicLens()
     lens.setFilmSize(MAP_RESOLUTION * MAP_WIDTH, MAP_RESOLUTION * MAP_HEIGHT)
@@ -203,27 +150,13 @@ def test_observations(env, agent_spec):
     # Check for ego vehicle
     ego_vehicle_position = observations[AGENT_ID].ego_vehicle_state.position
     sample_vehicle_pos(
-        lens,
-        rgb,
-        next_rgb,
-        ogm,
-        next_ogm,
-        drivable_area,
-        next_drivable_area,
-        ego_vehicle_position,
+        lens, rgb, ogm, drivable_area, ego_vehicle_position,
     )
 
     # Check for neighbor vehicles
     for neighbor_vehicle in observations[AGENT_ID].neighborhood_vehicle_states:
         sample_vehicle_pos(
-            lens,
-            rgb,
-            next_rgb,
-            ogm,
-            next_ogm,
-            drivable_area,
-            next_drivable_area,
-            neighbor_vehicle.position,
+            lens, rgb, ogm, drivable_area, neighbor_vehicle.position,
         )
 
     # Check for roads

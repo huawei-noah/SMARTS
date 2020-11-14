@@ -74,3 +74,11 @@ def path2hash(file_path: str):
     m = hashlib.md5()
     m.update(bytes(file_path, "utf-8"))
     return m.hexdigest()
+
+
+def file_md5_hash(file_path: str) -> str:
+    hasher = hashlib.md5()
+    with open(file_path) as f:
+        hasher.update(f.read().encode())
+
+    return str(hasher.hexdigest())
