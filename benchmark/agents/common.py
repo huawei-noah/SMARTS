@@ -731,7 +731,7 @@ class CalObs:
                         intersection_distance, ego_closest_its_nv_distance / 100
                     )
 
-                    # if to collide in 3s, make it slow down
+                    # if to collide in 2s or its distance in 6, make it slow down
                     if ttc < 2 or ego_closest_its_nv_distance < 6:
                         intersection_crash_flag = True
 
@@ -1136,7 +1136,7 @@ def get_reward_adapter(observation_adapter, adapter_type="vanilla"):
         bonus += 0.05 * env_reward
         return bonus + penalty
 
-    def cruising(env_obs, env_reward):
+    def cruising(last_env_obs, env_obs, env_reward):
         global lane_crash_flag
         global intersection_crash_flag
 
