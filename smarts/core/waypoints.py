@@ -314,6 +314,9 @@ class Waypoints:
             )
         )
 
+        if len(cumulative_path_dist) <= 1:
+            return [path[0].wp]
+
         evenly_spaced_cumulative_path_dist = np.linspace(
             0, cumulative_path_dist[-1], len(cumulative_path_dist) + 1
         )
