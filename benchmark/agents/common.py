@@ -908,7 +908,9 @@ def cal_obs(env_obs: Observation, space, feature_configs):
             obs.append(cal_obs(_env_obs, _space, feature_configs))
     else:
         raise NotImplementedError(f"space: {space}")
-    return obs
+    global intersection_crash_flag, lane_crash_flag
+    global_vars = [intersection_crash_flag, lane_crash_flag]
+    return obs, global_vars
 
 
 def default_info_adapter(observation, shaped_reward: float, raw_info: dict):
@@ -922,18 +924,24 @@ def get_observation_adapter(
         return env_obs
 
     def single_frame(env_obs):
-        return cal_obs(env_obs, observation_space, feature_configs)
+        return cal_obs(env_obs, observation_space, feature_configs)[0]
 
     def stack_frame(env_obs_list):
         assert isinstance(env_obs_list, Sequence)
         frames = list(
-            map(lambda v: cal_obs(v, observation_space, feature_configs), env_obs_list)
+            map(
+                lambda v: cal_obs(v, observation_space, feature_configs)[0],
+                env_obs_list,
+            )
         )
         observation = wrapper.stack_frames(frames)
         return observation
 
     def cruising(env_obs):
-        return cal_obs(env_obs, observation_space, feature_configs)
+        global intersection_crash_flag, lane_crash_flag
+        obs, global_vars = cal_obs(env_obs, observation_space, feature_configs)
+        intersection_crash_flag, lane_crash_flag = global_vars
+        return obs
 
     return {
         "vanilla": vanilla,
