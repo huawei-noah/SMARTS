@@ -19,6 +19,7 @@ constantly==15.1.0
 coverage==5.3
 cycler==0.10.0
 Cython==0.29.21
+debtcollector==2.2.0
 decorator==4.4.2
 dm-tree==0.1.5
 evdev==1.3.0
