@@ -922,28 +922,39 @@ class UTurnDesiredTrajectorySensor(Sensor):
         self._horizon = 50
 
     def __call__(self):
-        wp = self._sim.waypoints.closest_waypoint(self._vehicle.position)
-        road_edges = self._sim.road_network.road_edge_data_for_lane_id(wp.lane_id)
+        start_lane = self._mission_planner.start_lane
+        start_edge = self._sim.road_network.road_edge_data_for_lane_id(
+            start_lane.getID()
+        )
+        oncoming_edge = start_edge.oncoming_edges[0]
 
-        edge = road_edges.oncoming_edges[0]
-        lane = edge.getLanes()[0]  # lane_id = "edge-west-EW_0"
+        wp = self._sim.waypoints.closest_waypoint(self._vehicle.position)
+        current_edge = self._sim.road_network.edge_by_lane_id(wp.lane_id)
+        lane = oncoming_edge.getLanes()[0]  # lane_id = "edge-west-EW_0"
         paths = self.paths_for_lane(lane)
         target = paths[0][-1]  # List[List[Waypoints]]
-        p0 = self._vehicle.position[:2]
-        p1 = np.array([self._vehicle.position[0] + 30, self._vehicle.position[1]])
-        p2 = np.array([self._vehicle.position[0] + 30, target.pos[1]])
-        p3 = target.pos
-        # print(f"p0: {p0}")
-        # print(f"p1: {p1}")
-        # print(f"p2: {p2}")
-        # print(f"p3: {p3}")
-        p_x, p_y = bezier([p0, p1, p2, p3], 10)
+
+        if current_edge.getID() != oncoming_edge.getID():
+            # at start edge
+            p0 = self._vehicle.position[:2]
+            p1 = np.array([self._vehicle.position[0] + 10, self._vehicle.position[1]])
+            p2 = np.array([self._vehicle.position[0] + 10, target.pos[1]])
+            p3 = target.pos
+            p_x, p_y = bezier([p0, p1, p2, p3], 20)
+        else:
+            # at oncoming edge
+            p0 = self._vehicle.position[:2]
+            p1 = np.array([self._vehicle.position[0], self._vehicle.position[1] - 3])
+            p2 = np.array([self._vehicle.position[0] - 10, target.pos[1]])
+            p3 = target.pos
+            p_x, p_y = bezier([p0, p1, p2, p3], 20)
+
         trajectory = []
         for i in range(len(p_x)):
             wp = Waypoint(
                 id=i,
                 pos=np.array([p_x[i], p_y[i]]),
-                heading=0,
+                heading=1.5,
                 lane_width=3,
                 speed_limit=50,
                 lane_id=0,
@@ -951,7 +962,6 @@ class UTurnDesiredTrajectorySensor(Sensor):
                 right_of_way=True,
             )
             trajectory.append(wp)
-        print(trajectory)
         return [trajectory]
 
     def teardown(self):

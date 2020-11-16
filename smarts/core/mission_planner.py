@@ -65,6 +65,15 @@ class MissionPlanner:
             entry_tactic=None,
         )
 
+    @property
+    def start_lane(self):
+        start_lane = self._road_network.nearest_lane(
+            self._mission.start.position,
+            include_junctions=False,
+            include_special=False,
+        )
+        return start_lane
+
     def plan(self, mission: Optional[Mission]):
         self._mission = mission or self.random_endless_mission()
 
