@@ -486,6 +486,11 @@ class Sensors:
 
         return False
 
+    @classmethod
+    def clean_up(cls):
+        cls._oncoming_traffic_edge.cache_clear()
+        cls._vehicle_off_route_info.cache_clear()
+
 
 class Sensor:
     def step(self):
