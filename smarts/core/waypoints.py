@@ -321,10 +321,6 @@ class Waypoints:
                 )
             )
 
-            if len(distance_list) == 1:
-                ref_waypoints[path_idx].append(waypoint_paths[path_idx][0].wp)
-                continue
-
             evenly_spaced_cumulative_path_dist = np.linspace(
                 0, cumulative_path_dist[-1], len(cumulative_path_dist) + 1
             )
