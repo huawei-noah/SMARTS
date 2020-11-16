@@ -85,7 +85,9 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
 
             done = False
             while not done:
-                action = agent.act_with_adaptation(obs[AGENT_ID])
+                obs = agent_spec.observation_adapter(obs[AGENT_ID])
+                action = agent.act(obs)
+                action = agent_spec.action_adapter(action)
                 obs, _, dones, _ = smarts.step({AGENT_ID: action})
                 done = dones[AGENT_ID]
 
