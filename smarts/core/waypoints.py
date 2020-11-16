@@ -263,6 +263,9 @@ class Waypoints:
 
             waypoint_paths = next_waypoint_paths
 
+        return self._equally_spaced_paths(waypoint_paths)
+
+    def _equally_spaced_paths(self, waypoint_paths):
         continuous_variables = [
             "ref_wp_positions_x",
             "ref_wp_positions_y",
