@@ -29,7 +29,6 @@ from shapely.geometry import Point, Polygon
 
 from smarts.core.mission_planner import Mission, MissionPlanner
 from smarts.core.scenario import Start, default_entry_tactic
-from smarts.core.trap_config import TrapConfig
 from smarts.core.vehicle import VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic
 from smarts.core.utils.math import clip, squared_dist
