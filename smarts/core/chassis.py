@@ -368,7 +368,7 @@ class AckermannChassis(Chassis):
         self.set_pose(pose)
 
         if initial_speed is not None:
-            self._initialize_speed(self, initial_speed)
+            self._initialize_speed(initial_speed)
 
     @property
     def pose(self) -> Pose:
