@@ -2,7 +2,7 @@ import logging
 
 from smarts.core.smarts import SMARTS
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.scenario import Scenario
 from envision.client import Client as Envision
@@ -13,7 +13,7 @@ from examples import default_argument_parser
 logging.basicConfig(level=logging.INFO)
 
 
-class Policy(AgentPolicy):
+class KeepLaneAgent(Agent):
     def act(self, obs):
         return "keep_lane"
 
@@ -31,7 +31,7 @@ def main(scenarios, headless, seed):
                 interface=AgentInterface.from_type(
                     AgentType.Laner, max_episode_steps=None
                 ),
-                policy_builder=Policy,
+                agent_builder=KeepLaneAgent,
             )
 
             agent = agent_spec.build_agent()

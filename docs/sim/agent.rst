@@ -9,8 +9,8 @@ SMARTS provides users the ability to custom their agents. :class:`smarts.core.ag
 
     class AgentSpec:
         interface: AgentInterface
-        policy_builder: Callable[..., AgentPolicy] = None
-        policy_params: Optional[Any] = None
+        agent_builder: Callable[..., Agent] = None
+        agent_params: Optional[Any] = None
         observation_adapter: Callable = default_obs_adapter
         action_adapter: Callable = default_action_adapter
         reward_adapter: Callable = default_reward_adapter
@@ -22,8 +22,7 @@ An example of how to create an `Agent` instance is shown below.
 
     AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=500),
-        policy_params={"policy_function": lambda _: "keep_lane"},
-        policy_builder=AgentPolicy.from_function,
+        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
         observation_adapter=observation_adapter,
         reward_adapter=reward_adapter,
         action_adapter=action_adapter,
@@ -121,27 +120,25 @@ IMPORTANT: The generation of DrivableAreaGridMap(`drivable_area_grid_map=True`),
 IMPORTANT: Depending on how your agent model is set up, `ActionSpaceType.ActuatorDynamic` might allow the agent to learn faster than `ActionSpaceType.Continuous` simply because learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. But, again, it also depends on the design of your agent model. 
 
 ======
-Policy
+Agent
 ======
 
-A policy is a provider that takes in the observations of an agent and decides on an action.
+An agent maps an observation to an action.
 
 .. code-block:: python
 
-    # A simple policy that ignores observations
-    class IgnoreObservationsPolicy(AgentPolicy):
+    # A simple agent that ignores observations
+    class IgnoreObservationsAgent(Agent):
         def act(self, obs):
             return [throttle, brake, steering_rate]
 
-The observation passed in should be the observations that a given agent sees. In **contininuous action space** the policy is expected to pass out values for `throttle` [0->1], `brake` [0->1], and `steering_rate` [-1->1].
+The observation passed in should be the observations that a given agent sees. In **contininuous action space** the action is expected to produce values for `throttle` [0->1], `brake` [0->1], and `steering_rate` [-1->1].
 
-Otherwise, only while using **lane action space**, the policy is expected to return a laning related command: `"keep_lane"`, `"slow_down"`, `"change_lane_left"`, `"change_lane_right"`.
-
-The `Policy` is needed when we use `Agent` for evaluation. Otherwise it is not necessary for RL training.
+Otherwise, only while using **lane action space**, the agent is expected to return a lane related command: `"keep_lane"`, `"slow_down"`, `"change_lane_left"`, `"change_lane_right"`.
 
 Another example:
 
-.. literalinclude:: ../minimal_agent_policy.py
+.. literalinclude:: ../minimal_agent.py
    :language: python
 
 ===================
@@ -186,7 +183,7 @@ Likewise with the action adapter
 
 .. code-block:: python
 
-    # this comes in from the output of the Policy
+    # this comes in from the output of the Agent
     def action_adapter(model_action):
         throttle, brake, steering = model_action
         return np.array([throttle, brake, steering])

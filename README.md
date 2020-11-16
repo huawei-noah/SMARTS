@@ -11,15 +11,15 @@ SMARTS (Scalable Multi-Agent RL Training School) is a simulation platform for re
 import gym
 
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 
-class Policy(AgentPolicy):
+class SimpleAgent(Agent):
     def act(self, obs):
         return "keep_lane"
 
 agent_spec = AgentSpec(
     interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
-    policy_builder=Policy,
+    agent_builder=SimpleAgent,
 )
 
 agent_specs = {

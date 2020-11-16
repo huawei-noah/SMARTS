@@ -44,7 +44,7 @@ class Agent:
 
         .. code-block:: python
 
-            keep_lane_policy = Agent.from_function(lambda obs: "keep_lane")
+            keep_lane_agent = Agent.from_function(lambda obs: "keep_lane")
         """
         assert callable(agent_function)
 
@@ -76,8 +76,8 @@ class AgentSpec:
 
         agent_spec = AgentSpec(
             interface=AgentInterface.from_type(AgentType.Laner),
-            policy_params={"policy_function": lambda _: "keep_lane"},
-            policy_builder=AgentPolicy.from_function,
+            agent_params={"agent_function": lambda _: "keep_lane"},
+            agent_builder=AgentPolicy.from_function,
         )
 
         env = gym.make(

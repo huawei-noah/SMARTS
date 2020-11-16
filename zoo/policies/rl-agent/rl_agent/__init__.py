@@ -41,7 +41,7 @@ def entrypoint(
             action_adapter=get_action_adapter(
                 target_speed=target_speed, lane_change_speed=lane_change_speed,
             ),
-            policy_builder=lambda: RLPolicy(
+            agent_builder=lambda: RLPolicy(
                 load_path=str(checkpoint_path.absolute()),
                 policy_name="default_policy",
                 observation_space=OBSERVATION_SPACE,

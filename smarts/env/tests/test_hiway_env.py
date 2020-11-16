@@ -4,7 +4,7 @@ import gym
 
 from smarts.core.utils.episodes import episodes
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 
 AGENT_ID = "Agent-007"
 
@@ -52,7 +52,7 @@ def agent_spec():
 
     return AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=100),
-        policy_builder=lambda: AgentPolicy.from_function(
+        agent_builder=lambda: Agent.from_function(
             lambda _: ACTION_TO_BE_ADAPTED
         ),
         observation_adapter=observation_adapter,

@@ -1,6 +1,7 @@
 import pytest
+
 import smarts.sstudio.types as t
-from smarts.core.agent import AgentPolicy, AgentSpec
+from smarts.core.agent import AgentSpec, Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import LaneFollowingController
 from smarts.core.scenario import Scenario
@@ -20,15 +21,15 @@ AGENT_ID = "Agent-007"
         ((18, 0), AgentType.LanerWithSpeed),
     ]
 )
-def policy_and_agent_type(request):
-    class Policy(AgentPolicy):
+def agent_and_agent_type(request):
+    class FixedAgent(Agent):
         def __init__(self, action=request.param[0]):
             self.action = action
 
         def act(self, obs):
             return self.action
 
-    return (Policy, request.param[1])
+    return (FixedAgent, request.param[1])
 
 
 @pytest.fixture(
@@ -55,12 +56,12 @@ def scenarios(request):
 
 
 @pytest.fixture
-def agent_spec(policy_and_agent_type):
+def agent_spec(agent_and_agent_type):
     return AgentSpec(
         interface=AgentInterface.from_type(
-            policy_and_agent_type[1], max_episode_steps=5000
+            agent_and_agent_type[1], max_episode_steps=5000
         ),
-        policy_builder=policy_and_agent_type[0],
+        agent_builder=agent_and_agent_type[0],
     )
 
 

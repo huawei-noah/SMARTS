@@ -38,7 +38,7 @@ setup(
         "pybullet",
         "sklearn",  # KDTree from sklearn is used by waypoints
         "tableprint",
-        "pynput",  # Used by HumanKeyboardPolicy
+        "pynput",  # Used by HumanKeyboardAgent
         "sh",
         "rich",
         "supervisor",

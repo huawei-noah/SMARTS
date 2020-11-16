@@ -18,7 +18,7 @@ def entrypoint(
     debug=False,
     max_episode_steps=600,
 ):
-    from .policy import Policy
+    from .agent import OpEnAgent
 
     return AgentSpec(
         interface=AgentInterface(
@@ -27,8 +27,8 @@ def entrypoint(
             neighborhood_vehicles=True,
             max_episode_steps=max_episode_steps,
         ),
-        policy_params={"gains": gains, "debug": debug,},
-        policy_builder=Policy,
+        agent_params={"gains": gains, "debug": debug,},
+        agent_builder=OpEnAgent,
     )
 
 
