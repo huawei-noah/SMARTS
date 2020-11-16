@@ -37,7 +37,7 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, with_adaptation=True, connection_retries=100):
+    def __init__(self, connection_retries=100):
         atexit.register(self.terminate)
 
         self._log = logging.getLogger(self.__class__.__name__)
@@ -51,9 +51,6 @@ class RemoteAgent:
             ),
             sock_file,
         ]
-
-        if with_adaptation:
-            cmd.append("--with_adaptation")
 
         self._log.debug(f"Spawning remote agent proc: {cmd}")
 

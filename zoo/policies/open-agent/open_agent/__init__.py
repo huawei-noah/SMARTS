@@ -29,7 +29,6 @@ def entrypoint(
         ),
         policy_params={"gains": gains, "debug": debug,},
         policy_builder=Policy,
-        perform_self_test=False,
     )
 
 
