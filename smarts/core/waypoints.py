@@ -273,7 +273,7 @@ class Waypoints:
 
         discrete_variables = ["ref_wp_lane_id", "ref_wp_lane_index"]
 
-        ref_waypoints = [[] for _ in range(len(waypoint_paths))]
+        equally_spaced_paths = [[] for _ in range(len(waypoint_paths))]
 
         for path_idx in range(len(waypoint_paths)):
             ref_waypoints_coordinates = {
@@ -308,7 +308,7 @@ class Waypoints:
             # To ensure that the distance between waypoints are equal, we used
             # interpolation approach inspired by:
             # https://stackoverflow.com/a/51515357
-            distance_list = np.cumsum(
+            cumulative_path_dist = np.cumsum(
                 np.sqrt(
                     np.ediff1d(
                         ref_waypoints_coordinates["ref_wp_positions_x"], to_begin=0
@@ -325,57 +325,53 @@ class Waypoints:
                 ref_waypoints[path_idx].append(waypoint_paths[path_idx][0].wp)
                 continue
 
-            distance_list /= distance_list[-1]
-            normalized_distant = np.linspace(0, 1, lookahead + 1)
+            evenly_spaced_cumulative_path_dist = np.linspace(
+                0, cumulative_path_dist[-1], len(cumulative_path_dist) + 1
+            )
 
+            evenly_spaced_coordinates = {}
             for variable in continuous_variables:
-                ref_waypoints_coordinates[variable] = interp1d(
-                    distance_list, ref_waypoints_coordinates[variable]
-                )(normalized_distant)
+                evenly_spaced_coordinates[variable] = interp1d(
+                    cumulative_path_dist, ref_waypoints_coordinates[variable]
+                )(evenly_spaced_cumulative_path_dist)
 
             for variable in discrete_variables:
-                temp_list = ref_waypoints_coordinates[variable]
-
-                ref_waypoints_coordinates[variable] = []
+                ref_coordinates = ref_waypoints_coordinates[variable]
+                evenly_spaced_coordinates[variable] = []
                 jdx = 0
-                for idx in range(lookahead):
-                    if normalized_distant[idx] < distance_list[jdx + 1]:
-                        ref_waypoints_coordinates[variable].append(temp_list[jdx])
-
-                    else:
-                        while (
-                            jdx + 2 < len(distance_list) - 1
-                            and normalized_distant[idx] > distance_list[jdx + 2]
-                        ):
-                            jdx += 1
-                        ref_waypoints_coordinates[variable].append(temp_list[jdx + 1])
-
+                for idx in range(len(ref_coordinates)):
+                    while (
+                        jdx + 1 < len(cumulative_path_dist)
+                        and evenly_spaced_cumulative_path_dist[idx]
+                        > cumulative_path_dist[jdx + 1]
+                    ):
                         jdx += 1
-                ref_waypoints_coordinates[variable].append(temp_list[-1])
+
+                    evenly_spaced_coordinates[variable].append(ref_coordinates[jdx])
+                evenly_spaced_coordinates[variable].append(ref_coordinates[-1])
 
             for idx, waypoint in enumerate(waypoint_paths[path_idx]):
-
-                ref_waypoints[path_idx].append(
+                equally_spaced_paths[path_idx].append(
                     Waypoint(
                         pos=np.array(
                             [
-                                ref_waypoints_coordinates["ref_wp_positions_x"][idx],
-                                ref_waypoints_coordinates["ref_wp_positions_y"][idx],
+                                evenly_spaced_coordinates["ref_wp_positions_x"][idx],
+                                evenly_spaced_coordinates["ref_wp_positions_y"][idx],
                             ]
                         ),
                         heading=Heading(
-                            ref_waypoints_coordinates["ref_wp_headings"][idx]
+                            evenly_spaced_coordinates["ref_wp_headings"][idx]
                         ),
-                        lane_width=ref_waypoints_coordinates["ref_wp_lane_width"][idx],
-                        speed_limit=ref_waypoints_coordinates["ref_wp_speed_limit"][
+                        lane_width=evenly_spaced_coordinates["ref_wp_lane_width"][idx],
+                        speed_limit=evenly_spaced_coordinates["ref_wp_speed_limit"][
                             idx
                         ],
-                        lane_id=ref_waypoints_coordinates["ref_wp_lane_id"][idx],
-                        lane_index=ref_waypoints_coordinates["ref_wp_lane_index"][idx],
+                        lane_id=evenly_spaced_coordinates["ref_wp_lane_id"][idx],
+                        lane_index=evenly_spaced_coordinates["ref_wp_lane_index"][idx],
                     )
                 )
 
-        return ref_waypoints
+        return equally_spaced_paths
 
     def _interpolate_shape_waypoints(self, shape_waypoints, spacing):
         # memoize interpolated waypoints on the shape waypoint at start of
