@@ -214,8 +214,9 @@ class TrapManager:
                     if squared_dist(pos, mission.start.position) < largest_dimension:
                         continue
 
-                vehicle = TrapManager._make_vehicle(sim, agent_id, trap.mission)
-                vehicle.chassis.reset_speed(trap.default_entry_speed)
+                vehicle = TrapManager._make_vehicle(
+                    sim, agent_id, trap.mission, trap.default_entry_speed
+                )
             else:
                 continue
 
@@ -266,7 +267,7 @@ class TrapManager:
         return vehicle
 
     @staticmethod
-    def _make_vehicle(sim, agent_id, mission):
+    def _make_vehicle(sim, agent_id, mission, initial_speed):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         planner = MissionPlanner(sim.scenario.waypoints, sim.scenario.road_network)
         planner.plan(mission=mission)
@@ -281,6 +282,7 @@ class TrapManager:
             True,
             sim.scenario.surface_patches,
             sim.scenario.controller_parameters_filepath,
+            initial_speed=initial_speed,
             boid=False,
         )
         return vehicle
