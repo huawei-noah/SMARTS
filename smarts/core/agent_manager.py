@@ -59,6 +59,7 @@ class AgentManager:
 
         # We send observations and receive actions for all values in this dictionary
         self._remote_social_agents = {}
+        self._remote_social_agents_action = {}
 
     def teardown(self):
         self._log.debug("Tearing down AgentManager")
@@ -224,10 +225,21 @@ class AgentManager:
         return tuple(map(self._filter_for_active_ego, response_tuple))
 
     def fetch_agent_actions(self, sim, ego_agent_actions):
-        social_agent_actions = {
-            agent_id: remote_agent.recv_action(timeout=5)
-            for agent_id, remote_agent in self._remote_social_agents.items()
-        }
+        try:
+            social_agent_actions = {
+                agent_id: (
+                    self._remote_social_agents_action[agent_id].result()
+                    if self._remote_social_agents_action.get(agent_id, None)
+                    else None
+                )
+                for agent_id, remote_agent in self._remote_social_agents.items()
+            }
+        except Exception as e:
+            self._log.error(
+                "RemoteAgent: Resolving the remote agent's action (a Future object) generated exception."
+            )
+            self._log.exception(e)
+            raise e
 
         agents_without_actions = [
             agent_id
@@ -285,9 +297,12 @@ class AgentManager:
     def send_observations_to_social_agents(self, observations):
         # TODO: Don't send observations (or receive actions) from agents that have done
         #       vehicles.
+        self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
-            remote_agent.send_observation(obs)
+            self._remote_social_agents_action[agent_id] = remote_agent.act(
+                obs, timeout=5
+            )
 
     def setup_agents(self, sim):
         self.init_ego_agents(sim)
@@ -417,9 +432,12 @@ class AgentManager:
         return ids_
 
     def reset_agents(self, observations):
+        self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
-            remote_agent.send_observation(obs)
+            self._remote_social_agents_action[agent_id] = remote_agent.act(
+                obs, timeout=5
+            )
 
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)
