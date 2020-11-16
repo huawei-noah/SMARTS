@@ -77,9 +77,7 @@ parser.add_argument("socket_file", help="AF_UNIX domain socket file to be used f
 args = parser.parse_args()
 
 
-log.debug(
-    f"run_agent.py: socket_file={args.socket_file}"
-)
+log.debug(f"run_agent.py: socket_file={args.socket_file}")
 
 with Listener(args.socket_file, family="AF_UNIX") as listener:
     with listener.accept() as conn:

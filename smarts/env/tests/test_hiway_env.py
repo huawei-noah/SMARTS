@@ -52,9 +52,7 @@ def agent_spec():
 
     return AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=100),
-        agent_builder=lambda: Agent.from_function(
-            lambda _: ACTION_TO_BE_ADAPTED
-        ),
+        agent_builder=lambda: Agent.from_function(lambda _: ACTION_TO_BE_ADAPTED),
         observation_adapter=observation_adapter,
         reward_adapter=reward_adapter,
         action_adapter=action_adapter,

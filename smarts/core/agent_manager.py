@@ -409,11 +409,14 @@ class AgentManager:
         )
 
         matching_providers = [
-            provider for provider in sim.providers
+            provider
+            for provider in sim.providers
             if agent_interface.action_space in provider.action_spaces
         ]
         if matching_providers:
-            assert len(matching_providers) == 1, f"Found {matching_providers} for action space {agent_interface.action_space}"
+            assert (
+                len(matching_providers) == 1
+            ), f"Found {matching_providers} for action space {agent_interface.action_space}"
             provider = matching_providers[0]
             provider.create_vehicle(
                 VehicleState(

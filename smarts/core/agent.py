@@ -26,13 +26,15 @@ import cloudpickle
 
 from .agent_interface import AgentInterface
 
-warnings.simplefilter('once')
+warnings.simplefilter("once")
 
 
 class Agent:
     """The base class for agents"""
 
-    @removals.removed_property(message="Simply use the agent instance as is, Agent and AgentPolicy have been merged")
+    @removals.removed_property(
+        message="Simply use the agent instance as is, Agent and AgentPolicy have been merged"
+    )
     @property
     def policy(self):
         """ Backwards compatibility with the old Agent class"""
@@ -62,11 +64,13 @@ class Agent:
 
         raise NotImplementedError
 
+
 # Remain backwards compatible with existing Agent's
 class AgentPolicy(Agent):
     # we cannot use debtcollector here to signal deprecation because the wrapper object is
     # not pickleable, instead we simply print.
     print("[DEPRECATED] AgentPolicy has been replaced with `smarts.core.agent.Agent`")
+
 
 @dataclass
 class AgentSpec:
@@ -124,12 +128,16 @@ class AgentSpec:
             print(f"[DEPRECATED] `perform_self_test` has been deprecated: {self}")
 
         if self.policy_builder:
-            print(f"[DEPRECATED] Please use AgentSpec(agent_builder=<...>) instead of AgentSpec(policy_builder=<..>):\n {self}")
+            print(
+                f"[DEPRECATED] Please use AgentSpec(agent_builder=<...>) instead of AgentSpec(policy_builder=<..>):\n {self}"
+            )
             assert self.agent_builder is None, self.agent_builder
             self.agent_builder = self.policy_builder
 
         if self.policy_params:
-            print(f"[DEPRECATED] Please use AgentSpec(agent_params=<...>) instead of AgentSpec(policy_params=<..>):\n {self}")
+            print(
+                f"[DEPRECATED] Please use AgentSpec(agent_params=<...>) instead of AgentSpec(policy_params=<..>):\n {self}"
+            )
             assert self.agent_params is None, self.agent_params
             self.agent_params = self.policy_params
 
