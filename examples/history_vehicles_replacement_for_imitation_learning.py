@@ -41,7 +41,7 @@ def main(scenarios, headless, seed):
                 traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
                 envision=Envision(),
             )
-            observations = smarts.reset(scenario)
+            observations = smarts.reset(scenario, mission.start_time)
 
             dones = {agent_id: False}
             while not dones[agent_id]:

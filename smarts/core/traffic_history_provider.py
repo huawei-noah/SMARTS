@@ -21,7 +21,7 @@ from itertools import cycle
 from typing import Set
 
 from .controllers import ActionSpaceType
-from .coordinates import Pose, Heading
+from .coordinates import Pose, Heading, BoundingBox
 from .provider import ProviderState
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 

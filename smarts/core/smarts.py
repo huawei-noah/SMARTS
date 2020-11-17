@@ -268,7 +268,7 @@ class SMARTS(ShowBase):
 
         self._teardown_agent_vehicles(agents_to_cleanup)
 
-    def reset(self, scenario: Scenario):
+    def reset(self, scenario: Scenario, start_time=0):
         if scenario == self._scenario and self._reset_agents_only:
             agent_ids = self._agent_manager.teardown_ego_agents()
             self._teardown_agent_vehicles(agent_ids)
@@ -283,7 +283,8 @@ class SMARTS(ShowBase):
         self._traffic_history_provider.set_replaced_ids(scenario.missions.keys())
 
         self.taskMgr.clock.reset()
-        self._elapsed_sim_time = 0
+        self.taskMgr.clock.set_frame_time(start_time)
+        self._elapsed_sim_time = start_time
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
         observations, _, _, _ = self._agent_manager.observe(self)

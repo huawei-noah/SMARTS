@@ -42,24 +42,19 @@ class Trap:
     mission: Mission
     exclusion_prefixes: Sequence[str]
     reactivation_time: float
-    remaining_time_to_reactivation: float
+    emit_agent_at: float
     patience: float
     default_entry_speed: float
 
-    def step_trigger(self, dt: float):
-        self.remaining_time_to_reactivation -= dt
+    def is_ready(self, elapsed_sim_time: float):
+        return elapsed_sim_time >= self.emit_agent_at
 
-    @property
-    def ready(self):
-        return self.remaining_time_to_reactivation < 0
-
-    @property
-    def patience_expired(self):
+    def patience_expired(self, elapsed_sim_time: float):
         """Patience recommendation to wait for better capture circumstances"""
-        return self.remaining_time_to_reactivation < -self.patience
+        return elapsed_sim_time - self.emit_agent_at > self.patience
 
     def reset_trigger(self):
-        self.remaining_time_to_reactivation = self.reactivation_time
+        pass
 
     @property
     def reactivates(self):
@@ -102,6 +97,18 @@ class TrapManager:
             mission_planner.plan(mission)
 
             trap = self._mission2trap(scenario.road_network, mission)
+            trap_config = self._mission2trap(scenario.road_network, mission)
+            trap_configs.append((agent_id, trap_config))
+
+        for agent_id, tc in trap_configs:
+            trap = Trap(
+                geometry=tc.zone.to_geometry(scenario.road_network),
+                mission=tc.mission,
+                exclusion_prefixes=tc.exclusion_prefixes,
+                reactivation_time=tc.reactivation_time,
+                emit_agent_at=tc.activation_delay,
+                patience=tc.patience,
+            )
             self.add_trap_for_agent_id(agent_id, trap)
 
     def add_trap_for_agent_id(self, agent_id, trap: Trap):
@@ -144,9 +151,7 @@ class TrapManager:
             if trap is None:
                 continue
 
-            trap.step_trigger(sim.timestep_sec)
-
-            if not trap.ready:
+            if not trap.is_ready(sim.elapsed_sim_time):
                 continue
 
             # Order vehicle ids by distance.
@@ -191,7 +196,7 @@ class TrapManager:
 
             captures = captures_by_agent_id[agent_id]
 
-            if not trap.ready:
+            if not trap.is_ready(sim.elapsed_sim_time):
                 continue
 
             vehicle = None
@@ -200,8 +205,7 @@ class TrapManager:
                 vehicle = TrapManager._hijack_vehicle(
                     sim, vehicle_id, agent_id, mission
                 )
-            elif trap.patience_expired:
-                mission = trap.mission
+            elif trap.patience_expired(sim.elapsed_sim_time):
                 if len(agent_vehicle_comp) > 0:
                     agent_vehicle_comp.sort(
                         key=lambda v: squared_dist(v[0], mission.start.position)
