@@ -62,7 +62,7 @@ def loss_func(policy, model, dist_class, train_batch):
     action_dist = dist_class(logits, model)
 
     return -tf.reduce_mean(
-        action_dist.logp(train_batch[SampleBatch.ACTIONS])
+        input_tensor=action_dist.logp(train_batch[SampleBatch.ACTIONS])
         * tf.cast(train_batch[Postprocessing.ADVANTAGES], dtype=tf.float32)
     )
 
