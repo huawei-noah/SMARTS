@@ -54,7 +54,7 @@ class Trap:
         return elapsed_sim_time - self.emit_agent_at > self.patience
 
     def reset_trigger(self):
-        pass
+        self.emit_agent_at = float("+inf")
 
     @property
     def reactivates(self):
@@ -97,18 +97,6 @@ class TrapManager:
             mission_planner.plan(mission)
 
             trap = self._mission2trap(scenario.road_network, mission)
-            trap_config = self._mission2trap(scenario.road_network, mission)
-            trap_configs.append((agent_id, trap_config))
-
-        for agent_id, tc in trap_configs:
-            trap = Trap(
-                geometry=tc.zone.to_geometry(scenario.road_network),
-                mission=tc.mission,
-                exclusion_prefixes=tc.exclusion_prefixes,
-                reactivation_time=tc.reactivation_time,
-                emit_agent_at=tc.activation_delay,
-                patience=tc.patience,
-            )
             self.add_trap_for_agent_id(agent_id, trap)
 
     def add_trap_for_agent_id(self, agent_id, trap: Trap):
@@ -206,6 +194,7 @@ class TrapManager:
                     sim, vehicle_id, agent_id, mission
                 )
             elif trap.patience_expired(sim.elapsed_sim_time):
+                mission = trap.mission
                 if len(agent_vehicle_comp) > 0:
                     agent_vehicle_comp.sort(
                         key=lambda v: squared_dist(v[0], mission.start.position)
@@ -341,7 +330,7 @@ class TrapManager:
             # TODO: Make reactivation and activation delay configurable through
             #   scenario studio
             reactivation_time=-1,
-            remaining_time_to_reactivation=activation_delay,
+            emit_agent_at=activation_delay,
             patience=patience,
             mission=mission,
             exclusion_prefixes=mission.entry_tactic.exclusion_prefixes,

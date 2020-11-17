@@ -289,17 +289,7 @@ class SumoTrafficSimulation:
         pass
 
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
-        """
-        Args:
-            dt: time (in seconds) to simulate during this simulation step
-            managed_vehicles: dict of {vehicle_id: (x, y, heading)}
-                !! The vehicle state should represent the state of the
-                !! vehicles at the start of the current simulation step
-        Returns:
-            ProviderState representing the state of the SUMO simulation
-        """
-        # we tell SUMO to step through dt more seconds of the simulation
-        self._cumulative_sim_seconds += dt
+        self._cumulative_sim_seconds = elapsed_sim_time
         self._traci_conn.simulationStep(self._cumulative_sim_seconds)
 
         return self._compute_provider_state()
