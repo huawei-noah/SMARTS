@@ -8,6 +8,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import register
 
 
+
 class PoseBoidAgent(Agent):
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
