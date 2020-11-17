@@ -21,7 +21,6 @@ from typing import Optional, Any, Callable
 from dataclasses import dataclass, replace
 import warnings
 
-from debtcollector import removals
 import cloudpickle
 
 from .agent_interface import AgentInterface
@@ -31,14 +30,6 @@ warnings.simplefilter("once")
 
 class Agent:
     """The base class for agents"""
-
-    @removals.removed_property(
-        message="Simply use the agent instance as is, Agent and AgentPolicy have been merged"
-    )
-    @property
-    def policy(self):
-        """ Backwards compatibility with the old Agent class"""
-        return self
 
     @classmethod
     def from_function(cls, agent_function: Callable):
@@ -67,8 +58,6 @@ class Agent:
 
 # Remain backwards compatible with existing Agent's
 class AgentPolicy(Agent):
-    # we cannot use debtcollector here to signal deprecation because the wrapper object is
-    # not pickleable, instead we simply print.
     print("[DEPRECATED] AgentPolicy has been replaced with `smarts.core.agent.Agent`")
 
 
