@@ -64,7 +64,6 @@ setup(
         # The following are for /smarts/zoo
         "twisted",
         "PyYAML",
-        "debtcollector",
     ],
     extras_require={
         "train": ["tensorflow==2.2", "torch==1.3.0", "torchvision==0.4.1"],
