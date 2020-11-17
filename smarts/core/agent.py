@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 from typing import Optional, Any, Callable
 from dataclasses import dataclass, replace
 import warnings
@@ -26,6 +27,8 @@ import cloudpickle
 from .agent_interface import AgentInterface
 
 warnings.simplefilter("once")
+
+logger = logging.getLogger(__name__)
 
 
 class Agent:
@@ -58,7 +61,11 @@ class Agent:
 
 # Remain backwards compatible with existing Agent's
 class AgentPolicy(Agent):
-    print("[DEPRECATED] AgentPolicy has been replaced with `smarts.core.agent.Agent`")
+    # we cannot use debtcollector here to signal deprecation because the wrapper object is
+    # not pickleable, instead we simply print.
+    logger.warning(
+        "[DEPRECATED] AgentPolicy has been replaced with `smarts.core.agent.Agent`"
+    )
 
 
 @dataclass
@@ -114,17 +121,19 @@ class AgentSpec:
         cloudpickle.dumps(self)
 
         if self.perform_self_test:
-            print(f"[DEPRECATED] `perform_self_test` has been deprecated: {self}")
+            logger.warning(
+                f"[DEPRECATED] `perform_self_test` has been deprecated: {self}"
+            )
 
         if self.policy_builder:
-            print(
+            logger.warning(
                 f"[DEPRECATED] Please use AgentSpec(agent_builder=<...>) instead of AgentSpec(policy_builder=<..>):\n {self}"
             )
             assert self.agent_builder is None, self.agent_builder
             self.agent_builder = self.policy_builder
 
         if self.policy_params:
-            print(
+            logger.warning(
                 f"[DEPRECATED] Please use AgentSpec(agent_params=<...>) instead of AgentSpec(policy_params=<..>):\n {self}"
             )
             assert self.agent_params is None, self.agent_params
