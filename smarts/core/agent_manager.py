@@ -206,13 +206,18 @@ class AgentManager:
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
     def step_agent_sensors(self, sim):
-        for vehicle_id in sim.vehicle_index.agent_vehicle_ids:
-            sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle_id)
-            Sensors.step(self, sensor_state)
+        agent_vehicle_ids = sim.vehicle_index.agent_vehicle_ids
 
-            vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
-            for sensor in vehicle.sensors.values():
-                sensor.step()
+        for vehicle_id in sim.vehicle_index.vehicle_ids:
+            if (
+                vehicle_id in agent_vehicle_ids
+            ) or sim.vehicle_index.vehicle_is_shadowed(vehicle_id):
+                sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle_id)
+                Sensors.step(self, sensor_state)
+
+                vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
+                for sensor in vehicle.sensors.values():
+                    sensor.step()
 
     def _filter_for_active_ego(self, dict_):
         return {
