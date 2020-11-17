@@ -42,7 +42,7 @@ from .sensors import (
     RoadWaypointsSensor,
     TripMeterSensor,
     WaypointsSensor,
-    UTurnDesiredTrajectorySensor,
+    UTurnTrajectorySensor,
 )
 from .utils.math import rotate_around_point
 
@@ -438,7 +438,7 @@ class Vehicle:
 
         if agent_interface.task is not None:
             if agent_interface.task == Task.UTurn:
-                sensor = UTurnDesiredTrajectorySensor(
+                sensor = UTurnTrajectorySensor(
                     vehicle=vehicle, sim=sim, mission_planner=mission_planner
                 )
                 vehicle.attach_desired_trajectory_sensor(sensor)
