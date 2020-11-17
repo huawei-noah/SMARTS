@@ -1,17 +1,12 @@
-import logging
-
 import numpy as np
-from smarts.core.agent import AgentPolicy, AgentSpec
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.controllers import ActionSpaceType
+
 from smarts.zoo.registry import register
+from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.agent import AgentPolicy, AgentSpec
+from smarts.core.controllers import ActionSpaceType
 
 
 class PoseBoidPolicy(AgentPolicy):
-    def __init__(self):
-        self._log = logging.getLogger(self.__class__.__name__)
-        self._log.info(f"{self.__class__.__name__} was created")
-
     def act(self, obs):
         returning = {
             vehicle_id: self._single_act(obs_) for vehicle_id, obs_ in obs.items()
@@ -26,10 +21,6 @@ class PoseBoidPolicy(AgentPolicy):
 
 
 class TrajectoryBoidPolicy(AgentPolicy):
-    def __init__(self):
-        self._log = logging.getLogger(self.__class__.__name__)
-        self._log.info(f"{self.__class__.__name__} was created")
-
     def act(self, obs):
         returning = {
             vehicle_id: self._single_act(obs_) for vehicle_id, obs_ in obs.items()
@@ -62,7 +53,11 @@ register(
     locator="pose-boid-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
         interface=AgentInterface(
-            action=ActionSpaceType.MultiTargetPose, waypoints=True
+            action=ActionSpaceType.MultiTargetPose,
+            waypoints=True,
+            ogm=True,
+            rgb=True,
+            drivable_area_grid_map=True,
         ),
         policy_builder=PoseBoidPolicy,
     ),
@@ -71,7 +66,7 @@ register(
 register(
     locator="trajectory-boid-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface(action=ActionSpaceType.Trajectory, waypoints=True),
+        interface=AgentInterface(action=ActionSpaceType.Trajectory, waypoints=True,),
         policy_builder=TrajectoryBoidPolicy,
     ),
 )
