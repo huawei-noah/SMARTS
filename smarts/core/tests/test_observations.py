@@ -11,7 +11,7 @@ from smarts.core.agent_interface import (
     RGB,
     RoadWaypoints,
 )
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 from smarts.core.colors import SceneColors
 
 from panda3d.core import OrthographicLens, Point2, Point3
@@ -48,7 +48,7 @@ def agent_spec():
             rgb=RGB(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
             action=ActionSpaceType.Lane,
         ),
-        policy_builder=lambda: AgentPolicy.from_function(lambda _: "keep_lane"),
+        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
     )
 
 

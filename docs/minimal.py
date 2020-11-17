@@ -1,12 +1,12 @@
 import gym
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 
 agent_id = "Agent-007"
 agent_spec = AgentSpec(
     interface=AgentInterface.from_type(AgentType.Laner),
-    policy_params={"policy_function": lambda _: "keep_lane"},
-    policy_builder=AgentPolicy.from_function,
+    agent_params={"agent_function": lambda _: "keep_lane"},
+    agent_builder=Agent.from_function,
 )
 
 env = gym.make(

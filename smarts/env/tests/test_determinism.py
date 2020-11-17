@@ -5,7 +5,7 @@ import numpy as np
 from collections.abc import Sequence
 
 from smarts.core.agent_interface import AgentInterface
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.utils.episodes import episodes
 
@@ -28,7 +28,7 @@ def agent_spec():
             neighborhood_vehicles=True,
             action=ActionSpaceType.Lane,
         ),
-        policy_builder=lambda: AgentPolicy.from_function(lambda _: "keep_lane"),
+        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
     )
 
 

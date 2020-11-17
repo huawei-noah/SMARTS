@@ -9,7 +9,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 
 
 AGENT_ID = "Agent-007"
@@ -20,7 +20,7 @@ TIMESTEP_SEC = 0.1
 
 @pytest.fixture
 def agent_spec():
-    class Policy(AgentPolicy):
+    class KeepLaneAgent(Agent):
         def act(self, obs):
             return "keep_lane"
 
@@ -28,7 +28,7 @@ def agent_spec():
         interface=AgentInterface.from_type(
             AgentType.Laner, max_episode_steps=MAX_STEPS
         ),
-        policy_builder=Policy,
+        agent_builder=KeepLaneAgent,
     )
 
 
@@ -85,7 +85,9 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
 
             done = False
             while not done:
-                action = agent.act_with_adaptation(obs[AGENT_ID])
+                obs = agent_spec.observation_adapter(obs[AGENT_ID])
+                action = agent.act(obs)
+                action = agent_spec.action_adapter(action)
                 obs, _, dones, _ = smarts.step({AGENT_ID: action})
                 done = dones[AGENT_ID]
 

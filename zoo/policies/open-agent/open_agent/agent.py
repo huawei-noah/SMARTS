@@ -11,7 +11,7 @@ import casadi.casadi as cs
 import numpy as np
 import opengen as og
 
-from smarts.core.agent import AgentPolicy
+from smarts.core.agent import Agent
 from smarts.core.coordinates import Heading
 
 from .version import VERSION
@@ -341,7 +341,7 @@ def load_config():
         return json.load(config_fp)
 
 
-class Policy(AgentPolicy):
+class OpEnAgent(Agent):
     def __init__(
         self,
         gains={

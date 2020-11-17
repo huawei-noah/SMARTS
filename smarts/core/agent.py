@@ -19,33 +19,45 @@
 # THE SOFTWARE.
 from typing import Optional, Any, Callable
 from dataclasses import dataclass, replace
+import warnings
 
+from debtcollector import removals
 import cloudpickle
 
 from .agent_interface import AgentInterface
 
+warnings.simplefilter("once")
 
-class AgentPolicy:
-    """The base class for agent policies."""
+
+class Agent:
+    """The base class for agents"""
+
+    @removals.removed_property(
+        message="Simply use the agent instance as is, Agent and AgentPolicy have been merged"
+    )
+    @property
+    def policy(self):
+        """ Backwards compatibility with the old Agent class"""
+        return self
 
     @classmethod
-    def from_function(cls, policy_function: Callable):
-        """A utility function to create a policy from a lambda or other callable object.
+    def from_function(cls, agent_function: Callable):
+        """A utility function to create an agent from a lambda or other callable object.
 
         .. code-block:: python
 
-            keep_lane_policy = AgentPolicy.from_function(lambda obs: "keep_lane")
+            keep_lane_agent = Agent.from_function(lambda obs: "keep_lane")
         """
-        assert callable(policy_function)
+        assert callable(agent_function)
 
-        class FunctionPolicy(AgentPolicy):
+        class FunctionAgent(Agent):
             def act(self, obs):
-                return policy_function(obs)
+                return agent_function(obs)
 
-        return FunctionPolicy()
+        return FunctionAgent()
 
     def act(self, obs):
-        """The policy action. See documentation on observations, `Agent`, and `AgentInterface`.
+        """The agent action. See documentation on observations, `AgentSpec`, and `AgentInterface`.
 
         Expects an adapted observation and returns an unadapted action.
         """
@@ -53,39 +65,11 @@ class AgentPolicy:
         raise NotImplementedError
 
 
-@dataclass
-class Agent:
-    """The core agent class. This gathers the interface, policy, and adapters."""
-
-    interface: AgentInterface
-    """The adaptor used to wrap agent observation and action flow"""
-    policy: AgentPolicy
-    """The wrapper for the policy action"""
-    observation_adapter: Callable
-    """An adaptor that allows shaping of the observations"""
-    reward_adapter: Callable
-    """An adaptor that allows shaping of the reward"""
-    action_adapter: Callable
-    """An adaptor that allows shaping of the action"""
-    info_adapter: Callable
-    """An adaptor that allows shaping of info"""
-
-    def act(self, observation):
-        """Calls the policy action. Expects adapted observation and returns an unadapted action.
-
-        See documentation on observations and `AgentInterface`.
-        """
-
-        assert self.policy, "Unable to call Agent.act(...) without a policy"
-        action = self.policy.act(observation)
-        return action
-
-    # XXX: This method should only be used by social agents, not by ego agents.
-    def act_with_adaptation(self, env_observation):
-        observation = self.observation_adapter(env_observation)
-        policy_action = self.act(observation)
-        action = self.action_adapter(policy_action)
-        return action
+# Remain backwards compatible with existing Agent's
+class AgentPolicy(Agent):
+    # we cannot use debtcollector here to signal deprecation because the wrapper object is
+    # not pickleable, instead we simply print.
+    print("[DEPRECATED] AgentPolicy has been replaced with `smarts.core.agent.Agent`")
 
 
 @dataclass
@@ -96,8 +80,8 @@ class AgentSpec:
 
         agent_spec = AgentSpec(
             interface=AgentInterface.from_type(AgentType.Laner),
-            policy_params={"policy_function": lambda _: "keep_lane"},
-            policy_builder=AgentPolicy.from_function,
+            agent_params={"agent_function": lambda _: "keep_lane"},
+            agent_builder=AgentPolicy.from_function,
         )
 
         env = gym.make(
@@ -116,13 +100,15 @@ class AgentSpec:
     interface: AgentInterface = None
     """the adaptor used to wrap agent observation and action flow (default None)"""
 
-    # If you are training a policy with RLLib, you don't necessarily
-    # want to set the policy as part of the AgentSpec, thus we leave
-    # it as an optional field.
-    policy_builder: Callable[..., AgentPolicy] = None
-    """An adaptor that interprets the policy_params into a policy  (default None)"""
+    agent_builder: Callable[..., Agent] = None
+    """A callable to build an `smarts.core.agent.Agent` given `AgentSpec.agent_params` (default None)"""
+    agent_params: Optional[Any] = None
+    """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
+
+    policy_builder: Callable[..., Agent] = None
+    """[DEPRECATED] see `AgentSpec.agent_builder` (default None)"""
     policy_params: Optional[Any] = None
-    """Parameters to be fed into the policy builder (default None)"""
+    """[DEPRECATED] see `AgentSpec.agent_params` (default None)"""
     observation_adapter: Callable = lambda obs: obs
     """An adaptor that allows shaping of the observations (default lambda obs: obs)"""
     action_adapter: Callable = lambda act: act
@@ -131,33 +117,32 @@ class AgentSpec:
     """An adaptor that allows shaping of the reward (default lambda obs, reward: reward)"""
     info_adapter: Callable = lambda obs, reward, info: info
     """An adaptor that allows shaping of info (default lambda obs, reward, info: info)"""
-    perform_self_test: bool = True
+    perform_self_test: bool = False
+    """[DEPRECATED] this parameter is not used anymore"""
 
     def __post_init__(self):
         # make sure we can pickle ourselves
         cloudpickle.dumps(self)
-        # Perform a self-test
-        # TODO: move this to a remote agent, this is not safe to do in the smarts process
-        if self.policy_builder is None:
-            # skip this self-test if we have not set a `policy_builder`
-            return
 
         if self.perform_self_test:
-            policy = self._build_policy()
-            assert isinstance(
-                policy, AgentPolicy
-            ), f"Policy builder did not build an AgentPolicy: {policy}"
-            # TODO: The user has to hook up a few things correctly here
-            #       and without types to guide the user, we should help
-            #       them proactively.
-            #
-            #       perform a self-test here to ensure things are rigged
-            #       up properly. ie.  generate some fake obs based on the
-            #       interface, pass it through the obs adapter, run that
-            #       through the policy, pass the policy action through
-            #       the action_adapter and ensure the controller accepts
-            #       the produced action.
-            del policy
+            print(f"[DEPRECATED] `perform_self_test` has been deprecated: {self}")
+
+        if self.policy_builder:
+            print(
+                f"[DEPRECATED] Please use AgentSpec(agent_builder=<...>) instead of AgentSpec(policy_builder=<..>):\n {self}"
+            )
+            assert self.agent_builder is None, self.agent_builder
+            self.agent_builder = self.policy_builder
+
+        if self.policy_params:
+            print(
+                f"[DEPRECATED] Please use AgentSpec(agent_params=<...>) instead of AgentSpec(policy_params=<..>):\n {self}"
+            )
+            assert self.agent_params is None, self.agent_params
+            self.agent_params = self.policy_params
+
+        self.policy_params = self.agent_params
+        self.policy_builder = self.agent_builder
 
     def replace(self, **kwargs) -> "AgentSpec":
         """Return a copy of this AgentSpec with the given fields updated."""
@@ -166,47 +151,30 @@ class AgentSpec:
 
     def build_agent(self) -> Agent:
         """Construct an Agent from the AgentSpec configuration."""
+        if self.agent_builder is None:
+            raise ValueError("Can't build agent, no agent builder was supplied")
 
-        return Agent(
-            interface=self.interface,
-            observation_adapter=self.observation_adapter,
-            action_adapter=self.action_adapter,
-            reward_adapter=self.reward_adapter,
-            info_adapter=self.info_adapter,
-            policy=self._build_policy(),
-        )
-
-    def _build_policy(self):
-        if self.policy_builder is None:
-            raise ValueError("Can't build agent, no policy builder was supplied")
-
-        if not callable(self.policy_builder):
+        if not callable(self.agent_builder):
             raise ValueError(
-                f"""policy_builder: {self.policy_builder} is not callable
-Use a combination of policy_params and policy_builder to define how to build your policy, ie.
-AgentSpec(
-  policy_params={{"input_dimensions": 12}},
-  policy_builder=lambda: input_dimensions: MyPolicy(input_dimensions)
-)
-
-OR Better yet
+                f"""agent_builder: {self.agent_builder} is not callable
+Use a combination of agent_params and agent_builder to define how to build your agent, ie.
 
 AgentSpec(
-  policy_params={{"input_dimensions": 12}},
-  policy_builder=MyPolicy # we are not instantiating the policy, just passing the class reference
+  agent_params={{"input_dimensions": 12}},
+  agent_builder=MyAgent # we are not instantiating the agent, just passing the class reference
 )
 """
             )
 
-        if self.policy_params is None:
-            # no args to policy builder
-            return self.policy_builder()
-        elif isinstance(self.policy_params, (list, tuple)):
+        if self.agent_params is None:
+            # no args to agent builder
+            return self.agent_builder()
+        elif isinstance(self.agent_params, (list, tuple)):
             # a list or tuple is treated as positional arguments
-            return self.policy_builder(*self.policy_params)
-        elif isinstance(self.policy_params, dict):
+            return self.agent_builder(*self.agent_params)
+        elif isinstance(self.agent_params, dict):
             # dictionaries, as keyword arguments
-            return self.policy_builder(**self.policy_params)
+            return self.agent_builder(**self.agent_params)
         else:
-            # otherwise, the policy params are sent as is to the builder
-            return self.policy_builder(self.policy_params)
+            # otherwise, the agent params are sent as is to the builder
+            return self.agent_builder(self.agent_params)

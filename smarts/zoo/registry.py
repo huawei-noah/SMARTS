@@ -42,7 +42,7 @@ def register(locator: str, entry_point, **kwargs):
             locator="motion-planner-agent-v0",
             entry_point=lambda **kwargs: AgentSpec(
                 interface=AgentInterface(waypoints=True, action=ActionSpaceType.TargetPose),
-                policy_builder=MotionPlannerPolicy,
+                agent_builder=MotionPlannerAgent,
             ),
         )
     """

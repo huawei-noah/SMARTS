@@ -1,5 +1,5 @@
 """This is a (long-running) regression test to ensure code changes have not impacted
-learning. It compares the mean episode reward of a newly trained policy with that
+learning. It compares the mean episode reward of a newly trained agent with that
 of a baseline from a past (baseline) commit. It is set to run for one hour.
 """
 import multiprocessing

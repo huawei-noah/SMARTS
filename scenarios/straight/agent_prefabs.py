@@ -1,13 +1,14 @@
 import logging
 
 import numpy as np
-from smarts.core.agent import AgentPolicy, AgentSpec
+
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import register
 
 
-class PoseBoidPolicy(AgentPolicy):
+class PoseBoidAgent(Agent):
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.info(f"{self.__class__.__name__} was created")
@@ -25,7 +26,7 @@ class PoseBoidPolicy(AgentPolicy):
         return np.array([*wp.pos, wp.heading, dist_to_wp / target_speed])
 
 
-class TrajectoryBoidPolicy(AgentPolicy):
+class TrajectoryBoidAgent(Agent):
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.info(f"{self.__class__.__name__} was created")
@@ -64,7 +65,7 @@ register(
         interface=AgentInterface(
             action=ActionSpaceType.MultiTargetPose, waypoints=True
         ),
-        policy_builder=PoseBoidPolicy,
+        agent_builder=PoseBoidAgent,
     ),
 )
 
@@ -72,6 +73,6 @@ register(
     locator="trajectory-boid-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
         interface=AgentInterface(action=ActionSpaceType.Trajectory, waypoints=True),
-        policy_builder=TrajectoryBoidPolicy,
+        agent_builder=TrajectoryBoidAgent,
     ),
 )

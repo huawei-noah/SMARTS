@@ -8,7 +8,7 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 
 from examples import default_argument_parser
 
@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-class PyTorchPolicy(AgentPolicy):
+class PyTorchAgent(Agent):
     def __init__(self, input_dims, hidden_dims, output_dims, model_path=None):
         self.model = torch.nn.Sequential(
             torch.nn.Linear(input_dims, hidden_dims),
@@ -67,11 +67,11 @@ def observation_adapter(env_obs):
 
 @ray.remote
 def train(training_scenarios, evaluation_scenarios, headless, num_episodes, seed):
-    policy_params = {"input_dims": 4, "hidden_dims": 7, "output_dims": 3}
+    agent_params = {"input_dims": 4, "hidden_dims": 7, "output_dims": 3}
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=5000),
-        policy_params=policy_params,
-        policy_builder=PyTorchPolicy,
+        agent_params=agent_params,
+        agent_builder=PyTorchAgent,
         observation_adapter=observation_adapter,
     )
 
@@ -104,10 +104,10 @@ def train(training_scenarios, evaluation_scenarios, headless, num_episodes, seed
                 # We construct an evaluation agent based on the saved
                 # state of the agent in training.
                 model_path = tempfile.mktemp()
-                agent.policy.save(model_path)
+                agent.save(model_path)
 
                 eval_agent_spec = agent_spec.replace(
-                    policy_params=dict(policy_params, model_path=model_path)
+                    agent_params=dict(agent_params, model_path=model_path)
                 )
 
                 # Remove the call to ray.wait if you want evaluation to run

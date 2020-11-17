@@ -8,12 +8,12 @@ import gym
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy as LoadPolicy
 from ray.rllib.models import ModelCatalog
 
-from smarts.core.agent import AgentPolicy
+from smarts.core.agent import Agent
 
 import tensorflow as tf
 
 
-class RLPolicy(AgentPolicy):
+class RLAgent(Agent):
     def __init__(self, load_path, policy_name, observation_space, action_space):
         self._checkpoint_path = load_path
         self._policy_name = policy_name
