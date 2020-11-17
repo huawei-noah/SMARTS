@@ -335,8 +335,13 @@ class TrapEntryTactic(EntryTactic):
     """The prefixes of vehicles to avoid hijacking"""
 
 
-class Task(Enum):
-    uturn = 1
+@dataclass(frozen=True)
+class UTurn:
+    target_lane_index: int = 0
+
+    @property
+    def name(self):
+        return "uturn"
 
 
 @dataclass(frozen=True)
@@ -351,7 +356,7 @@ class Mission:
     """
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
-    task: Task = None
+    task: Tuple[UTurn] = None
 
 
 @dataclass(frozen=True)

@@ -45,7 +45,13 @@ from .utils.file import path2hash, file_md5_hash
 from .utils.id import SocialAgentId
 from .route import ShortestRoute
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import Zone, PositionalZone, RoadSurfacePatch, EntryTactic, Task
+from smarts.sstudio.types import (
+    Zone,
+    PositionalZone,
+    RoadSurfacePatch,
+    EntryTactic,
+    UTurn,
+)
 
 
 @dataclass(frozen=True)
@@ -112,7 +118,7 @@ class Mission:
     via: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
-    task: Task = None
+    task: Tuple[UTurn] = None
 
     @property
     def has_fixed_route(self):

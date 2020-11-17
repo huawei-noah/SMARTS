@@ -918,16 +918,16 @@ class UTurnTrajectorySensor(Sensor):
         self._horizon = 50
 
     def __call__(self):
+        # TODO: revisit the approach to calculate the U-Turn trajectory
         start_lane = self._mission_planner.start_lane
         start_edge = self._sim.road_network.road_edge_data_for_lane_id(
             start_lane.getID()
         )
-        oncoming_edge = start_edge.oncoming_edges[0]
-
         wp = self._sim.waypoints.closest_waypoint(self._vehicle.position)
         current_edge = self._sim.road_network.edge_by_lane_id(wp.lane_id)
-        # TODO: choose a lane
-        lane = oncoming_edge.getLanes()[0]
+        oncoming_edge = start_edge.oncoming_edges[0]
+        target_lane_index = self._mission_planner.task.target_lane_index
+        lane = oncoming_edge.getLanes()[target_lane_index]
         paths = self.paths_for_lane(lane)
         target = paths[0][-1]
 
@@ -935,7 +935,7 @@ class UTurnTrajectorySensor(Sensor):
         target_heading = target.heading
 
         if current_edge.getID() != oncoming_edge.getID():
-            # start edge
+            # agent at the start edge
             p0 = self._vehicle.position[:2]
             distance = (
                 10 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
@@ -952,7 +952,7 @@ class UTurnTrajectorySensor(Sensor):
             p3 = target.pos
             p_x, p_y = bezier([p0, p1, p2, p3], 20)
         else:
-            # oncoming edge
+            # agent at the oncoming edge
             p0 = self._vehicle.position[:2]
             offset = radians_to_vec(heading) * 3  # lane width
             p1 = np.array(
@@ -971,14 +971,19 @@ class UTurnTrajectorySensor(Sensor):
         for i in range(len(p_x)):
             pos = np.array([p_x[i], p_y[i]])
             heading = vec_to_radians(target.pos - pos)
+            lane = self._sim.road_network.nearest_lane(pos)
+            lane_id = lane.getID()
+            lane_index = lane_id.split("_")[-1]
+
+            # TODO: needs a better way to construct the waypoints
             wp = Waypoint(
                 id=i,
                 pos=pos,
                 heading=heading,
                 lane_width=3,
                 speed_limit=50,
-                lane_id="edge-west-EW_0",  # TODO
-                lane_index=0,
+                lane_id=lane_id,
+                lane_index=lane_index,
                 right_of_way=True,
             )
             trajectory.append(wp)

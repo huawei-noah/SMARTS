@@ -25,7 +25,7 @@ social_agent_missions = {
         [
             t.Mission(
                 t.Route(begin=("edge-west-WE", 0, 50), end=("edge-west-EW", 0, "max")),
-                task=t.Task.uturn
+                task=t.UTurn(target_lane_index=0),
             )
         ],
     ),
@@ -34,7 +34,7 @@ social_agent_missions = {
 ego_missions = [
     t.Mission(
         t.Route(begin=("edge-west-WE", 0, 50), end=("edge-west-EW", 0, "max")),
-        task=t.Task.uturn
+        task=t.UTurn(),
     )
 ]
 

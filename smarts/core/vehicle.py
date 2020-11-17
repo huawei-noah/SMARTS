@@ -375,7 +375,11 @@ class Vehicle:
             )
 
         if agent_interface.waypoints:
-            if mission_planner.task:
+            # TODO
+            if (
+                mission_planner.task is not None
+                and mission_planner.task.name == "uturn"
+            ):
                 sensor = UTurnTrajectorySensor(
                     vehicle=vehicle, sim=sim, mission_planner=mission_planner
                 )

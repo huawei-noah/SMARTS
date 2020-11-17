@@ -43,7 +43,7 @@ class MissionPlanner:
 
     @property
     def task(self):
-        return True
+        return self._mission.task
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
