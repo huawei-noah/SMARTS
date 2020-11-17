@@ -34,6 +34,7 @@ from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
+from shapely.geometry import Polygon, MultiPolygon
 
 from .data_model import SocialAgent
 from .sumo_road_network import SumoRoadNetwork
@@ -44,7 +45,7 @@ from .utils.file import path2hash, file_md5_hash
 from .utils.id import SocialAgentId
 from .route import ShortestRoute
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic
+from smarts.sstudio.types import Zone, PositionalZone, RoadSurfacePatch, EntryTactic
 
 
 @dataclass(frozen=True)
@@ -170,7 +171,6 @@ class Scenario:
         self._root = scenario_root
         self._route = route
         self._missions = missions or {}
-        self._bubbles = Scenario._discover_bubbles(scenario_root)
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
         self._log_dir = os.path.abspath(log_dir)
@@ -226,11 +226,8 @@ class Scenario:
             social_agent_infos = Scenario._discover_social_agents_info(scenario_root)
             social_agents = [
                 {
-                    agent_id: (agent.to_agent_spec(), (agent, mission))
-                    for agent_id, (
-                        agent,
-                        mission,
-                    ) in per_episode_social_agent_infos.items()
+                    agent_id: (agent.to_agent_spec(), agent)
+                    for agent_id, agent in per_episode_social_agent_infos.items()
                 }
                 for per_episode_social_agent_infos in social_agent_infos
             ]
@@ -255,16 +252,8 @@ class Scenario:
                 np.roll(social_agents, roll_social_agents, 0),
             ):
                 concrete_social_agent_missions = {
-                    agent_id: mission
-                    for agent_id, (_, (_, mission)) in (
-                        concrete_social_agents or {}
-                    ).items()
-                }
-
-                # Filter out mission
-                concrete_social_agents = {
-                    agent_id: (_agent_spec, social_agent)
-                    for agent_id, (_agent_spec, (social_agent, _)) in (
+                    agent_id: social_agent.mission
+                    for agent_id, (_agent_spec, social_agent) in (
                         concrete_social_agents or {}
                     ).items()
                 }
@@ -401,30 +390,25 @@ class Scenario:
                 extracted_mission = Scenario._extract_mission(
                     mission_and_actor.mission, road_network
                 )
+
                 namespace = os.path.basename(missions_file_path)
                 namespace = os.path.splitext(namespace)[0]
 
                 setdefault(agent_bucketer, count, []).append(
-                    (
-                        SocialAgent(
-                            id=SocialAgentId.new(actor.name, group=namespace),
-                            name=actor.name,
-                            is_boid=False,
-                            is_boid_keep_alive=False,
-                            agent_locator=actor.agent_locator,
-                            policy_kwargs=actor.policy_kwargs,
-                            initial_speed=actor.initial_speed,
-                        ),
-                        extracted_mission,
+                    SocialAgent(
+                        id=SocialAgentId.new(actor.name, group=namespace),
+                        name=actor.name,
+                        mission=extracted_mission,
+                        agent_locator=actor.agent_locator,
+                        policy_kwargs=actor.policy_kwargs,
+                        initial_speed=actor.initial_speed,
                     )
                 )
                 count += 1
 
         social_agents_info = []
         for l in agent_bucketer:
-            social_agents_info.append(
-                {agent.id: (agent, mission) for agent, mission in l}
-            )
+            social_agents_info.append({agent.id: agent for agent in l})
 
         return social_agents_info
 
@@ -463,9 +447,8 @@ class Scenario:
             ]
         )
 
-    @staticmethod
-    def _discover_bubbles(scenario_root):
-        path = os.path.join(scenario_root, "bubbles.pkl")
+    def discover_bubbles(self):
+        path = os.path.join(self._root, "bubbles.pkl")
         if not os.path.exists(path):
             return []
 
@@ -707,10 +690,6 @@ class Scenario:
     @property
     def social_agents(self):
         return self._social_agents
-
-    @property
-    def bubbles(self):
-        return self._bubbles
 
     def mission(self, agent_id):
         return self._missions.get(agent_id, None)
