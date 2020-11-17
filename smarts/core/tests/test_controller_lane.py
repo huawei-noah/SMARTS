@@ -1,17 +1,13 @@
 import pytest
-
-
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
-from smarts.core.controllers import LaneFollowingController
-
 import smarts.sstudio.types as t
-from smarts.core.tests.helpers.scenario import temp_scenario
+from smarts.core.agent import AgentPolicy, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.controllers import LaneFollowingController
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.tests.helpers.scenario import temp_scenario
 from smarts.sstudio import gen_scenario
-
 
 AGENT_ID = "Agent-007"
 
@@ -72,7 +68,7 @@ def agent_spec(policy_and_agent_type):
 def smarts(agent_spec):
     smarts = SMARTS(
         agent_interfaces={AGENT_ID: agent_spec.interface},
-        traffic_sim=SumoTrafficSimulation(headless=True),
+        traffic_sim=SumoTrafficSimulation(),
     )
     yield smarts
     smarts.destroy()
@@ -91,6 +87,7 @@ def test_lane_following_controller(smarts, agent_spec, scenarios):
     scenario = next(scenarios)
     observations = smarts.reset(scenario)
 
+    agent_obs = None
     for _ in range(500):
         agent_obs = observations[AGENT_ID]
         agent_obs = agent_spec.observation_adapter(agent_obs)
@@ -118,7 +115,7 @@ def test_lane_following_controller(smarts, agent_spec, scenarios):
         if agent_obs.events.reached_goal:
             break
 
-    assert agent_obs.events.reached_goal, "Didn't reach goal"
+    assert agent_obs is not None and agent_obs.events.reached_goal, "Didn't reach goal"
     assert min(speed) > 5 / 3.6, "Speed dropped below minimum (5)"
     assert sum(speed) / len(speed) > 5, "Average speed below maximum (5)"
     assert max(lateral_error) < 2.01, "Lateral error exceeded maximum (2)"
