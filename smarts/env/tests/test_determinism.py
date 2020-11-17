@@ -138,7 +138,7 @@ def test_short_length_determinism(agent_spec):
             agent_obs.waypoint_paths, orig_agent_obs.waypoint_paths
         ):
             for now, prev in zip(w_paths_now, w_paths_prev):
-                assert now.id == prev.id
+                assert now == prev
                 # np.array is requiring this
                 assert all(
                     [
@@ -151,7 +151,6 @@ def test_short_length_determinism(agent_spec):
                 assert now.speed_limit == prev.speed_limit
                 assert now.lane_id == prev.lane_id
                 assert now.lane_index == prev.lane_index
-                assert now.right_of_way == prev.right_of_way
 
         # "distance_travelled",
         assert agent_obs.distance_travelled == orig_agent_obs.distance_travelled
