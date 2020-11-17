@@ -3,13 +3,13 @@ name: SMARTS CI Master
 on:
   push:
     branches:
-      - disabled
+      - master
 
 env:
   venv_dir: .venv
 
 jobs:
-  test_learning:
+  test_memory:
     runs-on: ubuntu-18.04
     container: huaweinoah/smarts:v0.4.3-pre
     steps:
@@ -31,8 +31,8 @@ jobs:
           pip install wheel
           pip install -r requirements.txt
           pip install -e .[train]
-      - name: Test Learning
+      - name: Test Memory Growth
         run: |
           cd $GITHUB_WORKSPACE
           . "${venv_dir}/bin/activate"
-          make test-learning
+          make test-memory-growth

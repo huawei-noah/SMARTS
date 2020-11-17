@@ -10,6 +10,7 @@ test: build-all-scenarios
 		-n `nproc --ignore 1` \
 		./tests ./smarts/core ./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
 		--ignore=./smarts/env/tests/test_learning.py \
+		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/env/tests/test_benchmark.py
 
 .PHONY: benchmark
@@ -19,6 +20,15 @@ benchmark: build-all-scenarios
 .PHONY: test-learning
 test-learning: build-all-scenarios
 	pytest -v -s -o log_cli=1 -o log_cli_level=INFO ./smarts/env/tests/test_learning.py
+
+.PHONY: test-memory-growth
+test-memory-growth: build-all-scenarios
+	PYTHONHASHSEED=42 pytest -v \
+		--cov=smarts \
+		--forked \
+		--dist=loadscope \
+		-n `nproc --ignore 1` \
+		./smarts/core/tests/test_smarts_memory_growth.py
 
 .PHONY: test-zoo
 test-zoo: build-all-scenarios
