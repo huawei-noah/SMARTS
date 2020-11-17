@@ -409,7 +409,11 @@ class BubbleManager:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
         social_agent = None
-        if bubble.keep_alive or agent_id in sim.agent_manager.social_agent_ids:
+        if (
+            bubble.is_boid
+            and bubble.keep_alive
+            or agent_id in sim.agent_manager.social_agent_ids
+        ):
             # E.g. if agent is a boid and was being re-used
             interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         else:

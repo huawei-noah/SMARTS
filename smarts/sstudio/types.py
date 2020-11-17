@@ -540,6 +540,12 @@ class Bubble:
                 "A follow offset must be set if this is a travelling bubble"
             )
 
+        if self.keep_alive and not self.is_boid:
+            # TODO: We may want to remove this restriction in the future
+            raise ValueError(
+                "Only boids can have keep_alive enabled (for persistent boids)"
+            )
+
     @staticmethod
     def to_actor_id(actor, mission_group):
         return SocialAgentId.new(actor.name, group=mission_group)
