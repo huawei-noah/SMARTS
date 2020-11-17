@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import math
 import time
 import logging
 from functools import partial, lru_cache
@@ -44,6 +45,7 @@ from .masks import RenderMasks
 from .waypoints import Waypoint
 from .scenario import Mission
 from .events import Events
+from .utils.math import vec_to_radians, radians_to_vec, evaluate_bezier as bezier
 
 
 class VehicleObservation(NamedTuple):
@@ -922,6 +924,115 @@ class NeighborhoodVehiclesSensor(Sensor):
 
     def teardown(self):
         pass
+
+
+class UTurnTrajectorySensor(Sensor):
+    def __init__(self, vehicle, sim, mission_planner):
+        self._vehicle = vehicle
+        self._sim = sim
+        self._mission_planner = mission_planner
+        self._horizon = 50
+
+    def __call__(self):
+        # TODO: Reuse codes from RoadWaypointsSensor,
+        # need to revisit the approach to calculate the U-Turn trajectory
+        start_lane = self._mission_planner.start_lane
+        start_edge = self._sim.road_network.road_edge_data_for_lane_id(
+            start_lane.getID()
+        )
+        wp = self._sim.waypoints.closest_waypoint(self._vehicle.position)
+        current_edge = self._sim.road_network.edge_by_lane_id(wp.lane_id)
+        oncoming_edge = start_edge.oncoming_edges[0]
+        target_lane_index = self._mission_planner.task.target_lane_index
+        lane = oncoming_edge.getLanes()[target_lane_index]
+        paths = self.paths_for_lane(lane)
+        target = paths[0][-1]
+
+        heading = self._vehicle.heading
+        target_heading = target.heading
+
+        if current_edge.getID() != oncoming_edge.getID():
+            # agent at the start edge
+            p0 = self._vehicle.position[:2]
+            distance = (
+                10 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
+            )
+            offset = radians_to_vec(heading) * distance
+            p1 = np.array(
+                [
+                    self._vehicle.position[0] + offset[0],
+                    self._vehicle.position[1] + offset[1],
+                ]
+            )
+            offset = radians_to_vec(heading + math.pi / 2) * 12
+            p2 = np.array([p1[0] + offset[0], p1[1] + offset[1]])
+            p3 = target.pos
+            p_x, p_y = bezier([p0, p1, p2, p3], 20)
+        else:
+            # agent at the oncoming edge
+            p0 = self._vehicle.position[:2]
+            offset = radians_to_vec(heading) * 3  # lane width
+            p1 = np.array(
+                [
+                    self._vehicle.position[0] + offset[0],
+                    self._vehicle.position[1] + offset[1],
+                ]
+            )
+            offset = radians_to_vec(target_heading) * 10
+            p2 = np.array([p1[0] + offset[0], p1[1] + offset[1]])
+
+            p3 = target.pos
+            p_x, p_y = bezier([p0, p1, p2, p3], 20)
+
+        trajectory = []
+        for i in range(len(p_x)):
+            pos = np.array([p_x[i], p_y[i]])
+            heading = vec_to_radians(target.pos - pos)
+            lane = self._sim.road_network.nearest_lane(pos)
+            lane_id = lane.getID()
+            lane_index = lane_id.split("_")[-1]
+
+            # TODO: needs a better way to construct the waypoints
+            wp = Waypoint(
+                pos=pos,
+                heading=heading,
+                lane_width=3,
+                speed_limit=50,
+                lane_id=lane_id,
+                lane_index=lane_index,
+            )
+            trajectory.append(wp)
+        return [trajectory]
+
+    def teardown(self):
+        pass
+
+    def paths_for_lane(self, lane, overflow_offset=None):
+        if overflow_offset is None:
+            offset = self._sim.road_network.offset_into_lane(
+                lane, self._vehicle.position[:2]
+            )
+            start_offset = offset - self._horizon
+        else:
+            start_offset = lane.getLength() + overflow_offset
+
+        incoming_lanes = lane.getIncoming(onlyDirect=True)
+        if start_offset < 0 and len(incoming_lanes) > 0:
+            paths = []
+            for lane in incoming_lanes:
+                paths += self.paths_for_lane(lane, start_offset)
+            return paths
+        else:
+            start_offset = max(0, start_offset)
+            wp_start = self._sim.road_network.world_coord_from_offset(
+                lane, start_offset
+            )
+
+            wps_to_lookahead = self._horizon * 2
+            paths = self._sim.waypoints.waypoint_paths_on_lane_at(
+                point=wp_start, lane_id=lane.getID(), lookahead=wps_to_lookahead,
+            )
+            return paths
 
 
 class WaypointsSensor(Sensor):

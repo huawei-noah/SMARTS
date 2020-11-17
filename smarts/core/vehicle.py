@@ -40,6 +40,7 @@ from .sensors import (
     RoadWaypointsSensor,
     TripMeterSensor,
     WaypointsSensor,
+    UTurnTrajectorySensor,
 )
 from .utils.math import rotate_around_point
 
@@ -373,13 +374,23 @@ class Vehicle:
             )
 
         if agent_interface.waypoints:
-            vehicle.attach_waypoints_sensor(
-                WaypointsSensor(
-                    vehicle=vehicle,
-                    mission_planner=mission_planner,
-                    lookahead=agent_interface.waypoints.lookahead,
+            # TODO
+            if (
+                mission_planner.task is not None
+                and mission_planner.task.name == "uturn"
+            ):
+                sensor = UTurnTrajectorySensor(
+                    vehicle=vehicle, sim=sim, mission_planner=mission_planner
                 )
-            )
+                vehicle.attach_waypoints_sensor(sensor)
+            else:
+                vehicle.attach_waypoints_sensor(
+                    WaypointsSensor(
+                        vehicle=vehicle,
+                        mission_planner=mission_planner,
+                        lookahead=agent_interface.waypoints.lookahead,
+                    )
+                )
 
         if agent_interface.road_waypoints:
             vehicle.attach_road_waypoints_sensor(

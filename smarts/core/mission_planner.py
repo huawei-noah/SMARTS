@@ -41,6 +41,10 @@ class MissionPlanner:
         self._road_network = road_network
         self._did_plan = False
 
+    @property
+    def task(self):
+        return self._mission.task if self._mission else None
+
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
     ):
@@ -65,10 +69,21 @@ class MissionPlanner:
             entry_tactic=None,
         )
 
+    @property
+    def start_lane(self):
+        start_lane = self._road_network.nearest_lane(
+            self._mission.start.position,
+            include_junctions=False,
+            include_special=False,
+        )
+        return start_lane
+
     def plan(self, mission: Optional[Mission]):
         self._mission = mission or self.random_endless_mission()
 
         if not self._mission.has_fixed_route:
+            self._route = EmptyRoute()
+        elif self._mission.task is not None:
             self._route = EmptyRoute()
         else:
             start_lane = self._road_network.nearest_lane(
