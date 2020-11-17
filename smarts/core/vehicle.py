@@ -26,7 +26,6 @@ from direct.showbase.ShowBase import ShowBase
 from pybullet_utils.bullet_client import BulletClient
 
 from . import models
-from .agent_interface import Task
 from .chassis import Chassis, AckermannChassis, BoxChassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
@@ -376,13 +375,19 @@ class Vehicle:
             )
 
         if agent_interface.waypoints:
-            vehicle.attach_waypoints_sensor(
-                WaypointsSensor(
-                    vehicle=vehicle,
-                    mission_planner=mission_planner,
-                    lookahead=agent_interface.waypoints.lookahead,
+            if mission_planner.task:
+                sensor = UTurnTrajectorySensor(
+                    vehicle=vehicle, sim=sim, mission_planner=mission_planner
                 )
-            )
+                vehicle.attach_waypoints_sensor(sensor)
+            else:
+                vehicle.attach_waypoints_sensor(
+                    WaypointsSensor(
+                        vehicle=vehicle,
+                        mission_planner=mission_planner,
+                        lookahead=agent_interface.waypoints.lookahead,
+                    )
+                )
 
         if agent_interface.road_waypoints:
             vehicle.attach_road_waypoints_sensor(
@@ -435,13 +440,6 @@ class Vehicle:
                     sensor_params=agent_interface.lidar.sensor_params,
                 )
             )
-
-        if agent_interface.task is not None:
-            if agent_interface.task == Task.UTurn:
-                sensor = UTurnTrajectorySensor(
-                    vehicle=vehicle, sim=sim, mission_planner=mission_planner
-                )
-                vehicle.attach_desired_trajectory_sensor(sensor)
 
     def step(self, current_simulation_time):
         self._chassis.step(current_simulation_time)

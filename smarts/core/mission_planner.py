@@ -41,6 +41,10 @@ class MissionPlanner:
         self._road_network = road_network
         self._did_plan = False
 
+    @property
+    def task(self):
+        return True
+
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
     ):

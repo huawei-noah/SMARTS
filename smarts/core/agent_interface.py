@@ -102,10 +102,6 @@ class Accelerometer:
     pass
 
 
-class Task(IntEnum):
-    UTurn = 0
-
-
 class AgentType(IntEnum):
     Buddha = 0
     """Agent sees nothing and does nothing"""
@@ -212,8 +208,6 @@ class AgentInterface:
     """
 
     accelerometer: Union[Accelerometer, bool] = True
-
-    task: Optional[Task] = None
 
     def __post_init__(self):
         self.neighborhood_vehicles = AgentInterface._resolve_config(

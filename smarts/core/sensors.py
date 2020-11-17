@@ -265,16 +265,13 @@ class Sensors:
         rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
         lidar = vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
 
-        desired_trajectory = vehicle.desired_trajectory_sensor()
-
         done, events = Sensors._is_done_with_events(sim, agent_id, sensor_state)
         return (
             Observation(
                 events=events,
                 ego_vehicle_state=ego_vehicle_observation,
                 neighborhood_vehicle_states=neighborhood_vehicles,
-                # waypoint_paths=waypoint_paths,
-                waypoint_paths=desired_trajectory,
+                waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
                 top_down_rgb=rgb,
                 occupancy_grid_map=ogm,
@@ -940,7 +937,9 @@ class UTurnTrajectorySensor(Sensor):
         if current_edge.getID() != oncoming_edge.getID():
             # start edge
             p0 = self._vehicle.position[:2]
-            distance = 10 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
+            distance = (
+                10 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
+            )
             offset = radians_to_vec(heading) * distance
             p1 = np.array(
                 [
@@ -951,7 +950,7 @@ class UTurnTrajectorySensor(Sensor):
             offset = radians_to_vec(heading + math.pi / 2) * 12
             p2 = np.array([p1[0] + offset[0], p1[1] + offset[1]])
             p3 = target.pos
-            p_x, p_y = bezier([p0, p1, p2, p3], 10)
+            p_x, p_y = bezier([p0, p1, p2, p3], 20)
         else:
             # oncoming edge
             p0 = self._vehicle.position[:2]
@@ -966,7 +965,7 @@ class UTurnTrajectorySensor(Sensor):
             p2 = np.array([p1[0] + offset[0], p1[1] + offset[1]])
 
             p3 = target.pos
-            p_x, p_y = bezier([p0, p1, p2, p3], 15)
+            p_x, p_y = bezier([p0, p1, p2, p3], 20)
 
         trajectory = []
         for i in range(len(p_x)):
@@ -978,7 +977,7 @@ class UTurnTrajectorySensor(Sensor):
                 heading=heading,
                 lane_width=3,
                 speed_limit=50,
-                lane_id=0,
+                lane_id="edge-west-EW_0",  # TODO
                 lane_index=0,
                 right_of_way=True,
             )
