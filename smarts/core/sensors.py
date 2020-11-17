@@ -862,8 +862,11 @@ class TripMeterSensor(Sensor):
             or wp_edge in self._mission_planner.route.edges
         )
 
-        threshold_for_counting_wp = 0.5 # meters from last tracked waypoint
-        if np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp and should_count_wp:
+        threshold_for_counting_wp = 0.5  # meters from last tracked waypoint
+        if (
+            np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
+            and should_count_wp
+        ):
             self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
                 most_recent_wp, new_wp
             )
