@@ -83,6 +83,8 @@ class MissionPlanner:
 
         if not self._mission.has_fixed_route:
             self._route = EmptyRoute()
+        elif self._mission.task is not None:
+            self._route = EmptyRoute()
         else:
             start_lane = self._road_network.nearest_lane(
                 self._mission.start.position,

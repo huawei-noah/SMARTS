@@ -45,7 +45,7 @@ from .utils.file import path2hash, file_md5_hash
 from .utils.id import SocialAgentId
 from .route import ShortestRoute
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import Zone, PositionalZone, RoadSurfacePatch, EntryTactic
+from smarts.sstudio.types import Zone, PositionalZone, RoadSurfacePatch, EntryTactic, Task
 
 
 @dataclass(frozen=True)
@@ -112,6 +112,7 @@ class Mission:
     via: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
+    task: Task = None
 
     @property
     def has_fixed_route(self):
@@ -540,6 +541,7 @@ class Scenario:
                 goal=goal,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
+                task=mission.task,
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
             position, heading = to_position_and_heading(*mission.begin, road_network,)
@@ -550,6 +552,7 @@ class Scenario:
                 goal=EndlessGoal(),
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
+                task=mission.task,
             )
         elif isinstance(mission, sstudio_types.LapMission):
             start_edge_id, start_lane, start_edge_offset = mission.route.begin

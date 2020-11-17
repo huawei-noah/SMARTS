@@ -23,6 +23,7 @@ import random
 import itertools
 import collections.abc as collections_abc
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Sequence, Tuple, Dict, Any, Union, Optional
 
 import numpy as np
@@ -334,6 +335,10 @@ class TrapEntryTactic(EntryTactic):
     """The prefixes of vehicles to avoid hijacking"""
 
 
+class Task(Enum):
+    uturn = 1
+
+
 @dataclass(frozen=True)
 class Mission:
     """The descriptor for an actor's mission."""
@@ -346,6 +351,7 @@ class Mission:
     """
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
+    task: Task = None
 
 
 @dataclass(frozen=True)

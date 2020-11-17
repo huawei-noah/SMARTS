@@ -8,7 +8,9 @@ from smarts.sstudio import types as t
 traffic = t.Traffic(
     flows=[
         t.Flow(
-            route=t.RandomRoute(), rate=3600, actors={t.TrafficActor(name="car"): 1.0},
+            route=t.Route(begin=("edge-west-EW", 0, 0), end=("edge-west-EW", 0, "max")),
+            rate=1,
+            actors={t.TrafficActor(name="car"): 1.0},
         )
     ]
 )
@@ -22,15 +24,25 @@ social_agent_missions = {
         ],
         [
             t.Mission(
-                t.Route(begin=("edge-west-WE", 0, 30), end=("edge-south-NS", 0, 40))
+                t.Route(begin=("edge-west-WE", 0, 50), end=("edge-west-EW", 0, "max")),
+                task=t.Task.uturn
             )
         ],
     ),
 }
 
+ego_missions = [
+    t.Mission(
+        t.Route(begin=("edge-west-WE", 0, 50), end=("edge-west-EW", 0, "max")),
+        task=t.Task.uturn
+    )
+]
+
 gen_scenario(
     scenario=t.Scenario(
-        traffic={"basic": traffic}, social_agent_missions=social_agent_missions,
+        traffic={"basic": traffic},
+        # ego_missions=ego_missions,
+        social_agent_missions=social_agent_missions,
     ),
     output_dir=Path(__file__).parent,
 )
