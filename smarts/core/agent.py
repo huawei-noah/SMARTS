@@ -141,8 +141,8 @@ class AgentSpec:
             assert self.agent_params is None, self.agent_params
             self.agent_params = self.policy_params
 
-        self.policy_params = agent_params
-        self.policy_builder = agent_builder
+        self.policy_params = self.agent_params
+        self.policy_builder = self.agent_builder
 
     def replace(self, **kwargs) -> "AgentSpec":
         """Return a copy of this AgentSpec with the given fields updated."""
