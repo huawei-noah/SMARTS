@@ -116,6 +116,7 @@ class Chassis:
         raise NotImplementedError
 
     def inherit_physical_values(self, other: "Chassis"):
+        """Apply GCD between the two chassis."""
         raise NotImplementedError
 
     @property
@@ -367,8 +368,7 @@ class AckermannChassis(Chassis):
         self.set_pose(pose)
 
         if initial_speed is not None:
-            velocity = radians_to_vec(self.pose.heading) * initial_speed
-            self._client.resetBaseVelocity(self._bullet_id, [*velocity, 0])
+            self._initialize_speed(initial_speed)
 
     @property
     def pose(self) -> Pose:
@@ -509,9 +509,11 @@ class AckermannChassis(Chassis):
 
     def inherit_physical_values(self, other: BoxChassis):
         self.set_pose(other.pose)
-        # bullet wants m/s
-        velocity = radians_to_vec(self.pose.heading) * other.speed
-        self.speed = other.speed
+        self._initialize_speed(other.speed)
+
+    def _initialize_speed(self, speed: float):
+        self.speed = speed
+        velocity = radians_to_vec(self.pose.heading) * speed
         self._client.resetBaseVelocity(self._bullet_id, [*velocity, 0])
 
     def teardown(self):

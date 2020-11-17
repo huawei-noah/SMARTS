@@ -332,6 +332,8 @@ class TrapEntryTactic(EntryTactic):
     """The zone of the hijack area"""
     exclusion_prefixes: Tuple[str, ...] = tuple()
     """The prefixes of vehicles to avoid hijacking"""
+    default_entry_speed: float = None
+    """The speed that the vehicle starts at when defaulting to emitting"""
 
 
 @dataclass(frozen=True)
