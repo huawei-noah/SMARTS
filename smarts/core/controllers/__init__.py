@@ -17,23 +17,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import math
 from enum import Enum
 from functools import partial
 
-from numpy.linalg import matrix_power
 import numpy as np
 
-from scipy import signal
-
-from smarts.core.chassis import AckermannChassis
-from smarts.core.utils.math import (
-    lerp,
-    radians_to_vec,
-    signed_dist_to_line,
-    min_angles_difference_signed,
-    low_pass_filter,
-)
 from smarts.core.controllers.trajectory_tracking_controller import (
     TrajectoryTrackingControllerState,
     TrajectoryTrackingController,

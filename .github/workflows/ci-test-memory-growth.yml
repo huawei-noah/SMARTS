@@ -1,0 +1,38 @@
+name: SMARTS CI Master
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  venv_dir: .venv
+
+jobs:
+  test_memory:
+    runs-on: ubuntu-18.04
+    container: huaweinoah/smarts:v0.4.3-pre
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Package Setup
+        run: |
+          /usr/bin/Xorg \
+            -noreset \
+            +extension GLX \
+            +extension RANDR \
+            +extension RENDER \
+            -logfile ./xdummy.log \
+            -config /etc/X11/xorg.conf :1 &
+          cd $GITHUB_WORKSPACE
+          python3.7 -m venv "${venv_dir}"
+          . "${venv_dir}/bin/activate"
+          pip install --upgrade pip
+          pip install wheel
+          pip install -r requirements.txt
+          pip install -e .[train]
+      - name: Test Memory Growth
+        run: |
+          cd $GITHUB_WORKSPACE
+          . "${venv_dir}/bin/activate"
+          make test-memory-growth

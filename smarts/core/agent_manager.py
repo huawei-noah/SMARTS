@@ -75,6 +75,7 @@ class AgentManager:
 
     def destroy(self):
         self._remote_agent_buffer.destroy()
+        Sensors.clean_up()
 
     @property
     def agent_ids(self):

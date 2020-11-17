@@ -34,12 +34,13 @@ class RemoteAgentBuffer:
         self._agent_buffer_lock = Lock()
         self._replenish_thread = None
         self._start_replenish_thread()
-        atexit.register(self.__del__)
+        atexit.register(self.destroy)
 
     def __del__(self):
         self.destroy()
 
     def destroy(self):
+        atexit.unregister(self.destroy)
         self._quiescing = True
         if self._replenish_thread_is_running():
             self._replenish_thread.join()  # wait for the replenisher to finish

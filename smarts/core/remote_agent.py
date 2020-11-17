@@ -103,6 +103,7 @@ class RemoteAgent:
         )
 
     def terminate(self):
+        atexit.unregister(self.terminate)
         if self._agent_proc:
             if self._conn:
                 self._conn.close()
