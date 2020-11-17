@@ -13,7 +13,7 @@ from smarts.core.agent import Agent
 import tensorflow as tf
 
 
-class RLPolicy(Agent):
+class RLAgent(Agent):
     def __init__(self, load_path, policy_name, observation_space, action_space):
         self._checkpoint_path = load_path
         self._policy_name = policy_name

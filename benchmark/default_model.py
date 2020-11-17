@@ -1,6 +1,6 @@
 """
 This file contain default network for rllib training,
-and can be used for policy evaluation
+and can be used for agent evaluation
 """
 import pickle
 import tensorflow as tf
@@ -21,7 +21,7 @@ tf1, tf, tfv = try_import_tf()
 BASE_DIR = Path(__file__).expanduser().absolute().parent.parent
 
 
-class RLLibTFCheckpointPolicy(Agent):
+class RLLibTFCheckpointAgent(Agent):
     def __init__(self, load_path, algorithm, policy_name, yaml_path):
         load_path = str(load_path)
         if algorithm == "ppo":
@@ -141,7 +141,7 @@ class RLLibTFCheckpointPolicy(Agent):
         return action
 
 
-class RLLibTFSavedModelPolicy(Agent):
+class RLLibTFSavedModelAgent(Agent):
     def __init__(self, load_path, algorithm, policy_name, observation_space):
         load_path = str(load_path)
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
@@ -192,7 +192,7 @@ class RLLibTFSavedModelPolicy(Agent):
         return action
 
 
-class BatchRLLibTFCheckpointPolicy(Agent):
+class BatchRLLibTFCheckpointAgent(Agent):
     def __init__(
         self, load_path, algorithm, policy_name, observation_space, action_space
     ):
@@ -266,7 +266,7 @@ class BatchRLLibTFCheckpointPolicy(Agent):
         return actions
 
 
-class BatchRLLibTFSavedModelPolicy(Agent):
+class BatchRLLibTFSavedModelAgent(Agent):
     def __init__(self, load_path, algorithm, policy_name, observation_space):
         load_path = str(load_path)
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)

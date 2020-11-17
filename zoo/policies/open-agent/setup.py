@@ -4,7 +4,7 @@ from pathlib import Path
 from open_agent.version import VERSION
 
 try:
-    from open_agent.policy import compile_solver
+    from open_agent.agent import compile_solver
     import subprocess
     import shutil
     import glob

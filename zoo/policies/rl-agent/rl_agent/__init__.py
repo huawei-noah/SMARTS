@@ -9,7 +9,7 @@ from .lane_space import (
     agent_interface,
     get_observation_adapter,
 )
-from .policy import RLPolicy
+from .agent import RLAgent
 from . import checkpoint
 from smarts.zoo.registry import register
 
@@ -41,7 +41,7 @@ def entrypoint(
             action_adapter=get_action_adapter(
                 target_speed=target_speed, lane_change_speed=lane_change_speed,
             ),
-            agent_builder=lambda: RLPolicy(
+            agent_builder=lambda: RLAgent(
                 load_path=str(checkpoint_path.absolute()),
                 policy_name="default_policy",
                 observation_space=OBSERVATION_SPACE,

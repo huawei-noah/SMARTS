@@ -52,7 +52,7 @@ class TrainingModel(FullyConnectedNetwork):
 ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
 
 
-class RLLibTFSavedModelPolicy(Agent):
+class RLLibTFSavedModelAgent(Agent):
     def __init__(self, path_to_model, observation_space):
         path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
@@ -83,7 +83,7 @@ rllib_agent = {
             "path_to_model": Path(__file__).resolve().parent / "model",
             "observation_space": OBSERVATION_SPACE,
         },
-        agent_builder=RLLibTFSavedModelPolicy,
+        agent_builder=RLLibTFSavedModelAgent,
         observation_adapter=observation_adapter,
         reward_adapter=reward_adapter,
         action_adapter=action_adapter,
