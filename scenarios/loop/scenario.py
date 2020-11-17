@@ -51,6 +51,7 @@ gen_scenario(
                     open_agent_actor, mission_group="all"
                 ),
                 follow_offset=(-7, 10),
+                keep_alive=True,
             ),
         ],
     ),
