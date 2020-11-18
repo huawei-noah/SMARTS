@@ -162,7 +162,7 @@ class Scenario:
         route: str = None,
         missions: Dict[str, Mission] = None,
         social_agents: Dict[str, SocialAgent] = None,
-        log_dir: str = "/tmp/smarts/_sumo_run_logs",
+        log_dir: str = None,
         surface_patches: list = None,
     ):
 
@@ -173,7 +173,7 @@ class Scenario:
         self._bubbles = Scenario._discover_bubbles(scenario_root)
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
-        self._log_dir = os.path.abspath(log_dir)
+        self._log_dir = self._resolve_log_dir(log_dir)
 
         self._validate_assets_exist()
         self._road_network = SumoRoadNetwork.from_file(self.net_filepath)
@@ -714,6 +714,16 @@ class Scenario:
 
     def mission(self, agent_id):
         return self._missions.get(agent_id, None)
+
+    def _resolve_log_dir(self, log_dir):
+        home_dir = os.path.expanduser("~")
+        _, home_user = os.path.split(home_dir)
+        if log_dir is None:
+            log_dir = os.path.abspath(f"/tmp/smarts_{home_user}/_sumo_run_logs")
+        else:
+            log_dir = os.path.abspath(log_dir)
+
+        return log_dir
 
     def _validate_assets_exist(self):
         assert Scenario.is_valid_scenario(self._root)
