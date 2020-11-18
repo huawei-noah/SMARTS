@@ -66,7 +66,7 @@ setup(
         "PyYAML",
     ],
     extras_require={
-        "train": ["tensorflow==2.2", "torch==1.3.0", "torchvision==0.4.1"],
+        "train": ["tensorflow==2.2.1", "torch==1.3.0", "torchvision==0.4.1"],
         "dev": [
             "black==19.10b0",
             "sphinx",
