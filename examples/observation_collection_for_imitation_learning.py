@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 def main(scenarios, headless, seed):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
-        policy_builder=None,
+        agent_builder=None,
         observation_adapter=None,
     )
 

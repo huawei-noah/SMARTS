@@ -1,9 +1,9 @@
 import numpy as np
 
-from smarts.core.agent import AgentPolicy
+from smarts.core.agent import Agent
 
 
-class NonInteractivePolicy(AgentPolicy):
+class NonInteractiveAgent(Agent):
     def __init__(self, speed=5, target_lane_index=None):
         self.speed = speed
         if target_lane_index is None:

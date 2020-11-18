@@ -17,7 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# Heavily based on gym/envs/registration.py (but more generic)
+# ====================
+# Heavily derived from https://github.com/openai/gym/blob/v0.10.5/gym/envs/registration.py
+# See gym license in THIRD_PARTY_OPEN_SOURCE_SOFTWARE_NOTICE
 import re
 from urllib.parse import urlparse
 import importlib
@@ -29,36 +31,7 @@ NAME_CONSTRAINT_REGEX = re.compile(r"^(?:[\w:-]+\/)?([\w:.-]+)-v(\d+)$")
 
 def is_valid_locator(locator: str):
     # Handle non-URL-based agents (e.g. open_agent-v0)
-    if NAME_CONSTRAINT_REGEX.search(locator):
-        return True
-
-    return is_valid_url_locator(locator)
-
-
-def is_valid_url_locator(locator: str):
-    # Handle URL-based agents (e.g. http://localhost:8080/open_agent?v=0.1)
-    def to_url_locator(locator):
-        try:
-            url = urlparse(locator)
-            if all([url.scheme, url.netloc, url.path]):
-                return url
-        finally:
-            pass
-
-        return None
-
-    if len(locator.split(":", 1)) < 2:
-        return False
-
-    module, locator = locator.split(":", 1)
-    url = to_url_locator(locator)
-    if not url:
-        return False
-
-    if url.query.startswith("v="):
-        return True
-
-    return False
+    return NAME_CONSTRAINT_REGEX.search(locator)
 
 
 def find_attribute_spec(name):
@@ -123,13 +96,8 @@ class ClassRegister:
         mod_name, name = locator.split(":", 1)
         # `name` could be simple name string (e.g. <open_agent-v0> or a URL
         try:
+            # Import the module so that the agent may register it self in our self.index
             module = importlib.import_module(mod_name)
-            if is_valid_url_locator(locator):
-                # Non-URL locators importing local source modules will internally call
-                # register(...). Importing packaged agents do not, so we have to do
-                # that here to update self.index
-                self.register(locator=name, entry_point=module.entrypoint)
-
         except ImportError:
             raise ImportError(
                 f"Ensure that `{mod_name}` module can be found from your "

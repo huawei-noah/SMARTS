@@ -72,15 +72,6 @@ def build_social_agent_actors(original_data):
                     agent_locator=agent_locator,
                     policy_kwargs=agent["params"] if "params" in agent else {},
                 )
-            elif "url" in agent:
-                # packaged agent, installed via pip
-                agent_name = f"{agent['package']}-{agent['version']}"
-                actor = SocialAgentActor.from_zoo(
-                    name=agent_name,
-                    url=agent["url"],
-                    package=agent["package"],
-                    version=agent["version"],
-                )
             else:
                 raise ValueError(
                     f"Agent {agent} configuration does not match the expected schema"
@@ -233,4 +224,8 @@ if __name__ == "__main__":
         ]
     )
 
-    console.print(f'[bold]Done![/bold] Results can be found at "{result_path}"')
+    console.print("[bold]Done![/bold] metric results:")
+    with open(result_path / "metrics_results" / "report.csv", "r") as report:
+        console.print(report.read())
+
+    console.print(f'Full results can be found at "{result_path}"')

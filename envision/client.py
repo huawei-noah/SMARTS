@@ -159,7 +159,7 @@ class Client:
             self._log.debug("Connection to Envision closed")
 
         def on_error(ws, error):
-            self._log.warning("Unable to connect to Envision")
+            self._log.error(f"Connection to Envision terminated with: {error}")
 
         def on_open(ws):
             setattr(threadlocal, "connection_established", True)
@@ -214,9 +214,9 @@ class Client:
         self._state_queue.put(Client.QueueDone())
         self._logging_queue.put(Client.QueueDone())
         if self._thread:
-            self._thread.join()
+            self._thread.join(timeout=3)
             self._thread = None
 
         if self._logging_thread:
-            self._logging_thread.join()
+            self._logging_thread.join(timeout=3)
             self._logging_thread = None

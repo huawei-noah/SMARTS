@@ -18,7 +18,7 @@ traffic = t.Traffic(
         t.Flow(
             route=t.Route(begin=("west", lane_idx, 0), end=("east", lane_idx, "max"),),
             rate=50,
-            actors={t.TrafficActor("car"): 1,},
+            actors={t.TrafficActor("car"): 1},
         )
         for lane_idx in range(3)
     ]
@@ -36,6 +36,7 @@ scenario = t.Scenario(
             zone=t.PositionalZone(pos=(150, 0), size=(50, 20)),
             margin=5,
             actor=pose_boid_agent,
+            keep_alive=True,
         ),
     ],
 )

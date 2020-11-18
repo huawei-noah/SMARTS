@@ -1,15 +1,16 @@
+from os import path
 from setuptools import setup, find_packages
 
-
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+this_dir = path.abspath(path.dirname(__file__))
+with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
+    long_description = f.read()
 
 setup(
     name="smarts",
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.4.2",
+    version="0.4.5",
     packages=find_packages(exclude="tests"),
     include_package_data=True,
     zip_safe=True,
@@ -19,12 +20,11 @@ setup(
         #   tensorboard needs >=41
         #   50.0 is broken: https://github.com/pypa/setupatools/issues/2353
         "setuptools>=41.0.0,!=50.0",
+        "click",  # used in scl
         "gym",
         "panda3d",
         "panda3d-gltf",
         "numpy",
-        "qpsolvers",
-        "cvxopt",
         "shapely",
         "networkx",
         "trimesh",  # Used for writing .glb files
@@ -38,7 +38,7 @@ setup(
         "pybullet",
         "sklearn",  # KDTree from sklearn is used by waypoints
         "tableprint",
-        "pynput",  # Used by HumanKeyboardPolicy
+        "pynput",  # Used by HumanKeyboardAgent
         "sh",
         "rich",
         "supervisor",
@@ -63,10 +63,16 @@ setup(
         "scikit-image",
         # The following are for /smarts/zoo
         "twisted",
+        "PyYAML",
     ],
     extras_require={
-        "train": ["tensorflow==1.15", "torch==1.3.0", "torchvision==0.4.1"],
-        "dev": ["black", "sphinx", "sphinx-rtd-theme", "sphinxcontrib-apidoc",],
+        "train": ["tensorflow==2.2", "torch==1.3.0", "torchvision==0.4.1"],
+        "dev": [
+            "black==19.10b0",
+            "sphinx",
+            "sphinx-rtd-theme",
+            "sphinxcontrib-apidoc",
+        ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )

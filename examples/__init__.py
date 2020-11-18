@@ -22,6 +22,9 @@ def default_argument_parser(program: str):
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
+        "--sumo-port", help="Run SUMO with a specified port.", type=int, default=None
+    )
+    parser.add_argument(
         "--episodes",
         help="The number of episodes to run the simulation for.",
         type=int,

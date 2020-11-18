@@ -4,7 +4,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import register
 
 
-def make_agent_spec(
+def entrypoint(
     gains={
         "theta": 3.0,
         "position": 4.0,
@@ -18,7 +18,7 @@ def make_agent_spec(
     debug=False,
     max_episode_steps=600,
 ):
-    from .policy import Policy
+    from .agent import OpEnAgent
 
     return AgentSpec(
         interface=AgentInterface(
@@ -27,10 +27,9 @@ def make_agent_spec(
             neighborhood_vehicles=True,
             max_episode_steps=max_episode_steps,
         ),
-        policy_params={"gains": gains, "debug": debug,},
-        policy_builder=Policy,
-        perform_self_test=False,
+        agent_params={"gains": gains, "debug": debug,},
+        agent_builder=OpEnAgent,
     )
 
 
-register(locator="open_agent-v0", entry_point=make_agent_spec)
+register(locator="open_agent-v0", entry_point=entrypoint)

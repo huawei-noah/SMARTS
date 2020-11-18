@@ -1,6 +1,6 @@
 """
 This file contain default network for rllib training,
-and can be used for policy evaluation
+and can be used for agent evaluation
 """
 import pickle
 import tensorflow as tf
@@ -11,7 +11,7 @@ from ray.rllib.models import ModelCatalog
 from ray.rllib.utils import try_import_tf
 from ray.rllib.agents.trainer import with_common_config
 
-from smarts.core.agent import AgentPolicy
+from smarts.core.agent import Agent
 
 from benchmark.agents import load_config
 
@@ -21,7 +21,7 @@ tf1, tf, tfv = try_import_tf()
 BASE_DIR = Path(__file__).expanduser().absolute().parent.parent
 
 
-class RLLibTFCheckpointPolicy(AgentPolicy):
+class RLLibTFCheckpointAgent(Agent):
     def __init__(self, load_path, algorithm, policy_name, yaml_path):
         load_path = str(load_path)
         if algorithm == "ppo":
@@ -64,13 +64,13 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
         pconfig["agent_id"] = policy_name
 
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
-        self._sess = tf.Session(graph=tf.get_default_graph())
+        self._sess = tf.compat.v1.Session(graph=tf.compat.v1.get_default_graph())
 
-        with tf.name_scope(policy_name):
+        with tf.compat.v1.name_scope(policy_name):
             # Observation space needs to be flattened before passed to the policy
             flat_obs_space = self._prep.observation_space
             policy = LoadPolicy(flat_obs_space, action_space, pconfig)
-            self._sess.run(tf.global_variables_initializer())
+            self._sess.run(tf.compat.v1.global_variables_initializer())
             objs = pickle.load(open(load_path, "rb"))
             objs = pickle.loads(objs["worker"])
             state = objs["state"]
@@ -96,7 +96,7 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(
+                input=self._sess.graph.get_tensor_by_name(
                     f"{policy_name}/value_out/BiasAdd:0"
                 ),
                 axis=1,
@@ -106,7 +106,7 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
                 f"{policy_name}/policy-inputs:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(
+                input=self._sess.graph.get_tensor_by_name(
                     f"{policy_name}/logits_out/BiasAdd:0"
                 ),
                 axis=1,
@@ -116,7 +116,7 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
                 f"{policy_name}/obs_2:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(
+                input=self._sess.graph.get_tensor_by_name(
                     f"{policy_name}/actor/AGENT_2_actor_RelaxedOneHotCategorical_1/sample/AGENT_2_actor_exp/forward/Exp:0"
                 )
             )
@@ -125,7 +125,9 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(f"{policy_name}/fc_out/BiasAdd:0"),
+                input=self._sess.graph.get_tensor_by_name(
+                    f"{policy_name}/fc_out/BiasAdd:0"
+                ),
                 axis=1,
             )
 
@@ -139,12 +141,12 @@ class RLLibTFCheckpointPolicy(AgentPolicy):
         return action
 
 
-class RLLibTFSavedModelPolicy(AgentPolicy):
+class RLLibTFSavedModelAgent(Agent):
     def __init__(self, load_path, algorithm, policy_name, observation_space):
         load_path = str(load_path)
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
-        self._sess = tf.Session(graph=tf.Graph())
-        tf.saved_model.load(
+        self._sess = tf.compat.v1.Session(graph=tf.Graph())
+        tf.compat.v1.saved_model.load(
             self._sess, export_dir=load_path, tags=["serve"], clear_devices=True,
         )
         # These tensor names were found by inspecting the trained model
@@ -164,7 +166,7 @@ class RLLibTFSavedModelPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(
+                input=self._sess.graph.get_tensor_by_name(
                     f"{policy_name}/value_out/BiasAdd:0"
                 ),
                 axis=1,
@@ -174,7 +176,9 @@ class RLLibTFSavedModelPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(f"{policy_name}/fc_out/BiasAdd:0"),
+                input=self._sess.graph.get_tensor_by_name(
+                    f"{policy_name}/fc_out/BiasAdd:0"
+                ),
                 axis=1,
             )
 
@@ -188,7 +192,7 @@ class RLLibTFSavedModelPolicy(AgentPolicy):
         return action
 
 
-class BatchRLLibTFCheckpointPolicy(AgentPolicy):
+class BatchRLLibTFCheckpointAgent(Agent):
     def __init__(
         self, load_path, algorithm, policy_name, observation_space, action_space
     ):
@@ -205,9 +209,9 @@ class BatchRLLibTFCheckpointPolicy(AgentPolicy):
             raise ValueError(f"Unsupported algorithm: {algorithm}")
 
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
-        self._sess = tf.Session(graph=tf.Graph())
+        self._sess = tf.compat.v1.Session(graph=tf.Graph())
 
-        with tf.name_scope(policy_name):
+        with tf.compat.v1.name_scope(policy_name):
             # obs_space need to be flattened before passed to PPOTFPolicy
             flat_obs_space = self._prep.observation_space
             policy = LoadPolicy(flat_obs_space, self._action_space, {})
@@ -233,7 +237,7 @@ class BatchRLLibTFCheckpointPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(
+                input=self._sess.graph.get_tensor_by_name(
                     f"{policy_name}/value_out/BiasAdd:0"
                 ),
                 axis=1,
@@ -243,7 +247,9 @@ class BatchRLLibTFCheckpointPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(f"{policy_name}/fc_out/BiasAdd:0"),
+                input=self._sess.graph.get_tensor_by_name(
+                    f"{policy_name}/fc_out/BiasAdd:0"
+                ),
                 axis=1,
             )
 
@@ -260,12 +266,12 @@ class BatchRLLibTFCheckpointPolicy(AgentPolicy):
         return actions
 
 
-class BatchRLLibTFSavedModelPolicy(AgentPolicy):
+class BatchRLLibTFSavedModelAgent(Agent):
     def __init__(self, load_path, algorithm, policy_name, observation_space):
         load_path = str(load_path)
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
-        self._sess = tf.Session(graph=tf.Graph())
-        tf.saved_model.load(
+        self._sess = tf.compat.v1.Session(graph=tf.Graph())
+        tf.compat.v1.saved_model.load(
             self._sess, export_dir=load_path, tags=["serve"], clear_devices=True,
         )
         # These tensor names were found by inspecting the trained model
@@ -284,7 +290,7 @@ class BatchRLLibTFSavedModelPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(
+                input=self._sess.graph.get_tensor_by_name(
                     f"{policy_name}/value_out/BiasAdd:0"
                 ),
                 axis=1,
@@ -294,7 +300,9 @@ class BatchRLLibTFSavedModelPolicy(AgentPolicy):
                 f"{policy_name}/observations:0"
             )
             self._output_node = tf.argmax(
-                self._sess.graph.get_tensor_by_name(f"{policy_name}/fc_out/BiasAdd:0"),
+                input=self._sess.graph.get_tensor_by_name(
+                    f"{policy_name}/fc_out/BiasAdd:0"
+                ),
                 axis=1,
             )
 

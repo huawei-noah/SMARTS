@@ -8,7 +8,7 @@ from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
 from ray.rllib.utils import try_import_tf
 
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 from smarts.env.custom_observations import lane_ttc_observation_adapter
 
 tf = try_import_tf()
@@ -52,12 +52,14 @@ class TrainingModel(FullyConnectedNetwork):
 ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
 
 
-class RLLibTFSavedModelPolicy(AgentPolicy):
+class RLLibTFSavedModelAgent(Agent):
     def __init__(self, path_to_model, observation_space):
         path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
-        self._sess = tf.Session(graph=tf.Graph())
-        tf.saved_model.load(self._sess, export_dir=path_to_model, tags=["serve"])
+        self._sess = tf.compat.v1.Session(graph=tf.Graph())
+        tf.compat.v1.saved_model.load(
+            self._sess, export_dir=path_to_model, tags=["serve"]
+        )
         self._output_node = self._sess.graph.get_tensor_by_name("default_policy/add:0")
         self._input_node = self._sess.graph.get_tensor_by_name(
             "default_policy/observation:0"
@@ -77,11 +79,11 @@ class RLLibTFSavedModelPolicy(AgentPolicy):
 rllib_agent = {
     "agent_spec": AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=500),
-        policy_params={
+        agent_params={
             "path_to_model": Path(__file__).resolve().parent / "model",
             "observation_space": OBSERVATION_SPACE,
         },
-        policy_builder=RLLibTFSavedModelPolicy,
+        agent_builder=RLLibTFSavedModelAgent,
         observation_adapter=observation_adapter,
         reward_adapter=reward_adapter,
         action_adapter=action_adapter,

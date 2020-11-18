@@ -1,9 +1,9 @@
 from smarts.zoo.registry import register
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentPolicy, AgentSpec
+from smarts.core.agent import Agent, AgentSpec
 
 
-class Policy(AgentPolicy):
+class SimpleAgent(Agent):
     def act(self, obs):
         return "keep_lane"
 
@@ -12,7 +12,7 @@ class Policy(AgentPolicy):
 def demo_agent_callable(target_prefix=None, interface=None):
     if interface is None:
         interface = AgentInterface.from_type(AgentType.Laner)
-    return AgentSpec(interface=interface, policy_builder=Policy)
+    return AgentSpec(interface=interface, agent_builder=SimpleAgent)
 
 
 register(

@@ -3,7 +3,7 @@ import pytest
 
 from smarts.core.utils.episodes import episodes
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 
 AGENT_ID = "Agent-007"
 SOCIAL_AGENT_ID = "Alec Trevelyan"
@@ -15,7 +15,7 @@ MAX_EPISODES = 3
 def agent_spec():
     return AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=100),
-        policy_builder=lambda: AgentPolicy.from_function(lambda _: "keep_lane"),
+        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
     )
 
 

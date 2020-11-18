@@ -26,7 +26,6 @@ from dataclasses import dataclass, field
 from typing import Sequence, Tuple, Dict, Any, Union, Optional
 
 import numpy as np
-from scipy.stats import truncnorm
 from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 
@@ -129,6 +128,8 @@ class TruncatedDistribution:
             self.a, self.b = self.b, self.a
 
     def sample(self):
+        from scipy.stats import truncnorm
+
         return truncnorm.rvs(self.a, self.b, loc=self.loc, scale=self.scale)
 
 
@@ -201,26 +202,6 @@ class SocialAgentActor(Actor):
     """
     initial_speed: float = None
     """Set the initial speed, defaults to 0."""
-
-    @classmethod
-    def from_zoo(
-        cls, name, url, package, version, initial_speed=None, policy_kwargs=None
-    ):
-        """A convenience factory method for using policies from the policy zoo. Example,
-
-        SocialAgentActor.from_zoo(
-            name="open-agent",
-            url="http://localhost:8080/open-agent",
-            package="open_agent",
-            version="0.1",
-        )
-        """
-        return cls(
-            name=name,
-            agent_locator=f"{package}:{url}?v={version}",
-            initial_speed=initial_speed,
-            policy_kwargs=policy_kwargs or {},
-        )
 
 
 @dataclass(frozen=True)
@@ -351,6 +332,8 @@ class TrapEntryTactic(EntryTactic):
     """The zone of the hijack area"""
     exclusion_prefixes: Tuple[str, ...] = tuple()
     """The prefixes of vehicles to avoid hijacking"""
+    default_entry_speed: float = None
+    """The speed that the vehicle starts at when defaulting to emitting"""
 
 
 @dataclass(frozen=True)
@@ -542,6 +525,11 @@ class Bubble:
     """Maintained offset to place the travelling bubble relative to the follow
     vehicle if it were facing north.
     """
+    keep_alive: bool = False
+    """If enabled, the social agent actor will be spawned upon first vehicle airlock
+    and be reused for every subsequent vehicle entering the bubble until the episode
+    is over.
+    """
 
     def __post_init__(self):
         if self.margin <= 0:
@@ -552,9 +540,19 @@ class Bubble:
                 "A follow offset must be set if this is a travelling bubble"
             )
 
+        if self.keep_alive and not self.is_boid:
+            # TODO: We may want to remove this restriction in the future
+            raise ValueError(
+                "Only boids can have keep_alive enabled (for persistent boids)"
+            )
+
     @staticmethod
     def to_actor_id(actor, mission_group):
         return SocialAgentId.new(actor.name, group=mission_group)
+
+    @property
+    def is_boid(self):
+        return isinstance(self.actor, BoidAgentActor)
 
 
 @dataclass(frozen=True)

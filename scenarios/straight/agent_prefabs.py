@@ -1,12 +1,18 @@
+import logging
+
 import numpy as np
 
-from smarts.zoo.registry import register
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentPolicy, AgentSpec
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
+from smarts.zoo.registry import register
 
 
-class PoseBoidPolicy(AgentPolicy):
+class PoseBoidAgent(Agent):
+    def __init__(self):
+        self._log = logging.getLogger(self.__class__.__name__)
+        self._log.info(f"{self.__class__.__name__} was created")
+
     def act(self, obs):
         returning = {
             vehicle_id: self._single_act(obs_) for vehicle_id, obs_ in obs.items()
@@ -20,7 +26,11 @@ class PoseBoidPolicy(AgentPolicy):
         return np.array([*wp.pos, wp.heading, dist_to_wp / target_speed])
 
 
-class TrajectoryBoidPolicy(AgentPolicy):
+class TrajectoryBoidAgent(Agent):
+    def __init__(self):
+        self._log = logging.getLogger(self.__class__.__name__)
+        self._log.info(f"{self.__class__.__name__} was created")
+
     def act(self, obs):
         returning = {
             vehicle_id: self._single_act(obs_) for vehicle_id, obs_ in obs.items()
@@ -53,20 +63,16 @@ register(
     locator="pose-boid-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
         interface=AgentInterface(
-            action=ActionSpaceType.MultiTargetPose,
-            waypoints=True,
-            ogm=True,
-            rgb=True,
-            drivable_area_grid_map=True,
+            action=ActionSpaceType.MultiTargetPose, waypoints=True
         ),
-        policy_builder=PoseBoidPolicy,
+        agent_builder=PoseBoidAgent,
     ),
 )
 
 register(
     locator="trajectory-boid-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface(action=ActionSpaceType.Trajectory, waypoints=True,),
-        policy_builder=TrajectoryBoidPolicy,
+        interface=AgentInterface(action=ActionSpaceType.Trajectory, waypoints=True),
+        agent_builder=TrajectoryBoidAgent,
     ),
 )

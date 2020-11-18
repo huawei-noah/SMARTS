@@ -213,7 +213,8 @@ class SMARTS(ShowBase):
         provider_state = self._step_providers(all_agent_actions, dt)
 
         # 3. Step bubble manager and trap manager
-        self._bubble_manager.step()
+        self.vehicle_index.sync()
+        self._bubble_manager.step(self)
         self._trap_manager.step(self)
 
         # 4. Calculate observation and reward
@@ -242,12 +243,7 @@ class SMARTS(ShowBase):
         self._agent_manager.send_observations_to_social_agents(observations)
 
         # 6. Clear done agents
-        done_agents = {id_ for id_ in dones if dones[id_]}
-        agents_to_cleanup = self._agent_manager.teardown_ego_agents(done_agents)
-        if self._should_teardown_done_social_agents:
-            agents_to_cleanup |= self._agent_manager.teardown_social_agents(done_agents)
-
-        self._teardown_agent_vehicles(agents_to_cleanup)
+        self._teardown_done_agents_and_vehicles(dones)
 
         # 7. Perform visualization
         self._try_emit_envision_state(provider_state, observations, scores)
@@ -256,6 +252,21 @@ class SMARTS(ShowBase):
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
         return observations, rewards, dones, extras
+
+    def _teardown_done_agents_and_vehicles(self, dones):
+        done_agents = {id_ for id_ in dones if dones[id_]}
+        agents_to_cleanup = self._agent_manager.teardown_ego_agents(done_agents)
+        if self._should_teardown_done_social_agents:
+            agents_to_teardown = {
+                id_
+                for id_ in done_agents
+                if not self.agent_manager.is_boid_keep_alive_agent(id_)
+            }
+            agents_to_cleanup |= self._agent_manager.teardown_social_agents(
+                agents_to_teardown
+            )
+
+        self._teardown_agent_vehicles(agents_to_cleanup)
 
     def reset(self, scenario: Scenario):
         if scenario == self._scenario and self._reset_agents_only:
@@ -309,17 +320,20 @@ class SMARTS(ShowBase):
         self._setup_road_network()
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
 
-        bubbles = scenario.discover_bubbles()
-        self._bubble_manager = BubbleManager(self, bubbles)
+        self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_network)
         self._trap_manager = TrapManager(scenario)
 
         self._setup_bullet_client(self._bullet_client)
         provider_state = self._setup_providers(self._scenario)
         self._agent_manager.setup_agents(self)
+
         self._harmonize_providers(provider_state)
         self._last_provider_state = provider_state
 
         self._is_setup = True
+
+    def add_provider(self, provider):
+        self._providers.append(provider)
 
     def _setup_road_network(self):
         glb_path = self.scenario.map_glb_filepath
@@ -328,7 +342,7 @@ class SMARTS(ShowBase):
                 "road_network={} already exists. Removing and adding a new "
                 "one from glb_path={}".format(self._road_network_np, glb_path)
             )
-        model_np = self.loader.loadModel(glb_path)
+        model_np = self.loader.loadModel(glb_path, noCache=True)
 
         np = self._root_np.attachNewNode("road_network")
         model_np.reparent_to(np)
@@ -414,7 +428,6 @@ class SMARTS(ShowBase):
         torndown_vehicles = self._vehicle_index.teardown_vehicles_by_actor_ids(
             agent_ids
         )
-        self._bubble_manager.forget_vehicles(torndown_vehicles)
         self._clear_collisions(agent_ids)
 
     def attach_sensors_to_vehicles(self, agent_spec, vehicle_ids):
@@ -480,6 +493,12 @@ class SMARTS(ShowBase):
             )
             == 0
         }
+
+        agents_to_teardown = {
+            id_
+            for id_ in agents_to_teardown
+            if not self.agent_manager.is_boid_keep_alive_agent(id_)
+        }
         self.agent_manager.teardown_social_agents(filter_ids=agents_to_teardown)
 
     def _teardown_vehicles_and_agents(self, vehicle_ids):
@@ -488,6 +507,7 @@ class SMARTS(ShowBase):
             agent_id = self.vehicle_index.actor_id_from_vehicle_id(vehicle_id)
             if agent_id:
                 shadow_and_controlling_agents.add(agent_id)
+
             shadow_agent_id = self.vehicle_index.shadow_actor_id_from_vehicle_id(
                 vehicle_id
             )
@@ -495,8 +515,6 @@ class SMARTS(ShowBase):
                 shadow_and_controlling_agents.add(shadow_agent_id)
 
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
-        self._bubble_manager.forget_vehicles(vehicle_ids)
-
         self.teardown_agents_without_vehicles(shadow_and_controlling_agents)
 
     def _pybullet_provider_sync(self, provider_state: ProviderState):
@@ -669,7 +687,7 @@ class SMARTS(ShowBase):
                     )
                 ]
 
-                if self._agent_manager.is_boid_agent(self, agent_id):
+                if self._agent_manager.is_boid_agent(agent_id):
                     for vehicle_id, vehicle_action in action.items():
                         assert vehicle_id in vehicle_ids
                         provider_actions[vehicle_id] = vehicle_action
@@ -786,7 +804,7 @@ class SMARTS(ShowBase):
                 agent_interface = self._agent_manager.agent_interface_for_agent_id(
                     agent_id
                 )
-                is_boid_agent = self._agent_manager.is_boid_agent(self, agent_id)
+                is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
 
                 for vehicle in agent_vehicles:
                     vehicle_action = action[vehicle.id] if is_boid_agent else action
@@ -859,7 +877,7 @@ class SMARTS(ShowBase):
                 # this is an agent controlled vehicle
                 agent_id = self._vehicle_index.actor_id_from_vehicle_id(v.vehicle_id)
                 agent_obs = obs[agent_id]
-                is_boid_agent = self._agent_manager.is_boid_agent(self, agent_id)
+                is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
                 vehicle_obs = agent_obs[v.vehicle_id] if is_boid_agent else agent_obs
 
                 if self._agent_manager.is_ego(agent_id):
@@ -887,7 +905,7 @@ class SMARTS(ShowBase):
                         for path in paths
                     ]
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
-                    name=self._agent_manager.name_for_agent(agent_id),
+                    name=self._agent_manager.agent_name(agent_id),
                     actor_type=actor_type,
                     vehicle_type=envision_types.VehicleType.Car,
                     position=v.pose.position,

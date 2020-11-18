@@ -49,7 +49,8 @@ function do_install_for_linux {
 function do_install_for_macos {
     echo "Installing sumo (used for traffic simulation and road network)"
     brew tap dlr-ts/sumo
-    brew install sumo spatialindex
+    brew install sumo spatialindex # for sumo
+    brew install geos # for shapely
 
     # start X11 manually the first time, logging in/out will also do the trick
     open -g -a XQuartz.app
