@@ -20,6 +20,7 @@
 import os
 import random
 import logging
+from smarts.core.utils.file import make_dir_in_smarts_log_dir
 import tempfile
 
 import sh
@@ -110,10 +111,7 @@ class RandomRouteGenerator:
 
 class TrafficGenerator:
     def __init__(
-        self,
-        scenario_dir: str,
-        log_dir: str = "/tmp/smarts/_duarouter_routing",
-        overwrite: bool = False,
+        self, scenario_dir: str, log_dir: str = None, overwrite: bool = False,
     ):
         """
         scenario: The path to the scenario directory
@@ -125,7 +123,7 @@ class TrafficGenerator:
         self._road_network_path = os.path.join(self._scenario, "map.net.xml")
         self._road_network = None
         self._random_route_generator = None
-        self._log_dir = os.path.abspath(log_dir)
+        self._log_dir = self._resolve_log_dir(log_dir)
 
     def plan_and_save(
         self, traffic: types.Traffic, name: str, output_dir: str = None, seed: int = 42
@@ -267,3 +265,9 @@ class TrafficGenerator:
             )
 
         return next(self._random_route_generator)
+
+    def _resolve_log_dir(self, log_dir):
+        if log_dir is None:
+            log_dir = make_dir_in_smarts_log_dir("_duarouter_routing")
+
+        return os.path.abspath(log_dir)
