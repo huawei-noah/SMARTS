@@ -46,7 +46,7 @@ setup(
         #       and ray[rllib] under [train] it  prevents rllib from getting installed.
         #       For simplicity we just install both here. In the future we may want to
         #       address this bug head on to keep our SMARTS base install more lean.
-        "ray[rllib]==0.8.*",  # We use Ray for our multiprocessing needs
+        "ray[rllib]==0.8.3",  # We use Ray for our multiprocessing needs
         # The following are for Scenario Studio
         "yattag",
         # The following are for testing
@@ -57,7 +57,7 @@ setup(
         # The following are for /envision
         "tornado",
         "websocket-client",
-        "cloudpickle<1.4.*",
+        "cloudpickle<1.4.0",
         # The following are for the /smarts/algorithms
         "matplotlib",
         "scikit-image",
@@ -66,7 +66,7 @@ setup(
         "PyYAML",
     ],
     extras_require={
-        "train": ["tensorflow==2.2.*", "torch==1.3.*", "torchvision==0.4.*"],
+        "train": ["tensorflow==2.2.1", "torch==1.3.0", "torchvision==0.4.1"],
         "dev": [
             "black==19.10b0",
             "sphinx",
