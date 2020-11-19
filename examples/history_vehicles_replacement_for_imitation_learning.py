@@ -52,6 +52,8 @@ def main(scenarios, headless, seed):
                     {agent_id: agent_action}
                 )
 
+            smarts.destroy()
+
 
 if __name__ == "__main__":
     parser = default_argument_parser("history-vehicles-replacement-example")
