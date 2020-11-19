@@ -17,13 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from functools import lru_cache
+import dataclasses
 import hashlib
 import os
 import shutil
-import dataclasses
-import stat
 import tempfile
+from functools import lru_cache
 
 # https://stackoverflow.com/a/2166841
 def isnamedtupleinstance(x):
