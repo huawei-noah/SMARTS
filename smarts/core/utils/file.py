@@ -24,6 +24,7 @@ import shutil
 import tempfile
 from functools import lru_cache
 
+
 # https://stackoverflow.com/a/2166841
 def isnamedtupleinstance(x):
     t = type(x)

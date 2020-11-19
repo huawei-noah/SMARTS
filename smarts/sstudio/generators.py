@@ -23,14 +23,14 @@ import random
 import tempfile
 
 import sh
-from yattag import Doc
-from yattag import indent
+from yattag import Doc, indent
 
-from . import types
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.core.utils.sumo import sumolib
 from smarts.core.waypoints import Waypoints
+
+from . import types
 
 
 class InvalidRoute(Exception):
