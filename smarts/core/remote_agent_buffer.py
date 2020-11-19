@@ -40,7 +40,8 @@ class RemoteAgentBuffer:
         self.destroy()
 
     def destroy(self):
-        atexit.unregister(self.destroy)
+        if atexit.unregister is not None:
+            atexit.unregister(self.destroy)
         self._quiescing = True
         if self._replenish_thread_is_running():
             self._replenish_thread.join()  # wait for the replenisher to finish
