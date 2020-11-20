@@ -104,7 +104,7 @@ class Accelerometer:
 
 @dataclass
 class Goalpoints:
-    """ Observation of nearby checkpoints """
+    """ Observation of nearby goalpoints """
 
     near_acquisition_radius: float = 50
 
