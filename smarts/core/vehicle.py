@@ -34,7 +34,7 @@ from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
     DrivenPathSensor,
-    GoalpointSensor,
+    CheckpointSensor,
     LidarSensor,
     NeighborhoodVehiclesSensor,
     OGMSensor,
@@ -434,12 +434,12 @@ class Vehicle:
                     sensor_params=agent_interface.lidar.sensor_params,
                 )
             )
-        if agent_interface.goalpoint:
-            vehicle.attach_goalpoint_sensor(
-                GoalpointSensor(
+        if agent_interface.checkpoint:
+            vehicle.attach_checkpoint_sensor(
+                CheckpointSensor(
                     vehicle=vehicle,
                     mission_planner=mission_planner,
-                    acquisition_radius=agent_interface.goalpoint.near_acquisition_radius,
+                    acquisition_radius=agent_interface.checkpoint.near_acquisition_radius,
                 )
             )
 
@@ -496,7 +496,7 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
-            "goalpoint_sensor",
+            "checkpoint_sensor",
         ]
         for sensor_name in sensor_names:
 

@@ -103,8 +103,8 @@ class Accelerometer:
 
 
 @dataclass
-class Goalpoints:
-    """ Observation of nearby goalpoints """
+class Checkpoints:
+    """ Observation of nearby checkpoints """
 
     near_acquisition_radius: float = 50
 
@@ -219,7 +219,7 @@ class AgentInterface:
     Enable acceleration and jerk observations.
     """
 
-    goalpoint: Union[Goalpoints, bool] = True
+    checkpoint: Union[Checkpoints, bool] = True
     """
     Points that must be hit in order to successfully end an episode at the end goal.
     """
@@ -241,7 +241,7 @@ class AgentInterface:
         self.accelerometer = AgentInterface._resolve_config(
             self.accelerometer, Accelerometer
         )
-        self.goalpoint = AgentInterface._resolve_config(self.goalpoint, Goalpoints)
+        self.checkpoint = AgentInterface._resolve_config(self.checkpoint, Checkpoints)
 
     @staticmethod
     def from_type(requested_type: AgentType, **kwargs):
