@@ -36,7 +36,7 @@ from panda3d.core import (
     WindowProperties,
 )
 
-from smarts.core.route import Checkpoint
+from smarts.core.route import ViaPoint
 from smarts.sstudio.types import EdgePointVia
 
 from .coordinates import BoundingBox, Heading
@@ -115,10 +115,10 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 @dataclass
-class CheckpointData:
-    nearest_remaining_checkpoint: Checkpoint
-    hit_checkpoint: List[Tuple[Checkpoint, int]]
-    near_checkpoints: Set[Checkpoint]
+class ViaPointData:
+    nearest_remaining_via_point: ViaPoint
+    hit_via_point: List[Tuple[ViaPoint, int]]
+    near_via_points: Set[ViaPoint]
 
 
 @dataclass
@@ -138,7 +138,7 @@ class Observation:
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
-    checkpoint_data: CheckpointData = None
+    via_point_data: ViaPointData = None
 
 
 @dataclass
@@ -249,20 +249,20 @@ class Sensors:
             else None
         )
 
-        near_checkpoints = []
-        hit_checkpoint = []
-        nearest_remaining_checkpoint = None
-        if vehicle.subscribed_to_checkpoint_sensor:
+        near_via_points = []
+        hit_via_point = []
+        nearest_remaining_via_point = None
+        if vehicle.subscribed_to_via_point_sensor:
             (
-                near_checkpoints,
-                hit_checkpoint,
-                nearest_remaining_checkpoint,
-            ) = vehicle.checkpoint_sensor()
+                near_via_points,
+                hit_via_point,
+                nearest_remaining_via_point,
+            ) = vehicle.via_point_sensor()
 
-        checkpoint_data = CheckpointData(
-            nearest_remaining_checkpoint=nearest_remaining_checkpoint,
-            near_checkpoints=near_checkpoints,
-            hit_checkpoint=hit_checkpoint,
+        via_point_data = ViaPointData(
+            nearest_remaining_via_point=nearest_remaining_via_point,
+            near_via_points=near_via_points,
+            hit_via_point=hit_via_point,
         )
 
         vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
@@ -284,7 +284,7 @@ class Sensors:
 
         done, events = Sensors._is_done_with_events(sim, agent_id, sensor_state)
         events = events._replace(
-            reached_goal=events.reached_goal and not nearest_remaining_checkpoint
+            reached_goal=events.reached_goal and not nearest_remaining_via_point
         )
         return (
             Observation(
@@ -298,7 +298,7 @@ class Sensors:
                 drivable_area_grid_map=drivable_area_grid_map,
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
-                checkpoint_data=checkpoint_data,
+                via_point_data=via_point_data,
             ),
             done,
         )
@@ -955,7 +955,7 @@ class WaypointsSensor(Sensor):
         pass
 
 
-class CheckpointSensor(Sensor):
+class ViaPointSensor(Sensor):
     def __init__(self, vehicle, mission_planner, acquisition_radius):
         self._last_points = set()
         self._mission_planner = mission_planner
@@ -971,15 +971,15 @@ class CheckpointSensor(Sensor):
             if isinstance(point_via, EdgePointVia)
         ]
 
-    def _near(position, checkpoint_position, radius):
-        return squared_dist(position, checkpoint_position) < radius ** 2
+    def _near(position, via_point_position, radius):
+        return squared_dist(position, via_point_position) < radius ** 2
 
     def __call__(self):
         vias = self._mission_vias()
 
-        near_checkpoints = set()
-        hit_checkpoints = set()
-        nearest_remaining_checkpoint = None
+        near_via_points = set()
+        hit_via_points = set()
+        nearest_remaining_via_point = None
         vehicle_pos = self._vehicle.position
         for point_via in vias:
             pos = vec_2d(point_via.position)
@@ -989,17 +989,17 @@ class CheckpointSensor(Sensor):
                 continue
 
             if near:
-                near_checkpoints.add(point_via)
+                near_via_points.add(point_via)
 
             if (
                 self._near(pos, vehicle_pos, point_via.radius)
                 and self.vehicle.speed >= point_via.required_speed
             ):
                 hits = self._via_hits.get(point_via, 0) + 1
-                hit_checkpoints.add(point_via)
+                hit_via_points.add(point_via)
                 self._via_hits[point_via] = hits
 
-        self._last_points = hit_checkpoints | (self._last_points & near_checkpoints)
+        self._last_points = hit_via_points | (self._last_points & near_via_points)
 
         def _ordered_by_position(vias, position):
             return sorted(
@@ -1007,13 +1007,13 @@ class CheckpointSensor(Sensor):
             )
 
         # TODO use a better heuristic of all waypoints for remaining
-        nearest_remaining_checkpoint = _ordered_by_position(
+        nearest_remaining_via_point = _ordered_by_position(
             set(self._mission_vias()) - self._last_points, self._vehicle.position
         )
         return (
-            near_checkpoints,
-            [(via, self._via_hits[via]) for via in hit_checkpoints],
-            nearest_remaining_checkpoint,
+            near_via_points,
+            [(via, self._via_hits[via]) for via in hit_via_points],
+            nearest_remaining_via_point,
         )
 
     def teardown(self):

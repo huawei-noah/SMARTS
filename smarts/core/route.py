@@ -30,7 +30,7 @@ from sumolib.net.edge import Edge  # isort:skip
 
 
 @dataclass(frozen=True)
-class Checkpoint:
+class ViaPoint:
     position: Tuple[float, float]
     radius: float
 
@@ -44,7 +44,7 @@ class Route:
         raise NotImplementedError()
 
     @property
-    def checkpoints(self) -> List[Any]:
+    def via_points(self) -> List[Any]:
         raise NotImplementedError()
 
     @property
@@ -119,7 +119,7 @@ class ShortestRoute(Route):
         self._cached_edges = self._compute_edges()
         self._cached_geometry = self._compute_geometry()
         self._cached_length = self._compute_length()
-        self._checkpoints = self._to_checkpoints(vias, sumo_road_network)
+        self._via_points = self._to_via_points(vias, sumo_road_network)
 
     @property
     def edges(self) -> List[Edge]:
@@ -129,11 +129,11 @@ class ShortestRoute(Route):
     def geometry(self) -> Sequence[Tuple[float, float]]:
         return self._cached_geometry
 
-    def _to_checkpoints(
+    def _to_via_points(
         self, vias: List[EdgePointVia], sumo_road_network: SumoRoadNetwork
-    ) -> List[Checkpoint]:
+    ) -> List[ViaPoint]:
         return [
-            Checkpoint(
+            ViaPoint(
                 sumo_road_network.world_coord_from_offset(
                     sumo_road_network.lane_by_offset(via.edge_id, via.lane_offset),
                     via.offset_into_lane,
@@ -145,8 +145,8 @@ class ShortestRoute(Route):
         ]
 
     @property
-    def checkpoints(self) -> List[Any]:
-        return self._checkpoints
+    def via_points(self) -> List[Any]:
+        return self._via_points
 
     @property
     def length(self) -> float:
