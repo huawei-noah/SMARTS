@@ -104,7 +104,7 @@ class Accelerometer:
 
 @dataclass
 class Checkpoints:
-    """ Observation of nearby checkpoints """
+    """Observation of nearby checkpoints"""
 
     sensor_range_radius: float = 50
 
