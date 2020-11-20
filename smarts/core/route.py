@@ -40,7 +40,7 @@ class Route:
 
     @property
     def edges(self) -> List[Edge]:
-        """An (unordered) guess of edges that this route covers"""
+        """An (unordered) list of edges that this route covers"""
         raise NotImplementedError()
 
     @property
