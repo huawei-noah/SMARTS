@@ -84,14 +84,12 @@ class ShortestRoute(Route):
         start_lane = sumo_road_network.nearest_lane(
             start.position, include_junctions=False, include_special=False,
         )
-        start_edge = start_lane.getEdge()
 
         end_lane = sumo_road_network.nearest_lane(
             goal.position, include_junctions=False, include_special=False,
         )
-        end_edge = end_lane.getEdge()
 
-        edge_constraints = [start_edge]
+        edge_constraints = [start_lane.getEdge()]
 
         last_edge = None
         for edge in vias:
@@ -99,7 +97,7 @@ class ShortestRoute(Route):
                 edge_constraints.append(sumo_road_network.edge_by_id(edge))
             last_edge = edge
 
-        edge_constraints.append(end_edge)
+        edge_constraints.append(end_lane.getEdge())
 
         self.road_network = sumo_road_network
         self.wraps_around = wraps_around
