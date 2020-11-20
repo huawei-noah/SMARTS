@@ -90,20 +90,9 @@ def file_md5_hash(file_path: str) -> str:
 @lru_cache(maxsize=1)
 def smarts_log_dir() -> str:
     ## Following should work for linux and macos
-    # home_dir = os.path.expanduser("~")
-    # _, home_user = os.path.split(home_dir)
-    # temp_dir = os.path.join(tempfile.gettempdir(), "smarts")
-
-    # if not os.path.exists(temp_dir):
-    #     original_mask = os.umask(0)
-    #     try:
-    #         os.makedirs(temp_dir, mode=0o777)
-    #         os.chmod(temp_dir, mode=0o777)
-    #     finally:
-    #         os.umask(original_mask)
-
-    # return os.path.join(temp_dir, f"{home_user}")
-    return tempfile.mkdtemp(prefix="SMARTS_")
+    smarts_dir = os.path.join(os.path.expanduser("~"), "smarts")
+    os.makedirs(smarts_dir, exist_ok=True)
+    return smarts_dir
 
 
 def make_dir_in_smarts_log_dir(dir):
