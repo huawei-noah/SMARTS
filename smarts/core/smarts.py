@@ -91,7 +91,6 @@ class SMARTS(ShowBase):
         visdom: VisdomClient = None,
         timestep_sec=0.1,
         reset_agents_only=False,
-        should_teardown_done_social_agents=True,
     ):
         try:
             super().__init__(self, windowType="offscreen")
@@ -107,7 +106,6 @@ class SMARTS(ShowBase):
 
         self._log = logging.getLogger(self.__class__.__name__)
 
-        self._should_teardown_done_social_agents = should_teardown_done_social_agents
         self._is_setup = False
         self._scenario: Scenario = None
         self._envision: EnvisionClient = envision
@@ -153,7 +151,10 @@ class SMARTS(ShowBase):
         self._agent_manager = AgentManager(agent_interfaces)
         self._vehicle_index = VehicleIndex()
 
-        self._agent_collisions = defaultdict(list)  # list of `Collision` instances
+        # TODO: Should not be stored in SMARTS
+        self._vehicle_collisions = defaultdict(list)  # list of `Collision` instances
+        self._vehicle_states = []
+
         self._bubble_manager = None
         self._trap_manager: TrapManager = None
 
@@ -213,7 +214,7 @@ class SMARTS(ShowBase):
         provider_state = self._step_providers(all_agent_actions, dt)
 
         # 3. Step bubble manager and trap manager
-        self.vehicle_index.sync()
+        self._vehicle_index.sync()
         self._bubble_manager.step(self)
         self._trap_manager.step(self)
 
@@ -254,24 +255,48 @@ class SMARTS(ShowBase):
         return observations, rewards, dones, extras
 
     def _teardown_done_agents_and_vehicles(self, dones):
-        done_agents = {id_ for id_ in dones if dones[id_]}
-        agents_to_cleanup = self._agent_manager.teardown_ego_agents(done_agents)
-        if self._should_teardown_done_social_agents:
-            agents_to_teardown = {
-                id_
-                for id_ in done_agents
-                if not self.agent_manager.is_boid_keep_alive_agent(id_)
-            }
-            agents_to_cleanup |= self._agent_manager.teardown_social_agents(
-                agents_to_teardown
-            )
+        def is_agent_done(agent_id, done):
+            if self._agent_manager.is_boid_agent(agent_id):
+                # Agent is done when all remaining vehicles are done
+                return all(done.values())
 
-        self._teardown_agent_vehicles(agents_to_cleanup)
+            return done
+
+        def done_vehicle_ids(dones, vehicle_index):
+            vehicle_ids = set()
+            for agent_id, done in dones.items():
+                if self._agent_manager.is_boid_agent(agent_id):
+                    for vehicle_id in done:
+                        if done[vehicle_id]:
+                            vehicle_ids.add(vehicle_id)
+                elif done:
+                    ids = vehicle_index.vehicle_ids_by_actor_id(agent_id)
+                    assert len(ids) == 1
+                    vehicle_ids.add(ids[0])
+
+            return vehicle_ids
+
+        done_agents = {id_ for id_, done in dones.items() if is_agent_done(id_, done)}
+        agents_to_cleanup = self._agent_manager.teardown_ego_agents(done_agents)
+        agents_to_teardown = {
+            id_
+            for id_ in done_agents
+            if not self.agent_manager.is_boid_keep_alive_agent(id_)
+        }
+        agents_to_cleanup |= self._agent_manager.teardown_social_agents(
+            agents_to_teardown
+        )
+
+        self._teardown_agent_vehicles(done_vehicle_ids(dones, self._vehicle_index))
 
     def reset(self, scenario: Scenario):
         if scenario == self._scenario and self._reset_agents_only:
+            vehicle_ids_to_teardown = []
             agent_ids = self._agent_manager.teardown_ego_agents()
-            self._teardown_agent_vehicles(agent_ids)
+            for agent_id in agent_ids:
+                ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
+                vehicle_ids_to_teardown.extend(ids)
+            self._teardown_agent_vehicles(set(vehicle_ids_to_teardown))
             self._trap_manager.init_traps(scenario)
             self._agent_manager.init_ego_agents(self)
             self._sync_panda3d()
@@ -424,11 +449,9 @@ class SMARTS(ShowBase):
 
         super().destroy()
 
-    def _teardown_agent_vehicles(self, agent_ids):
-        torndown_vehicles = self._vehicle_index.teardown_vehicles_by_actor_ids(
-            agent_ids
-        )
-        self._clear_collisions(agent_ids)
+    def _teardown_agent_vehicles(self, vehicle_ids):
+        self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
+        self._clear_collisions(vehicle_ids)
 
     def attach_sensors_to_vehicles(self, agent_spec, vehicle_ids):
         self._agent_manager.attach_sensors_to_vehicles(
@@ -487,7 +510,7 @@ class SMARTS(ShowBase):
             for agent_id in agent_ids
             # Only clean-up when there are no controlled agents left (e.g. boids)
             if len(
-                self.vehicle_index.vehicles_by_actor_id(
+                self._vehicle_index.vehicles_by_actor_id(
                     agent_id, include_shadowers=True
                 )
             )
@@ -504,11 +527,11 @@ class SMARTS(ShowBase):
     def _teardown_vehicles_and_agents(self, vehicle_ids):
         shadow_and_controlling_agents = set()
         for vehicle_id in vehicle_ids:
-            agent_id = self.vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
             if agent_id:
                 shadow_and_controlling_agents.add(agent_id)
 
-            shadow_agent_id = self.vehicle_index.shadow_actor_id_from_vehicle_id(
+            shadow_agent_id = self._vehicle_index.shadow_actor_id_from_vehicle_id(
                 vehicle_id
             )
             if shadow_agent_id:
@@ -733,65 +756,28 @@ class SMARTS(ShowBase):
         indices = numpy.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 
-    def agent_reached_goal(self, agent_id):
-        # TODO: If any vehicle reached the goal we consider the agent having reached
-        #       its goal. Is this the behaviour we want?
-        vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
-        for vehicle in vehicles:
-            sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-            distance_travelled = vehicle.trip_meter_sensor()
-            mission = sensor_state.mission_planner.mission
-            reached_goal = mission.is_complete(vehicle, distance_travelled)
-            if reached_goal:
-                return True
-
-        return False
-
-    def agent_is_on_shoulder(self, agent_id):
-        vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
-        for vehicle in vehicles:
-            if any(
-                [
-                    not self.scenario.road_network.point_is_within_road(
-                        corner_coordinate
-                    )
-                    for corner_coordinate in vehicle.bounding_box
-                ]
-            ):
-                return True
-        return False
-
-    def agent_is_off_road(self, agent_id):
-        vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
-        for vehicle in vehicles:
-            if self.scenario.road_network.point_is_within_road(vehicle.position):
-                return False
-
-        return len(vehicles) > 0
-
-    def agent_did_collide(self, agent_id):
+    def vehicle_did_collide(self, vehicle_id):
         return (
             len(
                 [
                     c
-                    for c in self._agent_collisions[agent_id]
+                    for c in self._vehicle_collisions[vehicle_id]
                     if c.collidee_id != self._ground_bullet_id
                 ]
             )
             > 0
         )
 
-    def agent_collisions(self, agent_id):
-        # Filter out off-road collisions.
+    def vehicle_collisions(self, vehicle_id):
         return [
             c
-            for c in self._agent_collisions[agent_id]
+            for c in self._vehicle_collisions[vehicle_id]
             if c.collidee_id != self._ground_bullet_id
         ]
 
-    def _clear_collisions(self, agent_ids):
-        for agent_id in agent_ids:
-            self._agent_collisions.pop(agent_id, None)
+    def _clear_collisions(self, vehicle_ids):
+        for vehicle_id in vehicle_ids:
+            self._vehicle_collisions.pop(vehicle_id, None)
 
     def _perform_agent_actions(self, agent_actions):
         for agent_id, action in agent_actions.items():
@@ -831,7 +817,7 @@ class SMARTS(ShowBase):
             vehicle.sync_to_panda3d()
 
     def _process_collisions(self):
-        self._agent_collisions = defaultdict(list)  # list of `Collision` instances
+        self._vehicle_collisions = defaultdict(list)  # list of `Collision` instances
 
         for vehicle_id in self._vehicle_index.agent_vehicle_ids:
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
@@ -848,7 +834,7 @@ class SMARTS(ShowBase):
                 collidee = self._bullet_id_to_vehicle(bullet_id)
                 collision = self._node_to_collision(collidee.np.node())
                 agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-                self._agent_collisions[agent_id].append(collision)
+                self._vehicle_collisions[agent_id].append(collision)
 
     def _bullet_id_to_vehicle(self, bullet_id):
         for vehicle in self._vehicle_index.vehicles:

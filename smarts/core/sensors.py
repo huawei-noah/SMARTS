@@ -255,7 +255,10 @@ class Sensors:
         rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
         lidar = vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
 
-        done, events = Sensors._is_done_with_events(sim, agent_id, sensor_state)
+        done, events = Sensors._is_done_with_events(
+            sim, agent_id, vehicle, sensor_state
+        )
+
         return (
             Observation(
                 events=events,
@@ -277,26 +280,30 @@ class Sensors:
         return sensor_state.step()
 
     @classmethod
-    def _is_done_with_events(cls, sim, agent_id, sensor_state):
+    def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state):
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
-        collided = sim.agent_did_collide(agent_id) if done_criteria.collision else False
+        collided = (
+            sim.vehicle_did_collide(vehicle) if done_criteria.collision else False
+        )
         is_off_road = (
-            sim.agent_is_off_road(agent_id) if done_criteria.off_road else False
+            cls._vehicle_is_off_road(sim, vehicle) if done_criteria.off_road else False
         )
         is_on_shoulder = (
-            sim.agent_is_on_shoulder(agent_id) if done_criteria.on_shoulder else False
+            cls._vehicle_is_on_shoulder(sim, vehicle)
+            if done_criteria.on_shoulder
+            else False
         )
         is_not_moving = (
-            cls._agent_vehicle_is_not_moving(sim, agent_id)
+            cls._vehicle_is_not_moving(sim, vehicle)
             if done_criteria.not_moving
             else False
         )
-        reached_goal = sim.agent_reached_goal(agent_id)
+        reached_goal = cls._agent_reached_goal(sim, vehicle)
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
-        is_off_route, is_wrong_way = cls._agent_vehicle_is_off_route_and_wrong_way(
-            sim, agent_id
+        is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
+            sim, vehicle
         )
 
         done = (
@@ -310,9 +317,8 @@ class Sensors:
             or (is_wrong_way and done_criteria.wrong_way)
         )
 
-        # TODO: These events should operate at a per-vehicle level
         events = Events(
-            collisions=sim.agent_collisions(agent_id),
+            collisions=sim.vehicle_collisions(vehicle.id),
             off_road=is_off_road,
             reached_goal=reached_goal,
             reached_max_episode_steps=reached_max_episode_steps,
@@ -323,7 +329,46 @@ class Sensors:
         return done, events
 
     @classmethod
-    def _agent_vehicle_is_off_route_and_wrong_way(cls, sim, agent_id):
+    def _agent_reached_goal(cls, sim, vehicle):
+        sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+        distance_travelled = vehicle.trip_meter_sensor()
+        mission = sensor_state.mission_planner.mission
+        return mission.is_complete(vehicle, distance_travelled)
+
+    @classmethod
+    def _vehicle_is_off_road(cls, sim, vehicle):
+        if sim.scenario.road_network.point_is_within_road(vehicle.position):
+            return False
+
+        return True
+
+    @classmethod
+    def _vehicle_is_on_shoulder(cls, sim, vehicle):
+        return any(
+            [
+                not sim.scenario.road_network.point_is_within_road(corner_coordinate)
+                for corner_coordinate in vehicle.bounding_box
+            ]
+        )
+
+    @classmethod
+    def _vehicle_is_not_moving(cls, sim, vehicle):
+        last_n_seconds_considered = 60
+
+        # Flag if the vehicle has been immobile for the past 60 seconds
+        if sim.elapsed_sim_time < last_n_seconds_considered:
+            return False
+
+        distance = vehicle.driven_path_sensor.distance_travelled(
+            sim, last_n_seconds=last_n_seconds_considered
+        )
+
+        # Due to controller instabilities there may be some movement even when a
+        # vehicle is "stopped". Here we allow 1m of total distance in 60 seconds.
+        return distance < 1
+
+    @classmethod
+    def _vehicle_is_off_route_and_wrong_way(cls, sim, vehicle):
         """Determines if the agent is on route and on the correct side of the road.
 
         Args:
@@ -338,61 +383,53 @@ class Sensors:
                 Actor's vehicle is going against the lane travel direction.
         """
 
-        vehicles = sim.vehicle_index.vehicles_by_actor_id(agent_id)
+        sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+        route_edges = sensor_state.mission_planner.route.edges
 
-        # TODO: check vehicles for agent individually
-        for vehicle in vehicles:
-            sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-            route_edges = sensor_state.mission_planner.route.edges
+        vehicle_pos = vehicle.position[:2]
+        vehicle_minimum_radius_bounds = (
+            np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
+        )
+        # Check that center of vehicle is still close to route
+        # Most lanes are around 3.2 meters wide
+        nearest_lanes = sim.scenario.road_network.nearest_lanes(
+            vehicle_pos, radius=vehicle_minimum_radius_bounds + 5
+        )
 
-            vehicle_pos = vehicle.position[:2]
-            vehicle_minimum_radius_bounds = (
-                np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
+        # No road nearby.
+        if not nearest_lanes:
+            return (True, False)
+
+        nearest_lane, _ = nearest_lanes[0]
+
+        # Route is endless
+        if not route_edges:
+            is_wrong_way = cls._vehicle_is_wrong_way(sim, vehicle, nearest_lane.getID())
+            return (False, is_wrong_way)
+
+        closest_edges = []
+        used_edges = set()
+        for lane, _ in nearest_lanes:
+            edge = lane.getEdge()
+            if edge in used_edges:
+                continue
+            used_edges.add(edge)
+            closest_edges.append(edge)
+
+        # TODO: Narrow down the route edges to check using distance travelled.
+        is_off_route, route_edge_or_oncoming = cls._vehicle_off_route_info(
+            sim.scenario.root_filepath, tuple(route_edges), tuple(closest_edges)
+        )
+        is_wrong_way = False
+        if route_edge_or_oncoming:
+            # Lanes from an edge are parallel so any lane from the edge will do for direction check
+            # but the innermost lane will be the last lane in the edge and usually the closest.
+            lane_to_check = route_edge_or_oncoming.getLanes()[-1]
+            is_wrong_way = cls._vehicle_is_wrong_way(
+                sim, vehicle, lane_to_check.getID()
             )
-            # Check that center of vehicle is still close to route
-            # Most lanes are around 3.2 meters wide
-            nearest_lanes = sim.scenario.road_network.nearest_lanes(
-                vehicle_pos, radius=vehicle_minimum_radius_bounds + 5
-            )
 
-            # No road nearby.
-            if not nearest_lanes:
-                return (True, False)
-
-            nearest_lane, _ = nearest_lanes[0]
-
-            # Route is endless
-            if not route_edges:
-                is_wrong_way = cls._vehicle_is_wrong_way(
-                    sim, vehicle, nearest_lane.getID()
-                )
-                return (False, is_wrong_way)
-
-            closest_edges = []
-            used_edges = set()
-            for lane, _ in nearest_lanes:
-                edge = lane.getEdge()
-                if edge in used_edges:
-                    continue
-                used_edges.add(edge)
-                closest_edges.append(edge)
-
-            # TODO: Narrow down the route edges to check using distance travelled.
-            is_off_route, route_edge_or_oncoming = cls._vehicle_off_route_info(
-                sim.scenario.root_filepath, tuple(route_edges), tuple(closest_edges)
-            )
-            is_wrong_way = False
-            if route_edge_or_oncoming:
-                # Lanes from an edge are parallel so any lane from the edge will do for direction check
-                # but the innermost lane will be the last lane in the edge and usually the closest.
-                lane_to_check = route_edge_or_oncoming.getLanes()[-1]
-                is_wrong_way = cls._vehicle_is_wrong_way(
-                    sim, vehicle, lane_to_check.getID()
-                )
-            return (is_off_route, is_wrong_way)
-
-        # Vehicle is not on route
-        return (len(vehicles) > 0, False)
+        return (is_off_route, is_wrong_way)
 
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, lane_id):
@@ -463,28 +500,6 @@ class Sensors:
                 return candidate
 
         return None
-
-    @classmethod
-    def _agent_vehicle_is_not_moving(cls, sim, agent_id):
-        last_n_seconds_considered = 60
-        vehicles = sim.vehicle_index.vehicles_by_actor_id(agent_id)
-
-        for vehicle in vehicles:
-            sensor = vehicle.driven_path_sensor
-            # Flag if the vehicle has been immobile for the past 60 seconds
-            if sim.elapsed_sim_time < last_n_seconds_considered:
-                return False
-
-            distance = sensor.distance_travelled(
-                sim, last_n_seconds=last_n_seconds_considered
-            )
-
-            # Due to controller instabilities there may be some movement even when a
-            # vehicle is "stopped". Here we allow 1m of total distance in 60 seconds.
-            if distance < 1:
-                return True
-
-        return False
 
     @classmethod
     def clean_up(cls):
