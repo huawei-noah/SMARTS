@@ -91,11 +91,12 @@ class ShortestRoute(Route):
 
         edge_constraints = [start_lane.getEdge()]
 
-        last_edge = None
-        for edge in vias:
-            if edge != last_edge:
-                edge_constraints.append(sumo_road_network.edge_by_id(edge))
-            last_edge = edge
+        last_edge_id = None
+        for via in vias:
+            edge_id = via.edge_id
+            if edge_id != last_edge_id:
+                edge_constraints.append(sumo_road_network.edge_by_id(edge_id))
+            last_edge_id = edge_id
 
         edge_constraints.append(end_lane.getEdge())
 
