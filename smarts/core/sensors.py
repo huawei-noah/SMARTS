@@ -22,7 +22,7 @@ import time
 from collections import deque, namedtuple
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, List, NamedTuple, Tuple
+from typing import Dict, List, NamedTuple, Set, Tuple
 
 import numpy as np
 from direct.showbase.ShowBase import ShowBase
@@ -36,6 +36,7 @@ from panda3d.core import (
     WindowProperties,
 )
 
+from smarts.core.route import Checkpoint
 from smarts.sstudio.types import EdgePointVia
 
 from .coordinates import BoundingBox, Heading
@@ -115,9 +116,9 @@ class DrivableAreaGridMap(NamedTuple):
 
 @dataclass
 class CheckpointData:
-    nearest_remaining_checkpoint: Any
-    hit_checkpoint: Any
-    near_checkpoints: Any
+    nearest_remaining_checkpoint: Checkpoint
+    hit_checkpoint: List[Tuple[Checkpoint, int]]
+    near_checkpoints: Set[Checkpoint]
 
 
 @dataclass
