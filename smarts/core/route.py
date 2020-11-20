@@ -17,12 +17,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import List, Sequence, Tuple
-from numpy import unique
-from smarts.core.sumo_road_network import SumoRoadNetwork
+from dataclasses import dataclass
+from typing import Any, List, Sequence, Tuple
 
-from .utils.sumo import sumolib
-from sumolib.net.edge import Edge
+from numpy import unique
+
+from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.sstudio.types import EdgePointVia
+
+from .utils.sumo import sumolib  # isort:skip
+from sumolib.net.edge import Edge  # isort:skip
+
+
+@dataclass(frozen=True)
+class Goalpoint:
+    position: Tuple[float, float]
+    radius: float
 
 
 class Route:
@@ -30,7 +40,11 @@ class Route:
 
     @property
     def edges(self) -> List[Edge]:
-        """An (unordered) list of edges that this route covers"""
+        """An (unordered) guess of edges that this route covers"""
+        raise NotImplementedError()
+
+    @property
+    def goalpoints(self) -> List[Any]:
         raise NotImplementedError()
 
     @property
@@ -62,9 +76,27 @@ class ShortestRoute(Route):
     def __init__(
         self,
         sumo_road_network: SumoRoadNetwork,
-        edge_constraints: Sequence[Edge],
+        start,
+        goal,
+        vias,
         wraps_around: bool = False,
     ):
+        start_lane = sumo_road_network.nearest_lane(
+            start.position, include_junctions=False, include_special=False,
+        )
+        start_edge = start_lane.getEdge()
+
+        end_lane = sumo_road_network.nearest_lane(
+            goal.position, include_junctions=False, include_special=False,
+        )
+        end_edge = end_lane.getEdge()
+
+        edge_constraints: Sequence[Edge] = [
+            sumo_road_network.edge_by_id(edge.edge_id) for edge in vias
+        ]
+
+        edge_constraints = [start_edge] + edge_constraints + [end_edge]
+
         self.road_network = sumo_road_network
         self.wraps_around = wraps_around
 
@@ -84,6 +116,7 @@ class ShortestRoute(Route):
         self._cached_edges = self._compute_edges()
         self._cached_geometry = self._compute_geometry()
         self._cached_length = self._compute_length()
+        self._goalpoints = self._to_goalpoints(vias, sumo_road_network)
 
     @property
     def edges(self) -> List[Edge]:
@@ -92,6 +125,25 @@ class ShortestRoute(Route):
     @property
     def geometry(self) -> Sequence[Tuple[float, float]]:
         return self._cached_geometry
+
+    def _to_goalpoints(
+        self, vias: List[EdgePointVia], sumo_road_network: SumoRoadNetwork
+    ) -> List[Goalpoint]:
+        return [
+            Goalpoint(
+                sumo_road_network.world_coord_from_offset(
+                    sumo_road_network.lane_by_offset(via.edge_id, via.lane_offset),
+                    via.offset_into_lane,
+                ),
+                via.hit_radius,
+            )
+            for via in vias
+            if isinstance(via, EdgePointVia)
+        ]
+
+    @property
+    def goalpoints(self) -> List[Any]:
+        return self._goalpoints
 
     @property
     def length(self) -> float:

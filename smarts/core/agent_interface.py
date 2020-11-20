@@ -17,13 +17,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from dataclasses import dataclass, field, replace
 from enum import IntEnum
-from dataclasses import dataclass, replace, field
-from typing import Union, Optional
+from typing import Optional, Union
 
 from .controllers import ActionSpaceType
-from .lidar_sensor_params import SensorParams as LidarSensorParams
 from .lidar_sensor_params import BasicLidar
+from .lidar_sensor_params import SensorParams as LidarSensorParams
 
 
 @dataclass
@@ -100,6 +100,13 @@ class NeighborhoodVehicles:
 @dataclass
 class Accelerometer:
     pass
+
+
+@dataclass
+class Goalpoints:
+    """ Observation of nearby checkpoints """
+
+    near_acquisition_radius: float = 50
 
 
 class AgentType(IntEnum):
@@ -208,6 +215,14 @@ class AgentInterface:
     """
 
     accelerometer: Union[Accelerometer, bool] = True
+    """
+    Enable acceleration and jerk observations.
+    """
+
+    goalpoint: Union[Goalpoints, bool] = True
+    """
+    Points that must be hit in order to successfully end an episode at the end goal.
+    """
 
     def __post_init__(self):
         self.neighborhood_vehicles = AgentInterface._resolve_config(
@@ -226,6 +241,7 @@ class AgentInterface:
         self.accelerometer = AgentInterface._resolve_config(
             self.accelerometer, Accelerometer
         )
+        self.goalpoint = AgentInterface._resolve_config(self.goalpoint, Goalpoints)
 
     @staticmethod
     def from_type(requested_type: AgentType, **kwargs):

@@ -22,29 +22,28 @@ import json
 import logging
 import math
 import os
-import sys
 import pickle
 import random
 import uuid
-
-import numpy as np
-
-from dataclasses import dataclass, field
+from dataclasses import astuple, dataclass, field
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, Sequence, Tuple, Union
 
-from .data_model import SocialAgent
-from .sumo_road_network import SumoRoadNetwork
-from .waypoints import Waypoints
-from .coordinates import Heading
-from .utils.math import vec_to_radians
-from .utils.file import path2hash, file_md5_hash
-from .utils.id import SocialAgentId
-from .route import ShortestRoute
+import numpy as np
+
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic
+from smarts.sstudio.types import EdgeDestination, EdgePointVia, EntryTactic
+
+from .coordinates import Heading
+from .data_model import SocialAgent
+from .route import ShortestRoute
+from .sumo_road_network import SumoRoadNetwork
+from .utils.file import file_md5_hash, path2hash
+from .utils.id import SocialAgentId
+from .utils.math import vec_to_radians
+from .waypoints import Waypoints
 
 
 @dataclass(frozen=True)
@@ -108,7 +107,9 @@ class Mission:
     goal: Goal
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    via: Tuple[str] = field(default_factory=tuple)
+    via: Tuple[Union[sstudio_types.EdgeVia, sstudio_types.EdgePointVia], ...,] = field(
+        default_factory=tuple
+    )
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
 
@@ -128,7 +129,9 @@ class LapMission:
     num_laps: int = None  # None means infinite # of laps
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    via: Tuple[str] = field(default_factory=tuple)
+    via: Tuple[Union[sstudio_types.EdgeVia, sstudio_types.EdgePointVia], ...,] = field(
+        default_factory=tuple
+    )
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
 
@@ -531,25 +534,33 @@ class Scenario:
             else:
                 return float(offset)
 
-        def to_position_and_heading(edge_id, lane_index, offset, road_network):
-            edge = road_network.edge_by_id(edge_id)
-            lane = edge.getLanes()[lane_index]
-            offset = resolve_offset(offset, lane.getLength())
-            position = road_network.world_coord_from_offset(lane, offset)
-            lane_vector = road_network.lane_vector_at_offset(lane, offset)
-            heading = vec_to_radians(lane_vector)
+        def to_position_and_heading(destination, road_network):
+            edge_point_via = destination
+            position = (0, 0)
+            heading = 0
+            if isinstance(destination, EdgeDestination):
+                edge_point_via = destination
+
+            if isinstance(edge_point_via, EdgePointVia):
+                edge_id, lane_index, offset, _ = astuple(destination)
+                edge = road_network.edge_by_id(edge_id)
+                lane = edge.getLanes()[lane_index]
+                offset = resolve_offset(offset, lane.getLength())
+                position = road_network.world_coord_from_offset(lane, offset)
+                lane_vector = road_network.lane_vector_at_offset(lane, offset)
+                heading = vec_to_radians(lane_vector)
             return tuple(position), Heading(heading)
 
         # For now we discard the route and just take the start and end to form our
         # missions.
         if isinstance(mission, sstudio_types.Mission):
-            position, heading = to_position_and_heading(
-                *mission.route.begin, road_network,
+            start_position, heading = to_position_and_heading(
+                mission.route.begin, road_network,
             )
-            start = Start(position, heading)
+            start = Start(start_position, heading)
 
-            position, _ = to_position_and_heading(*mission.route.end, road_network,)
-            goal = PositionalGoal(position, radius=2)
+            goal_position, _ = to_position_and_heading(mission.route.end, road_network,)
+            goal = PositionalGoal(goal_position, radius=2)
 
             return Mission(
                 start=start,
@@ -559,8 +570,10 @@ class Scenario:
                 entry_tactic=mission.entry_tactic,
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
-            position, heading = to_position_and_heading(*mission.begin, road_network,)
-            start = Start(position, heading)
+            start_position, heading = to_position_and_heading(
+                mission.begin, road_network,
+            )
+            start = Start(start_position, heading)
 
             return Mission(
                 start=start,
@@ -569,26 +582,18 @@ class Scenario:
                 entry_tactic=mission.entry_tactic,
             )
         elif isinstance(mission, sstudio_types.LapMission):
-            start_edge_id, start_lane, start_edge_offset = mission.route.begin
-            end_edge_id, end_lane, end_edge_offset = mission.route.end
-
-            travel_edge = road_network.edge_by_id(start_edge_id)
-            if start_edge_id == end_edge_id:
-                travel_edge = list(travel_edge.getOutgoing())[0]
-
-            end_edge = road_network.edge_by_id(end_edge_id)
-            via_edges = [road_network.edge_by_id(e) for e in mission.route.via]
-
             route_length = ShortestRoute(
                 road_network,
-                edge_constraints=[travel_edge] + via_edges + [end_edge],
+                start=mission.route.begin,
+                goal=mission.route.end,
+                vias=mission.route.via,
                 wraps_around=True,
             ).length
 
             start_position, start_heading = to_position_and_heading(
-                *mission.route.begin, road_network,
+                mission.route.begin, road_network,
             )
-            end_position, _ = to_position_and_heading(*mission.route.end, road_network,)
+            end_position, _ = to_position_and_heading(mission.route.end, road_network,)
 
             return LapMission(
                 start=Start(start_position, start_heading),

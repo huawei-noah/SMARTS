@@ -17,31 +17,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import math
 import logging
-import re
+import math
 import random
+import re
 from dataclasses import dataclass
-from typing import Union, Sequence, Tuple
+from typing import Sequence, Tuple, Union
 
 import numpy as np
-from shapely import ops
-from shapely.geometry import (
-    Polygon,
-    MultiPolygon,
-    LineString,
-)
-from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
-from shapely.ops import triangulate
-
 import trimesh
 import trimesh.scene
+from shapely import ops
+from shapely.geometry import LineString, MultiPolygon, Polygon
+from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
+from shapely.ops import triangulate
 from trimesh.exchange import gltf
 
-from .utils.math import rotate_around_point, sign as smrt_sign
-from .utils.sumo import sumolib
-from sumolib.net.lane import Lane
-from sumolib.net.edge import Edge
+from .utils.math import rotate_around_point
+
+from .utils.sumo import sumolib  # isort:skip
+from sumolib.net.lane import Lane  # isort:skip
+from sumolib.net.edge import Edge  # isort:skip
 
 
 def _convert_camera(camera):
@@ -190,6 +186,9 @@ class SumoRoadNetwork:
 
     def edge_by_id(self, edge_id):
         return self._graph.getEdge(edge_id)
+
+    def lane_by_offset(self, edge_id, lane_idx):
+        return self._graph.edge_by_id(edge_id).getLane(lane_idx)
 
     def lane_by_id(self, lane_id):
         return self._graph.getLane(lane_id)

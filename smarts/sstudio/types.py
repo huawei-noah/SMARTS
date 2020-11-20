@@ -17,22 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import re
-import math
-import random
-import itertools
 import collections.abc as collections_abc
+import random
 from dataclasses import dataclass, field
-from typing import Sequence, Tuple, Dict, Any, Union, Optional
+from functools import lru_cache
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-import numpy as np
-from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
+from shapely.geometry import GeometryCollection, MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
-from smarts.core.utils.id import SocialAgentId
-from smarts.core.waypoints import Waypoint, Waypoints
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.utils.id import SocialAgentId
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -219,6 +215,29 @@ class BoidAgentActor(SocialAgentActor):
 
 
 @dataclass(frozen=True)
+class EdgeVia:
+    """ An edge that the actor must pass through """
+
+    edge_id: str
+
+
+@dataclass(frozen=True)
+class EdgePointVia:
+    """ A point on an edge that an actor must pass through """
+
+    edge_id: str
+    lane_offset: int
+    offset_into_lane: Any
+    hit_radius: float
+
+
+@dataclass(frozen=True)
+class EdgeDestination(EdgePointVia):
+    def __repr__(self) -> str:
+        return f"{self.edge_id}_{self.lane_offset}_{self.offset_into_lane}"
+
+
+@dataclass(frozen=True)
 class Route:
     """A route is represented by begin and end edge IDs, with an optional list of
     itermediary edge IDs. When an intermediary is not specified the router will
@@ -226,7 +245,7 @@ class Route:
     """
 
     ## edge, lane index, offset
-    begin: Tuple[str, int, Any]
+    begin: Union[Tuple[str, int, Any], EdgeDestination]
     """The (edge, lane_index, offset) details of the start location for the route.
 
     edge:
@@ -237,7 +256,7 @@ class Route:
         The offset in metres into the lane. Also acceptable\\: "max", "random"
     """
     ## edge, lane index, offset
-    end: Tuple[str, int, Any]
+    end: Union[Tuple[str, int, Any], EdgeDestination]
     """The (edge, lane_index, offset) details of the end location for the route.
 
     edge:
@@ -248,19 +267,41 @@ class Route:
         The offset in metres into the lane. Also acceptable\\: "max", "random"
     """
 
-    # Edges we want to make sure this route includes
-    via: Tuple[str, ...] = field(default_factory=tuple)
-    """The ids of edges that must be included in the route between `begin` and `end`."""
+    # Via we want to make sure this route includes
+    via: Tuple[Union[EdgeVia, EdgePointVia], ...] = field(default_factory=tuple)
+    """The via that must be included in the route between `begin` and `end`."""
+
+    def __post_init__(self):
+        if isinstance(self.begin, tuple):
+            object.__setattr__(
+                self, "begin", EdgeDestination(*self.begin, hit_radius=5)
+            )
+
+        if isinstance(self.end, tuple):
+            object.__setattr__(self, "end", EdgeDestination(*self.end, hit_radius=5))
 
     @property
     def id(self) -> str:
-        return "route-{}-{}-{}-".format(
-            "_".join(map(str, self.begin)), "_".join(map(str, self.end)), hash(self),
-        )
+        return "route-{}-{}-{}-".format(self.begin, self.end, hash(self),)
+
+    @property
+    @lru_cache(maxsize=1)
+    def route(self):
+        return (self.begin,) + self.via + (self.end,)
 
     @property
     def edges(self):
-        return (self.begin[0],) + self.via + (self.end[0],)
+        return (
+            (self.begin.edge_id,)
+            + tuple(
+                [
+                    edge_via.edge_id
+                    for edge_via in self.via
+                    if isinstance(edge_via, EdgeVia)
+                ]
+            )
+            + (self.end.edge_id,)
+        )
 
 
 @dataclass(frozen=True)
@@ -354,7 +395,7 @@ class Mission:
 class EndlessMission:
     """The descriptor for an actor's mission that has no end."""
 
-    begin: Tuple[str, int, float]
+    begin: Union[Tuple[str, int, Any], EdgeDestination]
     """The (edge, lane_index, offset) details of the start location for the route.
 
     edge:
@@ -368,6 +409,12 @@ class EndlessMission:
     """The earliest simulation time that this mission starts"""
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission"""
+
+    def __post_init__(self):
+        if isinstance(self.begin, tuple):
+            object.__setattr__(
+                self, "begin", EdgeDestination(*self.begin, hit_radius=5)
+            )
 
 
 @dataclass(frozen=True)

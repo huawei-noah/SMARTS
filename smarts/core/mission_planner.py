@@ -21,12 +21,11 @@ import random
 from math import isclose
 from typing import Optional
 
-from smarts.sstudio.types import MapZone
-from .sumo_road_network import SumoRoadNetwork
-from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
-from .waypoints import Waypoints
-from .route import ShortestRoute, EmptyRoute
 from .coordinates import Pose
+from .route import EmptyRoute, ShortestRoute
+from .scenario import EndlessGoal, LapMission, Mission, Start
+from .sumo_road_network import SumoRoadNetwork
+from .waypoints import Waypoints
 
 
 class PlanningError(Exception):
@@ -43,7 +42,7 @@ class MissionPlanner:
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
-    ):
+    ) -> Mission:
         assert min_range_along_lane > 0  # Need to start further than beginning of lane
         assert max_range_along_lane < 1  # Cannot start past end of lane
         assert min_range_along_lane < max_range_along_lane  # Min must be less than max
@@ -65,33 +64,17 @@ class MissionPlanner:
             entry_tactic=None,
         )
 
-    def plan(self, mission: Optional[Mission]):
+    def plan(self, mission: Optional[Mission]) -> Mission:
         self._mission = mission or self.random_endless_mission()
 
         if not self._mission.has_fixed_route:
             self._route = EmptyRoute()
         else:
-            start_lane = self._road_network.nearest_lane(
-                self._mission.start.position,
-                include_junctions=False,
-                include_special=False,
-            )
-            start_edge = start_lane.getEdge()
-
-            end_lane = self._road_network.nearest_lane(
-                self._mission.goal.position,
-                include_junctions=False,
-                include_special=False,
-            )
-            end_edge = end_lane.getEdge()
-
-            intermediary_edges = [
-                self._road_network.edge_by_id(edge) for edge in self._mission.via
-            ]
-
             self._route = ShortestRoute(
                 self._road_network,
-                edge_constraints=[start_edge] + intermediary_edges + [end_edge],
+                start=self._mission.start,
+                goal=self._mission.goal,
+                vias=self._mission.via,
                 wraps_around=isinstance(self._mission, LapMission),
             )
 
@@ -105,7 +88,7 @@ class MissionPlanner:
                     "Unable to find a route between start={} and end={}. If either of "
                     "these are junctions (not well supported today) please switch to "
                     "edges and ensure there is a > 0 offset into the edge if it's "
-                    "after a junction.".format(start_edge.getID(), end_edge.getID())
+                    "after a junction.".format(self._mission.start, self._mission.goal)
                 )
 
         self._did_plan = True

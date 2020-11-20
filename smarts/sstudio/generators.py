@@ -17,17 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 import os
 import random
-import logging
 import tempfile
 
 import sh
 from yattag import Doc, indent
 
-from smarts.core.waypoints import Waypoints
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.sumo import sumolib
+from smarts.core.waypoints import Waypoints
+from smarts.sstudio.types import EdgeVia
 
 from . import types
 
@@ -98,7 +99,7 @@ class RandomRouteGenerator:
 
             return types.Route(
                 begin=(start_edge_id, start_lane_index, start_lane_offset),
-                via=tuple(edges[1:-1]),
+                via=tuple([types.EdgeVia(edge_id=edge) for edge in edges[1:-1]]),
                 end=(end_edge_id, end_lane_index, end_lane_offset),
             )
 
@@ -234,11 +235,11 @@ class TrafficGenerator:
                         type=actor.id,
                         route=route.id,
                         vehsPerHour=flow.rate * (weight / total_weight),
-                        departLane=route.begin[1],
-                        departPos=route.begin[2],
+                        departLane=route.begin.lane_offset,
+                        departPos=route.begin.offset_into_lane,
                         departSpeed=actor.depart_speed,
-                        arrivalLane=route.end[1],
-                        arrivalPos=route.end[2],
+                        arrivalLane=route.end.lane_offset,
+                        arrivalPos=route.end.offset_into_lane,
                         begin=flow.begin,
                         end=flow.end,
                     )

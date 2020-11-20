@@ -17,33 +17,35 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import time
 import logging
-from functools import partial, lru_cache
-from typing import NamedTuple, Tuple, Dict, List
-from collections import namedtuple, deque
+import time
+from collections import deque, namedtuple
 from dataclasses import dataclass
+from functools import lru_cache
+from typing import Any, Dict, List, NamedTuple, Tuple
 
 import numpy as np
-
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
-    GraphicsPipe,
-    OrthographicLens,
-    GraphicsOutput,
-    Texture,
     FrameBufferProperties,
-    WindowProperties,
+    GraphicsOutput,
+    GraphicsPipe,
     NodePath,
+    OrthographicLens,
+    Texture,
+    WindowProperties,
 )
 
+from smarts.sstudio.types import EdgePointVia
+
 from .coordinates import BoundingBox, Heading
+from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
-from .waypoints import Waypoint
 from .scenario import Mission
-from .events import Events
+from .utils.math import squared_dist, vec_2d
+from .waypoints import Waypoint
 
 
 class VehicleObservation(NamedTuple):
@@ -112,6 +114,13 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 @dataclass
+class GoalpointData:
+    nearest_remaining_goalpoint: Any
+    hit_goalpoint: Any
+    near_goalpoints: Any
+
+
+@dataclass
 class Observation:
     events: Events
     ego_vehicle_state: EgoVehicleObservation
@@ -128,6 +137,7 @@ class Observation:
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
+    goalpoint_data: GoalpointData = None
 
 
 @dataclass
@@ -238,6 +248,22 @@ class Sensors:
             else None
         )
 
+        near_goalpoints = []
+        hit_goalpoint = []
+        nearest_remaining_goalpoint = None
+        if vehicle.subscribed_to_goalpoint_sensor:
+            (
+                near_goalpoints,
+                hit_goalpoint,
+                nearest_remaining_goalpoint,
+            ) = vehicle.goalpoint_sensor()
+
+        goalpoint_data = GoalpointData(
+            nearest_remaining_goalpoint=nearest_remaining_goalpoint,
+            near_goalpoints=near_goalpoints,
+            hit_goalpoint=hit_goalpoint,
+        )
+
         vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
         distance_travelled = vehicle.trip_meter_sensor(sim)
 
@@ -256,6 +282,9 @@ class Sensors:
         lidar = vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
 
         done, events = Sensors._is_done_with_events(sim, agent_id, sensor_state)
+        events = events._replace(
+            reached_goal=events.reached_goal and not nearest_remaining_goalpoint
+        )
         return (
             Observation(
                 events=events,
@@ -268,6 +297,7 @@ class Sensors:
                 drivable_area_grid_map=drivable_area_grid_map,
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
+                goalpoint_data=goalpoint_data,
             ),
             done,
         )
@@ -918,6 +948,71 @@ class WaypointsSensor(Sensor):
     def __call__(self):
         return self._mission_planner.waypoint_paths_at(
             self._vehicle.pose, lookahead=self._lookahead
+        )
+
+    def teardown(self):
+        pass
+
+
+class GoalpointSensor(Sensor):
+    def __init__(self, vehicle, mission_planner, acquisition_radius):
+        self._last_points = set()
+        self._mission_planner = mission_planner
+        self._via_hits = dict()
+        self._acquisition_radius = acquisition_radius
+        self._vehicle = vehicle
+
+    @lru_cache(maxsize=1)
+    def _mission_vias(self):
+        return [
+            point_via
+            for point_via in self._mission_planner.mission.via
+            if isinstance(point_via, EdgePointVia)
+        ]
+
+    def _near(position, checkpoint_position, radius):
+        return squared_dist(position, checkpoint_position) < radius ** 2
+
+    def __call__(self):
+        vias = self._mission_vias()
+
+        near_goalpoints = set()
+        hit_goalpoints = set()
+        nearest_remaining_goalpoint = None
+        vehicle_pos = self._vehicle.position
+        for point_via in vias:
+            pos = vec_2d(point_via.position)
+            near = self._near(pos, vehicle_pos, self._acquisition_radius)
+
+            if self._last_point in self._last_points:
+                continue
+
+            if near:
+                near_goalpoints.add(point_via)
+
+            if (
+                self._near(pos, vehicle_pos, point_via.radius)
+                and self.vehicle.speed >= point_via.required_speed
+            ):
+                hits = self._via_hits.get(point_via, 0) + 1
+                hit_goalpoints.add(point_via)
+                self._via_hits[point_via] = hits
+
+        self._last_points = hit_goalpoints | (self._last_points & near_goalpoints)
+
+        def _ordered_by_position(vias, position):
+            return sorted(
+                vias, key=lambda via: squared_dist(vec_2d(via.position), position)
+            )
+
+        # TODO use a better heuristic of all waypoints for remaining
+        nearest_remaining_goalpoint = _ordered_by_position(
+            set(self._mission_vias()) - self._last_points, self._vehicle.position
+        )
+        return (
+            near_goalpoints,
+            [(via, self._via_hits[via]) for via in hit_goalpoints],
+            nearest_remaining_goalpoint,
         )
 
     def teardown(self):

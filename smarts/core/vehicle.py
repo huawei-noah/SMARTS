@@ -26,14 +26,15 @@ from direct.showbase.ShowBase import ShowBase
 from pybullet_utils.bullet_client import BulletClient
 
 from . import models
-from .chassis import Chassis, AckermannChassis, BoxChassis
+from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
 from .masks import RenderMasks
 from .sensors import (
     AccelerometerSensor,
-    DrivenPathSensor,
     DrivableAreaGridMapSensor,
+    DrivenPathSensor,
+    GoalpointSensor,
     LidarSensor,
     NeighborhoodVehiclesSensor,
     OGMSensor,
@@ -433,6 +434,14 @@ class Vehicle:
                     sensor_params=agent_interface.lidar.sensor_params,
                 )
             )
+        if agent_interface.goalpoint:
+            vehicle.attach_goalpoint_sensor(
+                GoalpointSensor(
+                    vehicle=vehicle,
+                    mission_planner=mission_planner,
+                    acquisition_radius=agent_interface.goalpoint.near_acquisition_radius,
+                )
+            )
 
     def step(self, current_simulation_time):
         self._chassis.step(current_simulation_time)
@@ -487,6 +496,7 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
+            "goalpoint_sensor",
         ]
         for sensor_name in sensor_names:
 
