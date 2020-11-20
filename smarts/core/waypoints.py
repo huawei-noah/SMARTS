@@ -309,6 +309,8 @@ class Waypoints:
 
         wp_position = np.array([*path[0].wp.pos, 0])
 
+        vehicle_position = np.array([point[0], point[1], 0])
+
         heading_vector = np.array(
             [
                 math.cos(math.pi / 2 + first_wp_heading),
@@ -317,7 +319,9 @@ class Waypoints:
             ]
         )
 
-        projected_distant_wp_vehicle = np.inner((point - wp_position), heading_vector)
+        projected_distant_wp_vehicle = np.inner(
+            (vehicle_position - wp_position), heading_vector
+        )
 
         ref_waypoints_coordinates["ref_wp_positions_x"][0] = wp_position[
             0
