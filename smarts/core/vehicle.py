@@ -439,7 +439,7 @@ class Vehicle:
                 CheckpointSensor(
                     vehicle=vehicle,
                     mission_planner=mission_planner,
-                    acquisition_radius=agent_interface.checkpoint.near_acquisition_radius,
+                    acquisition_radius=agent_interface.checkpoint.sensor_range_radius,
                 )
             )
 

@@ -106,7 +106,7 @@ class Accelerometer:
 class Checkpoints:
     """ Observation of nearby checkpoints """
 
-    near_acquisition_radius: float = 50
+    sensor_range_radius: float = 50
 
 
 class AgentType(IntEnum):
