@@ -225,11 +225,11 @@ class SMARTS(ShowBase):
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
 
         # Agents
-        self._agent_manager.step_agent_sensors(self)
+        self._agent_manager.step_sensors(self)
 
         # Panda3D
         # runs through the render pipeline
-        # MUST perform this after step_agent_sensors() above, and before observe() below,
+        # MUST perform this after step_sensors() above, and before observe() below,
         # so that all updates are ready before rendering happens per frame
         self.taskMgr.mgr.poll()
 
@@ -738,7 +738,7 @@ class SMARTS(ShowBase):
         #       its goal. Is this the behaviour we want?
         vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
         for vehicle in vehicles:
-            sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+            sensor_state = self._vehicle_index.sensor_states()[vehicle.id]
             distance_travelled = vehicle.trip_meter_sensor()
             mission = sensor_state.mission_planner.mission
             reached_goal = mission.is_complete(vehicle, distance_travelled)
@@ -812,9 +812,7 @@ class SMARTS(ShowBase):
                     controller_state = self._vehicle_index.controller_state_for_vehicle_id(
                         vehicle.id
                     )
-                    sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
-                        vehicle.id
-                    )
+                    sensor_state = self._vehicle_index.sensor_states()[vehicle.id]
                     # TODO: Support performing batched actions
                     Controllers.perform_action(
                         self,
@@ -882,9 +880,9 @@ class SMARTS(ShowBase):
 
                 if self._agent_manager.is_ego(agent_id):
                     actor_type = envision_types.TrafficActorType.Agent
-                    mission_route_geometry = self._vehicle_index.sensor_state_for_vehicle_id(
+                    mission_route_geometry = self._vehicle_index.sensor_states()[
                         v.vehicle_id
-                    ).mission_planner.route.geometry
+                    ].mission_planner.route.geometry
                 else:
                     actor_type = envision_types.TrafficActorType.SocialAgent
                     mission_route_geometry = None

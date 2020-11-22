@@ -526,8 +526,8 @@ class VehicleIndex:
 
         return vehicle
 
-    def sensor_state_for_vehicle_id(self, vehicle_id):
-        return self._sensor_states[vehicle_id]
+    def sensor_states(self):
+        return self._sensor_states
 
     def controller_state_for_vehicle_id(self, vehicle_id):
         return self._controller_states[vehicle_id]
