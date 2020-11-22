@@ -44,8 +44,13 @@ class RemoteAgentBuffer:
         if atexit.unregister is not None:
             atexit.unregister(self.destroy)
 
-        for remote_agent in self._agent_buffer:
-            remote_agent.terminate()
+        for remote_agent_future in self._agent_buffer:
+            # try to cancel the future
+            if not remote_agent_future.cancel():
+                # We can't cancel this future, wait for it to complete
+                # and terminate the agent after it's been created
+                remote_agent = remote_agent_future.result()
+                remote_agent.terminate()
 
     def _remote_agent_future(self):
         return self._replenish_threadpool.submit(RemoteAgent)
