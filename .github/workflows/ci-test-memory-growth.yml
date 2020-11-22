@@ -3,7 +3,7 @@ name: SMARTS CI Master
 on:
   push:
     branches:
-      - master
+      - disabled
 
 env:
   venv_dir: .venv
