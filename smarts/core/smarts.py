@@ -255,39 +255,40 @@ class SMARTS(ShowBase):
         return observations, rewards, dones, extras
 
     def _teardown_done_agents_and_vehicles(self, dones):
-        def is_agent_done(agent_id, done):
-            if self._agent_manager.is_boid_agent(agent_id):
-                # Agent is done when all remaining vehicles are done
-                return all(done.values())
-
-            return done
-
-        def done_vehicle_ids(dones, vehicle_index):
+        def done_vehicle_ids(dones):
             vehicle_ids = set()
             for agent_id, done in dones.items():
                 if self._agent_manager.is_boid_agent(agent_id):
-                    for vehicle_id in done:
-                        if done[vehicle_id]:
-                            vehicle_ids.add(vehicle_id)
+                    vehicle_ids.update([id_ for id_ in done if done[id_]])
                 elif done:
-                    ids = vehicle_index.vehicle_ids_by_actor_id(agent_id)
-                    assert len(ids) == 1
-                    vehicle_ids.add(ids[0])
+                    ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
+                    # 0 if shadowing, 1 if active
+                    assert len(ids) <= 1, f"{len(ids)} <= 1"
+                    vehicle_ids.update(ids)
 
             return vehicle_ids
 
-        done_agents = {id_ for id_, done in dones.items() if is_agent_done(id_, done)}
-        agents_to_cleanup = self._agent_manager.teardown_ego_agents(done_agents)
-        agents_to_teardown = {
-            id_
-            for id_ in done_agents
-            if not self.agent_manager.is_boid_keep_alive_agent(id_)
-        }
-        agents_to_cleanup |= self._agent_manager.teardown_social_agents(
-            agents_to_teardown
-        )
+        def done_agent_ids(dones):
+            agent_ids = set()
+            for agent_id, done in dones.items():
+                if self._agent_manager.is_boid_agent(agent_id):
+                    if not self.agent_manager.is_boid_keep_alive_agent(
+                        agent_id
+                    ) and all(dones[agent_id].values()):
+                        agent_ids.add(agent_id)
+                elif done:
+                    agent_ids.add(agent_id)
 
-        self._teardown_agent_vehicles(done_vehicle_ids(dones, self._vehicle_index))
+            return agent_ids
+
+        # XXX: These can not be put inline because we do queries that must proceed
+        #      the actual teardown.
+        vehicles_to_teardown = done_vehicle_ids(dones)
+        agents_to_teardown = done_agent_ids(dones)
+
+        self._agent_manager.teardown_ego_agents(agents_to_teardown)
+        self._agent_manager.teardown_social_agents(agents_to_teardown)
+        self._teardown_agent_vehicles(vehicles_to_teardown)
 
     def reset(self, scenario: Scenario):
         if scenario == self._scenario and self._reset_agents_only:
