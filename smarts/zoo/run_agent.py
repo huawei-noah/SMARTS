@@ -46,7 +46,6 @@ from multiprocessing.connection import Listener
 import cloudpickle
 
 # front-load some expensive imports as to not block the simulation
-
 modules = [
     "pybullet",
     "smarts.core.utils.sumo",

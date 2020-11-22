@@ -17,38 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import logging
-from time import time
-from contextlib import contextmanager
 
+from .logging import disable_logging
 
-@contextmanager
-def timeit(name: str):
-    start = time()
-    yield
-    ellapsed_time = (time() - start) * 1000
-
-    logging.info(f'"{name}" took: {ellapsed_time:4f}ms')
-
-
-# Reference: https://gist.github.com/simon-weber/7853144
-@contextmanager
-def disable_logging(highest_level=logging.CRITICAL):
-    """
-    A context manager that will prevent any logging messages triggered during the
-    body from being processed.
-    :param highest_level: the maximum logging level in use.
-      This would only need to be changed if a custom level greater than CRITICAL
-      is defined.
-    """
-    # HACK: If can't get the highest logging level in effect then delegate to the user.
-    #       If can't get the current module-level override then use an undocumented
-    #       (but non-private!) interface.
-
-    previous_level = logging.root.manager.disable
-    logging.disable(highest_level)
-
-    try:
-        yield
-    finally:
-        logging.disable(previous_level)
+with disable_logging():
+    # XXX: Importing pybullet logs an annoying build version tag. There's no
+    #      "friendly" way to fix this since they simply use print(...). Disabling
+    #      logging at the time of import is our hack.
+    from pybullet import *
+    from pybullet_utils import bullet_client

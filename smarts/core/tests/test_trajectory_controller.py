@@ -2,22 +2,19 @@ import math
 
 from unittest import mock
 import numpy as np
-import pybullet
-import pybullet_utils.bullet_client as bc
 import pytest
-from direct.showbase.ShowBase import ShowBase
 
 import random
 from pathlib import Path
-import multiprocessing as mp
 
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
     TrajectoryTrackingControllerState,
 )
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.scenario import Start
 from smarts.core.vehicle import Vehicle
 
 
@@ -75,7 +72,7 @@ def build_trajectory(radius, omega, step_num, TIMESTEP_SEC=time_step):
     else:
         Omega = omega_1
         alph = 0
-    desheadi = step_num * Omega * TIMESTEP_SEC
+
     trajectory = [
         [
             -(R - R * math.cos((step_num + i + alph) * Omega * TIMESTEP_SEC))
@@ -101,6 +98,7 @@ def step_with_vehicle_commands(
     # Proceed till the end of half of the circle.
     n_steps = int(0.5 * 3.14 / (omega * TIMESTEP_SEC))
 
+    desired_trajectory = []
     controller_state = TrajectoryTrackingControllerState()
     for step_num in range(n_steps):
         desired_trajectory = build_trajectory(radius, omega, step_num)

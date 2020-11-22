@@ -22,24 +22,11 @@ import psutil
 import itertools
 
 import numpy as np
-from panda3d.core import (
-    NodePath,
-    Quat,
-    CS_zup_right,
-    LineSegs,
-    Geom,
-    GeomNode,
-    GeomPoints,
-    GeomVertexData,
-    GeomVertexFormat,
-    GeomVertexWriter,
-)
+from panda3d.core import Quat
 
-import pybullet
-import pybullet_utils.bullet_client as bc
+from .utils.pybullet import bullet_client as bc
 
 from .lidar_sensor_params import SensorParams
-from .masks import RenderMasks
 from .utils.math import batches
 
 

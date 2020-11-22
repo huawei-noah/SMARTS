@@ -21,18 +21,18 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
-import yaml
-from typing import NamedTuple, Sequence, Tuple
-from shapely.geometry import Polygon, Point, box as shapely_box
-from shapely.affinity import rotate as shapely_rotate
+from typing import Sequence
 
 import numpy as np
-import pybullet
-import pybullet_utils.bullet_client as bc
+import yaml
+from shapely.affinity import rotate as shapely_rotate
+from shapely.geometry import Point, Polygon
+from shapely.geometry import box as shapely_box
 
 from . import models
 from .coordinates import BoundingBox, Heading, Pose
-from .tire_models import TireForces, LinearTireForces
+from .tire_models import TireForces
+from .utils import pybullet
 from .utils.bullet import (
     BulletBoxShape,
     BulletPositionConstraint,
@@ -40,16 +40,8 @@ from .utils.bullet import (
     JointInfo,
     JointState,
 )
-from .utils.math import (
-    fast_quaternion_from_angle,
-    yaw_from_quaternion,
-    radians_to_vec,
-)
-from smarts.sstudio.types import (
-    Zone,
-    PositionalZone,
-    RoadSurfacePatch,
-)
+from .utils.math import radians_to_vec, yaw_from_quaternion
+from .utils.pybullet import bullet_client as bc
 
 
 def _query_bullet_contact_points(bullet_client, bullet_id, link_index):

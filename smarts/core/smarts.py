@@ -17,52 +17,41 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
-import math
-import logging
-from typing import List, Sequence, Dict
-from collections import defaultdict, namedtuple
 import importlib.resources as pkg_resources
+import logging
+import math
+import os
+from collections import defaultdict
+from typing import List, Sequence
 
 import gltf
 import numpy
-import pybullet
-import pybullet_utils.bullet_client as bc
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import (
-    ClockObject,
-    GeomVertexReader,
-    loadPrcFileData,
-    NodePath,
-    Shader,
-)
-from sklearn.metrics.pairwise import euclidean_distances
-
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
-from .utils.visdom_client import VisdomClient
+from panda3d.core import ClockObject, NodePath, Shader, loadPrcFileData
+from sklearn.metrics.pairwise import euclidean_distances
 
-from . import glsl
-from . import models
-from .agent import Agent
+from . import glsl, models
 from .agent_manager import AgentManager
 from .bubble_manager import BubbleManager
-from .colors import Colors, SceneColors
+from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
-from .coordinates import Heading, Pose
-from .trap_manager import TrapManager
 from .masks import RenderMasks
 from .motion_planner_provider import MotionPlannerProvider
 from .provider import ProviderState
-from .sensors import Collision
 from .scenario import Scenario
-from .sumo_traffic_simulation import SumoTrafficSimulation
+from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
+from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
-from .vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
+from .trap_manager import TrapManager
+from .utils import pybullet
+from .utils.pybullet import bullet_client as bc
+from .utils.visdom_client import VisdomClient
+from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
 from .waypoints import Waypoints
-
 
 # disable vsync otherwise we are limited to refresh-rate of screen
 loadPrcFileData("", "sync-video false")

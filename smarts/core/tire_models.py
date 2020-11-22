@@ -23,10 +23,6 @@ import multiprocessing as mp
 import numpy as np
 
 
-import pybullet
-import pybullet_utils.bullet_client as bc
-
-
 class TireForces:
     def __init__(self, stiffness, road_friction):
         self.c_alpha_front, self.c_alpha_rear, self.c_x_front, self.c_x_rear = stiffness
@@ -114,7 +110,6 @@ class TireForces:
 
     @staticmethod
     def _calculate_slip_ratios(chassis, client, action):
-
         slip_ratios = np.zeros(4)
         tires_center_speed = np.zeros(4)
         tire_angles = TireForces._calculate_tire_angles(chassis, client, action)
@@ -174,12 +169,6 @@ class LinearTireForces(TireForces):
             rl_slip_angle,
             rr_slip_angle,
         ) = self._calculate_slip_angles(chassis, client, action)
-        (
-            fl_slip_ratio,
-            fr_slip_ratio,
-            rl_slip_ratio,
-            rr_slip_ratio,
-        ) = self._calculate_slip_ratios(chassis, client, action)
         # Maximum lateral force for front tires are set to 2000N and
         # for rear tires it is set to 6000 N, this is to ensure stability.
         # Note that the maximum force for rear tires can be calculate using

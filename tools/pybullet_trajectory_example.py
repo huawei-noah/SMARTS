@@ -1,25 +1,17 @@
 import math
-import numpy as np
-import random
 from pathlib import Path
 from unittest import mock
-import multiprocessing as mp
 import matplotlib.pyplot as plt
-from direct.showbase.ShowBase import ShowBase
-import pybullet
-import pybullet_utils.bullet_client as bc
 
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.coordinates import Pose, Heading
 from smarts.core.vehicle import Vehicle
-from smarts.core.scenario import Start
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
     TrajectoryTrackingControllerState,
 )
-from smarts.core.utils.math import signed_dist_to_line
-
-# from smarts.core.utils.bullet_client import BulletClient
 
 
 TIMESTEP_SEC = 1 / 240
@@ -52,19 +44,12 @@ def run(base, client, vehicle, plane_body_id, sliders, n_steps=1e6):
             print("Client got disconnected")
             return
 
-        action = [
-            client.readUserDebugParameter(sliders["throttle"]),
-            client.readUserDebugParameter(sliders["brake"]),
-            client.readUserDebugParameter(sliders["steering"]),
-        ]
-
         # Simple circular trajectory with radius R and angular velocity Omega in rad/sec
         num_trajectory_points = 15
         R = 40
         omega_1 = 0.1
         omega_2 = 0.2
         if step_num > 1.4 * 3.14 / (TIMESTEP_SEC * omega_1):
-            print("here")
             raise ValueError("Terminate and plot.")
 
         if step_num > 3.14 / (TIMESTEP_SEC * omega_1):
