@@ -33,9 +33,7 @@ class RemoteAgentBuffer:
         self._log = logging.getLogger(self.__class__.__name__)
         self._buffer_size = buffer_size
         self._replenish_threadpool = futures.ThreadPoolExecutor()
-        self._agent_buffer = [
-            self._remote_agent_future() for _ in range(buffer_size)
-        ]
+        self._agent_buffer = [self._remote_agent_future() for _ in range(buffer_size)]
 
         atexit.register(self.destroy)
 
@@ -47,7 +45,7 @@ class RemoteAgentBuffer:
             atexit.unregister(self.destroy)
 
         for remote_agent in self._agent_buffer:
-          remote_agent.terminate()
+            remote_agent.terminate()
 
     def _remote_agent_future(self):
         return self._replenish_threadpool.submit(RemoteAgent)
@@ -67,7 +65,9 @@ class RemoteAgentBuffer:
             future = self._agent_buffer.pop(done_future_indices[0])
         else:
             # Otherwise, we will block, waiting on a remote agent future
-            self._log.warning("No ready remote agents, simulation will block until one is available")
+            self._log.warning(
+                "No ready remote agents, simulation will block until one is available"
+            )
             future = self._agent_buffer.pop(0)
 
         remote_agent = future.result(timeout=10)
