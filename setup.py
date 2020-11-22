@@ -24,7 +24,7 @@ setup(
         "gym",
         "panda3d",
         "panda3d-gltf",
-        "numpy",
+        "numpy==1.18.5",
         "shapely",
         "networkx",
         "trimesh",  # Used for writing .glb files
@@ -66,7 +66,13 @@ setup(
         "PyYAML",
     ],
     extras_require={
-        "train": ["tensorflow==2.2.1", "torch==1.3.0", "torchvision==0.4.1"],
+        "train": [
+            "tensorflow==2.2.1",
+            # XXX: TF requires specific version of scipy
+            "scipy==1.4.1",
+            "torch==1.3.0",
+            "torchvision==0.4.1"
+        ],
         "dev": [
             "black==19.10b0",
             "sphinx",
