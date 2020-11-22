@@ -316,7 +316,6 @@ class Waypoints:
         ref_waypoints_coordinates["ref_wp_positions_x"][0] = (
             wp_position[0] + projected_distant_wp_vehicle * heading_vector[0]
         )
-
         ref_waypoints_coordinates["ref_wp_positions_y"][0] = (
             wp_position[1] + projected_distant_wp_vehicle * heading_vector[1]
         )
@@ -363,7 +362,6 @@ class Waypoints:
             evenly_spaced_coordinates[variable].append(ref_coordinates[-1])
 
         equally_spaced_path = []
-
         for idx, waypoint in enumerate(path):
             equally_spaced_path.append(
                 Waypoint(
