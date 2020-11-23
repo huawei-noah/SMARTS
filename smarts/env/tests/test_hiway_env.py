@@ -37,7 +37,7 @@ def agent_spec():
         # travelled since this bug has appeared a few times.
         #
         # The way to verify this is by making sure the reward does not grow without bounds.
-        assert -3 < env_reward < 3
+        assert -3 < env_reward < 5
 
         # Return a constant reward to test reward adapter call.
         return REWARD_EXPECTED

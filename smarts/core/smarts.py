@@ -378,6 +378,13 @@ class SMARTS(ShowBase):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
 
+        client.setPhysicsEngineParameter(
+            numSolverIterations=10,
+            solverResidualThreshold=0.001,
+            numSubSteps=25,
+            fixedTimeStep=0.1,
+        )
+
         self._ground_bullet_id = client.loadURDF(
             plane_path,
             useFixedBase=True,
