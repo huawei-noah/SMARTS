@@ -28,6 +28,10 @@ from .remote_agent import RemoteAgent, RemoteAgentException
 
 class RemoteAgentBuffer:
     def __init__(self, buffer_size=3):
+        """
+        Args:
+          buffer_size: Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
+        """
         assert buffer_size > 0
 
         self._log = logging.getLogger(self.__class__.__name__)
