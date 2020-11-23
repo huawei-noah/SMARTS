@@ -554,7 +554,9 @@ class Scenario:
             return tuple(
                 PositionalViaPoint(
                     sumo_road_network.world_coord_from_offset(
-                        sumo_road_network.lane_by_offset(via.edge_id, via.lane_offset),
+                        sumo_road_network.lane_by_offset_on_edge(
+                            via.edge_id, via.lane_offset
+                        ),
                         via.offset_into_lane,
                     ),
                     via.hit_radius,
