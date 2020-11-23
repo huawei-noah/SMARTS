@@ -362,7 +362,9 @@ class SMARTS(ShowBase):
         # well (https://git.io/Jvf0M), but PyBullet does not expose it.
         client.setPhysicsEngineParameter(
             fixedTimeStep=self._timestep_sec,
-            numSubSteps=math.ceil(self._timestep_sec / (1 / 240)),
+            numSubSteps=25,
+            numSolverIterations=10,
+            solverResidualThreshold=0.001,
         )
 
         client.setGravity(0, 0, -9.8)
@@ -377,13 +379,6 @@ class SMARTS(ShowBase):
         if not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
-
-        client.setPhysicsEngineParameter(
-            numSolverIterations=10,
-            solverResidualThreshold=0.001,
-            numSubSteps=25,
-            fixedTimeStep=0.1,
-        )
 
         self._ground_bullet_id = client.loadURDF(
             plane_path,
