@@ -20,8 +20,6 @@
 import React, { useState, useEffect } from "react";
 
 import {
-  ArcRotateCamera,
-  Vector2,
   Vector3,
   Color3,
   Tools,
@@ -32,9 +30,6 @@ import {
   MeshBuilder,
   Mesh,
   Color4,
-  BoundingInfo,
-  UniversalCamera,
-  TransformNode,
 } from "@babylonjs/core";
 
 import { GLTFLoader } from "@babylonjs/loaders/glTF/2.0/glTFLoader";
@@ -42,16 +37,13 @@ import SceneComponent from "babylonjs-hook";
 
 import Camera from "./camera.js";
 import Vehicles from "./vehicles.js";
+import DrivenPaths from "./driven_paths.js";
+import MissionRoutes from "./mission_routes.js";
 
 import { ActorTypes } from "../enums.js";
 import AgentScores from "./agent_scores";
 import earcut from "earcut";
-import { intersection, difference } from "../math.js";
-import {
-  vehicleMeshFilename,
-  vehicleMeshColor,
-  buildLabel,
-} from "../render_helpers.js";
+import { vehicleMeshColor } from "../render_helpers.js";
 
 // Required by Babylon.js
 window.earcut = earcut;
@@ -66,9 +58,7 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
 
   const [mapMeshes, setMapMeshes] = useState([]);
   const [bubbleGeometry, setBubbleGeometry] = useState([]); // List of mesh objects
-  const [missionGeometry, setMissionGeometry] = useState([]);
   const [waypointGeometries, setWaypointGeometries] = useState([]);
-  const [drivenPathGeometries, setDrivenPathGeometries] = useState({});
 
   const [roadNetworkBbox, setRoadNetworkBbox] = useState([]);
   const [laneDividerPos, setLaneDividerPos] = useState([]);
@@ -292,56 +282,6 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
     // Bubbles only change from scenario to scenario, this will prevent unnecessary work
   }, [scene, JSON.stringify(worldState.bubbles)]);
 
-  // Mission route geometry
-  let missionRoutes = {};
-  let missionRouteStringify = [];
-
-  let sortedTrafficKeys = Object.keys(worldState.traffic).sort();
-  for (const vehicle_id of sortedTrafficKeys) {
-    let actor = worldState.traffic[vehicle_id];
-    if (actor.mission_route_geometry == null) {
-      continue;
-    }
-
-    missionRoutes[vehicle_id] = actor.mission_route_geometry;
-    missionRouteStringify.push(actor.mission_route_geometry);
-  }
-
-  useEffect(() => {
-    if (scene == null) {
-      return;
-    }
-
-    for (const geom of missionGeometry) {
-      // doNotRecurse = false, disposeMaterialAndTextures = true
-      geom.dispose(false, true);
-    }
-
-    let nextMissionGeometry = [];
-    for (const [vehicle_id, agent_route] of Object.entries(missionRoutes)) {
-      agent_route.forEach((route_shape, shape_id) => {
-        let points = route_shape.map((p) => new Vector3(p[0], 0, p[1]));
-        let polygon = MeshBuilder.CreatePolygon(
-          `mission-route-shape-${vehicle_id}-${shape_id}`,
-          { shape: points },
-          scene
-        );
-        polygon.position.y = 0.1;
-        polygon.material = new StandardMaterial(
-          `mission-route-shape-${vehicle_id}-${shape_id}-material`,
-          scene
-        );
-        polygon.material.diffuseColor = new Color4(
-          ...worldState.scene_colors["mission_route"]
-        );
-        polygon.material.alpha = worldState.scene_colors["mission_route"][3];
-        polygon.material.specularColor = new Color3(0, 0, 0);
-        nextMissionGeometry.push(polygon);
-      });
-    }
-    setMissionGeometry(nextMissionGeometry);
-  }, [scene, JSON.stringify(missionRouteStringify)]);
-
   // Waypoints geometry
   useEffect(() => {
     if (scene == null) {
@@ -404,134 +344,6 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
     setWaypointGeometries(newWaypointGeometries);
   }, [scene, worldState.traffic]);
 
-  // Driven path geometry
-  useEffect(() => {
-    if (scene == null) {
-      return;
-    }
-
-    if (worldState.traffic.length == 0) {
-      return;
-    }
-
-    let newDrivenPathGeometries = {};
-
-    // No need to re-create all driven path segments every frame,
-    // cache geometries with unchanged positions across frames
-    for (const vehicle_id of Object.keys(drivenPathGeometries)) {
-      let drivenPath = drivenPathGeometries[vehicle_id];
-      var i = 0;
-      for (i = 0; i < drivenPath.length; i++) {
-        if (
-          !(vehicle_id in worldState.traffic) ||
-          worldState.traffic[vehicle_id].driven_path.length < 2
-        ) {
-          drivenPath[i].dispose();
-        } else {
-          let geomPos = new Vector2(
-            drivenPath[i].position.x,
-            drivenPath[i].position.z
-          );
-          let newGeomPos = Vector2.Center(
-            new Vector2(...worldState.traffic[vehicle_id].driven_path[0]),
-            new Vector2(...worldState.traffic[vehicle_id].driven_path[1])
-          );
-          if (geomPos.equalsWithEpsilon(newGeomPos, 0.0001)) {
-            newDrivenPathGeometries[vehicle_id] = [];
-            break;
-          }
-          drivenPath[i].dispose();
-        }
-      }
-
-      for (let j = i; j < drivenPath.length; j++) {
-        newDrivenPathGeometries[vehicle_id].push(drivenPath[j]);
-      }
-    }
-
-    if (egoDrivenPathModel.material == null) {
-      egoDrivenPathModel.material = new StandardMaterial(
-        "ego-driven-path-material",
-        scene
-      );
-      egoDrivenPathModel.material.specularColor = new Color3(0, 0, 0);
-      egoDrivenPathModel.material.diffuseColor = new Color4(
-        ...worldState.scene_colors["ego_driven_path"]
-      );
-      egoDrivenPathModel.material.alpha =
-        worldState.scene_colors["ego_driven_path"][3];
-    }
-
-    if (socialDrivenPathModel.material == null) {
-      socialDrivenPathModel.material = new StandardMaterial(
-        "social-driven-path-material",
-        scene
-      );
-      socialDrivenPathModel.material.specularColor = new Color3(0, 0, 0);
-      let color = vehicleMeshColor(
-        ActorTypes.SOCIAL_AGENT,
-        worldState.scene_colors
-      );
-      socialDrivenPathModel.material.diffuseColor = new Color4(...color);
-      socialDrivenPathModel.material.alpha =
-        worldState.scene_colors["ego_driven_path"][3];
-    }
-
-    // Add in new driven path segments
-    let drivenPathOffsetY = 0.1;
-    for (const [vehicle_id, trafficActor] of Object.entries(
-      worldState.traffic
-    )) {
-      if (!(vehicle_id in newDrivenPathGeometries)) {
-        newDrivenPathGeometries[vehicle_id] = [];
-      }
-
-      for (
-        let i = newDrivenPathGeometries[vehicle_id].length;
-        i < trafficActor.driven_path.length - 1;
-        i++
-      ) {
-        let drivenPathSegment_ = null;
-        if (trafficActor.actor_type == ActorTypes.SOCIAL_AGENT) {
-          drivenPathSegment_ = socialDrivenPathModel.createInstance(
-            "social-driven-path-segment"
-          );
-        } else {
-          drivenPathSegment_ = egoDrivenPathModel.createInstance(
-            "ego-driven-path-segment"
-          );
-        }
-
-        let p0 = new Vector3(
-          trafficActor.driven_path[i][0],
-          drivenPathOffsetY,
-          trafficActor.driven_path[i][1]
-        );
-        let p1 = new Vector3(
-          trafficActor.driven_path[i + 1][0],
-          drivenPathOffsetY,
-          trafficActor.driven_path[i + 1][1]
-        );
-
-        drivenPathSegment_.position = Vector3.Center(p0, p1);
-
-        let axis1 = p0.subtract(p1);
-        let axis3 = new Vector3(0, 1, 0);
-        let axis2 = Vector3.Cross(axis3, axis1);
-
-        drivenPathSegment_.scaling.x = axis1.length() + 0.01;
-        drivenPathSegment_.rotation = Vector3.RotationFromAxis(
-          axis1,
-          axis2,
-          axis3
-        );
-
-        newDrivenPathGeometries[vehicle_id].push(drivenPathSegment_);
-      }
-    }
-    setDrivenPathGeometries(newDrivenPathGeometries);
-  }, [scene, worldState.traffic]);
-
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <SceneComponent
@@ -559,6 +371,13 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
         vehicleRootUrl={`${client.endpoint.origin}/assets/models/`}
         egoView={egoView}
       />
+      <DrivenPaths
+        scene={scene}
+        worldState={worldState}
+        egoDrivenPathModel={egoDrivenPathModel}
+        socialDrivenPathModel={socialDrivenPathModel}
+      />
+      <MissionRoutes scene={scene} worldState={worldState} />
       {showScores ? (
         <AgentScores
           style={{
