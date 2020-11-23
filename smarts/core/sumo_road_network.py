@@ -194,7 +194,7 @@ class SumoRoadNetwork:
         return self._graph.getLane(lane_id)
 
     def lane_by_offset_on_edge(self, edge_id, lane_idx):
-        return self._graph.edge_by_id(edge_id).getLane(lane_idx)
+        return self.edge_by_id(edge_id).getLane(lane_idx)
 
     def edge_by_lane_id(self, lane_id):
         return self.lane_by_id(lane_id).getEdge()
