@@ -1082,7 +1082,7 @@ class ViaPointSensor(Sensor):
                 hits = self._via_hits.get(point_via, 0) + 1
                 hit_via_points.add(point_via)
                 self._via_hits[point_via] = hits
-        
+
         ## Add the hit vias to the consumed ones
         self._consumed_via_points = hit_via_points | (self._consumed_via_points)
 
