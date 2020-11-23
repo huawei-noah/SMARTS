@@ -17,17 +17,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import random
 import collections.abc as collections_abc
+import random
 from dataclasses import dataclass, field
-from typing import Sequence, Tuple, Dict, Any, Union, Optional
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
+from shapely.geometry import GeometryCollection, MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
-from smarts.core.utils.id import SocialAgentId
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.utils.id import SocialAgentId
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -304,6 +304,16 @@ class Flow:
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
 
+@dataclass
+class ViaPoint:
+    """A point on an edge that an actor must pass through"""
+
+    edge_id: str
+    lane_offset: int
+    offset_into_lane: Any
+    hit_radius: float
+
+
 @dataclass(frozen=True)
 class Traffic:
     """The descriptor for traffic."""
@@ -341,7 +351,12 @@ class UTurn:
 
 
 @dataclass(frozen=True)
-class Mission:
+class MissionBase:
+    via_points: Tuple[ViaPoint, ...]
+
+
+@dataclass(frozen=True)
+class Mission(MissionBase):
     """The descriptor for an actor's mission."""
 
     route: Route
@@ -356,7 +371,7 @@ class Mission:
 
 
 @dataclass(frozen=True)
-class EndlessMission:
+class EndlessMission(MissionBase):
     """The descriptor for an actor's mission that has no end."""
 
     begin: Tuple[str, int, float]
@@ -376,7 +391,7 @@ class EndlessMission:
 
 
 @dataclass(frozen=True)
-class LapMission:
+class LapMission(MissionBase):
     """The descriptor for an actor's mission that defines mission that repeats
     in a closed loop.
     """
@@ -392,7 +407,7 @@ class LapMission:
 
 
 @dataclass(frozen=True)
-class GroupedLapMission:
+class GroupedLapMission(MissionBase):
     """The descriptor for a group of actor missions that repeat in a closed loop."""
 
     route: Route
