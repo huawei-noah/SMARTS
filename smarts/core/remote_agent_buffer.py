@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import logging
 import atexit
+from concurrent import futures
 
 from threading import Lock, Thread
 
@@ -26,14 +27,18 @@ from .remote_agent import RemoteAgent, RemoteAgentException
 
 
 class RemoteAgentBuffer:
-    def __init__(self, buffer_size=1):
+    def __init__(self, buffer_size=3):
+        """
+        Args:
+          buffer_size: Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
+        """
+        assert buffer_size > 0
+
         self._log = logging.getLogger(self.__class__.__name__)
         self._buffer_size = buffer_size
-        self._quiescing = False
-        self._agent_buffer = []
-        self._agent_buffer_lock = Lock()
-        self._replenish_thread = None
-        self._start_replenish_thread()
+        self._replenish_threadpool = futures.ThreadPoolExecutor()
+        self._agent_buffer = [self._remote_agent_future() for _ in range(buffer_size)]
+
         atexit.register(self.destroy)
 
     def __del__(self):
@@ -42,60 +47,40 @@ class RemoteAgentBuffer:
     def destroy(self):
         if atexit.unregister is not None:
             atexit.unregister(self.destroy)
-        self._quiescing = True
-        if self._replenish_thread_is_running():
-            self._replenish_thread.join()  # wait for the replenisher to finish
 
-        with self._agent_buffer_lock:
-            for remote_agent in self._agent_buffer:
+        for remote_agent_future in self._agent_buffer:
+            # try to cancel the future
+            if not remote_agent_future.cancel():
+                # We can't cancel this future, wait for it to complete
+                # and terminate the agent after it's been created
+                remote_agent = remote_agent_future.result()
                 remote_agent.terminate()
 
-    def _replenish_thread_is_running(self):
-        return self._replenish_thread is not None and self._replenish_thread.is_alive()
-
-    def _replenish_agents(self):
-        # For high-availability, we allow for the possibility that we may create
-        # more than `buffer_size` number of agents in the buffer under certain race conditions.
-        #
-        # To prevent this we would have to put the `RemoteAgent()` creation calls inside the lock
-        # context, this would slow down the `acquire_remote_agent` code path.
-        fresh_procs = []
-        for _ in range(self._buffer_size - len(self._agent_buffer)):
-            if self._quiescing:
-                return  # early out if we happened to be shutting down midway replenishmen
-
-            try:
-                fresh_procs.append(RemoteAgent())
-            except RemoteAgentException:
-                self._log.error("Failed to initialize remote agent")
-
-        with self._agent_buffer_lock:
-            self._agent_buffer.extend(fresh_procs)
-
-    def _start_replenish_thread(self):
-        if self._quiescing:
-            # not starting thread since we are shutting down
-            pass
-        elif self._replenish_thread is not None and self._replenish_thread.is_alive():
-            # not starting thread since there's already one running
-            pass
-        else:
-            # otherwise start the replenishment thread
-            self._replenish_thread = Thread(target=self._replenish_agents, daemon=True)
-            self._replenish_thread.start()
+    def _remote_agent_future(self):
+        return self._replenish_threadpool.submit(RemoteAgent)
 
     def acquire_remote_agent(self) -> RemoteAgent:
-        with self._agent_buffer_lock:
-            if len(self._agent_buffer) > 0:
-                remote_agent = self._agent_buffer.pop()
-            else:
-                remote_agent = None
+        assert len(self._agent_buffer) == self._buffer_size
 
-            self._start_replenish_thread()
+        # Check if we have any done remote agent futures.
+        done_future_indices = [
+            idx
+            for idx, agent_future in enumerate(self._agent_buffer)
+            if agent_future.done()
+        ]
 
-        if remote_agent is None:
-            # Do this here instead of in the else branch above to avoid holding the lock
-            # while the RemoteAgent() is being created
-            remote_agent = RemoteAgent()
+        if len(done_future_indices) > 0:
+            # If so, prefer one of these done ones to avoid sim delays.
+            future = self._agent_buffer.pop(done_future_indices[0])
+        else:
+            # Otherwise, we will block, waiting on a remote agent future
+            self._log.warning(
+                "No ready remote agents, simulation will block until one is available"
+            )
+            future = self._agent_buffer.pop(0)
 
+        remote_agent = future.result(timeout=10)
+
+        # Schedule the next remote agent and add it to the buffer.
+        self._agent_buffer.append(self._remote_agent_future())
         return remote_agent
