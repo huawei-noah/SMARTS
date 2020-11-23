@@ -486,6 +486,7 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
+            "via_point_sensor",
         ]
         for sensor_name in sensor_names:
 
