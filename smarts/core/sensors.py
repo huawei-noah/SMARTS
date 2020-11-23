@@ -17,33 +17,35 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import time
 import logging
-from functools import partial, lru_cache
-from typing import NamedTuple, Tuple, Dict, List
-from collections import namedtuple, deque
+import time
+from collections import deque, namedtuple
 from dataclasses import dataclass
+from functools import lru_cache
+from typing import Dict, List, NamedTuple, Set, Tuple
 
 import numpy as np
-
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
-    GraphicsPipe,
-    OrthographicLens,
-    GraphicsOutput,
-    Texture,
     FrameBufferProperties,
-    WindowProperties,
+    GraphicsOutput,
+    GraphicsPipe,
     NodePath,
+    OrthographicLens,
+    Texture,
+    WindowProperties,
 )
 
+from smarts.core.utils.math import squared_dist, vec_2d
+from smarts.sstudio.types import ViaPoint
+
 from .coordinates import BoundingBox, Heading
+from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
-from .waypoints import Waypoint
 from .scenario import Mission
-from .events import Events
+from .waypoints import Waypoint
 
 
 class VehicleObservation(NamedTuple):
@@ -109,6 +111,13 @@ class OccupancyGridMap(NamedTuple):
 class DrivableAreaGridMap(NamedTuple):
     metadata: GridMapMetadata
     data: np.ndarray
+
+
+@dataclass
+class ViaPointData:
+    nearest_remaining_via_point: ViaPoint
+    hit_via_point: List[Tuple[ViaPoint, int]]
+    near_via_points: Set[ViaPoint]
 
 
 @dataclass
@@ -1010,6 +1019,67 @@ class AccelerometerSensor(Sensor):
         angular_jerk = angular_acc - last_angular_acc
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)
+
+    def teardown(self):
+        pass
+
+
+class ViaPointSensor(Sensor):
+    def __init__(self, vehicle, mission_planner, acquisition_radius):
+        self._last_points = set()
+        self._mission_planner = mission_planner
+        self._via_hits = dict()
+        self._acquisition_radius = acquisition_radius
+        self._vehicle = vehicle
+
+    def _near(position, via_point_position, radius):
+        return squared_dist(position, via_point_position) < radius ** 2
+
+    @property
+    def _via_points(self):
+        return self._mission_planner.mission.via_points
+
+    def __call__(self):
+        vias = self._via_points()
+
+        near_via_points = set()
+        hit_via_points = set()
+        nearest_remaining_via_point = None
+        vehicle_pos = self._vehicle.position
+        for point_via in vias:
+            pos = vec_2d(point_via.position)
+            near = self._near(pos, vehicle_pos, self._acquisition_radius)
+
+            if self._last_point in self._last_points:
+                continue
+
+            if near:
+                near_via_points.add(point_via)
+
+            if (
+                self._near(pos, vehicle_pos, point_via.radius)
+                and self.vehicle.speed >= point_via.required_speed
+            ):
+                hits = self._via_hits.get(point_via, 0) + 1
+                hit_via_points.add(point_via)
+                self._via_hits[point_via] = hits
+
+        self._last_points = hit_via_points | (self._last_points & near_via_points)
+
+        def _ordered_by_position(vias, position):
+            return sorted(
+                vias, key=lambda via: squared_dist(vec_2d(via.position), position)
+            )
+
+        # TODO use a better heuristic of all waypoints for remaining
+        nearest_remaining_via_point = _ordered_by_position(
+            set(self._mission_vias()) - self._last_points, self._vehicle.position
+        )
+        return (
+            near_via_points,
+            [(via, self._via_hits[via]) for via in hit_via_points],
+            nearest_remaining_via_point,
+        )
 
     def teardown(self):
         pass

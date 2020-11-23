@@ -102,6 +102,12 @@ def default_entry_tactic():
 
 
 @dataclass(frozen=True)
+class PositionalViaPoint:
+    position: Tuple[float, float]
+    radius: float
+
+
+@dataclass(frozen=True)
 class Mission:
     start: Start
     goal: Goal
@@ -111,7 +117,7 @@ class Mission:
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
     task: Tuple[UTurn] = None
-    via_points: Tuple[ViaPoint] = ()
+    via_points: Tuple[PositionalViaPoint] = ()
 
     @property
     def has_fixed_route(self):
@@ -542,6 +548,20 @@ class Scenario:
             heading = vec_to_radians(lane_vector)
             return tuple(position), Heading(heading)
 
+        def to_positional_via_points(
+            vias: Tuple[ViaPoint, ...], sumo_road_network: SumoRoadNetwork
+        ) -> Tuple[PositionalViaPoint, ...]:
+            return tuple(
+                PositionalViaPoint(
+                    sumo_road_network.world_coord_from_offset(
+                        sumo_road_network.lane_by_offset(via.edge_id, via.lane_offset),
+                        via.offset_into_lane,
+                    ),
+                    via.hit_radius,
+                )
+                for via in vias
+            )
+
         # For now we discard the route and just take the start and end to form our
         # missions.
         if isinstance(mission, sstudio_types.Mission):
@@ -560,7 +580,7 @@ class Scenario:
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
                 task=mission.task,
-                via_points=mission.via_points,
+                via_points=to_positional_via_points(mission.via_points, road_network),
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
             position, heading = to_position_and_heading(*mission.begin, road_network,)
@@ -571,7 +591,7 @@ class Scenario:
                 goal=EndlessGoal(),
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via_points=mission.via_points,
+                via_points=to_positional_via_points(mission.via_points, road_network),
             )
         elif isinstance(mission, sstudio_types.LapMission):
             start_edge_id, start_lane, start_edge_offset = mission.route.begin
@@ -603,7 +623,7 @@ class Scenario:
                 route_length=route_length,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via_points=mission.via_points,
+                via_points=to_positional_via_points(mission.via_points, road_network),
             )
 
         raise RuntimeError(
