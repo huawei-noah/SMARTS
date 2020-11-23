@@ -46,7 +46,7 @@ class MissionPlanner:
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
-    ):
+    ) -> Mission:
         assert min_range_along_lane > 0  # Need to start further than beginning of lane
         assert max_range_along_lane < 1  # Cannot start past end of lane
         assert min_range_along_lane < max_range_along_lane  # Min must be less than max
@@ -68,7 +68,7 @@ class MissionPlanner:
             entry_tactic=None,
         )
 
-    def plan(self, mission: Optional[Mission]):
+    def plan(self, mission: Optional[Mission]) -> Mission:
         self._mission = mission or self.random_endless_mission()
 
         if not self._mission.has_fixed_route:
