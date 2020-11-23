@@ -208,8 +208,7 @@ class AgentManager:
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
     def step_sensors(self, sim):
-        for vehicle_id in sim.vehicle_index.sensor_states().keys():
-            sensor_state = sim.vehicle_index.sensor_states()[vehicle_id]
+        for vehicle_id, sensor_state in sim.vehicle_index.sensor_states().items():
             Sensors.step(self, sensor_state)
 
             vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
