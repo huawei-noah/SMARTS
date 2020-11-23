@@ -23,13 +23,13 @@ from typing import Optional
 
 import numpy as np
 
-from smarts.sstudio.types import MapZone, UTurn
-from .sumo_road_network import SumoRoadNetwork
-from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
-from .waypoints import Waypoint, Waypoints
-from .route import ShortestRoute, EmptyRoute
+from smarts.sstudio.types import UTurn
 from .coordinates import Pose
+from .route import ShortestRoute, EmptyRoute
+from .scenario import EndlessGoal, LapMission, Mission, Start
+from .sumo_road_network import SumoRoadNetwork
 from .utils.math import vec_to_radians, radians_to_vec, evaluate_bezier as bezier
+from .waypoints import Waypoint, Waypoints
 
 
 class PlanningError(Exception):
