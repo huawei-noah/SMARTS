@@ -17,10 +17,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import dataclasses
 import hashlib
 import os
 import shutil
-import dataclasses
+
 
 # https://stackoverflow.com/a/2166841
 def isnamedtupleinstance(x):
@@ -82,3 +83,14 @@ def file_md5_hash(file_path: str) -> str:
         hasher.update(f.read().encode())
 
     return str(hasher.hexdigest())
+
+
+def smarts_log_dir() -> str:
+    ## Following should work for linux and macos
+    smarts_dir = os.path.join(os.path.expanduser("~"), ".smarts")
+    os.makedirs(smarts_dir, exist_ok=True)
+    return smarts_dir
+
+
+def make_dir_in_smarts_log_dir(dir):
+    return os.path.join(smarts_log_dir(), dir)

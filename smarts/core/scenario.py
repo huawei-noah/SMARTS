@@ -22,29 +22,28 @@ import json
 import logging
 import math
 import os
-import sys
 import pickle
 import random
 import uuid
-
-import numpy as np
-
 from dataclasses import dataclass, field
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
 
-from .data_model import SocialAgent
-from .sumo_road_network import SumoRoadNetwork
-from .waypoints import Waypoints
-from .coordinates import Heading
-from .utils.math import vec_to_radians
-from .utils.file import path2hash, file_md5_hash
-from .utils.id import SocialAgentId
-from .route import ShortestRoute
+import numpy as np
+
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import EntryTactic
+
+from .coordinates import Heading
+from .data_model import SocialAgent
+from .route import ShortestRoute
+from .sumo_road_network import SumoRoadNetwork
+from .utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
+from .utils.id import SocialAgentId
+from .utils.math import vec_to_radians
+from .waypoints import Waypoints
 
 
 @dataclass(frozen=True)
@@ -162,7 +161,7 @@ class Scenario:
         route: str = None,
         missions: Dict[str, Mission] = None,
         social_agents: Dict[str, SocialAgent] = None,
-        log_dir: str = "/tmp/smarts/_sumo_run_logs",
+        log_dir: str = None,
         surface_patches: list = None,
     ):
 
@@ -173,7 +172,7 @@ class Scenario:
         self._bubbles = Scenario._discover_bubbles(scenario_root)
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
-        self._log_dir = os.path.abspath(log_dir)
+        self._log_dir = self._resolve_log_dir(log_dir)
 
         self._validate_assets_exist()
         self._road_network = SumoRoadNetwork.from_file(self.net_filepath)
@@ -715,11 +714,16 @@ class Scenario:
     def mission(self, agent_id):
         return self._missions.get(agent_id, None)
 
+    def _resolve_log_dir(self, log_dir):
+        if log_dir is None:
+            log_dir = make_dir_in_smarts_log_dir("_sumo_run_logs")
+
+        return os.path.abspath(log_dir)
+
     def _validate_assets_exist(self):
         assert Scenario.is_valid_scenario(self._root)
 
-        if not os.path.exists(self._log_dir):
-            os.makedirs(self._log_dir)
+        os.makedirs(self._log_dir, exist_ok=True)
 
     @property
     def scenario_hash(self):

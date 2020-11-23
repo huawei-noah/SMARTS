@@ -8,9 +8,9 @@ from pathlib import Path
 from ray import tune
 from ray.rllib.models import ModelCatalog
 
+from examples.rllib_agent import TrainingModel, rllib_agent
+from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-
-from examples.rllib_agent import rllib_agent, TrainingModel
 
 HORIZON = 5000
 
@@ -53,7 +53,7 @@ def test_learning_regression_rllib():
         name="learning_regression_test",
         stop={"training_iteration": 60},
         max_failures=10,
-        local_dir="~/smarts_learning_regression",
+        local_dir=make_dir_in_smarts_log_dir("smarts_learning_regression"),
         config=tune_confg,
     )
 
