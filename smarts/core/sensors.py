@@ -137,6 +137,7 @@ class Observation:
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
+    via_point_data: ViaPointData = None
 
 
 @dataclass
@@ -247,6 +248,22 @@ class Sensors:
             else None
         )
 
+        near_via_points = []
+        hit_via_point = []
+        nearest_remaining_via_point = None
+        if vehicle.subscribed_to_via_point_sensor:
+            (
+                near_via_points,
+                hit_via_point,
+                nearest_remaining_via_point,
+            ) = vehicle.via_point_sensor()
+
+        via_point_data = ViaPointData(
+            nearest_remaining_via_point=nearest_remaining_via_point,
+            near_via_points=near_via_points,
+            hit_via_point=hit_via_point,
+        )
+
         vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
         distance_travelled = vehicle.trip_meter_sensor(sim)
 
@@ -280,6 +297,7 @@ class Sensors:
                 drivable_area_grid_map=drivable_area_grid_map,
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
+                via_point_data=via_point_data,
             ),
             done,
         )
