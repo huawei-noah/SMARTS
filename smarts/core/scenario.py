@@ -105,6 +105,7 @@ def default_entry_tactic():
 class PositionalViaPoint:
     position: Tuple[float, float]
     radius: float
+    required_speed: float
 
 
 @dataclass(frozen=True)
@@ -562,6 +563,7 @@ class Scenario:
                         )
                     ),
                     via.hit_radius,
+                    via.required_speed,
                 )
                 for via in vias
             )

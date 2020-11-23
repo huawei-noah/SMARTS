@@ -1044,45 +1044,51 @@ class AccelerometerSensor(Sensor):
 
 class ViaPointSensor(Sensor):
     def __init__(self, vehicle, mission_planner, acquisition_radius):
-        self._last_points = set()
+        self._consumed_via_points = set()
         self._mission_planner = mission_planner
         self._via_hits = dict()
         self._acquisition_radius = acquisition_radius
         self._vehicle = vehicle
 
-    def _near(position, via_point_position, radius):
-        return squared_dist(position, via_point_position) < radius ** 2
-
     @property
     def _via_points(self):
-        return self._mission_planner.mission.via_points
+        return set(self._mission_planner.mission.via_points)
 
     def __call__(self):
-        vias = self._via_points()
+        def _near(position, via_point_position, radius):
+            return squared_dist(position, via_point_position) < radius ** 2
+
+        vias = self._via_points
 
         near_via_points = set()
         hit_via_points = set()
         nearest_remaining_via_point = None
-        vehicle_pos = self._vehicle.position
+        vehicle_pos = self._vehicle.position[:2]
         for point_via in vias:
-            pos = vec_2d(point_via.position)
-            near = self._near(pos, vehicle_pos, self._acquisition_radius)
+            pos = vec_2d(point_via.position)[:2]
+            near = _near(pos, vehicle_pos, self._acquisition_radius)
 
-            if self._last_point in self._last_points:
+            ## Skip consumed vias
+            if point_via in self._consumed_via_points:
                 continue
 
             if near:
                 near_via_points.add(point_via)
 
             if (
-                self._near(pos, vehicle_pos, point_via.radius)
-                and self.vehicle.speed >= point_via.required_speed
+                _near(pos, vehicle_pos, point_via.radius)
+                and self._vehicle.speed >= point_via.required_speed
             ):
                 hits = self._via_hits.get(point_via, 0) + 1
                 hit_via_points.add(point_via)
                 self._via_hits[point_via] = hits
+        
+        ## Add the hit vias to the consumed ones
+        self._consumed_via_points = hit_via_points | (self._consumed_via_points)
 
-        self._last_points = hit_via_points | (self._last_points & near_via_points)
+        ## Reset after collecting all
+        if self._consumed_via_points == vias:
+            self._consumed_via_points = set()
 
         def _ordered_by_position(vias, position):
             return sorted(
@@ -1091,7 +1097,7 @@ class ViaPointSensor(Sensor):
 
         # TODO use a better heuristic of all waypoints for remaining
         nearest_remaining_via_point = _ordered_by_position(
-            set(self._mission_vias()) - self._last_points, self._vehicle.position
+            set(self._via_points) - self._consumed_via_points, vehicle_pos
         )
         return (
             near_via_points,

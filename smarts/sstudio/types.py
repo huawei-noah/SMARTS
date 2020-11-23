@@ -312,6 +312,7 @@ class ViaPoint:
     lane_offset: int
     offset_into_lane: Any
     hit_radius: float
+    required_speed: float
 
 
 @dataclass(frozen=True)
