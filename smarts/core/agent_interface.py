@@ -102,13 +102,6 @@ class Accelerometer:
     pass
 
 
-@dataclass
-class ViaPoints:
-    """Observation of nearby via_points"""
-
-    sensor_range_radius: float = 50
-
-
 class AgentType(IntEnum):
     Buddha = 0
     """Agent sees nothing and does nothing"""
@@ -219,11 +212,6 @@ class AgentInterface:
     Enable acceleration and jerk observations.
     """
 
-    via_point: Union[ViaPoints, bool] = True
-    """
-    Points that must be hit in order to successfully end an episode at the end goal.
-    """
-
     def __post_init__(self):
         self.neighborhood_vehicles = AgentInterface._resolve_config(
             self.neighborhood_vehicles, NeighborhoodVehicles
@@ -241,7 +229,6 @@ class AgentInterface:
         self.accelerometer = AgentInterface._resolve_config(
             self.accelerometer, Accelerometer
         )
-        self.via_point = AgentInterface._resolve_config(self.via_point, ViaPoints)
 
     @staticmethod
     def from_type(requested_type: AgentType, **kwargs):

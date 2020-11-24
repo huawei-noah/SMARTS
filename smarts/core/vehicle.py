@@ -434,14 +434,13 @@ class Vehicle:
                 )
             )
 
-        if agent_interface.via_point:
-            vehicle.attach_via_point_sensor(
-                ViaPointSensor(
-                    vehicle=vehicle,
-                    mission_planner=mission_planner,
-                    acquisition_radius=agent_interface.via_point.sensor_range_radius,
-                )
+        vehicle.attach_via_point_sensor(
+            ViaPointSensor(
+                vehicle=vehicle,
+                mission_planner=mission_planner,
+                acquisition_radius=100,
             )
+        )
 
     def step(self, current_simulation_time):
         self._chassis.step(current_simulation_time)
