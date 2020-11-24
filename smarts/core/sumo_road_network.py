@@ -176,6 +176,10 @@ class SumoRoadNetwork:
         metadata["lane_dividers"] = lane_dividers
         metadata["edge_dividers"] = edge_dividers
 
+        mesh.visual = trimesh.visual.TextureVisuals(
+            material=trimesh.visual.material.PBRMaterial()
+        )
+
         scene.add_geometry(mesh)
         return GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
 
