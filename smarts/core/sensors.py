@@ -342,7 +342,7 @@ class Sensors:
 
         # TODO: check vehicles for agent individually
         for vehicle in vehicles:
-            sensor_state = sim.vehicle_index.sensor_states()[vehicle.id]
+            sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
             route_edges = sensor_state.mission_planner.route.edges
 
             vehicle_pos = vehicle.position[:2]

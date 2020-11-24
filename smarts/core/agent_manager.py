@@ -120,7 +120,7 @@ class AgentManager:
         for v_id in vehicle_ids:
             vehicle = sim.vehicle_index.vehicle_by_id(v_id)
             agent_id = self._vehicle_with_sensors[v_id]
-            sensor_state = sim.vehicle_index.sensor_states()[vehicle.id]
+            sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
             observations[agent_id], dones[agent_id] = Sensors.observe(
                 sim, agent_id, sensor_state, vehicle
             )
@@ -152,7 +152,9 @@ class AgentManager:
                 ]
                 # returns format of {<agent_id>: {<vehicle_id>: {...}}}
                 sensor_states = {
-                    vehicle.id: sim.vehicle_index.sensor_states()[vehicle.id]
+                    vehicle.id: sim.vehicle_index.sensor_state_for_vehicle_id(
+                        vehicle.id
+                    )
                     for vehicle in vehicles
                 }
                 observations[agent_id], dones[agent_id] = Sensors.observe_batch(
@@ -180,7 +182,7 @@ class AgentManager:
                 )
 
                 vehicle = sim.vehicle_index.vehicle_by_id(vehicle_ids[0])
-                sensor_state = sim.vehicle_index.sensor_states()[vehicle.id]
+                sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
                 observations[agent_id], dones[agent_id] = Sensors.observe(
                     sim, agent_id, sensor_state, vehicle
                 )
@@ -208,7 +210,7 @@ class AgentManager:
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
     def step_sensors(self, sim):
-        for vehicle_id, sensor_state in sim.vehicle_index.sensor_states().items():
+        for vehicle_id, sensor_state in sim.vehicle_index.sensor_states_items():
             Sensors.step(self, sensor_state)
 
             vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
