@@ -233,28 +233,21 @@ class Cursor:
         )
 
         transition = None
+        # XXX: When a travelling bubble disappears and an agent is airlocked or
+        #      hijacked. It remains in that state.
         # TODO: Depending on step size, we could potentially skip transitions (e.g.
         #       go straight to relinquish w/o hijacking first). This may be solved by
         #       time-based airlocking. For robust code we'll want to handle these
         #       scenarios (e.g. hijacking if didn't airlock first)
-        if (
-            is_social
-            and not is_shadowed
-            and is_admissible
-            and in_airlock(pos)
-            and not (in_airlock(prev_pos) or in_bubble(prev_pos))
-        ):
+        if is_social and not is_shadowed and is_admissible and in_airlock(pos):
             transition = BubbleTransition.AirlockEntered
-        elif is_shadowed and is_admissible and in_airlock(prev_pos) and in_bubble(pos):
+        elif is_shadowed and is_admissible and in_bubble(pos):
             transition = BubbleTransition.Entered
-        elif is_hijacked and in_bubble(prev_pos) and in_airlock(pos):
+        elif is_hijacked and in_airlock(pos):
+            # XXX: This may get called repeatedly because we don't actually change
+            #      any state when this happens.
             transition = BubbleTransition.Exited
-        elif (
-            # AirlockEntered --> AirlockExited or Entered --> AirlockExited
-            (is_shadowed or is_hijacked)
-            and in_airlock(prev_pos)
-            and not (in_airlock(pos) or in_bubble(pos))
-        ):
+        elif (is_shadowed or is_hijacked) and not (in_airlock(pos) or in_bubble(pos)):
             transition = BubbleTransition.AirlockExited
 
         state = None
@@ -340,7 +333,7 @@ class BubbleManager:
         # Calculate latest cursors
         cursors = []
         for vehicle_id, vehicle in index_new.vehicleitems():
-            for bubble in self._bubbles:
+            for bubble in self._active_bubbles():
                 cursors.append(
                     Cursor.from_pos(
                         prev_pos=index_pre.vehicle_position(vehicle_id),
