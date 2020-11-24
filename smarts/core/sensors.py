@@ -249,7 +249,7 @@ class Sensors:
         )
 
         near_via_lanes = []
-        on_via_lanes = None
+        on_via_lanes = []
         if vehicle.subscribed_to_via_lane_sensor:
             (near_via_lanes, on_via_lanes,) = vehicle.via_lane_sensor()
 
@@ -1047,7 +1047,7 @@ class ViaEdgeSensor(Sensor):
         return self._mission_planner.mission.via_lanes
 
     def __call__(self):
-        near_via_lanes = set()
+        near_via_lanes = list()
         on_via_lanes = list()
         veh_pos = self._vehicle.position[:2]
         for via_lane in self._via_lanes:
@@ -1060,7 +1060,7 @@ class ViaEdgeSensor(Sensor):
             if dist_from_lane_sq > self._acquisition_radius ** 2:
                 continue
 
-            near_via_lanes.add((via_lane, np.sqrt(dist_from_lane_sq)))
+            near_via_lanes.append((via_lane, np.sqrt(dist_from_lane_sq)))
 
             if (
                 dist_from_lane_sq > via_lane.hit_distance ** 2
