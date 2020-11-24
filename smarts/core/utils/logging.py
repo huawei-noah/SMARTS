@@ -17,14 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
-from random import randrange
-import sys
-import logging
-from time import time
-import ctypes
-from contextlib import contextmanager
 import atexit
+import ctypes
+import logging
+import os
+import sys
+from contextlib import contextmanager
+from random import randrange
+from time import time
 
 
 @contextmanager
@@ -52,7 +52,6 @@ def surpress_stdout():
     #      processes calling redirect_stdout.
     dup_stdout_fno = randrange(5, 128)
     os.dup2(original_stdout_fno, dup_stdout_fno)
-    # dup_stdout_fno = os.dup(original_stdout_fno)
 
     devnull_fno = os.open(os.devnull, os.O_WRONLY)
     os.dup2(devnull_fno, original_stdout_fno)
@@ -68,7 +67,6 @@ def surpress_stdout():
 
         os.dup2(dup_stdout_fno, original_stdout_fno)
         os.fsync(dup_stdout_fno)
-
         sys.stdout = os.fdopen(dup_stdout_fno, "w")
 
         def close():
