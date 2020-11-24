@@ -23,7 +23,6 @@ from dataclasses import dataclass
 
 import numpy
 from direct.showbase.ShowBase import ShowBase
-from pybullet_utils.bullet_client import BulletClient
 
 from . import models
 from .chassis import Chassis, AckermannChassis, BoxChassis

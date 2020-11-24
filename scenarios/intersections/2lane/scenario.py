@@ -1,7 +1,6 @@
 import os
-import random
 
-from smarts.sstudio import gen_traffic, gen_missions
+from smarts.sstudio import gen_traffic
 from smarts.sstudio.types import (
     Traffic,
     Flow,

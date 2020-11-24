@@ -29,19 +29,19 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Point, Polygon
 from shapely.geometry import box as shapely_box
 
-from . import models
-from .coordinates import BoundingBox, Heading, Pose
-from .tire_models import TireForces
-from .utils import pybullet
-from .utils.bullet import (
+from smarts.core import models
+from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.tire_models import TireForces
+from smarts.core.utils import pybullet
+from smarts.core.utils.bullet import (
     BulletBoxShape,
     BulletPositionConstraint,
     ContactPoint,
     JointInfo,
     JointState,
 )
-from .utils.math import radians_to_vec, yaw_from_quaternion
-from .utils.pybullet import bullet_client as bc
+from smarts.core.utils.math import radians_to_vec, yaw_from_quaternion
+from smarts.core.utils.pybullet import bullet_client as bc
 
 
 def _query_bullet_contact_points(bullet_client, bullet_id, link_index):

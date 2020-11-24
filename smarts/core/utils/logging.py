@@ -17,9 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os
+from random import randrange
+import sys
 import logging
 from time import time
+import ctypes
 from contextlib import contextmanager
+import atexit
 
 
 @contextmanager
@@ -31,24 +36,42 @@ def timeit(name: str):
     logging.info(f'"{name}" took: {ellapsed_time:4f}ms')
 
 
-# Reference: https://gist.github.com/simon-weber/7853144
-@contextmanager
-def disable_logging(highest_level=logging.CRITICAL):
-    """
-    A context manager that will prevent any logging messages triggered during the
-    body from being processed.
-    :param highest_level: the maximum logging level in use.
-      This would only need to be changed if a custom level greater than CRITICAL
-      is defined.
-    """
-    # HACK: If can't get the highest logging level in effect then delegate to the user.
-    #       If can't get the current module-level override then use an undocumented
-    #       (but non-private!) interface.
+libc = ctypes.CDLL(None)
+try:
+    c_stdout = ctypes.c_void_p.in_dll(libc, "stdout")
+except:
+    # macOS
+    c_stdout = ctypes.c_void_p.in_dll(libc, "__stdoutp")
 
-    previous_level = logging.root.manager.disable
-    logging.disable(highest_level)
+
+@contextmanager
+def surpress_stdout():
+    original_stdout_fno = sys.stdout.fileno()
+
+    # XXX: Range is to prevent collisions if there are race conditions with multiple
+    #      processes calling redirect_stdout.
+    dup_stdout_fno = randrange(5, 128)
+    os.dup2(original_stdout_fno, dup_stdout_fno)
+    # dup_stdout_fno = os.dup(original_stdout_fno)
+
+    devnull_fno = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull_fno, original_stdout_fno)
+    sys.stdout = os.fdopen(devnull_fno, "w")
 
     try:
         yield
     finally:
-        logging.disable(previous_level)
+        sys.stdout.flush()
+        libc.fflush(c_stdout)
+        os.fsync(devnull_fno)
+        os.close(devnull_fno)
+
+        os.dup2(dup_stdout_fno, original_stdout_fno)
+        os.fsync(dup_stdout_fno)
+
+        sys.stdout = os.fdopen(dup_stdout_fno, "w")
+
+        def close():
+            sys.stdout.close()
+
+        atexit.register(close)

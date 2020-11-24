@@ -18,11 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from .logging import disable_logging
+from smarts.core.utils.logging import surpress_stdout
 
-with disable_logging():
-    # XXX: Importing pybullet logs an annoying build version tag. There's no
-    #      "friendly" way to fix this since they simply use print(...). Disabling
-    #      logging at the time of import is our hack.
+# XXX: Importing pybullet logs an annoying build version tag. There's no "friendly"
+#      way to fix this since they simply use print(...). Disabling logging at the
+#      time of import is our hack.
+with surpress_stdout():
     from pybullet import *
     from pybullet_utils import bullet_client
