@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import queue
 import random
+import math
 from typing import Sequence
 from dataclasses import dataclass
 from collections import namedtuple, defaultdict
@@ -32,6 +33,7 @@ from .utils.math import (
     lerp,
     vec_2d,
     signed_dist_to_line,
+    radians_to_vec,
 )
 
 
@@ -185,7 +187,7 @@ class Waypoints:
         )[0][0]
 
         unlinked_waypoint_paths = self._waypoints_starting_at_waypoint(
-            closest_linked_wp, lookahead, filter_edge_ids
+            closest_linked_wp, lookahead, point, filter_edge_ids
         )
 
         return unlinked_waypoint_paths
@@ -239,7 +241,11 @@ class Waypoints:
         return [[linked_wps[idx] for idx in idxs] for idxs in closest_indices]
 
     def _waypoints_starting_at_waypoint(
-        self, waypoint: LinkedWaypoint, lookahead, filter_edge_ids: Sequence[str] = None
+        self,
+        waypoint: LinkedWaypoint,
+        lookahead,
+        point,
+        filter_edge_ids: Sequence[str] = None,
     ):
         waypoint_paths = [[waypoint]]
         for _ in range(lookahead):
@@ -263,9 +269,9 @@ class Waypoints:
 
             waypoint_paths = next_waypoint_paths
 
-        return [self._equally_spaced_path(path) for path in waypoint_paths]
+        return [self._equally_spaced_path(path, point) for path in waypoint_paths]
 
-    def _equally_spaced_path(self, path):
+    def _equally_spaced_path(self, path, point):
         continuous_variables = [
             "ref_wp_positions_x",
             "ref_wp_positions_y",
@@ -299,7 +305,20 @@ class Waypoints:
         ref_waypoints_coordinates["ref_wp_headings"] = np.unwrap(
             ref_waypoints_coordinates["ref_wp_headings"]
         )
+        first_wp_heading = ref_waypoints_coordinates["ref_wp_headings"][0]
+        wp_position = np.array([*path[0].wp.pos, 0])
+        vehicle_pos = np.array([point[0], point[1], 0])
+        heading_vector = np.array([*radians_to_vec(first_wp_heading), 0,])
+        projected_distant_wp_vehicle = np.inner(
+            (vehicle_pos - wp_position), heading_vector
+        )
 
+        ref_waypoints_coordinates["ref_wp_positions_x"][0] = (
+            wp_position[0] + projected_distant_wp_vehicle * heading_vector[0]
+        )
+        ref_waypoints_coordinates["ref_wp_positions_y"][0] = (
+            wp_position[1] + projected_distant_wp_vehicle * heading_vector[1]
+        )
         # To ensure that the distance between waypoints are equal, we used
         # interpolation approach inspired by:
         # https://stackoverflow.com/a/51515357
