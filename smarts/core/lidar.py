@@ -24,6 +24,7 @@ import itertools
 import numpy as np
 from panda3d.core import Quat
 
+from .utils import pybullet
 from .utils.pybullet import bullet_client as bc
 
 from .lidar_sensor_params import SensorParams
