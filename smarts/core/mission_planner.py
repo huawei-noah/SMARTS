@@ -194,7 +194,8 @@ class MissionPlanner:
         return edge_ids
 
     def uturn_waypoints(self, pose: Pose):
-        # TODO: need to revisit the approach to calculate the U-Turn trajectory
+        # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
+        #       2. Wrap this method in a helper.
         start_lane = self._road_network.nearest_lane(
             self._mission.start.position,
             include_junctions=False,
@@ -209,8 +210,7 @@ class MissionPlanner:
         oncoming_edge = start_edge.oncoming_edges[0]
         oncoming_lanes = oncoming_edge.getLanes()
         target_lane_index = self._mission.task.target_lane_index
-        if len(oncoming_lanes) <= target_lane_index:
-            return []
+        target_lane_index = min(target_lane_index, len(oncoming_lanes) - 1)
         target_lane = oncoming_lanes[target_lane_index]
 
         offset = self._road_network.offset_into_lane(start_lane, pose.position[:2])
