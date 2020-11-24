@@ -44,6 +44,14 @@ except:
     c_stdout = ctypes.c_void_p.in_dll(libc, "__stdoutp")
 
 
+def try_fsync(fd):
+    try:
+        os.fsync(fd)
+    except OSError:
+        # On GH actions was returning an OSError: [Errno 22] Invalid argument
+        pass
+
+
 @contextmanager
 def surpress_stdout():
     original_stdout_fno = sys.stdout.fileno()
@@ -62,11 +70,11 @@ def surpress_stdout():
     finally:
         sys.stdout.flush()
         libc.fflush(c_stdout)
-        os.fsync(devnull_fno)
+        try_fsync(devnull_fno)
         os.close(devnull_fno)
 
         os.dup2(dup_stdout_fno, original_stdout_fno)
-        os.fsync(dup_stdout_fno)
+        try_fsync(dup_stdout_fno)
         sys.stdout = os.fdopen(dup_stdout_fno, "w")
 
         def close():
