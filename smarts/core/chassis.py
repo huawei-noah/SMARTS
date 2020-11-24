@@ -229,22 +229,17 @@ class AckermannChassis(Chassis):
         assert isinstance(pose, Pose)
         self._log = logging.getLogger(self.__class__.__name__)
 
-        if (vehicle_filepath is None):
+        if vehicle_filepath is None:
             with pkg_resources.path(models, "vehicle.urdf") as path:
                 vehicle_filepath = str(path.absolute())
 
-        if (controller_parameters_filepath is None):
+        if controller_parameters_filepath is None:
             with pkg_resources.path(
                 models, "controller_parameters.yaml"
             ) as controller_path:
                 controller_filepath = str(controller_path.absolute())
             with open(controller_filepath, "r") as controller_file:
-                controller_parameters_filepath = yaml.safe_load(controller_file)[
-                    "car"
-                ]
-
-
-
+                controller_parameters_filepath = yaml.safe_load(controller_file)["car"]
 
         # XXX: Parameterize these vehicle properties?
         self._client = bullet_client
