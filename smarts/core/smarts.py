@@ -259,7 +259,7 @@ class SMARTS(ShowBase):
             vehicle_ids = set()
             for agent_id, done in dones.items():
                 if self._agent_manager.is_boid_agent(agent_id):
-                    vehicle_ids.update([id_ for id_ in done if done[id_]])
+                    vehicle_ids.update(id_ for id_ in done if done[id_])
                 elif done:
                     ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                     # 0 if shadowing, 1 if active
