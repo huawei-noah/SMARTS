@@ -125,6 +125,10 @@ class MissionPlanner:
     def mission(self):
         return self._mission
 
+    def closest_point_on_lane(self, pose: Pose, lane_id: str):
+        lane = self._road_network.lane_by_id(lane_id)
+        return self._road_network.lane_center_at_point(lane, pose.position[:2])
+
     def waypoint_paths_at(self, pose: Pose, lookahead: float):
         """Call assumes you're on the correct route already. We do not presently
         "replan" in case the route has changed.

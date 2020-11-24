@@ -305,14 +305,13 @@ class Flow:
 
 
 @dataclass
-class ViaPoint:
+class ViaLane:
     """A point on an edge that an actor must pass through"""
 
     edge_id: str
     lane_offset: int
-    offset_into_lane: Any
-    hit_radius: float
     required_speed: float
+    hit_distance: float = -1
 
 
 @dataclass(frozen=True)
@@ -358,7 +357,7 @@ class Mission:
     route: Route
     """The route for the actor to attempt to follow."""
 
-    via_points: Tuple[ViaPoint, ...] = ()
+    via_lanes: Tuple[ViaLane, ...] = ()
     """Points on an edge that an actor must pass through"""
 
     start_time: float = 0.1
@@ -384,7 +383,7 @@ class EndlessMission:
     offset:
         The offset in metres into the lane. Also acceptable\\: 'max', 'random'
     """
-    via_points: Tuple[ViaPoint, ...] = ()
+    via_lanes: Tuple[ViaLane, ...] = ()
     """Points on an edge that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
@@ -402,7 +401,7 @@ class LapMission:
     """The route for the actor to attempt to follow"""
     num_laps: int
     """The amount of times to repeat the mission"""
-    via_points: Tuple[ViaPoint, ...] = ()
+    via_lanes: Tuple[ViaLane, ...] = ()
     """Points on an edge that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
@@ -424,7 +423,7 @@ class GroupedLapMission:
     """The number of actors to be part of the group"""
     num_laps: int
     """The amount of times to repeat the mission"""
-    via_points: Tuple[ViaPoint, ...] = ()
+    via_lanes: Tuple[ViaLane, ...] = ()
     """Points on an edge that an actor must pass through"""
 
 

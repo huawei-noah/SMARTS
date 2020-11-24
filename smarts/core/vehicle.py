@@ -39,7 +39,7 @@ from .sensors import (
     RGBSensor,
     RoadWaypointsSensor,
     TripMeterSensor,
-    ViaPointSensor,
+    ViaEdgeSensor,
     WaypointsSensor,
 )
 from .utils.math import rotate_around_point
@@ -434,11 +434,9 @@ class Vehicle:
                 )
             )
 
-        vehicle.attach_via_point_sensor(
-            ViaPointSensor(
-                vehicle=vehicle,
-                mission_planner=mission_planner,
-                acquisition_radius=100,
+        vehicle.attach_via_lane_sensor(
+            ViaEdgeSensor(
+                vehicle=vehicle, mission_planner=mission_planner, acquisition_range=100,
             )
         )
 
@@ -495,7 +493,7 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
-            "via_point_sensor",
+            "via_lane_sensor",
         ]
         for sensor_name in sensor_names:
 
