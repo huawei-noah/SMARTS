@@ -352,12 +352,7 @@ class UTurn:
 
 
 @dataclass(frozen=True)
-class MissionBase:
-    pass
-
-
-@dataclass(frozen=True)
-class Mission(MissionBase):
+class Mission:
     """The descriptor for an actor's mission."""
 
     route: Route
@@ -376,7 +371,7 @@ class Mission(MissionBase):
 
 
 @dataclass(frozen=True)
-class EndlessMission(MissionBase):
+class EndlessMission:
     """The descriptor for an actor's mission that has no end."""
 
     begin: Tuple[str, int, float]
@@ -398,7 +393,7 @@ class EndlessMission(MissionBase):
 
 
 @dataclass(frozen=True)
-class LapMission(MissionBase):
+class LapMission:
     """The descriptor for an actor's mission that defines mission that repeats
     in a closed loop.
     """
@@ -416,7 +411,7 @@ class LapMission(MissionBase):
 
 
 @dataclass(frozen=True)
-class GroupedLapMission(MissionBase):
+class GroupedLapMission:
     """The descriptor for a group of actor missions that repeat in a closed loop."""
 
     route: Route
