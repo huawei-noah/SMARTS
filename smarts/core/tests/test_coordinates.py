@@ -1,11 +1,8 @@
 import math
 import numpy as np
 import pytest
-import pybullet
-import pybullet_utils.bullet_client as bc
 
 from smarts.core.coordinates import Pose, Heading
-from smarts.core.utils.math import fast_quaternion_from_angle
 
 
 @pytest.fixture

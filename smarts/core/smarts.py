@@ -17,52 +17,47 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
-import math
-import logging
-from typing import List, Sequence, Dict
-from collections import defaultdict, namedtuple
 import importlib.resources as pkg_resources
+import logging
+import math
+import os
+from collections import defaultdict
+from typing import List, Sequence
 
 import gltf
 import numpy
-import pybullet
-import pybullet_utils.bullet_client as bc
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import (
-    ClockObject,
-    GeomVertexReader,
-    loadPrcFileData,
-    NodePath,
-    Shader,
-)
-from sklearn.metrics.pairwise import euclidean_distances
-
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
-from .utils.visdom_client import VisdomClient
+from panda3d.core import ClockObject, NodePath, Shader, loadPrcFileData
 
-from . import glsl
-from . import models
-from .agent import Agent
+import warnings
+
+with warnings.catch_warnings():
+    # XXX: Benign warning, seems no other way to "properly" fix
+    warnings.filterwarnings("ignore", "numpy.ufunc size changed")
+    from sklearn.metrics.pairwise import euclidean_distances
+
+from . import glsl, models
 from .agent_manager import AgentManager
 from .bubble_manager import BubbleManager
-from .colors import Colors, SceneColors
+from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
-from .coordinates import Heading, Pose
-from .trap_manager import TrapManager
 from .masks import RenderMasks
 from .motion_planner_provider import MotionPlannerProvider
 from .provider import ProviderState
-from .sensors import Collision
 from .scenario import Scenario
-from .sumo_traffic_simulation import SumoTrafficSimulation
+from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
+from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
-from .vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
+from .trap_manager import TrapManager
+from .utils import pybullet
+from .utils.pybullet import bullet_client as bc
+from .utils.visdom_client import VisdomClient
+from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
 from .waypoints import Waypoints
-
 
 # disable vsync otherwise we are limited to refresh-rate of screen
 loadPrcFileData("", "sync-video false")
@@ -70,6 +65,7 @@ loadPrcFileData("", "model-path %s" % os.getcwd())
 loadPrcFileData("", "audio-library-name null")
 loadPrcFileData("", "gl-version 3 3")
 loadPrcFileData("", "notify-level error")
+loadPrcFileData("", "print-pipe-types false")
 
 # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
 # loadPrcFileData('', 'threading-model Cull/Draw')
@@ -119,6 +115,7 @@ class SMARTS(ShowBase):
             self._motion_planner_provider,
             self._traffic_history_provider,
         ]
+
         # We buffer provider state between steps to compensate for TRACI's timestep delay
         self._last_provider_state = None
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
@@ -288,7 +285,7 @@ class SMARTS(ShowBase):
 
         self._agent_manager.teardown_ego_agents(agents_to_teardown)
         self._agent_manager.teardown_social_agents(agents_to_teardown)
-        self._teardown_agent_vehicles(vehicles_to_teardown)
+        self._teardown_vehicles(vehicles_to_teardown)
 
     def reset(self, scenario: Scenario):
         if scenario == self._scenario and self._reset_agents_only:
@@ -297,7 +294,7 @@ class SMARTS(ShowBase):
             for agent_id in agent_ids:
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                 vehicle_ids_to_teardown.extend(ids)
-            self._teardown_agent_vehicles(set(vehicle_ids_to_teardown))
+            self._teardown_vehicles(set(vehicle_ids_to_teardown))
             self._trap_manager.init_traps(scenario)
             self._agent_manager.init_ego_agents(self)
             self._sync_panda3d()
@@ -452,7 +449,7 @@ class SMARTS(ShowBase):
 
         super().destroy()
 
-    def _teardown_agent_vehicles(self, vehicle_ids):
+    def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self._clear_collisions(vehicle_ids)
 

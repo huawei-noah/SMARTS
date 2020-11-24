@@ -2,7 +2,11 @@ import gym
 import pytest
 import numpy as np
 
-from collections.abc import Sequence
+# Reference: https://stackoverflow.com/a/53978543/2783780
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.agent import AgentSpec, Agent

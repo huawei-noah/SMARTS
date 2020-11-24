@@ -1,18 +1,14 @@
 import math
 
 import numpy as np
-import pybullet
-import pybullet_utils.bullet_client as bc
 import pytest
 from direct.showbase.ShowBase import ShowBase
 
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.coordinates import BoundingBox, Heading, Pose
-from smarts.core.utils.math import vec_2d
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
-from smarts.core.chassis import (
-    AckermannChassis,
-    BoxChassis,
-)
+from smarts.core.chassis import BoxChassis
 
 
 @pytest.fixture

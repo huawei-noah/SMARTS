@@ -10,7 +10,13 @@ import pytest
 )
 def test_examples(example):
     main = importlib.import_module(f"examples.{example}").main
-    main(scenarios=["scenarios/loop"], headless=True, num_episodes=1, seed=42)
+    main(
+        scenarios=["scenarios/loop"],
+        headless=True,
+        num_episodes=1,
+        seed=42,
+        max_episode_steps=100,
+    )
 
 
 def test_multi_instance_example():

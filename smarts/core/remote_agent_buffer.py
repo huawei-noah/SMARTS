@@ -74,7 +74,7 @@ class RemoteAgentBuffer:
             future = self._agent_buffer.pop(done_future_indices[0])
         else:
             # Otherwise, we will block, waiting on a remote agent future
-            self._log.warning(
+            self._log.debug(
                 "No ready remote agents, simulation will block until one is available"
             )
             future = self._agent_buffer.pop(0)

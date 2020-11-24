@@ -4,14 +4,13 @@ import time
 
 from pathlib import Path
 
-import numpy as np
-import pybullet
-import pybullet_utils.bullet_client as bc
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
 import pytest
 
 from smarts.core import models
 from smarts.core.chassis import AckermannChassis, BoxChassis
-from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.coordinates import Heading, Pose
 from smarts.core.vehicle import VEHICLE_CONFIGS
 
 

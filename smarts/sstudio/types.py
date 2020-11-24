@@ -17,21 +17,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import re
-import math
 import random
-import itertools
 import collections.abc as collections_abc
 from dataclasses import dataclass, field
 from typing import Sequence, Tuple, Dict, Any, Union, Optional
 
-import numpy as np
 from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.waypoints import Waypoint, Waypoints
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
 

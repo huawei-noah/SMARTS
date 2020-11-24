@@ -1,23 +1,17 @@
 import math
-import multiprocessing as mp
-import random
 from pathlib import Path
 from unittest import mock
-
-import pybullet
-import pybullet_utils.bullet_client as bc
-from direct.showbase.ShowBase import ShowBase
 
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
 )
+
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.coordinates import Pose, Heading
-from smarts.core.scenario import Start
 from smarts.core.vehicle import Vehicle
 from smarts.core.chassis import AckermannChassis
-
-# from smarts.core.utils.bullet import BulletClient
 
 
 TIMESTEP_SEC = 1 / 240

@@ -25,7 +25,12 @@ from dataclasses import dataclass
 from collections import namedtuple, defaultdict
 from scipy.interpolate import interp1d
 import numpy as np
-from sklearn.neighbors import KDTree
+
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "numpy.ufunc size changed")
+    from sklearn.neighbors import KDTree
 
 from .coordinates import Heading, Pose
 from .utils.math import (

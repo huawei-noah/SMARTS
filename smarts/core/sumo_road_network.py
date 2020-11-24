@@ -17,31 +17,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import math
 import logging
-import re
+import math
 import random
+import re
 from dataclasses import dataclass
-from typing import Union, Sequence, Tuple
+from typing import Sequence, Tuple, Union
 
 import numpy as np
-from shapely import ops
-from shapely.geometry import (
-    Polygon,
-    MultiPolygon,
-    LineString,
-)
-from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
-from shapely.ops import triangulate
-
 import trimesh
 import trimesh.scene
+from shapely import ops
+from shapely.geometry import LineString, MultiPolygon, Polygon
+from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
+from shapely.ops import triangulate
 from trimesh.exchange import gltf
 
-from .utils.math import rotate_around_point, sign as smrt_sign
+from .utils.math import rotate_around_point
 from .utils.sumo import sumolib
-from sumolib.net.lane import Lane
 from sumolib.net.edge import Edge
+from sumolib.net.lane import Lane
 
 
 def _convert_camera(camera):
@@ -180,6 +175,10 @@ class SumoRoadNetwork:
         lane_dividers, edge_dividers = self.compute_traffic_dividers()
         metadata["lane_dividers"] = lane_dividers
         metadata["edge_dividers"] = edge_dividers
+
+        mesh.visual = trimesh.visual.TextureVisuals(
+            material=trimesh.visual.material.PBRMaterial()
+        )
 
         scene.add_geometry(mesh)
         return GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
