@@ -106,9 +106,8 @@ class RemoteAgent:
             if self._conn:
                 self._conn.close()
 
-            if self._agent_proc.poll() is not None:
-                self._agent_proc.kill()
-                self._agent_proc.wait()
+            self._agent_proc.kill()
+            self._agent_proc.wait()
             self._agent_proc = None
 
         # Shutdown thread pool executor
