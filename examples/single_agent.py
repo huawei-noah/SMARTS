@@ -21,7 +21,9 @@ class KeepLaneAgent(Agent):
 
 def main(scenarios, headless, num_episodes, seed):
     agent_spec = AgentSpec(
-        interface=AgentInterface.from_type(AgentType.Tracker, max_episode_steps=None),
+        interface=AgentInterface.from_type(
+            AgentType.Laner, vehicle_type="car", max_episode_steps=None
+        ),
         agent_builder=KeepLaneAgent,
     )
 
