@@ -458,10 +458,8 @@ class BubbleManager:
         )
 
         for provider in sim.providers:
-            if (
-                sim.agent_manager.agent_interface_for_agent_id(agent_id).action_space
-                in provider.action_spaces
-            ):
+            interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+            if interface.action_space in provider.action_spaces:
                 provider.create_vehicle(
                     VehicleState(
                         vehicle_id=vehicle_id,

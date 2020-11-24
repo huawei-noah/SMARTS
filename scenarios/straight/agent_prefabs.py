@@ -1,7 +1,4 @@
-import logging
-
 import numpy as np
-
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
@@ -9,15 +6,8 @@ from smarts.zoo.registry import register
 
 
 class PoseBoidAgent(Agent):
-    def __init__(self):
-        self._log = logging.getLogger(self.__class__.__name__)
-        self._log.info(f"{self.__class__.__name__} was created")
-
     def act(self, obs):
-        returning = {
-            vehicle_id: self._single_act(obs_) for vehicle_id, obs_ in obs.items()
-        }
-        return returning
+        return {vehicle_id: self._single_act(obs_) for vehicle_id, obs_ in obs.items()}
 
     def _single_act(self, obs):
         wp = obs.waypoint_paths[0][:5][-1]
@@ -27,15 +17,8 @@ class PoseBoidAgent(Agent):
 
 
 class TrajectoryBoidAgent(Agent):
-    def __init__(self):
-        self._log = logging.getLogger(self.__class__.__name__)
-        self._log.info(f"{self.__class__.__name__} was created")
-
     def act(self, obs):
-        returning = {
-            vehicle_id: self._single_act(obs_) for vehicle_id, obs_ in obs.items()
-        }
-        return returning
+        return {vehicle_id: self._single_act(obs_) for vehicle_id, obs_ in obs.items()}
 
     def _single_act(self, obs):
         lane_index = 0
@@ -62,9 +45,7 @@ class TrajectoryBoidAgent(Agent):
 register(
     locator="pose-boid-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface(
-            action=ActionSpaceType.MultiTargetPose, waypoints=True
-        ),
+        interface=AgentInterface(action=ActionSpaceType.TargetPose, waypoints=True),
         agent_builder=PoseBoidAgent,
     ),
 )
