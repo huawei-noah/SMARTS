@@ -229,23 +229,48 @@ class AckermannChassis(Chassis):
         assert isinstance(pose, Pose)
         self._log = logging.getLogger(self.__class__.__name__)
 
+        if (vehicle_filepath is None):
+            with pkg_resources.path(models, "vehicle.urdf") as path:
+                vehicle_filepath = str(path.absolute())
+
+        if (controller_parameters_filepath is None):
+            with pkg_resources.path(
+                models, "controller_parameters.yaml"
+            ) as controller_path:
+                controller_filepath = str(controller_path.absolute())
+            with open(controller_filepath, "r") as controller_file:
+                controller_parameters_filepath = yaml.safe_load(controller_file)[
+                    "car"
+                ]
+
+
+
+
         # XXX: Parameterize these vehicle properties?
         self._client = bullet_client
-        self._chassis_aero_force_gain = 0.63
-        self._max_brake_gain = 10000
+        self._chassis_aero_force_gain = controller_parameters_filepath["chassis"][
+            "chassis_aero_force_gain"
+        ]
+        self._max_brake_gain = controller_parameters_filepath["chassis"][
+            "max_brake_gain"
+        ]
         # This value was found emperically. It causes the wheel steer joints to
         # reach their maximum. We use this value to map to the -1, 1 steering range.
         # If it were larger we'd cap out our turning radius before we hit -1, or 1.
         # If it were smaller we'd never reach the tightest turning radius we could.
-        self._max_turn_radius = 2.2
-        self._wheel_radius = 0.31265
-        self._max_torque = 1000
-        self._max_btorque = 800
+        self._max_turn_radius = controller_parameters_filepath["chassis"][
+            "max_turn_radius"
+        ]
+        self._wheel_radius = controller_parameters_filepath["chassis"]["wheel_radius"]
+        self._max_torque = controller_parameters_filepath["chassis"]["max_torque"]
+        self._max_btorque = controller_parameters_filepath["chassis"]["max_btorque"]
         # 720 is the maximum driver steering wheel angle
         # which equals to two full rotation of steering wheel.
         # This corresponds to maximum 41.3 deg angle at tires.
-        self._max_steering = math.radians(720)
-        self._steering_gear_ratio = 17.4
+        self._max_steering = controller_parameters_filepath["chassis"]["max_steering"]
+        self._steering_gear_ratio = controller_parameters_filepath["chassis"][
+            "steering_gear_ratio"
+        ]
         self._tire_model = None
         self._lat_forces = np.zeros(4)
         self._lon_forces = np.zeros(4)
@@ -253,11 +278,6 @@ class AckermannChassis(Chassis):
         self._friction_map = friction_map
         self._tire_parameters = None
         self._road_wheel_frictions = None
-        self._controller_parameters = None
-
-        if (vehicle_filepath is None) or not os.path.exists(vehicle_filepath):
-            with pkg_resources.path(models, "vehicle.urdf") as path:
-                vehicle_filepath = str(path.absolute())
 
         self._bullet_id = self._client.loadURDF(
             vehicle_filepath,
@@ -282,15 +302,7 @@ class AckermannChassis(Chassis):
                 }
                 break
 
-        if (controller_parameters_filepath is None) or not os.path.exists(
-            controller_parameters_filepath
-        ):
-            with pkg_resources.path(
-                models, "controller_parameters.yaml"
-            ) as controller_path:
-                controller_parameters_filepath = str(controller_path.absolute())
-        with open(controller_parameters_filepath, "r") as controller_file:
-            self._controller_parameters = yaml.safe_load(controller_file)
+        self._controller_parameters = controller_parameters_filepath["control"]
 
         if (tire_parameters_filepath is not None) and os.path.exists(
             tire_parameters_filepath

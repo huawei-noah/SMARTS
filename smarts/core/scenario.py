@@ -662,7 +662,10 @@ class Scenario:
 
     @property
     def vehicle_filepath(self):
-        return os.path.join(self._root, "vehicle.urdf")
+        for fname in os.listdir(self._root):
+            if fname.endswith(".urdf") and fname != "plane.urdf":
+                return os.path.join(self._root, fname)
+        return None
 
     @property
     def tire_parameters_filepath(self):
