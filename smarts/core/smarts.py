@@ -65,6 +65,7 @@ loadPrcFileData("", "model-path %s" % os.getcwd())
 loadPrcFileData("", "audio-library-name null")
 loadPrcFileData("", "gl-version 3 3")
 loadPrcFileData("", "notify-level error")
+loadPrcFileData("", "print-pipe-types false")
 
 # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
 # loadPrcFileData('', 'threading-model Cull/Draw')
@@ -114,6 +115,7 @@ class SMARTS(ShowBase):
             self._motion_planner_provider,
             self._traffic_history_provider,
         ]
+
         # We buffer provider state between steps to compensate for TRACI's timestep delay
         self._last_provider_state = None
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
