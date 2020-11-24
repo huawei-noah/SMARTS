@@ -54,6 +54,7 @@ def try_fsync(fd):
 
 @contextmanager
 def surpress_stdout():
+    original_stdout = sys.stdout
     original_stdout_fno = sys.stdout.fileno()
 
     # XXX: Range is to prevent collisions if there are race conditions with multiple
@@ -74,10 +75,5 @@ def surpress_stdout():
         os.close(devnull_fno)
 
         os.dup2(dup_stdout_fno, original_stdout_fno)
-        try_fsync(dup_stdout_fno)
-        sys.stdout = os.fdopen(dup_stdout_fno, "w")
-
-        def close():
-            sys.stdout.close()
-
-        atexit.register(close)
+        os.close(dup_stdout_fno)
+        sys.stdout = original_stdout
