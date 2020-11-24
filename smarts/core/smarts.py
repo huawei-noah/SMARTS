@@ -285,7 +285,7 @@ class SMARTS(ShowBase):
 
         self._agent_manager.teardown_ego_agents(agents_to_teardown)
         self._agent_manager.teardown_social_agents(agents_to_teardown)
-        self._teardown_agent_vehicles(vehicles_to_teardown)
+        self._teardown_vehicles(vehicles_to_teardown)
 
     def reset(self, scenario: Scenario):
         if scenario == self._scenario and self._reset_agents_only:
@@ -294,7 +294,7 @@ class SMARTS(ShowBase):
             for agent_id in agent_ids:
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                 vehicle_ids_to_teardown.extend(ids)
-            self._teardown_agent_vehicles(set(vehicle_ids_to_teardown))
+            self._teardown_vehicles(set(vehicle_ids_to_teardown))
             self._trap_manager.init_traps(scenario)
             self._agent_manager.init_ego_agents(self)
             self._sync_panda3d()
@@ -449,7 +449,7 @@ class SMARTS(ShowBase):
 
         super().destroy()
 
-    def _teardown_agent_vehicles(self, vehicle_ids):
+    def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self._clear_collisions(vehicle_ids)
 
