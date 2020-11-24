@@ -24,7 +24,7 @@ setup(
         "gym",
         "panda3d",
         "panda3d-gltf",
-        "numpy==1.18.5",
+        "numpy",
         "shapely",
         "networkx",
         "trimesh",  # Used for writing .glb files
