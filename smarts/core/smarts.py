@@ -30,7 +30,13 @@ from direct.showbase.ShowBase import ShowBase
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
 from panda3d.core import ClockObject, NodePath, Shader, loadPrcFileData
-from sklearn.metrics.pairwise import euclidean_distances
+
+import warnings
+
+with warnings.catch_warnings():
+    # XXX: Benign warning, seems no other way to "properly" fix
+    warnings.filterwarnings("ignore", "numpy.ufunc size changed")
+    from sklearn.metrics.pairwise import euclidean_distances
 
 from . import glsl, models
 from .agent_manager import AgentManager
