@@ -332,6 +332,15 @@ class TrapEntryTactic(EntryTactic):
 
 
 @dataclass(frozen=True)
+class UTurn:
+    target_lane_index: int = 0
+
+    @property
+    def name(self):
+        return "uturn"
+
+
+@dataclass(frozen=True)
 class Mission:
     """The descriptor for an actor's mission."""
 
@@ -343,6 +352,7 @@ class Mission:
     """
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
+    task: Tuple[UTurn] = None
 
 
 @dataclass(frozen=True)
