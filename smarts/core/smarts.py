@@ -225,11 +225,11 @@ class SMARTS(ShowBase):
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
 
         # Agents
-        self._agent_manager.step_agent_sensors(self)
+        self._agent_manager.step_sensors(self)
 
         # Panda3D
         # runs through the render pipeline
-        # MUST perform this after step_agent_sensors() above, and before observe() below,
+        # MUST perform this after step_sensors() above, and before observe() below,
         # so that all updates are ready before rendering happens per frame
         self.taskMgr.mgr.poll()
 

@@ -209,17 +209,13 @@ class AgentManager:
     def _vehicle_score(self, vehicle_id, sim):
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
-    def step_agent_sensors(self, sim):
-        for agent_id in self.active_agents:
-            for vehicle_id in sim.vehicle_index.vehicle_ids_by_actor_id(
-                agent_id, include_shadowers=True
-            ):
-                sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle_id)
-                Sensors.step(self, sensor_state)
+    def step_sensors(self, sim):
+        for vehicle_id, sensor_state in sim.vehicle_index.sensor_states_items():
+            Sensors.step(self, sensor_state)
 
-                vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
-                for sensor in vehicle.sensors.values():
-                    sensor.step()
+            vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
+            for sensor in vehicle.sensors.values():
+                sensor.step()
 
     def _filter_for_active_ego(self, dict_):
         return {
