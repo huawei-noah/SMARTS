@@ -1044,7 +1044,7 @@ class ViaSensor(Sensor):
 
     @property
     def _via_lanes(self) -> Iterable[ScenarioVia]:
-        return self._mission_planner.mission.via_lanes
+        return self._mission_planner.mission.via_points
 
     def __call__(self):
         near_via_lanes = list()

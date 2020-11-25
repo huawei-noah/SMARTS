@@ -310,6 +310,7 @@ class Via:
 
     edge_id: str
     lane_offset: int
+    lane_index: int
     required_speed: float
     hit_distance: float = -1
 
