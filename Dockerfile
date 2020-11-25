@@ -63,6 +63,10 @@ ENV SUMO_HOME /usr/share/sumo
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
+RUN add-apt-repository ppa:git-core/ppa
+RUN apt update
+RUN install git
+
 ENV PYTHONPATH=/src
 COPY . /src
 RUN cd /usr/local/lib/python3.7 && \
