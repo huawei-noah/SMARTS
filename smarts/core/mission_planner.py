@@ -92,7 +92,7 @@ class MissionPlanner:
             end_edge = end_lane.getEdge()
 
             intermediary_edges = [
-                self._road_network.edge_by_id(edge) for edge in self._mission.via
+                self._road_network.edge_by_id(edge) for edge in self._mission.route_vias
             ]
 
             self._route = ShortestRoute(

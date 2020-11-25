@@ -38,14 +38,14 @@ from panda3d.core import (
 )
 
 from smarts.core.utils.math import squared_dist, vec_2d
-from smarts.sstudio.types import ViaLane
+from smarts.sstudio.types import Via
 
 from .coordinates import BoundingBox, Heading
 from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
-from .scenario import Mission, ScenarioViaLane
+from .scenario import Mission, ScenarioVia
 from .waypoints import Waypoint
 
 
@@ -115,9 +115,9 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 @dataclass
-class ViaLaneData:
-    near_via_lanes: List[Tuple[ViaLane, int]]
-    on_via_lanes: Set[ViaLane]
+class ViaData:
+    near_via_lanes: List[Tuple[Via, int]]
+    on_via_lanes: Set[Via]
 
 
 @dataclass
@@ -137,7 +137,7 @@ class Observation:
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
-    via_lane_data: ViaLaneData = None
+    via_lane_data: ViaData = None
 
 
 @dataclass
@@ -253,7 +253,7 @@ class Sensors:
         if vehicle.subscribed_to_via_lane_sensor:
             (near_via_lanes, on_via_lanes,) = vehicle.via_lane_sensor()
 
-        via_lane_data = ViaLaneData(
+        via_lane_data = ViaData(
             near_via_lanes=near_via_lanes, on_via_lanes=on_via_lanes,
         )
 
@@ -1035,7 +1035,7 @@ class AccelerometerSensor(Sensor):
         pass
 
 
-class ViaEdgeSensor(Sensor):
+class ViaSensor(Sensor):
     def __init__(self, vehicle, mission_planner, acquisition_range):
         self._consumed_via_lanes = set()
         self._mission_planner: MissionPlanner = mission_planner
@@ -1043,7 +1043,7 @@ class ViaEdgeSensor(Sensor):
         self._vehicle = vehicle
 
     @property
-    def _via_lanes(self) -> Iterable[ScenarioViaLane]:
+    def _via_lanes(self) -> Iterable[ScenarioVia]:
         return self._mission_planner.mission.via_lanes
 
     def __call__(self):

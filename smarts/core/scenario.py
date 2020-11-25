@@ -34,7 +34,7 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic, UTurn, ViaLane
+from smarts.sstudio.types import EntryTactic, UTurn, Via
 
 from .coordinates import Heading
 from .data_model import SocialAgent
@@ -102,7 +102,7 @@ def default_entry_tactic():
 
 
 @dataclass(frozen=True)
-class ScenarioViaLane:
+class ScenarioVia:
     lane_id: str
     hit_distance: float
     required_speed: float
@@ -114,11 +114,11 @@ class Mission:
     goal: Goal
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    via: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
     task: Tuple[UTurn] = None
-    via_lanes: Tuple[ScenarioViaLane, ...] = ()
+    via_lanes: Tuple[ScenarioVia, ...] = ()
 
     @property
     def has_fixed_route(self):
@@ -136,10 +136,10 @@ class LapMission:
     num_laps: int = None  # None means infinite # of laps
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    via: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
-    via_lanes: Tuple[ViaLane] = ()
+    via_lanes: Tuple[Via] = ()
 
     @property
     def has_fixed_route(self):
@@ -550,19 +550,19 @@ class Scenario:
             return tuple(position), Heading(heading)
 
         def to_positional_via_lanes(
-            vias: Tuple[ViaLane, ...], sumo_road_network: SumoRoadNetwork
-        ) -> Tuple[ScenarioViaLane, ...]:
+            vias: Tuple[Via, ...], sumo_road_network: SumoRoadNetwork
+        ) -> Tuple[ScenarioVia, ...]:
             s_vias = []
             for via in vias:
                 lane = sumo_road_network.lane_by_offset_on_edge(
-                    via.edge_id, via.lane_offset
+                    via.edge_id, via.lane_index
                 )
                 hit_distance = (
                     via.hit_distance if via.hit_distance > 0 else lane.getWidth() / 2
                 )
 
                 s_vias.append(
-                    ScenarioViaLane(
+                    ScenarioVia(
                         lane_id=lane.getID(),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
@@ -584,7 +584,7 @@ class Scenario:
 
             return Mission(
                 start=start,
-                via=mission.route.via,
+                route_vias=mission.route.via,
                 goal=goal,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
@@ -627,7 +627,7 @@ class Scenario:
             return LapMission(
                 start=Start(start_position, start_heading),
                 goal=PositionalGoal(end_position, radius=2),
-                via=mission.route.via,
+                route_vias=mission.route.via,
                 num_laps=mission.num_laps,
                 route_length=route_length,
                 start_time=mission.start_time,
