@@ -57,15 +57,15 @@ RUN echo "Cleaning-up"
 RUN apt-get autoremove && \
     rm -rf /var/lib/apt/lists/*
 
+RUN add-apt-repository ppa:git-core/ppa
+RUN apt-get update
+RUN apt-get install -y git
+
 RUN echo "Setup SMARTS Dependencies"
 ENV SUMO_HOME /usr/share/sumo
 
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
-
-RUN add-apt-repository ppa:git-core/ppa
-RUN apt update
-RUN install git
 
 ENV PYTHONPATH=/src
 COPY . /src
