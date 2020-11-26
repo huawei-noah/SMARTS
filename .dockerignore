@@ -1,3 +1,7 @@
+**/.benchmarks
+**/*.egg-info
+**/.github
+**/.gitignore
 **/__pycache__
 **/.pytest_cache
 **/.venv
