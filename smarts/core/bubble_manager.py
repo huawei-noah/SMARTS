@@ -26,7 +26,7 @@ from functools import lru_cache
 from typing import Dict, Sequence
 
 from shapely.affinity import rotate, translate
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, CAP_STYLE, JOIN_STYLE
 
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import Mission, MissionPlanner, Start
@@ -75,7 +75,7 @@ class Bubble:
                 self._limit = min(bubble.limit, bubble.actor.capacity)
 
         self._cached_airlock_geometry = self._cached_inner_geometry.buffer(
-            bubble.margin
+            bubble.margin, cap_style=CAP_STYLE.square, join_style=JOIN_STYLE.mitre,
         )
 
     @property
@@ -231,6 +231,9 @@ class Cursor:
         is_admissible = bubble.is_admissible(
             vehicle.id, index, prev_cursors, running_cursors
         )
+        was_in_this_bubble = vehicle.id in BubbleManager.vehicle_ids_in_bubble(
+            bubble, prev_cursors
+        )
 
         transition = None
         # XXX: When a travelling bubble disappears and an agent is airlocked or
@@ -247,7 +250,11 @@ class Cursor:
             # XXX: This may get called repeatedly because we don't actually change
             #      any state when this happens.
             transition = BubbleTransition.Exited
-        elif (is_shadowed or is_hijacked) and not (in_airlock(pos) or in_bubble(pos)):
+        elif (
+            was_in_this_bubble
+            and (is_shadowed or is_hijacked)
+            and not (in_airlock(pos) or in_bubble(pos))
+        ):
             transition = BubbleTransition.AirlockExited
 
         state = None
