@@ -260,8 +260,8 @@ class Sensors:
 
         near_via_points = []
         hit_via_points = []
-        if vehicle.subscribed_to_via_lane_sensor:
-            (near_via_points, hit_via_points,) = vehicle.via_lane_sensor()
+        if vehicle.subscribed_to_via_sensor:
+            (near_via_points, hit_via_points,) = vehicle.via_sensor()
         via_data = ViaData(
             near_via_points=near_via_points, hit_via_points=hit_via_points,
         )

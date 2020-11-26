@@ -434,7 +434,7 @@ class Vehicle:
                 )
             )
 
-        vehicle.attach_via_lane_sensor(
+        vehicle.attach_via_sensor(
             ViaSensor(
                 vehicle=vehicle,
                 mission_planner=mission_planner,
@@ -495,7 +495,7 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
-            "via_lane_sensor",
+            "via_sensor",
         ]
         for sensor_name in sensor_names:
 
