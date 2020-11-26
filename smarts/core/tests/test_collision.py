@@ -247,10 +247,13 @@ def test_sim_level_collision(smarts, scenarios):
     smarts.reset(scenario)
 
     collisions = []
+    agent_dones = []
 
     for _ in range(30):
-        observations, _, _, _ = smarts.step({AGENT_1: "keep_lane"})
+        observations, _, dones, _ = smarts.step({AGENT_1: "keep_lane"})
         if AGENT_1 in observations:
             collisions.extend(observations[AGENT_1].events.collisions)
+            agent_dones.append(dones[AGENT_1])
 
     assert len(collisions) > 0
+    assert any(agent_dones)
