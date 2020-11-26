@@ -27,11 +27,11 @@ traffic = t.Traffic(
 scenario = t.Scenario(
     traffic={"all": traffic},
     bubbles=[
-        # t.Bubble(
-        #     zone=t.PositionalZone(pos=(50, 0), size=(40, 20)),
-        #     margin=5,
-        #     actor=trajectory_boid_agent,
-        # ),
+        t.Bubble(
+            zone=t.PositionalZone(pos=(50, 0), size=(40, 20)),
+            margin=5,
+            actor=trajectory_boid_agent,
+        ),
         t.Bubble(
             zone=t.PositionalZone(pos=(150, 0), size=(50, 20)),
             margin=5,
