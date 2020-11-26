@@ -147,7 +147,7 @@ class Observation:
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
-    via_lane_data: ViaData = None
+    via_data: ViaData = None
 
 
 @dataclass
@@ -262,7 +262,7 @@ class Sensors:
         hit_via_points = []
         if vehicle.subscribed_to_via_lane_sensor:
             (near_via_points, hit_via_points,) = vehicle.via_lane_sensor()
-        via_lane_data = ViaData(
+        via_data = ViaData(
             near_via_points=near_via_points, hit_via_points=hit_via_points,
         )
 
@@ -299,7 +299,7 @@ class Sensors:
                 drivable_area_grid_map=drivable_area_grid_map,
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
-                via_lane_data=via_lane_data,
+                via_data=via_data,
             ),
             done,
         )
