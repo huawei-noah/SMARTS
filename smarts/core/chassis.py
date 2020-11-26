@@ -51,13 +51,12 @@ from smarts.sstudio.types import (
     RoadSurfacePatch,
 )
 
-vehicle_filepath, controller_parameters = None, None
 with pkg_resources.path(models, "vehicle.urdf") as path:
-    vehicle_filepath = str(path.absolute())
+    DEFAULT_VEHICLE_FILEPATH = str(path.absolute())
 with pkg_resources.path(models, "controller_parameters.yaml") as controller_path:
     controller_filepath = str(controller_path.absolute())
 with open(controller_filepath, "r") as controller_file:
-    controller_parameters = yaml.safe_load(controller_file)["sedan"]
+    DEFAULT_CONTROLLER_PARAMETERS = yaml.safe_load(controller_file)["sedan"]
 
 
 def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
@@ -228,18 +227,14 @@ class AckermannChassis(Chassis):
         self,
         pose: Pose,
         bullet_client: bc.BulletClient,
-        vehicle_filepath=vehicle_filepath,
+        vehicle_filepath=DEFAULT_VEHICLE_FILEPATH,
         tire_parameters_filepath=None,
         friction_map=None,
-        controller_parameters=controller_parameters,
+        controller_parameters=DEFAULT_CONTROLLER_PARAMETERS,
         initial_speed=None,
     ):
         assert isinstance(pose, Pose)
         self._log = logging.getLogger(self.__class__.__name__)
-        assert vehicle_filepath is not None, "vehicle urdf file does not exist!"
-        assert (
-            controller_parameters is not None
-        ), "controller parameters urdf file does not exist!"
 
         # XXX: Parameterize these vehicle properties?
         self._client = bullet_client

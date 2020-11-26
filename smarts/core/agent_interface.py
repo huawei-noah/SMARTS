@@ -315,8 +315,6 @@ class AgentInterface:
         >>> interface.waypoints
         Waypoints(...)
         """
-        if "vehicle_type" not in kwargs:
-            kwargs["vehicle_type"] = "sedan"
         return replace(self, **kwargs)
 
     @property
