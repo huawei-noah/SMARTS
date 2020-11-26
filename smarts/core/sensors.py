@@ -285,7 +285,7 @@ class Sensors:
         done_criteria = interface.done_criteria
 
         collided = (
-            sim.vehicle_did_collide(vehicle) if done_criteria.collision else False
+            sim.vehicle_did_collide(vehicle.id) if done_criteria.collision else False
         )
         is_off_road = (
             cls._vehicle_is_off_road(sim, vehicle) if done_criteria.off_road else False
