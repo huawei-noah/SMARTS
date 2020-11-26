@@ -1,4 +1,4 @@
-car:
+sedan:
     control:
             final_heading_gain: 0.1
             final_lateral_gain: 3.65

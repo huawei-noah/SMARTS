@@ -316,7 +316,7 @@ class Vehicle:
             SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
         )
 
-        if agent_interface.vehicle_type == "car":
+        if agent_interface.vehicle_type == "sedan":
             urdf_name = "vehicle"
         elif agent_interface.vehicle_type == "bus":
             urdf_name = "bus"
@@ -347,7 +347,7 @@ class Vehicle:
                 vehicle_filepath=vehicle_filepath,
                 tire_parameters_filepath=tire_filepath,
                 friction_map=surface_patches,
-                controller_parameters_filepath=controller_parameters,
+                controller_parameters=controller_parameters,
                 initial_speed=initial_speed,
             ),
             color=vehicle_color,
