@@ -436,7 +436,9 @@ class Vehicle:
 
         vehicle.attach_via_lane_sensor(
             ViaSensor(
-                vehicle=vehicle, mission_planner=mission_planner, acquisition_range=100,
+                vehicle=vehicle,
+                mission_planner=mission_planner,
+                lane_acquisition_range=40,
             )
         )
 
