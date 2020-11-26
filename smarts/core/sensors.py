@@ -115,9 +115,19 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 @dataclass
+class ViaPointData:
+    position: Tuple[float, float]
+    lane_index: float
+    edge_id: str
+    required_speed: float
+
+
+@dataclass(frozen=True)
 class ViaData:
-    near_via_lanes: List[Tuple[Via, int]]
-    on_via_lanes: Set[Via]
+    near_via_points: List[ViaPointData]
+    """Ordered list of nearby points that have not been hit"""
+    hit_via_points: List[ViaPointData]
+    """List of points that were hit in the previous step"""
 
 
 @dataclass
@@ -248,13 +258,12 @@ class Sensors:
             else None
         )
 
-        near_via_lanes = []
-        on_via_lanes = []
+        near_via_points = []
+        hit_via_points = []
         if vehicle.subscribed_to_via_lane_sensor:
-            (near_via_lanes, on_via_lanes,) = vehicle.via_lane_sensor()
-
+            (near_via_points, hit_via_points,) = vehicle.via_lane_sensor()
         via_lane_data = ViaData(
-            near_via_lanes=near_via_lanes, on_via_lanes=on_via_lanes,
+            near_via_points=near_via_points, hit_via_points=hit_via_points,
         )
 
         vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
@@ -1036,44 +1045,58 @@ class AccelerometerSensor(Sensor):
 
 
 class ViaSensor(Sensor):
-    def __init__(self, vehicle, mission_planner, acquisition_range):
-        self._consumed_via_lanes = set()
+    def __init__(self, vehicle, mission_planner, lane_acquisition_range):
+        self._consumed_via_points = set()
         self._mission_planner: MissionPlanner = mission_planner
-        self._acquisition_radius = acquisition_range
+        self._acquisition_range = lane_acquisition_range
         self._vehicle = vehicle
 
     @property
-    def _via_lanes(self) -> Iterable[ScenarioVia]:
-        return self._mission_planner.mission.via_points
+    def _vias(self) -> Iterable[ScenarioVia]:
+        return self._mission_planner.mission.via
 
     def __call__(self):
-        near_via_lanes = list()
-        on_via_lanes = list()
-        veh_pos = self._vehicle.position[:2]
-        for via_lane in self._via_lanes:
-            closest_on_lane = self._mission_planner.closest_point_on_lane(
-                self._vehicle.pose, via_lane.lane_id
+        near_points: List[ViaPointData] = list()
+        hit_points: List[ViaPointData] = list()
+        vehicle_position = self._vehicle.position[:2]
+
+        @lru_cache()
+        def closest_point_on_lane(position, lane_id):
+            return self._mission_planner.closest_point_on_lane(position, lane_id)
+
+        for via in self._vias:
+            closest_position_on_lane = closest_point_on_lane(
+                tuple(vehicle_position), via.lane_id
             )
-            closest_on_lane = closest_on_lane[:2]
-            dist_from_lane_sq = squared_dist(veh_pos, closest_on_lane)
+            closest_position_on_lane = closest_position_on_lane[:2]
 
-            if dist_from_lane_sq > self._acquisition_radius ** 2:
+            dist_from_lane_sq = squared_dist(vehicle_position, closest_position_on_lane)
+            if dist_from_lane_sq > self._acquisition_range ** 2:
                 continue
 
-            near_via_lanes.append((via_lane, np.sqrt(dist_from_lane_sq)))
+            point = ViaPointData(
+                tuple(via.via_position),
+                lane_index=via.lane_index,
+                edge_id=via.edge_id,
+                required_speed=via.required_speed,
+            )
 
+            near_points.append(point)
+            dist_from_point_sq = squared_dist(vehicle_position, via.via_position)
             if (
-                dist_from_lane_sq > via_lane.hit_distance ** 2
-                and self._vehicle.speed < via_lane.required_speed
+                dist_from_point_sq <= via.hit_distance ** 2
+                and via not in self._consumed_via_points
+                and self._vehicle.speed > via.required_speed
             ):
-                continue
-
-            on_via_lanes.append(via_lane)
-            self._consumed_via_lanes.add(via_lane)
+                self._consumed_via_points.add(via)
+                hit_points.append(point)
 
         return (
-            sorted(near_via_lanes, key=lambda via: squared_dist(via[1], veh_pos)),
-            on_via_lanes,
+            sorted(
+                near_points,
+                key=lambda point: squared_dist(point.position, vehicle_position),
+            ),
+            hit_points,
         )
 
     def teardown(self):

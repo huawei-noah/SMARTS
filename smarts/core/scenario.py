@@ -104,6 +104,8 @@ def default_entry_tactic():
 @dataclass(frozen=True)
 class ScenarioVia:
     lane_id: str
+    edge_id: str
+    lane_index: int
     via_position: int
     hit_distance: float
     required_speed: float
@@ -561,14 +563,15 @@ class Scenario:
                 hit_distance = (
                     via.hit_distance if via.hit_distance > 0 else lane.getWidth() / 2
                 )
-                via_position=sumo_road_network.world_coord_from_offset(
-                    lane,
-                    via.lane_offset,
+                via_position = sumo_road_network.world_coord_from_offset(
+                    lane, via.lane_offset,
                 )
 
                 s_vias.append(
                     ScenarioVia(
                         lane_id=lane.getID(),
+                        lane_index=via.lane_index,
+                        edge_id=via.edge_id,
                         via_position=tuple(via_position),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
