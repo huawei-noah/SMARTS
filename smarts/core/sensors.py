@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-from smarts.core.mission_planner import MissionPlanner
 import time
 from collections import deque, namedtuple
 from dataclasses import dataclass
@@ -37,6 +36,7 @@ from panda3d.core import (
     WindowProperties,
 )
 
+from smarts.core.mission_planner import MissionPlanner
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.sstudio.types import Via
 
