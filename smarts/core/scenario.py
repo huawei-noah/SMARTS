@@ -119,7 +119,7 @@ class Mission:
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
     task: Tuple[UTurn] = None
-    via_points: Tuple[ScenarioVia, ...] = ()
+    via: Tuple[ScenarioVia, ...] = ()
 
     @property
     def has_fixed_route(self):
@@ -569,7 +569,7 @@ class Scenario:
                 s_vias.append(
                     ScenarioVia(
                         lane_id=lane.getID(),
-                        via_position=via_position,
+                        via_position=tuple(via_position),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
                     )
@@ -595,7 +595,7 @@ class Scenario:
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
                 task=mission.task,
-                via_points=to_positional_via_lanes(mission.via, road_network),
+                via=to_positional_via_lanes(mission.via, road_network),
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
             position, heading = to_position_and_heading(*mission.begin, road_network,)
@@ -606,7 +606,7 @@ class Scenario:
                 goal=EndlessGoal(),
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via_points=to_positional_via_lanes(mission.via, road_network),
+                via=to_positional_via_lanes(mission.via, road_network),
             )
         elif isinstance(mission, sstudio_types.LapMission):
             start_edge_id, start_lane, start_edge_offset = mission.route.begin
