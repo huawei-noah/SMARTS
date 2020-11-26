@@ -552,7 +552,7 @@ class Scenario:
             heading = vec_to_radians(lane_vector)
             return tuple(position), Heading(heading)
 
-        def to_positional_via_lanes(
+        def to_scenario_via(
             vias: Tuple[Via, ...], sumo_road_network: SumoRoadNetwork
         ) -> Tuple[ScenarioVia, ...]:
             s_vias = []
@@ -598,7 +598,7 @@ class Scenario:
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
                 task=mission.task,
-                via=to_positional_via_lanes(mission.via, road_network),
+                via=to_scenario_via(mission.via, road_network),
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
             position, heading = to_position_and_heading(*mission.begin, road_network,)
@@ -609,7 +609,7 @@ class Scenario:
                 goal=EndlessGoal(),
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via=to_positional_via_lanes(mission.via, road_network),
+                via=to_scenario_via(mission.via, road_network),
             )
         elif isinstance(mission, sstudio_types.LapMission):
             start_edge_id, start_lane, start_edge_offset = mission.route.begin
@@ -641,7 +641,7 @@ class Scenario:
                 route_length=route_length,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via_points=to_positional_via_lanes(mission.via, road_network),
+                via_points=to_scenario_via(mission.via, road_network),
             )
 
         raise RuntimeError(
