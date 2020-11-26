@@ -7,7 +7,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-18.04
-    container: huaweinoah/smarts:v0.4.3-pre
+    container: huaweinoah/smarts:v0.4.6
     steps:
       - name: Checkout
         uses: actions/checkout@v2
