@@ -1,17 +1,26 @@
 import math
 import importlib.resources as pkg_resources
 import time
-
 from pathlib import Path
 
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
 import pytest
 
+from helpers.scenario import temp_scenario
 from smarts.core import models
+from smarts.core.agent_interface import (
+    AgentInterface,
+    ActionSpaceType,
+)
 from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Heading, Pose
+from smarts.core.scenario import Scenario
+from smarts.core.smarts import SMARTS
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.vehicle import VEHICLE_CONFIGS
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.sstudio import types as t
+from smarts.sstudio import gen_scenario
 
 
 @pytest.fixture
@@ -22,7 +31,7 @@ def bullet_client():
     path = Path(__file__).parent / "../smarts/core/models/plane.urdf"
     with pkg_resources.path(models, "plane.urdf") as path:
         plane_path = str(path.absolute())
-    plane_body_id = client.loadURDF(plane_path, useFixedBase=True)
+    client.loadURDF(plane_path, useFixedBase=True)
 
     yield client
     client.disconnect()
@@ -32,7 +41,7 @@ def step_with_vehicle_commands(
     bv: AckermannChassis, steps, throttle=0, brake=0, steering=0
 ):
     collisions = []
-    for s in range(steps):
+    for _ in range(steps):
         bv.control(throttle, brake, steering)
         bv._client.stepSimulation()
         collisions.extend(bv.contact_points)
@@ -197,3 +206,51 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
     )
     collisions = step_with_vehicle_commands(chassis, steps=10)
     assert len(collisions) < 1
+
+
+AGENT_1 = "Agent_007"
+AGENT_2 = "Agent_008"
+
+
+@pytest.fixture
+def scenarios():
+    with temp_scenario(name="straight", map="maps/straight.net.xml") as scenario_root:
+        ego_missions = [
+            # missions of laner and buddha
+            t.Mission(t.Route(begin=("west", 0, 30), end=("east", 0, "max"),)),
+            t.Mission(t.Route(begin=("west", 0, 40), end=("east", 0, "max"),)),
+        ]
+        gen_scenario(
+            t.Scenario(ego_missions=ego_missions), output_dir=scenario_root,
+        )
+
+        yield Scenario.variations_for_all_scenario_roots(
+            [str(scenario_root)], [AGENT_1, AGENT_2]
+        )
+
+
+@pytest.fixture
+def smarts():
+    laner = AgentInterface(max_episode_steps=1000, action=ActionSpaceType.Lane,)
+    buddha = AgentInterface(max_episode_steps=1000, action=ActionSpaceType.Lane,)
+    agents = {AGENT_1: laner, AGENT_2: buddha}
+    smarts = SMARTS(
+        agents, traffic_sim=SumoTrafficSimulation(headless=True), envision=None,
+    )
+
+    yield smarts
+    smarts.destroy()
+
+
+def test_sim_level_collision(smarts, scenarios):
+    scenario = next(scenarios)
+    smarts.reset(scenario)
+
+    collisions = []
+
+    for _ in range(30):
+        observations, _, _, _ = smarts.step({AGENT_1: "keep_lane"})
+        if AGENT_1 in observations:
+            collisions.extend(observations[AGENT_1].events.collisions)
+
+    assert len(collisions) > 0
