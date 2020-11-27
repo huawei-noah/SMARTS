@@ -45,7 +45,7 @@ from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
-from .scenario import Mission, ScenarioVia
+from .scenario import Mission, Via
 from .waypoints import Waypoint
 
 
@@ -1052,7 +1052,7 @@ class ViaSensor(Sensor):
         self._vehicle = vehicle
 
     @property
-    def _vias(self) -> Iterable[ScenarioVia]:
+    def _vias(self) -> Iterable[Via]:
         return self._mission_planner.mission.via
 
     def __call__(self):

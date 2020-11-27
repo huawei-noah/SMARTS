@@ -34,7 +34,7 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic, UTurn, Via
+from smarts.sstudio.types import EntryTactic, UTurn, Via as SSVia
 
 from .coordinates import Heading
 from .data_model import SocialAgent
@@ -102,7 +102,7 @@ def default_entry_tactic():
 
 
 @dataclass(frozen=True)
-class ScenarioVia:
+class Via:
     lane_id: str
     edge_id: str
     lane_index: int
@@ -121,7 +121,7 @@ class Mission:
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
     task: Tuple[UTurn] = None
-    via: Tuple[ScenarioVia, ...] = ()
+    via: Tuple[Via, ...] = ()
 
     @property
     def has_fixed_route(self):
@@ -142,7 +142,7 @@ class LapMission:
     route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
-    via_points: Tuple[ScenarioVia, ...] = ()
+    via_points: Tuple[Via, ...] = ()
 
     @property
     def has_fixed_route(self):
@@ -553,8 +553,8 @@ class Scenario:
             return tuple(position), Heading(heading)
 
         def to_scenario_via(
-            vias: Tuple[Via, ...], sumo_road_network: SumoRoadNetwork
-        ) -> Tuple[ScenarioVia, ...]:
+            vias: Tuple[SSVia, ...], sumo_road_network: SumoRoadNetwork
+        ) -> Tuple[Via, ...]:
             s_vias = []
             for via in vias:
                 lane = sumo_road_network.lane_by_offset_on_edge(
@@ -568,7 +568,7 @@ class Scenario:
                 )
 
                 s_vias.append(
-                    ScenarioVia(
+                    Via(
                         lane_id=lane.getID(),
                         lane_index=via.lane_index,
                         edge_id=via.edge_id,
