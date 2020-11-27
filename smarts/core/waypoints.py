@@ -112,6 +112,7 @@ LinkedWaypoint = namedtuple(
         "wp",  # Waypoint: current waypoint
         "nexts",  # list of LinkedWaypoint: list of next immediate waypoints
         # it's a list of waypoints because a path may branch at junctions
+        "shape",
     ],
 )
 
@@ -290,22 +291,27 @@ class Waypoints:
         ref_waypoints_coordinates = {
             parameter: [] for parameter in (continuous_variables + discrete_variables)
         }
-        for waypoint in path:
-            ref_waypoints_coordinates["ref_wp_positions_x"].append(waypoint.wp.pos[0])
-            ref_waypoints_coordinates["ref_wp_positions_y"].append(waypoint.wp.pos[1])
-            ref_waypoints_coordinates["ref_wp_headings"].append(
-                waypoint.wp.heading.as_bullet
-            )
-            ref_waypoints_coordinates["ref_wp_lane_id"].append(waypoint.wp.lane_id)
-            ref_waypoints_coordinates["ref_wp_lane_index"].append(
-                waypoint.wp.lane_index
-            )
-            ref_waypoints_coordinates["ref_wp_lane_width"].append(
-                waypoint.wp.lane_width
-            )
-            ref_waypoints_coordinates["ref_wp_speed_limit"].append(
-                waypoint.wp.speed_limit
-            )
+        for idx, waypoint in enumerate(path):
+            if idx == 0 or idx == len(path) - 1 or waypoint.shape == 1:
+                ref_waypoints_coordinates["ref_wp_positions_x"].append(
+                    waypoint.wp.pos[0]
+                )
+                ref_waypoints_coordinates["ref_wp_positions_y"].append(
+                    waypoint.wp.pos[1]
+                )
+                ref_waypoints_coordinates["ref_wp_headings"].append(
+                    waypoint.wp.heading.as_bullet
+                )
+                ref_waypoints_coordinates["ref_wp_lane_id"].append(waypoint.wp.lane_id)
+                ref_waypoints_coordinates["ref_wp_lane_index"].append(
+                    waypoint.wp.lane_index
+                )
+                ref_waypoints_coordinates["ref_wp_lane_width"].append(
+                    waypoint.wp.lane_width
+                )
+                ref_waypoints_coordinates["ref_wp_speed_limit"].append(
+                    waypoint.wp.speed_limit
+                )
 
         ref_waypoints_coordinates["ref_wp_headings"] = np.unwrap(
             ref_waypoints_coordinates["ref_wp_headings"]
@@ -342,7 +348,7 @@ class Waypoints:
             return [path[0].wp]
 
         evenly_spaced_cumulative_path_dist = np.linspace(
-            0, cumulative_path_dist[-1], len(cumulative_path_dist) + 1
+            0, cumulative_path_dist[-1], len(path)
         )
 
         evenly_spaced_coordinates = {}
@@ -355,7 +361,7 @@ class Waypoints:
             ref_coordinates = ref_waypoints_coordinates[variable]
             evenly_spaced_coordinates[variable] = []
             jdx = 0
-            for idx in range(len(ref_coordinates)):
+            for idx in range(len(path)):
                 while (
                     jdx + 1 < len(cumulative_path_dist)
                     and evenly_spaced_cumulative_path_dist[idx]
@@ -424,6 +430,7 @@ class Waypoints:
                     lane_index=shape_wp.wp.lane_index,
                 ),
                 nexts=[],
+                shape=1,
             )
 
             if previous_wp is not None:
@@ -507,6 +514,7 @@ class Waypoints:
                     lane_index=shape_wp.wp.lane_index,
                 ),
                 nexts=[],
+                shape=0,
             )
 
             curr_waypoint.nexts.append(linked_waypoint)
@@ -567,6 +575,7 @@ class Waypoints:
                     lane_index=lane.getIndex(),
                 ),
                 nexts=[],
+                shape=1,
             )
 
             if previous_wp is not None:
@@ -592,6 +601,7 @@ class Waypoints:
                         lane_index=lane.getIndex(),
                     ),
                     nexts=[],
+                    shape=1,
                 )
 
                 shape_waypoints.append(linked_waypoint)
@@ -609,6 +619,7 @@ class Waypoints:
                     lane_index=curr_waypoint.wp.lane_index,
                 ),
                 nexts=[],
+                shape=1,
             )
 
             shape_waypoints.append(last_linked_waypoint)
