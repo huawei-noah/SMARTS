@@ -309,8 +309,8 @@ class Via:
     """A point on an edge that an actor must pass through"""
 
     edge_id: str
-    lane_offset: int
     lane_index: int
+    lane_offset: int
     required_speed: float
     hit_distance: float = -1
 
