@@ -115,7 +115,7 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 @dataclass
-class ViaPointData:
+class ViaPoint:
     position: Tuple[float, float]
     lane_index: float
     edge_id: str
@@ -123,10 +123,10 @@ class ViaPointData:
 
 
 @dataclass(frozen=True)
-class ViaData:
-    near_via_points: List[ViaPointData]
+class Vias:
+    near_via_points: List[ViaPoint]
     """Ordered list of nearby points that have not been hit"""
-    hit_via_points: List[ViaPointData]
+    hit_via_points: List[ViaPoint]
     """List of points that were hit in the previous step"""
 
 
@@ -147,7 +147,7 @@ class Observation:
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
-    via_data: ViaData = None
+    via_data: Vias = None
 
 
 @dataclass
@@ -262,7 +262,7 @@ class Sensors:
         hit_via_points = []
         if vehicle.subscribed_to_via_sensor:
             (near_via_points, hit_via_points,) = vehicle.via_sensor()
-        via_data = ViaData(
+        via_data = Vias(
             near_via_points=near_via_points, hit_via_points=hit_via_points,
         )
 
@@ -1059,8 +1059,8 @@ class ViaSensor(Sensor):
         return self._mission_planner.mission.via
 
     def __call__(self):
-        near_points: List[ViaPointData] = list()
-        hit_points: List[ViaPointData] = list()
+        near_points: List[ViaPoint] = list()
+        hit_points: List[ViaPoint] = list()
         vehicle_position = self._vehicle.position[:2]
 
         @lru_cache()
@@ -1077,7 +1077,7 @@ class ViaSensor(Sensor):
             if dist_from_lane_sq > self._acquisition_range ** 2:
                 continue
 
-            point = ViaPointData(
+            point = ViaPoint(
                 tuple(via.position),
                 lane_index=via.lane_index,
                 edge_id=via.edge_id,
