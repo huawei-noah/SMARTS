@@ -1045,11 +1045,14 @@ class AccelerometerSensor(Sensor):
 
 
 class ViaSensor(Sensor):
-    def __init__(self, vehicle, mission_planner, lane_acquisition_range):
+    def __init__(
+        self, vehicle, mission_planner, lane_acquisition_range, speed_accuracy
+    ):
         self._consumed_via_points = set()
         self._mission_planner: MissionPlanner = mission_planner
         self._acquisition_range = lane_acquisition_range
         self._vehicle = vehicle
+        self._speed_accuracy = speed_accuracy
 
     @property
     def _vias(self) -> Iterable[Via]:
@@ -1075,18 +1078,20 @@ class ViaSensor(Sensor):
                 continue
 
             point = ViaPointData(
-                tuple(via.via_position),
+                tuple(via.position),
                 lane_index=via.lane_index,
                 edge_id=via.edge_id,
                 required_speed=via.required_speed,
             )
 
             near_points.append(point)
-            dist_from_point_sq = squared_dist(vehicle_position, via.via_position)
+            dist_from_point_sq = squared_dist(vehicle_position, via.position)
             if (
                 dist_from_point_sq <= via.hit_distance ** 2
                 and via not in self._consumed_via_points
-                and self._vehicle.speed > via.required_speed
+                and np.isclose(
+                    self._vehicle.speed, via.required_speed, atol=self._speed_accuracy
+                )
             ):
                 self._consumed_via_points.add(via)
                 hit_points.append(point)

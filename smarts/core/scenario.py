@@ -106,7 +106,7 @@ class Via:
     lane_id: str
     edge_id: str
     lane_index: int
-    via_position: int
+    position: Tuple[float, float]
     hit_distance: float
     required_speed: float
 
@@ -572,7 +572,7 @@ class Scenario:
                         lane_id=lane.getID(),
                         lane_index=via.lane_index,
                         edge_id=via.edge_id,
-                        via_position=tuple(via_position),
+                        position=tuple(via_position),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
                     )

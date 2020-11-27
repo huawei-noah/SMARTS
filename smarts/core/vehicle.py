@@ -439,6 +439,7 @@ class Vehicle:
                 vehicle=vehicle,
                 mission_planner=mission_planner,
                 lane_acquisition_range=40,
+                speed_accuracy=1.5,
             )
         )
 
