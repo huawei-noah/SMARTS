@@ -112,7 +112,7 @@ LinkedWaypoint = namedtuple(
         "wp",  # Waypoint: current waypoint
         "nexts",  # list of LinkedWaypoint: list of next immediate waypoints
         # it's a list of waypoints because a path may branch at junctions
-        "shape",
+        "is_shape_wp",
     ],
 )
 
@@ -292,7 +292,7 @@ class Waypoints:
             parameter: [] for parameter in (continuous_variables + discrete_variables)
         }
         for idx, waypoint in enumerate(path):
-            if idx == 0 or idx == len(path) - 1 or waypoint.shape == 1:
+            if idx == 0 or idx == len(path) - 1 or waypoint.is_shape_wp == 1:
                 ref_waypoints_coordinates["ref_wp_positions_x"].append(
                     waypoint.wp.pos[0]
                 )
@@ -430,7 +430,7 @@ class Waypoints:
                     lane_index=shape_wp.wp.lane_index,
                 ),
                 nexts=[],
-                shape=1,
+                is_shape_wp=1,
             )
 
             if previous_wp is not None:
@@ -514,7 +514,7 @@ class Waypoints:
                     lane_index=shape_wp.wp.lane_index,
                 ),
                 nexts=[],
-                shape=0,
+                is_shape_wp=0,
             )
 
             curr_waypoint.nexts.append(linked_waypoint)
@@ -575,7 +575,7 @@ class Waypoints:
                     lane_index=lane.getIndex(),
                 ),
                 nexts=[],
-                shape=1,
+                is_shape_wp=1,
             )
 
             if previous_wp is not None:
@@ -601,7 +601,7 @@ class Waypoints:
                         lane_index=lane.getIndex(),
                     ),
                     nexts=[],
-                    shape=1,
+                    is_shape_wp=1,
                 )
 
                 shape_waypoints.append(linked_waypoint)
@@ -619,7 +619,7 @@ class Waypoints:
                     lane_index=curr_waypoint.wp.lane_index,
                 ),
                 nexts=[],
-                shape=1,
+                is_shape_wp=1,
             )
 
             shape_waypoints.append(last_linked_waypoint)
