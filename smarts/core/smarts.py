@@ -833,8 +833,7 @@ class SMARTS(ShowBase):
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
                 collision = self._node_to_collision(collidee.np.node())
-                agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-                self._vehicle_collisions[agent_id].append(collision)
+                self._vehicle_collisions[vehicle_id].append(collision)
 
     def _bullet_id_to_vehicle(self, bullet_id):
         for vehicle in self._vehicle_index.vehicles:
