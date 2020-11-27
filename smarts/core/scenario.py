@@ -557,7 +557,7 @@ class Scenario:
         ) -> Tuple[Via, ...]:
             s_vias = []
             for via in vias:
-                lane = sumo_road_network.lane_by_offset_on_edge(
+                lane = sumo_road_network.lane_by_index_on_edge(
                     via.edge_id, via.lane_index
                 )
                 hit_distance = (
