@@ -262,9 +262,7 @@ class Sensors:
         hit_via_points = []
         if vehicle.subscribed_to_via_sensor:
             (near_via_points, hit_via_points,) = vehicle.via_sensor()
-        via_data = Vias(
-            near_via_points=near_via_points, hit_via_points=hit_via_points,
-        )
+        via_data = Vias(near_via_points=near_via_points, hit_via_points=hit_via_points,)
 
         vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
         distance_travelled = vehicle.trip_meter_sensor(sim)
