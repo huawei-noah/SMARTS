@@ -2,7 +2,6 @@ from pathlib import Path
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-from smarts.sstudio.types import Via
 
 traffic = t.Traffic(
     flows=[
@@ -42,22 +41,7 @@ bubbles = [
     ),
 ]
 
-ego_missions = [
-    t.EndlessMission(
-        begin=("edge-south-SN", 0, 20),
-        via=(
-            Via("edge-south-SN", lane_offset=40, lane_index=0, required_speed=8,),
-            Via("edge-south-SN", lane_offset=60, lane_index=1, required_speed=8,),
-            Via("edge-west-EW", lane_offset=10, lane_index=0, required_speed=2,),
-            Via("edge-west-EW", lane_offset=20, lane_index=0, required_speed=8,),
-            Via("edge-west-EW", lane_offset=50, lane_index=1, required_speed=2,),
-            Via("edge-west-EW", lane_offset=55, lane_index=0, required_speed=5,),
-            Via("edge-west-EW", lane_offset=60, lane_index=1, required_speed=2,),
-            Via("edge-west-EW", lane_offset=65, lane_index=0, required_speed=2,),
-            Via("edge-west-EW", lane_offset=70, lane_index=1, required_speed=2,),
-        ),
-    )
-]
+ego_missions = [t.EndlessMission(begin=("edge-south-SN", 1, 20),)]
 
 social_agent_missions = {
     "all": (
