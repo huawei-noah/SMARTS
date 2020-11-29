@@ -256,7 +256,7 @@ class TrapManager:
         planner.plan(mission=mission)
 
         # Apply agent vehicle association.
-        sim.vehicle_index.prepare_for_agent_control(
+        sim.vehicle_index.start_agent_observation(
             sim, vehicle_id, agent_id, agent_interface, planner
         )
         vehicle = sim.vehicle_index.switch_control_to_agent(

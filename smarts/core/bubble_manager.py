@@ -139,7 +139,8 @@ class Bubble:
             all_hijacked_or_shadowed_vehicle_ids = (
                 current_hijacked_or_shadowed_vehicle_ids
                 | running_hijacked_or_shadowed_vehicle_ids
-            )
+            ) - {vehicle_id}
+
             if len(all_hijacked_or_shadowed_vehicle_ids) >= self._limit:
                 return False
 
@@ -378,7 +379,7 @@ class BubbleManager:
                         sim, cursor.tracking_id, cursor.bubble
                     )
                 else:
-                    self._stop_shadowing_vehicle(sim, cursor.tracking_id)
+                    self._stop_shadowing_vehicle(sim, cursor.tracking_id, cursor.bubble)
 
     def _move_travelling_bubbles(self, sim):
         for bubble in self._active_bubbles():
@@ -483,21 +484,25 @@ class BubbleManager:
             f"shadow_agent={shadow_agent_id} sv_id={social_vehicle_id})"
         )
 
+        sim.vehicle_index.stop_agent_observation(vehicle_id)
+        sim.vehicle_index.relinquish_agent_control(sim, vehicle_id, social_vehicle_id)
         if bubble.is_boid and bubble.keep_alive:
-            sim.vehicle_index.relinquish_agent_control(
-                sim, vehicle_id, social_vehicle_id
-            )
             return
 
-        sim.vehicle_index.relinquish_agent_control(sim, vehicle_id, social_vehicle_id)
         teardown_agent_ids = [agent_id] + ([shadow_agent_id] if shadow_agent_id else [])
         sim.teardown_agents_without_vehicles(teardown_agent_ids)
 
-    def _stop_shadowing_vehicle(self, sim, vehicle_id: str):
+    def _stop_shadowing_vehicle(self, sim, vehicle_id: str, bubble: Bubble):
         shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
         self._log.debug(
             f"Stop shadowing vehicle={vehicle_id} (shadow_agent={shadow_agent_id})"
         )
+
+        sim.vehicle_index.stop_agent_observation(vehicle_id)
+
+        if bubble.is_boid and bubble.keep_alive:
+            return
+
         sim.teardown_agents_without_vehicles([shadow_agent_id])
 
     def _prepare_sensors_for_agent_control(
@@ -506,7 +511,7 @@ class BubbleManager:
         mission_planner = MissionPlanner(
             sim.scenario.waypoints, sim.scenario.road_network
         )
-        vehicle = sim.vehicle_index.prepare_for_agent_control(
+        vehicle = sim.vehicle_index.start_agent_observation(
             sim,
             vehicle_id,
             agent_id,
