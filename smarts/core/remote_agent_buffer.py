@@ -27,7 +27,7 @@ from .remote_agent import RemoteAgent, RemoteAgentException
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_worker_addrs = None, buffer_size=3):
+    def __init__(self, zoo_worker_addrs=None, buffer_size=3):
         """
         Args:
           buffer_size: Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
