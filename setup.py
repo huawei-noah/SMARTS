@@ -70,7 +70,7 @@ setup(
             "tensorflow==2.2.1",
             # XXX: TF requires specific version of scipy
             "scipy==1.4.1",
-            "torch==1.3.0",
+            "torch==1.4.0",
             "torchvision==0.4.1",
         ],
         "dev": [
