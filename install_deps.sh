@@ -16,7 +16,7 @@ function do_install_for_linux {
     sudo apt-get install -y \
          libspatialindex-dev \
          sumo sumo-tools sumo-doc \
-	 build-essentials
+	 build-essential
 
     #only a problem for linux
     if ! check_python_version_gte_3_7; then
