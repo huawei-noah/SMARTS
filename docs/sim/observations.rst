@@ -71,6 +71,10 @@ See implemention in :class:`smarts.core.sensors`
 
 Then, you can choose the observations needed through :class:`smarts.core.agent_interface.AgentInterface` and process these raw observations through :class:`smarts.core.observation_adapter`.
 
+=======
+Rewards
+=======
+The reward from smarts is given by a calculation in the `TripMeterSensor`. This is 0 or values `< -0.5 | 0.5 <` relating to distance traveled in meters when a vehicle has gone at least 0.5 meters since the last reward. `env_reward` from the smarts environment directly use this.
 
 =======
 Actions
