@@ -52,7 +52,7 @@ matplotlib==3.3.2
 more-itertools==8.2.0
 multidict==4.7.6
 networkx==2.5
-numpy==1.19.2
+numpy==1.18
 oauthlib==3.1.0
 opencv-python==4.4.0.44
 opencv-python-headless==4.4.0.46
