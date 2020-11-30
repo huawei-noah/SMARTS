@@ -71,7 +71,7 @@ def listen(port):
                         log.info(f"Responding with {resp}")
                         conn.send(resp)
                     except Exception as e:
-                        log.error(f"Failure while handling connection {resp(e)}")
+                        log.error(f"Failure while handling connection {repr(e)}")
     finally:
         log.info("Cleaning up zoo worker")
         # cleanup
