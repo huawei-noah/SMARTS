@@ -36,7 +36,7 @@ class RemoteAgentBuffer:
 
         self._log = logging.getLogger(self.__class__.__name__)
 
-        self._local_zoo_worker = None;
+        self._local_zoo_worker = None
         self._local_worker_addr = None
         if zoo_worker_addrs is None:
             self._local_worker_addr = self._spawn_local_zoo_worker()
@@ -96,7 +96,9 @@ class RemoteAgentBuffer:
                             address = resp["socket_file"]
                             family = "AF_UNIX"
                         else:
-                            self._log.error(f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}");
+                            self._log.error(
+                                f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
+                            )
                             continue
                     else:
                         conn.send("allocate_networked_agent")
@@ -106,7 +108,9 @@ class RemoteAgentBuffer:
                             address = (zoo_worker_addr[0], port)
                             family = "AF_INET"
                         else:
-                            self._log.error(f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}");
+                            self._log.error(
+                                f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
+                            )
                             continue
                     assert address is not None
                     assert family is not None
@@ -114,7 +118,9 @@ class RemoteAgentBuffer:
                     return RemoteAgent(address, family)
                     break
                 except Exception as e:
-                    self._log.error(f"Failed to connect to {zoo_worker_addr}, retrying {i} / {retries} '{e} {repr(e)}'");
+                    self._log.error(
+                        f"Failed to connect to {zoo_worker_addr}, retrying {i} / {retries} '{e} {repr(e)}'"
+                    )
                 finally:
                     if conn:
                         conn.close()

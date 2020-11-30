@@ -9,36 +9,29 @@ from multiprocessing.connection import Listener
 
 from smarts.core.utils.networking import find_free_port
 
-def spawn_networked_agent(port):
-  cmd = [
-            sys.executable,  # path to the current python binary
-            str(
-                (pathlib.Path(__file__).parent / "run_agent.py")
-                .absolute()
-                .resolve()
-            ),
-            "--port",
-            str(port),
-        ]
 
-  agent_proc = subprocess.Popen(cmd)
-  return agent_proc
+def spawn_networked_agent(port):
+    cmd = [
+        sys.executable,  # path to the current python binary
+        str((pathlib.Path(__file__).parent / "run_agent.py").absolute().resolve()),
+        "--port",
+        str(port),
+    ]
+
+    agent_proc = subprocess.Popen(cmd)
+    return agent_proc
 
 
 def spawn_local_agent(socket_file):
-  cmd = [
-            sys.executable,  # path to the current python binary
-            str(
-                (pathlib.Path(__file__).parent / "run_agent.py")
-                .absolute()
-                .resolve()
-            ),
-            "--socket_file",
-            socket_file,
-        ]
+    cmd = [
+        sys.executable,  # path to the current python binary
+        str((pathlib.Path(__file__).parent / "run_agent.py").absolute().resolve()),
+        "--socket_file",
+        socket_file,
+    ]
 
-  agent_proc = subprocess.Popen(cmd)
-  return agent_proc
+    agent_proc = subprocess.Popen(cmd)
+    return agent_proc
 
 
 def handle_request(request):
@@ -80,17 +73,16 @@ def listen(port):
                     except Exception as e:
                         log.error(f"Failure while handling connection {e}")
     finally:
-        # cleanup 
+        # cleanup
         for proc in agent_procs:
             proc.kill()
             proc.wait()
 
-        
-
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Listens for requests to allocate agents and executes them on-demand")
+    parser = argparse.ArgumentParser(
+        "Listens for requests to allocate agents and executes them on-demand"
+    )
     parser.add_argument("--port", help="Port to listen on", default=7432, type=int)
     args = parser.parse_args()
     listen(args.port)
-              

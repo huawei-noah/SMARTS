@@ -30,6 +30,7 @@ from .agent import AgentSpec
 class RemoteAgentException(Exception):
     pass
 
+
 class RemoteAgent:
     def __init__(self, address, socket_family, connection_retries=100):
         self._log = logging.getLogger(self.__class__.__name__)
