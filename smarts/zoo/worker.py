@@ -71,8 +71,9 @@ def listen(port):
                         log.info(f"Responding with {resp}")
                         conn.send(resp)
                     except Exception as e:
-                        log.error(f"Failure while handling connection {e}")
+                        log.error(f"Failure while handling connection {resp(e)}")
     finally:
+        log.info("Cleaning up zoo worker")
         # cleanup
         for proc in agent_procs:
             proc.kill()

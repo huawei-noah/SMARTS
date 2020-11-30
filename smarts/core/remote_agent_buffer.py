@@ -20,9 +20,10 @@
 import logging
 import atexit
 import time
+import random
 
+from multiprocessing.connection import Client
 from concurrent import futures
-from threading import Lock, Thread
 
 from .remote_agent import RemoteAgent, RemoteAgentException
 
@@ -79,50 +80,58 @@ class RemoteAgentBuffer:
         port = find_free_port()
         self._local_zoo_worker = Process(target=listen, args=(port,))
         self._local_zoo_worker.start()
-        return ("0.0.0.0", port)
+        address =("0.0.0.0", port)
+        while True:
+            try:
+                conn = Client(address, family="AF_INET")
+                break
+            except Exception as e:
+                self._log.error("Waiting for local zoo worker to start up")
+                time.sleep(1.0)
+        return address
 
-    def _remote_agent_future(self, retries=32):
+    def _try_to_allocate_remote_agent(self, zoo_worker_addr, conn):
+        address, family, resp = None, None, None
+        if zoo_worker_addr == self._local_worker_addr:
+            # This is a local zoo worker, as an optimization, allocate a local remote agent
+            conn.send("allocate_local_agent")
+            resp = conn.recv()
+            if resp["result"] == "success":
+                address = resp["socket_file"]
+                family = "AF_UNIX"
+        else:
+            # This is a remote zoo worker, we need to communicate with this
+            # remote agent over a network socket
+            conn.send("allocate_networked_agent")
+            resp = conn.recv()
+            if resp["result"] == "success":
+                port = resp["port"]
+                address = (zoo_worker_addr[0], port)
+                family = "AF_INET"
+
+        if address is None or family is None:
+            self._log.error(f"Failed to allocate remote agent on {zoo_worker_addr} {repr(resp)}")
+            return None
+
+        self._log.info(f"Connecting to remote agent at {address} over {family}")
+        return RemoteAgent(address, family)
+
+    def _remote_agent_future(self, retries=5):
         def build_remote_agent():
-            import random
-
-            from multiprocessing.connection import Client
 
             for i in range(retries):
                 conn = None
                 try:
                     zoo_worker_addr = random.choice(self._zoo_worker_addrs)
                     conn = Client(zoo_worker_addr, family="AF_INET")
-
-                    if zoo_worker_addr == self._local_worker_addr:
-                        conn.send("allocate_local_agent")
-                        resp = conn.recv()
-                        if resp["result"] == "success":
-                            address = resp["socket_file"]
-                            family = "AF_UNIX"
-                        else:
-                            time.sleep(0.5)
-                            self._log.error(
-                                f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
-                            )
-                            continue
+                    remote_agent = self._try_to_allocate_remote_agent(zoo_worker_addr, conn)
+                    if remote_agent:
+                        return remote_agent
                     else:
-                        conn.send("allocate_networked_agent")
-                        resp = conn.recv()
-                        if resp["result"] == "success":
-                            port = resp["port"]
-                            address = (zoo_worker_addr[0], port)
-                            family = "AF_INET"
-                        else:
-                            time.sleep(0.5)
-                            self._log.error(
-                                f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
-                            )
-                            continue
-                    assert address is not None
-                    assert family is not None
-                    self._log.info(f"Connecting to remote agent at {address} {family}")
-                    return RemoteAgent(address, family)
-                    break
+                        time.sleep(0.5)
+                        self._log.error(
+                          f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
+                        )
                 except Exception as e:
                     self._log.error(
                         f"Failed to connect to {zoo_worker_addr}, retrying {i} / {retries} '{e} {repr(e)}'"
@@ -134,37 +143,41 @@ class RemoteAgentBuffer:
 
         return self._replenish_threadpool.submit(build_remote_agent)
 
+    def _try_to_acquire_remote_agent(self):
+        assert len(self._agent_buffer) == self._buffer_size
+
+        # Check if we have any done remote agent futures.
+        done_future_indices = [
+            idx
+            for idx, agent_future in enumerate(self._agent_buffer)
+            if agent_future.done()
+        ]
+
+        if len(done_future_indices) > 0:
+            # If so, prefer one of these done ones to avoid sim delays.
+            future = self._agent_buffer.pop(done_future_indices[0])
+        else:
+            # Otherwise, we will block, waiting on a remote agent future
+            self._log.debug(
+                "No ready remote agents, simulation will block until one is available"
+            )
+            future = self._agent_buffer.pop(0)
+
+        # Schedule the next remote agent and add it to the buffer.
+        self._agent_buffer.append(self._remote_agent_future())
+
+        remote_agent = future.result(timeout=10)
+        return remote_agent
+
     def acquire_remote_agent(self, retries=3) -> RemoteAgent:
         for i in range(retries):
-            assert len(self._agent_buffer) == self._buffer_size
-
-            # Check if we have any done remote agent futures.
-            done_future_indices = [
-                idx
-                for idx, agent_future in enumerate(self._agent_buffer)
-                if agent_future.done()
-            ]
-
-            if len(done_future_indices) > 0:
-                # If so, prefer one of these done ones to avoid sim delays.
-                future = self._agent_buffer.pop(done_future_indices[0])
-            else:
-                # Otherwise, we will block, waiting on a remote agent future
-                self._log.debug(
-                    "No ready remote agents, simulation will block until one is available"
-                )
-                future = self._agent_buffer.pop(0)
-
-            # Schedule the next remote agent and add it to the buffer.
-            self._agent_buffer.append(self._remote_agent_future())
-
             try:
-                remote_agent = future.result(timeout=10)
-                return remote_agent
+                return self._try_to_acquire_remote_agent()
             except Exception as e:
                 self._log.error(
-                    f"Failed to acquire remote agent: {e} retrying {i} / {retries}"
+                    f"Failed to acquire remote agent: {repr(e)} retrying {i} / {retries}"
                 )
                 time.sleep(0.1)
 
+        self._log.error(self._local_zoo_worker)
         raise Exception("Failed to acquire remote agent")
