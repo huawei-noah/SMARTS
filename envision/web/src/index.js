@@ -26,7 +26,7 @@ import App from "./components/app.js";
 import "antd/dist/antd.dark.css";
 
 let client = new Client({
-  endpoint: "http://localhost:8081",
+  endpoint: window.location.host,
   delay: 2000,
   retries: 10,
 });
