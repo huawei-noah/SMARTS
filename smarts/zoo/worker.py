@@ -52,28 +52,28 @@ def handle_request(request):
 def listen(port):
     logging.basicConfig(level=logging.INFO)
     log = logging.getLogger(f"Zoo Worker")
-    log.info(f"Starting Zoo Worker on port {port}")
+    log.debug(f"Starting Zoo Worker on port {port}")
     agent_procs = []
     try:
         with Listener(("0.0.0.0", port), "AF_INET") as listener:
             while True:
                 with listener.accept() as conn:
-                    log.info(f"Accepted connection {conn}")
+                    log.debug(f"Accepted connection {conn}")
                     try:
                         request = conn.recv()
-                        log.info(f"Received request {request}")
+                        log.debug(f"Received request {request}")
 
                         proc, resp = handle_request(request)
                         if proc:
-                            log.info("Created agent proc")
+                            log.debug("Created agent proc")
                             agent_procs.append(proc)
 
-                        log.info(f"Responding with {resp}")
+                        log.debug(f"Responding with {resp}")
                         conn.send(resp)
                     except Exception as e:
                         log.error(f"Failure while handling connection {repr(e)}")
     finally:
-        log.info("Cleaning up zoo worker")
+        log.debug("Cleaning up zoo worker")
         # cleanup
         for proc in agent_procs:
             proc.kill()

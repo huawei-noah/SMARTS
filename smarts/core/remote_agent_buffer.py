@@ -22,10 +22,13 @@ import atexit
 import time
 import random
 
+from multiprocessing import Process
 from multiprocessing.connection import Client
 from concurrent import futures
 
+from smarts.zoo import worker as zoo_worker
 from .remote_agent import RemoteAgent, RemoteAgentException
+from .utils.networking import find_free_port
 
 
 class RemoteAgentBuffer:
@@ -39,10 +42,14 @@ class RemoteAgentBuffer:
         self._log = logging.getLogger(self.__class__.__name__)
 
         self._local_zoo_worker = None
-        self._local_worker_addr = None
+        self._local_zoo_worker_addr = None
+
         if zoo_worker_addrs is None:
-            self._local_worker_addr = self._spawn_local_zoo_worker()
-            zoo_worker_addrs = [self._local_worker_addr]
+            # The user has not specified any remote zoo workers.
+            # We need to spawn a local zoo worker.
+            self._local_zoo_worker_addr = self._spawn_local_zoo_worker()
+            zoo_worker_addrs = [self._local_zoo_worker_addr]
+
         self._zoo_worker_addrs = zoo_worker_addrs
 
         self._buffer_size = buffer_size
@@ -68,31 +75,35 @@ class RemoteAgentBuffer:
                         f"Exception while tearing down buffered remote agent: {repr(e)}"
                     )
 
+        # Note: important to teardown the local zoo worker after we purge the remote agents
+        #       since they may still require the local zoo worker to for instantiation.
         if self._local_zoo_worker is not None:
             self._local_zoo_worker.kill()
             self._local_zoo_worker.join()
 
-    def _spawn_local_zoo_worker(self):
-        from multiprocessing import Process
-        from smarts.zoo.worker import listen
-        from smarts.core.utils.networking import find_free_port
-
-        port = find_free_port()
-        self._local_zoo_worker = Process(target=listen, args=(port,))
+    def _spawn_local_zoo_worker(self, retries=3):
+        local_port = find_free_port()
+        self._local_zoo_worker = Process(target=zoo_worker.listen, args=(local_port,))
         self._local_zoo_worker.start()
-        address = ("0.0.0.0", port)
-        while True:
+
+        local_address = ("0.0.0.0", local_port)
+
+        # Block until the local zoo server is accepting connections.
+        for i in range(retries):
             try:
-                conn = Client(address, family="AF_INET")
+                conn = Client(local_address, family="AF_INET")
                 break
             except Exception as e:
-                self._log.error("Waiting for local zoo worker to start up")
-                time.sleep(1.0)
-        return address
+                self._log.error(
+                    f"Waiting for local zoo worker to start up, retrying {i} / {retries}"
+                )
+                time.sleep(0.1)
+
+        return local_address
 
     def _try_to_allocate_remote_agent(self, zoo_worker_addr, conn):
         address, family, resp = None, None, None
-        if zoo_worker_addr == self._local_worker_addr:
+        if zoo_worker_addr == self._local_zoo_worker_addr:
             # This is a local zoo worker, as an optimization, allocate a local remote agent
             conn.send("allocate_local_agent")
             resp = conn.recv()
@@ -115,27 +126,27 @@ class RemoteAgentBuffer:
             )
             return None
 
-        self._log.info(f"Connecting to remote agent at {address} over {family}")
+        self._log.debug(f"Connecting to remote agent at {address} with {family}")
         return RemoteAgent(address, family)
 
     def _remote_agent_future(self, retries=5):
         def build_remote_agent():
-
             for i in range(retries):
                 conn = None
                 try:
+                    # Try to connect to a random zoo worker.
                     zoo_worker_addr = random.choice(self._zoo_worker_addrs)
                     conn = Client(zoo_worker_addr, family="AF_INET")
+
+                    # Now that we've got a connection to this zoo worker,
+                    # request an allocation.
                     remote_agent = self._try_to_allocate_remote_agent(
                         zoo_worker_addr, conn
                     )
-                    if remote_agent:
+
+                    if remote_agent is not None:
+                        # We were successful in acquiring a remote agent, return it.
                         return remote_agent
-                    else:
-                        time.sleep(0.5)
-                        self._log.error(
-                            f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
-                        )
                 except Exception as e:
                     self._log.error(
                         f"Failed to connect to {zoo_worker_addr}, retrying {i} / {retries} '{e} {repr(e)}'"
@@ -143,6 +154,13 @@ class RemoteAgentBuffer:
                 finally:
                     if conn:
                         conn.close()
+
+                # Otherwise sleep and retry.
+                time.sleep(0.5)
+                self._log.error(
+                    f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
+                )
+
             raise Exception("Failed to allocate remote agent")
 
         return self._replenish_threadpool.submit(build_remote_agent)
@@ -183,5 +201,4 @@ class RemoteAgentBuffer:
                 )
                 time.sleep(0.1)
 
-        self._log.error(self._local_zoo_worker)
         raise Exception("Failed to acquire remote agent")
