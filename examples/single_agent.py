@@ -36,7 +36,7 @@ def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
-        zoo_workers=[("134.122.34.78", 7432)],
+        # zoo_workers=[("143.110.210.157", 7432)],
         # envision_record_data_replay_path="./data_replay",
     )
 
