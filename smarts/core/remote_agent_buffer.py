@@ -19,8 +19,9 @@
 # THE SOFTWARE.
 import logging
 import atexit
-from concurrent import futures
+import time
 
+from concurrent import futures
 from threading import Lock, Thread
 
 from .remote_agent import RemoteAgent, RemoteAgentException
@@ -83,7 +84,6 @@ class RemoteAgentBuffer:
     def _remote_agent_future(self, retries=32):
         def build_remote_agent():
             import random
-            import time
 
             from multiprocessing.connection import Client
 
