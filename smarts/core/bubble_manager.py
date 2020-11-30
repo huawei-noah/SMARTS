@@ -26,7 +26,7 @@ from functools import lru_cache
 from typing import Dict, Sequence
 
 from shapely.affinity import rotate, translate
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, CAP_STYLE, JOIN_STYLE
 
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import Mission, MissionPlanner, Start
@@ -75,7 +75,7 @@ class Bubble:
                 self._limit = min(bubble.limit, bubble.actor.capacity)
 
         self._cached_airlock_geometry = self._cached_inner_geometry.buffer(
-            bubble.margin
+            bubble.margin, cap_style=CAP_STYLE.square, join_style=JOIN_STYLE.mitre,
         )
 
     @property
@@ -139,7 +139,8 @@ class Bubble:
             all_hijacked_or_shadowed_vehicle_ids = (
                 current_hijacked_or_shadowed_vehicle_ids
                 | running_hijacked_or_shadowed_vehicle_ids
-            )
+            ) - {vehicle_id}
+
             if len(all_hijacked_or_shadowed_vehicle_ids) >= self._limit:
                 return False
 
@@ -231,28 +232,28 @@ class Cursor:
         is_admissible = bubble.is_admissible(
             vehicle.id, index, prev_cursors, running_cursors
         )
+        was_in_this_bubble = vehicle.id in BubbleManager.vehicle_ids_in_bubble(
+            bubble, prev_cursors
+        )
 
         transition = None
+        # XXX: When a travelling bubble disappears and an agent is airlocked or
+        #      hijacked. It remains in that state.
         # TODO: Depending on step size, we could potentially skip transitions (e.g.
         #       go straight to relinquish w/o hijacking first). This may be solved by
         #       time-based airlocking. For robust code we'll want to handle these
         #       scenarios (e.g. hijacking if didn't airlock first)
-        if (
-            is_social
-            and not is_shadowed
-            and is_admissible
-            and in_airlock(pos)
-            and not (in_airlock(prev_pos) or in_bubble(prev_pos))
-        ):
+        if is_social and not is_shadowed and is_admissible and in_airlock(pos):
             transition = BubbleTransition.AirlockEntered
-        elif is_shadowed and is_admissible and in_airlock(prev_pos) and in_bubble(pos):
+        elif is_shadowed and is_admissible and in_bubble(pos):
             transition = BubbleTransition.Entered
-        elif is_hijacked and in_bubble(prev_pos) and in_airlock(pos):
+        elif is_hijacked and in_airlock(pos):
+            # XXX: This may get called repeatedly because we don't actually change
+            #      any state when this happens.
             transition = BubbleTransition.Exited
         elif (
-            # AirlockEntered --> AirlockExited or Entered --> AirlockExited
-            (is_shadowed or is_hijacked)
-            and in_airlock(prev_pos)
+            was_in_this_bubble
+            and (is_shadowed or is_hijacked)
             and not (in_airlock(pos) or in_bubble(pos))
         ):
             transition = BubbleTransition.AirlockExited
@@ -340,7 +341,7 @@ class BubbleManager:
         # Calculate latest cursors
         cursors = []
         for vehicle_id, vehicle in index_new.vehicleitems():
-            for bubble in self._bubbles:
+            for bubble in self._active_bubbles():
                 cursors.append(
                     Cursor.from_pos(
                         prev_pos=index_pre.vehicle_position(vehicle_id),
@@ -378,7 +379,7 @@ class BubbleManager:
                         sim, cursor.tracking_id, cursor.bubble
                     )
                 else:
-                    self._stop_shadowing_vehicle(sim, cursor.tracking_id)
+                    self._stop_shadowing_vehicle(sim, cursor.tracking_id, cursor.bubble)
 
     def _move_travelling_bubbles(self, sim):
         for bubble in self._active_bubbles():
@@ -483,21 +484,25 @@ class BubbleManager:
             f"shadow_agent={shadow_agent_id} sv_id={social_vehicle_id})"
         )
 
+        sim.vehicle_index.stop_agent_observation(vehicle_id)
+        sim.vehicle_index.relinquish_agent_control(sim, vehicle_id, social_vehicle_id)
         if bubble.is_boid and bubble.keep_alive:
-            sim.vehicle_index.relinquish_agent_control(
-                sim, vehicle_id, social_vehicle_id
-            )
             return
 
-        sim.vehicle_index.relinquish_agent_control(sim, vehicle_id, social_vehicle_id)
         teardown_agent_ids = [agent_id] + ([shadow_agent_id] if shadow_agent_id else [])
         sim.teardown_agents_without_vehicles(teardown_agent_ids)
 
-    def _stop_shadowing_vehicle(self, sim, vehicle_id: str):
+    def _stop_shadowing_vehicle(self, sim, vehicle_id: str, bubble: Bubble):
         shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
         self._log.debug(
             f"Stop shadowing vehicle={vehicle_id} (shadow_agent={shadow_agent_id})"
         )
+
+        sim.vehicle_index.stop_agent_observation(vehicle_id)
+
+        if bubble.is_boid and bubble.keep_alive:
+            return
+
         sim.teardown_agents_without_vehicles([shadow_agent_id])
 
     def _prepare_sensors_for_agent_control(
@@ -506,7 +511,7 @@ class BubbleManager:
         mission_planner = MissionPlanner(
             sim.scenario.waypoints, sim.scenario.road_network
         )
-        vehicle = sim.vehicle_index.prepare_for_agent_control(
+        vehicle = sim.vehicle_index.start_agent_observation(
             sim,
             vehicle_id,
             agent_id,
