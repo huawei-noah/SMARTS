@@ -49,14 +49,7 @@ class RemoteAgentBuffer:
 
         atexit.register(self.destroy)
 
-    def __del__(self):
-        self.destroy()
-
     def destroy(self):
-        if self._local_zoo_worker is not None:
-            self._local_zoo_worker.kill()
-            self._local_zoo_worker.join()
-
         if atexit:
             atexit.unregister(self.destroy)
 
@@ -65,8 +58,15 @@ class RemoteAgentBuffer:
             if not remote_agent_future.cancel():
                 # We can't cancel this future, wait for it to complete
                 # and terminate the agent after it's been created
-                remote_agent = remote_agent_future.result()
-                remote_agent.terminate()
+                try:
+                    remote_agent = remote_agent_future.result()
+                    remote_agent.terminate()
+                except Exception as e:
+                    self._log.error(f"Exception while tearing down buffered remote agent: {repr(e)}")
+
+        if self._local_zoo_worker is not None:
+            self._local_zoo_worker.kill()
+            self._local_zoo_worker.join()
 
     def _spawn_local_zoo_worker(self):
         from multiprocessing import Process
@@ -78,10 +78,12 @@ class RemoteAgentBuffer:
         self._local_zoo_worker.start()
         return ("0.0.0.0", port)
 
-    def _remote_agent_future(self, retries=5):
+    def _remote_agent_future(self, retries=32):
         def build_remote_agent():
-            from multiprocessing.connection import Client
             import random
+            import time
+
+            from multiprocessing.connection import Client
 
             for i in range(retries):
                 conn = None
@@ -96,6 +98,7 @@ class RemoteAgentBuffer:
                             address = resp["socket_file"]
                             family = "AF_UNIX"
                         else:
+                            time.sleep(0.5)
                             self._log.error(
                                 f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
                             )
@@ -108,6 +111,7 @@ class RemoteAgentBuffer:
                             address = (zoo_worker_addr[0], port)
                             family = "AF_INET"
                         else:
+                            time.sleep(0.5)
                             self._log.error(
                                 f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
                             )
