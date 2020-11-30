@@ -238,6 +238,15 @@ $ python examples/single_agent.py scenarios/loop
 # Envision.
 ```
 
+If you would like to build your own Docker image from source, do the following:
+```bash
+$ git clone https://github.com/huawei-noah/SMARTS.git .
+# Docker image for development purposes
+$ docker build -t smarts-dev -f Dev.Dockerfile .
+# Docker image for production purposes
+$ docker build -t smarts-prod -f Prod.Dockerfile .
+```
+
 (For those who have permissions:) if you want to push new images to our [public dockerhub registry](https://hub.docker.com/orgs/huaweinoah) run,
 
 ```bash
@@ -245,7 +254,7 @@ $ python examples/single_agent.py scenarios/loop
 docker login
 
 export VERSION=v0.4.3-pre
-docker build -t smarts:$VERSION .
+docker build -t smarts:$VERSION -f Dev.Dockerfile .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
 docker push huaweinoah/smarts:$VERSION
 ```
