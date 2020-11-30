@@ -57,7 +57,7 @@ class RemoteAgentBuffer:
             self._local_zoo_worker.kill()
             self._local_zoo_worker.join()
 
-        if atexit.unregister is not None:
+        if atexit:
             atexit.unregister(self.destroy)
 
         for remote_agent_future in self._agent_buffer:
@@ -114,7 +114,7 @@ class RemoteAgentBuffer:
                     return RemoteAgent(address, family)
                     break
                 except Exception as e:
-                    self._log.error(f"Failed to connect to {zoo_worker_addr}, retrying {i} / {retries} {e}");
+                    self._log.error(f"Failed to connect to {zoo_worker_addr}, retrying {i} / {retries} '{e} {repr(e)}'");
                 finally:
                     if conn:
                         conn.close()

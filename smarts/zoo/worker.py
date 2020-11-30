@@ -18,7 +18,7 @@ def spawn_networked_agent(port):
                 .resolve()
             ),
             "--port",
-            port,
+            str(port),
         ]
 
   agent_proc = subprocess.Popen(cmd)
