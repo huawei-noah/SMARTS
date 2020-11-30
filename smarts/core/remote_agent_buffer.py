@@ -80,7 +80,7 @@ class RemoteAgentBuffer:
         port = find_free_port()
         self._local_zoo_worker = Process(target=listen, args=(port,))
         self._local_zoo_worker.start()
-        address =("0.0.0.0", port)
+        address = ("0.0.0.0", port)
         while True:
             try:
                 conn = Client(address, family="AF_INET")
@@ -110,7 +110,9 @@ class RemoteAgentBuffer:
                 family = "AF_INET"
 
         if address is None or family is None:
-            self._log.error(f"Failed to allocate remote agent on {zoo_worker_addr} {repr(resp)}")
+            self._log.error(
+                f"Failed to allocate remote agent on {zoo_worker_addr} {repr(resp)}"
+            )
             return None
 
         self._log.info(f"Connecting to remote agent at {address} over {family}")
@@ -124,13 +126,15 @@ class RemoteAgentBuffer:
                 try:
                     zoo_worker_addr = random.choice(self._zoo_worker_addrs)
                     conn = Client(zoo_worker_addr, family="AF_INET")
-                    remote_agent = self._try_to_allocate_remote_agent(zoo_worker_addr, conn)
+                    remote_agent = self._try_to_allocate_remote_agent(
+                        zoo_worker_addr, conn
+                    )
                     if remote_agent:
                         return remote_agent
                     else:
                         time.sleep(0.5)
                         self._log.error(
-                          f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
+                            f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
                         )
                 except Exception as e:
                     self._log.error(
