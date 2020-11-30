@@ -134,28 +134,37 @@ class RemoteAgentBuffer:
 
         return self._replenish_threadpool.submit(build_remote_agent)
 
-    def acquire_remote_agent(self) -> RemoteAgent:
-        assert len(self._agent_buffer) == self._buffer_size
+    def acquire_remote_agent(self, retries=3) -> RemoteAgent:
+        for i in range(retries):
+            assert len(self._agent_buffer) == self._buffer_size
 
-        # Check if we have any done remote agent futures.
-        done_future_indices = [
-            idx
-            for idx, agent_future in enumerate(self._agent_buffer)
-            if agent_future.done()
-        ]
+            # Check if we have any done remote agent futures.
+            done_future_indices = [
+                idx
+                for idx, agent_future in enumerate(self._agent_buffer)
+                if agent_future.done()
+            ]
 
-        if len(done_future_indices) > 0:
-            # If so, prefer one of these done ones to avoid sim delays.
-            future = self._agent_buffer.pop(done_future_indices[0])
-        else:
-            # Otherwise, we will block, waiting on a remote agent future
-            self._log.debug(
-                "No ready remote agents, simulation will block until one is available"
-            )
-            future = self._agent_buffer.pop(0)
+            if len(done_future_indices) > 0:
+                # If so, prefer one of these done ones to avoid sim delays.
+                future = self._agent_buffer.pop(done_future_indices[0])
+            else:
+                # Otherwise, we will block, waiting on a remote agent future
+                self._log.debug(
+                    "No ready remote agents, simulation will block until one is available"
+                )
+                future = self._agent_buffer.pop(0)
 
-        remote_agent = future.result(timeout=10)
+            # Schedule the next remote agent and add it to the buffer.
+            self._agent_buffer.append(self._remote_agent_future())
 
-        # Schedule the next remote agent and add it to the buffer.
-        self._agent_buffer.append(self._remote_agent_future())
-        return remote_agent
+            try:
+                remote_agent = future.result(timeout=10)
+                return remote_agent
+            except Exception as e:
+                self._log.error(
+                    f"Failed to acquire remote agent: {e} retrying {i} / {retries}"
+                )
+                time.sleep(0.1)
+
+        raise Exception("Failed to acquire remote agent")
