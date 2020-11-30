@@ -62,7 +62,9 @@ class RemoteAgentBuffer:
                     remote_agent = remote_agent_future.result()
                     remote_agent.terminate()
                 except Exception as e:
-                    self._log.error(f"Exception while tearing down buffered remote agent: {repr(e)}")
+                    self._log.error(
+                        f"Exception while tearing down buffered remote agent: {repr(e)}"
+                    )
 
         if self._local_zoo_worker is not None:
             self._local_zoo_worker.kill()
