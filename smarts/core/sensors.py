@@ -952,14 +952,18 @@ class NeighborhoodVehiclesSensor(Sensor):
 
 
 class WaypointsSensor(Sensor):
-    def __init__(self, vehicle, mission_planner, lookahead=50):
+    def __init__(self, vehicle, mission_planner, sim, lookahead=50):
         self._vehicle = vehicle
         self._mission_planner = mission_planner
+        self._sim = sim
         self._lookahead = lookahead
 
     def __call__(self):
         return self._mission_planner.waypoint_paths_at(
-            self._vehicle.pose, lookahead=self._lookahead
+            pose=self._vehicle.pose,
+            lookahead=self._lookahead,
+            sim=self._sim,
+            vehicle=self._vehicle,
         )
 
     def teardown(self):
