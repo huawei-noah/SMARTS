@@ -27,7 +27,7 @@ from .remote_agent import RemoteAgent, RemoteAgentException
 
 
 class RemoteAgentBuffer:
-    def __init__(self, buffer_size=3):
+    def __init__(self, zoo_worker_addrs = None, buffer_size=3):
         """
         Args:
           buffer_size: Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
@@ -35,6 +35,14 @@ class RemoteAgentBuffer:
         assert buffer_size > 0
 
         self._log = logging.getLogger(self.__class__.__name__)
+
+        self._local_zoo_worker = None;
+        self._local_worker_addr = None
+        if zoo_worker_addrs is None:
+            self._local_worker_addr = self._spawn_local_zoo_worker()
+            zoo_worker_addrs = [self._local_worker_addr]
+        self._zoo_worker_addrs = zoo_worker_addrs
+
         self._buffer_size = buffer_size
         self._replenish_threadpool = futures.ThreadPoolExecutor()
         self._agent_buffer = [self._remote_agent_future() for _ in range(buffer_size)]
@@ -45,6 +53,10 @@ class RemoteAgentBuffer:
         self.destroy()
 
     def destroy(self):
+        if self._local_zoo_worker is not None:
+            self._local_zoo_worker.kill()
+            self._local_zoo_worker.join()
+
         if atexit.unregister is not None:
             atexit.unregister(self.destroy)
 
@@ -56,8 +68,59 @@ class RemoteAgentBuffer:
                 remote_agent = remote_agent_future.result()
                 remote_agent.terminate()
 
-    def _remote_agent_future(self):
-        return self._replenish_threadpool.submit(RemoteAgent)
+    def _spawn_local_zoo_worker(self):
+        from multiprocessing import Process
+        from smarts.zoo.worker import listen
+        from smarts.core.utils.networking import find_free_port
+
+        port = find_free_port()
+        self._local_zoo_worker = Process(target=listen, args=(port,))
+        self._local_zoo_worker.start()
+        return ("0.0.0.0", port)
+
+    def _remote_agent_future(self, retries=5):
+        def build_remote_agent():
+            from multiprocessing.connection import Client
+            import random
+
+            for i in range(retries):
+                conn = None
+                try:
+                    zoo_worker_addr = random.choice(self._zoo_worker_addrs)
+                    conn = Client(zoo_worker_addr, family="AF_INET")
+
+                    if zoo_worker_addr == self._local_worker_addr:
+                        conn.send("allocate_local_agent")
+                        resp = conn.recv()
+                        if resp["result"] == "success":
+                            address = resp["socket_file"]
+                            family = "AF_UNIX"
+                        else:
+                            self._log.error(f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}");
+                            continue
+                    else:
+                        conn.send("allocate_networked_agent")
+                        resp = conn.recv()
+                        if resp["result"] == "success":
+                            port = resp["port"]
+                            address = (zoo_worker_addr[0], port)
+                            family = "AF_INET"
+                        else:
+                            self._log.error(f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}");
+                            continue
+                    assert address is not None
+                    assert family is not None
+                    self._log.info(f"Connecting to remote agent at {address} {family}")
+                    return RemoteAgent(address, family)
+                    break
+                except Exception as e:
+                    self._log.error(f"Failed to connect to {zoo_worker_addr}, retrying {i} / {retries} {e}");
+                finally:
+                    if conn:
+                        conn.close()
+            raise Exception("Failed to allocate remote agent")
+
+        return self._replenish_threadpool.submit(build_remote_agent)
 
     def acquire_remote_agent(self) -> RemoteAgent:
         assert len(self._agent_buffer) == self._buffer_size

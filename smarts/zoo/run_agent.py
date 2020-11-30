@@ -72,13 +72,27 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"PID({os.getpid()}) run_agent.py")
 
 parser = argparse.ArgumentParser("Spawn an agent in it's own independent process")
-parser.add_argument("socket_file", help="AF_UNIX domain socket file to be used for IPC")
+parser.add_argument("--socket_file", help="AF_UNIX domain socket file to be used for IPC", default=None)
+parser.add_argument("--port", type=int, help="AF_INET port to bind to for listening for remote connections IPC", default=None)
 args = parser.parse_args()
 
 
-log.debug(f"run_agent.py: socket_file={args.socket_file}")
+log.debug(f"run_agent.py: socket_file={args.socket_file} port={args.port}")
 
-with Listener(args.socket_file, family="AF_UNIX") as listener:
+if args.socket_file is not None and args.port is not None:
+  raise Exception("Only one of socket_file or port can be set")
+elif args.socket_file is None and args.port is None:
+  raise Exception("One of socket_file or port must be set")
+elif args.socket_file is not None:
+  address = args.socket_file
+  family = "AF_UNIX"
+elif args.port is not None:
+  address = ("0.0.0.0", args.port)
+  family = "AF_INET"
+else:
+  raise Exception(f"Unsupported configuration {args}")
+
+with Listener(address, family) as listener:
     with listener.accept() as conn:
         log.debug(f"connection accepted from {listener.last_accepted}")
         agent = None

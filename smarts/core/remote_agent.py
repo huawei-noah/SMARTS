@@ -17,13 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import atexit
 import cloudpickle
 import logging
-import pathlib
-import subprocess
-import sys
-import tempfile
 import time
 
 from concurrent import futures
@@ -35,35 +30,19 @@ from .agent import AgentSpec
 class RemoteAgentException(Exception):
     pass
 
-
 class RemoteAgent:
-    def __init__(self, connection_retries=100):
-        atexit.register(self.terminate)
-
+    def __init__(self, address, socket_family, connection_retries=100):
         self._log = logging.getLogger(self.__class__.__name__)
-        sock_file = tempfile.mktemp()
-        cmd = [
-            sys.executable,  # path to the current python binary
-            str(
-                (pathlib.Path(__file__).parent.parent / "zoo" / "run_agent.py")
-                .absolute()
-                .resolve()
-            ),
-            sock_file,
-        ]
 
-        self._log.debug(f"Spawning remote agent proc: {cmd}")
-
-        self._agent_proc = subprocess.Popen(cmd)
         self._conn = None
         self._tp_exec = futures.ThreadPoolExecutor()
 
         for i in range(connection_retries):
             # Waiting on agent to open it's socket.
             try:
-                self._conn = Client(sock_file, family="AF_UNIX")
+                self._conn = Client(address, socket_family)
                 break
-            except FileNotFoundError:
+            except Exception:
                 self._log.debug(
                     f"RemoteAgent retrying connection to agent in: attempt {i}"
                 )
@@ -100,15 +79,8 @@ class RemoteAgent:
         )
 
     def terminate(self):
-        if atexit.unregister is not None:
-            atexit.unregister(self.terminate)
-        if self._agent_proc:
-            if self._conn:
-                self._conn.close()
-
-            self._agent_proc.kill()
-            self._agent_proc.wait()
-            self._agent_proc = None
+        if self._conn:
+            self._conn.close()
 
         # Shutdown thread pool executor
         self._tp_exec.shutdown()
