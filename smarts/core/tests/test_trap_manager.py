@@ -133,7 +133,7 @@ def test_capture_vehicle(smarts: SMARTS, scenarios):
 
 def test_emit_on_default(smarts: SMARTS, empty_scenarios):
     smarts.reset(next(empty_scenarios))
-    assert smarts.elapsed_sim_time >= 3
+    assert smarts.elapsed_sim_time == 3
     assert len(smarts.vehicle_index.agent_vehicle_ids) == 1
     assert len(smarts.vehicle_index.vehicle_ids_by_actor_id(AGENT_ID)) == 1
 
