@@ -309,10 +309,15 @@ class Via:
     """A point on an edge that an actor must pass through"""
 
     edge_id: str
+    """The edge this via is on"""
     lane_index: int
+    """The lane this via sits on"""
     lane_offset: int
+    """The offset along the lane where this via sits"""
     required_speed: float
+    """The speed that a vehicle should travel through this via"""
     hit_distance: float = -1
+    """The distance at which this waypoint can be hit. Negative means half the lane radius."""
 
 
 @dataclass(frozen=True)

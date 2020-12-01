@@ -28,20 +28,21 @@ ego_missions = [
     )
 ]
 
+scenario = Scenario(
+    traffic={
+        "basic": Traffic(
+            flows=[
+                Flow(
+                    route=RandomRoute(),
+                    rate=3600,
+                    actors={TrafficActor(name="car"): 1.0},
+                )
+            ]
+        )
+    },
+    ego_missions=ego_missions,
+)
+
 gen_scenario(
-    scenario=Scenario(
-        traffic={
-            "basic": Traffic(
-                flows=[
-                    Flow(
-                        route=RandomRoute(),
-                        rate=3600,
-                        actors={TrafficActor(name="car"): 1.0},
-                    )
-                ]
-            )
-        },
-        ego_missions=ego_missions,
-    ),
-    output_dir=Path(__file__).parent,
+    scenario=scenario, output_dir=Path(__file__).parent,
 )
