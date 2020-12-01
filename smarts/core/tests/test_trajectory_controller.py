@@ -1,5 +1,7 @@
 import math
-
+import importlib.resources as pkg_resources
+import os
+import yaml
 from unittest import mock
 import numpy as np
 import pybullet
@@ -19,9 +21,26 @@ from smarts.core.controllers import (
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Start
 from smarts.core.vehicle import Vehicle
+from smarts.core import models
 
 
 time_step = 0.1
+
+
+@pytest.fixture(params=["sedan", "bus"])
+def vehicle_controller_file(request):
+    vehicle_file_name = request.param + ".urdf"
+    if request.param == "sedan":
+        vehicle_file_name = "vehicle.urdf"
+
+    with pkg_resources.path(models, vehicle_file_name) as path:
+        VEHICLE_FILEPATH = str(path.absolute())
+    with pkg_resources.path(models, "controller_parameters.yaml") as controller_path:
+        controller_filepath = str(controller_path.absolute())
+    with open(controller_filepath, "r") as controller_file:
+        VEHICLE_CONTROLLER_PARAMETERS = yaml.safe_load(controller_file)[request.param]
+
+    return (VEHICLE_FILEPATH, VEHICLE_CONTROLLER_PARAMETERS)
 
 
 @pytest.fixture
@@ -40,13 +59,18 @@ def bullet_client(TIMESTEP_SEC=time_step):
 
 
 @pytest.fixture
-def vehicle(bullet_client, TIMESTEP_SEC=time_step):
+def vehicle(bullet_client, vehicle_controller_file, TIMESTEP_SEC=time_step):
     pose = Pose.from_center((0, 0, 0), Heading(0))
     vehicle1 = Vehicle(
         id="vehicle",
         pose=pose,
         showbase=mock.MagicMock(),
-        chassis=AckermannChassis(pose=pose, bullet_client=bullet_client,),
+        chassis=AckermannChassis(
+            pose=pose,
+            bullet_client=bullet_client,
+            vehicle_filepath=vehicle_controller_file[0],
+            controller_parameters=vehicle_controller_file[1],
+        ),
     )
     return vehicle1
 
