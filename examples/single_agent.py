@@ -37,7 +37,9 @@ class ChaseViaPointsAgent(Agent):
 
 def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
-        interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
+        interface=AgentInterface.from_type(
+            AgentType.Laner, max_episode_steps=max_episode_steps
+        ),
         agent_builder=ChaseViaPointsAgent,
     )
 
