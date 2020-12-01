@@ -34,7 +34,7 @@ import {
 import { GLTFLoader } from "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import SceneComponent from "babylonjs-hook";
 
-import Bubble from "./bubble.js";
+import Bubbles from "./bubbles.js";
 import Camera from "./camera.js";
 import Vehicles from "./vehicles.js";
 import DrivenPaths from "./driven_paths.js";
@@ -56,7 +56,6 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
   const [socialDrivenPathModel, setSocialDrivenPathModel] = useState(null);
 
   const [mapMeshes, setMapMeshes] = useState([]);
-  const [bubbleGeometry, setBubbleGeometry] = useState([]); // List of mesh objects
 
   const [roadNetworkBbox, setRoadNetworkBbox] = useState([]);
   const [laneDividerPos, setLaneDividerPos] = useState([]);
@@ -259,7 +258,7 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
           height: "100%",
         }}
       />
-      <Bubble scene={scene} worldState={worldState} />
+      <Bubbles scene={scene} worldState={worldState} />
       <Camera
         scene={scene}
         roadNetworkBbox={roadNetworkBbox}

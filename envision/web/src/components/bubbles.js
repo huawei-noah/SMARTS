@@ -29,7 +29,7 @@ import {
 
 import { useEffect, useRef } from "react";
 
-export default function Bubble({ scene, worldState }) {
+export default function Bubbles({ scene, worldState }) {
   if (scene == null) {
     return null;
   }
@@ -39,6 +39,7 @@ export default function Bubble({ scene, worldState }) {
 
   useEffect(() => {
     for (const geom of bubbleGeometry) {
+      // doNotRecurse = false, disposeMaterialAndTextures = true
       geom.dispose(false, true);
     }
 
