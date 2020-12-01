@@ -158,7 +158,7 @@ class RemoteAgentBuffer:
                 # Otherwise sleep and retry.
                 time.sleep(0.5)
                 self._log.error(
-                    f"Failed to allocate agent on {zoo_worker_addr}: {resp}, retrying {i} / {retries}"
+                    f"Failed to allocate agent on {zoo_worker_addr}, retrying {i} / {retries}"
                 )
 
             raise Exception("Failed to allocate remote agent")
