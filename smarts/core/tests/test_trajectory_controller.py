@@ -34,13 +34,13 @@ def vehicle_controller_file(request):
         vehicle_file_name = "vehicle.urdf"
 
     with pkg_resources.path(models, vehicle_file_name) as path:
-        VEHICLE_FILEPATH = str(path.absolute())
+        vehicle_file_path = str(path.absolute())
     with pkg_resources.path(models, "controller_parameters.yaml") as controller_path:
         controller_filepath = str(controller_path.absolute())
     with open(controller_filepath, "r") as controller_file:
-        VEHICLE_CONTROLLER_PARAMETERS = yaml.safe_load(controller_file)[request.param]
+        vehicle_controller_file_path = yaml.safe_load(controller_file)[request.param]
 
-    return (VEHICLE_FILEPATH, VEHICLE_CONTROLLER_PARAMETERS)
+    return (vehicle_file_path, vehicle_controller_file_path)
 
 
 @pytest.fixture
