@@ -113,6 +113,7 @@ def smarts():
     yield smarts_
     smarts_.destroy()
 
+
 @pytest.fixture
 def smarts_two_agents():
     smarts_ = SMARTS(
@@ -147,7 +148,9 @@ def test_emit_on_default(smarts: SMARTS, empty_scenarios):
     assert len(smarts.vehicle_index.vehicle_ids_by_actor_id(AGENT_ID)) == 1
 
 
-def test_no_recapture_agent(smarts_two_agents: SMARTS, two_agent_capture_offset_tenth_of_second):
+def test_no_recapture_agent(
+    smarts_two_agents: SMARTS, two_agent_capture_offset_tenth_of_second
+):
     smarts_two_agents.reset(next(two_agent_capture_offset_tenth_of_second))
     for i in range(3):
         smarts_two_agents.step({})
