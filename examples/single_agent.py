@@ -37,10 +37,8 @@ class ChaseViaPointsAgent(Agent):
 
 def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
-        interface=AgentInterface.from_type(
-            AgentType.Laner, vehicle_type="sedan", max_episode_steps=None
-        ),
-        agent_builder=KeepLaneAgent,
+        interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
+        agent_builder=ChaseViaPointsAgent,
     )
 
     env = gym.make(
