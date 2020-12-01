@@ -17,8 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import collections.abc as collections_abc
+import logging
 import random
+import collections.abc as collections_abc
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
@@ -483,7 +484,12 @@ class MapZone(Zone):
             lane_length = lane.getLength()
             geom_length = max(self.length - 1e-6, 1e-6)
 
-            assert lane_length > geom_length  # Geom is too long for lane
+            if lane_length > geom_length:
+                logging.warning(
+                    f"Geometry is too long={geom_length} with offset={offset} for "
+                    f"lane={lane.getID()}, using length={lane_length} instead"
+                )
+
             assert geom_length > 0  # Geom length is negative
 
             lane_shape = SumoRoadNetwork.buffered_lane_or_edge(
@@ -497,12 +503,7 @@ class MapZone(Zone):
             lane_shape = road_network.split_lane_shape_at_offset(
                 Polygon(lane_shape), lane, min_cut
             )
-
-            if isinstance(lane_shape, GeometryCollection):
-                if len(lane_shape) < 2:
-                    break
-                lane_shape = lane_shape[1]
-
+            lane_shape = unary_union(lane_shape)
             lane_shape = road_network.split_lane_shape_at_offset(
                 lane_shape, lane, max_cut,
             )[0]
