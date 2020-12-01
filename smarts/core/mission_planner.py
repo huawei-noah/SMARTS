@@ -24,6 +24,11 @@ from typing import Optional
 import numpy as np
 
 from smarts.sstudio.types import UTurn
+from smarts.sstudio.types import CutIn, MapZone, UTurn
+from .sumo_road_network import SumoRoadNetwork
+from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
+from .waypoints import Waypoint, Waypoints
+from .route import ShortestRoute, EmptyRoute
 from .coordinates import Pose
 from .route import ShortestRoute, EmptyRoute
 from .scenario import EndlessGoal, LapMission, Mission, Start
@@ -129,7 +134,7 @@ class MissionPlanner:
         lane = self._road_network.lane_by_id(lane_id)
         return self._road_network.lane_center_at_point(lane, position)
 
-    def waypoint_paths_at(self, pose: Pose, lookahead: float):
+    def waypoint_paths_at(self, sim, pose: Pose, lookahead: float, vehicle=None):
         """Call assumes you're on the correct route already. We do not presently
         "replan" in case the route has changed.
         """
@@ -137,10 +142,17 @@ class MissionPlanner:
             self._did_plan
         ), "Must call plan(...) before being able to invoke the mission planner."
 
-        if self.mission.task is not None and isinstance(self.mission.task, UTurn):
-            return self.uturn_waypoints(pose)
+        waypoints_with_task = None
+        if self.mission.task is not None:
+            if isinstance(self.mission.task, UTurn):
+                waypoints_with_task = self.uturn_waypoints(pose)
+            elif isinstance(self.mission.task, CutIn):
+                waypoints_with_task = self.cut_in_waypoints(sim, pose, vehicle)
 
+        if waypoints_with_task:
+            return waypoints_with_task
         else:
+            # If specific waypoints are not not provided, return general waypoints
             edge_ids = self._edge_ids(pose)
             if edge_ids:
                 return self._waypoints.waypoint_paths_along_route(
@@ -196,6 +208,60 @@ class MissionPlanner:
             edge_ids.append(next_edges[0].getID())
 
         return edge_ids
+
+    def cut_in_waypoints(self, sim, pose: Pose, vehicle):
+        radius = 30
+        neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
+            vehicle=vehicle, radius=radius
+        )
+
+        if not neighborhood_vehicles:
+            return []
+
+        nei_vehicle = neighborhood_vehicles[0]
+        position = pose.position[:2]
+        lane = self._road_network.nearest_lane(position)
+        target_position = nei_vehicle.pose.position[:2]
+        target_lane = self._road_network.nearest_lane(target_position)
+
+        offset = self._road_network.offset_into_lane(lane, position)
+        target_offset = self._road_network.offset_into_lane(
+            target_lane, target_position
+        )
+        if offset < target_offset:
+            # Need to catch up with the target vehicle first
+            return []
+
+        nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+            target_position, target_lane.getID(), 60
+        )
+        p0 = position
+        p1 = nei_wps[0][len(nei_wps[0]) // 2].pos
+        p2 = target_position
+        p3 = nei_wps[0][-1].pos
+        p_x, p_y = bezier([p0, p1, p2, p3], 20)
+        trajectory = []
+        prev = position[:2]
+        for i in range(len(p_x)):
+            pos = np.array([p_x[i], p_y[i]])
+            heading = vec_to_radians(pos - prev)
+            prev = pos
+            lane = self._road_network.nearest_lane(pos)
+            lane_id = lane.getID()
+            lane_index = lane_id.split("_")[-1]
+            width = lane.getWidth()
+            speed_limit = lane.getSpeed()
+
+            wp = Waypoint(
+                pos=pos,
+                heading=heading,
+                lane_width=width,
+                speed_limit=speed_limit,
+                lane_id=lane_id,
+                lane_index=lane_index,
+            )
+            trajectory.append(wp)
+        return [trajectory]
 
     def uturn_waypoints(self, pose: Pose):
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.

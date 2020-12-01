@@ -357,6 +357,13 @@ class UTurn:
 
 
 @dataclass(frozen=True)
+class CutIn:
+    @property
+    def name(self):
+        return "cut_in"
+
+
+@dataclass(frozen=True)
 class Mission:
     """The descriptor for an actor's mission."""
 
@@ -372,7 +379,7 @@ class Mission:
     """
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
-    task: Tuple[UTurn] = None
+    task: Tuple[UTurn, CutIn] = None
 
 
 @dataclass(frozen=True)
