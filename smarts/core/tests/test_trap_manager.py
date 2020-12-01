@@ -144,6 +144,6 @@ def test_no_recapture_agent(
     smarts_two_agents.reset(next(two_agent_capture_offset_tenth_of_second))
     for i in range(3):
         smarts_two_agents.step({})
-    assert len(smarts_two_agents.agent_manager.pending_agent_ids) < 1
-    assert len(smarts_two_agents.agent_manager.active_agents) > 1
-    assert len(smarts_two_agents.vehicle_index.agent_vehicle_ids) > 1
+    assert len(smarts_two_agents.agent_manager.pending_agent_ids) == 0
+    assert len(smarts_two_agents.agent_manager.active_agents) == 2
+    assert len(smarts_two_agents.vehicle_index.agent_vehicle_ids) == 2
