@@ -27,18 +27,16 @@ def scenarios():
             ]
         )
 
-        scenario = t.Scenario(
-            traffic={"all": traffic},
-            ego_missions=[
-                t.Mission(
-                    t.Route(begin=("west", 1, 10), end=("east", 1, "max")),
-                    entry_tactic=t.TrapEntryTactic(
-                        wait_to_hijack_limit_s=3,
-                        zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
-                    ),
-                )
-            ],
-        )
+        missions = [
+            t.Mission(
+                t.Route(begin=("west", 1, 10), end=("east", 1, "max")),
+                entry_tactic=t.TrapEntryTactic(
+                    wait_to_hijack_limit_s=3,
+                    zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
+                ),
+            )
+        ]
+        scenario = t.Scenario(traffic={"all": traffic}, ego_missions=missions,)
 
         gen_scenario(scenario, output_dir=scenario_root)
         yield Scenario.variations_for_all_scenario_roots(
@@ -49,18 +47,16 @@ def scenarios():
 @pytest.fixture
 def empty_scenarios():
     with temp_scenario(name="straight", map="maps/straight.net.xml") as scenario_root:
-        scenario = t.Scenario(
-            traffic={},
-            ego_missions=[
-                t.Mission(
-                    t.Route(begin=("west", 1, 10), end=("east", 1, "max")),
-                    entry_tactic=t.TrapEntryTactic(
-                        wait_to_hijack_limit_s=3,
-                        zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
-                    ),
-                )
-            ],
-        )
+        missions = [
+            t.Mission(
+                t.Route(begin=("west", 1, 10), end=("east", 1, "max")),
+                entry_tactic=t.TrapEntryTactic(
+                    wait_to_hijack_limit_s=3,
+                    zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
+                ),
+            )
+        ]
+        scenario = t.Scenario(traffic={}, ego_missions=missions,)
 
         gen_scenario(scenario, output_dir=scenario_root)
         yield Scenario.variations_for_all_scenario_roots(
@@ -71,25 +67,24 @@ def empty_scenarios():
 @pytest.fixture
 def two_agent_capture_offset_tenth_of_second():
     with temp_scenario(name="straight", map="maps/straight.net.xml") as scenario_root:
-        scenario = t.Scenario(
-            traffic={},
-            ego_missions=[
-                t.Mission(
-                    t.Route(begin=("west", 1, 20), end=("east", 1, "max")),
-                    entry_tactic=t.TrapEntryTactic(
-                        wait_to_hijack_limit_s=0,
-                        zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
-                    ),
+        missions = [
+            t.Mission(
+                t.Route(begin=("west", 1, 20), end=("east", 1, "max")),
+                entry_tactic=t.TrapEntryTactic(
+                    wait_to_hijack_limit_s=0,
+                    zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
                 ),
-                t.Mission(
-                    t.Route(begin=("west", 2, 10), end=("east", 1, "max")),
-                    entry_tactic=t.TrapEntryTactic(
-                        wait_to_hijack_limit_s=0.1,
-                        zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
-                    ),
+            ),
+            t.Mission(
+                t.Route(begin=("west", 2, 10), end=("east", 1, "max")),
+                entry_tactic=t.TrapEntryTactic(
+                    wait_to_hijack_limit_s=0.1,
+                    zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
                 ),
-            ],
-        )
+            ),
+        ]
+
+        scenario = t.Scenario(traffic={}, ego_missions=missions,)
 
         gen_scenario(scenario, output_dir=scenario_root)
         yield Scenario.variations_for_all_scenario_roots(
