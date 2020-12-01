@@ -41,30 +41,21 @@ class Trap:
     geometry: Polygon
     mission: Mission
     exclusion_prefixes: Sequence[str]
-    reactivation_time: float
-    remaining_time_to_reactivation: float
+    remaining_time_to_activation: float
     patience: float
     default_entry_speed: float
 
     def step_trigger(self, dt: float):
-        self.remaining_time_to_reactivation -= dt
+        self.remaining_time_to_activation -= dt
 
     @property
     def ready(self):
-        return self.remaining_time_to_reactivation < 0
+        return self.remaining_time_to_activation < 0
 
     @property
     def patience_expired(self):
         """Patience recommendation to wait for better capture circumstances"""
-        return self.remaining_time_to_reactivation < -self.patience
-
-    def reset_trigger(self):
-        self.remaining_time_to_reactivation = self.reactivation_time
-
-    @property
-    def reactivates(self):
-        """If the trap is reusable"""
-        return self.reactivation_time >= 0
+        return self.remaining_time_to_activation < -self.patience
 
     def includes(self, vehicle_id: str):
         for prefix in self.exclusion_prefixes:
@@ -79,14 +70,13 @@ class TrapManager:
     def __init__(self, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
         self._traps: Dict[Trap] = defaultdict(None)
-        self.init_traps(scenario)
+        self.init_traps(scenario.road_network, scenario.waypoints, scenario.missions)
 
-    def init_traps(self, scenario):
+    def init_traps(self, road_network, waypoints, missions):
         self._traps.clear()
 
-        for agent_id in scenario.missions:
-            mission = scenario.missions[agent_id]
-            mission_planner = MissionPlanner(scenario.waypoints, scenario.road_network)
+        for agent_id, mission in missions.items():
+            mission_planner = MissionPlanner(waypoints, road_network)
             if mission is None:
                 mission = mission_planner.random_endless_mission()
 
@@ -101,17 +91,15 @@ class TrapManager:
 
             mission_planner.plan(mission)
 
-            trap = self._mission2trap(scenario.road_network, mission)
+            trap = self._mission2trap(road_network, mission)
             self.add_trap_for_agent_id(agent_id, trap)
 
     def add_trap_for_agent_id(self, agent_id, trap: Trap):
         self._traps[agent_id] = trap
 
     def reset_traps(self, used_traps):
-        for agent_id, trap in used_traps:
-            trap.reset_trigger()
-            if not trap.reactivates:
-                del self._traps[agent_id]
+        for agent_id, _ in used_traps:
+            del self._traps[agent_id]
 
     def step(self, sim):
         captures_by_agent_id = defaultdict(list)
@@ -334,10 +322,7 @@ class TrapManager:
 
         trap = Trap(
             geometry=zone.to_geometry(road_network),
-            # TODO: Make reactivation and activation delay configurable through
-            #   scenario studio
-            reactivation_time=-1,
-            remaining_time_to_reactivation=activation_delay,
+            remaining_time_to_activation=activation_delay,
             patience=patience,
             mission=mission,
             exclusion_prefixes=mission.entry_tactic.exclusion_prefixes,
