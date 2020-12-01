@@ -9,6 +9,9 @@ from multiprocessing.connection import Listener
 
 from smarts.core.utils.networking import find_free_port
 
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(f"Zoo Worker")
+
 
 def spawn_networked_agent(port):
     cmd = [
@@ -50,8 +53,6 @@ def handle_request(request):
 
 
 def listen(port):
-    logging.basicConfig(level=logging.INFO)
-    log = logging.getLogger(f"Zoo Worker")
     log.debug(f"Starting Zoo Worker on port {port}")
     agent_procs = []
     try:
