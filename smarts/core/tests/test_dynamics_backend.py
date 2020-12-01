@@ -1,12 +1,12 @@
 import math
 
 import numpy as np
-import pybullet
-import pybullet_utils.bullet_client as bc
 import pytest
 
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.chassis import AckermannChassis
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
 
 
 @pytest.fixture

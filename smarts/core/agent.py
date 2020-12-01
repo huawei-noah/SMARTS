@@ -63,9 +63,10 @@ class Agent:
 class AgentPolicy(Agent):
     # we cannot use debtcollector here to signal deprecation because the wrapper object is
     # not pickleable, instead we simply print.
-    logger.warning(
-        "[DEPRECATED] AgentPolicy has been replaced with `smarts.core.agent.Agent`"
-    )
+    def __init__(self):
+        logger.warning(
+            "[DEPRECATED] AgentPolicy has been replaced with `smarts.core.agent.Agent`"
+        )
 
 
 @dataclass

@@ -25,23 +25,23 @@ from dataclasses import dataclass
 
 import numpy
 from direct.showbase.ShowBase import ShowBase
-from pybullet_utils.bullet_client import BulletClient
 
 from . import models
-from .chassis import Chassis, AckermannChassis, BoxChassis
+from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
 from .masks import RenderMasks
 from .sensors import (
     AccelerometerSensor,
-    DrivenPathSensor,
     DrivableAreaGridMapSensor,
+    DrivenPathSensor,
     LidarSensor,
     NeighborhoodVehiclesSensor,
     OGMSensor,
     RGBSensor,
     RoadWaypointsSensor,
     TripMeterSensor,
+    ViaSensor,
     WaypointsSensor,
 )
 from .utils.math import rotate_around_point
@@ -457,6 +457,15 @@ class Vehicle:
                 )
             )
 
+        vehicle.attach_via_sensor(
+            ViaSensor(
+                vehicle=vehicle,
+                mission_planner=mission_planner,
+                lane_acquisition_range=40,
+                speed_accuracy=1.5,
+            )
+        )
+
     def step(self, current_simulation_time):
         self._chassis.step(current_simulation_time)
 
@@ -510,6 +519,7 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
+            "via_sensor",
         ]
         for sensor_name in sensor_names:
 

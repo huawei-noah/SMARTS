@@ -34,7 +34,7 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic
+from smarts.sstudio.types import EntryTactic, UTurn, Via as SSVia
 
 from .coordinates import Heading
 from .data_model import SocialAgent
@@ -102,14 +102,26 @@ def default_entry_tactic():
 
 
 @dataclass(frozen=True)
+class Via:
+    lane_id: str
+    edge_id: str
+    lane_index: int
+    position: Tuple[float, float]
+    hit_distance: float
+    required_speed: float
+
+
+@dataclass(frozen=True)
 class Mission:
     start: Start
     goal: Goal
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    via: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
+    task: Tuple[UTurn] = None
+    via: Tuple[Via, ...] = ()
 
     @property
     def has_fixed_route(self):
@@ -127,9 +139,10 @@ class LapMission:
     num_laps: int = None  # None means infinite # of laps
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    via: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
+    via_points: Tuple[Via, ...] = ()
 
     @property
     def has_fixed_route(self):
@@ -539,6 +552,34 @@ class Scenario:
             heading = vec_to_radians(lane_vector)
             return tuple(position), Heading(heading)
 
+        def to_scenario_via(
+            vias: Tuple[SSVia, ...], sumo_road_network: SumoRoadNetwork
+        ) -> Tuple[Via, ...]:
+            s_vias = []
+            for via in vias:
+                lane = sumo_road_network.lane_by_index_on_edge(
+                    via.edge_id, via.lane_index
+                )
+                hit_distance = (
+                    via.hit_distance if via.hit_distance > 0 else lane.getWidth() / 2
+                )
+                via_position = sumo_road_network.world_coord_from_offset(
+                    lane, via.lane_offset,
+                )
+
+                s_vias.append(
+                    Via(
+                        lane_id=lane.getID(),
+                        lane_index=via.lane_index,
+                        edge_id=via.edge_id,
+                        position=tuple(via_position),
+                        hit_distance=hit_distance,
+                        required_speed=via.required_speed,
+                    )
+                )
+
+            return tuple(s_vias)
+
         # For now we discard the route and just take the start and end to form our
         # missions.
         if isinstance(mission, sstudio_types.Mission):
@@ -552,10 +593,12 @@ class Scenario:
 
             return Mission(
                 start=start,
-                via=mission.route.via,
+                route_vias=mission.route.via,
                 goal=goal,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
+                task=mission.task,
+                via=to_scenario_via(mission.via, road_network),
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
             position, heading = to_position_and_heading(*mission.begin, road_network,)
@@ -566,6 +609,7 @@ class Scenario:
                 goal=EndlessGoal(),
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
+                via=to_scenario_via(mission.via, road_network),
             )
         elif isinstance(mission, sstudio_types.LapMission):
             start_edge_id, start_lane, start_edge_offset = mission.route.begin
@@ -592,11 +636,12 @@ class Scenario:
             return LapMission(
                 start=Start(start_position, start_heading),
                 goal=PositionalGoal(end_position, radius=2),
-                via=mission.route.via,
+                route_vias=mission.route.via,
                 num_laps=mission.num_laps,
                 route_length=route_length,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
+                via_points=to_scenario_via(mission.via, road_network),
             )
 
         raise RuntimeError(

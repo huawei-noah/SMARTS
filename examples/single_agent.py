@@ -5,6 +5,7 @@ import gym
 from smarts.core.utils.episodes import episodes
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.agent import AgentSpec, Agent
+from smarts.core.sensors import Observation
 
 from examples import default_argument_parser
 
@@ -14,12 +15,27 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-class KeepLaneAgent(Agent):
-    def act(self, obs):
-        return "keep_lane"
+class ChaseViaPointsAgent(Agent):
+    def act(self, obs: Observation):
+        if (
+            len(obs.via_data.near_via_points) < 1
+            or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
+        ):
+            return "keep_lane"
+
+        nearest = obs.via_data.near_via_points[0]
+        if nearest.lane_index == obs.ego_vehicle_state.lane_index:
+            speed_dif = obs.ego_vehicle_state.speed - nearest.required_speed
+            return "slow_down" if speed_dif > 1 else "keep_lane"
+
+        return (
+            "change_lane_left"
+            if nearest.lane_index > obs.ego_vehicle_state.lane_index
+            else "change_lane_right"
+        )
 
 
-def main(scenarios, headless, num_episodes, seed):
+def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.Laner, vehicle_type="sedan", max_episode_steps=None

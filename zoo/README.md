@@ -7,7 +7,7 @@
 ```bash
 # cd <project root>
 scl zoo build <policy>
-# e.g. scl zoo build zoo/open-agent
+# e.g. scl zoo build zoo/policies/open-agent
 ```
 
 **Use** (in scenarios)
@@ -15,7 +15,7 @@ Under your scenario directory, create a requirements.txt
 ```
 # we'll be serving packages from a local pip index
 --extra-index-url http://localhost:8080
-open-agent==0.1.186
+open-agent==0.1.187
 ```
 
 Then in your scenario.py:

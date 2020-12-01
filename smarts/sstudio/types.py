@@ -17,22 +17,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import re
-import math
-import random
-import itertools
 import collections.abc as collections_abc
+import random
 from dataclasses import dataclass, field
-from typing import Sequence, Tuple, Dict, Any, Union, Optional
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-import numpy as np
-from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
+from shapely.geometry import GeometryCollection, MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
-from smarts.core.utils.id import SocialAgentId
-from smarts.core.waypoints import Waypoint, Waypoints
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.utils.id import SocialAgentId
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -309,6 +304,22 @@ class Flow:
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
 
+@dataclass
+class Via:
+    """A point on an edge that an actor must pass through"""
+
+    edge_id: str
+    """The edge this via is on"""
+    lane_index: int
+    """The lane this via sits on"""
+    lane_offset: int
+    """The offset along the lane where this via sits"""
+    required_speed: float
+    """The speed that a vehicle should travel through this via"""
+    hit_distance: float = -1
+    """The distance at which this waypoint can be hit. Negative means half the lane radius."""
+
+
 @dataclass(frozen=True)
 class Traffic:
     """The descriptor for traffic."""
@@ -337,17 +348,31 @@ class TrapEntryTactic(EntryTactic):
 
 
 @dataclass(frozen=True)
+class UTurn:
+    target_lane_index: int = 0
+
+    @property
+    def name(self):
+        return "uturn"
+
+
+@dataclass(frozen=True)
 class Mission:
     """The descriptor for an actor's mission."""
 
     route: Route
     """The route for the actor to attempt to follow."""
+
+    via: Tuple[Via, ...] = ()
+    """Points on an edge that an actor must pass through"""
+
     start_time: float = 0.1
     """The earliest simulation time that this mission starts but may start later in couple with
     `entry_tactic`.
     """
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
+    task: Tuple[UTurn] = None
 
 
 @dataclass(frozen=True)
@@ -364,6 +389,8 @@ class EndlessMission:
     offset:
         The offset in metres into the lane. Also acceptable\\: 'max', 'random'
     """
+    via: Tuple[Via, ...] = ()
+    """Points on an edge that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
     entry_tactic: EntryTactic = None
@@ -380,6 +407,8 @@ class LapMission:
     """The route for the actor to attempt to follow"""
     num_laps: int
     """The amount of times to repeat the mission"""
+    via: Tuple[Via, ...] = ()
+    """Points on an edge that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
     entry_tactic: EntryTactic = None
@@ -400,6 +429,8 @@ class GroupedLapMission:
     """The number of actors to be part of the group"""
     num_laps: int
     """The amount of times to repeat the mission"""
+    via: Tuple[Via, ...] = ()
+    """Points on an edge that an actor must pass through"""
 
 
 @dataclass(frozen=True)

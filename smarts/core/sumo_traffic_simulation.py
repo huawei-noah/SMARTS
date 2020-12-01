@@ -20,6 +20,7 @@
 import logging
 import os
 import random
+from smarts.core.utils.logging import surpress_stdout
 import subprocess
 import time
 from typing import List, Sequence
@@ -135,12 +136,13 @@ class SumoTrafficSimulation:
             )
             time.sleep(0.05)  # give SUMO time to start
             try:
-                self._traci_conn = traci.connect(
-                    sumo_port,
-                    numRetries=100,
-                    proc=self._sumo_proc,
-                    waitBetweenRetries=0.05,
-                )  # SUMO must be ready within 5 seconds
+                with surpress_stdout():
+                    self._traci_conn = traci.connect(
+                        sumo_port,
+                        numRetries=100,
+                        proc=self._sumo_proc,
+                        waitBetweenRetries=0.05,
+                    )  # SUMO must be ready within 5 seconds
 
                 try:
                     assert (
@@ -426,7 +428,7 @@ class SumoTrafficSimulation:
             x=x,
             y=y,
             angle=heading,  # only used for visualizing in sumo-gui
-            keepRoute=0b010,  # gives vehicle freedom to move off road
+            keepRoute=0,
         )
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 

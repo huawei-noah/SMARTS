@@ -255,7 +255,7 @@ class VehicleIndex:
 
         return positions[0] if len(positions) > 0 else None
 
-    def prepare_for_agent_control(
+    def start_agent_observation(
         self, sim, vehicle_id, agent_id, agent_interface, mission_planner, boid=False
     ):
         vehicle = self._vehicles[vehicle_id]
@@ -284,21 +284,6 @@ class VehicleIndex:
         #      chassis-specific states, such as tire rotation.
 
         return vehicle
-
-    def attach_sensors_to_vehicle(
-        self, sim, vehicle_id, agent_interface, mission_planner
-    ):
-        vehicle = self._vehicles[vehicle_id]
-
-        Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, mission_planner
-        )
-        self._sensor_states[vehicle_id] = SensorState(
-            agent_interface.max_episode_steps, mission_planner=mission_planner,
-        )
-        self._controller_states[vehicle_id] = ControllerState.from_action_space(
-            agent_interface.action_space, vehicle.position, sim
-        )
 
     def switch_control_to_agent(
         self, sim, vehicle_id, agent_id, boid=False, hijacking=False, recreate=False
@@ -329,6 +314,60 @@ class VehicleIndex:
         )
 
         return vehicle
+
+    def stop_agent_observation(self, vehicle_id):
+        vehicle = self._vehicles[vehicle_id]
+        Vehicle.detach_all_sensors_from_vehicle(vehicle)
+
+        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        entity = self._controlled_by[v_index][0]
+        entity = _ControlEntity(*entity)
+        self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=""))
+
+        return vehicle
+
+    def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
+        self._log.debug(
+            f"Relinquishing agent control v_id={vehicle_id} sv_id={social_vehicle_id}"
+        )
+        vehicle = self._vehicles[vehicle_id]
+        box_chassis = BoxChassis(
+            pose=vehicle.chassis.pose,
+            speed=vehicle.chassis.speed,
+            dimensions=vehicle.chassis.dimensions,
+            bullet_client=sim.bc,
+        )
+        vehicle.swap_chassis(box_chassis)
+
+        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        entity = self._controlled_by[v_index][0]
+        entity = _ControlEntity(*entity)
+        self._controlled_by[v_index] = tuple(
+            entity._replace(
+                actor_type=_ActorType.Social,
+                actor_id="",
+                shadow_actor_id="",
+                is_boid=False,
+                is_hijacked=False,
+            )
+        )
+
+        return vehicle
+
+    def attach_sensors_to_vehicle(
+        self, sim, vehicle_id, agent_interface, mission_planner
+    ):
+        vehicle = self._vehicles[vehicle_id]
+
+        Vehicle.attach_sensors_to_vehicle(
+            sim, vehicle, agent_interface, mission_planner
+        )
+        self._sensor_states[vehicle_id] = SensorState(
+            agent_interface.max_episode_steps, mission_planner=mission_planner,
+        )
+        self._controller_states[vehicle_id] = ControllerState.from_action_space(
+            agent_interface.action_space, vehicle.position, sim
+        )
 
     def _switch_control_to_agent_recreate(
         self, sim, vehicle_id, agent_id, boid, hijacking
@@ -391,35 +430,6 @@ class VehicleIndex:
         )
 
         return new_vehicle
-
-    def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
-        self._log.debug(
-            f"Relinquishing agent control v_id={vehicle_id} sv_id={social_vehicle_id}"
-        )
-        vehicle = self._vehicles[vehicle_id]
-        box_chassis = BoxChassis(
-            pose=vehicle.chassis.pose,
-            speed=vehicle.chassis.speed,
-            dimensions=vehicle.chassis.dimensions,
-            bullet_client=sim.bc,
-        )
-        vehicle.swap_chassis(box_chassis)
-        Vehicle.detach_all_sensors_from_vehicle(vehicle)
-
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
-        entity = self._controlled_by[v_index][0]
-        entity = _ControlEntity(*entity)
-        self._controlled_by[v_index] = tuple(
-            entity._replace(
-                actor_type=_ActorType.Social,
-                actor_id="",
-                shadow_actor_id="",
-                is_boid=False,
-                is_hijacked=False,
-            )
-        )
-
-        return vehicle
 
     # TODO: Collapse build_social_vehicle and build_agent_vehicle
     def build_agent_vehicle(
@@ -525,6 +535,9 @@ class VehicleIndex:
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
         return vehicle
+
+    def sensor_states_items(self):
+        return self._sensor_states.items()
 
     def sensor_state_for_vehicle_id(self, vehicle_id):
         return self._sensor_states[vehicle_id]

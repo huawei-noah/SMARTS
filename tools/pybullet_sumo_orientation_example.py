@@ -4,23 +4,15 @@ from pathlib import Path
 from unittest import mock
 import multiprocessing as mp
 
-from direct.showbase.ShowBase import ShowBase
 import numpy as np
-import pybullet
-import pybullet_utils.bullet_client as bc
 
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import ProviderState
-from smarts.core.scenario import Start, Scenario
+from smarts.core.scenario import Scenario
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
-from smarts.core.chassis import (
-    AckermannChassis,
-    BoxChassis,
-)
-
-# TODO: `TrafficSimVehicle` is no longer available, this script is not longer functional.
+from smarts.core.chassis import BoxChassis
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.math import fast_quaternion_from_angle
 
 
 TIMESTEP_SEC = 1 / 240

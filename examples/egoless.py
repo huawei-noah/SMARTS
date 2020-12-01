@@ -9,7 +9,7 @@ from examples import default_argument_parser
 logging.basicConfig(level=logging.INFO)
 
 
-def main(scenarios, headless, num_episodes, seed):
+def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
@@ -21,11 +21,14 @@ def main(scenarios, headless, num_episodes, seed):
         timestep_sec=0.1,
     )
 
+    if max_episode_steps is None:
+        max_episode_steps = 1000
+
     for episode in episodes(n=num_episodes):
         env.reset()
         episode.record_scenario(env.scenario_log)
 
-        for _ in range(1000):
+        for _ in range(max_episode_steps):
             env.step({})
             episode.record_step({}, {}, {}, {})
 
