@@ -485,7 +485,7 @@ class MapZone(Zone):
             geom_length = max(self.length - 1e-6, 1e-6)
 
             if lane_length > geom_length:
-                logging.warning(
+                logging.debug(
                     f"Geometry is too long={geom_length} with offset={offset} for "
                     f"lane={lane.getID()}, using length={lane_length} instead"
                 )
