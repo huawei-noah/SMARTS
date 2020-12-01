@@ -28,22 +28,21 @@ import {
   Quaternion,
   HemisphericLight,
   MeshBuilder,
-  Mesh,
   Color4,
 } from "@babylonjs/core";
 
 import { GLTFLoader } from "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import SceneComponent from "babylonjs-hook";
 
+import Bubbles from "./bubbles.js";
 import Camera from "./camera.js";
 import Vehicles from "./vehicles.js";
 import DrivenPaths from "./driven_paths.js";
 import MissionRoutes from "./mission_routes.js";
+import Waypoints from "./waypoints.js";
 
-import { ActorTypes } from "../enums.js";
 import AgentScores from "./agent_scores";
 import earcut from "earcut";
-import { vehicleMeshColor } from "../render_helpers.js";
 
 // Required by Babylon.js
 window.earcut = earcut;
@@ -57,8 +56,6 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
   const [socialDrivenPathModel, setSocialDrivenPathModel] = useState(null);
 
   const [mapMeshes, setMapMeshes] = useState([]);
-  const [bubbleGeometry, setBubbleGeometry] = useState([]); // List of mesh objects
-  const [waypointGeometries, setWaypointGeometries] = useState([]);
 
   const [roadNetworkBbox, setRoadNetworkBbox] = useState([]);
   const [laneDividerPos, setLaneDividerPos] = useState([]);
@@ -245,105 +242,6 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
     setEdgeDividerGeometry(newEdgeDividers);
   }, [scene, JSON.stringify(edgeDividerPos)]);
 
-  // Bubble geometry
-  useEffect(() => {
-    if (scene == null) {
-      return;
-    }
-
-    for (const geom of bubbleGeometry) {
-      // doNotRecurse = false, disposeMaterialAndTextures = true
-      geom.dispose(false, true);
-    }
-
-    let newBubbleGeometry = worldState.bubbles.map((bubbleGeom, idx) => {
-      let points = bubbleGeom.map((p) => new Vector3(p[0], 0, p[1]));
-      let polygon = MeshBuilder.CreatePolygon(
-        `bubble-${idx}`,
-        {
-          sideOrientation: Mesh.DOUBLESIDE,
-          shape: points,
-          depth: 5,
-        },
-        scene
-      );
-      polygon.position.y = 4;
-      let material = new StandardMaterial(`bubble-${idx}-material`, scene);
-      material.diffuseColor = new Color4(
-        ...worldState.scene_colors["bubble_line"]
-      );
-      material.specularColor = new Color3(0, 0, 0);
-      material.alpha = worldState.scene_colors["bubble_line"][3];
-      polygon.material = material;
-      return polygon;
-    });
-    setBubbleGeometry(newBubbleGeometry);
-
-    // Bubbles only change from scenario to scenario, this will prevent unnecessary work
-  }, [scene, JSON.stringify(worldState.bubbles)]);
-
-  // Waypoints geometry
-  useEffect(() => {
-    if (scene == null) {
-      return;
-    }
-
-    for (const geom of waypointGeometries) {
-      geom.dispose();
-    }
-
-    if (worldState.traffic.length == 0) {
-      return;
-    }
-
-    if (egoWaypointModel.material == null) {
-      egoWaypointModel.material = new StandardMaterial(
-        "ego-waypoint-material",
-        scene
-      );
-      egoWaypointModel.material.specularColor = new Color3(0, 0, 0);
-      egoWaypointModel.material.diffuseColor = new Color4(
-        ...worldState.scene_colors["ego_waypoint"]
-      );
-      egoWaypointModel.material.alpha =
-        worldState.scene_colors["ego_waypoint"][3];
-    }
-
-    if (socialWaypointModel.material == null) {
-      socialWaypointModel.material = new StandardMaterial(
-        "social-waypoint-material",
-        scene
-      );
-      socialWaypointModel.material.specularColor = new Color3(0, 0, 0);
-      let color = vehicleMeshColor(
-        ActorTypes.SOCIAL_AGENT,
-        worldState.scene_colors
-      );
-      socialWaypointModel.material.diffuseColor = new Color4(...color);
-      socialWaypointModel.material.alpha =
-        worldState.scene_colors["ego_waypoint"][3];
-    }
-
-    let newWaypointGeometries = [];
-    for (const [_, trafficActor] of Object.entries(worldState.traffic)) {
-      for (const waypointPath of trafficActor.waypoint_paths) {
-        for (const waypoint of waypointPath) {
-          let wp_ = null;
-          if (trafficActor.actor_type == ActorTypes.SOCIAL_AGENT) {
-            wp_ = socialWaypointModel.createInstance("social-wp");
-          } else {
-            wp_ = egoWaypointModel.createInstance("ego-wp");
-          }
-          wp_.position.x = waypoint.pos[0];
-          wp_.position.y = 0.15;
-          wp_.position.z = waypoint.pos[1];
-          newWaypointGeometries.push(wp_);
-        }
-      }
-    }
-    setWaypointGeometries(newWaypointGeometries);
-  }, [scene, worldState.traffic]);
-
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <SceneComponent
@@ -360,6 +258,7 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
           height: "100%",
         }}
       />
+      <Bubbles scene={scene} worldState={worldState} />
       <Camera
         scene={scene}
         roadNetworkBbox={roadNetworkBbox}
@@ -378,6 +277,12 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
         socialDrivenPathModel={socialDrivenPathModel}
       />
       <MissionRoutes scene={scene} worldState={worldState} />
+      <Waypoints
+        scene={scene}
+        worldState={worldState}
+        egoWaypointModel={egoWaypointModel}
+        socialWaypointModel={socialWaypointModel}
+      />
       {showScores ? (
         <AgentScores
           style={{
