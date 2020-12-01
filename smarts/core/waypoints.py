@@ -114,7 +114,7 @@ LinkedWaypoint = namedtuple(
         # it's a list of waypoints because a path may branch at junctions
         "is_shape_wp",
     ],
-    defaults=[False],
+    defaults=[None, [], False],
 )
 
 
