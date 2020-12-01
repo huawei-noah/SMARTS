@@ -24,7 +24,7 @@ from typing import Optional
 import numpy as np
 
 from smarts.sstudio.types import UTurn
-from smarts.sstudio.types import MapZone, UTurn, CutIn
+from smarts.sstudio.types import CutIn, MapZone, UTurn
 from .sumo_road_network import SumoRoadNetwork
 from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
 from .waypoints import Waypoint, Waypoints
@@ -147,7 +147,7 @@ class MissionPlanner:
             if isinstance(self.mission.task, UTurn):
                 waypoints_with_task = self.uturn_waypoints(pose)
             elif isinstance(self.mission.task, CutIn):
-                waypoints_with_task = self.cut_in_waypoints(pose, sim, vehicle)
+                waypoints_with_task = self.cut_in_waypoints(sim, pose, vehicle)
 
         if waypoints_with_task:
             return waypoints_with_task
@@ -209,7 +209,7 @@ class MissionPlanner:
 
         return edge_ids
 
-    def cut_in_waypoints(self, pose: Pose, sim, vehicle):
+    def cut_in_waypoints(self, sim, pose: Pose, vehicle):
         radius = 30
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
             vehicle=vehicle, radius=radius
@@ -235,9 +235,9 @@ class MissionPlanner:
         nei_wps = self._waypoints.waypoint_paths_on_lane_at(
             target_position, target_lane.getID(), 60
         )
-        p0 = pose.position[:2]
+        p0 = position
         p1 = nei_wps[0][len(nei_wps[0]) // 2].pos
-        p2 = target_position[:2]
+        p2 = target_position
         p3 = nei_wps[0][-1].pos
         p_x, p_y = bezier([p0, p1, p2, p3], 20)
         trajectory = []
@@ -249,12 +249,14 @@ class MissionPlanner:
             lane = self._road_network.nearest_lane(pos)
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
+            width = lane.getWidth()
+            speed_limit = lane.getSpeed()
 
             wp = Waypoint(
                 pos=pos,
                 heading=heading,
-                lane_width=3,
-                speed_limit=50,
+                lane_width=width,
+                speed_limit=speed_limit,
                 lane_id=lane_id,
                 lane_index=lane_index,
             )

@@ -399,9 +399,9 @@ class Vehicle:
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
                 WaypointsSensor(
+                    sim=sim,
                     vehicle=vehicle,
                     mission_planner=mission_planner,
-                    sim=sim,
                     lookahead=agent_interface.waypoints.lookahead,
                 )
             )
