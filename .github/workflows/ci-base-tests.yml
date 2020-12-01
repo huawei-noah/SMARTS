@@ -21,7 +21,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           pip install --upgrade pip
           pip install wheel
-          pip install -r requirements.txt
+          pip install --no-deps -r requirements.txt
           pip install --upgrade -e .[train]
       - name: Run smoke tests
         run: |
