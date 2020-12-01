@@ -23,13 +23,13 @@ from typing import Optional
 
 import numpy as np
 
-from smarts.sstudio.types import MapZone, UTurn
-from .sumo_road_network import SumoRoadNetwork
-from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
-from .waypoints import Waypoint, Waypoints
-from .route import ShortestRoute, EmptyRoute
+from smarts.sstudio.types import UTurn
 from .coordinates import Pose
+from .route import ShortestRoute, EmptyRoute
+from .scenario import EndlessGoal, LapMission, Mission, Start
+from .sumo_road_network import SumoRoadNetwork
 from .utils.math import vec_to_radians, radians_to_vec, evaluate_bezier as bezier
+from .waypoints import Waypoint, Waypoints
 
 
 class PlanningError(Exception):
@@ -46,7 +46,7 @@ class MissionPlanner:
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
-    ):
+    ) -> Mission:
         assert min_range_along_lane > 0  # Need to start further than beginning of lane
         assert max_range_along_lane < 1  # Cannot start past end of lane
         assert min_range_along_lane < max_range_along_lane  # Min must be less than max
@@ -68,7 +68,7 @@ class MissionPlanner:
             entry_tactic=None,
         )
 
-    def plan(self, mission: Optional[Mission]):
+    def plan(self, mission: Optional[Mission]) -> Mission:
         self._mission = mission or self.random_endless_mission()
 
         if not self._mission.has_fixed_route:
@@ -92,7 +92,7 @@ class MissionPlanner:
             end_edge = end_lane.getEdge()
 
             intermediary_edges = [
-                self._road_network.edge_by_id(edge) for edge in self._mission.via
+                self._road_network.edge_by_id(edge) for edge in self._mission.route_vias
             ]
 
             self._route = ShortestRoute(
@@ -124,6 +124,10 @@ class MissionPlanner:
     @property
     def mission(self):
         return self._mission
+
+    def closest_point_on_lane(self, position, lane_id: str):
+        lane = self._road_network.lane_by_id(lane_id)
+        return self._road_network.lane_center_at_point(lane, position)
 
     def waypoint_paths_at(self, pose: Pose, lookahead: float):
         """Call assumes you're on the correct route already. We do not presently
