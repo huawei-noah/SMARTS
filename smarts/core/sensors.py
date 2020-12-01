@@ -960,9 +960,9 @@ class WaypointsSensor(Sensor):
 
     def __call__(self):
         return self._mission_planner.waypoint_paths_at(
+            sim=self._sim,
             pose=self._vehicle.pose,
             lookahead=self._lookahead,
-            sim=self._sim,
             vehicle=self._vehicle,
         )
 

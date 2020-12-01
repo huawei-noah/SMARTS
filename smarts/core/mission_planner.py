@@ -134,7 +134,7 @@ class MissionPlanner:
         lane = self._road_network.lane_by_id(lane_id)
         return self._road_network.lane_center_at_point(lane, position)
 
-    def waypoint_paths_at(self, pose: Pose, lookahead: float, sim=None, vehicle=None):
+    def waypoint_paths_at(self, sim, pose: Pose, lookahead: float, vehicle=None):
         """Call assumes you're on the correct route already. We do not presently
         "replan" in case the route has changed.
         """
