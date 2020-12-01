@@ -15,6 +15,7 @@ TIMESTEP_SEC = 0.1
 # Disable logging because it causes memory growth
 logging.disable(logging.WARNING)
 
+
 @pytest.fixture
 def agent_id():
     return "Agent-006"

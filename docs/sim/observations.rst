@@ -74,7 +74,7 @@ Then, you can choose the observations needed through :class:`smarts.core.agent_i
 =======
 Rewards
 =======
-The reward from smarts is given by a calculation in the `TripMeterSensor`. The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance traveled in meters on the step that a vehicle has gone at least 0.5 meters since the last given non-zero reward. `env_reward` from the smarts environment directly use this.
+The reward from smarts environments is given by a calculation within smarts; `env_reward` from smarts environments directly uses the reward from smarts. The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance traveled in meters on the step that a vehicle has gone at least 0.5 meters since the last given non-zero reward.
 
 =======
 Actions
