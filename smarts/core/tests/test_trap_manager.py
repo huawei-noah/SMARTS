@@ -73,7 +73,7 @@ def empty_scenarios():
 
 
 @pytest.fixture
-def no_agent_capture_scenarios():
+def two_agent_capture_offset_tenth_of_second():
     with temp_scenario(name="straight", map="maps/straight.net.xml") as scenario_root:
         traffic = t.Traffic(
             flows=[
@@ -144,8 +144,8 @@ def test_emit_on_default(smarts: SMARTS, empty_scenarios):
     assert len(smarts.vehicle_index.vehicle_ids_by_actor_id(AGENT_ID)) == 1
 
 
-# def test_no_recapture_agent(smarts: SMARTS, no_agent_capture_scenarios):
-#     smarts.reset(next(no_agent_capture_scenarios))
+# def test_no_recapture_agent(smarts: SMARTS, two_agent_capture_offset_tenth_of_second):
+#     smarts.reset(next(two_agent_capture_offset_tenth_of_second))
 #     smarts.step({})
 #     smarts.step({})
 #     assert len(smarts.vehicle_index.agent_vehicle_ids) > 1
