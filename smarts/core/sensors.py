@@ -17,33 +17,36 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import time
 import logging
-from functools import partial, lru_cache
-from typing import NamedTuple, Tuple, Dict, List
-from collections import namedtuple, deque
+import time
+from collections import deque, namedtuple
 from dataclasses import dataclass
+from functools import lru_cache
+from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 
 import numpy as np
-
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
-    GraphicsPipe,
-    OrthographicLens,
-    GraphicsOutput,
-    Texture,
     FrameBufferProperties,
-    WindowProperties,
+    GraphicsOutput,
+    GraphicsPipe,
     NodePath,
+    OrthographicLens,
+    Texture,
+    WindowProperties,
 )
 
+from smarts.core.mission_planner import MissionPlanner
+from smarts.core.utils.math import squared_dist, vec_2d
+from smarts.sstudio.types import Via
+
 from .coordinates import BoundingBox, Heading
+from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
+from .scenario import Mission, Via
 from .waypoints import Waypoint
-from .scenario import Mission
-from .events import Events
 
 
 class VehicleObservation(NamedTuple):
@@ -112,6 +115,22 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 @dataclass
+class ViaPoint:
+    position: Tuple[float, float]
+    lane_index: float
+    edge_id: str
+    required_speed: float
+
+
+@dataclass(frozen=True)
+class Vias:
+    near_via_points: List[ViaPoint]
+    """Ordered list of nearby points that have not been hit"""
+    hit_via_points: List[ViaPoint]
+    """List of points that were hit in the previous step"""
+
+
+@dataclass
 class Observation:
     events: Events
     ego_vehicle_state: EgoVehicleObservation
@@ -128,6 +147,7 @@ class Observation:
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
+    via_data: Vias = None
 
 
 @dataclass
@@ -238,6 +258,12 @@ class Sensors:
             else None
         )
 
+        near_via_points = []
+        hit_via_points = []
+        if vehicle.subscribed_to_via_sensor:
+            (near_via_points, hit_via_points,) = vehicle.via_sensor()
+        via_data = Vias(near_via_points=near_via_points, hit_via_points=hit_via_points,)
+
         vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
         distance_travelled = vehicle.trip_meter_sensor(sim)
 
@@ -271,6 +297,7 @@ class Sensors:
                 drivable_area_grid_map=drivable_area_grid_map,
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
+                via_data=via_data,
             ),
             done,
         )
@@ -1010,6 +1037,70 @@ class AccelerometerSensor(Sensor):
         angular_jerk = angular_acc - last_angular_acc
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)
+
+    def teardown(self):
+        pass
+
+
+class ViaSensor(Sensor):
+    def __init__(
+        self, vehicle, mission_planner, lane_acquisition_range, speed_accuracy
+    ):
+        self._consumed_via_points = set()
+        self._mission_planner: MissionPlanner = mission_planner
+        self._acquisition_range = lane_acquisition_range
+        self._vehicle = vehicle
+        self._speed_accuracy = speed_accuracy
+
+    @property
+    def _vias(self) -> Iterable[Via]:
+        return self._mission_planner.mission.via
+
+    def __call__(self):
+        near_points: List[ViaPoint] = list()
+        hit_points: List[ViaPoint] = list()
+        vehicle_position = self._vehicle.position[:2]
+
+        @lru_cache()
+        def closest_point_on_lane(position, lane_id):
+            return self._mission_planner.closest_point_on_lane(position, lane_id)
+
+        for via in self._vias:
+            closest_position_on_lane = closest_point_on_lane(
+                tuple(vehicle_position), via.lane_id
+            )
+            closest_position_on_lane = closest_position_on_lane[:2]
+
+            dist_from_lane_sq = squared_dist(vehicle_position, closest_position_on_lane)
+            if dist_from_lane_sq > self._acquisition_range ** 2:
+                continue
+
+            point = ViaPoint(
+                tuple(via.position),
+                lane_index=via.lane_index,
+                edge_id=via.edge_id,
+                required_speed=via.required_speed,
+            )
+
+            near_points.append(point)
+            dist_from_point_sq = squared_dist(vehicle_position, via.position)
+            if (
+                dist_from_point_sq <= via.hit_distance ** 2
+                and via not in self._consumed_via_points
+                and np.isclose(
+                    self._vehicle.speed, via.required_speed, atol=self._speed_accuracy
+                )
+            ):
+                self._consumed_via_points.add(via)
+                hit_points.append(point)
+
+        return (
+            sorted(
+                near_points,
+                key=lambda point: squared_dist(point.position, vehicle_position),
+            ),
+            hit_points,
+        )
 
     def teardown(self):
         pass

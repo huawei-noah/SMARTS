@@ -73,8 +73,8 @@
         <lane id=":junction-intersection_0_0" index="0" speed="8.33" length="15.48" shape="145.20,-45.60 144.60,-49.80 142.80,-52.80 139.80,-54.60 135.60,-55.20"/>
     </edge>
     <edge id=":junction-intersection_1" function="internal">
-        <lane id=":junction-intersection_1_0" index="0" speed="50.00" length="28.80" shape="145.20,-45.60 145.20,-74.40"/>
-        <lane id=":junction-intersection_1_1" index="1" speed="50.00" length="28.80" shape="148.40,-45.60 148.40,-74.40"/>
+        <lane id=":junction-intersection_1_0" index="0" speed="13" length="28.80" shape="145.20,-45.60 145.20,-74.40"/>
+        <lane id=":junction-intersection_1_1" index="1" speed="13" length="28.80" shape="148.40,-45.60 148.40,-74.40"/>
     </edge>
     <edge id=":junction-intersection_3" function="internal">
         <lane id=":junction-intersection_3_0" index="0" speed="10.62" length="8.24" shape="148.40,-45.60 149.40,-52.60 150.00,-53.60"/>
@@ -86,8 +86,8 @@
         <lane id=":junction-intersection_4_0" index="0" speed="8.33" length="15.48" shape="164.40,-55.20 160.20,-54.60 157.20,-52.80 155.40,-49.80 154.80,-45.60"/>
     </edge>
     <edge id=":junction-intersection_5" function="internal">
-        <lane id=":junction-intersection_5_0" index="0" speed="50.00" length="28.80" shape="164.40,-55.20 135.60,-55.20"/>
-        <lane id=":junction-intersection_5_1" index="1" speed="50.00" length="28.80" shape="164.40,-58.40 135.60,-58.40"/>
+        <lane id=":junction-intersection_5_0" index="0" speed="13" length="28.80" shape="164.40,-55.20 135.60,-55.20"/>
+        <lane id=":junction-intersection_5_1" index="1" speed="13" length="28.80" shape="164.40,-58.40 135.60,-58.40"/>
     </edge>
     <edge id=":junction-intersection_7" function="internal">
         <lane id=":junction-intersection_7_0" index="0" speed="10.62" length="8.24" shape="164.40,-58.40 157.40,-59.40 156.40,-60.00"/>
@@ -99,8 +99,8 @@
         <lane id=":junction-intersection_8_0" index="0" speed="8.33" length="15.48" shape="154.80,-74.40 155.40,-70.20 157.20,-67.20 160.20,-65.40 164.40,-64.80"/>
     </edge>
     <edge id=":junction-intersection_9" function="internal">
-        <lane id=":junction-intersection_9_0" index="0" speed="50.00" length="28.80" shape="154.80,-74.40 154.80,-45.60"/>
-        <lane id=":junction-intersection_9_1" index="1" speed="50.00" length="28.80" shape="151.60,-74.40 151.60,-45.60"/>
+        <lane id=":junction-intersection_9_0" index="0" speed="13" length="28.80" shape="154.80,-74.40 154.80,-45.60"/>
+        <lane id=":junction-intersection_9_1" index="1" speed="13" length="28.80" shape="151.60,-74.40 151.60,-45.60"/>
     </edge>
     <edge id=":junction-intersection_11" function="internal">
         <lane id=":junction-intersection_11_0" index="0" speed="10.62" length="8.24" shape="151.60,-74.40 150.60,-67.40 150.00,-66.40"/>
@@ -112,8 +112,8 @@
         <lane id=":junction-intersection_12_0" index="0" speed="8.33" length="15.48" shape="135.60,-64.80 139.80,-65.40 142.80,-67.20 144.60,-70.20 145.20,-74.40"/>
     </edge>
     <edge id=":junction-intersection_13" function="internal">
-        <lane id=":junction-intersection_13_0" index="0" speed="50.00" length="28.80" shape="135.60,-64.80 164.40,-64.80"/>
-        <lane id=":junction-intersection_13_1" index="1" speed="50.00" length="28.80" shape="135.60,-61.60 164.40,-61.60"/>
+        <lane id=":junction-intersection_13_0" index="0" speed="13" length="28.80" shape="135.60,-64.80 164.40,-64.80"/>
+        <lane id=":junction-intersection_13_1" index="1" speed="13" length="28.80" shape="135.60,-61.60 164.40,-61.60"/>
     </edge>
     <edge id=":junction-intersection_15" function="internal">
         <lane id=":junction-intersection_15_0" index="0" speed="10.62" length="8.24" shape="135.60,-61.60 142.60,-60.60 143.60,-60.00"/>
@@ -123,36 +123,36 @@
     </edge>
 
     <edge id="edge-east-EW" from="junction-east" to="junction-intersection" priority="-1">
-        <lane id="edge-east-EW_0" index="0" speed="50.00" length="55.60" shape="220.00,-55.20 164.40,-55.20"/>
-        <lane id="edge-east-EW_1" index="1" speed="50.00" length="55.60" shape="220.00,-58.40 164.40,-58.40"/>
+        <lane id="edge-east-EW_0" index="0" speed="13" length="55.60" shape="220.00,-55.20 164.40,-55.20"/>
+        <lane id="edge-east-EW_1" index="1" speed="13" length="55.60" shape="220.00,-58.40 164.40,-58.40"/>
     </edge>
     <edge id="edge-east-WE" from="junction-intersection" to="junction-east" priority="-1">
-        <lane id="edge-east-WE_0" index="0" speed="50.00" length="55.60" shape="164.40,-64.80 220.00,-64.80"/>
-        <lane id="edge-east-WE_1" index="1" speed="50.00" length="55.60" shape="164.40,-61.60 220.00,-61.60"/>
+        <lane id="edge-east-WE_0" index="0" speed="13" length="55.60" shape="164.40,-64.80 220.00,-64.80"/>
+        <lane id="edge-east-WE_1" index="1" speed="13" length="55.60" shape="164.40,-61.60 220.00,-61.60"/>
     </edge>
     <edge id="edge-north-NS" from="junction-north" to="junction-intersection" priority="-1">
-        <lane id="edge-north-NS_0" index="0" speed="50.00" length="55.60" shape="145.20,10.00 145.20,-45.60"/>
-        <lane id="edge-north-NS_1" index="1" speed="50.00" length="55.60" shape="148.40,10.00 148.40,-45.60"/>
+        <lane id="edge-north-NS_0" index="0" speed="13" length="55.60" shape="145.20,10.00 145.20,-45.60"/>
+        <lane id="edge-north-NS_1" index="1" speed="13" length="55.60" shape="148.40,10.00 148.40,-45.60"/>
     </edge>
     <edge id="edge-north-SN" from="junction-intersection" to="junction-north" priority="-1">
-        <lane id="edge-north-SN_0" index="0" speed="50.00" length="55.60" shape="154.80,-45.60 154.80,10.00"/>
-        <lane id="edge-north-SN_1" index="1" speed="50.00" length="55.60" shape="151.60,-45.60 151.60,10.00"/>
+        <lane id="edge-north-SN_0" index="0" speed="13" length="55.60" shape="154.80,-45.60 154.80,10.00"/>
+        <lane id="edge-north-SN_1" index="1" speed="13" length="55.60" shape="151.60,-45.60 151.60,10.00"/>
     </edge>
     <edge id="edge-south-NS" from="junction-intersection" to="junction-south" priority="-1">
-        <lane id="edge-south-NS_0" index="0" speed="50.00" length="55.60" shape="145.20,-74.40 145.20,-130.00"/>
-        <lane id="edge-south-NS_1" index="1" speed="50.00" length="55.60" shape="148.40,-74.40 148.40,-130.00"/>
+        <lane id="edge-south-NS_0" index="0" speed="13" length="55.60" shape="145.20,-74.40 145.20,-130.00"/>
+        <lane id="edge-south-NS_1" index="1" speed="13" length="55.60" shape="148.40,-74.40 148.40,-130.00"/>
     </edge>
     <edge id="edge-south-SN" from="junction-south" to="junction-intersection" priority="-1">
-        <lane id="edge-south-SN_0" index="0" speed="50.00" length="55.60" shape="154.80,-130.00 154.80,-74.40"/>
-        <lane id="edge-south-SN_1" index="1" speed="50.00" length="55.60" shape="151.60,-130.00 151.60,-74.40"/>
+        <lane id="edge-south-SN_0" index="0" speed="13" length="55.60" shape="154.80,-130.00 154.80,-74.40"/>
+        <lane id="edge-south-SN_1" index="1" speed="13" length="55.60" shape="151.60,-130.00 151.60,-74.40"/>
     </edge>
     <edge id="edge-west-EW" from="junction-intersection" to="junction-west" priority="-1">
-        <lane id="edge-west-EW_0" index="0" speed="50.00" length="115.60" shape="135.60,-55.20 20.00,-55.20"/>
-        <lane id="edge-west-EW_1" index="1" speed="50.00" length="115.60" shape="135.60,-58.40 20.00,-58.40"/>
+        <lane id="edge-west-EW_0" index="0" speed="13" length="115.60" shape="135.60,-55.20 20.00,-55.20"/>
+        <lane id="edge-west-EW_1" index="1" speed="13" length="115.60" shape="135.60,-58.40 20.00,-58.40"/>
     </edge>
     <edge id="edge-west-WE" from="junction-west" to="junction-intersection" priority="-1">
-        <lane id="edge-west-WE_0" index="0" speed="50.00" length="115.60" shape="20.00,-64.80 135.60,-64.80"/>
-        <lane id="edge-west-WE_1" index="1" speed="50.00" length="115.60" shape="20.00,-61.60 135.60,-61.60"/>
+        <lane id="edge-west-WE_0" index="0" speed="13" length="115.60" shape="20.00,-64.80 135.60,-64.80"/>
+        <lane id="edge-west-WE_1" index="1" speed="13" length="115.60" shape="20.00,-61.60 135.60,-61.60"/>
     </edge>
 
     <tlLogic id="junction-intersection" type="static" programID="0" offset="0">

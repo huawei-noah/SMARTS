@@ -1,8 +1,7 @@
 from pathlib import Path
 
-from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
-
+from smarts.sstudio import types as t
 
 traffic = t.Traffic(
     flows=[
@@ -42,7 +41,7 @@ bubbles = [
     ),
 ]
 
-ego_missions = [t.EndlessMission(begin=("edge-south-SN", 1, 20))]
+ego_missions = [t.EndlessMission(begin=("edge-south-SN", 1, 20),)]
 
 social_agent_missions = {
     "all": (
