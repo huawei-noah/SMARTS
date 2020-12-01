@@ -811,6 +811,7 @@ class SMARTS(ShowBase):
                         controller_state,
                         sensor_state,
                         agent_interface.action_space,
+                        agent_interface.vehicle_type,
                     )
 
     def _sync_panda3d(self):

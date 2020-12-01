@@ -207,6 +207,11 @@ class AgentInterface:
     The choice of action space, this action space also decides the controller that will be enabled.
     """
 
+    vehicle_type: str = "sedan"
+    """
+    The choice of vehicle type.
+    """
+
     accelerometer: Union[Accelerometer, bool] = True
     """
     Enable acceleration and jerk observations.
@@ -229,6 +234,7 @@ class AgentInterface:
         self.accelerometer = AgentInterface._resolve_config(
             self.accelerometer, Accelerometer
         )
+        assert self.vehicle_type in {"sedan", "bus"}
 
     @staticmethod
     def from_type(requested_type: AgentType, **kwargs):
@@ -240,7 +246,6 @@ class AgentInterface:
             max_episode_steps:
                 The total number of steps this interface will observe before expiring
         """
-
         if requested_type == AgentType.Buddha:  # The enlightened one
             interface = AgentInterface()
         elif requested_type == AgentType.Full:  # Uses everything

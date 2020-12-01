@@ -17,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os
+import yaml
 import importlib.resources as pkg_resources
 import logging
 from dataclasses import dataclass
@@ -292,7 +294,7 @@ class Vehicle:
         vehicle_id,
         agent_interface,
         mission_planner,
-        filepath,
+        vehicle_filepath,
         tire_filepath,
         trainable,
         surface_patches,
@@ -314,6 +316,27 @@ class Vehicle:
             SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
         )
 
+        if agent_interface.vehicle_type == "sedan":
+            urdf_name = "vehicle"
+        elif agent_interface.vehicle_type == "bus":
+            urdf_name = "bus"
+        else:
+            raise Exception("Vehicle type does not exist!!!")
+
+        if (vehicle_filepath is None) or not os.path.exists(vehicle_filepath):
+            with pkg_resources.path(models, urdf_name + ".urdf") as path:
+                vehicle_filepath = str(path.absolute())
+
+        if (controller_filepath is None) or not os.path.exists(controller_filepath):
+            with pkg_resources.path(
+                models, "controller_parameters.yaml"
+            ) as controller_path:
+                controller_filepath = str(controller_path.absolute())
+        with open(controller_filepath, "r") as controller_file:
+            controller_parameters = yaml.safe_load(controller_file)[
+                agent_interface.vehicle_type
+            ]
+
         vehicle = Vehicle(
             id=vehicle_id,
             pose=start_pose,
@@ -321,10 +344,10 @@ class Vehicle:
             chassis=AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=filepath,
+                vehicle_filepath=vehicle_filepath,
                 tire_parameters_filepath=tire_filepath,
                 friction_map=surface_patches,
-                controller_parameters_filepath=controller_filepath,
+                controller_parameters=controller_parameters,
                 initial_speed=initial_speed,
             ),
             color=vehicle_color,

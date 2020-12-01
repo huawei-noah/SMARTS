@@ -52,11 +52,19 @@ class ActionSpaceType(Enum):
 class Controllers:
     @staticmethod
     def perform_action(
-        sim, agent_id, vehicle, action, controller_state, sensor_state, action_space
+        sim,
+        agent_id,
+        vehicle,
+        action,
+        controller_state,
+        sensor_state,
+        action_space,
+        vehicle_type,
     ):
         if action is None:
             return
-
+        if vehicle_type == "bus":
+            assert action_space == ActionSpaceType.Trajectory
         if action_space == ActionSpaceType.Continuous:
             vehicle.control(
                 throttle=np.clip(action[0], 0.0, 1.0),
