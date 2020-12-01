@@ -112,7 +112,9 @@ LinkedWaypoint = namedtuple(
         "wp",  # Waypoint: current waypoint
         "nexts",  # list of LinkedWaypoint: list of next immediate waypoints
         # it's a list of waypoints because a path may branch at junctions
+        "is_shape_wp",
     ],
+    defaults=[None, [], False],
 )
 
 
@@ -290,7 +292,9 @@ class Waypoints:
         ref_waypoints_coordinates = {
             parameter: [] for parameter in (continuous_variables + discrete_variables)
         }
-        for waypoint in path:
+        for idx, waypoint in enumerate(path):
+            if not waypoint.is_shape_wp and 0 < idx < len(path) - 1:
+                continue
             ref_waypoints_coordinates["ref_wp_positions_x"].append(waypoint.wp.pos[0])
             ref_waypoints_coordinates["ref_wp_positions_y"].append(waypoint.wp.pos[1])
             ref_waypoints_coordinates["ref_wp_headings"].append(
@@ -342,7 +346,7 @@ class Waypoints:
             return [path[0].wp]
 
         evenly_spaced_cumulative_path_dist = np.linspace(
-            0, cumulative_path_dist[-1], len(cumulative_path_dist) + 1
+            0, cumulative_path_dist[-1], len(path)
         )
 
         evenly_spaced_coordinates = {}
@@ -355,7 +359,7 @@ class Waypoints:
             ref_coordinates = ref_waypoints_coordinates[variable]
             evenly_spaced_coordinates[variable] = []
             jdx = 0
-            for idx in range(len(ref_coordinates)):
+            for idx in range(len(path)):
                 while (
                     jdx + 1 < len(cumulative_path_dist)
                     and evenly_spaced_cumulative_path_dist[idx]
@@ -424,6 +428,7 @@ class Waypoints:
                     lane_index=shape_wp.wp.lane_index,
                 ),
                 nexts=[],
+                is_shape_wp=True,
             )
 
             if previous_wp is not None:
@@ -507,6 +512,7 @@ class Waypoints:
                     lane_index=shape_wp.wp.lane_index,
                 ),
                 nexts=[],
+                is_shape_wp=False,
             )
 
             curr_waypoint.nexts.append(linked_waypoint)
@@ -567,6 +573,7 @@ class Waypoints:
                     lane_index=lane.getIndex(),
                 ),
                 nexts=[],
+                is_shape_wp=True,
             )
 
             if previous_wp is not None:
@@ -592,6 +599,7 @@ class Waypoints:
                         lane_index=lane.getIndex(),
                     ),
                     nexts=[],
+                    is_shape_wp=True,
                 )
 
                 shape_waypoints.append(linked_waypoint)
@@ -609,6 +617,7 @@ class Waypoints:
                     lane_index=curr_waypoint.wp.lane_index,
                 ),
                 nexts=[],
+                is_shape_wp=True,
             )
 
             shape_waypoints.append(last_linked_waypoint)
