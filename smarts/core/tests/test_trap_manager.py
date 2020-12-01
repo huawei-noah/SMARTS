@@ -1,18 +1,13 @@
-from smarts.core.agent_interface import AgentInterface, AgentType
 import pytest
-from pathlib import Path
+
 import smarts.sstudio.types as t
-from smarts.core.coordinates import Heading, Pose
+from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.tests.helpers.providers import MockProvider
 from smarts.sstudio import gen_scenario
 
 from helpers.scenario import temp_scenario
-
-
-# TODO: Add test for small road
 
 
 AGENT_ID = "006"
