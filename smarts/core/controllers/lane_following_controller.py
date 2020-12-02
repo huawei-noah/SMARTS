@@ -25,8 +25,6 @@ from numpy.linalg import matrix_power
 import numpy as np
 
 from scipy import signal
-from cvxopt import matrix, solvers
-from qpsolvers import solve_qp
 from smarts.core.controllers.trajectory_tracking_controller import (
     TrajectoryTrackingControllerState,
     TrajectoryTrackingController,
@@ -238,8 +236,16 @@ class LaneFollowingController:
         # This coefficient also depends on the inertia properties
         # and the cornering stiffness of the tires. See:
         # https://www.tandfonline.com/doi/full/10.1080/00423114.2015.1055279
+        steering_feed_forward_gain = 0.15
+
+        if abs(curvature_radius) < 7:
+            steering_feed_forward_gain = 0.45
+
         steering_controller_feed_forward = (
-            1 * 0.15 * (1 / curvature_radius) * (vehicle.speed) ** 2
+            1
+            * steering_feed_forward_gain
+            * (1 / curvature_radius)
+            * (vehicle.speed) ** 2
         )
         steering_norm = np.clip(
             -1

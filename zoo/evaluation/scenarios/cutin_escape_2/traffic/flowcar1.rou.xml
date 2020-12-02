@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+
+  <vType id="flow-car" accel="3.0" decel="1.0" minGap="0" maxSpeed="8" sigma="0.5" lcStrategic="0.0" lcCooperative="0.0" lcSpeedGain="0.0" lcKeepRight="0.0" 
+  lcOvertakeRight="0.0" lcLookaheadLeft="0.0" lcSpeedGainRight="0.0" lcSublane="0.0"  lcCooperativeSpeed="0.0" />
+  <route id="cutin-escape-route" edges="E5-35 E35-3"/>
+  <vehicle depart="0" departLane="2" arrivalLane="0" departPos="100" departSpeed="6" id="npc-flow-car-escape-1" route="cutin-escape-route" type="flow-car" color="255, 255, 0"/>
+  <vehicle depart="0" departLane="2" arrivalLane="0" departPos="70" departSpeed="6" id="npc-flow-car-escape-2" route="cutin-escape-route" type="flow-car" color="255, 0, 0"/>
+  <vehicle depart="0" departLane="2" arrivalLane="0" departPos="30" departSpeed="6" id="npc-flow-car-escape-3" route="cutin-escape-route" type="flow-car" color="255, 0, 0"/>
+  <vehicle depart="2" departLane="2" arrivalLane="0" departPos="0" departSpeed="6" id="npc-flow-car-escape-4" route="cutin-escape-route" type="flow-car" color="255, 0, 0"/>
+</routes>

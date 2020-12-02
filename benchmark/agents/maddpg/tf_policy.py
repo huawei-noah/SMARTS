@@ -1,4 +1,25 @@
-# Reference: https://github.com/ray-project/ray/blob/master/rllib/contrib/maddpg/maddpg_policy.py
+# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# =========================
+# Original version: https://github.com/ray-project/ray/blob/master/rllib/contrib/maddpg/maddpg_policy.py
+# See ray in THIRD_PARTY_OPEN_SOURCE_SOFTWARE_NOTICE
 import logging
 import gym
 import numpy as np
@@ -176,7 +197,7 @@ class MADDPG2TFPolicy(MADDPGPostprocessing, TFPolicy):
             ),
             critic[:, 0],
         )
-        critic_loss = tf.reduce_mean(td_error ** 2)
+        critic_loss = tf.reduce_mean(input_tensor=td_error ** 2)
 
         # _____ Policy Network
         # Build actor network for t.
@@ -215,10 +236,10 @@ class MADDPG2TFPolicy(MADDPGPostprocessing, TFPolicy):
             getattr(tf.nn, config["critic_hidden_activation"]),
             scope="critic",
         )
-        actor_loss = -tf.reduce_mean(critic)
+        actor_loss = -tf.reduce_mean(input_tensor=critic)
         if config["actor_feature_reg"] is not None:
             actor_loss += config["actor_feature_reg"] * tf.reduce_mean(
-                actor_feature ** 2
+                input_tensor=actor_feature ** 2
             )
 
         # _____ Losses

@@ -17,17 +17,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import sys
+import atexit
+import cloudpickle
 import logging
 import pathlib
 import subprocess
+import sys
 import tempfile
 import time
-import atexit
 
+from concurrent import futures
 from multiprocessing.connection import Client
-
-import cloudpickle
 
 from .agent import AgentSpec
 
@@ -37,7 +37,7 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, with_adaptation=True, connection_retries=100):
+    def __init__(self, connection_retries=100):
         atexit.register(self.terminate)
 
         self._log = logging.getLogger(self.__class__.__name__)
@@ -52,13 +52,11 @@ class RemoteAgent:
             sock_file,
         ]
 
-        if with_adaptation:
-            cmd.append("--with_adaptation")
-
         self._log.debug(f"Spawning remote agent proc: {cmd}")
 
         self._agent_proc = subprocess.Popen(cmd)
         self._conn = None
+        self._tp_exec = futures.ThreadPoolExecutor()
 
         for i in range(connection_retries):
             # Waiting on agent to open it's socket.
@@ -77,10 +75,10 @@ class RemoteAgent:
     def __del__(self):
         self.terminate()
 
-    def send_observation(self, obs):
+    def _act(self, obs, timeout):
+        # Send observation
         self._conn.send({"type": "obs", "payload": obs})
-
-    def recv_action(self, timeout=None):
+        # Receive action
         if self._conn.poll(timeout):
             try:
                 return self._conn.recv()
@@ -90,14 +88,19 @@ class RemoteAgent:
         else:
             return None
 
+    def act(self, obs, timeout=None):
+        # Run task asynchronously and return a Future
+        return self._tp_exec.submit(self._act, obs, timeout)
+
     def start(self, agent_spec: AgentSpec):
-        # send the AgentSpec to the agent runner
+        # Send the AgentSpec to the agent runner
         self._conn.send(
             # We use cloudpickle only for the agent_spec to allow for serialization of lambdas
             {"type": "agent_spec", "payload": cloudpickle.dumps(agent_spec)}
         )
 
     def terminate(self):
+        atexit.unregister(self.terminate)
         if self._agent_proc:
             if self._conn:
                 self._conn.close()
@@ -106,3 +109,6 @@ class RemoteAgent:
                 self._agent_proc.kill()
                 self._agent_proc.wait()
             self._agent_proc = None
+
+        # Shutdown thread pool executor
+        self._tp_exec.shutdown()

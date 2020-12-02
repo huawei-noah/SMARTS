@@ -17,7 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import math
 import logging
+from copy import copy, deepcopy
 from io import StringIO
 from enum import IntEnum
 from typing import NamedTuple
@@ -27,7 +29,7 @@ import tableprint as tp
 
 from smarts.core import gen_id
 from .chassis import AckermannChassis, BoxChassis
-from .vehicle import Vehicle, VehicleState
+from .vehicle import Vehicle
 from .sensors import SensorState
 from .controllers import ControllerState
 
@@ -45,8 +47,13 @@ class _ControlEntity(NamedTuple):
     # Applies to shadowing and controlling actor
     # TODO: Consider moving this to an _ActorType field
     is_boid: bool
+    is_hijacked: bool
+    position: np.ndarray
 
 
+# TODO: Consider wrapping the controlled_by recarry into a sep state object
+#       VehicleIndex can perform operations on. Then we can do diffs of that
+#       recarray with subset queries.
 class VehicleIndex:
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -60,6 +67,64 @@ class VehicleIndex:
 
         # {vehicle_id: <SensorState>}
         self._sensor_states = {}
+
+    @classmethod
+    def identity(cls):
+        return cls()
+
+    def __sub__(self, other: "VehicleIndex") -> "VehicleIndex":
+        vehicle_ids = set(self._controlled_by["vehicle_id"]) - set(
+            other._controlled_by["vehicle_id"]
+        )
+        return self._subset(vehicle_ids)
+
+    def __and__(self, other: "VehicleIndex") -> "VehicleIndex":
+        vehicle_ids = set(self._controlled_by["vehicle_id"]) & set(
+            other._controlled_by["vehicle_id"]
+        )
+        return self._subset(vehicle_ids)
+
+    def _subset(self, vehicle_ids):
+        index = VehicleIndex()
+        assert self.vehicle_ids.issuperset(vehicle_ids)
+
+        indices = np.isin(
+            self._controlled_by["vehicle_id"], list(vehicle_ids), assume_unique=True
+        )
+        index._controlled_by = self._controlled_by[indices]
+        index._vehicles = {id_: self._vehicles[id_] for id_ in vehicle_ids}
+        index._controller_states = {
+            id_: self._controller_states[id_]
+            for id_ in vehicle_ids
+            if id_ in self._controller_states
+        }
+        index._sensor_states = {
+            id_: self._sensor_states[id_]
+            for id_ in vehicle_ids
+            if id_ in self._sensor_states
+        }
+        return index
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+
+        dict_ = copy(self.__dict__)
+        shallow = ["_vehicles", "_sensor_states", "_controller_states"]
+        for k in shallow:
+            v = dict_.pop(k)
+            setattr(result, k, copy(v))
+
+        for k, v in dict_.items():
+            setattr(result, k, deepcopy(v, memo))
+
+        return result
+
+    @property
+    def vehicle_ids(self):
+        vehicle_ids = self._controlled_by["vehicle_id"]
+        return set(vehicle_ids)
 
     @property
     def agent_vehicle_ids(self):
@@ -75,21 +140,32 @@ class VehicleIndex:
         ]["vehicle_id"]
         return set(vehicle_ids)
 
-    def actor_is_boid(self, actor_id):
-        v_index = (self._controlled_by["actor_id"] == actor_id) | (
-            self._controlled_by["shadow_actor_id"] == actor_id
-        )
-        is_boids = self._controlled_by[v_index]["is_boid"]
-        if len(is_boids) == 0:
+    def vehicle_is_hijacked(self, vehicle_id):
+        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        if not np.any(v_index):
             return False
 
-        # If a boid actor (or not) all vehicles should have the same is_boid value
-        assert all(x == is_boids[0] for x in is_boids)
-        return is_boids[0]
+        entities = self._controlled_by[v_index]
+        assert len(entities) == 1
+
+        return bool(_ControlEntity(*entities[0]).is_hijacked)
+
+    def vehicle_is_shadowed(self, vehicle_id):
+        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        if not np.any(v_index):
+            return False
+
+        entities = self._controlled_by[v_index]
+        assert len(entities) == 1
+
+        return bool(_ControlEntity(*entities[0]).shadow_actor_id)
 
     @property
     def vehicles(self):
         return list(self._vehicles.values())
+
+    def vehicleitems(self):
+        return self._vehicles.items()
 
     def vehicle_by_id(self, vehicle_id):
         return self._vehicles[vehicle_id]
@@ -125,6 +201,14 @@ class VehicleIndex:
 
         return vehicle_ids
 
+    def sync(self):
+        for vehicle_id, vehicle in self._vehicles.items():
+            v_index = self._controlled_by["vehicle_id"] == vehicle_id
+            entity = _ControlEntity(*self._controlled_by[v_index][0])
+            self._controlled_by[v_index] = tuple(
+                entity._replace(position=vehicle.position)
+            )
+
     def teardown(self):
         self._controlled_by = self._build_empty_controlled_by()
 
@@ -134,23 +218,6 @@ class VehicleIndex:
         self._vehicles = {}
         self._controller_states = {}
         self._sensor_states = {}
-
-    def vehicle_indices_by_actor_id(self, actor_id, columns):
-        """Returns given vehicle index values for the given actor ID as list of columns.
-
-        Args:
-            actor_id:
-                The id of the actor to query for.
-            columns:
-                The columns for the vehicles associated with the actor to retrieve.
-        Returns:
-            The columns of vehicle information related to the queried actor.
-        """
-
-        v_index = (self._controlled_by["actor_id"] == actor_id) | (
-            self._controlled_by["shadow_actor_id"] == actor_id
-        )
-        return self._controlled_by[v_index][columns]
 
     def vehicle_ids_by_actor_id(self, actor_id, include_shadowers=False):
         """Returns all vehicles for the given actor ID as a list. This is most
@@ -180,6 +247,13 @@ class VehicleIndex:
         ]["shadow_actor_id"]
 
         return shadow_actor_ids[0] if shadow_actor_ids else None
+
+    def vehicle_position(self, vehicle_id):
+        positions = self._controlled_by[
+            self._controlled_by["vehicle_id"] == vehicle_id
+        ]["position"]
+
+        return positions[0] if len(positions) > 0 else None
 
     def prepare_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, mission_planner, boid=False
@@ -227,7 +301,7 @@ class VehicleIndex:
         )
 
     def switch_control_to_agent(
-        self, sim, vehicle_id, agent_id, boid=False, recreate=False
+        self, sim, vehicle_id, agent_id, boid=False, hijacking=False, recreate=False
     ):
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
         if recreate:
@@ -235,7 +309,7 @@ class VehicleIndex:
             #      sumo traffic sim sync(...) logic in how it detects a vehicle as
             #      being hijacked vs joining. Presently it's still used for trapping.
             return self._switch_control_to_agent_recreate(
-                sim, vehicle_id, agent_id, boid
+                sim, vehicle_id, agent_id, boid, hijacking
             )
 
         vehicle = self._vehicles[vehicle_id]
@@ -250,12 +324,15 @@ class VehicleIndex:
                 actor_id=agent_id,
                 shadow_actor_id="",
                 is_boid=boid,
+                is_hijacked=hijacking,
             )
         )
 
         return vehicle
 
-    def _switch_control_to_agent_recreate(self, sim, vehicle_id, agent_id, boid):
+    def _switch_control_to_agent_recreate(
+        self, sim, vehicle_id, agent_id, boid, hijacking
+    ):
         # TODO: There existed a SUMO connection error bug
         #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occured
         #       during lange changing when we hijacked/trapped a SUMO vehicle. Forcing
@@ -306,11 +383,11 @@ class VehicleIndex:
             sim,
             agent_id,
             agent_interface,
-            new_vehicle_id,
             new_vehicle,
             controller_state,
             sensor_state,
             boid,
+            hijacking,
         )
 
         return new_vehicle
@@ -335,9 +412,10 @@ class VehicleIndex:
         self._controlled_by[v_index] = tuple(
             entity._replace(
                 actor_type=_ActorType.Social,
-                actor_id=social_vehicle_id,
+                actor_id="",
                 shadow_actor_id="",
                 is_boid=False,
+                is_hijacked=False,
             )
         )
 
@@ -372,8 +450,6 @@ class VehicleIndex:
             initial_speed,
         )
 
-        waypoint_paths = sim.waypoints.waypoint_paths_at(vehicle.position, lookahead=1)
-
         sensor_state = SensorState(
             agent_interface.max_episode_steps, mission_planner=mission_planner,
         )
@@ -386,11 +462,11 @@ class VehicleIndex:
             sim,
             agent_id,
             agent_interface,
-            vehicle_id,
             vehicle,
             controller_state,
             sensor_state,
             boid,
+            hijacking=False,
         )
 
         return vehicle
@@ -400,11 +476,11 @@ class VehicleIndex:
         sim,
         agent_id,
         agent_interface,
-        vehicle_id,
         vehicle,
         controller_state,
         sensor_state,
         boid=False,
+        hijacking=False,
     ):
         Vehicle.attach_sensors_to_vehicle(
             sim, vehicle, agent_interface, sensor_state.mission_planner
@@ -420,6 +496,8 @@ class VehicleIndex:
             actor_type=_ActorType.Agent,
             shadow_actor_id="",
             is_boid=boid,
+            is_hijacked=hijacking,
+            position=vehicle.position,
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
@@ -441,6 +519,8 @@ class VehicleIndex:
             actor_type=_ActorType.Social,
             shadow_actor_id="",
             is_boid=False,
+            is_hijacked=False,
+            position=vehicle.position,
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
@@ -466,12 +546,38 @@ class VehicleIndex:
                 #      We can add an shadow_actor_type when needed
                 ("shadow_actor_id", "O"),
                 ("is_boid", "B"),
+                ("is_hijacked", "B"),
+                ("position", "O"),
             ],
         )
 
     def __repr__(self):
+        def truncate(str_, length, separator="..."):
+            if len(str_) <= length:
+                return str_
+
+            start = math.ceil((length - len(separator)) / 2)
+            end = math.floor((length - len(separator)) / 2)
+            return f"{str_[:start]}{separator}{str_[len(str_) - end:]}"
+
         io = StringIO("")
-        table = tp.table(
-            self._controlled_by, self._controlled_by.dtype.names, style="round", out=io,
+        n_columns = len(self._controlled_by.dtype.names)
+
+        by = self._controlled_by.copy().astype(
+            list(zip(self._controlled_by.dtype.names, ["O"] * n_columns))
         )
+
+        by["position"] = [", ".join([f"{x:.2f}" for x in p]) for p in by["position"]]
+        by["actor_id"] = [truncate(p, 20) for p in by["actor_id"]]
+        by["vehicle_id"] = [truncate(p, 20) for p in by["vehicle_id"]]
+        by["shadow_actor_id"] = [truncate(p, 20) for p in by["shadow_actor_id"]]
+        by["is_boid"] = [str(bool(x)) for x in by["is_boid"]]
+        by["is_hijacked"] = [str(bool(x)) for x in by["is_hijacked"]]
+        by["actor_type"] = [str(_ActorType(x)).split(".")[-1] for x in by["actor_type"]]
+
+        # XXX: tableprint crashes when there's no data
+        if by.size == 0:
+            by = [[""] * n_columns]
+
+        tp.table(by, self._controlled_by.dtype.names, style="round", out=io)
         return io.getvalue()

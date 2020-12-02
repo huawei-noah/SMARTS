@@ -17,41 +17,57 @@ scenarios_root:
 agent_list:
   group_1:
     - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+      params:
+        gains:
+          theta: 1.3173076923076925
+          position: 1.221153846153846
+          obstacle: 3.0
+          u_accel: 10.103365384615384
+          u_yaw_rate: 40.1778846153846156
+          terminal: 0.04807692307692313
+          impatience: 0.10817307692307687
+          speed: 0.01
     - locator: zoo.policies:keep-lane-agent-v0
 
   group_2:
-   - locator: zoo.policies.open-agent.open_agent:open_agent-v0
-     name: open_agent_default
-   - locator: zoo.policies.open-agent.open_agent:open_agent-v0
-     name: open_agent_stable
-     params:
-       N: 10
-       SV_N: 5
-       WP_N: 30
-       ts: 0.3
-       Q_theta: 0
-       Q_position: 30
-       Q_obstacle: 300
-       Q_u_accel: 100
-       Q_u_yaw_rate: 1
-       Q_n: 0.01
-       Q_impatience: 0.2
+    - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+      name: open_agent_default
+      params:
+        gains:
+          theta: 1.3173076923076925
+          position: 1.221153846153846
+          obstacle: 3.0
+          u_accel: 10.103365384615384
+          u_yaw_rate: 40.1778846153846156
+          terminal: 0.04807692307692313
+          impatience: 0.10817307692307687
+          speed: 0.01
 
+    - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+      name: open_agent_stable
+      params:
+        gains:
+          theta: 1.3
+          position: 1.5
+          obstacle: 3.0
+          u_accel: 10.0
+          u_yaw_rate: 40.0
+          terminal: 0.05
+          impatience: 0.2
+          speed: 0.01
 
-   - locator: zoo.open_agent.open_agent:open_agent-v0
-     name: open_agent_safe
-     params:
-        N: 10
-        SV_N: 5
-        WP_N: 30
-        ts: 0.3
-        Q_theta: 0
-        Q_position: 100
-        Q_obstacle: 2000
-        Q_u_accel: 100
-        Q_u_yaw_rate: 1
-        Q_n: 0.01
-        Q_impatience: 0.01
+    - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+      name: open_agent_safe
+      params:
+        gains:
+          theta: 1.3
+          position: 3.2
+          obstacle: 4.0
+          u_accel: 10.0
+          u_yaw_rate: 40.0
+          terminal: 0.0
+          impatience: 0.0
+          speed: 0.01
 
   group_3:
     - locator: rl_agent:rl-agent-v0

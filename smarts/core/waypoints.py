@@ -22,7 +22,7 @@ import random
 from typing import Sequence
 from dataclasses import dataclass
 from collections import namedtuple, defaultdict
-
+from scipy.interpolate import interp1d
 import numpy as np
 from sklearn.neighbors import KDTree
 
@@ -37,13 +37,11 @@ from .utils.math import (
 
 @dataclass(frozen=True)
 class Waypoint:
-    id: int  # Numeric identifier for this waypoint
     pos: np.ndarray  # Center point of lane
     heading: Heading  # Heading angle of lane at this point (radians)
     lane_width: float  # Width of lane at this point (meters)
     speed_limit: float  # Lane speed in m/s
     lane_id: str  # ID of lane under waypoint
-    right_of_way: bool  # True if this waypoint has right of way, False otherwise
     lane_index: int  # Index of the lane this waypoint is over. 0 is the outer(right) most lane.
 
     def dist_to(self, p):
@@ -75,6 +73,30 @@ class Waypoint:
     @property
     def pose(self):
         return Pose.from_center(tuple(self.pos), self.heading)
+
+    def __hash__(self):
+        return hash(
+            (
+                *self.pos,
+                self.heading,
+                self.lane_width,
+                self.speed_limit,
+                self.lane_id,
+                self.lane_index,
+            )
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, Waypoint):
+            return False
+        return (
+            self.pos.all() == other.pos.all()
+            and self.heading == other.heading
+            and self.lane_width == other.lane_width
+            and self.speed_limit == other.speed_limit
+            and self.lane_id == other.lane_id
+            and self.lane_index == other.lane_index
+        )
 
 
 LinkedWaypoint = namedtuple(
@@ -162,14 +184,10 @@ class Waypoints:
             [point], self._waypoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
 
-        waypoint_paths = self._waypoints_starting_at_waypoint(
+        unlinked_waypoint_paths = self._waypoints_starting_at_waypoint(
             closest_linked_wp, lookahead, filter_edge_ids
         )
 
-        # don't give users access to the linked structure
-        unlinked_waypoint_paths = [
-            [linked_wp.wp for linked_wp in path] for path in waypoint_paths
-        ]
         return unlinked_waypoint_paths
 
     def waypoint_paths_at(self, point, lookahead):
@@ -212,17 +230,6 @@ class Waypoints:
         sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
         return sorted_wps
 
-    def _does_lane_have_right_of_way(self, lane):
-        # This is hard coded for the competition scenario, we should use something like
-        #  - prohibitions at the nearest intersection
-        #  - Node.areFoes(lane1_index, lane2_index)
-        return lane.getEdge().getPriority() > 1
-
-    def _unique_waypoint_id(self):
-        id_ = self._next_waypoint_id
-        self._next_waypoint_id += 1
-        return id_
-
     def _closest_linked_wp_in_kd_tree_batched(self, points, linked_wps, tree, k=1):
         p2ds = np.array([vec_2d(p) for p in points])
         closest_indices = tree.query(
@@ -256,7 +263,104 @@ class Waypoints:
 
             waypoint_paths = next_waypoint_paths
 
-        return waypoint_paths
+        return [self._equally_spaced_path(path) for path in waypoint_paths]
+
+    def _equally_spaced_path(self, path):
+        continuous_variables = [
+            "ref_wp_positions_x",
+            "ref_wp_positions_y",
+            "ref_wp_headings",
+            "ref_wp_lane_width",
+            "ref_wp_speed_limit",
+        ]
+
+        discrete_variables = ["ref_wp_lane_id", "ref_wp_lane_index"]
+
+        ref_waypoints_coordinates = {
+            parameter: [] for parameter in (continuous_variables + discrete_variables)
+        }
+        for waypoint in path:
+            ref_waypoints_coordinates["ref_wp_positions_x"].append(waypoint.wp.pos[0])
+            ref_waypoints_coordinates["ref_wp_positions_y"].append(waypoint.wp.pos[1])
+            ref_waypoints_coordinates["ref_wp_headings"].append(
+                waypoint.wp.heading.as_bullet
+            )
+            ref_waypoints_coordinates["ref_wp_lane_id"].append(waypoint.wp.lane_id)
+            ref_waypoints_coordinates["ref_wp_lane_index"].append(
+                waypoint.wp.lane_index
+            )
+            ref_waypoints_coordinates["ref_wp_lane_width"].append(
+                waypoint.wp.lane_width
+            )
+            ref_waypoints_coordinates["ref_wp_speed_limit"].append(
+                waypoint.wp.speed_limit
+            )
+
+        ref_waypoints_coordinates["ref_wp_headings"] = np.unwrap(
+            ref_waypoints_coordinates["ref_wp_headings"]
+        )
+
+        # To ensure that the distance between waypoints are equal, we used
+        # interpolation approach inspired by:
+        # https://stackoverflow.com/a/51515357
+        cumulative_path_dist = np.cumsum(
+            np.sqrt(
+                np.ediff1d(ref_waypoints_coordinates["ref_wp_positions_x"], to_begin=0)
+                ** 2
+                + np.ediff1d(
+                    ref_waypoints_coordinates["ref_wp_positions_y"], to_begin=0
+                )
+                ** 2
+            )
+        )
+
+        if len(cumulative_path_dist) <= 1:
+            return [path[0].wp]
+
+        evenly_spaced_cumulative_path_dist = np.linspace(
+            0, cumulative_path_dist[-1], len(cumulative_path_dist) + 1
+        )
+
+        evenly_spaced_coordinates = {}
+        for variable in continuous_variables:
+            evenly_spaced_coordinates[variable] = interp1d(
+                cumulative_path_dist, ref_waypoints_coordinates[variable]
+            )(evenly_spaced_cumulative_path_dist)
+
+        for variable in discrete_variables:
+            ref_coordinates = ref_waypoints_coordinates[variable]
+            evenly_spaced_coordinates[variable] = []
+            jdx = 0
+            for idx in range(len(ref_coordinates)):
+                while (
+                    jdx + 1 < len(cumulative_path_dist)
+                    and evenly_spaced_cumulative_path_dist[idx]
+                    > cumulative_path_dist[jdx + 1]
+                ):
+                    jdx += 1
+
+                evenly_spaced_coordinates[variable].append(ref_coordinates[jdx])
+            evenly_spaced_coordinates[variable].append(ref_coordinates[-1])
+
+        equally_spaced_path = []
+        for idx, waypoint in enumerate(path):
+            equally_spaced_path.append(
+                Waypoint(
+                    pos=np.array(
+                        [
+                            evenly_spaced_coordinates["ref_wp_positions_x"][idx],
+                            evenly_spaced_coordinates["ref_wp_positions_y"][idx],
+                        ]
+                    ),
+                    heading=Heading(evenly_spaced_coordinates["ref_wp_headings"][idx]),
+                    lane_width=evenly_spaced_coordinates["ref_wp_lane_width"][idx],
+                    speed_limit=evenly_spaced_coordinates["ref_wp_speed_limit"][idx],
+                    lane_id=evenly_spaced_coordinates["ref_wp_lane_id"][idx],
+                    lane_index=evenly_spaced_coordinates["ref_wp_lane_index"][idx],
+                )
+            )
+
+        return equally_spaced_path
 
     def _interpolate_shape_waypoints(self, shape_waypoints, spacing):
         # memoize interpolated waypoints on the shape waypoint at start of
@@ -280,22 +384,20 @@ class Waypoints:
 
         while not shape_queue.empty():
             shape_wp, previous_wp = shape_queue.get()
-            if shape_wp.wp.id in interp_memo:
+            if shape_wp.wp in interp_memo:
                 if previous_wp is None:
                     continue
-                previous_wp.nexts.append(interp_memo[shape_wp.wp.id])
+                previous_wp.nexts.append(interp_memo[shape_wp.wp])
                 continue
 
             first_linked_waypoint = LinkedWaypoint(
                 wp=Waypoint(
-                    id=self._unique_waypoint_id(),
                     pos=shape_wp.wp.pos,
                     heading=shape_wp.wp.heading,
                     lane_width=shape_wp.wp.lane_width,
                     speed_limit=shape_wp.wp.speed_limit,
                     lane_id=shape_wp.wp.lane_id,
                     lane_index=shape_wp.wp.lane_index,
-                    right_of_way=shape_wp.wp.right_of_way,
                 ),
                 nexts=[],
             )
@@ -306,7 +408,7 @@ class Waypoints:
             if initial_waypoint is None:
                 initial_waypoint = first_linked_waypoint
 
-            interp_memo[shape_wp.wp.id] = first_linked_waypoint
+            interp_memo[shape_wp.wp] = first_linked_waypoint
 
             newly_created_waypoints.append(first_linked_waypoint)
 
@@ -371,20 +473,14 @@ class Waypoints:
             lane_width = lerp(shape_wp.wp.lane_width, next_shape_wp.wp.lane_width, p)
             speed_limit = lerp(shape_wp.wp.speed_limit, next_shape_wp.wp.speed_limit, p)
 
-            # We don't consider the next_shape_wp.wp.right_of_way because you have the
-            # right of way if the lane you started on has the right of way
-            right_of_way = shape_wp.wp.right_of_way
-
             linked_waypoint = LinkedWaypoint(
                 wp=Waypoint(
-                    id=self._unique_waypoint_id(),
                     pos=pos,
                     heading=Heading(heading),
                     lane_width=lane_width,
                     speed_limit=speed_limit,
                     lane_id=lane_id,
                     lane_index=shape_wp.wp.lane_index,
-                    right_of_way=right_of_way,
                 ),
                 nexts=[],
             )
@@ -431,7 +527,6 @@ class Waypoints:
 
             lane_data = self._road_network.lane_data_for_lane(lane)
             lane_shape = [np.array(p) for p in lane.getShape(False)]
-            right_of_way = self._does_lane_have_right_of_way(lane)
 
             assert len(lane_shape) >= 2, repr(lane_shape)
 
@@ -440,14 +535,12 @@ class Waypoints:
 
             first_waypoint = LinkedWaypoint(
                 wp=Waypoint(
-                    id=self._unique_waypoint_id(),
                     pos=lane_shape[0],
                     heading=heading,
                     lane_width=lane.getWidth(),
                     speed_limit=lane_data.lane_speed,
                     lane_id=lane.getID(),
                     lane_index=lane.getIndex(),
-                    right_of_way=right_of_way,
                 ),
                 nexts=[],
             )
@@ -467,14 +560,12 @@ class Waypoints:
                 heading_ = Heading(heading_)
                 linked_waypoint = LinkedWaypoint(
                     wp=Waypoint(
-                        id=self._unique_waypoint_id(),
                         pos=p1,
                         heading=heading_,
                         lane_width=lane.getWidth(),
                         speed_limit=lane_data.lane_speed,
                         lane_id=lane.getID(),
                         lane_index=lane.getIndex(),
-                        right_of_way=right_of_way,
                     ),
                     nexts=[],
                 )
@@ -486,14 +577,12 @@ class Waypoints:
             # Add a waypoint for the last point of the current lane
             last_linked_waypoint = LinkedWaypoint(
                 wp=Waypoint(
-                    id=self._unique_waypoint_id(),
                     pos=lane_shape[-1],
                     heading=curr_waypoint.wp.heading,
                     lane_width=curr_waypoint.wp.lane_width,
                     speed_limit=curr_waypoint.wp.speed_limit,
                     lane_id=curr_waypoint.wp.lane_id,
                     lane_index=curr_waypoint.wp.lane_index,
-                    right_of_way=right_of_way,
                 ),
                 nexts=[],
             )

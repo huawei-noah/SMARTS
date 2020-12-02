@@ -4,7 +4,7 @@ import argparse
 import gym
 
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 from smarts.core.utils.episodes import episodes
 
 from pynput.keyboard import Key, Listener
@@ -16,13 +16,13 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-class HumanKeyboardPolicy(AgentPolicy):
+class HumanKeyboardAgent(Agent):
     def __init__(self):
         # initialize the keyboard listener
         self.listener = Listener(on_press=self.on_press)
         self.listener.start()
 
-        # Parameters for the human-keyboard policy
+        # Parameters for the human-keyboard agent
         # you need to change them to suit the scenario
         # These values work the best with zoo_intersection
 
@@ -86,7 +86,7 @@ def main(
         interface=AgentInterface.from_type(
             AgentType.StandardWithAbsoluteSteering, max_episode_steps=3000
         ),
-        policy_builder=HumanKeyboardPolicy,
+        agent_builder=HumanKeyboardAgent,
     )
 
     env = gym.make(

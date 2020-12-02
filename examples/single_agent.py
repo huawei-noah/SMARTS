@@ -4,7 +4,7 @@ import gym
 
 from smarts.core.utils.episodes import episodes
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 
 from examples import default_argument_parser
 
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-class Policy(AgentPolicy):
+class KeepLaneAgent(Agent):
     def act(self, obs):
         return "keep_lane"
 
@@ -22,7 +22,7 @@ class Policy(AgentPolicy):
 def main(scenarios, headless, num_episodes, seed):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
-        policy_builder=Policy,
+        agent_builder=KeepLaneAgent,
     )
 
     env = gym.make(

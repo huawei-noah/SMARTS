@@ -63,6 +63,14 @@ ENV SUMO_HOME /usr/share/sumo
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
+ENV PYTHONPATH=/src
+COPY . /src
+RUN cd /usr/local/lib/python3.7 && \
+    mkdir site-packages && \
+    cd site-packages && \
+    python /src/setup.py develop
+WORKDIR /src
+
 # For Envision
 EXPOSE 8081
 

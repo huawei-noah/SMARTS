@@ -4,7 +4,7 @@ import gym
 
 from smarts.core.utils.episodes import episodes
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 
 from examples import default_argument_parser
 
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-class Policy(AgentPolicy):
+class TrackingAgent(Agent):
     def act(self, obs):
         lane_index = 0
         num_trajectory_points = min([10, len(obs.waypoint_paths[lane_index])])
@@ -41,7 +41,7 @@ class Policy(AgentPolicy):
 def main(scenarios, headless, num_episodes, seed):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Tracker, max_episode_steps=None),
-        policy_builder=Policy,
+        agent_builder=TrackingAgent,
     )
 
     env = gym.make(

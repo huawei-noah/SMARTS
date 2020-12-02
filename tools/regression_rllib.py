@@ -13,7 +13,7 @@ from ray.rllib.models import ModelCatalog
 from ray.rllib.utils import try_import_tf
 
 from examples.rllib_agent import TrainingModel
-from smarts.env.agent import Agent, AgentPolicy
+from smarts.core.agent import Agent, AgentSpec
 from smarts.env.custom_observations import lane_ttc_observation_adapter
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -23,19 +23,21 @@ HORIZON = 5000
 tf = try_import_tf()
 
 
-class RLlibTFSavedModelPolicy(AgentPolicy):
+class RLlibTFSavedModelAgent(Agent):
     def __init__(self, path_to_model, observation_space):
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._path_to_model = path_to_model
 
     def setup(self):
-        self._sess = tf.Session(graph=tf.Graph())
+        self._sess = tf.compat.v1.Session(graph=tf.Graph())
         self._sess.__enter__()
-        tf.saved_model.load(self._sess, export_dir=self._path_to_model, tags=["serve"])
+        tf.compat.v1.saved_model.load(
+            self._sess, export_dir=self._path_to_model, tags=["serve"]
+        )
 
     def act(self, obs):
         obs = self._prep.transform(obs)
-        graph = tf.get_default_graph()
+        graph = tf.compat.v1.get_default_graph()
         # These tensor names were found by inspecting the trained model
         output_node = graph.get_tensor_by_name("default_policy/add:0")
         input_node = graph.get_tensor_by_name("default_policy/observation:0")
@@ -67,11 +69,9 @@ def action_adapter(model_action):
 
 def run_experiment(log_path, experiment_name, training_iteration=100):
     model_path = Path(__file__).parent / "model"
-    agent = Agent(
+    agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=5000),
-        policy=RLlibTFSavedModelPolicy(model_path.absolute(), OBSERVATION_SPACE,),
-        observation_space=OBSERVATION_SPACE,
-        action_space=ACTION_SPACE,
+        policy=RLlibTFSavedModelAgent(model_path.absolute(), OBSERVATION_SPACE,),
         observation_adapter=observation_adapter,
         reward_adapter=reward_adapter,
         action_adapter=action_adapter,
@@ -80,8 +80,8 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
     rllib_policies = {
         "policy": (
             None,
-            agent.observation_space,
-            agent.action_space,
+            OBSERVATION_SPACE,
+            ACTION_SPACE,
             {"model": {"custom_model": TrainingModel.NAME}},
         )
     }
@@ -95,7 +95,7 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
             "scenarios": [scenario_path],
             "seed": 42,
             "headless": True,
-            "agents": {"Agent-007": agent},
+            "agent_specs": {"Agent-007": agent_spec},
         },
         "multiagent": {
             "policies": rllib_policies,

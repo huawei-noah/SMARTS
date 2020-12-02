@@ -4,7 +4,7 @@ import gym
 import pytest
 
 from smarts.core.smarts import SMARTSNotSetupError
-from smarts.core.agent import AgentSpec, AgentPolicy
+from smarts.core.agent import AgentSpec, Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 
 AGENT_ID = "AGENT-007"
@@ -26,7 +26,7 @@ def test_graceful_shutdown():
     """SMARTS should not throw any exceptions when shutdown."""
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner),
-        policy_builder=lambda: AgentPolicy.from_function(lambda _: "keep_lane"),
+        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
     )
     env = build_env(agent_spec)
     agent = agent_spec.build_agent()
@@ -42,7 +42,7 @@ def test_graceful_interrupt(monkeypatch):
 
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner),
-        policy_builder=lambda: AgentPolicy.from_function(lambda _: "keep_lane"),
+        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
     )
     agent = agent_spec.build_agent()
     env = build_env(agent_spec)

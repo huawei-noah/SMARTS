@@ -47,12 +47,10 @@ ego_missions = [t.EndlessMission(begin=("edge-south-SN", 1, 20))]
 social_agent_missions = {
     "all": (
         [
-            t.SocialAgentActor.from_zoo(
-                name="rl-agent",
-                url="http://localhost:8080/rl-agent",
-                package="rl_agent",
-                version="0.1",
-            )
+            t.SocialAgentActor(
+                name="open-agent", agent_locator="open_agent:open_agent-v0"
+            ),
+            t.SocialAgentActor(name="rl-agent", agent_locator="rl_agent:rl-agent-v0"),
         ],
         [
             t.Mission(

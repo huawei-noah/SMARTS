@@ -107,7 +107,7 @@ traffic_histories.pkl
 **/social_agents/*
 
 # Manually generated sumo route files
-!scenarios/benchmarks/bm_exam/**/traffic/*.rou.xml
+!zoo/evaluation/scenarios/**/traffic/*.rou.xml
 
 # but keep model assets
 !**/models/*.glb

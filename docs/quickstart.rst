@@ -6,22 +6,22 @@ First we'll need to define what our agent looks like, we'll then place the agent
 Specifying the Agent
 --------------------
 
-The agent is defined in terms of the interface it expects from the environment and the policy governing the agent's behaviour. To help bridge the gap between the environment and your policy, we also introduce adapters.
+The agent is defined in terms of the interface it expects from the environment and the responses an agent produces. To help bridge the gap between the environment and your agent, we also introduce adapters.
 
 :class:`smarts.core.agent_interface.AgentInterface`
    This is where you can control the interface between SMARTS and your agent.
 
-:class:`smarts.core.agent.AgentPolicy`
-   This is the brains of the agent, you will need to implement the interface defined by :class:`smarts.core.agent.AgentPolicy` in order to give the agent some behaviour.
+:class:`smarts.core.agent.Agent`
+   This is the brains of the agent, you will need to implement the interface defined by :class:`smarts.core.agent.Agent` in order to give the agent some behaviour.
 
 Adapters:
-  Adapters bridge the gab between SMARTS and your policy. It is sometimes useful to preprocess the input and outputs of a policy, we won't be needing adapter for this little walkthrough but for a more in-depth treatment see :ref:`adapters`.
+  Adapters bridge the gab between SMARTS and your agent. It is sometimes useful to preprocess the input and outputs of an agent, we won't be needing adapter for this little walkthrough but for a more in-depth treatment see :ref:`adapters`.
 
 
 AgentInterface :class:`smarts.core.agent_interface.AgentInterface`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Here we choose the interface between SMARTS and your policy. Select which sensors to enable on your vehicle and the action space for you policy.
+Here we choose the interface between SMARTS and your agent. Select which sensors to enable on your vehicle and the action space for you agent.
 
 Some common configurations have been packaged up under :class:`smarts.core.agent_interface.AgentType` and can be instantiated via
 
@@ -34,19 +34,19 @@ Some common configurations have been packaged up under :class:`smarts.core.agent
 This `AgentType.Tracker` preset gives us :class:`smarts.core.agent_interface.Waypoints` and the trajectory following action space `ActionSpaceType.Trajectory`, see :class:`smarts.core.controllers.ActionSpaceType` for more available action spaces.
 
 
-AgentPolicy :class:`smarts.core.agent.AgentPolicy`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Agent :class:`smarts.core.agent.Agent`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Next up, we need to define the behaviour of the agent. That is to say, we want to map the observations from the sensors we configured above to the action space we chose.
 
-This is done by implementing the :class:`smarts.core.agent.AgentPolicy` interface:
+This is done by implementing the :class:`smarts.core.agent.Agent` interface:
 
 .. code-block:: python
 
    from smarts.core.bezier_motion_planner import BezierMotionPlanner
-   from smarts.core.agent import AgentPolicy
+   from smarts.core.agent import Agent
 
-   class ExamplePolicy(AgentPolicy):
+   class ExampleAgent(Agent):
        def __init__(self, target_speed = 10):
            self.motion_planner = BezierMotionPlanner()
            self.target_speed = target_speed
@@ -73,7 +73,7 @@ This is done by implementing the :class:`smarts.core.agent.AgentPolicy` interfac
            )
            return traj
 
-Here we are implementing a simple lane following policy using the BezierMotionPlanner. The `obs` argument to `ExamplePolicy.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActipnSpaceType` chosen as well. (This constraint is relaxed when adapters are introduced.)
+Here we are implementing a simple lane following agent using the BezierMotionPlanner. The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActipnSpaceType` chosen as well. (This constraint is relaxed when adapters are introduced.)
 
 
 AgentSpec :class:`smarts.core.agent.AgentSpec`
@@ -85,9 +85,9 @@ These pieces are brought together by the :class:`smarts.core.agent.AgentSpec`:
 
    agent_spec = AgentSpec(
        interface=AgentInterface.from_type(AgentType.Tracker)
-       # params are passed to the policy_builder when we build the agent
-       policy_params={"target_speed": 5},
-       policy_builder=ExamplePolicy
+       # params are passed to the agent_builder when we build the agent
+       agent_params={"target_speed": 5},
+       agent_builder=ExampleAgent
    )
 
 The :class:`smarts.core.agent.AgentSpec` acts as a container to store the information we need to build an agent, we can distribute this spec safely between process' to aid in parallelism and once we have it in the right spot, we can instantiate the :class:`smarts.core.agent.Agent` with
@@ -104,12 +104,12 @@ We can run this agent with "scenarios/loop", one of the scenarios packaged with 
 .. code-block:: python
 
    import gym
-   from smarts.core.agent import AgentSpec, AgentPolicy
+   from smarts.core.agent import AgentSpec, Agent
    from smarts.core.agent_interface import AgentInterface, AgentType
    from smarts.core.bezier_motion_planner import BezierMotionPlanner
    from smarts.core.utils.episodes import episodes
 
-   class ExamplePolicy(AgentPolicy):
+   class ExampleAgent(Agent):
        def __init__(self, target_speed = 10):
            self.motion_planner = BezierMotionPlanner()
            self.target_speed = target_speed
@@ -139,8 +139,8 @@ We can run this agent with "scenarios/loop", one of the scenarios packaged with 
    AGENT_ID = "Agent-007"
    agent_spec = AgentSpec(
        interface=AgentInterface.from_type(AgentType.Tracker)
-       policy_params={"target_speed": 5},
-       policy_builder=ExamplePolicy
+       agent_params={"target_speed": 5},
+       agent_builder=ExampleAgent
    )
 
    env = gym.make(
@@ -165,4 +165,4 @@ We can run this agent with "scenarios/loop", one of the scenarios packaged with 
 
 The scenario is deterministic in totality. This means that assuming all agents take the exact same 
 actions the entire scenario will play back deterministically but each episode will have different
-behaviour. 
+behaviour.

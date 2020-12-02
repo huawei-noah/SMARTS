@@ -71,6 +71,10 @@ class EgoVehicleObservation(NamedTuple):
     mission: Mission
     linear_velocity: np.ndarray
     angular_velocity: np.ndarray
+    linear_acceleration: np.ndarray
+    angular_acceleration: np.ndarray
+    linear_jerk: np.ndarray
+    angular_jerk: np.ndarray
 
 
 class RoadWaypoints(NamedTuple):
@@ -186,6 +190,31 @@ class Sensors:
         ego_lane_index = closest_waypoint.lane_index
         ego_edge_id = sim.road_network.edge_by_lane_id(ego_lane_id).getID()
         ego_vehicle_state = vehicle.state
+
+        acceleration_params = {
+            "linear_acceleration": None,
+            "angular_acceleration": None,
+            "linear_jerk": None,
+            "angular_jerk": None,
+        }
+        if vehicle.subscribed_to_accelerometer_sensor:
+            acceleration_values = vehicle.accelerometer_sensor(
+                ego_vehicle_state.linear_velocity, ego_vehicle_state.angular_velocity
+            )
+            acceleration_params.update(
+                dict(
+                    zip(
+                        [
+                            "linear_acceleration",
+                            "angular_acceleration",
+                            "linear_jerk",
+                            "angular_jerk",
+                        ],
+                        acceleration_values,
+                    )
+                )
+            )
+
         ego_vehicle_observation = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
             position=ego_vehicle_state.pose.position,
@@ -200,7 +229,9 @@ class Sensors:
             mission=sensor_state.mission_planner.mission,
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,
+            **acceleration_params,
         )
+
         road_waypoints = (
             vehicle.road_waypoints_sensor()
             if vehicle.subscribed_to_road_waypoints_sensor
@@ -422,7 +453,7 @@ class Sensors:
         return closest_edges[on_route_edge_index]
 
     @staticmethod
-    @lru_cache(maxsize=100)
+    @lru_cache(maxsize=128)
     def _oncoming_traffic_edge(instance_id, edge):
         from_node = edge.getFromNode()
         to_node = edge.getToNode()
@@ -454,6 +485,11 @@ class Sensors:
                 return True
 
         return False
+
+    @classmethod
+    def clean_up(cls):
+        cls._oncoming_traffic_edge.cache_clear()
+        cls._vehicle_off_route_info.cache_clear()
 
 
 class Sensor:
@@ -826,7 +862,11 @@ class TripMeterSensor(Sensor):
             or wp_edge in self._mission_planner.route.edges
         )
 
-        if most_recent_wp.id != new_wp.id and should_count_wp:
+        threshold_for_counting_wp = 0.5  # meters from last tracked waypoint
+        if (
+            np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
+            and should_count_wp
+        ):
             self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
                 most_recent_wp, new_wp
             )
@@ -927,6 +967,34 @@ class RoadWaypointsSensor(Sensor):
                 point=wp_start, lane_id=lane.getID(), lookahead=wps_to_lookahead,
             )
             return paths
+
+    def teardown(self):
+        pass
+
+
+class AccelerometerSensor(Sensor):
+    def __init__(self, vehicle, sim):
+        self.linear_accelerations = deque(maxlen=3)
+        self.angular_accelerations = deque(maxlen=3)
+
+    def __call__(self, linear_velocity, angular_velocity):
+        if linear_velocity is not None:
+            self.linear_accelerations.append(linear_velocity)
+        if angular_velocity is not None:
+            self.angular_accelerations.append(angular_velocity)
+
+        if len(self.linear_accelerations) < 3 or len(self.angular_accelerations) < 3:
+            return (0.0, 0.0, 0.0, 0.0)
+
+        linear_acc = self.linear_accelerations[0] - self.linear_accelerations[1]
+        last_linear_acc = self.linear_accelerations[1] - self.linear_accelerations[2]
+        angular_acc = self.angular_accelerations[0] - self.angular_accelerations[1]
+        last_angular_acc = self.angular_accelerations[1] - self.angular_accelerations[2]
+
+        linear_jerk = linear_acc - last_linear_acc
+        angular_jerk = angular_acc - last_angular_acc
+
+        return (linear_acc, angular_acc, linear_jerk, angular_jerk)
 
     def teardown(self):
         pass

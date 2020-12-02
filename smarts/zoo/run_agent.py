@@ -36,28 +36,36 @@ The protocal is as follows:
 7. run_agent.py listens for observations and responds with actions
 """
 
-
-import logging
 import argparse
-import time
+import importlib
+import logging
 import os
-
+import time
 from multiprocessing.connection import Listener
+
 import cloudpickle
 
 # front-load some expensive imports as to not block the simulation
 
-import pybullet
-import smarts.core.utils.sumo
-import smarts.core.sumo_road_network
-import numpy
-import sklearn
-import shapely
-import scipy
-import trimesh
-import panda3d
-import gym
-import ray
+modules = [
+    "pybullet",
+    "smarts.core.utils.sumo",
+    "smarts.core.sumo_road_network",
+    "numpy",
+    "sklearn",
+    "shapely",
+    "scipy",
+    "trimesh",
+    "panda3d",
+    "gym",
+    "ray",
+]
+
+for mod in modules:
+    try:
+        importlib.import_module(mod)
+    except ImportError:
+        pass
 
 # end front-loaded imports
 
@@ -66,13 +74,10 @@ log = logging.getLogger(f"PID({os.getpid()}) run_agent.py")
 
 parser = argparse.ArgumentParser("Spawn an agent in it's own independent process")
 parser.add_argument("socket_file", help="AF_UNIX domain socket file to be used for IPC")
-parser.add_argument("--with_adaptation", action="store_true")
 args = parser.parse_args()
 
 
-log.debug(
-    f"run_agent.py: with_adaptation={args.with_adaptation} socket_file={args.socket_file}"
-)
+log.debug(f"run_agent.py: socket_file={args.socket_file}")
 
 with Listener(args.socket_file, family="AF_UNIX") as listener:
     with listener.accept() as conn:
@@ -102,11 +107,10 @@ with Listener(args.socket_file, family="AF_UNIX") as listener:
                 msg = conn.recv()
                 if msg["type"] == "obs":
                     obs = msg["payload"]
-                    if args.with_adaptation:
-                        action = agent.act_with_adaptation(obs)
-                    else:
-                        action = agent.act(obs)
-                    conn.send(action)
+                    adapted_obs = agent_spec.observation_adapter(obs)
+                    action = agent.act(adapted_obs)
+                    adapted_action = agent_spec.action_adapter(action)
+                    conn.send(adapted_action)
                 else:
                     log.error(f"run_agent.py dropping malformed msg: {repr(msg)}")
 
