@@ -4,7 +4,7 @@ from pathlib import Path
 from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
 
-NUM_TRAFFIC_FLOWS = 10
+NUM_TRAFFIC_FLOWS = 1000
 
 traffic = t.Traffic(
     flows=[
@@ -44,7 +44,14 @@ travelling_bubbles = [
 
 static_bubbles = [
     t.Bubble(zone=t.MapZone((id_, 0, 10), 200, 1), margin=5, actor=laner_actor,)
-    for id_ in ["-216568114#0", "327452915#0", "22241344", "21674620#2", "-263506114#0"]
+    for id_ in [
+        "21675239",
+        "126742590#1",
+        "-77720372",
+        "-263506114#6",
+        "-33002812#1",
+        "14632489#1",
+    ]
 ]
 
 gen_scenario(
