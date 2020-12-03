@@ -94,7 +94,7 @@ if __name__ == "__main__":
         "--authkey",
         type=bytes,
         help="Authentication key for connection to run agent",
-        default=b'secret',
+        default=b"secret",
     )
     args = parser.parse_args()
     listen(args.port, args.authkey)

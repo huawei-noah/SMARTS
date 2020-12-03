@@ -88,7 +88,7 @@ class SMARTS(ShowBase):
         timestep_sec=0.1,
         reset_agents_only=False,
         zoo_workers=None,
-        authkey=b'secret',
+        authkey=b"secret",
     ):
         try:
             super().__init__(self, windowType="offscreen")

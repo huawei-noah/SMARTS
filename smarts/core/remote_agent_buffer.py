@@ -32,7 +32,7 @@ from .utils.networking import find_free_port
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_worker_addrs=None, authkey=b'secret', buffer_size=3):
+    def __init__(self, zoo_worker_addrs=None, authkey=b"secret", buffer_size=3):
         """
         Args:
             zoo_worker_addrs:
@@ -89,7 +89,9 @@ class RemoteAgentBuffer:
 
     def _spawn_local_zoo_worker(self, retries=3):
         local_port = find_free_port()
-        self._local_zoo_worker = Process(target=zoo_worker.listen, args=(local_port, self._authkey))
+        self._local_zoo_worker = Process(
+            target=zoo_worker.listen, args=(local_port, self._authkey)
+        )
         self._local_zoo_worker.start()
 
         local_address = ("0.0.0.0", local_port)
@@ -142,7 +144,9 @@ class RemoteAgentBuffer:
                 try:
                     # Try to connect to a random zoo worker.
                     zoo_worker_addr = random.choice(self._zoo_worker_addrs)
-                    conn = Client(zoo_worker_addr, family="AF_INET", authkey=self._authkey)
+                    conn = Client(
+                        zoo_worker_addr, family="AF_INET", authkey=self._authkey
+                    )
 
                     # Now that we've got a connection to this zoo worker,
                     # request an allocation.

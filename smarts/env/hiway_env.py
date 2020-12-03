@@ -83,7 +83,7 @@ class HiWayEnv(gym.Env):
         envision_endpoint=None,
         envision_record_data_replay_path=None,
         zoo_workers=None,
-        authkey=b'secret',
+        authkey=b"secret",
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts.core.seed(seed)
