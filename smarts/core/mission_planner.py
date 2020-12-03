@@ -229,7 +229,7 @@ class MissionPlanner:
         target_offset = self._road_network.offset_into_lane(
             target_lane, target_position
         )
-        if offset < target_offset:
+        if offset < target_offset + 5:
             # Need to catch up with the target vehicle first
             return []
 
