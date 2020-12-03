@@ -89,12 +89,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "Listens for requests to allocate agents and executes them on-demand"
     )
-    parser.add_argument("--port", help="Port to listen on", default=7432, type=int)
+    parser.add_argument(
+        "--port", type=int, default=7432, help="Port to listen on",
+    )
     parser.add_argument(
         "--authkey",
-        type=bytes,
+        type=str,
+        default="secret",
         help="Authentication key for connection to run agent",
-        default=b"secret",
     )
     args = parser.parse_args()
+    args.authkey = str.encode(args.authkey)
     listen(args.port, args.authkey)

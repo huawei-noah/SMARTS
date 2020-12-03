@@ -78,11 +78,12 @@ if __name__ == "__main__":
     parser = default_argument_parser("single-agent-example")
     parser.add_argument(
         "--authkey",
+        type=str,
+        default="secret",
         help="Authentication key for connection to run agent",
-        default=b"secret",
-        type=bytes,
     )
     args = parser.parse_args()
+    args.authkey = str.encode(args.authkey)
 
     main(
         scenarios=args.scenarios,
