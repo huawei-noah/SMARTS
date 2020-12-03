@@ -480,7 +480,7 @@ class MapZone(Zone):
                 return lane_shape
 
             # For simplicty, we only deal w/ the == 1 or 2 case
-            if len(lane_shape) == 0 or len(lane_shape) > 2:
+            if len(lane_shape) not in {1, 2}:
                 return None
 
             if len(lane_shape) == 1:
