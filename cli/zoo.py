@@ -67,10 +67,11 @@ You can now add it to the policy zoo if you want to make it available to scenari
 
 @zoo_cli.command(name="worker", help="Start the agent worker")
 @click.argument("port", default=7432, type=int)
-def worker(port):
+@click.argument("authkey", default="secret", type=str)
+def worker(port, authkey):
     from smarts.zoo.worker import listen
 
-    listen(port)
+    listen(port, str.encode(authkey))
 
 
 zoo_cli.add_command(build_policy)
