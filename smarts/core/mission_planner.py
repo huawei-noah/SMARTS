@@ -48,6 +48,7 @@ class MissionPlanner:
         self._route = None
         self._road_network = road_network
         self._did_plan = False
+        self._trigger_task = False
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -145,7 +146,7 @@ class MissionPlanner:
         waypoints_with_task = None
         if self.mission.task is not None:
             if isinstance(self.mission.task, UTurn):
-                waypoints_with_task = self.uturn_waypoints(pose)
+                waypoints_with_task = self.uturn_waypoints(sim, pose, vehicle)
             elif isinstance(self.mission.task, CutIn):
                 waypoints_with_task = self.cut_in_waypoints(sim, pose, vehicle)
 
@@ -210,7 +211,7 @@ class MissionPlanner:
         return edge_ids
 
     def cut_in_waypoints(self, sim, pose: Pose, vehicle):
-        radius = 30
+        radius = self._mission.task.trigger_radius
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
             vehicle=vehicle, radius=radius
         )
@@ -263,9 +264,17 @@ class MissionPlanner:
             trajectory.append(wp)
         return [trajectory]
 
-    def uturn_waypoints(self, pose: Pose):
+    def uturn_waypoints(self, sim, pose: Pose, vehicle):
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
+        radius = self._mission.task.trigger_radius
+        neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
+            vehicle=vehicle, radius=radius
+        )
+
+        if not neighborhood_vehicles and not self._trigger_task:
+            return []
+
         start_lane = self._road_network.nearest_lane(
             self._mission.start.position,
             include_junctions=False,
@@ -276,6 +285,8 @@ class MissionPlanner:
         current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
         if not start_edge.oncoming_edges:
             return []
+
+        self._trigger_task = True
 
         oncoming_edge = start_edge.oncoming_edges[0]
         oncoming_lanes = oncoming_edge.getLanes()
@@ -299,7 +310,7 @@ class MissionPlanner:
             # agent at the start edge
             p0 = pose.position[:2]
             distance = (
-                10 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
+                15 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
             )
             offset = radians_to_vec(heading) * distance
             p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])

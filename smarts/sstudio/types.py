@@ -349,6 +349,9 @@ class TrapEntryTactic(EntryTactic):
 
 @dataclass(frozen=True)
 class UTurn:
+    trigger_radius: int = 100
+    """This task will be triggered if any vehicles within this radius"""
+
     target_lane_index: int = 0
 
     @property
@@ -358,6 +361,9 @@ class UTurn:
 
 @dataclass(frozen=True)
 class CutIn:
+    trigger_radius: int = 30
+    """This task will be triggered if any vehicles within this radius"""
+
     @property
     def name(self):
         return "cut_in"
@@ -377,9 +383,12 @@ class Mission:
     """The earliest simulation time that this mission starts but may start later in couple with
     `entry_tactic`.
     """
+
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
+
     task: Tuple[UTurn, CutIn] = None
+    """A task for the actor to accomplish."""
 
 
 @dataclass(frozen=True)

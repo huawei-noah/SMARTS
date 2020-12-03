@@ -405,7 +405,8 @@ class OpEnAgent(Agent):
 
     def act(self, obs):
         ego = obs.ego_vehicle_state
-        wps = obs.waypoint_paths[len(obs.waypoint_paths) // 2]
+        lane_index = min(len(obs.waypoint_paths) - 1, ego.lane_index)
+        wps = obs.waypoint_paths[lane_index]
         # wps = min(
         #     obs.waypoint_paths,
         #     key=lambda wps: abs(wps[0].signed_lateral_error(ego.position)),
