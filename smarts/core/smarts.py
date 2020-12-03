@@ -88,7 +88,7 @@ class SMARTS(ShowBase):
         timestep_sec=0.1,
         reset_agents_only=False,
         zoo_workers=None,
-        authkey=b"secret",
+        auth_key=b"secret",
     ):
         try:
             super().__init__(self, windowType="offscreen")
@@ -147,7 +147,7 @@ class SMARTS(ShowBase):
         }
 
         # Set up indices
-        self._agent_manager = AgentManager(agent_interfaces, zoo_workers, authkey)
+        self._agent_manager = AgentManager(agent_interfaces, zoo_workers, auth_key)
         self._vehicle_index = VehicleIndex()
 
         # TODO: Should not be stored in SMARTS

@@ -32,7 +32,7 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, address, socket_family, authkey, connection_retries=100):
+    def __init__(self, address, socket_family, auth_key, connection_retries=100):
         self._log = logging.getLogger(self.__class__.__name__)
 
         self._conn = None
@@ -41,7 +41,7 @@ class RemoteAgent:
         for i in range(connection_retries):
             # Waiting on agent to open it's socket.
             try:
-                self._conn = Client(address, socket_family, authkey)
+                self._conn = Client(address, socket_family, auth_key)
                 break
             except Exception:
                 self._log.debug(

@@ -105,7 +105,7 @@ elif args.port is not None:
 else:
     raise Exception(f"Unsupported configuration {args}")
 
-with Listener(address, family, authkey=args.authkey) as listener:
+with Listener(address, family, auth_key=args.authkey) as listener:
     with listener.accept() as conn:
         log.debug(f"connection accepted from {listener.last_accepted}")
         agent = None

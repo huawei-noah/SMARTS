@@ -36,7 +36,7 @@ class ChaseViaPointsAgent(Agent):
 
 
 def main(
-    scenarios, headless, num_episodes, seed, authkey=b"secret", max_episode_steps=None
+    scenarios, headless, num_episodes, seed, auth_key=b"secret", max_episode_steps=None
 ):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
@@ -55,7 +55,7 @@ def main(
         sumo_headless=True,
         seed=seed,
         # zoo_workers=[("143.110.210.157", 7432)], # Distribute social agents across these workers
-        authkey=authkey,
+        auth_key=auth_key,
         # envision_record_data_replay_path="./data_replay",
     )
 
@@ -90,5 +90,5 @@ if __name__ == "__main__":
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,
-        authkey=args.authkey,
+        auth_key=args.authkey,
     )

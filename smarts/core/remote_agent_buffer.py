@@ -32,12 +32,12 @@ from .utils.networking import find_free_port
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_worker_addrs=None, authkey=b"secret", buffer_size=3):
+    def __init__(self, zoo_worker_addrs=None, auth_key=b"secret", buffer_size=3):
         """
         Args:
             zoo_worker_addrs:
                 List of (ip, port) tuples of Zoo Workers, used to instantiate remote social agents
-            authkey:
+            auth_key:
                 Authentication key for communication with Zoo Workers
             buffer_size: 
                 Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
@@ -48,7 +48,7 @@ class RemoteAgentBuffer:
 
         self._local_zoo_worker = None
         self._local_zoo_worker_addr = None
-        self._authkey = authkey
+        self._auth_key = auth_key
 
         if zoo_worker_addrs is None:
             # The user has not specified any remote zoo workers.
@@ -90,7 +90,7 @@ class RemoteAgentBuffer:
     def _spawn_local_zoo_worker(self, retries=3):
         local_port = find_free_port()
         self._local_zoo_worker = Process(
-            target=zoo_worker.listen, args=(local_port, self._authkey)
+            target=zoo_worker.listen, args=(local_port, self._auth_key)
         )
         self._local_zoo_worker.start()
 
@@ -99,7 +99,7 @@ class RemoteAgentBuffer:
         # Block until the local zoo server is accepting connections.
         for i in range(retries):
             try:
-                conn = Client(local_address, family="AF_INET", authkey=self._authkey)
+                conn = Client(local_address, family="AF_INET", auth_key=self._auth_key)
                 break
             except Exception as e:
                 self._log.error(
@@ -135,7 +135,7 @@ class RemoteAgentBuffer:
             return None
 
         self._log.debug(f"Connecting to remote agent at {address} with {family}")
-        return RemoteAgent(address, family, self._authkey)
+        return RemoteAgent(address, family, self._auth_key)
 
     def _remote_agent_future(self, retries=5):
         def build_remote_agent():
@@ -145,7 +145,7 @@ class RemoteAgentBuffer:
                     # Try to connect to a random zoo worker.
                     zoo_worker_addr = random.choice(self._zoo_worker_addrs)
                     conn = Client(
-                        zoo_worker_addr, family="AF_INET", authkey=self._authkey
+                        zoo_worker_addr, family="AF_INET", auth_key=self._auth_key
                     )
 
                     # Now that we've got a connection to this zoo worker,
