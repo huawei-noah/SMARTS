@@ -29,7 +29,7 @@ from .sumo_road_network import SumoRoadNetwork
 from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
 from .waypoints import Waypoint, Waypoints
 from .route import ShortestRoute, EmptyRoute
-from .coordinates import Pose
+from .coordinates import Pose, Heading
 from .route import ShortestRoute, EmptyRoute
 from .scenario import EndlessGoal, LapMission, Mission, Start
 from .sumo_road_network import SumoRoadNetwork
@@ -245,7 +245,7 @@ class MissionPlanner:
         prev = position[:2]
         for i in range(len(p_x)):
             pos = np.array([p_x[i], p_y[i]])
-            heading = vec_to_radians(pos - prev)
+            heading = Heading(vec_to_radians(pos - prev))
             prev = pos
             lane = self._road_network.nearest_lane(pos)
             lane_id = lane.getID()
@@ -333,7 +333,7 @@ class MissionPlanner:
         trajectory = []
         for i in range(len(p_x)):
             pos = np.array([p_x[i], p_y[i]])
-            heading = vec_to_radians(target.pos - pos)
+            heading = Heading(vec_to_radians(target.pos - pos))
             lane = self._road_network.nearest_lane(pos)
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
