@@ -32,7 +32,7 @@ from .utils.networking import find_free_port
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_worker_addrs=None, authkey=None, buffer_size=3):
+    def __init__(self, zoo_worker_addrs=None, authkey=b'secret', buffer_size=3):
         """
         Args:
             zoo_worker_addrs:
@@ -133,7 +133,7 @@ class RemoteAgentBuffer:
             return None
 
         self._log.debug(f"Connecting to remote agent at {address} with {family}")
-        return RemoteAgent(address, family, self.authkey)
+        return RemoteAgent(address, family, self._authkey)
 
     def _remote_agent_future(self, retries=5):
         def build_remote_agent():

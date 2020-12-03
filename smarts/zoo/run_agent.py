@@ -73,7 +73,9 @@ log = logging.getLogger(f"PID({os.getpid()}) run_agent.py")
 
 parser = argparse.ArgumentParser("Spawn an agent in it's own independent process")
 parser.add_argument(
-    "--socket_file", help="AF_UNIX domain socket file to be used for IPC", default=None
+    "--socket_file", 
+    help="AF_UNIX domain socket file to be used for IPC", 
+    default=None,
 )
 parser.add_argument(
     "--port",
@@ -84,10 +86,10 @@ parser.add_argument(
 parser.add_argument(
     "--authkey",
     help="Authentication key for connection to run agent",
-    default=None,
+    default='secret',
 )
 args = parser.parse_args()
-
+args.authkey = str.encode(args.authkey)
 
 log.debug(f"run_agent.py: socket_file={args.socket_file} port={args.port}")
 

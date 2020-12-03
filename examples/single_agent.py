@@ -35,7 +35,7 @@ class ChaseViaPointsAgent(Agent):
         )
 
 
-def main(scenarios, headless, num_episodes, seed, authkey=None, max_episode_steps=None):
+def main(scenarios, headless, num_episodes, seed, authkey=b'secret', max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.Laner, max_episode_steps=max_episode_steps
@@ -73,11 +73,12 @@ def main(scenarios, headless, num_episodes, seed, authkey=None, max_episode_step
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("single-agent-example")
+    parser = default_argument_parser("single-agent-example") 
     parser.add_argument(
         "--authkey",
         help="Authentication key for connection to run agent",
-        default=None,
+        default=b'secret',
+        type=bytes,
     )
     args = parser.parse_args()
 

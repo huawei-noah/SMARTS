@@ -92,8 +92,9 @@ if __name__ == "__main__":
     parser.add_argument("--port", help="Port to listen on", default=7432, type=int)
     parser.add_argument(
         "--authkey",
+        type=bytes,
         help="Authentication key for connection to run agent",
-        default=None,
+        default=b'secret',
     )
     args = parser.parse_args()
     listen(args.port, args.authkey)
