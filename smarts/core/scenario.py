@@ -202,7 +202,9 @@ class Scenario:
 
     @staticmethod
     def scenario_variations(
-        scenarios_or_scenarios_dirs: Sequence[str], agents_to_be_briefed: Sequence[str],
+        scenarios_or_scenarios_dirs: Sequence[str],
+        agents_to_be_briefed: Sequence[str],
+        ordered_scenarios: bool = False,
     ):
         """Generate a cycle of the configurations of scenarios.
 
@@ -220,7 +222,9 @@ class Scenario:
                 scenario_roots.append(root)
             else:
                 scenario_roots.extend(Scenario.discover_scenarios(root))
-        np.random.shuffle(scenario_roots)
+
+        if not ordered_scenarios:
+            np.random.shuffle(scenario_roots)
 
         return Scenario.variations_for_all_scenario_roots(
             cycle(scenario_roots), agents_to_be_briefed
