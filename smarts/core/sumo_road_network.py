@@ -90,7 +90,7 @@ class SumoRoadNetwork:
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
         G = sumolib.net.readNet(net_file, withInternal=True)
-        return SumoRoadNetwork(G)
+        return cls(G)
 
     @property
     def graph(self):

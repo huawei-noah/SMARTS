@@ -17,8 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import collections.abc as collections_abc
+import logging
 import random
+import collections.abc as collections_abc
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
@@ -469,50 +470,85 @@ class MapZone(Zone):
     """The number of lanes from right to left that this zone covers."""
 
     def to_geometry(self, road_network: SumoRoadNetwork) -> Polygon:
-        def resolve_offset(offset, geometry_length, lane_length, buffer_from_ends):
-            if offset == "base" or offset == 0:
-                return buffer_from_ends
+        def resolve_offset(offset, geometry_length, lane_length):
+            if offset == "base":
+                return 0
             # push off of end of lane
             elif offset == "max":
-                return lane_length - geometry_length - buffer_from_ends
+                return lane_length - geometry_length
             elif offset == "random":
-                return random.uniform(
-                    0, lane_length - geometry_length - buffer_from_ends
-                )
+                return random.uniform(0, lane_length - geometry_length)
             else:
                 return float(offset)
+
+        def pick_remaining_shape_after_split(geometry_collection, length, lane):
+            lane_shape = geometry_collection
+            if not isinstance(lane_shape, GeometryCollection):
+                return lane_shape
+
+            # For simplicty, we only deal w/ the == 1 or 2 case
+            if len(lane_shape) not in {1, 2}:
+                return None
+
+            if len(lane_shape) == 1:
+                return lane_shape[0]
+
+            expected_bbox_area = lane.getWidth() * length
+            keep_index = 0
+            if (lane_shape[0].minimum_rotated_rectangle.area - expected_bbox_area) < (
+                lane_shape[1].minimum_rotated_rectangle.area - expected_bbox_area
+            ):
+                # 0 is the discard piece, keep the other
+                keep_index = 1
+            lane_shape = lane_shape[keep_index]
+
+            return lane_shape
 
         lane_shapes = []
         edge_id, lane_idx, offset = self.start
         edge = road_network.edge_by_id(edge_id)
+        buffer_from_ends = 1e-6
         for lane_idx in range(lane_idx, lane_idx + self.n_lanes):
             lane = edge.getLanes()[lane_idx]
             lane_length = lane.getLength()
-            geom_length = max(self.length - 1e-6, 1e-6)
+            geom_length = self.length
 
-            assert lane_length > geom_length  # Geom is too long for lane
+            if geom_length > lane_length:
+                logging.debug(
+                    f"Geometry is too long={geom_length} with offset={offset} for "
+                    f"lane={lane.getID()}, using length={lane_length} instead"
+                )
+                geom_length = lane_length
+
             assert geom_length > 0  # Geom length is negative
 
-            lane_shape = SumoRoadNetwork.buffered_lane_or_edge(
+            lane_shape = SumoRoadNetwork._buffered_lane_or_edge(
                 lane, width=lane.getWidth() + 0.3
             )
 
-            min_cut = resolve_offset(offset, geom_length, lane_length, 1e-6)
+            lane_offset = resolve_offset(offset, geom_length, lane_length)
+            lane_offset += buffer_from_ends
+            geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
+            lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
+
+            min_cut = min(lane_offset, lane_length)
             # Second cut takes into account shortening of geometry by `min_cut`.
-            max_cut = min(min_cut + geom_length, lane_length - min_cut - 1e-6)
+            max_cut = min(min_cut + geom_length, lane_length - min_cut)
 
             lane_shape = road_network.split_lane_shape_at_offset(
-                Polygon(lane_shape), lane, min_cut
+                lane_shape, lane, min_cut
             )
-
-            if isinstance(lane_shape, GeometryCollection):
-                if len(lane_shape) < 2:
-                    break
-                lane_shape = lane_shape[1]
+            lane_shape = pick_remaining_shape_after_split(lane_shape, min_cut, lane)
+            if lane_shape is None:
+                continue
 
             lane_shape = road_network.split_lane_shape_at_offset(
                 lane_shape, lane, max_cut,
-            )[0]
+            )
+            lane_shape = pick_remaining_shape_after_split(lane_shape, max_cut, lane)
+            if lane_shape is None:
+                continue
+
             lane_shapes.append(lane_shape)
 
         geom = unary_union(MultiPolygon(lane_shapes))
