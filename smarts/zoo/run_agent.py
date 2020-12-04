@@ -82,13 +82,12 @@ parser.add_argument(
     help="AF_INET port to bind to for listening for remote connections IPC",
 )
 parser.add_argument(
-    "--authkey",
+    "--auth_key",
     type=str,
-    default="secret",
     help="Authentication key for connection to run agent",
 )
 args = parser.parse_args()
-args.authkey = str.encode(args.authkey)
+args.auth_key = str.encode(args.auth_key)
 
 log.debug(f"run_agent.py: socket_file={args.socket_file} port={args.port}")
 
@@ -105,7 +104,7 @@ elif args.port is not None:
 else:
     raise Exception(f"Unsupported configuration {args}")
 
-with Listener(address, family, auth_key=args.authkey) as listener:
+with Listener(address, family, authkey=args.auth_key) as listener:
     with listener.accept() as conn:
         log.debug(f"connection accepted from {listener.last_accepted}")
         agent = None

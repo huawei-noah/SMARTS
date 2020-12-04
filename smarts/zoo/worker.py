@@ -19,7 +19,7 @@ def spawn_networked_agent(port, auth_key):
         str((pathlib.Path(__file__).parent / "run_agent.py").absolute().resolve()),
         "--port",
         str(port),
-        "--authkey",
+        "--auth_key",
         auth_key,
     ]
 
@@ -33,7 +33,7 @@ def spawn_local_agent(socket_file, auth_key):
         str((pathlib.Path(__file__).parent / "run_agent.py").absolute().resolve()),
         "--socket_file",
         socket_file,
-        "--authkey",
+        "--auth_key",
         auth_key,
     ]
 
@@ -60,7 +60,7 @@ def listen(port, auth_key):
     log.debug(f"Starting Zoo Worker on port {port}")
     agent_procs = []
     try:
-        with Listener(("0.0.0.0", port), "AF_INET", auth_key=auth_key) as listener:
+        with Listener(("0.0.0.0", port), "AF_INET", authkey=auth_key) as listener:
             while True:
                 with listener.accept() as conn:
                     log.debug(f"Accepted connection {conn}")
@@ -93,11 +93,10 @@ if __name__ == "__main__":
         "--port", type=int, default=7432, help="Port to listen on",
     )
     parser.add_argument(
-        "--authkey",
+        "--auth_key",
         type=str,
-        default="secret",
         help="Authentication key for connection to run agent",
     )
     args = parser.parse_args()
-    args.authkey = str.encode(args.authkey)
-    listen(args.port, args.authkey)
+    args.auth_key = str.encode(args.auth_key)
+    listen(args.port, args.auth_key)

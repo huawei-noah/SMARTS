@@ -32,7 +32,7 @@ from .utils.networking import find_free_port
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_worker_addrs=None, auth_key=b"secret", buffer_size=3):
+    def __init__(self, zoo_worker_addrs=None, auth_key=b"None", buffer_size=3):
         """
         Args:
             zoo_worker_addrs:
@@ -99,7 +99,7 @@ class RemoteAgentBuffer:
         # Block until the local zoo server is accepting connections.
         for i in range(retries):
             try:
-                conn = Client(local_address, family="AF_INET", auth_key=self._auth_key)
+                conn = Client(local_address, family="AF_INET", authkey=self._auth_key)
                 break
             except Exception as e:
                 self._log.error(
@@ -145,7 +145,7 @@ class RemoteAgentBuffer:
                     # Try to connect to a random zoo worker.
                     zoo_worker_addr = random.choice(self._zoo_worker_addrs)
                     conn = Client(
-                        zoo_worker_addr, family="AF_INET", auth_key=self._auth_key
+                        zoo_worker_addr, family="AF_INET", authkey=self._auth_key
                     )
 
                     # Now that we've got a connection to this zoo worker,

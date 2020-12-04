@@ -36,7 +36,7 @@ class ChaseViaPointsAgent(Agent):
 
 
 def main(
-    scenarios, headless, num_episodes, seed, auth_key=b"secret", max_episode_steps=None
+    scenarios, headless, num_episodes, seed, auth_key, max_episode_steps=None
 ):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
@@ -77,18 +77,18 @@ def main(
 if __name__ == "__main__":
     parser = default_argument_parser("single-agent-example")
     parser.add_argument(
-        "--authkey",
+        "--auth_key",
         type=str,
-        default="secret",
+        default=None,
         help="Authentication key for connection to run agent",
     )
     args = parser.parse_args()
-    args.authkey = str.encode(args.authkey)
+    args.auth_key = str.encode(str(args.auth_key))
 
     main(
         scenarios=args.scenarios,
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,
-        auth_key=args.authkey,
+        auth_key=args.auth_key,
     )
