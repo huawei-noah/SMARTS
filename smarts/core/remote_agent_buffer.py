@@ -38,7 +38,7 @@ class RemoteAgentBuffer:
             zoo_worker_addrs:
                 List of (ip, port) tuples of Zoo Workers, used to instantiate remote social agents
             auth_key:
-                Authentication key for communication with Zoo Workers
+                Authentication key of type byte string for communication with Zoo Workers
             buffer_size: 
                 Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
         """

@@ -61,7 +61,7 @@ class HiWayEnv(gym.Env):
         zoo_workers:
             List of (ip, port) tuples of Zoo Workers, used to instantiate remote social agents
         auth_key:
-            Authentication key for communication with Zoo Workers
+            Authentication key of type byte string for communication with Zoo Workers
     """
 
     metadata = {"render.modes": ["human"]}
