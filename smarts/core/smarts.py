@@ -386,9 +386,10 @@ class SMARTS(ShowBase):
         # well (https://git.io/Jvf0M), but PyBullet does not expose it.
         client.setPhysicsEngineParameter(
             fixedTimeStep=self._timestep_sec,
-            numSubSteps=25,
+            numSubSteps=int(self._timestep_sec * 240),
             numSolverIterations=10,
             solverResidualThreshold=0.001,
+            # warmStartingFactor=0.99
         )
 
         client.setGravity(0, 0, -9.8)
