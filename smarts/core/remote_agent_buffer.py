@@ -48,6 +48,10 @@ class RemoteAgentBuffer:
 
         self._local_zoo_worker = None
         self._local_zoo_worker_addr = None
+
+        assert isinstance(
+            auth_key, bytes
+        ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'bytes'>."
         self._auth_key = auth_key
 
         if zoo_worker_addrs is None:
