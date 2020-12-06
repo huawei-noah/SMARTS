@@ -30,6 +30,8 @@ export default class Client {
     this._delay = delay;
     this._maxRetries = retries;
     this._glb_cache = {};
+
+    this._socket = null;
   }
 
   async fetchSimulationIds() {
@@ -37,12 +39,21 @@ export default class Client {
     url.pathname = "simulations";
     let response = await fetch(url);
     if (!response.ok) {
-      console.error("Unable to fetch simulation IDs.");
+      console.error("Unable to fetch simulation IDs");
       return [];
     } else {
       let data = await response.json();
       return data.simulations;
     }
+  }
+
+  seek(seconds) {
+    if (!this._socket && this._socket.readyState == WebSocket.OPEN) {
+      console.warn("Unable to seek because no connected socket exists");
+      return;
+    }
+
+    this._socket.send(JSON.stringify({ seek: seconds }));
   }
 
   async _obtainStream(simulationId, stateQueue, remainingRetries) {
@@ -63,7 +74,8 @@ export default class Client {
         };
 
         socket.onmessage = (event) => {
-          let data = JSON.parse(event.data, (_, value) =>
+          let data = JSON.parse(event.data);
+          let state = JSON.parse(data.state, (_, value) =>
             value === "NaN"
               ? Nan
               : value === "Infinity"
@@ -72,7 +84,11 @@ export default class Client {
               ? -Infinity
               : value
           );
-          stateQueue.push(data);
+          stateQueue.push({
+            state: state,
+            current_elapsed_time: data.current_elapsed_time,
+            total_elapsed_time: data.total_elapsed_time,
+          });
         };
 
         socket.onerror = (error) => {
@@ -101,19 +117,24 @@ export default class Client {
   }
 
   async *worldstate(simulationId) {
-    let socket = null;
     let stateQueue = [];
 
     while (true) {
       // If we dropped the connection or never connected in the first place
-      let isConnected = socket && socket.readyState === WebSocket.OPEN;
+      let isConnected =
+        this._socket && this._socket.readyState == WebSocket.OPEN;
 
       if (isConnected) {
         while (stateQueue.length > 0) {
-          yield stateQueue.pop();
+          let item = stateQueue.pop();
+          let elapsed_times = [
+            item.current_elapsed_time,
+            item.total_elapsed_time,
+          ];
+          yield [item.state, elapsed_times];
         }
       } else {
-        socket = await this._obtainStream(
+        this._socket = await this._obtainStream(
           simulationId,
           stateQueue,
           this._maxRetries

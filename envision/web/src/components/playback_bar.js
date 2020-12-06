@@ -17,23 +17,33 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-import regeneratorRuntime from "regenerator-runtime";
-import React from "react";
-import ReactDOM from "react-dom";
-import { HashRouter as Router } from "react-router-dom";
-import Client from "./client.js";
-import App from "./components/app.js";
-import "antd/dist/antd.dark.css";
+import React, { useState } from "react";
+import { Slider } from "antd";
 
-let client = new Client({
-  endpoint: "http://localhost:8081",
-  delay: 2000,
-  retries: 10,
-});
-
-ReactDOM.render(
-  <Router>
-    <App client={client} />
-  </Router>,
-  document.getElementById("root")
-);
+export default function PlaybackBar({
+  onSeek,
+  currentTime = 0,
+  totalTime = 1,
+}) {
+  const [_, setCurrentTime] = useState(currentTime);
+  return (
+    <div
+      style={{
+        padding: "10px 20px",
+        background: "#1F1F1F",
+      }}
+    >
+      <Slider
+        value={currentTime}
+        max={totalTime}
+        step={0.0001}
+        onChange={(seconds) => {
+          setCurrentTime(seconds);
+          onSeek(seconds);
+        }}
+        tipFormatter={(tip) => `${tip.toFixed(2)}s`}
+        tooltipVisible
+      />
+    </div>
+  );
+}
