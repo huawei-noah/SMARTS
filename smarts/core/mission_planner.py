@@ -48,7 +48,7 @@ class MissionPlanner:
         self._route = None
         self._road_network = road_network
         self._did_plan = False
-        self._trigger_task = False
+        self._task_is_triggered = False
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -272,7 +272,7 @@ class MissionPlanner:
             vehicle=vehicle, radius=radius
         )
 
-        if not neighborhood_vehicles and not self._trigger_task:
+        if not neighborhood_vehicles and not self._task_is_triggered:
             return []
 
         start_lane = self._road_network.nearest_lane(
@@ -286,7 +286,7 @@ class MissionPlanner:
         if not start_edge.oncoming_edges:
             return []
 
-        self._trigger_task = True
+        self._task_is_triggered = True
 
         oncoming_edge = start_edge.oncoming_edges[0]
         oncoming_lanes = oncoming_edge.getLanes()
