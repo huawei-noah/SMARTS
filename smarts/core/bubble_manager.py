@@ -17,13 +17,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from functools import lru_cache
 import logging
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
-from functools import lru_cache
-from typing import Dict, Sequence
+from typing import Dict, FrozenSet, Sequence, Set
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import Point, Polygon, CAP_STYLE, JOIN_STYLE
@@ -40,6 +40,7 @@ from smarts.sstudio.types import BoidAgentActor
 from smarts.sstudio.types import Bubble as SSBubble
 from smarts.sstudio.types import SocialAgentActor
 from smarts.zoo.registry import make as make_social_agent
+from smarts.core.utils.logging import timeit
 
 
 class BubbleTransition(Enum):
@@ -118,7 +119,11 @@ class Bubble:
         return self._cached_airlock_geometry
 
     def is_admissible(
-        self, vehicle_id: str, index: VehicleIndex, prev_cursors, running_cursors
+        self,
+        vehicle_id: str,
+        index: VehicleIndex,
+        vehicle_ids_in_bubbles: Dict["Bubble", Set[str]],
+        running_cursors: Set["Cursor"],
     ):
         """The vehicle_id we are querying for and the `other_vehicle_ids` _presently in
         this `sstudio.types.Bubble`_.
@@ -131,12 +136,14 @@ class Bubble:
             # Already hijacked (according to VehicleIndex) + to be hijacked (running cursors)
             current_hijacked_or_shadowed_vehicle_ids = {
                 v_id
-                for v_id in BubbleManager.vehicle_ids_in_bubble(self, prev_cursors)
+                for v_id in vehicle_ids_in_bubbles[self]
                 if index.vehicle_is_hijacked(v_id) or index.vehicle_is_shadowed(v_id)
             }
-            running_hijacked_or_shadowed_vehicle_ids = BubbleManager.vehicle_ids_in_bubble(
-                self, running_cursors
+            per_bubble_veh_ids = BubbleManager.vehicle_ids_per_bubble(
+                frozenset(running_cursors)
             )
+            running_hijacked_or_shadowed_vehicle_ids = per_bubble_veh_ids[self]
+
             all_hijacked_or_shadowed_vehicle_ids = (
                 current_hijacked_or_shadowed_vehicle_ids
                 | running_hijacked_or_shadowed_vehicle_ids
@@ -198,44 +205,42 @@ class Bubble:
 )"""
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Cursor:
     """Tracks a vehicle through an airlock or a bubble."""
 
     # We would always want to have the vehicle go through the airlock zone. This may
     # not be the case if we spawn a vehicle in a bubble, but that wouldn't be ideal.
-    vehicle: Vehicle
+    vehicle_id: str
     state: BubbleState = None
     transition: BubbleTransition = None
     bubble: Bubble = None
-    tracking_id: str = field(init=False)
-
-    def __post_init__(self):
-        self.tracking_id = self.vehicle.id
 
     @classmethod
     def from_pos(
-        cls, prev_pos, pos, vehicle, bubble, index, prev_cursors, running_cursors
+        cls,
+        pos,
+        vehicle,
+        bubble,
+        index,
+        prev_cursors: Set["Cursor"],
+        running_cursors: Set["Cursor"],
     ):
-        @lru_cache(maxsize=2)
-        def in_bubble(pos_):
-            return bubble.in_bubble(pos_)
+        pos = tuple(pos)
+        vehicle_ids_per_bubble = BubbleManager.vehicle_ids_per_bubble(
+            frozenset(prev_cursors)
+        )
 
-        @lru_cache(maxsize=2)
-        def in_airlock(pos_):
-            return bubble.in_airlock(pos_)
-
-        prev_pos, pos = tuple(prev_pos), tuple(pos)
+        in_bubble = bubble.in_bubble(pos)
+        in_airlock = bubble.in_airlock(pos)
 
         is_social = vehicle.id in index.social_vehicle_ids()
         is_shadowed = index.vehicle_is_shadowed(vehicle.id)
         is_hijacked = index.vehicle_is_hijacked(vehicle.id)
         is_admissible = bubble.is_admissible(
-            vehicle.id, index, prev_cursors, running_cursors
+            vehicle.id, index, vehicle_ids_per_bubble, running_cursors
         )
-        was_in_this_bubble = vehicle.id in BubbleManager.vehicle_ids_in_bubble(
-            bubble, prev_cursors
-        )
+        was_in_this_bubble = vehicle.id in vehicle_ids_per_bubble[bubble]
 
         transition = None
         # XXX: When a travelling bubble disappears and an agent is airlocked or
@@ -244,41 +249,39 @@ class Cursor:
         #       go straight to relinquish w/o hijacking first). This may be solved by
         #       time-based airlocking. For robust code we'll want to handle these
         #       scenarios (e.g. hijacking if didn't airlock first)
-        if is_social and not is_shadowed and is_admissible and in_airlock(pos):
+        if is_social and not is_shadowed and is_admissible and in_airlock:
             transition = BubbleTransition.AirlockEntered
-        elif is_shadowed and is_admissible and in_bubble(pos):
+        elif is_shadowed and is_admissible and in_bubble:
             transition = BubbleTransition.Entered
-        elif is_hijacked and in_airlock(pos):
+        elif is_hijacked and in_airlock:
             # XXX: This may get called repeatedly because we don't actually change
             #      any state when this happens.
             transition = BubbleTransition.Exited
         elif (
             was_in_this_bubble
             and (is_shadowed or is_hijacked)
-            and not (in_airlock(pos) or in_bubble(pos))
+            and not (in_airlock or in_bubble)
         ):
             transition = BubbleTransition.AirlockExited
 
         state = None
-        if is_admissible and in_bubble(pos):
+        if is_admissible and in_bubble:
             state = BubbleState.InBubble
-        elif is_admissible and in_airlock(pos):
+        elif is_admissible and in_airlock:
             state = BubbleState.InAirlock
 
-        return cls(vehicle=vehicle, transition=transition, state=state, bubble=bubble)
+        return cls(
+            vehicle_id=vehicle.id, transition=transition, state=state, bubble=bubble
+        )
 
     def __repr__(self):
-        return f"""Cursor(
-  tracking_id={self.tracking_id},
-  state={self.state},
-  transition={self.transition},
-)"""
+        return f"Cursor(state={self.state}, transition={self.transition})"
 
 
 class BubbleManager:
     def __init__(self, bubbles: Sequence[SSBubble], road_network: SumoRoadNetwork):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._cursors = []
+        self._cursors = set()
         self._last_vehicle_index = VehicleIndex.identity()
         self._bubbles = [Bubble(b, road_network) for b in bubbles]
 
@@ -300,19 +303,15 @@ class BubbleManager:
         return [bubble for bubble in self._bubbles if is_active(bubble)]
 
     @staticmethod
-    def vehicle_ids_in_bubble(bubble: Bubble, cursors: Sequence[Cursor]):
-        cursors = BubbleManager._group_cursors_by_bubble(cursors)[bubble]
-        return {
-            c.vehicle.id
-            for c in cursors
-            if c.state in [BubbleState.InBubble, BubbleState.InAirlock]
-        }
-
-    @staticmethod
-    def _group_cursors_by_bubble(cursors: Sequence[Cursor]) -> Dict[Bubble, Cursor]:
-        grouped = defaultdict(list)
+    @lru_cache(maxsize=2)
+    def vehicle_ids_per_bubble(cursors: FrozenSet[Cursor]) -> Dict[Bubble, Set[str]]:
+        grouped = defaultdict(set)
         for cursor in cursors:
-            grouped[cursor.bubble].append(cursor)
+            if (
+                cursor.state == BubbleState.InBubble
+                or cursor.state == BubbleState.InAirlock
+            ):
+                grouped[cursor.bubble].add(cursor.vehicle_id)
 
         return grouped
 
@@ -333,19 +332,14 @@ class BubbleManager:
         # del_index = last_vehicle_index - vehicle_index
 
         # Vehicles that stuck around
-        index_pre = last_vehicle_index & vehicle_index
         index_new = vehicle_index & last_vehicle_index
 
-        # Passed indexes must be the interesections, and thus have the same vehicle IDs
-        assert index_pre.vehicle_ids() == index_new.vehicle_ids()
-
         # Calculate latest cursors
-        cursors = []
-        for vehicle_id, vehicle in index_new.vehicleitems():
+        cursors = set()
+        for _, vehicle in index_new.vehicleitems():
             for bubble in self._active_bubbles():
-                cursors.append(
+                cursors.add(
                     Cursor.from_pos(
-                        prev_pos=index_pre.vehicle_position(vehicle_id),
                         pos=vehicle.position,
                         vehicle=vehicle,
                         bubble=bubble,
@@ -357,7 +351,7 @@ class BubbleManager:
 
         return cursors
 
-    def _handle_transitions(self, sim, cursors):
+    def _handle_transitions(self, sim, cursors: Set[Cursor]):
         social_agent_vehicles = []
         for agent_id in sim.agent_manager.social_agent_ids:
             social_agent_vehicles += sim.vehicle_index.vehicles_by_actor_id(agent_id)
@@ -366,21 +360,21 @@ class BubbleManager:
         for cursor in transitioned:
             if cursor.transition == BubbleTransition.AirlockEntered:
                 self._airlock_social_vehicle_with_social_agent(
-                    sim, cursor.tracking_id, cursor.bubble.actor, cursor.bubble
+                    sim, cursor.vehicle_id, cursor.bubble.actor, cursor.bubble
                 )
             elif cursor.transition == BubbleTransition.Entered:
                 self._hijack_social_vehicle_with_social_agent(
-                    sim, cursor.tracking_id, cursor.bubble.actor, cursor.bubble
+                    sim, cursor.vehicle_id, cursor.bubble.actor, cursor.bubble
                 )
             elif cursor.transition == BubbleTransition.Exited:
                 continue
             elif cursor.transition == BubbleTransition.AirlockExited:
-                if sim.vehicle_index.vehicle_is_hijacked(cursor.tracking_id):
+                if sim.vehicle_index.vehicle_is_hijacked(cursor.vehicle_id):
                     self._relinquish_vehicle_to_traffic_sim(
-                        sim, cursor.tracking_id, cursor.bubble
+                        sim, cursor.vehicle_id, cursor.bubble
                     )
                 else:
-                    self._stop_shadowing_vehicle(sim, cursor.tracking_id, cursor.bubble)
+                    self._stop_shadowing_vehicle(sim, cursor.vehicle_id, cursor.bubble)
 
     def _move_travelling_bubbles(self, sim):
         for bubble in self._active_bubbles():
