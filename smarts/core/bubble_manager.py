@@ -227,7 +227,7 @@ class Cursor:
 
         prev_pos, pos = tuple(prev_pos), tuple(pos)
 
-        is_social = vehicle.id in index.social_vehicle_ids
+        is_social = vehicle.id in index.social_vehicle_ids()
         is_shadowed = index.vehicle_is_shadowed(vehicle.id)
         is_hijacked = index.vehicle_is_hijacked(vehicle.id)
         is_admissible = bubble.is_admissible(
@@ -337,7 +337,7 @@ class BubbleManager:
         index_new = vehicle_index & last_vehicle_index
 
         # Passed indexes must be the interesections, and thus have the same vehicle IDs
-        assert index_pre.vehicle_ids == index_new.vehicle_ids
+        assert index_pre.vehicle_ids() == index_new.vehicle_ids()
 
         # Calculate latest cursors
         cursors = []

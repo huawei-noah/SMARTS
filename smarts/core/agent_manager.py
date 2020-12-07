@@ -138,7 +138,7 @@ class AgentManager:
         dones = {
             agent_id: agent_id not in self.pending_agent_ids
             for agent_id in self.agent_ids
-            if agent_id not in sim.vehicle_index.agent_vehicle_ids
+            if agent_id not in sim.vehicle_index.agent_vehicle_ids()
         }
 
         for agent_id in self.active_agents:
@@ -266,7 +266,7 @@ class AgentManager:
         returned action should not be executed on the vehicle until it is hijacked
         by the agent.
         """
-        vehicle_ids_controlled_by_agents = sim.vehicle_index.agent_vehicle_ids
+        vehicle_ids_controlled_by_agents = sim.vehicle_index.agent_vehicle_ids()
         controlling_agent_ids = set(
             [
                 sim.vehicle_index.actor_id_from_vehicle_id(v_id)

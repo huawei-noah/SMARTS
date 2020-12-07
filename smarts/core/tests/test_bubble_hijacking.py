@@ -102,7 +102,7 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
                 is_shadowing = (
                     index.shadow_actor_id_from_vehicle_id(vehicle.id) is not None
                 )
-                is_agent_controlled = vehicle.id in index.agent_vehicle_ids
+                is_agent_controlled = vehicle.id in index.agent_vehicle_ids()
 
                 zone_steps = steps_driven_in_zones[bubble.id][vehicle.id]
                 if position.within(geometry.bubble):

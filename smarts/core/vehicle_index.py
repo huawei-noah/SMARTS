@@ -18,10 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import functools
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
 from typing import NamedTuple
+import uuid
 
 import numpy as np
 import tableprint as tp
@@ -61,6 +63,125 @@ class _ControlEntity(NamedTuple):
     is_boid: bool
     is_hijacked: bool
     position: np.ndarray
+
+
+# TODO: Move all caching-related decorators into a separate module
+
+from typing import Any
+from types import FunctionType
+from threading import RLock
+
+
+# Taken from https://git.io/JI4PW
+class _HashedSeq(list):
+    """ This class guarantees that hash() will be called no more than once
+        per element.  This is important because the lru_cache() will hash
+        the key multiple times on a cache miss.
+    """
+
+    __slots__ = "hashvalue"
+
+    def __init__(self, tup, hash=hash):
+        self[:] = tup
+        self.hashvalue = hash(tup)
+
+    def __hash__(self):
+        return self.hashvalue
+
+
+# Taken from https://git.io/JI4PW
+def _make_key(
+    args,
+    kwds,
+    typed=False,
+    kwd_mark=(object(),),
+    fasttypes={int, str},
+    tuple=tuple,
+    type=type,
+    len=len,
+):
+    """Make a cache key from optionally typed positional and keyword arguments
+    The key is constructed in a way that is flat as possible rather than
+    as a nested structure that would take more memory.
+    If there is only a single argument and its data type is known to cache
+    its hash value, then that argument is returned without a wrapper.  This
+    saves space and improves lookup speed.
+    """
+    # All of code below relies on kwds preserving the order input by the user.
+    # Formerly, we sorted() the kwds before looping.  The new way is *much*
+    # faster; however, it means that f(x=1, y=2) will now be treated as a
+    # distinct call from f(y=2, x=1) which will be cached separately.
+    key = args
+    if kwds:
+        key += kwd_mark
+        for item in kwds.items():
+            key += item
+    if typed:
+        key += tuple(type(v) for v in args)
+        if kwds:
+            key += tuple(type(v) for v in kwds.values())
+    elif len(key) == 1 and type(key[0]) in fasttypes:
+        return key[0]
+    return _HashedSeq(key)
+
+
+# Inspired by https://strandmark.wordpress.com/2018/10/01/clearable-per-instance-method-cache-in-python/
+class _CacheCallable:
+    def __init__(self, cache_key: str, method: FunctionType, instance: Any):
+        self._method = method
+        self._instance = instance
+        self._cache = instance.__dict__
+        self._cache_key = cache_key
+        self._lock = RLock()
+
+    def __call__(self, *args, **kwargs) -> Any:
+        cached = self._cache.get(self._cache_key, {})
+
+        key = _make_key(args, kwargs)
+        if key not in cached:
+            with self._lock:
+                # Check if another thread filled cache while we awaited lock
+                cached = self._cache.get(self._cache_key, {})
+                if key not in cached:
+                    cached[key] = self._method(self._instance, *args, **kwargs)
+                    self._cache[self._cache_key] = cached
+
+        return cached[key]
+
+    def cache_clear(self):
+        self._cache[self._cache_key] = {}
+
+
+class cache:
+    def __init__(self, method: FunctionType):
+        self._method = method
+        self._cache_key = f"_cache_decorator_{method.__name__}"
+
+    def __get__(self, instance: Any, _):
+        assert instance, "Method must be called on an object"
+        return _CacheCallable(self._cache_key, self._method, instance)
+
+
+def clear_cache(func):
+    """Clears all the LRU caches."""
+
+    def _clear_caches(self):
+        self.vehicle_ids.cache_clear()
+        self.agent_vehicle_ids.cache_clear()
+        self.social_vehicle_ids.cache_clear()
+        self.vehicle_is_hijacked.cache_clear()
+        self.vehicle_is_shadowed.cache_clear()
+        self.vehicle_ids_by_actor_id.cache_clear()
+        self.actor_id_from_vehicle_id.cache_clear()
+        self.shadow_actor_id_from_vehicle_id.cache_clear()
+        self.vehicle_position.cache_clear()
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        _clear_caches(self)
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 # TODO: Consider wrapping the controlled_by recarry into a sep state object
@@ -106,9 +227,9 @@ class VehicleIndex:
         return self._subset(vehicle_ids)
 
     def _subset(self, vehicle_ids):
-        assert self.vehicle_ids.issuperset(
+        assert self.vehicle_ids().issuperset(
             vehicle_ids
-        ), f"{', '.join(list(self.vehicle_ids)[:3])} ⊅ {', '.join(list(vehicle_ids)[:3])}"
+        ), f"{', '.join(list(self.vehicle_ids())[:3])} ⊅ {', '.join(list(vehicle_ids)[:3])}"
 
         vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
 
@@ -147,13 +268,13 @@ class VehicleIndex:
 
         return result
 
-    @property
+    @cache
     def vehicle_ids(self):
         vehicle_ids = self._controlled_by["vehicle_id"]
         vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
         return set(vehicle_ids)
 
-    @property
+    @cache
     def agent_vehicle_ids(self):
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Agent
@@ -162,7 +283,7 @@ class VehicleIndex:
         vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
         return set(vehicle_ids)
 
-    @property
+    @cache
     def social_vehicle_ids(self):
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Social
@@ -170,6 +291,7 @@ class VehicleIndex:
         vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
         return set(vehicle_ids)
 
+    @cache
     def vehicle_is_hijacked(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
@@ -181,6 +303,7 @@ class VehicleIndex:
 
         return bool(_ControlEntity(*entities[0]).is_hijacked)
 
+    @cache
     def vehicle_is_shadowed(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
@@ -191,6 +314,60 @@ class VehicleIndex:
         assert len(entities) == 1
 
         return bool(_ControlEntity(*entities[0]).shadow_actor_id)
+
+    @cache
+    def vehicle_ids_by_actor_id(self, actor_id, include_shadowers=False):
+        """Returns all vehicles for the given actor ID as a list. This is most
+        applicable when an agent is controlling multiple vehicles (e.g. with boids).
+        """
+        actor_id = _2id(actor_id)
+
+        v_index = self._controlled_by["actor_id"] == actor_id
+        if include_shadowers:
+            v_index = v_index | (self._controlled_by["shadow_actor_id"] == actor_id)
+
+        vehicle_ids = self._controlled_by[v_index]["vehicle_id"]
+        return [self._2id_to_id[id_] for id_ in vehicle_ids]
+
+    @cache
+    def actor_id_from_vehicle_id(self, vehicle_id):
+        vehicle_id = _2id(vehicle_id)
+
+        actor_ids = self._controlled_by[
+            self._controlled_by["vehicle_id"] == vehicle_id
+        ]["actor_id"]
+
+        if actor_ids:
+            return self._2id_to_id[actor_ids[0]]
+
+        return None
+
+    @cache
+    def shadow_actor_id_from_vehicle_id(self, vehicle_id):
+        vehicle_id = _2id(vehicle_id)
+
+        shadow_actor_ids = self._controlled_by[
+            self._controlled_by["vehicle_id"] == vehicle_id
+        ]["shadow_actor_id"]
+
+        if shadow_actor_ids:
+            return self._2id_to_id[shadow_actor_ids[0]]
+
+        return None
+
+    @cache
+    def vehicle_position(self, vehicle_id):
+        vehicle_id = _2id(vehicle_id)
+
+        positions = self._controlled_by[
+            self._controlled_by["vehicle_id"] == vehicle_id
+        ]["position"]
+
+        return positions[0] if len(positions) > 0 else None
+
+    def vehicles_by_actor_id(self, actor_id, include_shadowers=False):
+        vehicle_ids = self.vehicle_ids_by_actor_id(actor_id, include_shadowers)
+        return [self._vehicles[_2id(id_)] for id_ in vehicle_ids]
 
     @property
     def vehicles(self):
@@ -203,6 +380,7 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
         return self._vehicles[vehicle_id]
 
+    @clear_cache
     def teardown_vehicles_by_vehicle_ids(self, vehicle_ids):
         vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
 
@@ -241,6 +419,7 @@ class VehicleIndex:
 
         return [self._2id_to_id[id_] for id_ in vehicle_ids]
 
+    @clear_cache
     def sync(self):
         for vehicle_id, vehicle in self._vehicles.items():
             v_index = self._controlled_by["vehicle_id"] == vehicle_id
@@ -249,6 +428,7 @@ class VehicleIndex:
                 entity._replace(position=vehicle.position)
             )
 
+    @clear_cache
     def teardown(self):
         self._controlled_by = VehicleIndex._build_empty_controlled_by()
 
@@ -259,56 +439,7 @@ class VehicleIndex:
         self._controller_states = {}
         self._sensor_states = {}
 
-    def vehicle_ids_by_actor_id(self, actor_id, include_shadowers=False):
-        """Returns all vehicles for the given actor ID as a list. This is most
-        applicable when an agent is controlling multiple vehicles (e.g. with boids).
-        """
-        actor_id = _2id(actor_id)
-
-        v_index = self._controlled_by["actor_id"] == actor_id
-        if include_shadowers:
-            v_index = v_index | (self._controlled_by["shadow_actor_id"] == actor_id)
-
-        vehicle_ids = self._controlled_by[v_index]["vehicle_id"]
-        return [self._2id_to_id[id_] for id_ in vehicle_ids]
-
-    def vehicles_by_actor_id(self, actor_id, include_shadowers=False):
-        vehicle_ids = self.vehicle_ids_by_actor_id(actor_id, include_shadowers)
-        return [self._vehicles[_2id(id_)] for id_ in vehicle_ids]
-
-    def actor_id_from_vehicle_id(self, vehicle_id):
-        vehicle_id = _2id(vehicle_id)
-
-        actor_ids = self._controlled_by[
-            self._controlled_by["vehicle_id"] == vehicle_id
-        ]["actor_id"]
-
-        if actor_ids:
-            return self._2id_to_id[actor_ids[0]]
-
-        return None
-
-    def shadow_actor_id_from_vehicle_id(self, vehicle_id):
-        vehicle_id = _2id(vehicle_id)
-
-        shadow_actor_ids = self._controlled_by[
-            self._controlled_by["vehicle_id"] == vehicle_id
-        ]["shadow_actor_id"]
-
-        if shadow_actor_ids:
-            return self._2id_to_id[shadow_actor_ids[0]]
-
-        return None
-
-    def vehicle_position(self, vehicle_id):
-        vehicle_id = _2id(vehicle_id)
-
-        positions = self._controlled_by[
-            self._controlled_by["vehicle_id"] == vehicle_id
-        ]["position"]
-
-        return positions[0] if len(positions) > 0 else None
-
+    @clear_cache
     def start_agent_observation(
         self, sim, vehicle_id, agent_id, agent_interface, mission_planner, boid=False
     ):
@@ -343,6 +474,7 @@ class VehicleIndex:
 
         return vehicle
 
+    @clear_cache
     def switch_control_to_agent(
         self, sim, vehicle_id, agent_id, boid=False, hijacking=False, recreate=False
     ):
@@ -375,6 +507,7 @@ class VehicleIndex:
 
         return vehicle
 
+    @clear_cache
     def stop_agent_observation(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
 
@@ -388,6 +521,7 @@ class VehicleIndex:
 
         return vehicle
 
+    @clear_cache
     def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
         vehicle_id, social_vehicle_id = _2id(vehicle_id), _2id(social_vehicle_id)
 
@@ -418,6 +552,7 @@ class VehicleIndex:
 
         return vehicle
 
+    @clear_cache
     def attach_sensors_to_vehicle(
         self, sim, vehicle_id, agent_interface, mission_planner
     ):
@@ -547,6 +682,7 @@ class VehicleIndex:
 
         return vehicle
 
+    @clear_cache
     def _enfranchise_actor(
         self,
         sim,
@@ -585,6 +721,7 @@ class VehicleIndex:
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
+    @clear_cache
     def build_social_vehicle(
         self, sim, vehicle_state, actor_id, vehicle_type, vehicle_id=None
     ):
