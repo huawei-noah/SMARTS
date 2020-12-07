@@ -223,14 +223,9 @@ class Cursor:
         vehicle,
         bubble,
         index,
-        prev_cursors: Set["Cursor"],
+        vehicle_ids_per_bubble: Dict[Bubble, Set[str]],
         running_cursors: Set["Cursor"],
     ):
-        pos = tuple(pos)
-        vehicle_ids_per_bubble = BubbleManager.vehicle_ids_per_bubble(
-            frozenset(prev_cursors)
-        )
-
         in_bubble = bubble.in_bubble(pos)
         in_airlock = bubble.in_airlock(pos)
 
@@ -240,6 +235,7 @@ class Cursor:
         is_admissible = bubble.is_admissible(
             vehicle.id, index, vehicle_ids_per_bubble, running_cursors
         )
+
         was_in_this_bubble = vehicle.id in vehicle_ids_per_bubble[bubble]
 
         transition = None
@@ -335,6 +331,9 @@ class BubbleManager:
         index_new = vehicle_index & last_vehicle_index
 
         # Calculate latest cursors
+        vehicle_ids_per_bubble = BubbleManager.vehicle_ids_per_bubble(
+            frozenset(self._cursors)
+        )
         cursors = set()
         for _, vehicle in index_new.vehicleitems():
             for bubble in self._active_bubbles():
@@ -344,7 +343,7 @@ class BubbleManager:
                         vehicle=vehicle,
                         bubble=bubble,
                         index=vehicle_index,
-                        prev_cursors=self._cursors,
+                        vehicle_ids_per_bubble=vehicle_ids_per_bubble,
                         running_cursors=cursors,
                     )
                 )
