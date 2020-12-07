@@ -90,10 +90,7 @@ if __name__ == "__main__":
         "Listens for requests to allocate agents and executes them on-demand"
     )
     parser.add_argument(
-        "--port",
-        type=int,
-        default=7432,
-        help="Port to listen on",
+        "--port", type=int, default=7432, help="Port to listen on",
     )
     parser.add_argument(
         "--auth_key",

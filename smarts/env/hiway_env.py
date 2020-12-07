@@ -92,8 +92,7 @@ class HiWayEnv(gym.Env):
         self._dones_registered = 0
 
         self._scenarios_iterator = Scenario.scenario_variations(
-            scenarios,
-            list(agent_specs.keys()),
+            scenarios, list(agent_specs.keys()),
         )
 
         agent_interfaces = {
