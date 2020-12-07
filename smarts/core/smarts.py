@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import logging
-import math
 import os
 from collections import defaultdict
 from typing import List, Sequence
