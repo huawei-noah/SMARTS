@@ -88,7 +88,7 @@ class SMARTS(ShowBase):
         timestep_sec=0.1,
         reset_agents_only=False,
         zoo_workers=None,
-        auth_key=b"None",
+        auth_key=None,
     ):
         try:
             super().__init__(self, windowType="offscreen")
@@ -797,8 +797,8 @@ class SMARTS(ShowBase):
                 for vehicle in agent_vehicles:
                     vehicle_action = action[vehicle.id] if is_boid_agent else action
 
-                    controller_state = self._vehicle_index.controller_state_for_vehicle_id(
-                        vehicle.id
+                    controller_state = (
+                        self._vehicle_index.controller_state_for_vehicle_id(vehicle.id)
                     )
                     sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
                         vehicle.id
@@ -870,9 +870,11 @@ class SMARTS(ShowBase):
 
                 if self._agent_manager.is_ego(agent_id):
                     actor_type = envision_types.TrafficActorType.Agent
-                    mission_route_geometry = self._vehicle_index.sensor_state_for_vehicle_id(
-                        v.vehicle_id
-                    ).mission_planner.route.geometry
+                    mission_route_geometry = (
+                        self._vehicle_index.sensor_state_for_vehicle_id(
+                            v.vehicle_id
+                        ).mission_planner.route.geometry
+                    )
                 else:
                     actor_type = envision_types.TrafficActorType.SocialAgent
                     mission_route_geometry = None
@@ -900,7 +902,9 @@ class SMARTS(ShowBase):
                     heading=v.pose.heading,
                     speed=v.speed,
                     actor_id=envision_types.format_actor_id(
-                        agent_id, v.vehicle_id, is_multi=is_boid_agent,
+                        agent_id,
+                        v.vehicle_id,
+                        is_multi=is_boid_agent,
                     ),
                     events=vehicle_obs.events,
                     waypoint_paths=(vehicle_obs.waypoint_paths or []) + road_waypoints,

@@ -32,14 +32,14 @@ from .utils.networking import find_free_port
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_worker_addrs=None, auth_key=b"None", buffer_size=3):
+    def __init__(self, zoo_worker_addrs=None, auth_key=None, buffer_size=3):
         """
         Args:
             zoo_worker_addrs:
                 List of (ip, port) tuples of Zoo Workers, used to instantiate remote social agents
             auth_key:
                 Authentication key of type byte string for communication with Zoo Workers
-            buffer_size: 
+            buffer_size:
                 Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
         """
         assert buffer_size > 0
@@ -50,8 +50,8 @@ class RemoteAgentBuffer:
         self._local_zoo_worker_addr = None
 
         assert isinstance(
-            auth_key, bytes
-        ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'bytes'>."
+            auth_key, (bytes, type(None))
+        ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'bytes'> or <class 'NoneType'>."
         self._auth_key = auth_key
 
         if zoo_worker_addrs is None:

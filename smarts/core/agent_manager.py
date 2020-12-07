@@ -41,7 +41,7 @@ class AgentManager:
          time.
     """
 
-    def __init__(self, interfaces, zoo_workers=None, auth_key=b"None"):
+    def __init__(self, interfaces, zoo_workers=None, auth_key=None):
         self._log = logging.getLogger(self.__class__.__name__)
         self._remote_agent_buffer = RemoteAgentBuffer(
             zoo_worker_addrs=zoo_workers, auth_key=auth_key
@@ -252,8 +252,10 @@ class AgentManager:
                 f"social_agents=({', '.join(agents_without_actions)}) returned no action"
             )
 
-        social_agent_actions = self._filter_social_agent_actions_for_controlled_vehicles(
-            sim, social_agent_actions
+        social_agent_actions = (
+            self._filter_social_agent_actions_for_controlled_vehicles(
+                sim, social_agent_actions
+            )
         )
 
         return {**ego_agent_actions, **social_agent_actions}
@@ -346,7 +348,8 @@ class AgentManager:
             agent_id = BubbleManager._make_boid_social_agent_id(actor)
 
             social_agent = make_social_agent(
-                locator=actor.agent_locator, **actor.policy_kwargs,
+                locator=actor.agent_locator,
+                **actor.policy_kwargs,
             )
 
             actor = bubble.actor

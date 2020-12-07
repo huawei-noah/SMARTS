@@ -83,7 +83,7 @@ class HiWayEnv(gym.Env):
         envision_endpoint=None,
         envision_record_data_replay_path=None,
         zoo_workers=None,
-        auth_key=b"None",
+        auth_key=None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts.core.seed(seed)
@@ -92,7 +92,8 @@ class HiWayEnv(gym.Env):
         self._dones_registered = 0
 
         self._scenarios_iterator = Scenario.scenario_variations(
-            scenarios, list(agent_specs.keys()),
+            scenarios,
+            list(agent_specs.keys()),
         )
 
         agent_interfaces = {
