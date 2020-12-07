@@ -108,14 +108,14 @@ class TrapManager:
         if not sim.agent_manager.pending_agent_ids:
             return
 
-        social_vehicle_ids = sim.vehicle_index.social_vehicle_ids
+        social_vehicle_ids = sim.vehicle_index.social_vehicle_ids()
         vehicles = {
             v_id: sim.vehicle_index.vehicle_by_id(v_id) for v_id in social_vehicle_ids
         }
 
         existing_agent_vehicles = (
             sim.vehicle_index.vehicle_by_id(v_id)
-            for v_id in sim.vehicle_index.agent_vehicle_ids
+            for v_id in sim.vehicle_index.agent_vehicle_ids()
         )
 
         def largest_vehicle_plane_dimension(vehicle):

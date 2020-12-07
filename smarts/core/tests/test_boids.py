@@ -96,7 +96,7 @@ def test_boids(smarts, scenarios, bubble):
             position = Point(vehicle.position)
             in_bubble = position.within(geometry.bubble)
             is_shadowing = index.shadow_actor_id_from_vehicle_id(vehicle.id) is not None
-            is_agent_controlled = vehicle.id in index.agent_vehicle_ids
+            is_agent_controlled = vehicle.id in index.agent_vehicle_ids()
 
             zone_steps = steps_driven_in_zones[vehicle.id]
             if position.within(geometry.bubble):
