@@ -269,7 +269,7 @@ class VehicleIndex:
         )
 
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
-            agent_interface.action_space, vehicle.position, sim
+            agent_interface.action_space, vehicle.pose, sim
         )
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
@@ -366,7 +366,7 @@ class VehicleIndex:
             agent_interface.max_episode_steps, mission_planner=mission_planner,
         )
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
-            agent_interface.action_space, vehicle.position, sim
+            agent_interface.action_space, vehicle.pose, sim
         )
 
     def _switch_control_to_agent_recreate(
@@ -465,7 +465,7 @@ class VehicleIndex:
         )
 
         controller_state = ControllerState.from_action_space(
-            agent_interface.action_space, vehicle.position, sim
+            agent_interface.action_space, vehicle.pose, sim
         )
 
         self._enfranchise_actor(

@@ -182,7 +182,9 @@ class Sensors:
 
             if len(neighborhood_vehicles) > 0:
                 neighborhood_vehicle_wps = sim.waypoints.closest_waypoint_batched(
-                    [v.pose.position for v in neighborhood_vehicles]
+                    [v.pose for v in neighborhood_vehicles],
+                    within_radius=vehicle.length,
+                    filter_from_count=10,
                 )
                 neighborhood_vehicles = [
                     VehicleObservation(
@@ -202,10 +204,13 @@ class Sensors:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
             waypoint_paths = sim.waypoints.waypoint_paths_at(
-                vehicle.position, lookahead=1,  # For calculating distance travelled
+                vehicle.pose,
+                lookahead=1,
+                within_radius=vehicle.length,
+                filter_from_count=3,  # For calculating distance travelled
             )
 
-        closest_waypoint = sim.waypoints.closest_waypoint(vehicle.position)
+        closest_waypoint = sim.waypoints.closest_waypoint(vehicle.pose)
         ego_lane_id = closest_waypoint.lane_id
         ego_lane_index = closest_waypoint.lane_index
         ego_edge_id = sim.road_network.edge_by_lane_id(ego_lane_id).getID()
@@ -461,7 +466,7 @@ class Sensors:
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, lane_id):
         closest_waypoint = sim.scenario.waypoints.closest_waypoint_on_lane(
-            vehicle.position[:2], lane_id
+            vehicle.pose, lane_id,
         )
 
         # Check if the vehicle heading is oriented away from the lane heading.
@@ -881,7 +886,9 @@ class TripMeterSensor(Sensor):
         self._sim = sim
         self._mission_planner = mission_planner
 
-        waypoint_paths = sim.waypoints.waypoint_paths_at(vehicle.position, lookahead=1)
+        waypoint_paths = sim.waypoints.waypoint_paths_at(
+            vehicle.pose, lookahead=1, within_radius=vehicle.length
+        )
         starting_wp = waypoint_paths[0][0]
         self._wps_for_distance = [starting_wp]
 
@@ -977,7 +984,7 @@ class RoadWaypointsSensor(Sensor):
         self._horizon = horizon
 
     def __call__(self):
-        wp = self._sim.waypoints.closest_waypoint(self._vehicle.position)
+        wp = self._sim.waypoints.closest_waypoint(self._vehicle.pose)
         road_edges = self._sim.road_network.road_edge_data_for_lane_id(wp.lane_id)
 
         lane_paths = {}
