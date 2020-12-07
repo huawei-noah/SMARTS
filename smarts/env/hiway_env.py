@@ -69,7 +69,7 @@ class HiWayEnv(gym.Env):
         self,
         scenarios: Sequence[str],
         agent_specs,
-        ordered_scenarios=False,
+        shuffle_scenarios=True,
         headless=False,
         visdom=False,
         timestep_sec=0.1,
@@ -90,7 +90,7 @@ class HiWayEnv(gym.Env):
         self._dones_registered = 0
 
         self._scenarios_iterator = Scenario.scenario_variations(
-            scenarios, list(agent_specs.keys()), ordered_scenarios,
+            scenarios, list(agent_specs.keys()), shuffle_scenarios,
         )
 
         agent_interfaces = {

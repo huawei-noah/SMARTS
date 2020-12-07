@@ -204,7 +204,7 @@ class Scenario:
     def scenario_variations(
         scenarios_or_scenarios_dirs: Sequence[str],
         agents_to_be_briefed: Sequence[str],
-        ordered_scenarios: bool = False,
+        shuffle_scenarios: bool = True,
     ):
         """Generate a cycle of the configurations of scenarios.
 
@@ -223,7 +223,7 @@ class Scenario:
             else:
                 scenario_roots.extend(Scenario.discover_scenarios(root))
 
-        if not ordered_scenarios:
+        if not shuffle_scenarios:
             np.random.shuffle(scenario_roots)
 
         return Scenario.variations_for_all_scenario_roots(
