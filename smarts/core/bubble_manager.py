@@ -33,6 +33,7 @@ from smarts.core.mission_planner import Mission, MissionPlanner, Start
 from smarts.core.scenario import PositionalGoal
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.id import SocialAgentId
+from smarts.core.utils.string import truncate
 from smarts.core.vehicle import Vehicle, VehicleState
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio.types import BoidAgentActor
@@ -546,11 +547,11 @@ class BubbleManager:
 
     @staticmethod
     def _make_social_agent_id(vehicle_id):
-        return f"BUBBLE-AGENT-{vehicle_id}"
+        return f"BUBBLE-AGENT-{truncate(vehicle_id, 48)}"
 
     @staticmethod
     def _make_boid_social_agent_id(social_agent_actor):
-        return f"BUBBLE-AGENT-{social_agent_actor.id}"
+        return f"BUBBLE-AGENT-{truncate(social_agent_actor.id, 48)}"
 
     def teardown(self):
         self._cursors = []
