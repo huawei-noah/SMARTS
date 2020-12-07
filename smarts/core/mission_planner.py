@@ -29,7 +29,7 @@ from .sumo_road_network import SumoRoadNetwork
 from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
 from .waypoints import Waypoint, Waypoints
 from .route import ShortestRoute, EmptyRoute
-from .coordinates import Pose, Heading
+from .coordinates import Heading, Pose
 from .route import ShortestRoute, EmptyRoute
 from .scenario import EndlessGoal, LapMission, Mission, Start
 from .sumo_road_network import SumoRoadNetwork
