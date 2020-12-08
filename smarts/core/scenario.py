@@ -231,7 +231,9 @@ class Scenario:
         )
 
     @staticmethod
-    def variations_for_all_scenario_roots(scenario_roots, agents_to_be_briefed, shuffle_scenarios):
+    def variations_for_all_scenario_roots(
+        scenario_roots, agents_to_be_briefed, shuffle_scenarios
+    ):
         for scenario_root in scenario_roots:
             surface_patches = Scenario.discover_friction_map(scenario_root)
 
