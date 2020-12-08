@@ -4,7 +4,7 @@ from pathlib import Path
 from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
 
-NUM_TRAFFIC_FLOWS = 1000
+NUM_TRAFFIC_FLOWS = 500
 
 traffic = t.Traffic(
     flows=[
