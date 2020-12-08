@@ -407,6 +407,10 @@ class OpEnAgent(Agent):
         ego = obs.ego_vehicle_state
         lane_index = min(len(obs.waypoint_paths) - 1, ego.lane_index)
         wps = obs.waypoint_paths[lane_index]
+        for wp_path in obs.waypoint_paths:
+            if wp_path[0].lane_index == lane_index:
+                wps = wp_path
+                break
         # wps = min(
         #     obs.waypoint_paths,
         #     key=lambda wps: abs(wps[0].signed_lateral_error(ego.position)),
