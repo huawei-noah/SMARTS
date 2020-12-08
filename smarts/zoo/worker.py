@@ -20,7 +20,7 @@ def spawn_networked_agent(port, auth_key):
         "--port",
         str(port),
         "--auth_key",
-        str(auth_key),
+        auth_key,
     ]
 
     agent_proc = subprocess.Popen(cmd)
@@ -34,7 +34,7 @@ def spawn_local_agent(socket_file, auth_key):
         "--socket_file",
         socket_file,
         "--auth_key",
-        str(auth_key),
+        auth_key,
     ]
 
     agent_proc = subprocess.Popen(cmd)
