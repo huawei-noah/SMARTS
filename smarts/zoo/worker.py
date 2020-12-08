@@ -60,7 +60,7 @@ def listen(port, auth_key):
     log.debug(f"Starting Zoo Worker on port {port}")
     agent_procs = []
     assert isinstance(
-        auth_key, (str, None)
+        auth_key, (str, type(None))
     ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
     auth_key = auth_key if auth_key else ""
     auth_key_conn = str.encode(auth_key) if auth_key else None

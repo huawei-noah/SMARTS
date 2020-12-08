@@ -50,7 +50,7 @@ class RemoteAgentBuffer:
         self._local_zoo_worker_addr = None
 
         assert isinstance(
-            auth_key, (str, None)
+            auth_key, (str, type(None))
         ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
         self._auth_key = auth_key if auth_key else ""
         self._auth_key_conn = str.encode(auth_key) if auth_key else None

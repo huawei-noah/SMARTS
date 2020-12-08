@@ -89,7 +89,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 assert isinstance(
-    args.auth_key, (str, None)
+    args.auth_key, (str, type(None))
 ), f"Received auth_key of type {type(args.auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
 auth_key_conn = str.encode(args.auth_key) if args.auth_key else None
 
