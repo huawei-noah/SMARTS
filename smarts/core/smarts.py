@@ -297,7 +297,9 @@ class SMARTS(ShowBase):
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
-            self._trap_manager.init_traps(scenario)
+            self._trap_manager.init_traps(
+                scenario.road_network, scenario.waypoints, scenario.missions
+            )
             self._agent_manager.init_ego_agents(self)
             self._sync_panda3d()
         else:
