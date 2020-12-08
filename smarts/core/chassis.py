@@ -470,6 +470,10 @@ class AckermannChassis(Chassis):
         return self._dimensions
 
     @property
+    def max_steering_wheel(self):
+        return self._max_steering / self._steering_gear_ratio
+
+    @property
     def wheel_radius(self):
         return self._wheel_radius
 

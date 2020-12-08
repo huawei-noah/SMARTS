@@ -184,6 +184,11 @@ class Vehicle:
         return self._chassis.dimensions.length
 
     @property
+    def max_steering_wheel(self):
+        self._assert_initialized()
+        return self._chassis.max_steering_wheel
+
+    @property
     def width(self):
         self._assert_initialized()
         return self._chassis.dimensions.width
