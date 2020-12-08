@@ -59,8 +59,14 @@ def handle_request(request, auth_key):
 def listen(port, auth_key):
     log.debug(f"Starting Zoo Worker on port {port}")
     agent_procs = []
+    assert isinstance(
+        auth_key, (str, None)
+    ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
+    auth_key = auth_key if auth_key else ""
+    auth_key_conn = str.encode(auth_key) if auth_key else None
+
     try:
-        with Listener(("0.0.0.0", port), "AF_INET", authkey=auth_key) as listener:
+        with Listener(("0.0.0.0", port), "AF_INET", authkey=auth_key_conn) as listener:
             while True:
                 with listener.accept() as conn:
                     log.debug(f"Accepted connection {conn}")
@@ -93,8 +99,8 @@ if __name__ == "__main__":
         "--port", type=int, default=7432, help="Port to listen on",
     )
     parser.add_argument(
-        "--auth_key", type=str, help="Authentication key for connection to run agent",
+        "--auth_key", type=str, default=None, help="Authentication key for connection to run agent",
     )
     args = parser.parse_args()
-    args.auth_key = str.encode(args.auth_key)
-    listen(args.port, args.auth_key)
+    auth_key = args.auth_key if args.auth_key else ""
+    listen(args.port, auth_key)

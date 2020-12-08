@@ -32,13 +32,13 @@ from .utils.networking import find_free_port
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_worker_addrs=None, auth_key=b"None", buffer_size=3):
+    def __init__(self, zoo_worker_addrs=None, auth_key=None, buffer_size=3):
         """
         Args:
             zoo_worker_addrs:
                 List of (ip, port) tuples of Zoo Workers, used to instantiate remote social agents
             auth_key:
-                Authentication key of type byte string for communication with Zoo Workers
+                Authentication key of type string for communication with Zoo Workers
             buffer_size: 
                 Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
         """
@@ -50,9 +50,10 @@ class RemoteAgentBuffer:
         self._local_zoo_worker_addr = None
 
         assert isinstance(
-            auth_key, bytes
-        ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'bytes'>."
-        self._auth_key = auth_key
+            auth_key, (str, None)
+        ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
+        self._auth_key = auth_key if auth_key else ""
+        self._auth_key_conn = str.encode(auth_key) if auth_key else None
 
         if zoo_worker_addrs is None:
             # The user has not specified any remote zoo workers.
@@ -103,7 +104,7 @@ class RemoteAgentBuffer:
         # Block until the local zoo server is accepting connections.
         for i in range(retries):
             try:
-                conn = Client(local_address, family="AF_INET", authkey=self._auth_key)
+                conn = Client(local_address, family="AF_INET", authkey=self._auth_key_conn)
                 break
             except Exception as e:
                 self._log.error(
@@ -149,7 +150,7 @@ class RemoteAgentBuffer:
                     # Try to connect to a random zoo worker.
                     zoo_worker_addr = random.choice(self._zoo_worker_addrs)
                     conn = Client(
-                        zoo_worker_addr, family="AF_INET", authkey=self._auth_key
+                        zoo_worker_addr, family="AF_INET", authkey=self._auth_key_conn
                     )
 
                     # Now that we've got a connection to this zoo worker,
