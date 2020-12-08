@@ -32,8 +32,9 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, address, socket_family, connection_retries=100):
+    def __init__(self, address, socket_family, auth_key, connection_retries=100):
         self._log = logging.getLogger(self.__class__.__name__)
+        auth_key_conn = str.encode(auth_key) if auth_key else None
 
         self._conn = None
         self._tp_exec = futures.ThreadPoolExecutor()
@@ -41,7 +42,9 @@ class RemoteAgent:
         for i in range(connection_retries):
             # Waiting on agent to open it's socket.
             try:
-                self._conn = Client(address, socket_family)
+                self._conn = Client(
+                    address, family=socket_family, authkey=auth_key_conn
+                )
                 break
             except Exception:
                 self._log.debug(

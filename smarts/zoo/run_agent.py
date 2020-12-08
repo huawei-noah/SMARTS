@@ -73,15 +73,22 @@ log = logging.getLogger(f"PID({os.getpid()}) run_agent.py")
 
 parser = argparse.ArgumentParser("Spawn an agent in it's own independent process")
 parser.add_argument(
-    "--socket_file", help="AF_UNIX domain socket file to be used for IPC", default=None
+    "--socket_file", default=None, help="AF_UNIX domain socket file to be used for IPC",
 )
 parser.add_argument(
     "--port",
     type=int,
-    help="AF_INET port to bind to for listening for remote connections IPC",
     default=None,
+    help="AF_INET port to bind to for listening for remote connections IPC",
+)
+parser.add_argument(
+    "--auth_key",
+    type=str,
+    default=None,
+    help="Authentication key for connection to run agent",
 )
 args = parser.parse_args()
+auth_key_conn = str.encode(args.auth_key) if args.auth_key else None
 
 
 log.debug(f"run_agent.py: socket_file={args.socket_file} port={args.port}")
@@ -99,7 +106,7 @@ elif args.port is not None:
 else:
     raise Exception(f"Unsupported configuration {args}")
 
-with Listener(address, family) as listener:
+with Listener(address, family, authkey=auth_key_conn) as listener:
     with listener.accept() as conn:
         log.debug(f"connection accepted from {listener.last_accepted}")
         agent = None
