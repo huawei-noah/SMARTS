@@ -38,6 +38,11 @@ class ChaseViaPointsAgent(Agent):
 def main(
     scenarios, headless, num_episodes, seed, auth_key=None, max_episode_steps=None
 ):
+    assert isinstance(
+        auth_key, (str, None)
+    ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
+    auth_key = auth_key if auth_key else ""
+
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.Laner, max_episode_steps=max_episode_steps
