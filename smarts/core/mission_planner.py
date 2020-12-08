@@ -283,7 +283,7 @@ class MissionPlanner:
             include_special=False,
         )
         start_edge = self._road_network.road_edge_data_for_lane_id(start_lane.getID())
-        wp = self._waypoints.closest_waypoint(pose.position)
+        wp = self._waypoints.closest_waypoint(pose)
         current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
         if not start_edge.oncoming_edges:
             return []
