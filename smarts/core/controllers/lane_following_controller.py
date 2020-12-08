@@ -153,11 +153,11 @@ class LaneFollowingController:
         # 0.5 , 0.8 are dimensionless thresholds for road_curviness.
         # 1.8 and 0.6 are the longitudinal velocity controller
         # proportional gains for different road curvinesss.
-        if road_curviness < 0.5:
+        if road_curviness < 0.3:
             raw_throttle = (
                 -METER_PER_SECOND_TO_KM_PER_HR * 1.8 * (vehicle.speed - target_speed)
             )
-        elif road_curviness > 0.5 and road_curviness < 0.8:
+        elif road_curviness > 0.3 and road_curviness < 0.8:
             raw_throttle = (
                 -0.6
                 * METER_PER_SECOND_TO_KM_PER_HR
