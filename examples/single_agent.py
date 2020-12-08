@@ -84,7 +84,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     auth_key = args.auth_key if args.auth_key else ""
-    auth_key_conn = str.encode(auth_key) if auth_key else None
 
     main(
         scenarios=args.scenarios,

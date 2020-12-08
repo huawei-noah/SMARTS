@@ -42,7 +42,9 @@ class RemoteAgent:
         for i in range(connection_retries):
             # Waiting on agent to open it's socket.
             try:
-                self._conn = Client(address, family=socket_family, authkey=auth_key_conn)
+                self._conn = Client(
+                    address, family=socket_family, authkey=auth_key_conn
+                )
                 break
             except Exception:
                 self._log.debug(

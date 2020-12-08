@@ -104,7 +104,9 @@ class RemoteAgentBuffer:
         # Block until the local zoo server is accepting connections.
         for i in range(retries):
             try:
-                conn = Client(local_address, family="AF_INET", authkey=self._auth_key_conn)
+                conn = Client(
+                    local_address, family="AF_INET", authkey=self._auth_key_conn
+                )
                 break
             except Exception as e:
                 self._log.error(

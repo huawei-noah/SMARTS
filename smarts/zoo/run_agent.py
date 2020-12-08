@@ -82,7 +82,10 @@ parser.add_argument(
     help="AF_INET port to bind to for listening for remote connections IPC",
 )
 parser.add_argument(
-    "--auth_key", type=str, default=None, help="Authentication key for connection to run agent",
+    "--auth_key",
+    type=str,
+    default=None,
+    help="Authentication key for connection to run agent",
 )
 args = parser.parse_args()
 assert isinstance(
