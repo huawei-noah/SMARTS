@@ -22,6 +22,7 @@ import functools
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
+from smarts.core.utils.logging import timeit
 from typing import NamedTuple
 import uuid
 
@@ -169,8 +170,7 @@ def clear_cache(func):
         self.vehicle_ids.cache_clear()
         self.agent_vehicle_ids.cache_clear()
         self.social_vehicle_ids.cache_clear()
-        self.vehicle_is_hijacked.cache_clear()
-        self.vehicle_is_shadowed.cache_clear()
+        self.vehicle_is_hijacked_or_shadowed.cache_clear()
         self.vehicle_ids_by_actor_id.cache_clear()
         self.actor_id_from_vehicle_id.cache_clear()
         self.shadow_actor_id_from_vehicle_id.cache_clear()
@@ -292,28 +292,26 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
+    def vehicle_is_hijacked_or_shadowed(self, vehicle_id):
+        vehicle_id = _2id(vehicle_id)
+
+        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        if not np.any(v_index):
+            return False
+
+        vehicle = self._controlled_by[v_index]
+        assert len(vehicle) == 1
+
+        vehicle = vehicle[0]
+        return bool(vehicle["is_hijacked"]), bool(vehicle["shadow_actor_id"])
+
     def vehicle_is_hijacked(self, vehicle_id):
-        vehicle_id = _2id(vehicle_id)
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
-        if not np.any(v_index):
-            return False
+        is_hijacked, _ = self.vehicle_is_hijacked_or_shadowed(vehicle_id)
+        return is_hijacked
 
-        entities = self._controlled_by[v_index]
-        assert len(entities) == 1
-
-        return bool(_ControlEntity(*entities[0]).is_hijacked)
-
-    @cache
     def vehicle_is_shadowed(self, vehicle_id):
-        vehicle_id = _2id(vehicle_id)
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
-        if not np.any(v_index):
-            return False
-
-        entities = self._controlled_by[v_index]
-        assert len(entities) == 1
-
-        return bool(_ControlEntity(*entities[0]).shadow_actor_id)
+        _, is_shadowed = self.vehicle_is_hijacked_or_shadowed(vehicle_id)
+        return is_shadowed
 
     @cache
     def vehicle_ids_by_actor_id(self, actor_id, include_shadowers=False):

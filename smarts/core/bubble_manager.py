@@ -21,9 +21,9 @@ from functools import lru_cache
 import logging
 from collections import defaultdict
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, FrozenSet, Sequence, Set
+from typing import Dict, FrozenSet, Sequence, Set, Tuple
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import Point, Polygon, CAP_STYLE, JOIN_STYLE
@@ -154,15 +154,16 @@ class Bubble:
 
         return True
 
-    def in_bubble(self, position):
-        pos = Point(position)
-        return pos.within(self._cached_inner_geometry)
+    def in_bubble_or_airlock(self, position):
+        if not isinstance(position, Point):
+            position = Point(position)
 
-    def in_airlock(self, position):
-        pos = Point(position)
-        return not pos.within(self._cached_inner_geometry) and pos.within(
-            self._cached_airlock_geometry
-        )
+        in_airlock = position.within(self._cached_airlock_geometry)
+        if not in_airlock:
+            return False, False
+
+        in_bubble = position.within(self._cached_inner_geometry)
+        return in_bubble, in_airlock and not in_bubble
 
     @property
     def is_travelling(self):
@@ -226,25 +227,21 @@ class Cursor:
         vehicle_ids_per_bubble: Dict[Bubble, Set[str]],
         running_cursors: Set["Cursor"],
     ):
-        in_bubble = bubble.in_bubble(pos)
-        in_airlock = bubble.in_airlock(pos)
-
+        in_bubble, in_airlock = bubble.in_bubble_or_airlock(pos)
         is_social = vehicle.id in index.social_vehicle_ids()
-        is_shadowed = index.vehicle_is_shadowed(vehicle.id)
-        is_hijacked = index.vehicle_is_hijacked(vehicle.id)
+        is_hijacked, is_shadowed = index.vehicle_is_hijacked_or_shadowed(vehicle.id)
         is_admissible = bubble.is_admissible(
             vehicle.id, index, vehicle_ids_per_bubble, running_cursors
         )
-
         was_in_this_bubble = vehicle.id in vehicle_ids_per_bubble[bubble]
 
-        transition = None
         # XXX: When a travelling bubble disappears and an agent is airlocked or
         #      hijacked. It remains in that state.
         # TODO: Depending on step size, we could potentially skip transitions (e.g.
         #       go straight to relinquish w/o hijacking first). This may be solved by
         #       time-based airlocking. For robust code we'll want to handle these
         #       scenarios (e.g. hijacking if didn't airlock first)
+        transition = None
         if is_social and not is_shadowed and is_admissible and in_airlock:
             transition = BubbleTransition.AirlockEntered
         elif is_shadowed and is_admissible and in_bubble:
@@ -336,10 +333,14 @@ class BubbleManager:
         )
         cursors = set()
         for _, vehicle in index_new.vehicleitems():
+            # XXX: Turns out Point(...) creation is very expensive (~0.02ms) which
+            #      when inside of a loop x large number of vehicles makes a big
+            #      performance hit.
+            point = Point(vehicle.position)
             for bubble in self._active_bubbles():
                 cursors.add(
                     Cursor.from_pos(
-                        pos=vehicle.position,
+                        pos=point,
                         vehicle=vehicle,
                         bubble=bubble,
                         index=vehicle_index,
