@@ -66,7 +66,9 @@ class MissionPlanner:
         )
         offset *= n_lane.getLength()
         coord = self._road_network.world_coord_from_offset(n_lane, offset)
-        nearest_wp = self._waypoints.closest_waypoint_on_lane(coord, n_lane.getID())
+        nearest_wp = self._waypoints.closest_waypoint_on_lane_to_point(
+            coord, n_lane.getID()
+        )
         return Mission(
             start=Start(tuple(nearest_wp.pos), nearest_wp.heading),
             goal=EndlessGoal(),
@@ -159,7 +161,7 @@ class MissionPlanner:
                     pose.position, lookahead, edge_ids
                 )
 
-            return self._waypoints.waypoint_paths_at(pose.position, lookahead)
+            return self._waypoints.waypoint_paths_at(pose, lookahead)
 
     def waypoint_paths_on_lane_at(self, pose: Pose, lane_id: str, lookahead: float):
         """Call assumes you're on the correct route already. We do not presently
@@ -175,7 +177,7 @@ class MissionPlanner:
                 pose.position, lane_id, lookahead, edge_ids
             )
 
-        return self._waypoints.waypoint_paths_at(pose.position, lookahead)
+        return self._waypoints.waypoint_paths_at(pose, lookahead)
 
     def _edge_ids(self, pose: Pose, lane_id: str = None):
         if self._mission.has_fixed_route:
@@ -188,7 +190,7 @@ class MissionPlanner:
             # We take the 10 closest waypoints to then filter down to that which has
             # the closest heading. This way we get the waypoint on our lane instead of
             # a potentially closer lane that is on a different junction connection.
-            closest_wps = self._waypoints.closest_waypoints(pose.position, 10)
+            closest_wps = self._waypoints.closest_waypoints(pose, desired_count=10)
             closest_wps = sorted(
                 closest_wps, key=lambda wp: abs(pose.heading - wp.heading)
             )

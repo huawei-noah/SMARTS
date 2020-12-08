@@ -913,7 +913,6 @@ class SMARTS(ShowBase):
                 )
             elif v.vehicle_id in self._vehicle_index.social_vehicle_ids:
                 # this is a social vehicle
-                vehicle = self._vehicle_index.vehicle_by_id(v.vehicle_id)
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     actor_type=envision_types.TrafficActorType.SocialVehicle,
                     vehicle_type=v.vehicle_type,

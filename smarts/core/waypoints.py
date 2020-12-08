@@ -34,6 +34,7 @@ with warnings.catch_warnings():
 
 from .coordinates import Heading, Pose
 from .utils.math import (
+    squared_dist,
     vec_to_radians,
     lerp,
     vec_2d,
@@ -44,7 +45,7 @@ from .utils.math import (
 
 @dataclass(frozen=True)
 class Waypoint:
-    pos: np.ndarray  # Center point of lane
+    pos: np.ndarray  # Point positioned on center of lane
     heading: Heading  # Heading angle of lane at this point (radians)
     lane_width: float  # Width of lane at this point (meters)
     speed_limit: float  # Lane speed in m/s
@@ -156,31 +157,50 @@ class Waypoints:
         rselect = random.choices if replace else random.sample
         return [linked_wp.wp for linked_wp in rselect(self._linked_waypoints, k=n)]
 
-    def closest_waypoint_batched(self, points):
-        linked_waypoints = self._closest_linked_wp_in_kd_tree_batched(
-            points, self._linked_waypoints, self._waypoints_kd_tree
+    def closest_waypoint_batched(self, poses, filter_from_count, within_radius):
+        linked_waypoints = self._closest_linked_wp_in_kd_tree_with_pose_batched(
+            poses,
+            self._linked_waypoints,
+            self._waypoints_kd_tree,
+            within_radius=within_radius,
+            k=filter_from_count,
         )
 
         return [l_wps[0].wp for l_wps in linked_waypoints]
 
-    def closest_waypoint(self, point):
-        linked_waypoint = self._closest_linked_wp_in_kd_tree_batched(
-            [point], self._linked_waypoints, self._waypoints_kd_tree
-        )[0][0]
-
-        return linked_waypoint.wp
+    def closest_waypoint(self, pose, filter_from_count=10, within_radius=10):
+        return self.closest_waypoint_batched(
+            [pose], filter_from_count, within_radius=within_radius
+        )[0]
 
     def closest_waypoints(self, point, desired_count):
-        linked_waypoints = self._closest_linked_wp_in_kd_tree_batched(
-            [point], self._linked_waypoints, self._waypoints_kd_tree, k=desired_count
+        linked_waypoints = self._closest_linked_wp_in_kd_tree_with_pose_batched(
+            [point],
+            self._linked_waypoints,
+            self._waypoints_kd_tree,
+            within_radius=10,
+            k=desired_count,
+            keep_all_k=True,
         )[0]
 
         return [lwp.wp for lwp in linked_waypoints]
 
-    def closest_waypoint_on_lane(self, point, lane_id):
+    def closest_waypoint_on_lane(self, pose, lane_id):
+        lane_kd_tree = self._waypoints_kd_tree_by_lane_id[lane_id]
+        linked_waypoint = self._closest_linked_wp_in_kd_tree_with_pose_batched(
+            [pose],
+            self._waypoints_by_lane_id[lane_id],
+            lane_kd_tree,
+            within_radius=10,
+            k=10,
+        )[0][0]
+
+        return linked_waypoint.wp
+
+    def closest_waypoint_on_lane_to_point(self, position, lane_id):
         lane_kd_tree = self._waypoints_kd_tree_by_lane_id[lane_id]
         linked_waypoint = self._closest_linked_wp_in_kd_tree_batched(
-            [point], self._waypoints_by_lane_id[lane_id], lane_kd_tree
+            [position], self._waypoints_by_lane_id[lane_id], lane_kd_tree
         )[0][0]
 
         return linked_waypoint.wp
@@ -199,16 +219,18 @@ class Waypoints:
 
         return unlinked_waypoint_paths
 
-    def waypoint_paths_at(self, point, lookahead):
-        closest_linked_wp = self._closest_linked_wp_in_kd_tree_batched(
-            [point], self._linked_waypoints, self._waypoints_kd_tree
-        )[0][0]
-        closest_lane = self._road_network.lane_by_id(closest_linked_wp.wp.lane_id)
+    def waypoint_paths_at(self, pose, lookahead, filter_from_count=3, within_radius=5):
+        closest_linked_wp = self.closest_waypoint(
+            pose, filter_from_count=filter_from_count, within_radius=within_radius
+        )
+        closest_lane = self._road_network.lane_by_id(closest_linked_wp.lane_id)
 
         waypoint_paths = []
         for lane in closest_lane.getEdge().getLanes():
             lane_id = lane.getID()
-            waypoint_paths += self.waypoint_paths_on_lane_at(point, lane_id, lookahead)
+            waypoint_paths += self.waypoint_paths_on_lane_at(
+                pose.position, lane_id, lookahead
+            )
 
         sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
         return sorted_wps
@@ -239,10 +261,61 @@ class Waypoints:
         sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
         return sorted_wps
 
+    def _closest_linked_wp_in_kd_tree_with_pose_batched(
+        self, poses, waypoints, tree, within_radius, k=10, keep_all_k=False
+    ):
+        linked_waypoints = self._closest_linked_wp_in_kd_tree_batched(
+            [pose.position[:2] for pose in poses], waypoints, tree, k=k
+        )
+
+        radius_sq = within_radius * within_radius
+        linked_waypoints = [
+            sorted(
+                l_wps,
+                key=lambda _lwp: squared_dist(poses[idx].position[:2], _lwp.wp.pos),
+            )
+            for idx, l_wps in enumerate(linked_waypoints)
+        ]
+        # exclude those outside radius except closest
+        if not keep_all_k:
+            linked_waypoints = [
+                [
+                    _lwp
+                    for i, _lwp in enumerate(_lwps)
+                    if squared_dist(poses[idx].position[:2], _lwp.wp.pos) <= radius_sq
+                    or i == 0
+                ]
+                for idx, _lwps in enumerate(linked_waypoints)
+            ]
+        # Get the nearest point for the points where the radius check failed
+        unfound_waypoints = [
+            (i, poses[i]) for i, group in enumerate(linked_waypoints) if len(group) == 0
+        ]
+        if len(unfound_waypoints) > 0:
+            remaining_linked_wps = self._closest_linked_wp_in_kd_tree_batched(
+                [pose.position[:2] for _, pose in unfound_waypoints],
+                waypoints,
+                tree=tree,
+                k=k,
+            )
+            # Replace the empty waypoint locations
+            for (i, _), wps in [
+                g for g in zip(unfound_waypoints, remaining_linked_wps)
+            ]:
+                linked_waypoints[i] = [wps]
+
+        return [
+            sorted(
+                l_wps,
+                key=lambda _lwp: abs(poses[idx].heading.relative_to(_lwp.wp.heading)),
+            )
+            for idx, l_wps in enumerate(linked_waypoints)
+        ]
+
     def _closest_linked_wp_in_kd_tree_batched(self, points, linked_wps, tree, k=1):
         p2ds = np.array([vec_2d(p) for p in points])
         closest_indices = tree.query(
-            p2ds, k=k, return_distance=False, sort_results=True
+            p2ds, k=min(k, len(linked_wps)), return_distance=False, sort_results=True
         )
 
         return [[linked_wps[idx] for idx in idxs] for idxs in closest_indices]
