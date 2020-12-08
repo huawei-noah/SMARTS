@@ -223,15 +223,15 @@ class Scenario:
             else:
                 scenario_roots.extend(Scenario.discover_scenarios(root))
 
-        if not shuffle_scenarios:
+        if shuffle_scenarios:
             np.random.shuffle(scenario_roots)
 
         return Scenario.variations_for_all_scenario_roots(
-            cycle(scenario_roots), agents_to_be_briefed
+            cycle(scenario_roots), agents_to_be_briefed, shuffle_scenarios
         )
 
     @staticmethod
-    def variations_for_all_scenario_roots(scenario_roots, agents_to_be_briefed):
+    def variations_for_all_scenario_roots(scenario_roots, agents_to_be_briefed, shuffle_scenarios):
         for scenario_root in scenario_roots:
             surface_patches = Scenario.discover_friction_map(scenario_root)
 
@@ -257,9 +257,14 @@ class Scenario:
             agent_missions = agent_missions or [None]
             social_agents = social_agents or [None]
 
-            roll_routes = random.randint(0, len(routes))
-            roll_agent_missions = random.randint(0, len(agent_missions))
-            roll_social_agents = random.randint(0, len(social_agents))
+            if shuffle_scenarios:
+                roll_routes = random.randint(0, len(routes))
+                roll_agent_missions = random.randint(0, len(agent_missions))
+                roll_social_agents = random.randint(0, len(social_agents))
+            else:
+                roll_routes = 0
+                roll_agent_missions = 0
+                roll_social_agents = 0
 
             for (
                 concrete_route,
