@@ -204,6 +204,7 @@ class TrafficGenerator:
                     speedDev=actor.speed.sigma,
                     sigma=sigma,
                     minGap=min_gap,
+                    maxSpeed=actor.max_speed,
                     **actor.lane_changing_model,
                     **actor.junction_model,
                 )

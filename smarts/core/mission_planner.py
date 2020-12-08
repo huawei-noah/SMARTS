@@ -29,7 +29,7 @@ from .sumo_road_network import SumoRoadNetwork
 from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
 from .waypoints import Waypoint, Waypoints
 from .route import ShortestRoute, EmptyRoute
-from .coordinates import Pose
+from .coordinates import Heading, Pose
 from .route import ShortestRoute, EmptyRoute
 from .scenario import EndlessGoal, LapMission, Mission, Start
 from .sumo_road_network import SumoRoadNetwork
@@ -48,6 +48,7 @@ class MissionPlanner:
         self._route = None
         self._road_network = road_network
         self._did_plan = False
+        self._task_is_triggered = False
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -147,7 +148,7 @@ class MissionPlanner:
         waypoints_with_task = None
         if self.mission.task is not None:
             if isinstance(self.mission.task, UTurn):
-                waypoints_with_task = self.uturn_waypoints(pose)
+                waypoints_with_task = self.uturn_waypoints(sim, pose, vehicle)
             elif isinstance(self.mission.task, CutIn):
                 waypoints_with_task = self.cut_in_waypoints(sim, pose, vehicle)
 
@@ -212,7 +213,7 @@ class MissionPlanner:
         return edge_ids
 
     def cut_in_waypoints(self, sim, pose: Pose, vehicle):
-        radius = 30
+        radius = self._mission.task.trigger_radius
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
             vehicle=vehicle, radius=radius
         )
@@ -230,7 +231,7 @@ class MissionPlanner:
         target_offset = self._road_network.offset_into_lane(
             target_lane, target_position
         )
-        if offset < target_offset:
+        if offset < target_offset + 5:
             # Need to catch up with the target vehicle first
             return []
 
@@ -246,7 +247,7 @@ class MissionPlanner:
         prev = position[:2]
         for i in range(len(p_x)):
             pos = np.array([p_x[i], p_y[i]])
-            heading = vec_to_radians(pos - prev)
+            heading = Heading(vec_to_radians(pos - prev))
             prev = pos
             lane = self._road_network.nearest_lane(pos)
             lane_id = lane.getID()
@@ -265,9 +266,17 @@ class MissionPlanner:
             trajectory.append(wp)
         return [trajectory]
 
-    def uturn_waypoints(self, pose: Pose):
+    def uturn_waypoints(self, sim, pose: Pose, vehicle):
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
+        radius = self._mission.task.trigger_radius
+        neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
+            vehicle=vehicle, radius=radius
+        )
+
+        if not neighborhood_vehicles and not self._task_is_triggered:
+            return []
+
         start_lane = self._road_network.nearest_lane(
             self._mission.start.position,
             include_junctions=False,
@@ -278,6 +287,8 @@ class MissionPlanner:
         current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
         if not start_edge.oncoming_edges:
             return []
+
+        self._task_is_triggered = True
 
         oncoming_edge = start_edge.oncoming_edges[0]
         oncoming_lanes = oncoming_edge.getLanes()
@@ -301,7 +312,7 @@ class MissionPlanner:
             # agent at the start edge
             p0 = pose.position[:2]
             distance = (
-                10 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
+                15 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
             )
             offset = radians_to_vec(heading) * distance
             p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
@@ -324,7 +335,7 @@ class MissionPlanner:
         trajectory = []
         for i in range(len(p_x)):
             pos = np.array([p_x[i], p_y[i]])
-            heading = vec_to_radians(target.pos - pos)
+            heading = Heading(vec_to_radians(target.pos - pos))
             lane = self._road_network.nearest_lane(pos)
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
