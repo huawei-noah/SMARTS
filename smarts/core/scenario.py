@@ -259,14 +259,14 @@ class Scenario:
             agent_missions = agent_missions or [None]
             social_agents = social_agents or [None]
 
+            roll_routes = 0
+            roll_agent_missions = 0
+            roll_social_agents = 0
+ 
             if shuffle_scenarios:
                 roll_routes = random.randint(0, len(routes))
                 roll_agent_missions = random.randint(0, len(agent_missions))
                 roll_social_agents = random.randint(0, len(social_agents))
-            else:
-                roll_routes = 0
-                roll_agent_missions = 0
-                roll_social_agents = 0
 
             for (
                 concrete_route,
