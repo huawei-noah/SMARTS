@@ -1,5 +1,4 @@
 import gc
-import logging
 
 import gym
 import pytest
@@ -12,8 +11,6 @@ from smarts.core.agent import AgentSpec, AgentPolicy
 SMARTS_MEMORY_GROWTH_LIMIT = 2e5
 EPISODE_MEMORY_GROWTH_LIMIT = 2e5
 TIMESTEP_SEC = 0.1
-# Disable logging because it causes memory growth
-logging.disable(logging.WARNING)
 
 
 @pytest.fixture
