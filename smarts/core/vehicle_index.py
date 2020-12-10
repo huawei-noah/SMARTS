@@ -18,19 +18,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-import functools
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from smarts.core.utils.logging import timeit
 from typing import NamedTuple
-import uuid
 
 import numpy as np
 import tableprint as tp
 
 from smarts.core import gen_id
 from smarts.core.utils.string import truncate
+from smarts.core.utils.cache import cache, clear_cache
 
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
@@ -41,12 +39,13 @@ VEHICLE_INDEX_ID_LENGTH = 128
 
 
 def _2id(id_: str):
-    assert len(id_) <= VEHICLE_INDEX_ID_LENGTH, id_
+    separator = b"$"
+    assert len(id_) <= VEHICLE_INDEX_ID_LENGTH - len(separator), id_
 
-    id_ = id_.zfill(VEHICLE_INDEX_ID_LENGTH)
     if not isinstance(id_, bytes):
         id_ = bytes(id_.encode())
-    return id_
+
+    return (separator + id_).zfill(VEHICLE_INDEX_ID_LENGTH - len(separator))
 
 
 class _ActorType(IntEnum):
@@ -64,124 +63,6 @@ class _ControlEntity(NamedTuple):
     is_boid: bool
     is_hijacked: bool
     position: np.ndarray
-
-
-# TODO: Move all caching-related decorators into a separate module
-
-from typing import Any
-from types import FunctionType
-from threading import RLock
-
-
-# Taken from https://git.io/JI4PW
-class _HashedSeq(list):
-    """ This class guarantees that hash() will be called no more than once
-        per element.  This is important because the lru_cache() will hash
-        the key multiple times on a cache miss.
-    """
-
-    __slots__ = "hashvalue"
-
-    def __init__(self, tup, hash=hash):
-        self[:] = tup
-        self.hashvalue = hash(tup)
-
-    def __hash__(self):
-        return self.hashvalue
-
-
-# Taken from https://git.io/JI4PW
-def _make_key(
-    args,
-    kwds,
-    typed=False,
-    kwd_mark=(object(),),
-    fasttypes={int, str},
-    tuple=tuple,
-    type=type,
-    len=len,
-):
-    """Make a cache key from optionally typed positional and keyword arguments
-    The key is constructed in a way that is flat as possible rather than
-    as a nested structure that would take more memory.
-    If there is only a single argument and its data type is known to cache
-    its hash value, then that argument is returned without a wrapper.  This
-    saves space and improves lookup speed.
-    """
-    # All of code below relies on kwds preserving the order input by the user.
-    # Formerly, we sorted() the kwds before looping.  The new way is *much*
-    # faster; however, it means that f(x=1, y=2) will now be treated as a
-    # distinct call from f(y=2, x=1) which will be cached separately.
-    key = args
-    if kwds:
-        key += kwd_mark
-        for item in kwds.items():
-            key += item
-    if typed:
-        key += tuple(type(v) for v in args)
-        if kwds:
-            key += tuple(type(v) for v in kwds.values())
-    elif len(key) == 1 and type(key[0]) in fasttypes:
-        return key[0]
-    return _HashedSeq(key)
-
-
-# Inspired by https://strandmark.wordpress.com/2018/10/01/clearable-per-instance-method-cache-in-python/
-class _CacheCallable:
-    def __init__(self, cache_key: str, method: FunctionType, instance: Any):
-        self._method = method
-        self._instance = instance
-        self._cache = instance.__dict__
-        self._cache_key = cache_key
-        self._lock = RLock()
-
-    def __call__(self, *args, **kwargs) -> Any:
-        cached = self._cache.get(self._cache_key, {})
-
-        key = _make_key(args, kwargs)
-        if key not in cached:
-            with self._lock:
-                # Check if another thread filled cache while we awaited lock
-                cached = self._cache.get(self._cache_key, {})
-                if key not in cached:
-                    cached[key] = self._method(self._instance, *args, **kwargs)
-                    self._cache[self._cache_key] = cached
-
-        return cached[key]
-
-    def cache_clear(self):
-        self._cache[self._cache_key] = {}
-
-
-class cache:
-    def __init__(self, method: FunctionType):
-        self._method = method
-        self._cache_key = f"_cache_decorator_{method.__name__}"
-
-    def __get__(self, instance: Any, _):
-        assert instance, "Method must be called on an object"
-        return _CacheCallable(self._cache_key, self._method, instance)
-
-
-def clear_cache(func):
-    """Clears all the LRU caches."""
-
-    def _clear_caches(self):
-        self.vehicle_ids.cache_clear()
-        self.agent_vehicle_ids.cache_clear()
-        self.social_vehicle_ids.cache_clear()
-        self.vehicle_is_hijacked_or_shadowed.cache_clear()
-        self.vehicle_ids_by_actor_id.cache_clear()
-        self.actor_id_from_vehicle_id.cache_clear()
-        self.shadow_actor_id_from_vehicle_id.cache_clear()
-        self.vehicle_position.cache_clear()
-
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        _clear_caches(self)
-        return func(self, *args, **kwargs)
-
-    return wrapper
 
 
 # TODO: Consider wrapping the controlled_by recarry into a sep state object
@@ -253,8 +134,7 @@ class VehicleIndex:
         return index
 
     def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
+        result = self.__class__.__new__(self.__class__)
         memo[id(self)] = result
 
         dict_ = copy(self.__dict__)
@@ -304,14 +184,6 @@ class VehicleIndex:
 
         vehicle = vehicle[0]
         return bool(vehicle["is_hijacked"]), bool(vehicle["shadow_actor_id"])
-
-    def vehicle_is_hijacked(self, vehicle_id):
-        is_hijacked, _ = self.vehicle_is_hijacked_or_shadowed(vehicle_id)
-        return is_hijacked
-
-    def vehicle_is_shadowed(self, vehicle_id):
-        _, is_shadowed = self.vehicle_is_hijacked_or_shadowed(vehicle_id)
-        return is_shadowed
 
     @cache
     def vehicle_ids_by_actor_id(self, actor_id, include_shadowers=False):
@@ -367,12 +239,21 @@ class VehicleIndex:
         vehicle_ids = self.vehicle_ids_by_actor_id(actor_id, include_shadowers)
         return [self._vehicles[_2id(id_)] for id_ in vehicle_ids]
 
+    def vehicle_is_hijacked(self, vehicle_id):
+        is_hijacked, _ = self.vehicle_is_hijacked_or_shadowed(vehicle_id)
+        return is_hijacked
+
+    def vehicle_is_shadowed(self, vehicle_id):
+        _, is_shadowed = self.vehicle_is_hijacked_or_shadowed(vehicle_id)
+        return is_shadowed
+
     @property
     def vehicles(self):
+        # XXX: Order is not ensured
         return list(self._vehicles.values())
 
     def vehicleitems(self):
-        return self._vehicles.items()
+        return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items())
 
     def vehicle_by_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
@@ -380,12 +261,12 @@ class VehicleIndex:
 
     @clear_cache
     def teardown_vehicles_by_vehicle_ids(self, vehicle_ids):
-        vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
+        self._log.debug(f"Tearing down vehicle ids: {vehicle_ids}")
 
+        vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
         if len(vehicle_ids) == 0:
             return
 
-        self._log.debug(f"Tearing down vehicle ids: {vehicle_ids}")
         for vehicle_id in vehicle_ids:
             self._vehicles[vehicle_id].teardown()
             del self._vehicles[vehicle_id]
@@ -395,7 +276,7 @@ class VehicleIndex:
             self._sensor_states.pop(vehicle_id, None)
             self._controller_states.pop(vehicle_id, None)
 
-            # TODO: This stores actors/agents as well. Those aren't being cleaned-up
+            # TODO: This stores actors/agents as well; those aren't being cleaned-up
             self._2id_to_id.pop(vehicle_id, None)
 
         remove_vehicle_indices = np.isin(
@@ -434,6 +315,7 @@ class VehicleIndex:
         self._vehicles = {}
         self._controller_states = {}
         self._sensor_states = {}
+        self._2id_to_id = {}
 
     @clear_cache
     def start_agent_observation(
@@ -474,9 +356,9 @@ class VehicleIndex:
     def switch_control_to_agent(
         self, sim, vehicle_id, agent_id, boid=False, hijacking=False, recreate=False
     ):
-        vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
-
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
+
+        vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
         if recreate:
             # XXX: Recreate is presently broken for bubbles because it impacts the
             #      sumo traffic sim sync(...) logic in how it detects a vehicle as
@@ -519,11 +401,12 @@ class VehicleIndex:
 
     @clear_cache
     def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
-        vehicle_id, social_vehicle_id = _2id(vehicle_id), _2id(social_vehicle_id)
-
         self._log.debug(
             f"Relinquishing agent control v_id={vehicle_id} sv_id={social_vehicle_id}"
         )
+
+        vehicle_id, social_vehicle_id = _2id(vehicle_id), _2id(social_vehicle_id)
+
         vehicle = self._vehicles[vehicle_id]
         box_chassis = BoxChassis(
             pose=vehicle.chassis.pose,
@@ -619,7 +502,7 @@ class VehicleIndex:
         # Take control of the new vehicle
         self._enfranchise_actor(
             sim,
-            agent_id,
+            _2id(agent_id),
             agent_interface,
             new_vehicle,
             controller_state,
@@ -668,7 +551,7 @@ class VehicleIndex:
 
         self._enfranchise_actor(
             sim,
-            agent_id,
+            _2id(agent_id),
             agent_interface,
             vehicle,
             controller_state,
@@ -691,16 +574,15 @@ class VehicleIndex:
         boid=False,
         hijacking=False,
     ):
-        # XXX: agent_id must be the original agent_id (not the fixed _2id(...))
-        original_agent_id = agent_id
+        # XXX: agent_id is already fixed-length as this is an internal method.
+        original_agent_id = self._2id_to_id[agent_id]
+        vehicle_id = _2id(vehicle.id)
 
         Vehicle.attach_sensors_to_vehicle(
             sim, vehicle, agent_interface, sensor_state.mission_planner
         )
         vehicle.np.reparentTo(sim.vehicles_np)
 
-        vehicle_id = _2id(vehicle.id)
-        agent_id = _2id(original_agent_id)
         self._sensor_states[vehicle_id] = sensor_state
         self._controller_states[vehicle_id] = controller_state
         self._vehicles[vehicle_id] = vehicle
@@ -748,7 +630,7 @@ class VehicleIndex:
         return vehicle
 
     def sensor_states_items(self):
-        return self._sensor_states.items()
+        return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._sensor_states.items())
 
     def sensor_state_for_vehicle_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)

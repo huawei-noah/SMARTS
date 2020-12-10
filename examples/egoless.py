@@ -22,7 +22,7 @@ def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
     )
 
     if max_episode_steps is None:
-        max_episode_steps = 100
+        max_episode_steps = 1000
 
     for episode in episodes(n=num_episodes):
         env.reset()
@@ -42,6 +42,6 @@ if __name__ == "__main__":
     main(
         scenarios=args.scenarios,
         headless=args.headless,
-        num_episodes=2,
+        num_episodes=args.episodes,
         seed=args.seed,
     )
