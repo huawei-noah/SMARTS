@@ -37,7 +37,7 @@ from .controllers import ControllerState
 from .sensors import SensorState
 from .vehicle import Vehicle
 
-VEHICLE_INDEX_ID_LENGTH = 64
+VEHICLE_INDEX_ID_LENGTH = 128
 
 
 def _2id(id_: str):
@@ -297,7 +297,7 @@ class VehicleIndex:
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         if not np.any(v_index):
-            return False
+            return False, False
 
         vehicle = self._controlled_by[v_index]
         assert len(vehicle) == 1
