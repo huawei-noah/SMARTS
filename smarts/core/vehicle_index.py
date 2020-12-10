@@ -405,8 +405,6 @@ class VehicleIndex:
         self._controlled_by = self._controlled_by[~remove_vehicle_indices]
 
     def teardown_vehicles_by_actor_ids(self, actor_ids, include_shadowing=True):
-        actor_ids = [_2id(id_) for id_ in actor_ids]
-
         vehicle_ids = []
         for actor_id in actor_ids:
             vehicle_ids.extend(
@@ -415,7 +413,7 @@ class VehicleIndex:
 
         self.teardown_vehicles_by_vehicle_ids(vehicle_ids)
 
-        return [self._2id_to_id[id_] for id_ in vehicle_ids]
+        return vehicle_ids
 
     @clear_cache
     def sync(self):
@@ -572,6 +570,8 @@ class VehicleIndex:
     ):
         # XXX: vehicle_id and agent_id are already fixed-length as this is an internal
         #      method.
+        agent_id = self._2id_to_id[agent_id]
+
         # TODO: There existed a SUMO connection error bug
         #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occured
         #       during lange changing when we hijacked/trapped a SUMO vehicle. Forcing
@@ -589,10 +589,9 @@ class VehicleIndex:
         mission_planner = sensor_state.mission_planner
 
         # Create a new vehicle to replace the old one
-        new_vehicle_id = vehicle_id
         new_vehicle = Vehicle.build_agent_vehicle(
             sim,
-            new_vehicle_id,
+            vehicle.id,
             agent_interface,
             mission_planner,
             sim.scenario.vehicle_filepath,
@@ -609,13 +608,13 @@ class VehicleIndex:
 
         # Reserve space inside the traffic sim
         sim._traffic_sim.reserve_traffic_location_for_vehicle(
-            vehicle_id, vehicle.chassis.to_polygon
+            vehicle.id, vehicle.chassis.to_polygon
         )
 
         # Remove the old vehicle
-        self.teardown_vehicles_by_vehicle_ids([vehicle_id])
+        self.teardown_vehicles_by_vehicle_ids([vehicle.id])
         # HACK: Directly remove the vehicle from the traffic provider
-        sim._traffic_sim.remove_traffic_vehicle(vehicle_id)
+        sim._traffic_sim.remove_traffic_vehicle(vehicle.id)
 
         # Take control of the new vehicle
         self._enfranchise_actor(
