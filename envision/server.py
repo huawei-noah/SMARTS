@@ -139,11 +139,18 @@ class Frames:
         capacity size.
         """
         bytes_to_mb = 1e-6
+        start_frames_to_keep = 1
+        end_frames_to_keep = 10
         sizes = [frame.size for frame in self._frames]
-        while len(self._frames) >= 2 and sum(sizes) * bytes_to_mb > self._max_capacity:
+        while (
+            len(self._frames) > start_frames_to_keep + end_frames_to_keep
+            and sum(sizes) * bytes_to_mb > self._max_capacity
+        ):
             # XXX: randint(1, ...), we skip the start frame because that is a "safe"
             #      frame we can always rely on being available.
-            idx_to_delete = random.randint(1, len(self._frames) - 1)
+            idx_to_delete = random.randint(
+                1, len(self._frames) - 1 - end_frames_to_keep
+            )
             self._frames[idx_to_delete - 1].next_ = self._frames[idx_to_delete].next_
             del sizes[idx_to_delete]
             del self._frames[idx_to_delete]
