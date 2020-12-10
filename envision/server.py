@@ -92,7 +92,6 @@ class Frame:
 
 class Frames:
     def __init__(self, max_capacity_mb=500):
-        self._origin_timestamp = None
         self._max_capacity = max_capacity_mb
 
         # XXX: Index of timestamp in `self._timestamps` matches the index of the
@@ -109,16 +108,16 @@ class Frames:
 
     @property
     def start_time(self):
-        return self._origin_timestamp
+        return self._frames[0].timestamp if self._frames else None
 
     @property
     def elapsed_time(self):
-        return self._frames[-1].timestamp - self._origin_timestamp
+        if len(self._frames) == 0:
+            return 0
+
+        return self._frames[-1].timestamp - self._frames[0].timestamp
 
     def append(self, frame: Frame):
-        if len(self._frames) == 0:
-            self._origin_timestamp = frame.timestamp
-
         self._enforce_max_capacity()
 
         if len(self._frames) >= 1:
@@ -141,12 +140,12 @@ class Frames:
         """
         bytes_to_mb = 1e-6
         sizes = [frame.size for frame in self._frames]
-        while sum(sizes) * bytes_to_mb > self._max_capacity:
+        while len(self._frames) >= 2 and sum(sizes) * bytes_to_mb > self._max_capacity:
             # XXX: randint(1, ...), we skip the start frame because that is a "safe"
             #      frame we can always rely on being available.
             idx_to_delete = random.randint(1, len(self._frames) - 1)
-            sizes[idx_to_delete] = 0
             self._frames[idx_to_delete - 1].next_ = self._frames[idx_to_delete].next_
+            del sizes[idx_to_delete]
             del self._frames[idx_to_delete]
             del self._timestamps[idx_to_delete]
 
