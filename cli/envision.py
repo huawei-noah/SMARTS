@@ -40,7 +40,7 @@ def envision_cli():
     "-c",
     "--max_capacity",
     help=(
-        "Max capacity in MB of Envision. The larger the more contiguous history "
+        "Max capacity in MB of Envision's playback buffer. The larger the more contiguous history "
         "Envision can store."
     ),
     default=500,
