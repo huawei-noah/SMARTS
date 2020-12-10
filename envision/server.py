@@ -139,13 +139,16 @@ class Frames:
         """Sample random frames and clear their data to ensure we're under the max
         capacity size.
         """
+        bytes_to_mb = 1e-6
         sizes = [frame.size for frame in self._frames]
-        while sum(sizes) * 1e-6 > self._max_capacity:
+        while sum(sizes) * bytes_to_mb > self._max_capacity:
             # XXX: randint(1, ...), we skip the start frame because that is a "safe"
             #      frame we can always rely on being available.
             idx_to_delete = random.randint(1, len(self._frames) - 1)
             sizes[idx_to_delete] = 0
-            self._frames[idx_to_delete].data = None
+            self._frames[idx_to_delete - 1].next_ = self._frames[idx_to_delete].next_
+            del self._frames[idx_to_delete]
+            del self._timestamps[idx_to_delete]
 
 
 class WebClientRunLoop:
@@ -155,6 +158,7 @@ class WebClientRunLoop:
     """
 
     def __init__(self, frames, web_client_handler, timestep_sec, seek=None):
+        self._log = logging.getLogger(__class__.__name__)
         self._frames = frames
         self._client = web_client_handler
         self._timestep_sec = timestep_sec
@@ -171,7 +175,7 @@ class WebClientRunLoop:
 
     def run_forever(self):
         async def run_loop():
-            # Wait till the first frame is present
+            # If no frame, wait till one is present
             frame = self._frames.start_frame
             while frame is None:
                 await asyncio.sleep(0.1)
@@ -181,16 +185,15 @@ class WebClientRunLoop:
                 # Handle seek
                 if self._seek is not None and self._frames.start_time is not None:
                     frame = self._frames(self._frames.start_time + self._seek)
-                    frame = self._frame_with_data(frame)
                     self._seek = None
 
                 if frame is None:
-                    # TODO: This shouldn't happen, log a warning
+                    self._log.warning("Seek frame missing, reverting to start frame")
                     frame = self._frames.start_frame
 
                 closed = self._push_frame_to_web_client(frame)
                 if closed:
-                    # XXX: Log warning that the socket closed and we're exiting
+                    self._log.debug("Socket closed, exiting")
                     return
 
                 frame = await self._wait_for_next_frame(frame)
@@ -223,24 +226,10 @@ class WebClientRunLoop:
 
     async def _wait_for_next_frame(self, frame):
         while True:
+            # TODO: Consider using an asyncio queue instead
             await asyncio.sleep(self._timestep_sec)
-            next_frame = self._frame_with_data(frame.next_)
-            if next_frame is not None:
-                return next_frame
-
-    def _frame_with_data(self, frame):
-        # May loop through until it finds a frame with data
-        if frame is None:
-            return None
-
-        while frame.data is None:
-            frame = frame.next_
-
-            # No more frames left
-            if frame is None:
-                return None
-
-        return frame
+            if frame.next_ is not None:
+                return frame.next_
 
 
 class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
@@ -256,7 +245,6 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
     async def open(self, simulation_id):
         self._logger.debug(f"Broadcast websocket opened for simulation={simulation_id}")
         self._simulation_id = simulation_id
-        # TODO: Make capacity a command line parameter
         self._frames = Frames(max_capacity_mb=self._max_capacity_mb)
         FRAMES[simulation_id] = self._frames
         WEB_CLIENT_RUN_LOOPS[simulation_id] = set()
@@ -285,7 +273,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
             raise tornado.web.HTTPError(404)
 
-        # TODO: Set timestamp correctly...
+        # TODO: Set this appropriately
         timestep_sec = 0.1
         self._run_loop = WebClientRunLoop(
             frames=FRAMES[simulation_id],
@@ -303,6 +291,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         self._logger.debug(f"State websocket closed")
         for run_loop in WEB_CLIENT_RUN_LOOPS.values():
             if self in run_loop:
+                self._run_loop.stop()
                 run_loop.remove(self._run_loop)
 
     async def on_message(self, message):
