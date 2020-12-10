@@ -47,7 +47,15 @@ import earcut from "earcut";
 // Required by Babylon.js
 window.earcut = earcut;
 
-export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
+export default function Simulation({
+  simulationId,
+  client,
+  showScores,
+  egoView,
+  canvasRef,
+  onElapsedTimesChanged = (current, total) => {},
+  style = {},
+}) {
   const [scene, setScene] = useState(null);
 
   const [egoWaypointModel, setEgoWaypointModel] = useState(null);
@@ -138,9 +146,12 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
   useEffect(() => {
     let stopPolling = false;
     (async () => {
-      for await (let wstate of client.worldstate(simulationId)) {
+      for await (const [wstate, elapsed_times] of client.worldstate(
+        simulationId
+      )) {
         if (!stopPolling) {
           setWorldState(wstate);
+          onElapsedTimesChanged(...elapsed_times);
         }
       }
     })();
@@ -243,7 +254,9 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
   }, [scene, JSON.stringify(edgeDividerPos)]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div
+      style={{ position: "relative", width: "100%", height: "100%", ...style }}
+    >
       <SceneComponent
         antialias
         onSceneReady={onSceneReady}
@@ -297,4 +310,4 @@ export default ({ simulationId, client, showScores, egoView, canvasRef }) => {
       ) : null}
     </div>
   );
-};
+}
