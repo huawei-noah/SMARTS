@@ -21,7 +21,6 @@ import importlib.resources as pkg_resources
 import logging
 import os
 from collections import defaultdict
-from smarts.core.utils.logging import timeit
 from typing import List, Sequence
 
 import gltf
@@ -168,8 +167,7 @@ class SMARTS(ShowBase):
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
 
         try:
-            with timeit("step"):
-                return self._step(agent_actions)
+            return self._step(agent_actions)
         except (KeyboardInterrupt, SystemExit):
             # ensure we clean-up if the user exits the simulation
             self._log.info("Simulation was interrupted by the user.")
