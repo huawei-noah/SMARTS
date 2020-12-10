@@ -95,8 +95,9 @@ class SMARTS(ShowBase):
         except Exception as e:
             # Known reasons for this failing:
             raise Exception(
-                "Display is not found. Try running with different configurations of "
-                "`export Display=` using `:0`, `:1`... If this does not work please consult "
+                "SMARTS: Error in initializing parent class ShowBase."
+                "A potential reason is display not found. Try running with different configurations of "
+                "`export Display=` using `:0`, `:1`... . If this does not work please consult "
                 "the documentation."
             ) from e
 
