@@ -502,7 +502,7 @@ class VehicleIndex:
         # Take control of the new vehicle
         self._enfranchise_actor(
             sim,
-            _2id(agent_id),
+            agent_id,
             agent_interface,
             new_vehicle,
             controller_state,
@@ -551,7 +551,7 @@ class VehicleIndex:
 
         self._enfranchise_actor(
             sim,
-            _2id(agent_id),
+            agent_id,
             agent_interface,
             vehicle,
             controller_state,
@@ -574,14 +574,16 @@ class VehicleIndex:
         boid=False,
         hijacking=False,
     ):
-        # XXX: agent_id is already fixed-length as this is an internal method.
-        original_agent_id = self._2id_to_id[agent_id]
-        vehicle_id = _2id(vehicle.id)
+        # XXX: agent_id must be the original agent_id (not the fixed _2id(...))
+        original_agent_id = agent_id
 
         Vehicle.attach_sensors_to_vehicle(
             sim, vehicle, agent_interface, sensor_state.mission_planner
         )
         vehicle.np.reparentTo(sim.vehicles_np)
+
+        vehicle_id = _2id(vehicle.id)
+        agent_id = _2id(original_agent_id)
 
         self._sensor_states[vehicle_id] = sensor_state
         self._controller_states[vehicle_id] = controller_state
