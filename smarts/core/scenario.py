@@ -748,7 +748,7 @@ class Scenario:
         return os.path.join(self._root, "map.glb")
 
     def unique_sumo_log_file(self):
-        return os.path.join(self._log_dir, f"sumo-{uuid.uuid4()}")
+        return os.path.join(self._log_dir, f"sumo-{str(uuid.uuid4())[:8]}")
 
     @property
     def waypoints(self):

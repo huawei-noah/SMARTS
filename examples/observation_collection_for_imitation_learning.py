@@ -32,9 +32,9 @@ def main(scenarios, headless, seed):
     for _ in range(5000):
         smarts.step({})
         smarts.attach_sensors_to_vehicles(
-            agent_spec, smarts.vehicle_index.social_vehicle_ids
+            agent_spec, smarts.vehicle_index.social_vehicle_ids()
         )
-        obs, _, _, _ = smarts.observe_from(smarts.vehicle_index.social_vehicle_ids)
+        obs, _, _, _ = smarts.observe_from(smarts.vehicle_index.social_vehicle_ids())
         # TODO: save observations for imitation learning
 
 
