@@ -35,4 +35,6 @@ def seed(a):
 
 
 def gen_id():
-    return str(uuid.uuid4())[:8]
+    """Generates a unique but deterministic id if `smarts.core.seed` has set the core seed."""
+    id_ = uuid.UUID(int=random.getrandbits(128))
+    return str(id_)[:8]
