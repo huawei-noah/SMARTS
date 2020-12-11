@@ -17,24 +17,43 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os
+import time
+import sys
+import signal
+import subprocess
+from contextlib import contextmanager
+
 import click
 
-from .experiments import experiments_cli
-from .envision import envision_cli
-from .studio import scenario_cli
-from .zoo import zoo_cli
+
+@contextmanager
+def kill_process_group_afterwards():
+    os.setpgrp()
+    try:
+        yield
+    finally:
+        # Kill all processes in my group
+        os.killpg(0, signal.SIGKILL)
 
 
-@click.group()
-def scl():
+@click.group(name="experiments")
+def experiments_cli():
     pass
 
 
-scl.add_command(experiments_cli)
-scl.add_command(envision_cli)
-scl.add_command(scenario_cli)
-scl.add_command(zoo_cli)
+@experiments_cli.command(name="run")
+@click.argument("script_path", type=click.Path(exists=True), metavar="<script>")
+@click.argument("script_args", nargs=-1, type=click.UNPROCESSED)
+def run_experiment(script_path, script_args):
+    with kill_process_group_afterwards():
+        subprocess.Popen(
+            ["scl", "envision", "start", "-s", "./scenarios", "-p", "8081"],
+        )
+        # Just in case: give Envision a bit of time to warm up
+        time.sleep(0.5)
+        script = subprocess.Popen([sys.executable, script_path, *script_args],)
+        script.communicate()
 
 
-if __name__ == "__main__":
-    scl()
+experiments_cli.add_command(run_experiment)
