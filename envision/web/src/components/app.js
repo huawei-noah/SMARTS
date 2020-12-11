@@ -26,18 +26,15 @@ import {
   useRouteMatch,
 } from "react-router-dom";
 import html2canvas from "html2canvas";
-import {
-  RecordRTCPromisesHandler,
-  invokeSaveAsDialog,
-  getSeekableBlob,
-} from "recordrtc";
+import { RecordRTCPromisesHandler, invokeSaveAsDialog } from "recordrtc";
 import { Layout } from "antd";
 const { Content } = Layout;
-
 import Header from "./header";
 import Simulation from "./simulation";
 import SimulationGroup from "./simulation_group";
 import PlaybackBar from "./playback_bar";
+import { useToasts } from "react-toast-notifications";
+import transcode from "../helpers/transcode";
 
 // To fix https://git.io/JftW9
 window.html2canvas = html2canvas;
@@ -50,6 +47,7 @@ function App({ client }) {
   const [totalElapsedTime, setTotalElapsedTime] = useState(1);
   const simulationCanvasRef = useRef(null);
   const recorderRef = useRef(null);
+  const { addToast } = useToasts();
   const history = useHistory();
 
   // also includes all
@@ -74,21 +72,23 @@ function App({ client }) {
       simulationCanvasRef.current,
       {
         type: "canvas",
+        mimeType: "video/webm;codecs=h264",
       }
     );
     await recorderRef.current.startRecording();
   }
 
   async function onStopRecording() {
+    addToast("Stopping recording", { appearance: "info" });
     await recorderRef.current.stopRecording();
-    let blob = await recorderRef.current.getBlob();
 
-    getSeekableBlob(blob, function (seekableBlob) {
-      invokeSaveAsDialog(
-        seekableBlob,
-        `envision-${Math.round(Date.now() / 1000)}.webm`
-      );
-    });
+    let onMessage = (message) => addToast(message, { appearance: "info" });
+    let blob = await recorderRef.current.getBlob();
+    let outputBlob = await transcode(blob, onMessage);
+    invokeSaveAsDialog(
+      outputBlob,
+      `envision-${Math.round(Date.now() / 1000)}.mp4`
+    );
   }
 
   function onSelectSimulation(simulationId) {
