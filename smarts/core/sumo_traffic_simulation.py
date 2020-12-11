@@ -687,11 +687,11 @@ class SumoTrafficSimulation:
         self._traci_conn.vehicle.remove(vehicle_id)
         self._sumo_vehicle_ids.remove(vehicle_id)
 
-    def _shape_of_vehicle(self, sumo_vehicle_state_all, vehicle_id):
-        p = sumo_vehicle_state_all[vehicle_id][66]  # getPosition
-        length = sumo_vehicle_state_all[vehicle_id][68]  # getLength
-        width = sumo_vehicle_state_all[vehicle_id][77]  # getWidth
-        heading = Heading.from_sumo(sumo_vehicle_state_all[vehicle_id][67])  # getAngle
+    def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):
+        p = sumo_vehicle_state[vehicle_id][tc.VAR_POSITION]
+        length = sumo_vehicle_state[vehicle_id][tc.VAR_LENGTH]
+        width = sumo_vehicle_state[vehicle_id][tc.VAR_WIDTH]
+        heading = Heading.from_sumo(sumo_vehicle_state[vehicle_id][tc.VAR_ANGLE])
 
         poly = shapely_box(p[0] - width * 0.5, p[1] - length, p[0] + width * 0.5, p[1],)
         return shapely_rotate(poly, heading, use_radians=True)
