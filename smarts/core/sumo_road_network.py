@@ -505,7 +505,7 @@ class SumoRoadNetwork:
         edge = random.choice(self._graph.getEdges(False))
         return self.random_route_starting_at_edge(edge, max_route_len)
 
-    def compute_traffic_dividers(self):
+    def compute_traffic_dividers(self, threshold=1):
         lane_dividers = []  # divider between lanes with same traffic direction
         edge_dividers = []  # divider between lanes with opposite traffic direction
         edge_borders = []
@@ -532,7 +532,7 @@ class SumoRoadNetwork:
                 else:
                     lane_dividers.append(left_side)
 
-        # The edge borders that overlapped in positions form a edge divider
+        # The edge borders that overlapped in positions form an edge divider
         for i in range(len(edge_borders) - 1):
             for j in range(i + 1, len(edge_borders)):
                 edge_border_i = np.array(
@@ -541,7 +541,9 @@ class SumoRoadNetwork:
                 edge_border_j = np.array(
                     [edge_borders[j][-1], edge_borders[j][0]]
                 )  # start and end position with reverse traffic direction
-                if np.linalg.norm(edge_border_i - edge_border_j) < 0.001:
+
+                # The edge borders of two lanes do not always overlap perfectly, thus relax the tolerance threshold to 1
+                if np.linalg.norm(edge_border_i - edge_border_j) < threshold:
                     edge_dividers.append(edge_borders[i])
 
         return lane_dividers, edge_dividers
