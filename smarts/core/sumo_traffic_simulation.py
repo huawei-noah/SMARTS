@@ -488,8 +488,28 @@ class SumoTrafficSimulation:
         ]
 
         reserved_areas = [position for position in self._reserved_areas.values()]
+
+        # Subscribe to all vehicles to reduce repeated traci calls
         for vehicle_id in newly_departed_sumo_traffic:
-            other_vehicle_shape = self._shape_of_vehicle(vehicle_id)
+            self._traci_conn.vehicle.subscribe(
+                vehicle_id,
+                [
+                    tc.VAR_POSITION,  # Decimal=66,  Hex=0x42
+                    tc.VAR_ANGLE,  # Decimal=67,  Hex=0x43
+                    tc.VAR_SPEED,  # Decimal=64,  Hex=0x40
+                    tc.VAR_VEHICLECLASS,  # Decimal=73,  Hex=0x49
+                    tc.VAR_ROUTE_INDEX,  # Decimal=105, Hex=0x69
+                    tc.VAR_EDGES,  # Decimal=84,  Hex=0x54
+                    tc.VAR_TYPE,  # Decimal=79,  Hex=0x4F
+                    tc.VAR_LENGTH,  # Decimal=68,  Hex=0x44
+                    tc.VAR_WIDTH,  # Decimal=77,  Hex=0x4d
+                ],
+            )
+
+        sumo_vehicle_state = self._traci_conn.vehicle.getAllSubscriptionResults()
+
+        for vehicle_id in newly_departed_sumo_traffic:
+            other_vehicle_shape = self._shape_of_vehicle(sumo_vehicle_state, vehicle_id)
 
             violates_reserved_area = False
             for reserved_area in reserved_areas:
@@ -499,21 +519,10 @@ class SumoTrafficSimulation:
 
             if violates_reserved_area:
                 self._traci_conn.vehicle.remove(vehicle_id)
+                sumo_vehicle_state.pop(vehicle_id)
                 continue
 
             self._log.debug("SUMO vehicle %s entered simulation", vehicle_id)
-            self._traci_conn.vehicle.subscribe(
-                vehicle_id,
-                [
-                    tc.VAR_POSITION,
-                    tc.VAR_ANGLE,
-                    tc.VAR_SPEED,
-                    tc.VAR_VEHICLECLASS,
-                    tc.VAR_ROUTE_INDEX,
-                    tc.VAR_EDGES,
-                    tc.VAR_TYPE,
-                ],
-            )
 
         # Non-sumo vehicles will show up the step after the sync where the non-sumo vehicle is
         # added.
@@ -526,8 +535,6 @@ class SumoTrafficSimulation:
         for vehicle_id in newly_departed_non_sumo_vehicles:
             if vehicle_id in self._reserved_areas:
                 del self._reserved_areas[vehicle_id]
-
-        sumo_vehicle_state = self._traci_conn.vehicle.getAllSubscriptionResults()
 
         self._sumo_vehicle_ids = (
             set(sumo_vehicle_state.keys()) - self._non_sumo_vehicle_ids
@@ -680,11 +687,11 @@ class SumoTrafficSimulation:
         self._traci_conn.vehicle.remove(vehicle_id)
         self._sumo_vehicle_ids.remove(vehicle_id)
 
-    def _shape_of_vehicle(self, vehicle_id):
-        p = self._traci_conn.vehicle.getPosition(vehicle_id)
-        length = self._traci_conn.vehicle.getLength(vehicle_id)
-        width = self._traci_conn.vehicle.getWidth(vehicle_id)
-        heading = Heading.from_sumo(self._traci_conn.vehicle.getAngle(vehicle_id))
+    def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):
+        p = sumo_vehicle_state[vehicle_id][tc.VAR_POSITION]
+        length = sumo_vehicle_state[vehicle_id][tc.VAR_LENGTH]
+        width = sumo_vehicle_state[vehicle_id][tc.VAR_WIDTH]
+        heading = Heading.from_sumo(sumo_vehicle_state[vehicle_id][tc.VAR_ANGLE])
 
         poly = shapely_box(p[0] - width * 0.5, p[1] - length, p[0] + width * 0.5, p[1],)
         return shapely_rotate(poly, heading, use_radians=True)
