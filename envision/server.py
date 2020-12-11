@@ -275,6 +275,9 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
     def check_origin(self, origin):
         return True
 
+    def get_compression_options(self):
+        return {"compression_level": 6, "mem_level": 5}
+
     async def open(self, simulation_id):
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
             raise tornado.web.HTTPError(404)
