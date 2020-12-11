@@ -29,7 +29,8 @@ def main(scenarios, headless, num_episodes, seed):
         headless=headless,
         visdom=False,
         timestep_sec=0.1,
-        sumo_headless=True,
+        sumo_headless=False,
+        sumo_auto_start=False,
         seed=seed,
         # envision_record_data_replay_path="./data_replay",
     )

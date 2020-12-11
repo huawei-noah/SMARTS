@@ -226,9 +226,16 @@ class MissionPlanner:
         nei_wps = self._waypoints.waypoint_paths_on_lane_at(
             target_position, target_lane.getID(), 60
         )
+        # p0 = position
+        # p1 = nei_wps[0][len(nei_wps[0]) // 2].pos
+        # p2 = target_position
+        # p3 = nei_wps[0][-1].pos
         p0 = position
-        p1 = nei_wps[0][len(nei_wps[0]) // 2].pos
-        p2 = target_position
+        p_temp=nei_wps[0][len(nei_wps[0]) // 3].pos
+        # p_temp[1]=p0[1]
+        p1= p_temp
+        p2 = nei_wps[0][2*len(nei_wps[0]) // 3].pos
+        
         p3 = nei_wps[0][-1].pos
         p_x, p_y = bezier([p0, p1, p2, p3], 20)
         trajectory = []
@@ -242,6 +249,7 @@ class MissionPlanner:
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
             speed_limit = lane.getSpeed()
+            print(speed_limit,"sssss")
 
             wp = Waypoint(
                 pos=pos,

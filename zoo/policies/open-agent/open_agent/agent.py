@@ -169,7 +169,7 @@ class VehicleModel:
         self.y += ts * self.speed * cs.sin(self.theta)
         self.theta += ts * self.speed / self.LENGTH * u.yaw_rate
         self.speed += ts * self.MAX_ACCEL * u.accel
-        self.speed = cs.fmin(cs.fmax(0, self.speed), self.MAX_SPEED)
+        # self.speed = cs.fmin(cs.fmax(0, self.speed), self.MAX_SPEED)
 
 
 @dataclass
@@ -181,19 +181,29 @@ class XRef:
 
     def weighted_distance_to(self, other: "XRef", gain: Gain):
         theta_err = angle_error(self.theta, other.theta)
-        pos_err = (other.x - self.x) ** 2 + (other.y - self.y) ** 2
-        return gain.position * pos_err + gain.theta * theta_err
+        pos_errx = (other.x - self.x) ** 2 
+        pos_erry= (other.y - self.y) ** 2
+        return (gain.position * pos_errx,gain.position * pos_erry , gain.theta * theta_err)
 
 
 def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
     x_ref_iter = iter(xrefs)
-    min_xref_t_cost = next(x_ref_iter).weighted_distance_to(point, gain)
+    aaa=next(x_ref_iter).weighted_distance_to(point, gain)
+    min_xref_t_cost = sum(aaa[:2])
+    ret=aaa[1]+100*aaa[2]
     for xref_t in x_ref_iter:
-        min_xref_t_cost = cs.fmin(
-            min_xref_t_cost, xref_t.weighted_distance_to(point, gain),
-        )
+        # min_xref_t_cost = cs.fmin(
+        #     min_xref_t_cost, sum(xref_t.weighted_distance_to(point, gain)[:2]),
+        # )
+        bbb=sum(xref_t.weighted_distance_to(point, gain)[:2])
+        # ttt=bbb<=min_xref_t_cost
+        min_xref_t_cost=cs.if_else(bbb<=min_xref_t_cost,sum(xref_t.weighted_distance_to(point, gain)[:2]),min_xref_t_cost)
+        ret=cs.if_else(bbb<=min_xref_t_cost,xref_t.weighted_distance_to(point, gain)[1]+100*xref_t.weighted_distance_to(point, gain)[2],ret)
+        # if ttt:
+        #     min_xref_t_cost=sum(xref_t.weighted_distance_to(point, gain)[:2])
+        #     ret=xref_t.weighted_distance_to(point, gain)[1]+xref_t.weighted_distance_to(point, gain)[2]
 
-    return min_xref_t_cost
+    return ret
 
 
 @dataclass
@@ -220,8 +230,8 @@ class UTrajectory:
         for t in range(1, self.N):
             prev_u_t = self[t - 1]
             u_t = self[t]
-            cost += gain.u_accel * (u_t.accel - prev_u_t.accel) ** 2
-            cost += gain.u_yaw_rate * (u_t.yaw_rate - prev_u_t.yaw_rate) ** 2
+            cost += .0001*gain.u_accel * (u_t.accel - 0*prev_u_t.accel) ** 2
+            cost += 10000*gain.u_yaw_rate * (u_t.yaw_rate - 0*prev_u_t.yaw_rate) ** 2
 
         return cost
 
@@ -275,7 +285,7 @@ def build_problem(N, SV_N, WP_N, ts):
         # For the current pose, compute the smallest cost to any xref
         cost += min_cost_by_distance(xref_traj, ego.as_xref, gain)
 
-        cost += gain.speed * (ego.speed - target_speed.value) ** 2 / t
+        cost += 1000000*gain.speed * (ego.speed - target_speed.value) ** 2 / t
 
         for sv in social_vehicles:
             # step the social vehicle assuming no change in velocity or heading
@@ -287,7 +297,7 @@ def build_problem(N, SV_N, WP_N, ts):
             )
 
     # To stabilize the trajectory, we attach a higher weight to the final x_ref
-    cost += gain.terminal * xref_traj[-1].weighted_distance_to(ego.as_xref, gain)
+    cost += gain.terminal * sum(xref_traj[-1].weighted_distance_to(ego.as_xref, gain))
 
     cost += u_traj.integration_cost(gain)
 
