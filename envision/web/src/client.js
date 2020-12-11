@@ -32,6 +32,7 @@ export default class Client {
     this._glb_cache = {};
 
     this._socket = null;
+    this._flushStream = false;
   }
 
   async fetchSimulationIds() {
@@ -54,6 +55,7 @@ export default class Client {
     }
 
     this._socket.send(JSON.stringify({ seek: seconds }));
+    this._flushStream = true;
   }
 
   async _obtainStream(simulationId, stateQueue, remainingRetries) {
@@ -126,6 +128,12 @@ export default class Client {
 
       if (isConnected) {
         while (stateQueue.length > 0) {
+          if (this._flushStream) {
+            this._flushStream = false;
+            stateQueue.length = 0;
+            continue;
+          }
+
           let item = stateQueue.pop();
           let elapsed_times = [
             item.current_elapsed_time,

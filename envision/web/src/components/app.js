@@ -143,7 +143,10 @@ function App({ client }) {
                   <PlaybackBar
                     currentTime={currentElapsedTime}
                     totalTime={totalElapsedTime}
-                    onSeek={(seconds) => client.seek(seconds)}
+                    onSeek={(seconds) => {
+                      setCurrentElapsedTime(seconds);
+                      client.seek(seconds);
+                    }}
                     style={{ height: "80px" }}
                   />
                 </div>
