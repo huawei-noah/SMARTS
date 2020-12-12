@@ -416,6 +416,7 @@ class Vehicle:
                 RoadWaypointsSensor(
                     vehicle=vehicle,
                     sim=sim,
+                    mission_planner=mission_planner,
                     horizon=agent_interface.road_waypoints.horizon,
                 )
             )
