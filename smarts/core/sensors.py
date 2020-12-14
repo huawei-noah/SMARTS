@@ -38,7 +38,7 @@ from panda3d.core import (
 
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.utils.math import squared_dist, vec_2d
-from smarts.sstudio.types import CutIn, MapZone, UTurn, Via
+from smarts.sstudio.types import CutIn, UTurn
 
 from .coordinates import BoundingBox, Heading
 from .events import Events
@@ -978,7 +978,7 @@ class WaypointsSensor(Sensor):
                     self._sim, self._vehicle.pose, self._vehicle
                 )
 
-        if waypoints_with_task:
+        if waypoints_with_task is not None:
             return waypoints_with_task
         else:
             return self._mission_planner.waypoint_paths_at(
@@ -1008,7 +1008,6 @@ class RoadWaypointsSensor(Sensor):
             for lane in edge.getLanes():
                 lane_paths[lane.getID()] = self.paths_for_lane(lane)
 
-        edge = self._sim.road_network.lane_by_id(wp.lane_id).getEdge()
         route_waypoints = self.route_waypoints()
 
         return RoadWaypoints(lanes=lane_paths, route_waypoints=route_waypoints)
