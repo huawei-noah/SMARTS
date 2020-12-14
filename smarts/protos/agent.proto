@@ -1,0 +1,43 @@
+// Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+syntax = "proto3";
+
+package agent;
+
+// Interface exported by the server.
+service Agent {
+  // Spawns workers in either remote or local host.
+  //
+  // Machine is a string "local" or "remote".
+  // Status is "ok" or "fail". 
+  rpc SpawnWorkers(Machine) returns (Status) {}
+
+}
+
+// Spawn is a string which represents the type of connection to open.
+message Machine {
+  string name = 1;
+}
+
+message Status {
+  // State of the grpc connection.
+  int32 state = 1;
+}
