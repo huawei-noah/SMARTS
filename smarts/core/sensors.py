@@ -978,7 +978,7 @@ class WaypointsSensor(Sensor):
                     self._sim, self._vehicle.pose, self._vehicle
                 )
 
-        if waypoints_with_task is not None:
+        if waypoints_with_task:
             return waypoints_with_task
         else:
             return self._mission_planner.waypoint_paths_at(
