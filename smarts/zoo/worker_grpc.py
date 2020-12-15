@@ -31,8 +31,8 @@ def spawn_local_agent(socket_file, auth_key):
     cmd = [
         sys.executable,  # path to the current python binary
         str((pathlib.Path(__file__).parent / "run_agent.py").absolute().resolve()),
-        "--socket_file",
-        socket_file,
+        "--port",
+        str(port),
         "--auth_key",
         auth_key,
     ]
@@ -54,65 +54,36 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
             proc.wait()
     
     def SpawnWorkers(self, request, context):
+        port = find_free_port()
+
         if request.name == "allocate_networked_agent":
-            port = find_free_port()
             proc = spawn_networked_agent(port, auth_key)
             if proc:
                 agent_procs.append(proc)
-
-            return agent_pb2.Status(name="", location=request)
-proc, {"port": port, "result": "success"}
+            return agent_pb2.Connection(
+                agent_pb2.Status(result="success"), 
+                port=port)
         else if request.name == "allocate_local_agent":
             proc = spawn_local_agent(auth_key)
-            return proc, {"socket_file": sock_file, "result": "success"}
+            if proc:
+                agent_procs.append(proc)
+            return agent_pb2.Connection(
+                agent_pb2.Status(result="success"), 
+                port=port)    
         else:
-            return None, {"result": "error", "msg": "bad request"}
-       
-
-def listen(port, auth_key):
-    log.debug(f"Starting Zoo Worker on port {port}")
-    agent_procs = []
-    assert isinstance(
-        auth_key, (str, type(None))
-    ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
-    auth_key = auth_key if auth_key else ""
-    auth_key_conn = str.encode(auth_key) if auth_key else None
-
-    try:
-        with Listener(("0.0.0.0", port), "AF_INET", authkey=auth_key_conn) as listener:
-            while True:
-                with listener.accept() as conn:
-                    log.debug(f"Accepted connection {conn}")
-                    try:
-                        request = conn.recv()
-                        log.debug(f"Received request {request}")
-
-                        proc, resp = handle_request(request, auth_key)
-                        if proc:
-                            log.debug("Created agent proc")
-                            agent_procs.append(proc)
-
-                        log.debug(f"Responding with {resp}")
-                        conn.send(resp)
-                    except Exception as e:
-                        log.error(f"Failure while handling connection {repr(e)}")
-    finally:
-        log.debug("Cleaning up zoo worker")
-        # cleanup
-        for proc in agent_procs:
-            proc.kill()
-            proc.wait()
-
+            return agent_pb2.Connection(
+                agent_pb2.Status(result="error"), 
+                port=0)
+    
 def serve(port, auth_key):
     log.debug(f"Starting Zoo Worker on port {port}")
-    agent_procs = []
     assert isinstance(
         auth_key, (str, type(None))
     ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
     auth_key = auth_key if auth_key else ""
     auth_key_conn = str.encode(auth_key) if auth_key else None
 
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=3))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
     agent_pb2_grpc.add_AgentServicer_to_server(
         AgentServicer(), server)
     server.add_insecure_port(f"0.0.0.0:{port}")

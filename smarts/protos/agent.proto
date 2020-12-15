@@ -24,20 +24,43 @@ package agent;
 
 // Interface exported by the server.
 service Agent {
-  // Spawns workers in either remote or local host.
-  //
-  // Machine is a string "local" or "remote".
-  // Status is "ok" or "fail". 
-  rpc SpawnWorkers(Machine) returns (Status) {}
+    // Spawns workers in either remote or local host.
+    //
+    // Machine is a string "local" or "remote".
+    // Status is "ok" or "fail". 
+    rpc SpawnWorkers(Machine) returns (Connection) {}
 
+    rpc Build(Specification) returns (Status) {}
+
+    rpc Act(Observation) returns (Action) {}
+}
+
+message Status {
+    // State of the grpc connection.
+    string result = 1;
 }
 
 // Spawn is a string which represents the type of connection to open.
 message Machine {
-  string name = 1;
+    string name = 1;
 }
 
-message Status {
-  // State of the grpc connection.
-  int32 state = 1;
+message Connection{
+    Status status = 1
+    int32 port = 1;
+}
+
+message Specification {
+    // Agent spec
+    bytes payload = 1;
+}
+
+message Observation {
+    // Agent spec
+    bytes payload = 1;
+}
+
+message Action {
+    Status status = 1
+    bytes action = 1;
 }

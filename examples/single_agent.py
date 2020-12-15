@@ -55,6 +55,7 @@ def main(
         sumo_headless=True,
         seed=seed,
         # zoo_workers=[("143.110.210.157", 7432)], # Distribute social agents across these workers
+        # zoo_workers=[("10.193.241.236", 7432)], # Distribute social agents across these workers      
         auth_key=auth_key,
         # envision_record_data_replay_path="./data_replay",
     )
