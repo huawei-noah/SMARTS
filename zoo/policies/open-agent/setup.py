@@ -59,7 +59,7 @@ setup(
         "smarts",
         "wheel",
         "maturin",
-        "python-bindings-open-agent-solver",
+        "python-bindings-open-agent-solver==0.0.1",
     ],
     package_data={"open_agent": ["config.json"]},
 )

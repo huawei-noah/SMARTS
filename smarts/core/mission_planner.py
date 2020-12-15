@@ -206,29 +206,45 @@ class MissionPlanner:
             vehicle=vehicle, radius=radius
         )
 
-        if not neighborhood_vehicles:
-            return []
-
-        nei_vehicle = neighborhood_vehicles[0]
         position = pose.position[:2]
         lane = self._road_network.nearest_lane(position)
-        target_position = nei_vehicle.pose.position[:2]
-        target_lane = self._road_network.nearest_lane(target_position)
 
-        offset = self._road_network.offset_into_lane(lane, position)
-        target_offset = self._road_network.offset_into_lane(
-            target_lane, target_position
-        )
-        if offset < target_offset + 5:
-            # Need to catch up with the target vehicle first
-            return []
+        if neighborhood_vehicles:
+            nei_vehicle = neighborhood_vehicles[0]
 
-        nei_wps = self._waypoints.waypoint_paths_on_lane_at(
-            target_position, target_lane.getID(), 60
-        )
+            target_position = nei_vehicle.pose.position[:2]
+            target_lane = self._road_network.nearest_lane(target_position)
+
+            offset = self._road_network.offset_into_lane(lane, position)
+            target_offset = self._road_network.offset_into_lane(
+                target_lane, target_position
+            )
+
+            if offset < target_offset + 5 and not self._task_is_triggered:
+                return []
+            nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                target_position, target_lane.getID(), 60
+            )
+            if abs(position[1] - target_position[1]) < 0.5:
+                nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                    position, lane.getID(), 60
+                )
+
+        else:
+            if self._task_is_triggered:
+                nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                    position, lane.getID(), 60
+                )
+            else:
+                return []
+
+        self._task_is_triggered = True
+
         p0 = position
-        p1 = nei_wps[0][len(nei_wps[0]) // 2].pos
-        p2 = target_position
+        p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
+        p1 = p_temp
+        p2 = nei_wps[0][2 * len(nei_wps[0]) // 3].pos
+
         p3 = nei_wps[0][-1].pos
         p_x, p_y = bezier([p0, p1, p2, p3], 20)
         trajectory = []
