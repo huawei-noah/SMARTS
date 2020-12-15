@@ -220,7 +220,7 @@ class MissionPlanner:
                 target_lane, target_position
             )
 
-            if offset < target_offset + 5 and self._task_is_triggered is False:
+            if offset < target_offset + 5 and not self._task_is_triggered:
                 return []
             nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                 target_position, target_lane.getID(), 60
@@ -231,7 +231,7 @@ class MissionPlanner:
                 )
 
         else:
-            if self._task_is_triggered is True:
+            if self._task_is_triggered:
                 nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                     position, lane.getID(), 60
                 )
