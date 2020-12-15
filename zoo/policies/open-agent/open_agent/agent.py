@@ -169,7 +169,6 @@ class VehicleModel:
         self.y += ts * self.speed * cs.sin(self.theta)
         self.theta += ts * self.speed / self.LENGTH * u.yaw_rate
         self.speed += ts * self.MAX_ACCEL * u.accel
-        # self.speed = cs.fmin(cs.fmax(0, self.speed), self.MAX_SPEED)
 
 
 @dataclass
@@ -239,10 +238,9 @@ class UTrajectory:
         for t in range(1, self.N):
             prev_u_t = self[t - 1]
             u_t = self[t]
-            cost += 0.1 * gain.u_accel * (u_t.accel - 0 * prev_u_t.accel) ** 2
-            cost += 1 * gain.u_accel * (u_t.accel - 0 * prev_u_t.accel) ** 2
-            cost += 10 * gain.u_yaw_rate * (u_t.yaw_rate - 1 * prev_u_t.yaw_rate) ** 2
-            cost += 1 * gain.u_yaw_rate * (u_t.yaw_rate - 1 * prev_u_t.yaw_rate) ** 2
+            cost += 0.01 * gain.u_accel * u_t.accel ** 2
+            cost += 0.1 * gain.u_yaw_rate * u_t.yaw_rate ** 2
+            cost += 10 * gain.u_yaw_rate * (u_t.yaw_rate - prev_u_t.yaw_rate) ** 2
 
         return cost
 

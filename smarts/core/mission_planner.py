@@ -249,7 +249,6 @@ class MissionPlanner:
         p_x, p_y = bezier([p0, p1, p2, p3], 20)
         trajectory = []
         prev = position[:2]
-
         for i in range(len(p_x)):
             pos = np.array([p_x[i], p_y[i]])
             heading = Heading(vec_to_radians(pos - prev))
