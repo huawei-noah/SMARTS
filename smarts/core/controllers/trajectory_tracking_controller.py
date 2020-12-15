@@ -169,7 +169,6 @@ class TrajectoryTrackingController:
         trajectory, vehicle, state, dt_sec,
     ):
         # Controller parameters for trajectory tracking.
-        print(vehicle.speed)
         params = vehicle.chassis.controller_parameters
         final_heading_gain = params["final_heading_gain"]
         final_lateral_gain = params["final_lateral_gain"]
