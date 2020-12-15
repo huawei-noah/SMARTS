@@ -23,7 +23,6 @@ from typing import Optional
 
 import numpy as np
 
-from smarts.sstudio.types import UTurn
 from smarts.sstudio.types import CutIn, MapZone, UTurn
 from .sumo_road_network import SumoRoadNetwork
 from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
@@ -145,24 +144,13 @@ class MissionPlanner:
             self._did_plan
         ), "Must call plan(...) before being able to invoke the mission planner."
 
-        waypoints_with_task = None
-        if self.mission.task is not None:
-            if isinstance(self.mission.task, UTurn):
-                waypoints_with_task = self.uturn_waypoints(sim, pose, vehicle)
-            elif isinstance(self.mission.task, CutIn):
-                waypoints_with_task = self.cut_in_waypoints(sim, pose, vehicle)
+        edge_ids = self._edge_ids(pose)
+        if edge_ids:
+            return self._waypoints.waypoint_paths_along_route(
+                pose.position, lookahead, edge_ids
+            )
 
-        if waypoints_with_task:
-            return waypoints_with_task
-        else:
-            # If specific waypoints are not not provided, return general waypoints
-            edge_ids = self._edge_ids(pose)
-            if edge_ids:
-                return self._waypoints.waypoint_paths_along_route(
-                    pose.position, lookahead, edge_ids
-                )
-
-            return self._waypoints.waypoint_paths_at(pose, lookahead)
+        return self._waypoints.waypoint_paths_at(pose, lookahead)
 
     def waypoint_paths_on_lane_at(self, pose: Pose, lane_id: str, lookahead: float):
         """Call assumes you're on the correct route already. We do not presently
