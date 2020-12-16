@@ -1,1 +1,3 @@
 VERSION = "0.1.189"
+
+SOLVER_VERSION = "0.0.3"
