@@ -294,7 +294,7 @@ class TrajectoryTrackingController:
         throttle_filter_constant,
         dt_sec,
     ):
-        desired_speed = trajectory[3][0]
+        desired_speed = trajectory[3][len(trajectory[3]) - 1]
         # If the vehicle is on the curvy portion of the road, then the desired speed
         # will be reduced to 80 percent of the desired speed of the trajectory.
         # Value 4 is the number of ahead trajectory points for starting the calculation

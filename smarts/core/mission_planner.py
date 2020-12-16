@@ -48,6 +48,7 @@ class MissionPlanner:
         self._road_network = road_network
         self._did_plan = False
         self._task_is_triggered = False
+        self._uturn_initial_heading = None
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -291,6 +292,16 @@ class MissionPlanner:
         current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
         if not start_edge.oncoming_edges:
             return []
+        if self._task_is_triggered is False:
+            self._uturn_initial_heading = pose.heading
+
+        vehicle_heading_vec = radians_to_vec(pose.heading)
+        initial_heading_vec = radians_to_vec(self._uturn_initial_heading)
+
+        heading_diff = np.dot(vehicle_heading_vec, initial_heading_vec)
+
+        if heading_diff < -0.97:
+            return []
 
         self._task_is_triggered = True
 
@@ -344,7 +355,7 @@ class MissionPlanner:
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
-            speed_limit = lane.getSpeed()
+            speed_limit = lane.getSpeed() / 3
 
             wp = Waypoint(
                 pos=pos,

@@ -200,8 +200,9 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
     distant_to_first = next(x_ref_iter).weighted_distance_to(point, gain)
     min_xref_t_cost = sum(distant_to_first[:2])
     # This calculates the weighted combination of lateral error and
-    # heading error, 0.1 to put more emphasis on lateral error.
-    weighted_cost = distant_to_first[3] + 0.1 * cs.fabs(distant_to_first[2])
+    # heading error, TODO: Define new variable or integrates the coefficents
+    # into the default values.
+    weighted_cost = 10 * distant_to_first[3] + 5.1 * cs.fabs(distant_to_first[2])
     for xref_t in x_ref_iter:
 
         distant_to_point = sum(xref_t.weighted_distance_to(point, gain)[:2])
@@ -213,8 +214,8 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
         )
         weighted_cost = cs.if_else(
             distant_to_point <= min_xref_t_cost,
-            xref_t.weighted_distance_to(point, gain)[3]
-            + 0.1 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
+            10 * xref_t.weighted_distance_to(point, gain)[3]
+            + 5.1 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
             weighted_cost,
         )
 
@@ -246,7 +247,7 @@ class UTrajectory:
             prev_u_t = self[t - 1]
             u_t = self[t]
             cost += 0.01 * gain.u_accel * u_t.accel ** 2
-            cost += 0.1 * gain.u_yaw_rate * u_t.yaw_rate ** 2
+            cost += 1.1 * gain.u_yaw_rate * u_t.yaw_rate ** 2
             cost += 10 * gain.u_yaw_rate * (u_t.yaw_rate - prev_u_t.yaw_rate) ** 2
 
         return cost
@@ -301,7 +302,7 @@ def build_problem(N, SV_N, WP_N, ts):
         # For the current pose, compute the smallest cost to any xref
         cost += min_cost_by_distance(xref_traj, ego.as_xref, gain)
 
-        cost += 100000 * gain.speed * (ego.speed - target_speed.value) ** 2 / t
+        cost += 10 * gain.speed * (ego.speed - target_speed.value) ** 2 / t
 
         for sv in social_vehicles:
             # step the social vehicle assuming no change in velocity or heading
