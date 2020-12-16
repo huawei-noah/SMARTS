@@ -182,10 +182,16 @@ class XRef:
         theta_err = angle_error(self.theta, other.theta)
         pos_errx = (other.x - self.x) ** 2
         pos_erry = (other.y - self.y) ** 2
+        heading_vector = [cs.cos(self.theta), cs.sin(self.theta)]
+        lateral_error = (self.x - other.x) * heading_vector[1] - (
+            self.y - other.y
+        ) * heading_vector[0]
+        pos_err_theta = lateral_error ** 2
         return (
             gain.position * pos_errx,
             gain.position * pos_erry,
             gain.theta * theta_err,
+            pos_err_theta,
         )
 
 
@@ -193,8 +199,9 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
     x_ref_iter = iter(xrefs)
     distant_to_first = next(x_ref_iter).weighted_distance_to(point, gain)
     min_xref_t_cost = sum(distant_to_first[:2])
-    # value 10 is used to further put emphasis on lateral error.
-    weighted_cost = distant_to_first[1] + 10 * distant_to_first[2]
+    # This calculates the weighted combination of lateral error and
+    # heading error, 0.1 to put more emphasis on lateral error.
+    weighted_cost = distant_to_first[3] + 0.1 * cs.fabs(distant_to_first[2])
     for xref_t in x_ref_iter:
 
         distant_to_point = sum(xref_t.weighted_distance_to(point, gain)[:2])
@@ -206,12 +213,12 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
         )
         weighted_cost = cs.if_else(
             distant_to_point <= min_xref_t_cost,
-            xref_t.weighted_distance_to(point, gain)[1]
-            + 10 * xref_t.weighted_distance_to(point, gain)[2],
+            xref_t.weighted_distance_to(point, gain)[3]
+            + 0.1 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
             weighted_cost,
         )
 
-    return weighted_cost
+    return 5 * weighted_cost
 
 
 @dataclass
@@ -306,7 +313,9 @@ def build_problem(N, SV_N, WP_N, ts):
             )
 
     # To stabilize the trajectory, we attach a higher weight to the final x_ref
-    cost += gain.terminal * sum(xref_traj[-1].weighted_distance_to(ego.as_xref, gain))
+    cost += gain.terminal * sum(
+        xref_traj[-1].weighted_distance_to(ego.as_xref, gain)[:3]
+    )
 
     cost += u_traj.integration_cost(gain)
 
