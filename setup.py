@@ -64,7 +64,7 @@ setup(
         # The following are for /smarts/zoo
         "twisted",
         "PyYAML",
-        "grpcio==1.34.0"
+        "grpcio==1.34.0",
     ],
     extras_require={
         "train": [

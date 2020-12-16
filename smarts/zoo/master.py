@@ -20,6 +20,7 @@
 import argparse
 import grpc
 import logging
+import os
 import pathlib
 import signal
 import subprocess
@@ -30,21 +31,10 @@ from multiprocessing import Process
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import agent_pb2
 from smarts.zoo import agent_pb2_grpc
+from smarts.zoo import worker
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"Master")
-
-
-def spawn_networked_agent(port):
-    cmd = [
-        sys.executable,  # path to the current python binary
-        str((pathlib.Path(__file__).parent / "worker.py").absolute().resolve()),
-        "--port",
-        str(port),
-    ]
-
-    agent_proc = subprocess.Popen(cmd)
-    return agent_proc
+log = logging.getLogger(f"master.py - PID({os.getpid()})")
 
 
 class AgentServicer(agent_pb2_grpc.AgentServicer):
@@ -62,8 +52,8 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
 
     def SpawnWorker(self, request, context):
         port = find_free_port()
-
-        proc = spawn_networked_agent(port)
+        proc = Process(target=worker.serve, args=(port,))
+        proc.start()
         if proc:
             self.agent_procs.append(proc)
             return agent_pb2.Connection(

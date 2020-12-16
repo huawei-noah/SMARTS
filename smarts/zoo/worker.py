@@ -73,32 +73,18 @@ for mod in modules:
 # end front-loaded imports
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"PID({os.getpid()}) worker.py")
-
-parser = argparse.ArgumentParser("Spawn an agent in it's own independent process")
-parser.add_argument(
-    "--port",
-    type=int,
-    help="AF_INET port to bind to for listening for remote connections IPC",
-)
-
-args = parser.parse_args()
-
-log.debug(f"worker.py: port={args.port}")
-
-if args.port is None:
-    raise Exception(f"Unsupported configuration {args}")
+log = logging.getLogger(f"worker.py - PID({os.getpid()})")
 
 
 class AgentServicer(agent_pb2_grpc.AgentServicer):
-    """Provides methods that implement functionality of agent runner."""
+    """Provides methods that implement functionality of a worker node executing an agent."""
 
     def __init__(self):
         self.agent = None
         self.agent_spec = None
 
     def __del__(self):
-        log.debug("Closed connection, terminating worker")
+        log.debug("Closed connection, terminating worker node.")
 
     def Build(self, request, context):
         time_start = time.time()
@@ -152,4 +138,14 @@ def serve(port):
     log.debug("Server exited.")
 
 
-serve(args.port)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("Spawn an agent in it's own independent process.")
+    parser.add_argument(
+        "--port",
+        type=int,
+        required=True,
+        help="Port to bind to for listening for remote client connections.",
+    )
+
+    args = parser.parse_args()
+    serve(args.port)
