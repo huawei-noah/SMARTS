@@ -4,7 +4,7 @@ from smarts.sstudio import gen_missions, gen_traffic
 from smarts.sstudio.types import (
     Route,
     Mission,
-    CutIn,
+    UTurn,
 )
 from smarts.sstudio import types as t
 
@@ -14,9 +14,9 @@ scenario = str(Path(__file__).parent)
 traffic = t.Traffic(
     flows=[
         t.Flow(
-            route=Route(begin=("gneE20", 0, 55), end=("gneE20", 0, "max")),
+            route=Route(begin=("gneE1", 0, 120), end=("gneE1", 0, "max")),
             rate=1,
-            actors={t.TrafficActor("car", max_speed=30/3.6): 1},
+            actors={t.TrafficActor("car", max_speed=20/3.6): 1},
         )
     ],
 )
@@ -31,6 +31,6 @@ gen_traffic(
 gen_missions(
     scenario=scenario,
     missions=[
-        Mission(Route(begin=("gneE20", 1, 55), end=("gneE20", 0, "max")), task=CutIn()),
+        Mission(Route(begin=("gneE2", 2, 330), end=("gneE1", 2, "max")), task=UTurn()),
     ],
 )

@@ -31,6 +31,6 @@ gen_traffic(
 gen_missions(
     scenario=scenario,
     missions=[
-        Mission(Route(begin=("gneE20", 1, 55), end=("gneE20", 0, "max")), task=CutIn()),
+        Mission(Route(begin=("gneE20", 1, 25), end=("gneE20", 0, "max")), task=CutIn()),
     ],
 )

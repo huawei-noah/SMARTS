@@ -1,46 +1,36 @@
 from pathlib import Path
 
+from smarts.sstudio import gen_missions, gen_traffic
+from smarts.sstudio.types import (
+    Route,
+    Mission,
+    CutIn,
+)
 from smarts.sstudio import types as t
-from smarts.sstudio import gen_scenario
 
+
+scenario = str(Path(__file__).parent)
 
 traffic = t.Traffic(
     flows=[
         t.Flow(
-            route=t.Route(begin=("west", 0, 10), end=("east", 0, "max"),),
+            route=Route(begin=("gneE20", 0, 55), end=("gneE20", 0, "max")),
             rate=1,
             actors={t.TrafficActor("car", max_speed=20/3.6): 1},
         )
-    ]
+    ],
 )
 
-ego_missions = [
-    t.Mission(
-        t.Route(begin=("west", 1, 10), end=("east", 0, "max")), task=t.CutIn(),
-    )
-]
-
-social_agent_missions = {
-    "all": (
-        [
-            t.SocialAgentActor(
-                name="open-agent",
-                agent_locator="open_agent:open_agent-v0",
-                initial_speed=20,
-            ),
-        ],
-        [
-            t.Mission(
-                t.Route(begin=("west", 1, 10), end=("east", 0, "max")), task=t.CutIn(),
-            )
-        ],
-    ),
-}
-
-scenario = t.Scenario(
-    traffic={"all": traffic},
-    ego_missions=ego_missions,
-    # social_agent_missions=social_agent_missions,
+gen_traffic(
+    scenario=scenario,
+    traffic=traffic,
+    name="basic"
 )
 
-gen_scenario(scenario, output_dir=str(Path(__file__).parent))
+
+gen_missions(
+    scenario=scenario,
+    missions=[
+        Mission(Route(begin=("gneE20", 1, 55), end=("gneE20", 0, "max")), task=CutIn()),
+    ],
+)

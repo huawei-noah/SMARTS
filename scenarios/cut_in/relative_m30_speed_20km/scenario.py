@@ -16,7 +16,7 @@ traffic = t.Traffic(
         t.Flow(
             route=Route(begin=("gneE20", 0, 55), end=("gneE20", 0, "max")),
             rate=1,
-            actors={t.TrafficActor("car", max_speed=30/3.6): 1},
+            actors={t.TrafficActor("car", max_speed=20/3.6): 1},
         )
     ],
 )
@@ -31,6 +31,6 @@ gen_traffic(
 gen_missions(
     scenario=scenario,
     missions=[
-        Mission(Route(begin=("gneE20", 1, 55), end=("gneE20", 0, "max")), task=CutIn()),
+        Mission(Route(begin=("gneE20", 1, 25), end=("gneE20", 0, "max")), task=CutIn()),
     ],
 )
