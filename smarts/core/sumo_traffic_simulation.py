@@ -41,6 +41,7 @@ from smarts.core.utils.sumo import SUMO_PATH, traci
 import traci.constants as tc
 from traci.exceptions import FatalTraCIError, TraCIException
 
+
 class SumoTrafficSimulation:
     """
     Args:
