@@ -64,6 +64,7 @@ setup(
         # The following are for /smarts/zoo
         "twisted",
         "PyYAML",
+        "grpcio==1.34.0"
     ],
     extras_require={
         "train": [
@@ -78,6 +79,7 @@ setup(
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
+            "grpcio-tools==1.34.0",
         ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
