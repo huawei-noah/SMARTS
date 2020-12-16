@@ -307,11 +307,29 @@ class Flow:
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
 
+@dataclass(frozen=True)
+class JunctionEdgeIDResolver:
+    """ A utility for resolving a junction connection edge """
+
+    start_edge_id: str
+    start_lane_index: int
+    end_edge_id: str
+    end_lane_index: int
+
+    def to_edge(self, sumo_road_network: SumoRoadNetwork):
+        return sumo_road_network.get_edge_in_junction(
+            self.start_edge_id,
+            self.start_lane_index,
+            self.end_edge_id,
+            self.end_lane_index,
+        )
+
+
 @dataclass
 class Via:
     """A point on an edge that an actor must pass through"""
 
-    edge_id: str
+    edge_id: Union[str, JunctionEdgeIDResolver]
     """The edge this via is on"""
     lane_index: int
     """The lane this via sits on"""

@@ -501,6 +501,25 @@ class SumoRoadNetwork:
         edge = random.choice(node.getOutgoing())
         return self.random_route_starting_at_edge(edge, max_route_len)
 
+    def get_edge_in_junction(
+        self, start_edge_id, start_lane_index, end_edge_id, end_lane_index
+    ):
+        start_edge = self._graph.getEdge(start_edge_id)
+        start_lane = start_edge.getLane(start_lane_index)
+        end_edge = self._graph.getEdge(end_edge_id)
+        end_lane = end_edge.getLane(end_lane_index)
+        connection = start_lane.getConnection(end_lane)
+
+        # If there is no connection beween try and do the best
+        if connection is None:
+            # The first id is good enough since we just need to determine the junction edge id
+            connection = start_edge.getConnections(end_edge)[0]
+
+        connection_lane_id = connection.getViaLaneID()
+        connection_lane = self._graph.getLane(connection_lane_id)
+
+        return connection_lane.getEdge().getID()
+
     def random_route(self, max_route_len=10):
         edge = random.choice(self._graph.getEdges(False))
         return self.random_route_starting_at_edge(edge, max_route_len)

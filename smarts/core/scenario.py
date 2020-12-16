@@ -34,7 +34,12 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic, UTurn, Via as SSVia
+from smarts.sstudio.types import (
+    EntryTactic,
+    JunctionEdgeIDResolver,
+    UTurn,
+    Via as SSVia,
+)
 
 from .coordinates import Heading
 from .data_model import SocialAgent
@@ -568,9 +573,11 @@ class Scenario:
         ) -> Tuple[Via, ...]:
             s_vias = []
             for via in vias:
-                lane = sumo_road_network.lane_by_index_on_edge(
-                    via.edge_id, via.lane_index
-                )
+                edge_id = via.edge_id
+                if isinstance(edge_id, JunctionEdgeIDResolver):
+                    edge_id = edge_id.to_edge(sumo_road_network)
+
+                lane = sumo_road_network.lane_by_index_on_edge(edge_id, via.lane_index)
                 hit_distance = (
                     via.hit_distance if via.hit_distance > 0 else lane.getWidth() / 2
                 )
@@ -582,7 +589,7 @@ class Scenario:
                     Via(
                         lane_id=lane.getID(),
                         lane_index=via.lane_index,
-                        edge_id=via.edge_id,
+                        edge_id=edge_id,
                         position=tuple(via_position),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
