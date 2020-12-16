@@ -40,7 +40,7 @@ from tornado.websocket import WebSocketClosedError
 
 import smarts.core.models
 from smarts.core.utils.file import path2hash
-from .web import dist as web_dist
+from envision.web import dist as web_dist
 
 logging.basicConfig(level=logging.WARNING)
 
