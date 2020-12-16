@@ -27,13 +27,13 @@ To protect and isolate Agents from any pollution of global state in the main SMA
 This script is called from within SMARTS to instantiate a remote agent.
 The protocal is as follows:
 
-1. SMARTS Calls: run_agent.py /tmp/agent_007.sock # sets a unique path the domain socket per agent
-2. run_agent.py will create the /tmp_agent_007.sock domain socket and begin listening
+1. SMARTS Calls: worker.py /tmp/agent_007.sock # sets a unique path the domain socket per agent
+2. worker.py will create the /tmp_agent_007.sock domain socket and begin listening
 3. SMARTS connects to /tmp/agent_007.sock as a client
-4. SMARTS sends the `AgentSpec` over the socket to run_agent.py
-5. run_agent.py recvs the AgentSpec instances and builds the Agent
+4. SMARTS sends the `AgentSpec` over the socket to worker.py
+5. worker.py recvs the AgentSpec instances and builds the Agent
 6. SMARTS sends observations and listens for actions
-7. run_agent.py listens for observations and responds with actions
+7. worker.py listens for observations and responds with actions
 """
 
 import argparse
@@ -69,7 +69,7 @@ for mod in modules:
 # end front-loaded imports
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"PID({os.getpid()}) run_agent.py")
+log = logging.getLogger(f"PID({os.getpid()}) worker.py")
 
 parser = argparse.ArgumentParser("Spawn an agent in it's own independent process")
 parser.add_argument(
@@ -91,7 +91,7 @@ args = parser.parse_args()
 auth_key_conn = str.encode(args.auth_key) if args.auth_key else None
 
 
-log.debug(f"run_agent.py: socket_file={args.socket_file} port={args.port}")
+log.debug(f"worker.py: socket_file={args.socket_file} port={args.port}")
 
 if args.socket_file is not None and args.port is not None:
     raise Exception("Only one of socket_file or port can be set")
@@ -139,11 +139,11 @@ with Listener(address, family, authkey=auth_key_conn) as listener:
                     adapted_action = agent_spec.action_adapter(action)
                     conn.send(adapted_action)
                 else:
-                    log.error(f"run_agent.py dropping malformed msg: {repr(msg)}")
+                    log.error(f"worker.py dropping malformed msg: {repr(msg)}")
 
         except (EOFError, ConnectionResetError, BrokenPipeError):
             # We treat the closing of the socket as a signal to terminate the process
-            log.debug("Closed connection, terminating run_agent")
+            log.debug("Closed connection, terminating worker")
             pass
 
         del agent

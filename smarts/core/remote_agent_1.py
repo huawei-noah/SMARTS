@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import cloudpickle
-import grpc
 import logging
 import time
 
@@ -26,8 +25,6 @@ from concurrent import futures
 from multiprocessing.connection import Client
 
 from .agent import AgentSpec
-from smarts.zoo import agent_pb2
-from smarts.zoo import agent_pb2_grpc
 
 
 class RemoteAgentException(Exception):
@@ -35,33 +32,44 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, address):
+    def __init__(self, address, socket_family, auth_key, connection_retries=100):
         self._log = logging.getLogger(self.__class__.__name__)
+        auth_key_conn = str.encode(auth_key) if auth_key else None
 
+        self._conn = None
         self._tp_exec = futures.ThreadPoolExecutor()
 
-        ip, port = address
-        self.channel = grpc.insecure_channel(f"{ip}:{port}")
-        try:
-            # Wait until the grpc server is ready or timeout after 30 seconds
-            grpc.channel_ready_future(self.channel).result(timeout=30)
-        except grpc.FutureTimeoutError:
-            raise RemoteAgentException("Error connecting to remote agent.")
-        self.stub = agent_pb2_grpc.AgentStub(self.channel)
+        for i in range(connection_retries):
+            # Waiting on agent to open it's socket.
+            try:
+                self._conn = Client(
+                    address, family=socket_family, authkey=auth_key_conn
+                )
+                break
+            except Exception:
+                self._log.debug(
+                    f"RemoteAgent retrying connection to agent in: attempt {i}"
+                )
+                time.sleep(0.1)
+
+        if self._conn is None:
+            raise RemoteAgentException("Failed to connect to remote agent")
 
     def __del__(self):
         self.terminate()
 
     def _act(self, obs, timeout):
-        try:
-            response = self.stub.Act(
-                agent_pb2.Observation(payload=cloudpickle.dumps(obs)), timeout=timeout
-            )
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
-                print("Error: Agent exceeded deadline for response.")
-            raise ("Error in retrieving agent action.") from e
-        return cloudpickle.loads(response.action)
+        # Send observation
+        self._conn.send({"type": "obs", "payload": obs})
+        # Receive action
+        if self._conn.poll(timeout):
+            try:
+                return self._conn.recv()
+            except ConnectionResetError as e:
+                self.terminate()
+                raise e
+        else:
+            return None
 
     def act(self, obs, timeout=None):
         # Run task asynchronously and return a Future
@@ -69,11 +77,14 @@ class RemoteAgent:
 
     def start(self, agent_spec: AgentSpec):
         # Send the AgentSpec to the agent runner
-        # Cloudpickle used only for the agent_spec to allow for serialization of lambdas
-        self.stub.Build(agent_pb2.Specification(payload=cloudpickle.dumps(agent_spec)))
+        self._conn.send(
+            # We use cloudpickle only for the agent_spec to allow for serialization of lambdas
+            {"type": "agent_spec", "payload": cloudpickle.dumps(agent_spec)}
+        )
 
     def terminate(self):
-        # Close the channel
-        self.channel.close
+        if self._conn:
+            self._conn.close()
+
         # Shutdown thread pool executor
         self._tp_exec.shutdown()

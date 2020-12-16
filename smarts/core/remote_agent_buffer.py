@@ -21,24 +21,27 @@ import logging
 import atexit
 import time
 import random
+import grpc
 
 from multiprocessing import Process
 from multiprocessing.connection import Client
 from concurrent import futures
 
-from smarts.zoo import worker as zoo_worker
+from smarts.zoo import master as zoo_master
+from smarts.zoo import agent_pb2
+from smarts.zoo import agent_pb2_grpc
 from .remote_agent import RemoteAgent, RemoteAgentException
 from .utils.networking import find_free_port
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_worker_addrs=None, auth_key=None, buffer_size=3):
+    def __init__(self, zoo_master_addrs=None, auth_key=None, buffer_size=3):
         """
         Args:
-            zoo_worker_addrs:
-                List of (ip, port) tuples of Zoo Workers, used to instantiate remote social agents
+            zoo_master_addrs:
+                List of (ip, port) tuples of Zoo Masters, used to instantiate remote social agents
             auth_key:
-                Authentication key of type string for communication with Zoo Workers
+                Authentication key of type string for communication with Zoo Masters
             buffer_size: 
                 Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
         """
@@ -46,23 +49,16 @@ class RemoteAgentBuffer:
 
         self._log = logging.getLogger(self.__class__.__name__)
 
-        self._local_zoo_worker = None
-        self._local_zoo_worker_addr = None
+        self._local_zoo_master = None
+        self._local_zoo_master_addr = None
 
-        assert isinstance(
-            auth_key, (str, type(None))
-        ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
-        self._auth_key = auth_key if auth_key else ""
-        self._auth_key_conn = str.encode(auth_key) if auth_key else None
+        if zoo_master_addrs is None:
+            # The user has not specified any remote zoo masters.
+            # We need to spawn a local zoo master.
+            self._local_zoo_master_addr = self._spawn_local_zoo_master()
+            zoo_master_addrs = [self._local_zoo_master_addr]
 
-        if zoo_worker_addrs is None:
-            # The user has not specified any remote zoo workers.
-            # We need to spawn a local zoo worker.
-            self._local_zoo_worker_addr = self._spawn_local_zoo_worker()
-            zoo_worker_addrs = [self._local_zoo_worker_addr]
-
-        self._zoo_worker_addrs = zoo_worker_addrs
-
+        self._zoo_master_addrs = zoo_master_addrs
         self._buffer_size = buffer_size
         self._replenish_threadpool = futures.ThreadPoolExecutor()
         self._agent_buffer = [self._remote_agent_future() for _ in range(buffer_size)]
@@ -86,101 +82,56 @@ class RemoteAgentBuffer:
                         f"Exception while tearing down buffered remote agent: {repr(e)}"
                     )
 
-        # Note: important to teardown the local zoo worker after we purge the remote agents
-        #       since they may still require the local zoo worker to for instantiation.
-        if self._local_zoo_worker is not None:
-            self._local_zoo_worker.kill()
-            self._local_zoo_worker.join()
+        # Note: important to teardown the local zoo master after we purge the remote agents
+        #       since they may still require the local zoo master to for instantiation.
+        if self._local_zoo_master is not None:
+            self._local_zoo_master.kill()
+            self._local_zoo_master.join()
 
-    def _spawn_local_zoo_worker(self, retries=3):
-        local_port = find_free_port()
-        self._local_zoo_worker = Process(
-            target=zoo_worker.listen, args=(local_port, self._auth_key)
-        )
-        self._local_zoo_worker.start()
+    def _spawn_local_zoo_master(self, retries=3):
+        port = find_free_port()
 
-        local_address = ("0.0.0.0", local_port)
-
-        # Block until the local zoo server is accepting connections.
-        for i in range(retries):
-            try:
-                conn = Client(
-                    local_address, family="AF_INET", authkey=self._auth_key_conn
-                )
-                break
-            except Exception as e:
-                self._log.error(
-                    f"Waiting for local zoo worker to start up, retrying {i} / {retries}"
-                )
-                time.sleep(0.1)
-
+        self._local_zoo_master = Process(target=zoo_master.serve, args=(port,))
+        self._local_zoo_master.start()
+        local_address = ("localhost", port)
         return local_address
 
-    def _try_to_allocate_remote_agent(self, zoo_worker_addr, conn):
-        address, family, resp = None, None, None
-        if zoo_worker_addr == self._local_zoo_worker_addr:
-            # This is a local zoo worker, as an optimization, allocate a local remote agent
-            conn.send("allocate_local_agent")
-            resp = conn.recv()
-            if resp["result"] == "success":
-                address = resp["socket_file"]
-                family = "AF_UNIX"
-        else:
-            # This is a remote zoo worker, we need to communicate with this
-            # remote agent over a network socket
-            conn.send("allocate_networked_agent")
-            resp = conn.recv()
-            if resp["result"] == "success":
-                port = resp["port"]
-                address = (zoo_worker_addr[0], port)
-                family = "AF_INET"
+    def _build_remote_agent(self, zoo_master_addrs):
+        # Get a random zoo master
+        zoo_master_addr = random.choice(zoo_master_addrs)
 
-        if address is None or family is None:
-            self._log.error(
-                f"Failed to allocate remote agent on {zoo_worker_addr} {repr(resp)}"
-            )
-            return None
+        # Connect to the random zoo master
+        ip, port = zoo_master_addr
+        channel = grpc.insecure_channel(f"{ip}:{port}")
+        try:
+            # Wait until the grpc server is ready or timeout after 30 seconds
+            grpc.channel_ready_future(channel).result(timeout=30)
+        except grpc.FutureTimeoutError:
+            raise RemoteAgentException(
+                "Timeout error in connecting to remote zoo server."
+            ) from e
+        stub = agent_pb2_grpc.AgentStub(channel)
 
-        self._log.debug(f"Connecting to remote agent at {address} with {family}")
-        return RemoteAgent(address, family, self._auth_key)
+        # Get port of remote agent runner
+        response = stub.SpawnWorker(agent_pb2.Machine())
+        if response.status.result == "error":
+            raise RemoteAgentException(
+                "Agent runner could not be instantiated by remote zoo server."
+            ) from e
 
-    def _remote_agent_future(self, retries=5):
-        def build_remote_agent():
-            for i in range(retries):
-                conn = None
-                try:
-                    # Try to connect to a random zoo worker.
-                    zoo_worker_addr = random.choice(self._zoo_worker_addrs)
-                    conn = Client(
-                        zoo_worker_addr, family="AF_INET", authkey=self._auth_key_conn
-                    )
+        # Instantiate a local Remote Agent counterpart
+        address = (ip, response.port)
+        remote_agent = RemoteAgent(address)
 
-                    # Now that we've got a connection to this zoo worker,
-                    # request an allocation.
-                    remote_agent = self._try_to_allocate_remote_agent(
-                        zoo_worker_addr, conn
-                    )
+        # Close channel
+        channel.close()
 
-                    if remote_agent is not None:
-                        # We were successful in acquiring a remote agent, return it.
-                        return remote_agent
-                except Exception as e:
-                    self._log.error(
-                        f"Failed to connect to {zoo_worker_addr}, retrying {i} / {retries} '{e} {repr(e)}'"
-                    )
-                finally:
-                    if conn:
-                        conn.close()
+        return remote_agent
 
-                # Otherwise sleep and retry.
-                time.sleep(0.5)
-                self._log.error(
-                    f"Failed to allocate agent on {zoo_worker_addr}, retrying {i} / {retries}"
-                )
-
-            raise Exception("Failed to allocate remote agent")
-
-        return self._replenish_threadpool.submit(build_remote_agent)
+    def _remote_agent_future(self):
+        return self._replenish_threadpool.submit(
+            self._build_remote_agent, self._zoo_master_addrs
+        )
 
     def _try_to_acquire_remote_agent(self):
         assert len(self._agent_buffer) == self._buffer_size

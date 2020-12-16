@@ -28,26 +28,35 @@ service Agent {
     //
     // Machine is a string "local" or "remote".
     // Status is "ok" or "fail". 
-    rpc SpawnWorkers(Machine) returns (Connection) {}
+    rpc TestConnection(Input) returns (Output) {}
+
+    rpc SpawnWorker(Machine) returns (Connection) {}
 
     rpc Build(Specification) returns (Status) {}
 
     rpc Act(Observation) returns (Action) {}
 }
 
+message Input {
+    string msg = 1;
+}
+
+message Output {
+    string msg = 1;
+}
+
 message Status {
-    // State of the grpc connection.
+    // Status of rpc call.
     string result = 1;
 }
 
-// Spawn is a string which represents the type of connection to open.
+// SpawnWorkers service has no input
 message Machine {
-    string name = 1;
 }
 
 message Connection{
-    Status status = 1
-    int32 port = 1;
+    Status status = 1;
+    int32 port = 2;
 }
 
 message Specification {
@@ -61,6 +70,6 @@ message Observation {
 }
 
 message Action {
-    Status status = 1
-    bytes action = 1;
+    Status status = 1;
+    optional bytes action = 2;
 }

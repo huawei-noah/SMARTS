@@ -1,109 +1,155 @@
-import logging
+# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+"""
+Run an agent in it's own (independent) process.
+
+What Agent code does is out of our direct control, we want to avoid any interactions with global state that might be present in the SMARTS process.
+
+To protect and isolate Agents from any pollution of global state in the main SMARTS process, we spawn Agents in their fresh and independent python process.
+
+This script is called from within SMARTS to instantiate a remote agent.
+The protocal is as follows:
+
+1. SMARTS Calls: worker.py /tmp/agent_007.sock # sets a unique path the domain socket per agent
+2. worker.py will create the /tmp_agent_007.sock domain socket and begin listening
+3. SMARTS connects to /tmp/agent_007.sock as a client
+4. SMARTS sends the `AgentSpec` over the socket to worker.py
+5. worker.py recvs the AgentSpec instances and builds the Agent
+6. SMARTS sends observations and listens for actions
+7. worker.py listens for observations and responds with actions
+"""
+
 import argparse
-import tempfile
-import sys
-import pathlib
-import subprocess
+import cloudpickle
+import grpc
+import importlib
+import logging
+import os
+import signal
+import time
+from concurrent import futures
 
-from multiprocessing.connection import Listener
+from smarts.zoo import agent_pb2
+from smarts.zoo import agent_pb2_grpc
 
-from smarts.core.utils.networking import find_free_port
+# front-load some expensive imports as to not block the simulation
+modules = [
+    "smarts.core.utils.pybullet",
+    "smarts.core.utils.sumo",
+    "smarts.core.sumo_road_network",
+    "numpy",
+    "sklearn",
+    "shapely",
+    "scipy",
+    "trimesh",
+    "panda3d",
+    "gym",
+    "ray",
+]
+
+for mod in modules:
+    try:
+        importlib.import_module(mod)
+    except ImportError:
+        pass
+
+# end front-loaded imports
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"Zoo Worker")
+log = logging.getLogger(f"PID({os.getpid()}) worker.py")
+
+parser = argparse.ArgumentParser("Spawn an agent in it's own independent process")
+parser.add_argument(
+    "--port",
+    type=int,
+    help="AF_INET port to bind to for listening for remote connections IPC",
+)
+
+args = parser.parse_args()
+
+log.debug(f"worker.py: port={args.port}")
+
+if args.port is None:
+    raise Exception(f"Unsupported configuration {args}")
 
 
-def spawn_networked_agent(port, auth_key):
-    cmd = [
-        sys.executable,  # path to the current python binary
-        str((pathlib.Path(__file__).parent / "run_agent.py").absolute().resolve()),
-        "--port",
-        str(port),
-        "--auth_key",
-        auth_key,
-    ]
+class AgentServicer(agent_pb2_grpc.AgentServicer):
+    """Provides methods that implement functionality of agent runner."""
 
-    agent_proc = subprocess.Popen(cmd)
-    return agent_proc
+    def __init__(self):
+        self.agent = None
+        self.agent_spec = None
 
+    def __del__(self):
+        log.debug("Closed connection, terminating worker")
 
-def spawn_local_agent(socket_file, auth_key):
-    cmd = [
-        sys.executable,  # path to the current python binary
-        str((pathlib.Path(__file__).parent / "run_agent.py").absolute().resolve()),
-        "--socket_file",
-        socket_file,
-        "--auth_key",
-        auth_key,
-    ]
+    def Build(self, request, context):
+        time_start = time.time()
+        self.agent_spec = cloudpickle.loads(request.payload)
+        pickle_load_time = time.time()
+        self.agent = self.agent_spec.build_agent()
+        agent_build_time = time.time()
+        log.debug(
+            "build agent timings:\n"
+            f"  total ={agent_build_time - time_start:.2}\n"
+            f"  pickle={pickle_load_time - time_start:.2}\n"
+            f"  build ={agent_build_time - pickle_load_time:.2}\n"
+        )
+        return agent_pb2.Status(result="success")
 
-    agent_proc = subprocess.Popen(cmd)
-    return agent_proc
+    def Act(self, request, context):
+        if self.agent == None or self.agent_spec == None:
+            return agent_pb2.Action(
+                status=agent_pb2.Status(result="Error: Remote agent not built yet.")
+            )
 
-
-def handle_request(request, auth_key):
-    if request == "allocate_networked_agent":
-        port = find_free_port()
-        proc = spawn_networked_agent(port, auth_key)
-        return proc, {"port": port, "result": "success"}
-
-    elif request == "allocate_local_agent":
-        sock_file = tempfile.mktemp()
-        proc = spawn_local_agent(sock_file, auth_key)
-        return proc, {"socket_file": sock_file, "result": "success"}
-
-    else:
-        return None, {"result": "error", "msg": "bad request"}
+        adapted_obs = self.agent_spec.observation_adapter(
+            cloudpickle.loads(request.payload)
+        )
+        action = self.agent.act(adapted_obs)
+        adapted_action = self.agent_spec.action_adapter(action)
+        return agent_pb2.Action(
+            status=agent_pb2.Status(result="success"),
+            action=cloudpickle.dumps(adapted_action),
+        )
 
 
-def listen(port, auth_key):
-    log.debug(f"Starting Zoo Worker on port {port}")
-    agent_procs = []
-    assert isinstance(
-        auth_key, (str, type(None))
-    ), f"Received auth_key of type {type(auth_key)}, but need auth_key of type <class 'string'> or <class 'NoneType'>."
-    auth_key = auth_key if auth_key else ""
-    auth_key_conn = str.encode(auth_key) if auth_key else None
+def serve(port):
+    ip = "[::]"
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=3))
+    agent_pb2_grpc.add_AgentServicer_to_server(AgentServicer(), server)
+    server.add_insecure_port(f"{ip}:{port}")
+    server.start()
 
-    try:
-        with Listener(("0.0.0.0", port), "AF_INET", authkey=auth_key_conn) as listener:
-            while True:
-                with listener.accept() as conn:
-                    log.debug(f"Accepted connection {conn}")
-                    try:
-                        request = conn.recv()
-                        log.debug(f"Received request {request}")
+    log.debug(f"Runner: Started serving at {ip}, {port}")
+    print(f"Runner: Started serving at {ip}, {port}")
 
-                        proc, resp = handle_request(request, auth_key)
-                        if proc:
-                            log.debug("Created agent proc")
-                            agent_procs.append(proc)
+    def stop_server(unused_signum, unused_frame):
+        server.stop(0)
+        log.debug("GRPC server stopped by interrupt signal.")
 
-                        log.debug(f"Responding with {resp}")
-                        conn.send(resp)
-                    except Exception as e:
-                        log.error(f"Failure while handling connection {repr(e)}")
-    finally:
-        log.debug("Cleaning up zoo worker")
-        # cleanup
-        for proc in agent_procs:
-            proc.kill()
-            proc.wait()
+    # Catch keyboard interrupt
+    signal.signal(signal.SIGINT, stop_server)
+
+    server.wait_for_termination()
+    log.debug("Server exited.")
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        "Listens for requests to allocate agents and executes them on-demand"
-    )
-    parser.add_argument(
-        "--port", type=int, default=7432, help="Port to listen on",
-    )
-    parser.add_argument(
-        "--auth_key",
-        type=str,
-        default=None,
-        help="Authentication key for connection to run agent",
-    )
-    args = parser.parse_args()
-    auth_key = args.auth_key if args.auth_key else ""
-    listen(args.port, auth_key)
+serve(args.port)
