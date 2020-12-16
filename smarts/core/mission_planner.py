@@ -48,7 +48,7 @@ class MissionPlanner:
         self._road_network = road_network
         self._did_plan = False
         self._task_is_triggered = False
-        self._uturn_initial_heading = None
+        self._uturn_initial_heading = 0
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
