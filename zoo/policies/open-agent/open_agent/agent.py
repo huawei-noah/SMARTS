@@ -14,7 +14,7 @@ import opengen as og
 from smarts.core.agent import Agent
 from smarts.core.coordinates import Heading
 
-from .version import VERSION
+from .version import VERSION, SOLVER_VERSION
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
 
@@ -331,7 +331,11 @@ def compile_solver(output_dir, N=6, SV_N=4, WP_N=15, ts=0.1):
         .with_build_mode("release")
         .with_build_python_bindings()
     )
-    meta = og.config.OptimizerMeta().with_optimizer_name(solver_name)
+    meta = (
+        og.config.OptimizerMeta()
+        .with_version(SOLVER_VERSION)
+        .with_optimizer_name(solver_name)
+    )
     solver_config = og.config.SolverConfiguration()
     builder = og.builder.OpEnOptimizerBuilder(
         problem, meta, build_config, solver_config
