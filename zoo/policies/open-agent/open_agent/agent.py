@@ -200,8 +200,9 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
     distant_to_first = next(x_ref_iter).weighted_distance_to(point, gain)
     min_xref_t_cost = sum(distant_to_first[:2])
     # This calculates the weighted combination of lateral error and
-    # heading error, 0.1 to put more emphasis on lateral error.
-    weighted_cost = distant_to_first[3] + 0.1 * cs.fabs(distant_to_first[2])
+    # heading error, TODO: Define new variable or integrates the coefficents
+    # into the default values.
+    weighted_cost = 10 * distant_to_first[3] + 5.1 * cs.fabs(distant_to_first[2])
     for xref_t in x_ref_iter:
 
         distant_to_point = sum(xref_t.weighted_distance_to(point, gain)[:2])
@@ -213,8 +214,8 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
         )
         weighted_cost = cs.if_else(
             distant_to_point <= min_xref_t_cost,
-            xref_t.weighted_distance_to(point, gain)[3]
-            + 0.1 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
+            10 * xref_t.weighted_distance_to(point, gain)[3]
+            + 5.1 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
             weighted_cost,
         )
 

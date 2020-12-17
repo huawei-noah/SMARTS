@@ -48,6 +48,7 @@ class MissionPlanner:
         self._road_network = road_network
         self._did_plan = False
         self._task_is_triggered = False
+        self._uturn_initial_heading = 0
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -291,6 +292,17 @@ class MissionPlanner:
         current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
         if not start_edge.oncoming_edges:
             return []
+        if self._task_is_triggered is False:
+            self._uturn_initial_heading = pose.heading
+
+        vehicle_heading_vec = radians_to_vec(pose.heading)
+        initial_heading_vec = radians_to_vec(self._uturn_initial_heading)
+
+        heading_diff = np.dot(vehicle_heading_vec, initial_heading_vec)
+
+        if heading_diff < -0.97:
+            # Once it faces the opposite direction, stop generating u-turn waypoints
+            return []
 
         self._task_is_triggered = True
 
@@ -331,7 +343,7 @@ class MissionPlanner:
             offset = radians_to_vec(heading) * lane_width
             p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
             offset = radians_to_vec(target_heading) * 5
-            p2 = np.array([p1[0] + offset[0], p1[1] + offset[1]])
+            p2 = np.array([p1[0] - offset[0], p1[1] - offset[1]])
 
             p3 = target.pos
             p_x, p_y = bezier([p0, p1, p2, p3], 20)
@@ -344,7 +356,7 @@ class MissionPlanner:
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
-            speed_limit = lane.getSpeed()
+            speed_limit = lane.getSpeed() / 2
 
             wp = Waypoint(
                 pos=pos,
