@@ -247,7 +247,7 @@ class UTrajectory:
             prev_u_t = self[t - 1]
             u_t = self[t]
             cost += 0.01 * gain.u_accel * u_t.accel ** 2
-            cost += 1.1 * gain.u_yaw_rate * u_t.yaw_rate ** 2
+            cost += 0.1 * gain.u_yaw_rate * u_t.yaw_rate ** 2
             cost += 10 * gain.u_yaw_rate * (u_t.yaw_rate - prev_u_t.yaw_rate) ** 2
 
         return cost
@@ -302,7 +302,7 @@ def build_problem(N, SV_N, WP_N, ts):
         # For the current pose, compute the smallest cost to any xref
         cost += min_cost_by_distance(xref_traj, ego.as_xref, gain)
 
-        cost += 10 * gain.speed * (ego.speed - target_speed.value) ** 2 / t
+        cost += 100000 * gain.speed * (ego.speed - target_speed.value) ** 2 / t
 
         for sv in social_vehicles:
             # step the social vehicle assuming no change in velocity or heading

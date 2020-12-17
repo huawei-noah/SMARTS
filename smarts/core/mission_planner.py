@@ -342,7 +342,7 @@ class MissionPlanner:
             offset = radians_to_vec(heading) * lane_width
             p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
             offset = radians_to_vec(target_heading) * 5
-            p2 = np.array([p1[0] + offset[0], p1[1] + offset[1]])
+            p2 = np.array([p1[0] - offset[0], p1[1] - offset[1]])
 
             p3 = target.pos
             p_x, p_y = bezier([p0, p1, p2, p3], 20)
@@ -355,7 +355,7 @@ class MissionPlanner:
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
-            speed_limit = lane.getSpeed() / 3
+            speed_limit = lane.getSpeed() / 2
 
             wp = Waypoint(
                 pos=pos,
