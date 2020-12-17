@@ -131,7 +131,9 @@ def serve(port):
 
     def stop_server(unused_signum, unused_frame):
         stop_event.set()
-        log.debug(f"Worker - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal.")
+        log.debug(
+            f"Worker - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal."
+        )
 
     # Catch keyboard interrupt
     signal.signal(signal.SIGINT, stop_server)

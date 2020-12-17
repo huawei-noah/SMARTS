@@ -82,11 +82,9 @@ class RemoteAgent:
             self.stub.Stop(agent_pb2.Input())
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
-                """
-                Server-shutdown rpc executed. Some data transmitted but connection 
-                breaks due to server shutting down. Hence, server `UNAVAILABLE`
-                error is thrown. This error can be ignored.
-                """
+                # Server-shutdown rpc executed. Some data transmitted but connection
+                # breaks due to server shutting down. Hence, server `UNAVAILABLE`
+                # error is thrown. This error can be ignored.
                 pass
             else:
                 raise e
