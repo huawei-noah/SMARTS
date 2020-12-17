@@ -129,15 +129,15 @@ class AgentSpec:
         if self.policy_builder:
             logger.warning(
                 f"[DEPRECATED] Please use AgentSpec(agent_builder=<...>) instead of AgentSpec(policy_builder=<..>):\n {self}"
+                "policy_builder will overwrite agent_builder"
             )
-            assert self.agent_builder is None, self.agent_builder
             self.agent_builder = self.policy_builder
 
         if self.policy_params:
             logger.warning(
                 f"[DEPRECATED] Please use AgentSpec(agent_params=<...>) instead of AgentSpec(policy_params=<..>):\n {self}"
+                "policy_builder will overwrite agent_builder"
             )
-            assert self.agent_params is None, self.agent_params
             self.agent_params = self.policy_params
 
         self.policy_params = self.agent_params
@@ -146,7 +146,27 @@ class AgentSpec:
     def replace(self, **kwargs) -> "AgentSpec":
         """Return a copy of this AgentSpec with the given fields updated."""
 
-        return replace(self, **kwargs)
+        replacements = [
+            ("policy_builder", "agent_builder"),
+            ("policy_params", "agent_params"),
+            ("perform_self_test", None),
+        ]
+
+        kwargs_copy = kwargs.copy()
+        for deprecated, current in replacements:
+            if deprecated in kwargs:
+                logger.warning(
+                    f"[DEPRECATED] Please use AgentSpec.replace({current}=<...>) instead of AgentSpec.replace({deprecated}=<...>)\n"
+                )
+                assert (
+                    current not in kwargs
+                ), f"Mixed current ({current}) and deprecated ({deprecated}) values in replace"
+                moved = kwargs[deprecated]
+                del kwargs_copy[deprecated]
+                if current:
+                    kwargs_copy[current] = moved
+
+        return replace(self, **kwargs_copy)
 
     def build_agent(self) -> Agent:
         """Construct an Agent from the AgentSpec configuration."""
