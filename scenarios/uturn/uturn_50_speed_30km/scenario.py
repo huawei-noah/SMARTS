@@ -16,16 +16,12 @@ traffic = t.Traffic(
         t.Flow(
             route=Route(begin=("gneE1", 0, 120), end=("gneE1", 0, "max")),
             rate=1,
-            actors={t.TrafficActor("car", max_speed=30/3.6): 1},
+            actors={t.TrafficActor("car", max_speed=30 / 3.6): 1},
         )
     ],
 )
 
-gen_traffic(
-    scenario=scenario,
-    traffic=traffic,
-    name="basic"
-)
+gen_traffic(scenario=scenario, traffic=traffic, name="basic")
 
 
 gen_missions(
