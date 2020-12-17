@@ -301,6 +301,7 @@ class MissionPlanner:
         heading_diff = np.dot(vehicle_heading_vec, initial_heading_vec)
 
         if heading_diff < -0.97:
+            # Once it faces the opposite direction, stop generating u-turn waypoints
             return []
 
         self._task_is_triggered = True
