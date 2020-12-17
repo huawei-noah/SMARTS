@@ -47,6 +47,7 @@ class BoundingBox:
 
 class Heading(float):
     """In this space we use radians, 0 is facing north, and turn counter-clockwise."""
+
     def __init__(self, value=...):
         float.__init__(value)
 
@@ -54,13 +55,13 @@ class Heading(float):
         """A override to constrain heading to -pi to pi"""
         value = x
         if isinstance(value, (int, float)):
-            value = value % (2*math.pi)
+            value = value % (2 * math.pi)
             if value > math.pi:
                 value -= 2 * math.pi
             if value < -math.pi:
                 value += 2 * math.pi
         if x in {..., None}:
-            value = 0   
+            value = 0
         return float.__new__(self, value)
 
     @classmethod
