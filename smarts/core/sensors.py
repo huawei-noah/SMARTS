@@ -960,7 +960,7 @@ class NeighborhoodVehiclesSensor(Sensor):
 
 
 class WaypointsSensor(Sensor):
-    def __init__(self, sim, vehicle, mission_planner, lookahead=50):
+    def __init__(self, sim, vehicle, mission_planner: MissionPlanner, lookahead=50):
         self._sim = sim
         self._vehicle = vehicle
         self._mission_planner = mission_planner

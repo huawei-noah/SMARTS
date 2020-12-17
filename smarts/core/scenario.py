@@ -35,6 +35,7 @@ import numpy as np
 
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import (
+    CutIn,
     EntryTactic,
     JunctionEdgeIDResolver,
     UTurn,
@@ -125,7 +126,7 @@ class Mission:
     route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
-    task: Tuple[UTurn] = None
+    task: Tuple[UTurn, CutIn] = None
     via: Tuple[Via, ...] = ()
 
     @property
