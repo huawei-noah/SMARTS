@@ -315,6 +315,10 @@ def _gen_missions(
         if task:
             kwargs["task"] = _resolve_task(task, generator=generator)
 
+        via = getattr(mission, "via", ())
+        if via is not ():
+            kwargs["via"] = _resolve_vias(via, generator=generator)
+
         mission = replace(mission, **kwargs)
 
         return mission
@@ -346,6 +350,15 @@ def _resolve_task(task, generator):
             )
 
     return task
+
+
+def _resolve_vias(via: Tuple[types.Via], generator):
+    vias = [*via]
+    for i in range(len(vias)):
+        v = vias[i]
+        if isinstance(v.edge_id, types.JunctionEdgeIDResolver):
+            vias[i] = replace(v, edge_id=v.edge_id.to_edge(generator.road_network))
+    return tuple(vias)
 
 
 def _validate_missions(missions):

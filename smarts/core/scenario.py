@@ -574,11 +574,9 @@ class Scenario:
         ) -> Tuple[Via, ...]:
             s_vias = []
             for via in vias:
-                edge_id = via.edge_id
-                if isinstance(edge_id, JunctionEdgeIDResolver):
-                    edge_id = edge_id.to_edge(sumo_road_network)
-
-                lane = sumo_road_network.lane_by_index_on_edge(edge_id, via.lane_index)
+                lane = sumo_road_network.lane_by_index_on_edge(
+                    via.edge_id, via.lane_index
+                )
                 hit_distance = (
                     via.hit_distance if via.hit_distance > 0 else lane.getWidth() / 2
                 )
@@ -590,7 +588,7 @@ class Scenario:
                     Via(
                         lane_id=lane.getID(),
                         lane_index=via.lane_index,
-                        edge_id=edge_id,
+                        edge_id=via.edge_id,
                         position=tuple(via_position),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
