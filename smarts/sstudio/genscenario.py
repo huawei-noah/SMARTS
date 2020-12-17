@@ -26,14 +26,9 @@ import itertools
 import logging
 import os
 import pickle
-import subprocess
-import sys
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Sequence, Tuple, Union
-from urllib.parse import urlparse
-
-import sh
 
 from . import types
 from .generators import TrafficGenerator
@@ -312,9 +307,15 @@ def _gen_missions(
 
     def resolve_mission(mission):
         route = getattr(mission, "route", None)
+        kwargs = {}
         if route:
-            route = generator.resolve_route(route)
-            mission = replace(mission, route=route)
+            kwargs["route"] = generator.resolve_route(route)
+
+        task = getattr(mission, "task", None)
+        if task:
+            kwargs["task"] = _resolve_task(task, generator=generator)
+
+        mission = replace(mission, **kwargs)
 
         return mission
 
@@ -332,6 +333,19 @@ def _gen_missions(
     ]
     with open(output_path, "wb") as f:
         pickle.dump(missions, f)
+
+
+def _resolve_task(task, generator):
+    if isinstance(task, types.CutIn):
+        if isinstance(task.complete_on_edge_id, types.JunctionEdgeIDResolver):
+            task = replace(
+                task,
+                complete_on_edge_id=task.complete_on_edge_id.to_edge(
+                    generator.road_network
+                ),
+            )
+
+    return task
 
 
 def _validate_missions(missions):

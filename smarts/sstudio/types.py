@@ -385,6 +385,9 @@ class CutIn:
     trigger_radius: int = 30
     """This task will be triggered if any vehicles within this radius"""
 
+    complete_on_edge_id: Union[str, JunctionEdgeIDResolver] = None
+    """The edge this task will be completed on"""
+
     @property
     def name(self):
         return "cut_in"

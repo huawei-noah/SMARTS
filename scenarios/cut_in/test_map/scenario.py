@@ -31,6 +31,14 @@ gen_missions(
                     -1,
                 )
             ],
+            task=t.CutIn(
+                complete_on_edge_id=JunctionEdgeIDResolver(
+                    start_edge_id="gneE14",
+                    start_lane_index=1,
+                    end_edge_id="gneE20",
+                    end_lane_index=0,
+                )
+            ),
         ),
     ],
 )
