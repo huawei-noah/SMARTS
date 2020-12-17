@@ -45,12 +45,9 @@ class RemoteAgent:
         try:
             # Wait until the grpc server is ready or timeout after 30 seconds
             grpc.channel_ready_future(self.channel).result(timeout=30)
-        except grpc.FutureTimeoutError:
-            raise RemoteAgentException("Error connecting to remote agent.")
+        except grpc.FutureTimeoutError as e:
+            raise RemoteAgentException("Timeout while connecting to remote worker process.") from e
         self.stub = agent_pb2_grpc.AgentStub(self.channel)
-
-    def __del__(self):
-        self.terminate()
 
     def _act(self, obs, timeout):
         try:
@@ -59,8 +56,9 @@ class RemoteAgent:
             )
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
-                print("Error: Agent exceeded deadline for response.")
-            raise ("Error in retrieving agent action.") from e
+                raise RemoteAgentException("Remote worker process exceeded response deadline.") from e
+            else:    
+                raise ("Error in retrieving agent action from remote worker process.") from e
         return cloudpickle.loads(response.action)
 
     def act(self, obs, timeout=None):
@@ -73,6 +71,19 @@ class RemoteAgent:
         self.stub.Build(agent_pb2.Specification(payload=cloudpickle.dumps(agent_spec)))
 
     def terminate(self):
+        # Stop the remote worker process
+        try:
+            self.stub.Stop(agent_pb2.Input())
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                """
+                Server-shutdown rpc executed. Some data transmitted but connection 
+                breaks due to server shutting down. Hence, server `UNAVAILABLE`
+                error is thrown. This error can be ignored.
+                """
+                pass
+            else:
+                raise e
         # Close the channel
         self.channel.close
         # Shutdown thread pool executor

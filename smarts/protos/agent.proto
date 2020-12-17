@@ -24,12 +24,14 @@ package agent;
 
 // Interface exported by the server.
 service Agent {
-    // Spawns workers in either remote or local host.
-    //
-    // Machine is a string "local" or "remote".
-    // Status is "ok" or "fail". 
+
+    // Stops the server
+    rpc Stop(Input) returns (Output) {}
+
     rpc TestConnection(Input) returns (Output) {}
 
+    // Spawns worker processes.
+    // Returns the address (ip, port) of new worker process.
     rpc SpawnWorker(Machine) returns (Connection) {}
 
     rpc Build(Specification) returns (Status) {}
@@ -46,7 +48,6 @@ message Output {
 }
 
 message Status {
-    // Status of rpc call.
     string result = 1;
 }
 
@@ -60,12 +61,10 @@ message Connection{
 }
 
 message Specification {
-    // Agent spec
     bytes payload = 1;
 }
 
 message Observation {
-    // Agent spec
     bytes payload = 1;
 }
 

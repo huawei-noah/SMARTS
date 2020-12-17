@@ -46,9 +46,9 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
     def __del__(self):
         # cleanup
         log.debug("Cleaning up zoo workers")
-        for proc in self.agent_procs:
-            proc.kill()
-            proc.wait()
+        # for proc in self.agent_procs:
+        #     proc.kill()
+        #     proc.wait()
 
     def SpawnWorker(self, request, context):
         port = find_free_port()
@@ -74,19 +74,20 @@ def serve(port):
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
 
-    log.debug(f"Master: Started serving at {ip}, {port}")
-    print(f"Master: Started serving at {ip}, {port}")
+    log.debug(f"Master: Started serving at {ip}, {port} - PID({os.getpid()})")
+    print(f"Master: Started serving at {ip}, {port} - PID({os.getpid()})")
 
     def stop_server(unused_signum, unused_frame):
+        print(f"Interrupt signal received by PID({os.getpid()})")
         server.stop(0)
-        log.debug("GRPC server stopped by interrupt signal.")
+        print(f"Master GRPC server stopped by interrupt signal - PID({os.getpid()}).")
 
     # Catch keyboard interrupt
     signal.signal(signal.SIGINT, stop_server)
 
     server.wait_for_termination()
     log.debug("Server exited.")
-
+    print(f"Master exited - PID({os.getpid()}).")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

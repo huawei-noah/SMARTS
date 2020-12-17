@@ -70,17 +70,13 @@ class RemoteAgentBuffer:
             atexit.unregister(self.destroy)
 
         for remote_agent_future in self._agent_buffer:
-            # try to cancel the future
-            if not remote_agent_future.cancel():
-                # We can't cancel this future, wait for it to complete
-                # and terminate the agent after it's been created
-                try:
-                    remote_agent = remote_agent_future.result()
-                    remote_agent.terminate()
-                except Exception as e:
-                    self._log.error(
-                        f"Exception while tearing down buffered remote agent: {repr(e)}"
-                    )
+            try:
+                remote_agent = remote_agent_future.result()
+                remote_agent.terminate()
+            except Exception as e:
+                self._log.error(
+                    f"Exception while tearing down buffered remote agent: {repr(e)}"
+                )
 
         # Note: important to teardown the local zoo master after we purge the remote agents
         #       since they may still require the local zoo master to for instantiation.

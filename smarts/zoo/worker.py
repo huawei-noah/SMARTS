@@ -43,6 +43,7 @@ import importlib
 import logging
 import os
 import signal
+import threading
 import time
 from concurrent import futures
 
@@ -79,18 +80,16 @@ log = logging.getLogger(f"worker.py - PID({os.getpid()})")
 class AgentServicer(agent_pb2_grpc.AgentServicer):
     """Provides methods that implement functionality of a worker node executing an agent."""
 
-    def __init__(self):
-        self.agent = None
-        self.agent_spec = None
-
-    def __del__(self):
-        log.debug("Closed connection, terminating worker node.")
+    def __init__(self, stop_event):
+        self._agent = None
+        self._agent_spec = None
+        self._stop_event = stop_event
 
     def Build(self, request, context):
         time_start = time.time()
-        self.agent_spec = cloudpickle.loads(request.payload)
+        self._agent_spec = cloudpickle.loads(request.payload)
         pickle_load_time = time.time()
-        self.agent = self.agent_spec.build_agent()
+        self._agent = self._agent_spec.build_agent()
         agent_build_time = time.time()
         log.debug(
             "build agent timings:\n"
@@ -101,41 +100,49 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         return agent_pb2.Status(result="success")
 
     def Act(self, request, context):
-        if self.agent == None or self.agent_spec == None:
+        if self._agent == None or self._agent_spec == None:
             return agent_pb2.Action(
                 status=agent_pb2.Status(result="Error: Remote agent not built yet.")
             )
 
-        adapted_obs = self.agent_spec.observation_adapter(
+        adapted_obs = self._agent_spec.observation_adapter(
             cloudpickle.loads(request.payload)
         )
-        action = self.agent.act(adapted_obs)
-        adapted_action = self.agent_spec.action_adapter(action)
+        action = self._agent.act(adapted_obs)
+        adapted_action = self._agent_spec.action_adapter(action)
         return agent_pb2.Action(
             status=agent_pb2.Status(result="success"),
             action=cloudpickle.dumps(adapted_action),
         )
 
+    def Stop(self, request, context):
+        self._stop_event.set()
+        print(f"Worker stop triggered - PID({os.getpid()}).")
+        log.debug("GRPC server stopped by client.")
+        return agent_pb2.Output(msg=f"Bye Bye from PID({os.getpid()})")
 
 def serve(port):
     ip = "[::]"
+    stop_event = threading.Event()
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=3))
-    agent_pb2_grpc.add_AgentServicer_to_server(AgentServicer(), server)
+    agent_pb2_grpc.add_AgentServicer_to_server(AgentServicer(stop_event), server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
 
-    log.debug(f"Runner: Started serving at {ip}, {port}")
-    print(f"Runner: Started serving at {ip}, {port}")
+    log.debug(f"Worker: Started serving at {ip}, {port} - PID({os.getpid()})")
+    print(f"Worker: Started serving at {ip}, {port} - PID({os.getpid()})")
 
     def stop_server(unused_signum, unused_frame):
-        server.stop(0)
-        log.debug("GRPC server stopped by interrupt signal.")
+        stop_event.set()
+        print(f"Worker server stopped by interrupt signal - PID({os.getpid()}).")
 
     # Catch keyboard interrupt
     signal.signal(signal.SIGINT, stop_server)
 
-    server.wait_for_termination()
-    log.debug("Server exited.")
+    stop_event.wait()
+    server.stop(0)
+
+    print(f"Worker exited {ip}, {port} - PID({os.getpid()}).")
 
 
 if __name__ == "__main__":

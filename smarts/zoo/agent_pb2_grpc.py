@@ -15,207 +15,191 @@ class AgentStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.Stop = channel.unary_unary(
+                '/agent.Agent/Stop',
+                request_serializer=agent__pb2.Input.SerializeToString,
+                response_deserializer=agent__pb2.Output.FromString,
+                )
         self.TestConnection = channel.unary_unary(
-            "/agent.Agent/TestConnection",
-            request_serializer=agent__pb2.Input.SerializeToString,
-            response_deserializer=agent__pb2.Output.FromString,
-        )
+                '/agent.Agent/TestConnection',
+                request_serializer=agent__pb2.Input.SerializeToString,
+                response_deserializer=agent__pb2.Output.FromString,
+                )
         self.SpawnWorker = channel.unary_unary(
-            "/agent.Agent/SpawnWorker",
-            request_serializer=agent__pb2.Machine.SerializeToString,
-            response_deserializer=agent__pb2.Connection.FromString,
-        )
+                '/agent.Agent/SpawnWorker',
+                request_serializer=agent__pb2.Machine.SerializeToString,
+                response_deserializer=agent__pb2.Connection.FromString,
+                )
         self.Build = channel.unary_unary(
-            "/agent.Agent/Build",
-            request_serializer=agent__pb2.Specification.SerializeToString,
-            response_deserializer=agent__pb2.Status.FromString,
-        )
+                '/agent.Agent/Build',
+                request_serializer=agent__pb2.Specification.SerializeToString,
+                response_deserializer=agent__pb2.Status.FromString,
+                )
         self.Act = channel.unary_unary(
-            "/agent.Agent/Act",
-            request_serializer=agent__pb2.Observation.SerializeToString,
-            response_deserializer=agent__pb2.Action.FromString,
-        )
+                '/agent.Agent/Act',
+                request_serializer=agent__pb2.Observation.SerializeToString,
+                response_deserializer=agent__pb2.Action.FromString,
+                )
 
 
 class AgentServicer(object):
     """Interface exported by the server.
     """
 
-    def TestConnection(self, request, context):
+    def Stop(self, request, context):
         """Spawns workers in either remote or local host.
 
         Machine is a string "local" or "remote".
         Status is "ok" or "fail". 
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def TestConnection(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def SpawnWorker(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def Build(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def Act(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_AgentServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "TestConnection": grpc.unary_unary_rpc_method_handler(
-            servicer.TestConnection,
-            request_deserializer=agent__pb2.Input.FromString,
-            response_serializer=agent__pb2.Output.SerializeToString,
-        ),
-        "SpawnWorker": grpc.unary_unary_rpc_method_handler(
-            servicer.SpawnWorker,
-            request_deserializer=agent__pb2.Machine.FromString,
-            response_serializer=agent__pb2.Connection.SerializeToString,
-        ),
-        "Build": grpc.unary_unary_rpc_method_handler(
-            servicer.Build,
-            request_deserializer=agent__pb2.Specification.FromString,
-            response_serializer=agent__pb2.Status.SerializeToString,
-        ),
-        "Act": grpc.unary_unary_rpc_method_handler(
-            servicer.Act,
-            request_deserializer=agent__pb2.Observation.FromString,
-            response_serializer=agent__pb2.Action.SerializeToString,
-        ),
+            'Stop': grpc.unary_unary_rpc_method_handler(
+                    servicer.Stop,
+                    request_deserializer=agent__pb2.Input.FromString,
+                    response_serializer=agent__pb2.Output.SerializeToString,
+            ),
+            'TestConnection': grpc.unary_unary_rpc_method_handler(
+                    servicer.TestConnection,
+                    request_deserializer=agent__pb2.Input.FromString,
+                    response_serializer=agent__pb2.Output.SerializeToString,
+            ),
+            'SpawnWorker': grpc.unary_unary_rpc_method_handler(
+                    servicer.SpawnWorker,
+                    request_deserializer=agent__pb2.Machine.FromString,
+                    response_serializer=agent__pb2.Connection.SerializeToString,
+            ),
+            'Build': grpc.unary_unary_rpc_method_handler(
+                    servicer.Build,
+                    request_deserializer=agent__pb2.Specification.FromString,
+                    response_serializer=agent__pb2.Status.SerializeToString,
+            ),
+            'Act': grpc.unary_unary_rpc_method_handler(
+                    servicer.Act,
+                    request_deserializer=agent__pb2.Observation.FromString,
+                    response_serializer=agent__pb2.Action.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "agent.Agent", rpc_method_handlers
-    )
+            'agent.Agent', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
-# This class is part of an EXPERIMENTAL API.
+ # This class is part of an EXPERIMENTAL API.
 class Agent(object):
     """Interface exported by the server.
     """
 
     @staticmethod
-    def TestConnection(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def Stop(request,
             target,
-            "/agent.Agent/TestConnection",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/agent.Agent/Stop',
             agent__pb2.Input.SerializeToString,
             agent__pb2.Output.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def SpawnWorker(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def TestConnection(request,
             target,
-            "/agent.Agent/SpawnWorker",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/agent.Agent/TestConnection',
+            agent__pb2.Input.SerializeToString,
+            agent__pb2.Output.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SpawnWorker(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/agent.Agent/SpawnWorker',
             agent__pb2.Machine.SerializeToString,
             agent__pb2.Connection.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def Build(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def Build(request,
             target,
-            "/agent.Agent/Build",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/agent.Agent/Build',
             agent__pb2.Specification.SerializeToString,
             agent__pb2.Status.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def Act(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def Act(request,
             target,
-            "/agent.Agent/Act",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/agent.Agent/Act',
             agent__pb2.Observation.SerializeToString,
             agent__pb2.Action.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
