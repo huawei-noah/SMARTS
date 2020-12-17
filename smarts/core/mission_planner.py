@@ -235,6 +235,8 @@ class MissionPlanner:
 
         # cut-in offset should consider the aggressiveness and the speed
         # of the other vehicle.
+        edge_id = lane.getEdge().getID()
+        complete_on_edge_id = self._mission.task.complete_on_edge_id
         cut_in_offset = np.clip(20 - aggressiveness, 10, 20) + np.clip(
             target_vehicle.speed * 0.1, 0, 10
         )
@@ -242,6 +244,7 @@ class MissionPlanner:
             abs(offset - (cut_in_offset + target_offset)) > 1
             and lane.getID() != target_lane.getID()
             and self._task_is_triggered is False
+            or self._task_is_triggered and (complete_on_edge_id is not None and edge_id != complete_on_edge_id)
         ):
             nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                 position, lane.getID(), 60
