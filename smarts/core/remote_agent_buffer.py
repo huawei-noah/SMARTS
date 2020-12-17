@@ -30,8 +30,8 @@ from concurrent import futures
 from smarts.zoo import master as zoo_master
 from smarts.zoo import agent_pb2
 from smarts.zoo import agent_pb2_grpc
-from .remote_agent import RemoteAgent, RemoteAgentException
-from .utils.networking import find_free_port
+from smarts.core.remote_agent import RemoteAgent, RemoteAgentException
+from smarts.core.utils.networking import find_free_port
 
 
 class RemoteAgentBuffer:
@@ -39,11 +39,11 @@ class RemoteAgentBuffer:
         """
         Args:
             zoo_master_addrs:
-                List of (ip, port) tuples of Zoo Masters, used to instantiate remote social agents
+                List of (ip, port) tuples for master processes, which are used to instantiate remote social agents.
             auth_key:
-                Authentication key of type string for communication with Zoo Masters
+                Authentication key of type string for communication.
             buffer_size: 
-                Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3)
+                Number of RemoteAgents to pre-initialize and keep running in the background, must be non-zero (default: 3).
         """
         assert buffer_size > 0
 
@@ -81,7 +81,7 @@ class RemoteAgentBuffer:
         # Note: important to teardown the local zoo master after we purge the remote agents
         #       since they may still require the local zoo master to for instantiation.
         if self._local_zoo_master is not None:
-            self._local_zoo_master.kill()
+            self._local_zoo_master.terminate()
             self._local_zoo_master.join()
 
     def _spawn_local_zoo_master(self, retries=3):
@@ -110,9 +110,9 @@ class RemoteAgentBuffer:
 
         # Get port of remote agent runner
         response = stub.SpawnWorker(agent_pb2.Machine())
-        if response.status.result == "error":
+        if response.status.result == "Error":
             raise RemoteAgentException(
-                "Agent runner could not be instantiated by remote zoo server."
+                "Worker process could not be instantiated by master server."
             ) from e
 
         # Instantiate a local Remote Agent counterpart

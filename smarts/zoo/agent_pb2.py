@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0b\x61gent.proto\x12\x05\x61gent\"\x14\n\x05Input\x12\x0b\n\x03msg\x18\x01 \x01(\t\"\x15\n\x06Output\x12\x0b\n\x03msg\x18\x01 \x01(\t\"\x18\n\x06Status\x12\x0e\n\x06result\x18\x01 \x01(\t\"\t\n\x07Machine\"9\n\nConnection\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.agent.Status\x12\x0c\n\x04port\x18\x02 \x01(\x05\" \n\rSpecification\x12\x0f\n\x07payload\x18\x01 \x01(\x0c\"\x1e\n\x0bObservation\x12\x0f\n\x07payload\x18\x01 \x01(\x0c\"G\n\x06\x41\x63tion\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.agent.Status\x12\x13\n\x06\x61\x63tion\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x42\t\n\x07_action2\xef\x01\n\x05\x41gent\x12%\n\x04Stop\x12\x0c.agent.Input\x1a\r.agent.Output\"\x00\x12/\n\x0eTestConnection\x12\x0c.agent.Input\x1a\r.agent.Output\"\x00\x12\x32\n\x0bSpawnWorker\x12\x0e.agent.Machine\x1a\x11.agent.Connection\"\x00\x12.\n\x05\x42uild\x12\x14.agent.Specification\x1a\r.agent.Status\"\x00\x12*\n\x03\x41\x63t\x12\x12.agent.Observation\x1a\r.agent.Action\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\x0b\x61gent.proto\x12\x05\x61gent\"!\n\x05Input\x12\x10\n\x03msg\x18\x01 \x01(\tH\x00\x88\x01\x01\x42\x06\n\x04_msg\"\"\n\x06Output\x12\x10\n\x03msg\x18\x01 \x01(\tH\x00\x88\x01\x01\x42\x06\n\x04_msg\"\t\n\x07Machine\"\x18\n\x06Status\x12\x0e\n\x06result\x18\x01 \x01(\t\"9\n\nConnection\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.agent.Status\x12\x0c\n\x04port\x18\x02 \x01(\x05\" \n\rSpecification\x12\x0f\n\x07payload\x18\x01 \x01(\x0c\"\x1e\n\x0bObservation\x12\x0f\n\x07payload\x18\x01 \x01(\x0c\"G\n\x06\x41\x63tion\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.agent.Status\x12\x13\n\x06\x61\x63tion\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x42\t\n\x07_action2\xbe\x01\n\x05\x41gent\x12%\n\x04Stop\x12\x0c.agent.Input\x1a\r.agent.Output\"\x00\x12\x32\n\x0bSpawnWorker\x12\x0e.agent.Machine\x1a\x11.agent.Connection\"\x00\x12.\n\x05\x42uild\x12\x14.agent.Specification\x1a\r.agent.Status\"\x00\x12*\n\x03\x41\x63t\x12\x12.agent.Observation\x1a\r.agent.Action\"\x00\x62\x06proto3'
 )
 
 
@@ -51,9 +51,14 @@ _INPUT = _descriptor.Descriptor(
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
+    _descriptor.OneofDescriptor(
+      name='_msg', full_name='agent.Input._msg',
+      index=0, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
   ],
   serialized_start=22,
-  serialized_end=42,
+  serialized_end=55,
 )
 
 
@@ -83,9 +88,39 @@ _OUTPUT = _descriptor.Descriptor(
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
+    _descriptor.OneofDescriptor(
+      name='_msg', full_name='agent.Output._msg',
+      index=0, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
   ],
-  serialized_start=44,
-  serialized_end=65,
+  serialized_start=57,
+  serialized_end=91,
+)
+
+
+_MACHINE = _descriptor.Descriptor(
+  name='Machine',
+  full_name='agent.Machine',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=93,
+  serialized_end=102,
 )
 
 
@@ -116,33 +151,8 @@ _STATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=67,
-  serialized_end=91,
-)
-
-
-_MACHINE = _descriptor.Descriptor(
-  name='Machine',
-  full_name='agent.Machine',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=93,
-  serialized_end=102,
+  serialized_start=104,
+  serialized_end=128,
 )
 
 
@@ -180,8 +190,8 @@ _CONNECTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=104,
-  serialized_end=161,
+  serialized_start=130,
+  serialized_end=187,
 )
 
 
@@ -212,8 +222,8 @@ _SPECIFICATION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=163,
-  serialized_end=195,
+  serialized_start=189,
+  serialized_end=221,
 )
 
 
@@ -244,8 +254,8 @@ _OBSERVATION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=197,
-  serialized_end=227,
+  serialized_start=223,
+  serialized_end=253,
 )
 
 
@@ -288,10 +298,16 @@ _ACTION = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=229,
-  serialized_end=300,
+  serialized_start=255,
+  serialized_end=326,
 )
 
+_INPUT.oneofs_by_name['_msg'].fields.append(
+  _INPUT.fields_by_name['msg'])
+_INPUT.fields_by_name['msg'].containing_oneof = _INPUT.oneofs_by_name['_msg']
+_OUTPUT.oneofs_by_name['_msg'].fields.append(
+  _OUTPUT.fields_by_name['msg'])
+_OUTPUT.fields_by_name['msg'].containing_oneof = _OUTPUT.oneofs_by_name['_msg']
 _CONNECTION.fields_by_name['status'].message_type = _STATUS
 _ACTION.fields_by_name['status'].message_type = _STATUS
 _ACTION.oneofs_by_name['_action'].fields.append(
@@ -299,8 +315,8 @@ _ACTION.oneofs_by_name['_action'].fields.append(
 _ACTION.fields_by_name['action'].containing_oneof = _ACTION.oneofs_by_name['_action']
 DESCRIPTOR.message_types_by_name['Input'] = _INPUT
 DESCRIPTOR.message_types_by_name['Output'] = _OUTPUT
-DESCRIPTOR.message_types_by_name['Status'] = _STATUS
 DESCRIPTOR.message_types_by_name['Machine'] = _MACHINE
+DESCRIPTOR.message_types_by_name['Status'] = _STATUS
 DESCRIPTOR.message_types_by_name['Connection'] = _CONNECTION
 DESCRIPTOR.message_types_by_name['Specification'] = _SPECIFICATION
 DESCRIPTOR.message_types_by_name['Observation'] = _OBSERVATION
@@ -321,19 +337,19 @@ Output = _reflection.GeneratedProtocolMessageType('Output', (_message.Message,),
   })
 _sym_db.RegisterMessage(Output)
 
-Status = _reflection.GeneratedProtocolMessageType('Status', (_message.Message,), {
-  'DESCRIPTOR' : _STATUS,
-  '__module__' : 'agent_pb2'
-  # @@protoc_insertion_point(class_scope:agent.Status)
-  })
-_sym_db.RegisterMessage(Status)
-
 Machine = _reflection.GeneratedProtocolMessageType('Machine', (_message.Message,), {
   'DESCRIPTOR' : _MACHINE,
   '__module__' : 'agent_pb2'
   # @@protoc_insertion_point(class_scope:agent.Machine)
   })
 _sym_db.RegisterMessage(Machine)
+
+Status = _reflection.GeneratedProtocolMessageType('Status', (_message.Message,), {
+  'DESCRIPTOR' : _STATUS,
+  '__module__' : 'agent_pb2'
+  # @@protoc_insertion_point(class_scope:agent.Status)
+  })
+_sym_db.RegisterMessage(Status)
 
 Connection = _reflection.GeneratedProtocolMessageType('Connection', (_message.Message,), {
   'DESCRIPTOR' : _CONNECTION,
@@ -372,8 +388,8 @@ _AGENT = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=303,
-  serialized_end=542,
+  serialized_start=329,
+  serialized_end=519,
   methods=[
   _descriptor.MethodDescriptor(
     name='Stop',
@@ -386,19 +402,9 @@ _AGENT = _descriptor.ServiceDescriptor(
     create_key=_descriptor._internal_create_key,
   ),
   _descriptor.MethodDescriptor(
-    name='TestConnection',
-    full_name='agent.Agent.TestConnection',
-    index=1,
-    containing_service=None,
-    input_type=_INPUT,
-    output_type=_OUTPUT,
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-  ),
-  _descriptor.MethodDescriptor(
     name='SpawnWorker',
     full_name='agent.Agent.SpawnWorker',
-    index=2,
+    index=1,
     containing_service=None,
     input_type=_MACHINE,
     output_type=_CONNECTION,
@@ -408,7 +414,7 @@ _AGENT = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Build',
     full_name='agent.Agent.Build',
-    index=3,
+    index=2,
     containing_service=None,
     input_type=_SPECIFICATION,
     output_type=_STATUS,
@@ -418,7 +424,7 @@ _AGENT = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Act',
     full_name='agent.Agent.Act',
-    index=4,
+    index=3,
     containing_service=None,
     input_type=_OBSERVATION,
     output_type=_ACTION,

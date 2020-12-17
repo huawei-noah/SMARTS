@@ -25,34 +25,37 @@ package agent;
 // Interface exported by the server.
 service Agent {
 
-    // Stops the server
+    // Stops the server.
     rpc Stop(Input) returns (Output) {}
-
-    rpc TestConnection(Input) returns (Output) {}
 
     // Spawns worker processes.
     // Returns the address (ip, port) of new worker process.
     rpc SpawnWorker(Machine) returns (Connection) {}
 
+    // Builds Agent according the AgentSpec.
     rpc Build(Specification) returns (Status) {}
 
+    // Agent processes observations and returns action.
     rpc Act(Observation) returns (Action) {}
 }
 
+// Dummy input message.
 message Input {
-    string msg = 1;
+    optional string msg = 1;
 }
 
+// Dummy output message.
 message Output {
-    string msg = 1;
+    optional string msg = 1;
 }
 
+// Dummy input for SpawnWorker rpc.
+message Machine {
+}
+
+// Status
 message Status {
     string result = 1;
-}
-
-// SpawnWorkers service has no input
-message Machine {
 }
 
 message Connection{

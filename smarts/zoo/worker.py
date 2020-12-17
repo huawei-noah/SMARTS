@@ -27,13 +27,12 @@ To protect and isolate Agents from any pollution of global state in the main SMA
 This script is called from within SMARTS to instantiate a remote agent.
 The protocal is as follows:
 
-1. SMARTS Calls: worker.py /tmp/agent_007.sock # sets a unique path the domain socket per agent
-2. worker.py will create the /tmp_agent_007.sock domain socket and begin listening
-3. SMARTS connects to /tmp/agent_007.sock as a client
-4. SMARTS sends the `AgentSpec` over the socket to worker.py
-5. worker.py recvs the AgentSpec instances and builds the Agent
-6. SMARTS sends observations and listens for actions
-7. worker.py listens for observations and responds with actions
+1. SMARTS Calls: worker.py --port 5467 # sets a unique port per agent
+2. worker.py will begin listening on port 5467.
+3. SMARTS connects to (ip, port) as a client.
+4. SMARTS calls `Build()` rpc with `AgentSpec` as input.
+5. worker.py recieves the `AgentSpec` instances and builds the Agent.
+6. SMARTS calls `Act()` rpc with observation as input and receives the actions as response from worker.py.
 """
 
 import argparse
@@ -50,7 +49,7 @@ from concurrent import futures
 from smarts.zoo import agent_pb2
 from smarts.zoo import agent_pb2_grpc
 
-# front-load some expensive imports as to not block the simulation
+# Front-load some expensive imports as to not block the simulation
 modules = [
     "smarts.core.utils.pybullet",
     "smarts.core.utils.sumo",
@@ -71,14 +70,14 @@ for mod in modules:
     except ImportError:
         pass
 
-# end front-loaded imports
+# End front-loaded imports
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"worker.py - PID({os.getpid()})")
 
 
 class AgentServicer(agent_pb2_grpc.AgentServicer):
-    """Provides methods that implement functionality of a worker node executing an agent."""
+    """Provides methods that implement functionality of Agent Servicer."""
 
     def __init__(self, stop_event):
         self._agent = None
@@ -97,12 +96,12 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
             f"  pickle={pickle_load_time - time_start:.2}\n"
             f"  build ={agent_build_time - pickle_load_time:.2}\n"
         )
-        return agent_pb2.Status(result="success")
+        return agent_pb2.Status(result="Success")
 
     def Act(self, request, context):
         if self._agent == None or self._agent_spec == None:
             return agent_pb2.Action(
-                status=agent_pb2.Status(result="Error: Remote agent not built yet.")
+                status=agent_pb2.Status(result="Remote agent not built yet.")
             )
 
         adapted_obs = self._agent_spec.observation_adapter(
@@ -111,15 +110,15 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         action = self._agent.act(adapted_obs)
         adapted_action = self._agent_spec.action_adapter(action)
         return agent_pb2.Action(
-            status=agent_pb2.Status(result="success"),
+            status=agent_pb2.Status(result="Success"),
             action=cloudpickle.dumps(adapted_action),
         )
 
     def Stop(self, request, context):
         self._stop_event.set()
-        print(f"Worker stop triggered - PID({os.getpid()}).")
-        log.debug("GRPC server stopped by client.")
-        return agent_pb2.Output(msg=f"Bye Bye from PID({os.getpid()})")
+        log.debug(f"Worker - PID({os.getpid()}): Stopped by client.")
+        return agent_pb2.Output()
+
 
 def serve(port):
     ip = "[::]"
@@ -128,30 +127,29 @@ def serve(port):
     agent_pb2_grpc.add_AgentServicer_to_server(AgentServicer(stop_event), server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
-
-    log.debug(f"Worker: Started serving at {ip}, {port} - PID({os.getpid()})")
-    print(f"Worker: Started serving at {ip}, {port} - PID({os.getpid()})")
+    log.debug(f"Worker - {ip}, {port}, PID({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
         stop_event.set()
-        print(f"Worker server stopped by interrupt signal - PID({os.getpid()}).")
+        log.debug(f"Worker - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal.")
 
     # Catch keyboard interrupt
     signal.signal(signal.SIGINT, stop_server)
+    signal.signal(signal.SIGTERM, stop_server)
 
+    # Wait to receive server termination signal
     stop_event.wait()
     server.stop(0)
-
-    print(f"Worker exited {ip}, {port} - PID({os.getpid()}).")
+    log.debug(f"Worker - {ip}, {port}, PID({os.getpid()}): Server exited")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Spawn an agent in it's own independent process.")
+    parser = argparse.ArgumentParser("Run an agent in an independent process.")
     parser.add_argument(
         "--port",
         type=int,
         required=True,
-        help="Port to bind to for listening for remote client connections.",
+        help="Port to listen for remote client connections.",
     )
 
     args = parser.parse_args()

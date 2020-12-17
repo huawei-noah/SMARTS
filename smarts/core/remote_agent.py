@@ -46,7 +46,9 @@ class RemoteAgent:
             # Wait until the grpc server is ready or timeout after 30 seconds
             grpc.channel_ready_future(self.channel).result(timeout=30)
         except grpc.FutureTimeoutError as e:
-            raise RemoteAgentException("Timeout while connecting to remote worker process.") from e
+            raise RemoteAgentException(
+                "Timeout while connecting to remote worker process."
+            ) from e
         self.stub = agent_pb2_grpc.AgentStub(self.channel)
 
     def _act(self, obs, timeout):
@@ -56,9 +58,13 @@ class RemoteAgent:
             )
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
-                raise RemoteAgentException("Remote worker process exceeded response deadline.") from e
-            else:    
-                raise ("Error in retrieving agent action from remote worker process.") from e
+                raise RemoteAgentException(
+                    "Remote worker process exceeded response deadline."
+                ) from e
+            else:
+                raise (
+                    f"Error in retrieving agent action from remote worker process. {response.status.result}"
+                ) from e
         return cloudpickle.loads(response.action)
 
     def act(self, obs, timeout=None):

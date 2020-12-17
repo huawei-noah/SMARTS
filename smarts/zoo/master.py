@@ -25,6 +25,7 @@ import pathlib
 import signal
 import subprocess
 import sys
+import threading
 from concurrent import futures
 from multiprocessing import Process
 
@@ -38,63 +39,66 @@ log = logging.getLogger(f"master.py - PID({os.getpid()})")
 
 
 class AgentServicer(agent_pb2_grpc.AgentServicer):
-    """Provides methods that implement functionality of Zoo Master."""
+    """Provides methods that implement functionality of Agent Servicer."""
 
-    def __init__(self):
-        self.agent_procs = []
+    def __init__(self, stop_event):
+        self._agent_workers = []
+        self._stop_event = stop_event
 
     def __del__(self):
-        # cleanup
-        log.debug("Cleaning up zoo workers")
-        # for proc in self.agent_procs:
-        #     proc.kill()
-        #     proc.wait()
+        log.debug("Cleaning up zoo workers.")
+        for proc in self._agent_workers:
+            if proc.is_alive():
+                proc.terminate()
+                proc.join()
 
     def SpawnWorker(self, request, context):
         port = find_free_port()
         proc = Process(target=worker.serve, args=(port,))
         proc.start()
-        if proc:
-            self.agent_procs.append(proc)
+        if proc.is_alive():
+            self._agent_workers.append(proc)
             return agent_pb2.Connection(
-                status=agent_pb2.Status(result="success"), port=port
+                status=agent_pb2.Status(result="Success"), port=port
             )
 
-        return agent_pb2.Connection(status=agent_pb2.Status(result="error"), port=port)
-
-    def TestConnection(self, request, context):
-        print(f"Input: {request.msg}, Note: Inside TestConnection() RPC.")
-        return agent_pb2.Output(msg=f"Input: {request.msg}, Output: Success.")
+        return agent_pb2.Connection(status=agent_pb2.Status(result="Error"), port=port)
+    
+    def Stop(self, request, context):
+        self._stop_event.set()
+        log.debug(f"Master - PID({os.getpid()}): Stopped by client.")
+        return agent_pb2.Output()
 
 
 def serve(port):
     ip = "[::]"
+    stop_event = threading.Event()
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
-    agent_pb2_grpc.add_AgentServicer_to_server(AgentServicer(), server)
+    agent_pb2_grpc.add_AgentServicer_to_server(AgentServicer(stop_event), server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
-
-    log.debug(f"Master: Started serving at {ip}, {port} - PID({os.getpid()})")
-    print(f"Master: Started serving at {ip}, {port} - PID({os.getpid()})")
+    log.debug(f"Master - {ip}, {port}, PID({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
-        print(f"Interrupt signal received by PID({os.getpid()})")
-        server.stop(0)
-        print(f"Master GRPC server stopped by interrupt signal - PID({os.getpid()}).")
+        stop_event.set()
+        print(f"{unused_signum, unused_frame}")
+        log.debug(f"Master - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal.")
 
     # Catch keyboard interrupt
     signal.signal(signal.SIGINT, stop_server)
+    signal.signal(signal.SIGTERM, stop_server)
 
-    server.wait_for_termination()
-    log.debug("Server exited.")
-    print(f"Master exited - PID({os.getpid()}).")
+    # Wait to receive server termination signal
+    stop_event.wait()
+    server.stop(0)
+    log.debug(f"Master - {ip}, {port}, PID({os.getpid()}): Server exited")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        "Listens for requests to allocate agents and executes them on-demand"
+        "Listen for requests to allocate agents and execute them on-demand."
     )
     parser.add_argument(
-        "--port", type=int, default=7432, help="Port to listen on",
+        "--port", type=int, default=7432, help="Port to listen on.",
     )
 
     args = parser.parse_args()

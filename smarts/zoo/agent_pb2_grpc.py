@@ -20,11 +20,6 @@ class AgentStub(object):
                 request_serializer=agent__pb2.Input.SerializeToString,
                 response_deserializer=agent__pb2.Output.FromString,
                 )
-        self.TestConnection = channel.unary_unary(
-                '/agent.Agent/TestConnection',
-                request_serializer=agent__pb2.Input.SerializeToString,
-                response_deserializer=agent__pb2.Output.FromString,
-                )
         self.SpawnWorker = channel.unary_unary(
                 '/agent.Agent/SpawnWorker',
                 request_serializer=agent__pb2.Machine.SerializeToString,
@@ -47,35 +42,30 @@ class AgentServicer(object):
     """
 
     def Stop(self, request, context):
-        """Spawns workers in either remote or local host.
-
-        Machine is a string "local" or "remote".
-        Status is "ok" or "fail". 
+        """Stops the server.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def TestConnection(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def SpawnWorker(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Spawns worker processes.
+        Returns the address (ip, port) of new worker process.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Build(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Builds Agent according the AgentSpec.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Act(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Agent processes observations and returns action.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -85,11 +75,6 @@ def add_AgentServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Stop': grpc.unary_unary_rpc_method_handler(
                     servicer.Stop,
-                    request_deserializer=agent__pb2.Input.FromString,
-                    response_serializer=agent__pb2.Output.SerializeToString,
-            ),
-            'TestConnection': grpc.unary_unary_rpc_method_handler(
-                    servicer.TestConnection,
                     request_deserializer=agent__pb2.Input.FromString,
                     response_serializer=agent__pb2.Output.SerializeToString,
             ),
@@ -131,23 +116,6 @@ class Agent(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/agent.Agent/Stop',
-            agent__pb2.Input.SerializeToString,
-            agent__pb2.Output.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def TestConnection(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/agent.Agent/TestConnection',
             agent__pb2.Input.SerializeToString,
             agent__pb2.Output.FromString,
             options, channel_credentials,
