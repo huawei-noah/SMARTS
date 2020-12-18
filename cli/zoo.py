@@ -69,10 +69,10 @@ You can now add it to the policy zoo if you want to make it available to scenari
 @click.argument("auth_key", type=str, default=None)
 @click.argument("port", default=7432, type=int)
 def worker(auth_key, port):
-    from smarts.zoo.worker import listen
+    from smarts.zoo import master
 
     auth_key = auth_key if auth_key else ""
-    listen(port, auth_key)
+    master.serve(port)
 
 
 zoo_cli.add_command(build_policy)

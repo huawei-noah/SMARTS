@@ -64,12 +64,6 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
 
         return agent_pb2.Connection(status=agent_pb2.Status(result="Error"), port=port)
 
-    def Stop(self, request, context):
-        self._stop_event.set()
-        log.debug(f"Master - PID({os.getpid()}): Stopped by client.")
-        return agent_pb2.Output()
-
-
 def serve(port):
     ip = "[::]"
     stop_event = threading.Event()
@@ -81,7 +75,6 @@ def serve(port):
 
     def stop_server(unused_signum, unused_frame):
         stop_event.set()
-        print(f"{unused_signum, unused_frame}")
         log.debug(
             f"Master - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal."
         )
