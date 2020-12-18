@@ -428,7 +428,7 @@ class SumoTrafficSimulation:
             x=x,
             y=y,
             angle=heading,  # only used for visualizing in sumo-gui
-            keepRoute=0,
+            keepRoute=0b010,
         )
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
