@@ -152,6 +152,12 @@ class DoneCriteria:
 
 
 @dataclass
+class AgentBehavior:
+
+    aggressiveness: int = 0
+
+
+@dataclass
 class AgentInterface:
     """
     Configure the interface between an Agent and the Environment.
@@ -216,6 +222,8 @@ class AgentInterface:
     """
     Enable acceleration and jerk observations.
     """
+
+    agent_behavior: AgentBehavior = None
 
     def __post_init__(self):
         self.neighborhood_vehicles = AgentInterface._resolve_config(
