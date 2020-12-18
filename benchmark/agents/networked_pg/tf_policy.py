@@ -50,5 +50,6 @@ NetworkedPG = build_tf_policy(
 
 
 NetworkedPGTrainer = build_trainer(
-    name="NetworkedPGTrainer", default_policy=NetworkedPG,
+    name="NetworkedPGTrainer",
+    default_policy=NetworkedPG,
 )

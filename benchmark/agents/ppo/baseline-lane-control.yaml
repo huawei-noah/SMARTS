@@ -3,16 +3,27 @@ name: ppo-baseline
 agent:
   state:
     wrapper:
-      name: Simple
+      name: FrameStacked
     features:
+      # relative position of goal
+      goal_relative_pos: True
+      # distance to the center of lane
       distance_to_center: True
+      # speed
       speed: True
+      # steering
       steering: True
+      # a list of heading errors
       heading_errors: [20, continuous]
+      # at most eight neighboring vehicles' driving states
       neighbor: 8
+      # bird's-eye view gray-scale image with the agent at the center
+      img_gray: (28, 28)
+
   action:
     type: 1  # 0 for continuous, 1 for discrete
 
+# for agent interface
 interface:
   max_episode_steps: 1000
   neighborhood_vehicles:

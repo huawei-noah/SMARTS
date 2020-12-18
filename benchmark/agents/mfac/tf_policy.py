@@ -133,8 +133,7 @@ def postprocess_trajectory(
 
 
 def ac_loss_func(policy, model, dist_class, train_batch):
-    """ Predefined actor-critic loss reuse.
-    """
+    """Predefined actor-critic loss reuse."""
     logits, _ = model.from_batch(train_batch)
     action_dist = dist_class(logits, model)
 

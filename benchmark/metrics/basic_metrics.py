@@ -22,7 +22,9 @@ General metrics
 """
 
 import numpy as np
-import tableprint as tp
+import csv
+import time
+import os
 
 from collections import defaultdict, namedtuple, OrderedDict
 from dataclasses import dataclass, field
@@ -54,12 +56,13 @@ def min_max_mean(data: list):
 class EvaluatedEpisode(EpisodeLog):
     ego_speed: dict = field(default_factory=lambda: defaultdict(lambda: []))
     num_collision: dict = field(default_factory=lambda: defaultdict(lambda: 0))
-    distance_to_goal: dict = field(default_factory=lambda: defaultdict(lambda: 0.0))
+    distance_to_goal: dict = field(default_factory=lambda: defaultdict(lambda: []))
     distance_to_ego_car: dict = field(default_factory=lambda: defaultdict(lambda: []))
     acceleration: dict = field(default_factory=lambda: defaultdict(lambda: 0.0))
     reach_goal: dict = field(default_factory=lambda: defaultdict(lambda: False))
+    agent_step: dict = field(default_factory=lambda: defaultdict(lambda: 0))
 
-    def record_step(self, observations, rewards, dones, infos):
+    def record_step(self, observations=None, rewards=None, dones=None, infos=None):
         for agent_id, info in infos.items():
             if info.get("_group_info") is not None:
                 for i, _info in enumerate(info["_group_info"]):
@@ -74,10 +77,8 @@ class EvaluatedEpisode(EpisodeLog):
             else:
                 self.ego_speed[agent_id].append(info["speed"])
                 self.num_collision[agent_id] += len(info["events"].collisions)
-
-                if dones[agent_id]:
-                    self.reach_goal[agent_id] = info["events"].reached_goal
-                    self.distance_to_goal[agent_id] = info["distance_to_goal"]
+                self.distance_to_goal[agent_id] = info["distance_to_goal"]
+                self.agent_step[agent_id] += 1
 
         self.steps += 1
 
@@ -89,70 +90,104 @@ def get_statistics(data: list):
     return MinMeanMax(np.min(data), np.mean(data), np.max(data))
 
 
-class Metric:
+class MetricKeys:
+    AVE_CR = "Average Collision Rate"
+    AVE_COMR = "Completion Rate"
+    MAX_L = "Max Live Step"
+    MIN_L = "Min Live Step"
+    MEAN_L = "Mean Live Step"
+    MIN_G = "Min Goal Distance"
+
+
+class MetricHandler:
     def __init__(self, num_episode):
         self._logs = [EvaluatedEpisode() for _ in range(num_episode)]
 
     def log_step(self, observations, rewards, dones, infos, episode):
         self._logs[episode].record_step(observations, rewards, dones, infos)
 
-    def compute(self):
-        res = dict()
+    def write_to_csv(self, csv_dir):
+        csv_dir = f"{csv_dir}/{int(time.time())}"
+        for i, logger in enumerate(self._logs):
+            sub_dir = f"{csv_dir}/episode_{i}"
+            os.makedirs(sub_dir)
+            for agent_id in logger.agent_step.keys():
+                # get time step
+                f_name = f"{sub_dir}/agent_{agent_id}.csv"
+                with open(f_name, "w") as f:
+                    writer = csv.writer(f, delimiter=",")
+                    headers = [""] + [
+                        str(i) for i in range(logger.agent_step[agent_id])
+                    ]
+                    writer.writerow(headers)
+                    writer.writerow(["Speed"] + logger.ego_speed[agent_id])
+                    writer.writerow(["GDistance"] + logger.distance_to_goal[agent_id])
+                    writer.writerow(
+                        ["EDistance"] + logger.distance_to_ego_car[agent_id]
+                    )
+                    # writer.writerow(["Acceleration"] + logger.acceleration[agent_id])
+                    writer.writerow(
+                        ["Num_Collision"] + [logger.num_collision[agent_id]]
+                    )
 
-        for i, log in enumerate(self._logs):
-            for agent_id in log.ego_speed.keys():
-                speed_list = log.ego_speed[agent_id]
+    def read_episode(self, csv_dir):
+        agent_record = defaultdict(
+            lambda: {
+                "Speed": None,
+                "GDistance": None,
+                "EDistance": None,
+                "Num_Collision": None,
+                "Acceleration": None,
+            }
+        )
+        for f_name in os.listdir(csv_dir):
+            if f_name.endswith(".csv"):
+                f_path = os.path.join(csv_dir, f_name)
+                agent_id = f_path.split(".")[0]
+                print(f"Got file `{f_name}` for agent-{agent_id}")
+                with open(
+                    f_path,
+                ) as f:
+                    reader = csv.reader(f, delimiter=",")
+                    _ = next(reader)
+                    agent_record[agent_id]["Speed"] = next(reader)[1:]
+                    agent_record[agent_id]["GDistance"] = next(reader)[1:]
+                    agent_record[agent_id]["EDistance"] = next(reader)[1:]
+                    # agent_record[agent_id]["Acceleration"] = next(reader)[1:]
+                    agent_record[agent_id]["Num_Collision"] = next(reader)
+        return agent_record
 
-                if res.get(agent_id, None) is None:
-                    res[agent_id] = {
-                        "collision": [],
-                        "goal_distance": [],
-                        "reach_goal": [],
-                        "speed_statis": dict(),
-                    }
+    def compute(self, csv_dir):
+        # list directory
+        sub_dirs = [os.path.join(csv_dir, sub_dir) for sub_dir in os.listdir(csv_dir)]
+        agent_metrics = defaultdict(
+            lambda: {
+                MetricKeys.AVE_CR: 0.0,
+                MetricKeys.AVE_COMR: 0.0,
+                MetricKeys.MAX_L: 0,
+                MetricKeys.MIN_L: 0,
+                MetricKeys.MEAN_L: 0.0,
+                MetricKeys.MIN_G: 0.0,
+            }
+        )
 
-                res[agent_id]["collision"].append(log.num_collision[agent_id])
-                res[agent_id]["goal_distance"].append(log.distance_to_goal[agent_id])
-                res[agent_id]["reach_goal"].append(log.reach_goal[agent_id])
-                res[agent_id]["speed_statis"][i] = get_statistics(speed_list)
+        goal_dist_th = 2.0
 
-        for agent_id, statis in res.items():
-            statis["collision"] = get_statistics(statis["collision"])
-            statis["goal_distance"] = get_statistics(statis["goal_distance"])
-            statis["reach_goal_rate"] = sum(statis["reach_goal"]) / len(
-                statis["reach_goal"]
-            )
+        for sub_dir in sub_dirs:
+            episode_agent_record: dict = self.read_episode(sub_dir)
+            for aid, record in episode_agent_record.items():
+                am = agent_metrics[aid]
+                am[MetricKeys.AVE_CR] += record["Num_Collision"]
+                min_goal_dist = record["GDistance"][-1]
+                am[MetricKeys.AVE_COMR] += 1.0 if min_goal_dist < goal_dist_th else 0.0
+                am[MetricKeys.MAX_L] = max(am[MetricKeys.MAX_L], len(record["Speed"]))
+                am[MetricKeys.MIN_L] = min(am[MetricKeys.MIN_L], len(record["Speed"]))
+                am[MetricKeys.MEAN_L] += len(record["Speed"])
+                am[MetricKeys.MIN_G] = min(am[MetricKeys.MIN_G], min_goal_dist)
 
-        col_width = 32
+        for aid, record in agent_metrics.items():
+            record[MetricKeys.MEAN_L] /= len(sub_dirs)
+            record[MetricKeys.AVE_COMR] /= len(sub_dirs)
+            record[MetricKeys.AVE_CR] /= len(sub_dirs)
 
-        with tp.TableContext(
-            [
-                "Agent ID",
-                "Collision (min / mean / max)",
-                "Goal distance (min / mean / max)",
-                "Goal reached rate",
-            ],
-            width=col_width,
-            style="round",
-        ) as table:
-            res = OrderedDict(sorted(res.items(), key=lambda x: x[0]))
-            collision = [
-                f"{e['collision'][0]:.2f} / {e['collision'][1]:.2f} / {e['collision'][2]:.2f}"
-                for agent, e in res.items()
-            ]
-            goal_distances = [
-                f"{e['goal_distance'][0]:.2f} / {e['goal_distance'][1]:.2f} / {e['goal_distance'][2]:.2f}"
-                for agent, e in res.items()
-            ]
-            reach_goal_rate = [
-                f"{e['reach_goal_rate']:.2f}" for agent, e in res.items()
-            ]
-
-            agent_ids = list(res.keys())
-
-            for i in range(len(collision)):
-                table(
-                    (agent_ids[i], collision[i], goal_distances[i], reach_goal_rate[i],)
-                )
-
-        return res
+        print(agent_metrics)

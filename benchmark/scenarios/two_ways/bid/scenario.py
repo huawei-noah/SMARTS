@@ -11,5 +11,6 @@ missions = [
 ]
 
 gen_scenario(
-    t.Scenario(ego_missions=missions), output_dir=Path(__file__).parent,
+    t.Scenario(ego_missions=missions),
+    output_dir=Path(__file__).parent,
 )

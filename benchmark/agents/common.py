@@ -42,12 +42,18 @@ from smarts.core.scenario import PositionalGoal
 SPACE_LIB = dict(
     # normalized distance to lane center
     distance_to_center=lambda _: gym.spaces.Box(low=-1e3, high=1e3, shape=(1,)),
-    heading_errors=lambda look: gym.spaces.Box(low=-1.0, high=1.0, shape=(look[0],),),
+    heading_errors=lambda look: gym.spaces.Box(
+        low=-1.0,
+        high=1.0,
+        shape=(look[0],),
+    ),
     speed=lambda _: gym.spaces.Box(low=-330.0, high=330.0, shape=(1,)),
     steering=lambda _: gym.spaces.Box(low=-1.0, high=1.0, shape=(1,)),
     goal_relative_pos=lambda _: gym.spaces.Box(low=-1e2, high=1e2, shape=(2,)),
     neighbor=lambda neighbor_num: gym.spaces.Box(
-        low=-1e3, high=1e3, shape=(neighbor_num * 5,),
+        low=-1e3,
+        high=1e3,
+        shape=(neighbor_num * 5,),
     ),
     img_gray=lambda shape: gym.spaces.Box(low=0.0, high=1.0, shape=shape),
     lane_its_info=lambda _: gym.spaces.Box(low=-1e10, high=1e10, shape=(16,)),
@@ -151,28 +157,6 @@ class ActionSpace:
             raise NotImplementedError
 
 
-class EasyOBSFn(ObservationFunction):
-    """ For agent grouping """
-
-    def _filter__obs_dict(self, agent_obs: dict, agent_id):
-        res = copy.copy(agent_obs)
-        res.pop(agent_id)
-        return res
-
-    def _filter_act_dict(self, policies):
-        return {_id: policy.action_space for _id, policy in policies}
-
-    def __call__(self, agent_obs, worker, base_env, policies, episode, **kw):
-        return {
-            agent_id: {
-                "own_obs": obs,
-                **self._filter_obs_dict(agent_obs, agent_id),
-                **{f"{_id}_action": 0.0 for _id in agent_obs},
-            }
-            for agent_id, obs in agent_obs.items()
-        }
-
-
 lane_crash_flag = False
 intersection_crash_flag = False
 
@@ -189,8 +173,9 @@ class CalObs:
         ego_pos = ego_state.position[:2]
         goal_pos = goal.position  # the position of mission goal is 2-dimensional.
         vector = np.asarray([goal_pos[0] - ego_pos[0], goal_pos[1] - ego_pos[1]])
-        space = SPACE_LIB["goal_relative_pos"](None)
-        return vector / (space.high - space.low)
+        # space = SPACE_LIB["goal_relative_pos"](None)
+        # return vector / (space.high - space.low)
+        return vector
 
     @staticmethod
     def cal_distance_to_center(env_obs: Observation, _):
@@ -201,10 +186,11 @@ class CalObs:
         wps = [path[0] for path in waypoint_paths]
         closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
         signed_dist_to_center = closest_wp.signed_lateral_error(ego.position)
-        lane_hwidth = closest_wp.lane_width * 0.5
-        norm_dist_from_center = signed_dist_to_center / lane_hwidth
+        # lane_hwidth = closest_wp.lane_width * 0.5
+        # norm_dist_from_center = signed_dist_to_center / lane_hwidth
 
-        dist = np.asarray([norm_dist_from_center])
+        # dist = np.asarray([norm_dist_from_center])
+        dist = np.asarray([signed_dist_to_center])
         return dist
 
     @staticmethod
@@ -241,7 +227,8 @@ class CalObs:
     def cal_speed(env_obs: Observation, _):
         ego = env_obs.ego_vehicle_state
         res = np.asarray([ego.speed])
-        return res * 3.6 / 120
+        # return res * 3.6 / 120
+        return res * 3.6
 
     @staticmethod
     def cal_steering(env_obs: Observation, _):
@@ -294,7 +281,7 @@ class CalObs:
             else:
                 rel_speed = ego.speed * ego_cosin - v.speed * v_cosin
 
-            ttc = min(rel_dist / max(1e-5, rel_speed), 1e3)
+            ttc = min(rel_dist / max(1e-5, rel_speed), 5.0)
 
             features[i, :] = np.asarray(
                 [rel_dist, rel_speed, ttc, rel_pos[0], rel_pos[1]]
@@ -775,7 +762,7 @@ class CalObs:
 
 class SimpleCallbacks(DefaultCallbacks):
     """See example from (>=0.8.6): https://github.com/ray-project/ray/blob/master/rllib/examples
-    /custom_metrics_and_callbacks.py """
+    /custom_metrics_and_callbacks.py"""
 
     def on_episode_start(
         self,

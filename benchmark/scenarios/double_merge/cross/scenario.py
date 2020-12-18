@@ -30,7 +30,10 @@ traffic = {
     "1": t.Traffic(
         flows=[
             t.Flow(
-                route=t.Route(begin=(f"gneE17", 0, 2), end=(f"gneE5", 1, 120),),
+                route=t.Route(
+                    begin=(f"gneE17", 0, 2),
+                    end=(f"gneE5", 1, 120),
+                ),
                 rate=1,
                 actors={impatient_car: 0.5, patient_car: 0.5},
             )
@@ -39,7 +42,10 @@ traffic = {
     "2": t.Traffic(
         flows=[
             t.Flow(
-                route=t.Route(begin=(f"gneE22", 0, 2), end=(f"gneE5", 0, 120),),
+                route=t.Route(
+                    begin=(f"gneE22", 0, 2),
+                    end=(f"gneE5", 0, 120),
+                ),
                 rate=1,
                 actors={impatient_car: 0.5, patient_car: 0.5},
             )

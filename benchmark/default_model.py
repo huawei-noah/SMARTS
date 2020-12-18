@@ -147,7 +147,10 @@ class RLLibTFSavedModelAgent(Agent):
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._sess = tf.compat.v1.Session(graph=tf.Graph())
         tf.compat.v1.saved_model.load(
-            self._sess, export_dir=load_path, tags=["serve"], clear_devices=True,
+            self._sess,
+            export_dir=load_path,
+            tags=["serve"],
+            clear_devices=True,
         )
         # These tensor names were found by inspecting the trained model
         if algorithm == "PPO":
@@ -272,7 +275,10 @@ class BatchRLLibTFSavedModelAgent(Agent):
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._sess = tf.compat.v1.Session(graph=tf.Graph())
         tf.compat.v1.saved_model.load(
-            self._sess, export_dir=load_path, tags=["serve"], clear_devices=True,
+            self._sess,
+            export_dir=load_path,
+            tags=["serve"],
+            clear_devices=True,
         )
         # These tensor names were found by inspecting the trained model
         if algorithm == "PPO":

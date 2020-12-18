@@ -14,5 +14,6 @@ missions = [
     Mission(Route(begin=("gneE22", 0, 25), end=("gneE5", 1, 100))),
 ]
 gen_scenario(
-    Scenario(ego_missions=missions), output_dir=Path(__file__).parent,
+    Scenario(ego_missions=missions),
+    output_dir=Path(__file__).parent,
 )

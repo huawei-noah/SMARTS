@@ -51,7 +51,7 @@ def _get_policy_observation_space(wrapper, observation_space, config):
 
 
 def _make_rllib_config(config, mode="train"):
-    """ Generate agent configuration. `mode` can be `train` or 'evaluation', and the
+    """Generate agent configuration. `mode` can be `train` or 'evaluation', and the
     only difference on the generated configuration is the agent info adapter.
     """
 
