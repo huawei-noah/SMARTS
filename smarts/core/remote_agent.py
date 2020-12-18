@@ -58,12 +58,11 @@ class RemoteAgent:
             )
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
-                raise RemoteAgentException(
-                    "Remote worker process exceeded response deadline."
-                ) from e
+                log.debug("Remote worker process exceeded response deadline.")
+                return None
             else:
-                raise (
-                    f"Error in retrieving agent action from remote worker process. {response.status.result}"
+                raise RemoteAgentException(
+                    f"Error in retrieving agent action from remote worker process."
                 ) from e
         return cloudpickle.loads(response.action)
 
