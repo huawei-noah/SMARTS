@@ -3,14 +3,14 @@ from pathlib import Path
 from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
 
-pose_boid_agent = t.BoidAgentActor(
-    name="pose-boid",
-    agent_locator="scenarios.straight.agent_prefabs:pose-boid-agent-v0",
-)
-
 trajectory_boid_agent = t.BoidAgentActor(
     name="trajectory-boid",
     agent_locator="scenarios.straight.agent_prefabs:trajectory-boid-agent-v0",
+)
+
+pose_boid_agent = t.BoidAgentActor(
+    name="pose-boid",
+    agent_locator="scenarios.straight.agent_prefabs:pose-boid-agent-v0",
 )
 
 traffic = t.Traffic(

@@ -12,7 +12,7 @@ import smarts
 from smarts.core.utils.file import copy_tree
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 
-from .rllib_agent import TrainingModel, rllib_agent
+from examples.rllib_agent import TrainingModel, rllib_agent
 
 logging.basicConfig(level=logging.INFO)
 
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     save_model_path = str(Path(__file__).expanduser().resolve().parent / "model")
     parser.add_argument(
         "--save_model_path",
-        type=int,
+        type=str,
         default=save_model_path,
         help="Destination path of where to copy the model when training is over",
     )

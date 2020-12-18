@@ -99,7 +99,7 @@ class Heading(float):
         if rel_heading < -math.pi:
             rel_heading += 2 * math.pi
 
-        assert -math.pi <= rel_heading <= math.pi
+        assert -math.pi <= rel_heading <= math.pi, f"{rel_heading}"
 
         return Heading(rel_heading)
 

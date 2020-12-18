@@ -18,15 +18,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import random
-from math import isclose
+import math
 from typing import Optional
 
-from smarts.sstudio.types import MapZone
+import numpy as np
+
+from smarts.sstudio.types import CutIn, MapZone, UTurn
 from .sumo_road_network import SumoRoadNetwork
 from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
-from .waypoints import Waypoints
+from .waypoints import Waypoint, Waypoints
 from .route import ShortestRoute, EmptyRoute
-from .coordinates import Pose
+from .coordinates import Heading, Pose
+from .route import ShortestRoute, EmptyRoute
+from .scenario import EndlessGoal, LapMission, Mission, Start
+from .sumo_road_network import SumoRoadNetwork
+from .utils.math import vec_to_radians, radians_to_vec, evaluate_bezier as bezier
+from .waypoints import Waypoint, Waypoints
 
 
 class PlanningError(Exception):
@@ -40,10 +47,12 @@ class MissionPlanner:
         self._route = None
         self._road_network = road_network
         self._did_plan = False
+        self._task_is_triggered = False
+        self._uturn_initial_heading = 0
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
-    ):
+    ) -> Mission:
         assert min_range_along_lane > 0  # Need to start further than beginning of lane
         assert max_range_along_lane < 1  # Cannot start past end of lane
         assert min_range_along_lane < max_range_along_lane  # Min must be less than max
@@ -58,17 +67,22 @@ class MissionPlanner:
         )
         offset *= n_lane.getLength()
         coord = self._road_network.world_coord_from_offset(n_lane, offset)
-        nearest_wp = self._waypoints.closest_waypoint_on_lane(coord, n_lane.getID())
+        nearest_wp = self._waypoints.closest_waypoint_on_lane_to_point(
+            coord, n_lane.getID()
+        )
         return Mission(
             start=Start(tuple(nearest_wp.pos), nearest_wp.heading),
             goal=EndlessGoal(),
             entry_tactic=None,
         )
 
-    def plan(self, mission: Optional[Mission]):
+    def plan(self, mission: Optional[Mission]) -> Mission:
         self._mission = mission or self.random_endless_mission()
 
         if not self._mission.has_fixed_route:
+            self._route = EmptyRoute()
+        elif self._mission.task is not None:
+            # TODO: ensure there is a default route
             self._route = EmptyRoute()
         else:
             start_lane = self._road_network.nearest_lane(
@@ -86,7 +100,7 @@ class MissionPlanner:
             end_edge = end_lane.getEdge()
 
             intermediary_edges = [
-                self._road_network.edge_by_id(edge) for edge in self._mission.via
+                self._road_network.edge_by_id(edge) for edge in self._mission.route_vias
             ]
 
             self._route = ShortestRoute(
@@ -119,7 +133,11 @@ class MissionPlanner:
     def mission(self):
         return self._mission
 
-    def waypoint_paths_at(self, pose: Pose, lookahead: float):
+    def closest_point_on_lane(self, position, lane_id: str):
+        lane = self._road_network.lane_by_id(lane_id)
+        return self._road_network.lane_center_at_point(lane, position)
+
+    def waypoint_paths_at(self, sim, pose: Pose, lookahead: float, vehicle=None):
         """Call assumes you're on the correct route already. We do not presently
         "replan" in case the route has changed.
         """
@@ -133,7 +151,7 @@ class MissionPlanner:
                 pose.position, lookahead, edge_ids
             )
 
-        return self._waypoints.waypoint_paths_at(pose.position, lookahead)
+        return self._waypoints.waypoint_paths_at(pose, lookahead)
 
     def waypoint_paths_on_lane_at(self, pose: Pose, lane_id: str, lookahead: float):
         """Call assumes you're on the correct route already. We do not presently
@@ -149,7 +167,7 @@ class MissionPlanner:
                 pose.position, lane_id, lookahead, edge_ids
             )
 
-        return self._waypoints.waypoint_paths_at(pose.position, lookahead)
+        return self._waypoints.waypoint_paths_at(pose, lookahead)
 
     def _edge_ids(self, pose: Pose, lane_id: str = None):
         if self._mission.has_fixed_route:
@@ -162,7 +180,7 @@ class MissionPlanner:
             # We take the 10 closest waypoints to then filter down to that which has
             # the closest heading. This way we get the waypoint on our lane instead of
             # a potentially closer lane that is on a different junction connection.
-            closest_wps = self._waypoints.closest_waypoints(pose.position, 10)
+            closest_wps = self._waypoints.closest_waypoints(pose, desired_count=10)
             closest_wps = sorted(
                 closest_wps, key=lambda wp: abs(pose.heading - wp.heading)
             )
@@ -182,3 +200,179 @@ class MissionPlanner:
             edge_ids.append(next_edges[0].getID())
 
         return edge_ids
+
+    def cut_in_waypoints(self, sim, pose: Pose, vehicle):
+        radius = self._mission.task.trigger_radius
+        neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
+            vehicle=vehicle, radius=radius
+        )
+
+        position = pose.position[:2]
+        lane = self._road_network.nearest_lane(position)
+
+        if neighborhood_vehicles:
+            nei_vehicle = neighborhood_vehicles[0]
+
+            target_position = nei_vehicle.pose.position[:2]
+            target_lane = self._road_network.nearest_lane(target_position)
+
+            offset = self._road_network.offset_into_lane(lane, position)
+            target_offset = self._road_network.offset_into_lane(
+                target_lane, target_position
+            )
+
+            if offset < target_offset + 5 and not self._task_is_triggered:
+                return []
+            nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                target_position, target_lane.getID(), 60
+            )
+            if abs(position[1] - target_position[1]) < 0.5:
+                nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                    position, lane.getID(), 60
+                )
+
+        else:
+            if self._task_is_triggered:
+                nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                    position, lane.getID(), 60
+                )
+            else:
+                return []
+
+        self._task_is_triggered = True
+
+        p0 = position
+        p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
+        p1 = p_temp
+        p2 = nei_wps[0][2 * len(nei_wps[0]) // 3].pos
+
+        p3 = nei_wps[0][-1].pos
+        p_x, p_y = bezier([p0, p1, p2, p3], 20)
+        trajectory = []
+        prev = position[:2]
+        for i in range(len(p_x)):
+            pos = np.array([p_x[i], p_y[i]])
+            heading = Heading(vec_to_radians(pos - prev))
+            prev = pos
+            lane = self._road_network.nearest_lane(pos)
+            lane_id = lane.getID()
+            lane_index = lane_id.split("_")[-1]
+            width = lane.getWidth()
+            speed_limit = lane.getSpeed()
+
+            wp = Waypoint(
+                pos=pos,
+                heading=heading,
+                lane_width=width,
+                speed_limit=speed_limit,
+                lane_id=lane_id,
+                lane_index=lane_index,
+            )
+            trajectory.append(wp)
+        return [trajectory]
+
+    def uturn_waypoints(self, sim, pose: Pose, vehicle):
+        # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
+        #       2. Wrap this method in a helper.
+        radius = self._mission.task.trigger_radius
+        neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
+            vehicle=vehicle, radius=radius
+        )
+
+        if not neighborhood_vehicles and not self._task_is_triggered:
+            return []
+
+        start_lane = self._road_network.nearest_lane(
+            self._mission.start.position,
+            include_junctions=False,
+            include_special=False,
+        )
+        start_edge = self._road_network.road_edge_data_for_lane_id(start_lane.getID())
+        wp = self._waypoints.closest_waypoint(pose)
+        current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
+        if not start_edge.oncoming_edges:
+            return []
+        if self._task_is_triggered is False:
+            self._uturn_initial_heading = pose.heading
+
+        vehicle_heading_vec = radians_to_vec(pose.heading)
+        initial_heading_vec = radians_to_vec(self._uturn_initial_heading)
+
+        heading_diff = np.dot(vehicle_heading_vec, initial_heading_vec)
+
+        if heading_diff < -0.97:
+            # Once it faces the opposite direction, stop generating u-turn waypoints
+            return []
+
+        self._task_is_triggered = True
+
+        oncoming_edge = start_edge.oncoming_edges[0]
+        oncoming_lanes = oncoming_edge.getLanes()
+        target_lane_index = self._mission.task.target_lane_index
+        target_lane_index = min(target_lane_index, len(oncoming_lanes) - 1)
+        target_lane = oncoming_lanes[target_lane_index]
+
+        offset = self._road_network.offset_into_lane(start_lane, pose.position[:2])
+        oncoming_offset = max(0, target_lane.getLength() - offset)
+        paths = self.paths_of_lane_at(target_lane, oncoming_offset, lookahead=30)
+        target = paths[0][-1]
+
+        heading = pose.heading
+        target_heading = target.heading
+        lane_width = target_lane.getWidth()
+        lanes = (len(current_edge.getLanes())) + (
+            len(oncoming_lanes) - target_lane_index
+        )
+
+        if current_edge.getID() != oncoming_edge.getID():
+            # agent at the start edge
+            p0 = pose.position[:2]
+            distance = (
+                15 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
+            )
+            offset = radians_to_vec(heading) * distance
+            p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
+
+            offset = radians_to_vec(heading + math.pi / 2) * (lane_width * lanes)
+            p2 = np.array([p1[0] + offset[0], p1[1] + offset[1]])
+            p3 = target.pos
+            p_x, p_y = bezier([p0, p1, p2, p3], 20)
+        else:
+            # agent at the oncoming edge
+            p0 = pose.position[:2]
+            offset = radians_to_vec(heading) * lane_width
+            p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
+            offset = radians_to_vec(target_heading) * 5
+            p2 = np.array([p1[0] - offset[0], p1[1] - offset[1]])
+
+            p3 = target.pos
+            p_x, p_y = bezier([p0, p1, p2, p3], 20)
+
+        trajectory = []
+        for i in range(len(p_x)):
+            pos = np.array([p_x[i], p_y[i]])
+            heading = Heading(vec_to_radians(target.pos - pos))
+            lane = self._road_network.nearest_lane(pos)
+            lane_id = lane.getID()
+            lane_index = lane_id.split("_")[-1]
+            width = lane.getWidth()
+            speed_limit = lane.getSpeed() / 2
+
+            wp = Waypoint(
+                pos=pos,
+                heading=heading,
+                lane_width=width,
+                speed_limit=speed_limit,
+                lane_id=lane_id,
+                lane_index=lane_index,
+            )
+            trajectory.append(wp)
+        return [trajectory]
+
+    def paths_of_lane_at(self, lane, offset, lookahead=30):
+        wp_start = self._road_network.world_coord_from_offset(lane, offset)
+
+        paths = self._waypoints.waypoint_paths_on_lane_at(
+            point=wp_start, lane_id=lane.getID(), lookahead=lookahead,
+        )
+        return paths

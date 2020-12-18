@@ -25,29 +25,29 @@ import {
   withRouter,
   useRouteMatch,
 } from "react-router-dom";
-import ReactDOM from "react-dom";
 import html2canvas from "html2canvas";
-import {
-  RecordRTCPromisesHandler,
-  invokeSaveAsDialog,
-  getSeekableBlob,
-} from "recordrtc";
+import { RecordRTCPromisesHandler, invokeSaveAsDialog } from "recordrtc";
 import { Layout } from "antd";
 const { Content } = Layout;
-
-import Header from "./header.js";
-import Simulation from "./simulation.js";
-import SimulationGroup from "./simulation_group.js";
+import Header from "./header";
+import Simulation from "./simulation";
+import SimulationGroup from "./simulation_group";
+import PlaybackBar from "./playback_bar";
+import { useToasts } from "react-toast-notifications";
+import transcode from "../helpers/transcode";
 
 // To fix https://git.io/JftW9
 window.html2canvas = html2canvas;
 
-function App(props) {
+function App({ client }) {
   const [simulationIds, setSimulationIds] = useState([]);
   const [showScores, setShowScores] = useState(true);
   const [egoView, setEgoView] = useState(false);
+  const [currentElapsedTime, setCurrentElapsedTime] = useState(0);
+  const [totalElapsedTime, setTotalElapsedTime] = useState(1);
   const simulationCanvasRef = useRef(null);
   const recorderRef = useRef(null);
+  const { addToast } = useToasts();
   const history = useHistory();
 
   // also includes all
@@ -56,7 +56,7 @@ function App(props) {
 
   useEffect(() => {
     (async () => {
-      let ids = await props.client.fetchSimulationIds();
+      let ids = await client.fetchSimulationIds();
       if (ids.length > 0) {
         if (!matchedSimulationId || !ids.includes(matchedSimulationId)) {
           history.push(`/${ids[0]}`);
@@ -72,21 +72,23 @@ function App(props) {
       simulationCanvasRef.current,
       {
         type: "canvas",
+        mimeType: "video/webm;codecs=h264",
       }
     );
     await recorderRef.current.startRecording();
   }
 
   async function onStopRecording() {
+    addToast("Stopping recording", { appearance: "info" });
     await recorderRef.current.stopRecording();
-    let blob = await recorderRef.current.getBlob();
 
-    getSeekableBlob(blob, function (seekableBlob) {
-      invokeSaveAsDialog(
-        seekableBlob,
-        `envision-${Math.round(Date.now() / 1000)}.webm`
-      );
-    });
+    let onMessage = (message) => addToast(message, { appearance: "info" });
+    let blob = await recorderRef.current.getBlob();
+    let outputBlob = await transcode(blob, onMessage);
+    invokeSaveAsDialog(
+      outputBlob,
+      `envision-${Math.round(Date.now() / 1000)}.mp4`
+    );
   }
 
   function onSelectSimulation(simulationId) {
@@ -108,7 +110,7 @@ function App(props) {
         <Switch>
           <Route exact={true} path="/all">
             <SimulationGroup
-              client={props.client}
+              client={client}
               simulationIds={simulationIds}
               showScores={showScores}
               egoView={egoView}
@@ -118,13 +120,36 @@ function App(props) {
             path="/:simulation"
             render={() => {
               return (
-                <Simulation
-                  canvasRef={simulationCanvasRef}
-                  client={props.client}
-                  simulationId={matchedSimulationId}
-                  showScores={showScores}
-                  egoView={egoView}
-                />
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    height: "100%",
+                    flexDirection: "column",
+                  }}
+                >
+                  <Simulation
+                    canvasRef={simulationCanvasRef}
+                    client={client}
+                    simulationId={matchedSimulationId}
+                    showScores={showScores}
+                    egoView={egoView}
+                    onElapsedTimesChanged={(current, total) => {
+                      setCurrentElapsedTime(current);
+                      setTotalElapsedTime(total);
+                    }}
+                    style={{ flex: "1" }}
+                  />
+                  <PlaybackBar
+                    currentTime={currentElapsedTime}
+                    totalTime={totalElapsedTime}
+                    onSeek={(seconds) => {
+                      setCurrentElapsedTime(seconds);
+                      client.seek(seconds);
+                    }}
+                    style={{ height: "80px" }}
+                  />
+                </div>
               );
             }}
           />

@@ -22,29 +22,28 @@ import json
 import logging
 import math
 import os
-import sys
 import pickle
 import random
 import uuid
-
-import numpy as np
-
 from dataclasses import dataclass, field
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
 
-from .data_model import SocialAgent
-from .sumo_road_network import SumoRoadNetwork
-from .waypoints import Waypoints
-from .coordinates import Heading
-from .utils.math import vec_to_radians
-from .utils.file import path2hash, file_md5_hash
-from .utils.id import SocialAgentId
-from .route import ShortestRoute
+import numpy as np
+
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic
+from smarts.sstudio.types import EntryTactic, UTurn, Via as SSVia
+
+from .coordinates import Heading
+from .data_model import SocialAgent
+from .route import ShortestRoute
+from .sumo_road_network import SumoRoadNetwork
+from .utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
+from .utils.id import SocialAgentId
+from .utils.math import vec_to_radians
+from .waypoints import Waypoints
 
 
 @dataclass(frozen=True)
@@ -103,14 +102,26 @@ def default_entry_tactic():
 
 
 @dataclass(frozen=True)
+class Via:
+    lane_id: str
+    edge_id: str
+    lane_index: int
+    position: Tuple[float, float]
+    hit_distance: float
+    required_speed: float
+
+
+@dataclass(frozen=True)
 class Mission:
     start: Start
     goal: Goal
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    via: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
+    task: Tuple[UTurn] = None
+    via: Tuple[Via, ...] = ()
 
     @property
     def has_fixed_route(self):
@@ -128,9 +139,10 @@ class LapMission:
     num_laps: int = None  # None means infinite # of laps
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    via: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
+    via_points: Tuple[Via, ...] = ()
 
     @property
     def has_fixed_route(self):
@@ -162,7 +174,7 @@ class Scenario:
         route: str = None,
         missions: Dict[str, Mission] = None,
         social_agents: Dict[str, SocialAgent] = None,
-        log_dir: str = "/tmp/smarts/_sumo_run_logs",
+        log_dir: str = None,
         surface_patches: list = None,
     ):
 
@@ -173,7 +185,7 @@ class Scenario:
         self._bubbles = Scenario._discover_bubbles(scenario_root)
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
-        self._log_dir = os.path.abspath(log_dir)
+        self._log_dir = self._resolve_log_dir(log_dir)
 
         self._validate_assets_exist()
         self._road_network = SumoRoadNetwork.from_file(self.net_filepath)
@@ -190,7 +202,9 @@ class Scenario:
 
     @staticmethod
     def scenario_variations(
-        scenarios_or_scenarios_dirs: Sequence[str], agents_to_be_briefed: Sequence[str],
+        scenarios_or_scenarios_dirs: Sequence[str],
+        agents_to_be_briefed: Sequence[str],
+        shuffle_scenarios: bool = True,
     ):
         """Generate a cycle of the configurations of scenarios.
 
@@ -208,14 +222,18 @@ class Scenario:
                 scenario_roots.append(root)
             else:
                 scenario_roots.extend(Scenario.discover_scenarios(root))
-        np.random.shuffle(scenario_roots)
+
+        if shuffle_scenarios:
+            np.random.shuffle(scenario_roots)
 
         return Scenario.variations_for_all_scenario_roots(
-            cycle(scenario_roots), agents_to_be_briefed
+            cycle(scenario_roots), agents_to_be_briefed, shuffle_scenarios
         )
 
     @staticmethod
-    def variations_for_all_scenario_roots(scenario_roots, agents_to_be_briefed):
+    def variations_for_all_scenario_roots(
+        scenario_roots, agents_to_be_briefed, shuffle_scenarios=True
+    ):
         for scenario_root in scenario_roots:
             surface_patches = Scenario.discover_friction_map(scenario_root)
 
@@ -241,9 +259,14 @@ class Scenario:
             agent_missions = agent_missions or [None]
             social_agents = social_agents or [None]
 
-            roll_routes = random.randint(0, len(routes))
-            roll_agent_missions = random.randint(0, len(agent_missions))
-            roll_social_agents = random.randint(0, len(social_agents))
+            roll_routes = 0
+            roll_agent_missions = 0
+            roll_social_agents = 0
+
+            if shuffle_scenarios:
+                roll_routes = random.randint(0, len(routes))
+                roll_agent_missions = random.randint(0, len(agent_missions))
+                roll_social_agents = random.randint(0, len(social_agents))
 
             for (
                 concrete_route,
@@ -540,6 +563,34 @@ class Scenario:
             heading = vec_to_radians(lane_vector)
             return tuple(position), Heading(heading)
 
+        def to_scenario_via(
+            vias: Tuple[SSVia, ...], sumo_road_network: SumoRoadNetwork
+        ) -> Tuple[Via, ...]:
+            s_vias = []
+            for via in vias:
+                lane = sumo_road_network.lane_by_index_on_edge(
+                    via.edge_id, via.lane_index
+                )
+                hit_distance = (
+                    via.hit_distance if via.hit_distance > 0 else lane.getWidth() / 2
+                )
+                via_position = sumo_road_network.world_coord_from_offset(
+                    lane, via.lane_offset,
+                )
+
+                s_vias.append(
+                    Via(
+                        lane_id=lane.getID(),
+                        lane_index=via.lane_index,
+                        edge_id=via.edge_id,
+                        position=tuple(via_position),
+                        hit_distance=hit_distance,
+                        required_speed=via.required_speed,
+                    )
+                )
+
+            return tuple(s_vias)
+
         # For now we discard the route and just take the start and end to form our
         # missions.
         if isinstance(mission, sstudio_types.Mission):
@@ -553,10 +604,12 @@ class Scenario:
 
             return Mission(
                 start=start,
-                via=mission.route.via,
+                route_vias=mission.route.via,
                 goal=goal,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
+                task=mission.task,
+                via=to_scenario_via(mission.via, road_network),
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
             position, heading = to_position_and_heading(*mission.begin, road_network,)
@@ -567,6 +620,7 @@ class Scenario:
                 goal=EndlessGoal(),
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
+                via=to_scenario_via(mission.via, road_network),
             )
         elif isinstance(mission, sstudio_types.LapMission):
             start_edge_id, start_lane, start_edge_offset = mission.route.begin
@@ -593,11 +647,12 @@ class Scenario:
             return LapMission(
                 start=Start(start_position, start_heading),
                 goal=PositionalGoal(end_position, radius=2),
-                via=mission.route.via,
+                route_vias=mission.route.via,
                 num_laps=mission.num_laps,
                 route_length=route_length,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
+                via_points=to_scenario_via(mission.via, road_network),
             )
 
         raise RuntimeError(
@@ -663,7 +718,10 @@ class Scenario:
 
     @property
     def vehicle_filepath(self):
-        return os.path.join(self._root, "vehicle.urdf")
+        for fname in os.listdir(self._root):
+            if fname.endswith(".urdf") and fname != "plane.urdf":
+                return os.path.join(self._root, fname)
+        return None
 
     @property
     def tire_parameters_filepath(self):
@@ -690,7 +748,7 @@ class Scenario:
         return os.path.join(self._root, "map.glb")
 
     def unique_sumo_log_file(self):
-        return os.path.join(self._log_dir, f"sumo-{uuid.uuid4()}")
+        return os.path.join(self._log_dir, f"sumo-{str(uuid.uuid4())[:8]}")
 
     @property
     def waypoints(self):
@@ -715,11 +773,16 @@ class Scenario:
     def mission(self, agent_id):
         return self._missions.get(agent_id, None)
 
+    def _resolve_log_dir(self, log_dir):
+        if log_dir is None:
+            log_dir = make_dir_in_smarts_log_dir("_sumo_run_logs")
+
+        return os.path.abspath(log_dir)
+
     def _validate_assets_exist(self):
         assert Scenario.is_valid_scenario(self._root)
 
-        if not os.path.exists(self._log_dir):
-            os.makedirs(self._log_dir)
+        os.makedirs(self._log_dir, exist_ok=True)
 
     @property
     def scenario_hash(self):

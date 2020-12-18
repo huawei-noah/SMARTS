@@ -41,9 +41,11 @@ class AgentManager:
          time.
     """
 
-    def __init__(self, interfaces):
+    def __init__(self, interfaces, zoo_workers=None, auth_key=None):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._remote_agent_buffer = RemoteAgentBuffer()
+        self._remote_agent_buffer = RemoteAgentBuffer(
+            zoo_worker_addrs=zoo_workers, auth_key=auth_key
+        )
 
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
@@ -136,7 +138,7 @@ class AgentManager:
         dones = {
             agent_id: agent_id not in self.pending_agent_ids
             for agent_id in self.agent_ids
-            if agent_id not in sim.vehicle_index.agent_vehicle_ids
+            if agent_id not in sim.vehicle_index.agent_vehicle_ids()
         }
 
         for agent_id in self.active_agents:
@@ -160,10 +162,6 @@ class AgentManager:
                 observations[agent_id], dones[agent_id] = Sensors.observe_batch(
                     sim, agent_id, sensor_states, {v.id: v for v in vehicles}
                 )
-
-                # XXX: For now we collapse all vehicle dones into a single done
-                dones[agent_id] = any(dones[agent_id].values())
-
                 rewards[agent_id] = {
                     vehicle_id: self._vehicle_reward(vehicle_id, sim)
                     for vehicle_id in sensor_states.keys()
@@ -209,17 +207,13 @@ class AgentManager:
     def _vehicle_score(self, vehicle_id, sim):
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
-    def step_agent_sensors(self, sim):
-        for agent_id in self.active_agents:
-            for vehicle_id in sim.vehicle_index.vehicle_ids_by_actor_id(
-                agent_id, include_shadowers=True
-            ):
-                sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle_id)
-                Sensors.step(self, sensor_state)
+    def step_sensors(self, sim):
+        for vehicle_id, sensor_state in sim.vehicle_index.sensor_states_items():
+            Sensors.step(self, sensor_state)
 
-                vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
-                for sensor in vehicle.sensors.values():
-                    sensor.step()
+            vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
+            for sensor in vehicle.sensors.values():
+                sensor.step()
 
     def _filter_for_active_ego(self, dict_):
         return {
@@ -272,7 +266,7 @@ class AgentManager:
         returned action should not be executed on the vehicle until it is hijacked
         by the agent.
         """
-        vehicle_ids_controlled_by_agents = sim.vehicle_index.agent_vehicle_ids
+        vehicle_ids_controlled_by_agents = sim.vehicle_index.agent_vehicle_ids()
         controlling_agent_ids = set(
             [
                 sim.vehicle_index.actor_id_from_vehicle_id(v_id)

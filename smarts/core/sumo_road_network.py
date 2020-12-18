@@ -17,31 +17,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import math
 import logging
-import re
+import math
 import random
+import re
 from dataclasses import dataclass
-from typing import Union, Sequence, Tuple
+from typing import Sequence, Tuple, Union
 
 import numpy as np
-from shapely import ops
-from shapely.geometry import (
-    Polygon,
-    MultiPolygon,
-    LineString,
-)
-from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
-from shapely.ops import triangulate
-
 import trimesh
 import trimesh.scene
+from shapely import ops
+from shapely.geometry import LineString, MultiPolygon, Polygon
+from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
+from shapely.ops import triangulate, snap
 from trimesh.exchange import gltf
 
-from .utils.math import rotate_around_point, sign as smrt_sign
+from .utils.math import rotate_around_point
 from .utils.sumo import sumolib
-from sumolib.net.lane import Lane
 from sumolib.net.edge import Edge
+from sumolib.net.lane import Lane
 
 
 def _convert_camera(camera):
@@ -95,14 +90,14 @@ class SumoRoadNetwork:
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
         G = sumolib.net.readNet(net_file, withInternal=True)
-        return SumoRoadNetwork(G)
+        return cls(G)
 
     @property
     def graph(self):
         return self._graph
 
-    def _compute_road_polygons(self, scale):
-        polys = []
+    def _compute_road_polygons(self):
+        lane_to_poly = {}
         for edge in self._graph.getEdges():
             for lane in edge.getLanes():
                 shape = SumoRoadNetwork._buffered_lane_or_edge(lane, lane.getWidth())
@@ -112,7 +107,11 @@ class SumoRoadNetwork:
                         f"Lane:{lane.getID()} has provided non-shape values {lane.getShape()}"
                     )
                     continue
-                polys.append(shape)
+
+                lane_to_poly[lane.getID()] = shape
+
+        self._snap_internal_edges(lane_to_poly)
+        polys = list(lane_to_poly.values())
 
         for node in self._graph.getNodes():
             line = node.getShape()
@@ -125,6 +124,30 @@ class SumoRoadNetwork:
             polys.append(Polygon(line))
 
         return polys
+
+    def _snap_internal_edges(self, lane_to_poly, snap_threshold=2):
+        # HACK: Internal edges that have tight curves, when buffered their ends do not
+        #       create a tight seam with the connected lanes. This procedure attempts
+        #       to remedy that with snapping.
+        for lane_id in lane_to_poly:
+            lane = self.lane_by_id(lane_id)
+
+            # Only do snapping for internal edge lanes
+            if not lane.getEdge().isSpecial():
+                continue
+
+            lane_shape = lane_to_poly[lane_id]
+            incoming = self.lane_by_id(lane_id).getIncoming()[0]
+            incoming_shape = lane_to_poly.get(incoming.getID())
+            if incoming_shape:
+                lane_shape = Polygon(snap(lane_shape, incoming_shape, snap_threshold))
+                lane_to_poly[lane_id] = lane_shape
+
+            outgoing = self.lane_by_id(lane_id).getOutgoing()[0].getToLane()
+            outgoing_shape = lane_to_poly.get(outgoing.getID())
+            if outgoing_shape:
+                lane_shape = Polygon(snap(lane_shape, outgoing_shape, snap_threshold))
+                lane_to_poly[lane_id] = lane_shape
 
     @staticmethod
     def _triangulate(polygon):
@@ -181,11 +204,15 @@ class SumoRoadNetwork:
         metadata["lane_dividers"] = lane_dividers
         metadata["edge_dividers"] = edge_dividers
 
+        mesh.visual = trimesh.visual.TextureVisuals(
+            material=trimesh.visual.material.PBRMaterial()
+        )
+
         scene.add_geometry(mesh)
         return GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
 
-    def build_glb(self, scale=1) -> GLBData:
-        polys = self._compute_road_polygons(scale)
+    def build_glb(self) -> GLBData:
+        polys = self._compute_road_polygons()
         return self._make_glb_from_polys(polys)
 
     def edge_by_id(self, edge_id):
@@ -193,6 +220,9 @@ class SumoRoadNetwork:
 
     def lane_by_id(self, lane_id):
         return self._graph.getLane(lane_id)
+
+    def lane_by_index_on_edge(self, edge_id, lane_idx):
+        return self.edge_by_id(edge_id).getLane(lane_idx)
 
     def edge_by_lane_id(self, lane_id):
         return self.lane_by_id(lane_id).getEdge()
@@ -475,7 +505,7 @@ class SumoRoadNetwork:
         edge = random.choice(self._graph.getEdges(False))
         return self.random_route_starting_at_edge(edge, max_route_len)
 
-    def compute_traffic_dividers(self):
+    def compute_traffic_dividers(self, threshold=1):
         lane_dividers = []  # divider between lanes with same traffic direction
         edge_dividers = []  # divider between lanes with opposite traffic direction
         edge_borders = []
@@ -502,7 +532,7 @@ class SumoRoadNetwork:
                 else:
                     lane_dividers.append(left_side)
 
-        # The edge borders that overlapped in positions form a edge divider
+        # The edge borders that overlapped in positions form an edge divider
         for i in range(len(edge_borders) - 1):
             for j in range(i + 1, len(edge_borders)):
                 edge_border_i = np.array(
@@ -511,7 +541,9 @@ class SumoRoadNetwork:
                 edge_border_j = np.array(
                     [edge_borders[j][-1], edge_borders[j][0]]
                 )  # start and end position with reverse traffic direction
-                if np.linalg.norm(edge_border_i - edge_border_j) < 0.001:
+
+                # The edge borders of two lanes do not always overlap perfectly, thus relax the tolerance threshold to 1
+                if np.linalg.norm(edge_border_i - edge_border_j) < threshold:
                     edge_dividers.append(edge_borders[i])
 
         return lane_dividers, edge_dividers

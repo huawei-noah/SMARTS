@@ -15,10 +15,12 @@ class KeepLaneAgent(Agent):
         return "keep_lane"
 
 
-def main(scenarios, headless, num_episodes, seed):
+def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
     agent_specs = {
         agent_id: AgentSpec(
-            interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=5000),
+            interface=AgentInterface.from_type(
+                AgentType.Laner, max_episode_steps=max_episode_steps
+            ),
             agent_builder=KeepLaneAgent,
         )
         for agent_id in AGENT_IDS

@@ -21,9 +21,9 @@ from typing import NamedTuple, Tuple
 from multiprocessing import Process, Pipe
 
 import numpy as np
-import pybullet
-import pybullet_utils.bullet_client as bc
 
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.coordinates import Pose
 
 

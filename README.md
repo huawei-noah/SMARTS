@@ -250,12 +250,18 @@ docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
 docker push huaweinoah/smarts:$VERSION
 ```
 
-### SUMO Troubleshooting
+### Troubleshooting
 
+#### General
+In many cases additinal run logs are located at '~/.smarts'. These can sometimes be helpful.
+
+#### SUMO
+SUMO can have some problems in setup. Please look through the following for support for SUMO:
 * If you are having issues see: **[SETUP](docs/setup.rst)** and **[SUMO TROUBLESHOOTING](docs/SUMO_TROUBLESHOOTING.md)**
 * If you wish to find binaries: **[SUMO Download Page](https://sumo.dlr.de/docs/Downloads.php)**
-* If you wish to compile from source see: **[SUMO Build Instructions](https://sumo.dlr.de/docs/Developer/Main.html#build_instructions)**
-* If you build from the git repository use: **[SUMO version 1.7.0](https://github.com/eclipse/sumo/commits/v1_7_0)** or higher
+* If you wish to compile from source see: **[SUMO Build Instructions](https://sumo.dlr.de/docs/Developer/Main.html#build_instructions)**. 
+    * **Please note that building SUMO may not install other vital dependencies that SUMO requires to run.**
+    * If you build from the git repository we recommend you use: **[SUMO version 1.7.0](https://github.com/eclipse/sumo/commits/v1_7_0)** or higher
 
 ### Citing SMARTS
 

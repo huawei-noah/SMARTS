@@ -1,8 +1,5 @@
 import os
-import time
 import subprocess
-
-import pytest
 
 
 def test_sumo_lib():

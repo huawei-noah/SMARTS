@@ -21,8 +21,8 @@ is a Python `NamedTuple` with the following fields:
     * `reached_max_episode_steps` - `True` if the vehicle has reached its max episode steps
 * `ego_vehicle_state` - a `VehicleObservation` `NamedTuple` for the ego vehicle with the following fields:
     * `id` - a string identifier for this vehicle
-    * `position` - 3D numpy array (x, y, z) of vehicle position
-    * `bounding_box` - `BoundingBox` data class for the `length`, `width`, `height` of the vehicle.
+    * `position` - A 3D numpy array (x, y, z) of the center of the vehicle bounding box's bottom plane
+    * `bounding_box` - `BoundingBox` data class for the `length`, `width`, `height` of the vehicle
     * `heading` - vehicle heading in radians
     * `speed` - agent speed in m/s
     * `steering` - angle of front wheels in radians
@@ -71,6 +71,10 @@ See implemention in :class:`smarts.core.sensors`
 
 Then, you can choose the observations needed through :class:`smarts.core.agent_interface.AgentInterface` and process these raw observations through :class:`smarts.core.observation_adapter`.
 
+=======
+Rewards
+=======
+The reward from smarts environments is given by a calculation within smarts; `env_reward` from smarts environments directly uses the reward from smarts. The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance traveled in meters on the step that a vehicle has gone at least 0.5 meters since the last given non-zero reward.
 
 =======
 Actions

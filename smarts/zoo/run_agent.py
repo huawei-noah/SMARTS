@@ -46,9 +46,8 @@ from multiprocessing.connection import Listener
 import cloudpickle
 
 # front-load some expensive imports as to not block the simulation
-
 modules = [
-    "pybullet",
+    "smarts.core.utils.pybullet",
     "smarts.core.utils.sumo",
     "smarts.core.sumo_road_network",
     "numpy",
@@ -73,13 +72,41 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"PID({os.getpid()}) run_agent.py")
 
 parser = argparse.ArgumentParser("Spawn an agent in it's own independent process")
-parser.add_argument("socket_file", help="AF_UNIX domain socket file to be used for IPC")
+parser.add_argument(
+    "--socket_file", default=None, help="AF_UNIX domain socket file to be used for IPC",
+)
+parser.add_argument(
+    "--port",
+    type=int,
+    default=None,
+    help="AF_INET port to bind to for listening for remote connections IPC",
+)
+parser.add_argument(
+    "--auth_key",
+    type=str,
+    default=None,
+    help="Authentication key for connection to run agent",
+)
 args = parser.parse_args()
+auth_key_conn = str.encode(args.auth_key) if args.auth_key else None
 
 
-log.debug(f"run_agent.py: socket_file={args.socket_file}")
+log.debug(f"run_agent.py: socket_file={args.socket_file} port={args.port}")
 
-with Listener(args.socket_file, family="AF_UNIX") as listener:
+if args.socket_file is not None and args.port is not None:
+    raise Exception("Only one of socket_file or port can be set")
+elif args.socket_file is None and args.port is None:
+    raise Exception("One of socket_file or port must be set")
+elif args.socket_file is not None:
+    address = args.socket_file
+    family = "AF_UNIX"
+elif args.port is not None:
+    address = ("0.0.0.0", args.port)
+    family = "AF_INET"
+else:
+    raise Exception(f"Unsupported configuration {args}")
+
+with Listener(address, family, authkey=auth_key_conn) as listener:
     with listener.accept() as conn:
         log.debug(f"connection accepted from {listener.last_accepted}")
         agent = None

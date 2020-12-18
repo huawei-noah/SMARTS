@@ -17,33 +17,36 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import time
 import logging
-from functools import partial, lru_cache
-from typing import NamedTuple, Tuple, Dict, List
-from collections import namedtuple, deque
+import time
+from collections import deque, namedtuple
 from dataclasses import dataclass
+from functools import lru_cache
+from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 
 import numpy as np
-
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
-    GraphicsPipe,
-    OrthographicLens,
-    GraphicsOutput,
-    Texture,
     FrameBufferProperties,
-    WindowProperties,
+    GraphicsOutput,
+    GraphicsPipe,
     NodePath,
+    OrthographicLens,
+    Texture,
+    WindowProperties,
 )
 
+from smarts.core.mission_planner import MissionPlanner
+from smarts.core.utils.math import squared_dist, vec_2d
+from smarts.sstudio.types import CutIn, UTurn
+
 from .coordinates import BoundingBox, Heading
+from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
+from .scenario import Mission, Via
 from .waypoints import Waypoint
-from .scenario import Mission
-from .events import Events
 
 
 class VehicleObservation(NamedTuple):
@@ -79,6 +82,7 @@ class EgoVehicleObservation(NamedTuple):
 
 class RoadWaypoints(NamedTuple):
     lanes: Dict[str, List[Waypoint]]
+    route_waypoints: List[Waypoint]
 
 
 class GridMapMetadata(NamedTuple):
@@ -112,6 +116,22 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 @dataclass
+class ViaPoint:
+    position: Tuple[float, float]
+    lane_index: float
+    edge_id: str
+    required_speed: float
+
+
+@dataclass(frozen=True)
+class Vias:
+    near_via_points: List[ViaPoint]
+    """Ordered list of nearby points that have not been hit"""
+    hit_via_points: List[ViaPoint]
+    """List of points that were hit in the previous step"""
+
+
+@dataclass
 class Observation:
     events: Events
     ego_vehicle_state: EgoVehicleObservation
@@ -128,6 +148,7 @@ class Observation:
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
+    via_data: Vias = None
 
 
 @dataclass
@@ -162,7 +183,9 @@ class Sensors:
 
             if len(neighborhood_vehicles) > 0:
                 neighborhood_vehicle_wps = sim.waypoints.closest_waypoint_batched(
-                    [v.pose.position for v in neighborhood_vehicles]
+                    [v.pose for v in neighborhood_vehicles],
+                    within_radius=vehicle.length,
+                    filter_from_count=10,
                 )
                 neighborhood_vehicles = [
                     VehicleObservation(
@@ -182,10 +205,13 @@ class Sensors:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
             waypoint_paths = sim.waypoints.waypoint_paths_at(
-                vehicle.position, lookahead=1,  # For calculating distance travelled
+                vehicle.pose,
+                lookahead=1,
+                within_radius=vehicle.length,
+                filter_from_count=3,  # For calculating distance travelled
             )
 
-        closest_waypoint = sim.waypoints.closest_waypoint(vehicle.position)
+        closest_waypoint = sim.waypoints.closest_waypoint(vehicle.pose)
         ego_lane_id = closest_waypoint.lane_id
         ego_lane_index = closest_waypoint.lane_index
         ego_edge_id = sim.road_network.edge_by_lane_id(ego_lane_id).getID()
@@ -238,6 +264,12 @@ class Sensors:
             else None
         )
 
+        near_via_points = []
+        hit_via_points = []
+        if vehicle.subscribed_to_via_sensor:
+            (near_via_points, hit_via_points,) = vehicle.via_sensor()
+        via_data = Vias(near_via_points=near_via_points, hit_via_points=hit_via_points,)
+
         vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
         distance_travelled = vehicle.trip_meter_sensor(sim)
 
@@ -255,7 +287,10 @@ class Sensors:
         rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
         lidar = vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
 
-        done, events = Sensors._is_done_with_events(sim, agent_id, sensor_state)
+        done, events = Sensors._is_done_with_events(
+            sim, agent_id, vehicle, sensor_state
+        )
+
         return (
             Observation(
                 events=events,
@@ -268,6 +303,7 @@ class Sensors:
                 drivable_area_grid_map=drivable_area_grid_map,
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
+                via_data=via_data,
             ),
             done,
         )
@@ -277,26 +313,30 @@ class Sensors:
         return sensor_state.step()
 
     @classmethod
-    def _is_done_with_events(cls, sim, agent_id, sensor_state):
+    def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state):
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
-        collided = sim.agent_did_collide(agent_id) if done_criteria.collision else False
+        collided = (
+            sim.vehicle_did_collide(vehicle.id) if done_criteria.collision else False
+        )
         is_off_road = (
-            sim.agent_is_off_road(agent_id) if done_criteria.off_road else False
+            cls._vehicle_is_off_road(sim, vehicle) if done_criteria.off_road else False
         )
         is_on_shoulder = (
-            sim.agent_is_on_shoulder(agent_id) if done_criteria.on_shoulder else False
+            cls._vehicle_is_on_shoulder(sim, vehicle)
+            if done_criteria.on_shoulder
+            else False
         )
         is_not_moving = (
-            cls._agent_vehicle_is_not_moving(sim, agent_id)
+            cls._vehicle_is_not_moving(sim, vehicle)
             if done_criteria.not_moving
             else False
         )
-        reached_goal = sim.agent_reached_goal(agent_id)
+        reached_goal = cls._agent_reached_goal(sim, vehicle)
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
-        is_off_route, is_wrong_way = cls._agent_vehicle_is_off_route_and_wrong_way(
-            sim, agent_id
+        is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
+            sim, vehicle
         )
 
         done = (
@@ -310,9 +350,8 @@ class Sensors:
             or (is_wrong_way and done_criteria.wrong_way)
         )
 
-        # TODO: These events should operate at a per-vehicle level
         events = Events(
-            collisions=sim.agent_collisions(agent_id),
+            collisions=sim.vehicle_collisions(vehicle.id),
             off_road=is_off_road,
             reached_goal=reached_goal,
             reached_max_episode_steps=reached_max_episode_steps,
@@ -323,7 +362,46 @@ class Sensors:
         return done, events
 
     @classmethod
-    def _agent_vehicle_is_off_route_and_wrong_way(cls, sim, agent_id):
+    def _agent_reached_goal(cls, sim, vehicle):
+        sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+        distance_travelled = vehicle.trip_meter_sensor()
+        mission = sensor_state.mission_planner.mission
+        return mission.is_complete(vehicle, distance_travelled)
+
+    @classmethod
+    def _vehicle_is_off_road(cls, sim, vehicle):
+        if sim.scenario.road_network.point_is_within_road(vehicle.position):
+            return False
+
+        return True
+
+    @classmethod
+    def _vehicle_is_on_shoulder(cls, sim, vehicle):
+        return any(
+            [
+                not sim.scenario.road_network.point_is_within_road(corner_coordinate)
+                for corner_coordinate in vehicle.bounding_box
+            ]
+        )
+
+    @classmethod
+    def _vehicle_is_not_moving(cls, sim, vehicle):
+        last_n_seconds_considered = 60
+
+        # Flag if the vehicle has been immobile for the past 60 seconds
+        if sim.elapsed_sim_time < last_n_seconds_considered:
+            return False
+
+        distance = vehicle.driven_path_sensor.distance_travelled(
+            sim, last_n_seconds=last_n_seconds_considered
+        )
+
+        # Due to controller instabilities there may be some movement even when a
+        # vehicle is "stopped". Here we allow 1m of total distance in 60 seconds.
+        return distance < 1
+
+    @classmethod
+    def _vehicle_is_off_route_and_wrong_way(cls, sim, vehicle):
         """Determines if the agent is on route and on the correct side of the road.
 
         Args:
@@ -338,66 +416,58 @@ class Sensors:
                 Actor's vehicle is going against the lane travel direction.
         """
 
-        vehicles = sim.vehicle_index.vehicles_by_actor_id(agent_id)
+        sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+        route_edges = sensor_state.mission_planner.route.edges
 
-        # TODO: check vehicles for agent individually
-        for vehicle in vehicles:
-            sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-            route_edges = sensor_state.mission_planner.route.edges
+        vehicle_pos = vehicle.position[:2]
+        vehicle_minimum_radius_bounds = (
+            np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
+        )
+        # Check that center of vehicle is still close to route
+        # Most lanes are around 3.2 meters wide
+        nearest_lanes = sim.scenario.road_network.nearest_lanes(
+            vehicle_pos, radius=vehicle_minimum_radius_bounds + 5
+        )
 
-            vehicle_pos = vehicle.position[:2]
-            vehicle_minimum_radius_bounds = (
-                np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
+        # No road nearby.
+        if not nearest_lanes:
+            return (True, False)
+
+        nearest_lane, _ = nearest_lanes[0]
+
+        # Route is endless
+        if not route_edges:
+            is_wrong_way = cls._vehicle_is_wrong_way(sim, vehicle, nearest_lane.getID())
+            return (False, is_wrong_way)
+
+        closest_edges = []
+        used_edges = set()
+        for lane, _ in nearest_lanes:
+            edge = lane.getEdge()
+            if edge in used_edges:
+                continue
+            used_edges.add(edge)
+            closest_edges.append(edge)
+
+        # TODO: Narrow down the route edges to check using distance travelled.
+        is_off_route, route_edge_or_oncoming = cls._vehicle_off_route_info(
+            sim.scenario.root_filepath, tuple(route_edges), tuple(closest_edges)
+        )
+        is_wrong_way = False
+        if route_edge_or_oncoming:
+            # Lanes from an edge are parallel so any lane from the edge will do for direction check
+            # but the innermost lane will be the last lane in the edge and usually the closest.
+            lane_to_check = route_edge_or_oncoming.getLanes()[-1]
+            is_wrong_way = cls._vehicle_is_wrong_way(
+                sim, vehicle, lane_to_check.getID()
             )
-            # Check that center of vehicle is still close to route
-            # Most lanes are around 3.2 meters wide
-            nearest_lanes = sim.scenario.road_network.nearest_lanes(
-                vehicle_pos, radius=vehicle_minimum_radius_bounds + 5
-            )
 
-            # No road nearby.
-            if not nearest_lanes:
-                return (True, False)
-
-            nearest_lane, _ = nearest_lanes[0]
-
-            # Route is endless
-            if not route_edges:
-                is_wrong_way = cls._vehicle_is_wrong_way(
-                    sim, vehicle, nearest_lane.getID()
-                )
-                return (False, is_wrong_way)
-
-            closest_edges = []
-            used_edges = set()
-            for lane, _ in nearest_lanes:
-                edge = lane.getEdge()
-                if edge in used_edges:
-                    continue
-                used_edges.add(edge)
-                closest_edges.append(edge)
-
-            # TODO: Narrow down the route edges to check using distance travelled.
-            is_off_route, route_edge_or_oncoming = cls._vehicle_off_route_info(
-                sim.scenario.root_filepath, tuple(route_edges), tuple(closest_edges)
-            )
-            is_wrong_way = False
-            if route_edge_or_oncoming:
-                # Lanes from an edge are parallel so any lane from the edge will do for direction check
-                # but the innermost lane will be the last lane in the edge and usually the closest.
-                lane_to_check = route_edge_or_oncoming.getLanes()[-1]
-                is_wrong_way = cls._vehicle_is_wrong_way(
-                    sim, vehicle, lane_to_check.getID()
-                )
-            return (is_off_route, is_wrong_way)
-
-        # Vehicle is not on route
-        return (len(vehicles) > 0, False)
+        return (is_off_route, is_wrong_way)
 
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, lane_id):
         closest_waypoint = sim.scenario.waypoints.closest_waypoint_on_lane(
-            vehicle.position[:2], lane_id
+            vehicle.pose, lane_id,
         )
 
         # Check if the vehicle heading is oriented away from the lane heading.
@@ -463,28 +533,6 @@ class Sensors:
                 return candidate
 
         return None
-
-    @classmethod
-    def _agent_vehicle_is_not_moving(cls, sim, agent_id):
-        last_n_seconds_considered = 60
-        vehicles = sim.vehicle_index.vehicles_by_actor_id(agent_id)
-
-        for vehicle in vehicles:
-            sensor = vehicle.driven_path_sensor
-            # Flag if the vehicle has been immobile for the past 60 seconds
-            if sim.elapsed_sim_time < last_n_seconds_considered:
-                return False
-
-            distance = sensor.distance_travelled(
-                sim, last_n_seconds=last_n_seconds_considered
-            )
-
-            # Due to controller instabilities there may be some movement even when a
-            # vehicle is "stopped". Here we allow 1m of total distance in 60 seconds.
-            if distance < 1:
-                return True
-
-        return False
 
     @classmethod
     def clean_up(cls):
@@ -839,7 +887,9 @@ class TripMeterSensor(Sensor):
         self._sim = sim
         self._mission_planner = mission_planner
 
-        waypoint_paths = sim.waypoints.waypoint_paths_at(vehicle.position, lookahead=1)
+        waypoint_paths = sim.waypoints.waypoint_paths_at(
+            vehicle.pose, lookahead=1, within_radius=vehicle.length
+        )
         starting_wp = waypoint_paths[0][0]
         self._wps_for_distance = [starting_wp]
 
@@ -910,28 +960,47 @@ class NeighborhoodVehiclesSensor(Sensor):
 
 
 class WaypointsSensor(Sensor):
-    def __init__(self, vehicle, mission_planner, lookahead=50):
+    def __init__(self, sim, vehicle, mission_planner, lookahead=50):
+        self._sim = sim
         self._vehicle = vehicle
         self._mission_planner = mission_planner
         self._lookahead = lookahead
 
     def __call__(self):
-        return self._mission_planner.waypoint_paths_at(
-            self._vehicle.pose, lookahead=self._lookahead
-        )
+        waypoints_with_task = None
+        if self._mission_planner.mission.task is not None:
+            if isinstance(self._mission_planner.mission.task, UTurn):
+                waypoints_with_task = self._mission_planner.uturn_waypoints(
+                    self._sim, self._vehicle.pose, self._vehicle
+                )
+            elif isinstance(self._mission_planner.mission.task, CutIn):
+                waypoints_with_task = self._mission_planner.cut_in_waypoints(
+                    self._sim, self._vehicle.pose, self._vehicle
+                )
+
+        if waypoints_with_task:
+            return waypoints_with_task
+        else:
+            return self._mission_planner.waypoint_paths_at(
+                sim=self._sim,
+                pose=self._vehicle.pose,
+                lookahead=self._lookahead,
+                vehicle=self._vehicle,
+            )
 
     def teardown(self):
         pass
 
 
 class RoadWaypointsSensor(Sensor):
-    def __init__(self, vehicle, sim, horizon=50):
+    def __init__(self, vehicle, sim, mission_planner, horizon=50):
         self._vehicle = vehicle
         self._sim = sim
+        self._mission_planner = mission_planner
         self._horizon = horizon
 
     def __call__(self):
-        wp = self._sim.waypoints.closest_waypoint(self._vehicle.position)
+        wp = self._sim.waypoints.closest_waypoint(self._vehicle.pose)
         road_edges = self._sim.road_network.road_edge_data_for_lane_id(wp.lane_id)
 
         lane_paths = {}
@@ -939,7 +1008,14 @@ class RoadWaypointsSensor(Sensor):
             for lane in edge.getLanes():
                 lane_paths[lane.getID()] = self.paths_for_lane(lane)
 
-        return RoadWaypoints(lanes=lane_paths)
+        route_waypoints = self.route_waypoints()
+
+        return RoadWaypoints(lanes=lane_paths, route_waypoints=route_waypoints)
+
+    def route_waypoints(self):
+        return self._mission_planner.waypoint_paths_at(
+            sim=self._sim, pose=self._vehicle.pose, lookahead=50, vehicle=self._vehicle,
+        )
 
     def paths_for_lane(self, lane, overflow_offset=None):
         if overflow_offset is None:
@@ -995,6 +1071,70 @@ class AccelerometerSensor(Sensor):
         angular_jerk = angular_acc - last_angular_acc
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)
+
+    def teardown(self):
+        pass
+
+
+class ViaSensor(Sensor):
+    def __init__(
+        self, vehicle, mission_planner, lane_acquisition_range, speed_accuracy
+    ):
+        self._consumed_via_points = set()
+        self._mission_planner: MissionPlanner = mission_planner
+        self._acquisition_range = lane_acquisition_range
+        self._vehicle = vehicle
+        self._speed_accuracy = speed_accuracy
+
+    @property
+    def _vias(self) -> Iterable[Via]:
+        return self._mission_planner.mission.via
+
+    def __call__(self):
+        near_points: List[ViaPoint] = list()
+        hit_points: List[ViaPoint] = list()
+        vehicle_position = self._vehicle.position[:2]
+
+        @lru_cache()
+        def closest_point_on_lane(position, lane_id):
+            return self._mission_planner.closest_point_on_lane(position, lane_id)
+
+        for via in self._vias:
+            closest_position_on_lane = closest_point_on_lane(
+                tuple(vehicle_position), via.lane_id
+            )
+            closest_position_on_lane = closest_position_on_lane[:2]
+
+            dist_from_lane_sq = squared_dist(vehicle_position, closest_position_on_lane)
+            if dist_from_lane_sq > self._acquisition_range ** 2:
+                continue
+
+            point = ViaPoint(
+                tuple(via.position),
+                lane_index=via.lane_index,
+                edge_id=via.edge_id,
+                required_speed=via.required_speed,
+            )
+
+            near_points.append(point)
+            dist_from_point_sq = squared_dist(vehicle_position, via.position)
+            if (
+                dist_from_point_sq <= via.hit_distance ** 2
+                and via not in self._consumed_via_points
+                and np.isclose(
+                    self._vehicle.speed, via.required_speed, atol=self._speed_accuracy
+                )
+            ):
+                self._consumed_via_points.add(via)
+                hit_points.append(point)
+
+        return (
+            sorted(
+                near_points,
+                key=lambda point: squared_dist(point.position, vehicle_position),
+            ),
+            hit_points,
+        )
 
     def teardown(self):
         pass

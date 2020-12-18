@@ -14,7 +14,7 @@ import opengen as og
 from smarts.core.agent import Agent
 from smarts.core.coordinates import Heading
 
-from .version import VERSION
+from .version import VERSION, SOLVER_VERSION
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
 
@@ -157,7 +157,7 @@ class VehicleModel:
     speed: cs.SXElem
     LENGTH = 4.0
     MAX_SPEED = 14.0  # m/s roughly 50km/h
-    MAX_ACCEL = 5.0  # m/s/s
+    MAX_ACCEL = 4.0  # m/s/s
     DOF = 4
 
     @property
@@ -169,7 +169,6 @@ class VehicleModel:
         self.y += ts * self.speed * cs.sin(self.theta)
         self.theta += ts * self.speed / self.LENGTH * u.yaw_rate
         self.speed += ts * self.MAX_ACCEL * u.accel
-        self.speed = cs.fmin(cs.fmax(0, self.speed), self.MAX_SPEED)
 
 
 @dataclass
@@ -181,19 +180,46 @@ class XRef:
 
     def weighted_distance_to(self, other: "XRef", gain: Gain):
         theta_err = angle_error(self.theta, other.theta)
-        pos_err = (other.x - self.x) ** 2 + (other.y - self.y) ** 2
-        return gain.position * pos_err + gain.theta * theta_err
+        pos_errx = (other.x - self.x) ** 2
+        pos_erry = (other.y - self.y) ** 2
+        heading_vector = [cs.cos(self.theta), cs.sin(self.theta)]
+        lateral_error = (self.x - other.x) * heading_vector[1] - (
+            self.y - other.y
+        ) * heading_vector[0]
+        pos_err_theta = lateral_error ** 2
+        return (
+            gain.position * pos_errx,
+            gain.position * pos_erry,
+            gain.theta * theta_err,
+            pos_err_theta,
+        )
 
 
 def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
     x_ref_iter = iter(xrefs)
-    min_xref_t_cost = next(x_ref_iter).weighted_distance_to(point, gain)
+    distant_to_first = next(x_ref_iter).weighted_distance_to(point, gain)
+    min_xref_t_cost = sum(distant_to_first[:2])
+    # This calculates the weighted combination of lateral error and
+    # heading error, TODO: Define new variable or integrates the coefficents
+    # into the default values.
+    weighted_cost = 10 * distant_to_first[3] + 5.1 * cs.fabs(distant_to_first[2])
     for xref_t in x_ref_iter:
-        min_xref_t_cost = cs.fmin(
-            min_xref_t_cost, xref_t.weighted_distance_to(point, gain),
+
+        distant_to_point = sum(xref_t.weighted_distance_to(point, gain)[:2])
+
+        min_xref_t_cost = cs.if_else(
+            distant_to_point <= min_xref_t_cost,
+            sum(xref_t.weighted_distance_to(point, gain)[:2]),
+            min_xref_t_cost,
+        )
+        weighted_cost = cs.if_else(
+            distant_to_point <= min_xref_t_cost,
+            10 * xref_t.weighted_distance_to(point, gain)[3]
+            + 5.1 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
+            weighted_cost,
         )
 
-    return min_xref_t_cost
+    return 5 * weighted_cost
 
 
 @dataclass
@@ -220,8 +246,9 @@ class UTrajectory:
         for t in range(1, self.N):
             prev_u_t = self[t - 1]
             u_t = self[t]
-            cost += gain.u_accel * (u_t.accel - prev_u_t.accel) ** 2
-            cost += gain.u_yaw_rate * (u_t.yaw_rate - prev_u_t.yaw_rate) ** 2
+            cost += 0.01 * gain.u_accel * u_t.accel ** 2
+            cost += 0.1 * gain.u_yaw_rate * u_t.yaw_rate ** 2
+            cost += 10 * gain.u_yaw_rate * (u_t.yaw_rate - prev_u_t.yaw_rate) ** 2
 
         return cost
 
@@ -275,7 +302,7 @@ def build_problem(N, SV_N, WP_N, ts):
         # For the current pose, compute the smallest cost to any xref
         cost += min_cost_by_distance(xref_traj, ego.as_xref, gain)
 
-        cost += gain.speed * (ego.speed - target_speed.value) ** 2 / t
+        cost += 100000 * gain.speed * (ego.speed - target_speed.value) ** 2 / t
 
         for sv in social_vehicles:
             # step the social vehicle assuming no change in velocity or heading
@@ -287,7 +314,9 @@ def build_problem(N, SV_N, WP_N, ts):
             )
 
     # To stabilize the trajectory, we attach a higher weight to the final x_ref
-    cost += gain.terminal * xref_traj[-1].weighted_distance_to(ego.as_xref, gain)
+    cost += gain.terminal * sum(
+        xref_traj[-1].weighted_distance_to(ego.as_xref, gain)[:3]
+    )
 
     cost += u_traj.integration_cost(gain)
 
@@ -312,7 +341,11 @@ def compile_solver(output_dir, N=6, SV_N=4, WP_N=15, ts=0.1):
         .with_build_mode("release")
         .with_build_python_bindings()
     )
-    meta = og.config.OptimizerMeta().with_optimizer_name(solver_name)
+    meta = (
+        og.config.OptimizerMeta()
+        .with_version(SOLVER_VERSION)
+        .with_optimizer_name(solver_name)
+    )
     solver_config = og.config.SolverConfiguration()
     builder = og.builder.OpEnOptimizerBuilder(
         problem, meta, build_config, solver_config
@@ -405,7 +438,12 @@ class OpEnAgent(Agent):
 
     def act(self, obs):
         ego = obs.ego_vehicle_state
-        wps = obs.waypoint_paths[len(obs.waypoint_paths) // 2]
+        lane_index = min(len(obs.waypoint_paths) - 1, ego.lane_index)
+        wps = obs.waypoint_paths[lane_index]
+        for wp_path in obs.waypoint_paths:
+            if wp_path[0].lane_index == lane_index:
+                wps = wp_path
+                break
         # wps = min(
         #     obs.waypoint_paths,
         #     key=lambda wps: abs(wps[0].signed_lateral_error(ego.position)),

@@ -10,7 +10,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.4.5",
+    version="0.4.9",
     packages=find_packages(exclude="tests"),
     include_package_data=True,
     zip_safe=True,
@@ -46,7 +46,7 @@ setup(
         #       and ray[rllib] under [train] it  prevents rllib from getting installed.
         #       For simplicity we just install both here. In the future we may want to
         #       address this bug head on to keep our SMARTS base install more lean.
-        "ray[rllib]==0.8.3",  # We use Ray for our multiprocessing needs
+        "ray[rllib]==0.8.4",  # We use Ray for our multiprocessing needs
         # The following are for Scenario Studio
         "yattag",
         # The following are for testing
@@ -66,7 +66,13 @@ setup(
         "PyYAML",
     ],
     extras_require={
-        "train": ["tensorflow==2.2", "torch==1.3.0", "torchvision==0.4.1"],
+        "train": [
+            "tensorflow==2.2.1",
+            # XXX: TF requires specific version of scipy
+            "scipy==1.4.1",
+            "torch==1.4.0",
+            "torchvision==0.5.0",
+        ],
         "dev": [
             "black==19.10b0",
             "sphinx",

@@ -25,6 +25,7 @@ import threading
 from queue import Queue
 from typing import Union
 from pathlib import Path
+import warnings
 
 import websocket
 import numpy as np
@@ -159,6 +160,11 @@ class Client:
             self._log.debug("Connection to Envision closed")
 
         def on_error(ws, error):
+            if str(error) == "'NoneType' object has no attribute 'sock'":
+                # XXX: websocket-client library outputs some strange logs, just
+                #      surpress them for now.
+                return
+
             self._log.error(f"Connection to Envision terminated with: {error}")
 
         def on_open(ws):
@@ -177,18 +183,25 @@ class Client:
 
             tries = 1
             while tries <= num_retries and not connection_established:
-                self._log.info(
-                    f"Attempting to connect to Envision tries={tries}/{num_retries}"
-                )
                 ws = websocket.WebSocketApp(
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
-                ws.run_forever()
+
+                with warnings.catch_warnings():
+                    # XXX: websocket-client library seems to have leaks on connection
+                    #      retry that cause annoying warnings within Python 3.8+
+                    warnings.filterwarnings("ignore", category=ResourceWarning)
+                    ws.run_forever()
 
                 connection_established = getattr(
                     threadlocal, "connection_established", False
                 )
+
                 if not connection_established:
+                    self._log.info(
+                        f"Attempting to connect to Envision tries={tries}/{num_retries}"
+                    )
+
                     tries += 1
                     time.sleep(wait_between_retries)
 
@@ -213,6 +226,7 @@ class Client:
     def teardown(self):
         self._state_queue.put(Client.QueueDone())
         self._logging_queue.put(Client.QueueDone())
+
         if self._thread:
             self._thread.join(timeout=3)
             self._thread = None
