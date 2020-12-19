@@ -138,6 +138,7 @@ def test_waypoints_sensor_with_cut_in_task(cut_in_scenarios):
 
     sim = mock.Mock()
     nei_vehicle = mock.Mock()
+    nei_vehicle.speed = 10
     nei_vehicle.pose = Pose(
         position=np.array([25, -68, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
     )
