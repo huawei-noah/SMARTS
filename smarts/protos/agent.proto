@@ -55,12 +55,13 @@ message Machine {
 
 // Status
 message Status {
-    string result = 1;
+    int32 code = 1;
+    string msg = 2;
 }
 
 message Connection{
     Status status = 1;
-    int32 port = 2;
+    optional int32 port = 2;
 }
 
 message Specification {

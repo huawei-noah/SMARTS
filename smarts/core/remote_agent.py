@@ -23,7 +23,6 @@ import logging
 import time
 
 from concurrent import futures
-from multiprocessing.connection import Client
 
 from .agent import AgentSpec
 from smarts.zoo import agent_pb2
@@ -40,8 +39,8 @@ class RemoteAgent:
 
         self._tp_exec = futures.ThreadPoolExecutor()
 
-        ip, port = address
-        self.channel = grpc.insecure_channel(f"{ip}:{port}")
+        worker_ip, worker_port = address
+        self.channel = grpc.insecure_channel(f"{worker_ip}:{worker_port}")
         try:
             # Wait until the grpc server is ready or timeout after 30 seconds
             grpc.channel_ready_future(self.channel).result(timeout=30)
@@ -58,12 +57,13 @@ class RemoteAgent:
             )
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
-                log.debug("Remote worker process exceeded response deadline.")
+                print("Remote worker process exceeded response deadline.")
                 return None
             else:
-                raise RemoteAgentException(
-                    f"Error in retrieving agent action from remote worker process."
-                ) from e
+                # raise RemoteAgentException(
+                #     f"Error in retrieving agent action from remote worker process."
+                # ) from e
+                return None
         return cloudpickle.loads(response.action)
 
     def act(self, obs, timeout=None):

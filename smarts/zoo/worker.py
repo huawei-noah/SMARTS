@@ -36,18 +36,16 @@ The protocal is as follows:
 """
 
 import argparse
-import cloudpickle
 import grpc
 import importlib
 import logging
 import os
 import signal
 import threading
-import time
 from concurrent import futures
 
-from smarts.zoo import agent_pb2
 from smarts.zoo import agent_pb2_grpc
+from smarts.zoo import agent_servicer
 
 # Front-load some expensive imports as to not block the simulation
 modules = [
@@ -75,63 +73,18 @@ for mod in modules:
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"worker.py - PID({os.getpid()})")
 
-
-class AgentServicer(agent_pb2_grpc.AgentServicer):
-    """Provides methods that implement functionality of Agent Servicer."""
-
-    def __init__(self, stop_event):
-        self._agent = None
-        self._agent_spec = None
-        self._stop_event = stop_event
-
-    def Build(self, request, context):
-        time_start = time.time()
-        self._agent_spec = cloudpickle.loads(request.payload)
-        pickle_load_time = time.time()
-        self._agent = self._agent_spec.build_agent()
-        agent_build_time = time.time()
-        log.debug(
-            "build agent timings:\n"
-            f"  total ={agent_build_time - time_start:.2}\n"
-            f"  pickle={pickle_load_time - time_start:.2}\n"
-            f"  build ={agent_build_time - pickle_load_time:.2}\n"
-        )
-        return agent_pb2.Status(result="Success")
-
-    def Act(self, request, context):
-        if self._agent == None or self._agent_spec == None:
-            return agent_pb2.Action(
-                status=agent_pb2.Status(result="Remote agent not built yet.")
-            )
-
-        adapted_obs = self._agent_spec.observation_adapter(
-            cloudpickle.loads(request.payload)
-        )
-        action = self._agent.act(adapted_obs)
-        adapted_action = self._agent_spec.action_adapter(action)
-        return agent_pb2.Action(
-            status=agent_pb2.Status(result="Success"),
-            action=cloudpickle.dumps(adapted_action),
-        )
-
-    def Stop(self, request, context):
-        self._stop_event.set()
-        log.debug(f"Worker - PID({os.getpid()}): Stopped by client.")
-        return agent_pb2.Output()
-
-
 def serve(port):
     ip = "[::]"
     stop_event = threading.Event()
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=3))
-    agent_pb2_grpc.add_AgentServicer_to_server(AgentServicer(stop_event), server)
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+    agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer.AgentServicer(stop_event), server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
-    log.debug(f"Worker - {ip}, {port}, PID({os.getpid()}): Started serving.")
+    print(f"Worker - {ip}, {port}, PID({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
         stop_event.set()
-        log.debug(
+        print(
             f"Worker - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal."
         )
 
@@ -142,7 +95,7 @@ def serve(port):
     # Wait to receive server termination signal
     stop_event.wait()
     server.stop(0)
-    log.debug(f"Worker - {ip}, {port}, PID({os.getpid()}): Server exited")
+    print(f"Worker - {ip}, {port}, PID({os.getpid()}): Server exited")
 
 
 if __name__ == "__main__":

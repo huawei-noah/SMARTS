@@ -27,55 +27,25 @@ import subprocess
 import sys
 import threading
 from concurrent import futures
-from multiprocessing import Process
 
-from smarts.core.utils.networking import find_free_port
-from smarts.zoo import agent_pb2
 from smarts.zoo import agent_pb2_grpc
-from smarts.zoo import worker
+from smarts.zoo import agent_servicer
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"master.py - PID({os.getpid()})")
 
-
-class AgentServicer(agent_pb2_grpc.AgentServicer):
-    """Provides methods that implement functionality of Agent Servicer."""
-
-    def __init__(self, stop_event):
-        self._agent_workers = []
-        self._stop_event = stop_event
-
-    def __del__(self):
-        log.debug("Cleaning up zoo workers.")
-        for proc in self._agent_workers:
-            if proc.is_alive():
-                proc.terminate()
-                proc.join()
-
-    def SpawnWorker(self, request, context):
-        port = find_free_port()
-        proc = Process(target=worker.serve, args=(port,))
-        proc.start()
-        if proc.is_alive():
-            self._agent_workers.append(proc)
-            return agent_pb2.Connection(
-                status=agent_pb2.Status(result="Success"), port=port
-            )
-
-        return agent_pb2.Connection(status=agent_pb2.Status(result="Error"), port=port)
-
 def serve(port):
     ip = "[::]"
     stop_event = threading.Event()
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
-    agent_pb2_grpc.add_AgentServicer_to_server(AgentServicer(stop_event), server)
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+    agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer.AgentServicer(stop_event), server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
-    log.debug(f"Master - {ip}, {port}, PID({os.getpid()}): Started serving.")
+    print(f"Master - {ip}, {port}, PID({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
         stop_event.set()
-        log.debug(
+        print(
             f"Master - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal."
         )
 
@@ -86,8 +56,7 @@ def serve(port):
     # Wait to receive server termination signal
     stop_event.wait()
     server.stop(0)
-    log.debug(f"Master - {ip}, {port}, PID({os.getpid()}): Server exited")
-
+    print(f"Master - {ip}, {port}, PID({os.getpid()}): Server exited")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
