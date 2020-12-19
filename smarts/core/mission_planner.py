@@ -212,7 +212,7 @@ class MissionPlanner:
         position = pose.position[:2]
         lane = self._road_network.nearest_lane(position)
 
-        if len(neighborhood_vehicles) == 0:
+        if len(neighborhood_vehicles) == 0 or sim.elapsed_sim_time < 3:
             return []
 
         nei_vehicle = neighborhood_vehicles[0]
@@ -229,7 +229,7 @@ class MissionPlanner:
             abs(offset - (cut_in_offset + target_offset)) > 1
             and lane.getID() != target_lane.getID()
             and self._task_is_triggered is False
-        ) or sim.elapsed_sim_time < 3:
+        ):
             nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                 position, lane.getID(), 60
             )
