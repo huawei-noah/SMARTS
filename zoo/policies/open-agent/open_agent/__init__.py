@@ -1,5 +1,5 @@
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentBehavior
+from smarts.core.agent_interface import AgentBehavior, AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import register
 
