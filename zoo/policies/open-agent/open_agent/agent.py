@@ -504,8 +504,8 @@ class OpEnAgent(Agent):
             + flat_wps
             + [impatience, wps[0].speed_limit]
         )
-        aaa = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        resp = self.solver.run(solver_params, initial_guess=aaa)
+        neutral_bias = [0 for i in range(12)]
+        resp = self.solver.run(solver_params, initial_guess=neutral_bias)
 
         self.last_position = ego.position
 

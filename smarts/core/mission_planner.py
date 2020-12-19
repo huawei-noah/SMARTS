@@ -203,8 +203,7 @@ class MissionPlanner:
 
     def cut_in_waypoints(self, sim, pose: Pose, vehicle):
 
-        aggressivenes = 5
-        radius = self._mission.task.trigger_radius
+        aggressiveness = 5
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
             vehicle=vehicle, radius=80
         )
@@ -212,11 +211,11 @@ class MissionPlanner:
         position = pose.position[:2]
         lane = self._road_network.nearest_lane(position)
 
-        if len(neighborhood_vehicles) == 0 or sim.elapsed_sim_time < 3:
+        if not neighborhood_vehicles or sim.elapsed_sim_time < 3:
             return []
 
-        nei_vehicle = neighborhood_vehicles[0]
-        target_position = nei_vehicle.pose.position[:2]
+        target_vehicle = neighborhood_vehicles[0]
+        target_position = target_vehicle.pose.position[:2]
         target_lane = self._road_network.nearest_lane(target_position)
 
         offset = self._road_network.offset_into_lane(lane, position)
@@ -224,7 +223,7 @@ class MissionPlanner:
             target_lane, target_position
         )
 
-        cut_in_offset = 10 + aggressivenes
+        cut_in_offset = np.clip(20 - aggressiveness, 10, 20)
         if (
             abs(offset - (cut_in_offset + target_offset)) > 1
             and lane.getID() != target_lane.getID()
@@ -234,9 +233,9 @@ class MissionPlanner:
                 position, lane.getID(), 60
             )
             speed_limit = np.clip(
-                (nei_vehicle.speed + 5)
+                (target_vehicle.speed + 5)
                 - 5.2 * (offset - (cut_in_offset + target_offset)),
-                np.clip(nei_vehicle.speed - 5, 2.5, 30),
+                np.clip(target_vehicle.speed - 5, 2.5, 30),
                 30,
             )
         else:
@@ -244,7 +243,7 @@ class MissionPlanner:
             nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                 position, target_lane.getID(), 60
             )
-            speed_limit = nei_vehicle.speed + 5
+            speed_limit = target_vehicle.speed + 5
 
         p0 = position
         p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
