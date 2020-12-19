@@ -28,7 +28,7 @@ from multiprocessing import Process
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import agent_pb2
 from smarts.zoo import agent_pb2_grpc
-from smarts.zoo import worker
+from smarts.zoo import worker as zoo_worker
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"agent_servicer.py - PID({os.getpid()})")
@@ -39,22 +39,22 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
     def __init__(self, stop_event):
         self._agent = None
         self._agent_spec = None
-        self._agent_workers = []
+        self._workers = []
         self._stop_event = stop_event
 
     def __del__(self):
         print("Cleaning up agent workers.")
-        for proc in self._agent_workers:
-            if proc.is_alive():
-                proc.terminate()
-                proc.join()
+        for worker in self._workers:
+            if worker.is_alive():
+                worker.terminate()
+                worker.join()
 
     def SpawnWorker(self, request, context):
         port = find_free_port()
-        proc = Process(target=worker.serve, args=(port,))
-        proc.start()
-        if proc.is_alive():
-            self._agent_workers.append(proc)
+        worker = Process(target=zoo_worker.serve, args=(port,))
+        worker.start()
+        if worker.is_alive():
+            self._workers.append(worker)
             return agent_pb2.Connection(
                 status=agent_pb2.Status(code=0, msg="Success"), port=port
             )

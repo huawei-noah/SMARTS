@@ -24,7 +24,7 @@ import time
 
 from concurrent import futures
 
-from .agent import AgentSpec
+from smarts.core.agent import AgentSpec
 from smarts.zoo import agent_pb2
 from smarts.zoo import agent_pb2_grpc
 
@@ -39,8 +39,8 @@ class RemoteAgent:
 
         self._tp_exec = futures.ThreadPoolExecutor()
 
-        worker_ip, worker_port = address
-        self.channel = grpc.insecure_channel(f"{worker_ip}:{worker_port}")
+        self.worker_ip, self.worker_port = address
+        self.channel = grpc.insecure_channel(f"{self.worker_ip}:{self.worker_port}")
         try:
             # Wait until the grpc server is ready or timeout after 30 seconds
             grpc.channel_ready_future(self.channel).result(timeout=30)
@@ -63,6 +63,15 @@ class RemoteAgent:
                 # raise RemoteAgentException(
                 #     f"Error in retrieving agent action from remote worker process."
                 # ) from e
+
+                print("Error remote_agent stub.Act --->")
+                print(e)
+                print("e.details() = ", e.details())
+                status_code = e.code()
+                print(status_code.name)
+                print(status_code.value)
+                print(f"ip, port = ({self.worker_ip},{self.worker_port})")
+                print("EXCEPTION IN AGENT ACT ===================================")
                 return None
         return cloudpickle.loads(response.action)
 
@@ -86,7 +95,7 @@ class RemoteAgent:
                 # error is thrown. This error can be ignored.
                 pass
             else:
-                raise e
+                raise RemoteAgentException("Error in terminating remote worker process.") from e
         # Close the channel
         self.channel.close
         # Shutdown thread pool executor
