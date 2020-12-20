@@ -74,13 +74,13 @@ export default function Header_({
       <Space>
         <Select
           value={selectValue}
-          style={{ width: 200 }}
+          style={{ width: 400 }}
           onChange={(value) => onSelectSimulation(value)}
         >
           <Option value="all">All Simulations</Option>
           <OptGroup label="Simulations">
             {simulationIds.map((id) => (
-              <Option key={id} value={id}>{`Simulation ${id}`}</Option>
+              <Option key={id} value={id}>{`Sim ${id}`}</Option>
             ))}
           </OptGroup>
         </Select>

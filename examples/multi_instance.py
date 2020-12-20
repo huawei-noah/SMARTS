@@ -66,7 +66,9 @@ def observation_adapter(env_obs):
 
 
 @ray.remote
-def train(training_scenarios, evaluation_scenarios, headless, num_episodes, seed):
+def train(
+    training_scenarios, evaluation_scenarios, sim_name, headless, num_episodes, seed
+):
     agent_params = {"input_dims": 4, "hidden_dims": 7, "output_dims": 3}
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=5000),
@@ -79,6 +81,7 @@ def train(training_scenarios, evaluation_scenarios, headless, num_episodes, seed
         "smarts.env:hiway-v0",
         scenarios=training_scenarios,
         agent_specs={AGENT_ID: agent_spec},
+        sim_name=sim_name,
         headless=headless,
         timestep_sec=0.1,
         seed=seed,
@@ -150,13 +153,18 @@ def evaluate(agent_spec, evaluation_scenarios, headless, seed):
 
 
 def main(
-    training_scenarios, evaluation_scenarios, headless, num_episodes, seed,
+    training_scenarios, evaluation_scenarios, sim_name, headless, num_episodes, seed,
 ):
     ray.init()
     ray.wait(
         [
             train.remote(
-                training_scenarios, evaluation_scenarios, headless, num_episodes, seed,
+                training_scenarios,
+                evaluation_scenarios,
+                sim_name,
+                headless,
+                num_episodes,
+                seed,
             )
         ]
     )
@@ -175,6 +183,7 @@ if __name__ == "__main__":
     main(
         training_scenarios=args.scenarios,
         evaluation_scenarios=[args.evaluation_scenario],
+        sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.num_episodes,
         seed=args.seed,
