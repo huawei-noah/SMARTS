@@ -62,6 +62,7 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         return agent_pb2.Connection(status=agent_pb2.Status(code=1, msg="Error"))
 
     def Build(self, request, context):
+        # try:
         time_start = time.time()
         self._agent_spec = cloudpickle.loads(request.payload)
         pickle_load_time = time.time()
@@ -74,8 +75,13 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
             f"  build ={agent_build_time - pickle_load_time:.2}\n"
         )
         return agent_pb2.Status(code=0, msg="Success")
+        # except Exception as e:
+        #     print("&&&&& CAUGHT THE ERROR !!!!!!!!!!!!!")
+        #     print(f"PID({os.getpid()}): agent_servicer. Build() ")
+        #     raise e
 
     def Act(self, request, context):
+        # try:
         if self._agent == None or self._agent_spec == None:
             return agent_pb2.Action(
                 status=agent_pb2.Status(code=1, msg="Remote agent not built yet.")
@@ -90,8 +96,17 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
             status=agent_pb2.Status(code=0, msg="Success"),
             action=cloudpickle.dumps(adapted_action),
         )
+        # except Exception as e:
+        #     print("&&&&& CAUGHT THE ERROR !!!!!!!!!!!!!")
+        #     print(f"PID({os.getpid()}): agent_servicer. Act() ")
+        #     raise e
 
     def Stop(self, request, context):
+        # try:
         self._stop_event.set()
         print(f"PID({os.getpid()}): Stopped by client.")
         return agent_pb2.Output()
+        # except Exception as e:
+        #     print("&&&&& CAUGHT THE ERROR !!!!!!!!!!!!!")
+        #     print(f"PID({os.getpid()}): agent_servicer. Stop() ")
+        #     raise e

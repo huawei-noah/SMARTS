@@ -38,6 +38,7 @@ class RemoteAgent:
         self._log = logging.getLogger(self.__class__.__name__)
 
         self._tp_exec = futures.ThreadPoolExecutor()
+        self.last_act_future = None
 
         self.worker_ip, self.worker_port = address
         self.channel = grpc.insecure_channel(f"{self.worker_ip}:{self.worker_port}")
@@ -51,33 +52,51 @@ class RemoteAgent:
         self.stub = agent_pb2_grpc.AgentStub(self.channel)
 
     def _act(self, obs, timeout):
+
+        # print("===================================")
+        # print("_act observation type")
+        # # observ2 = cloudpickle.dumps(obs)
+        # print(obs)
+        # # import sys, os
+        # # sys.exit(0)
+        # print("===================================")
+
         try:
             response = self.stub.Act(
-                agent_pb2.Observation(payload=cloudpickle.dumps(obs)), timeout=timeout
-            )
+                agent_pb2.Observation(payload=cloudpickle.dumps(obs)), timeout=0.005)
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
-                print("Remote worker process exceeded response deadline.")
+                print("***** Remote worker process exceeded response deadline.")
+                return None
+            elif  e.code() == grpc.StatusCode.UNAVAILABLE:    
+                print("+++++ Remote worker process is not avaliable.")
+                # Act is called with a future. Then terminate is called. If act is not done by the time terminate
+                # executes, act returns a server unavailable error. This is a race condition which happens at the 
+                # end of episodes. Solution is to explicitly kill the any active gRPC calls before terminating 
+                # the server.
                 return None
             else:
-                # raise RemoteAgentException(
-                #     f"Error in retrieving agent action from remote worker process."
-                # ) from e
+                print("EXCEPTION IN remote_agent.py::_act ===================================")
+                raise RemoteAgentException(
+                    f"Error in retrieving agent action from remote worker process."
+                ) from e
 
-                print("Error remote_agent stub.Act --->")
-                print(e)
-                print("e.details() = ", e.details())
-                status_code = e.code()
-                print(status_code.name)
-                print(status_code.value)
-                print(f"ip, port = ({self.worker_ip},{self.worker_port})")
-                print("EXCEPTION IN AGENT ACT ===================================")
-                return None
+                # print("---> Error in remote_agent.py::_act")
+                # print("e = ", e)
+                # print("e.details() = ", e.details())
+                # print("e.code().name = ", e.code().name)
+                # print("e.code().value = ", e.code().value)
+                # print(f"---> remote_agent.py::_act = ({self.worker_ip},{self.worker_port})")
+                # print("EXCEPTION IN remote_agent.py::_act ===================================")
+                # return None
         return cloudpickle.loads(response.action)
 
     def act(self, obs, timeout=None):
-        # Run task asynchronously and return a Future
-        return self._tp_exec.submit(self._act, obs, timeout)
+        # Run task asynchronously and return a Future.
+        # Keep track of last action future returned.
+        print(f"%%%%% Calling the next act = ({self.worker_ip},{self.worker_port})")
+        self.last_act_future = self._tp_exec.submit(self._act, obs, 0.005)
+        return self.last_act_future
 
     def start(self, agent_spec: AgentSpec):
         # Send the AgentSpec to the agent runner
@@ -85,8 +104,21 @@ class RemoteAgent:
         self.stub.Build(agent_pb2.Specification(payload=cloudpickle.dumps(agent_spec)))
 
     def terminate(self):
+        # If the last action future returned is incomplete, cancel it first.
+        if (self.last_act_future != None):
+            if self.last_act_future.done():
+                print(f"---> remote_agent.py::terminate, last_act_future done = ({self.worker_ip},{self.worker_port})")
+            if self.last_act_future.cancel():
+                print(f"---> remote_agent.py::terminate, last_act_future cancelled = ({self.worker_ip},{self.worker_port})")
+        if (self.last_act_future == None):
+            print(f"---> remote_agent.py::terminate, last_act_future none = ({self.worker_ip},{self.worker_port})")
+
+        print(f"---> remote_agent.py::terminate, CATCH ALL = {self.last_act_future.done()}, ({self.worker_ip},{self.worker_port})")
+
         # Stop the remote worker process
         try:
+
+            print(f"---> remote_agent.py::terminate, try stub.Stop = ({self.worker_ip},{self.worker_port})")
             self.stub.Stop(agent_pb2.Input())
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
