@@ -107,7 +107,7 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
     sim.neighborhood_vehicles_around_vehicle = mock.MagicMock(
         return_value=[nei_vehicle]
     )
-    vehicle.position = np.array([33, -65, 0])
+
     vehicle.pose = Pose(
         position=np.array([33, -65, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
     )

@@ -45,6 +45,7 @@ class MissionPlanner:
         self, waypoints: Waypoints, road_network: SumoRoadNetwork, agent_behavior=None
     ):
         self._waypoints = waypoints
+        self._agent_behavior=agent_behavior
         self._mission = None
         self._route = None
         self._road_network = road_network
@@ -291,7 +292,7 @@ class MissionPlanner:
         if not neighborhood_vehicles:
             return []
 
-        aggressiveness = 0.3
+        aggressiveness = self._agent_behavior.aggressiveness
         if sim.elapsed_sim_time < 0.5:
             return []
         if sim.elapsed_sim_time == 0.5:
@@ -309,7 +310,7 @@ class MissionPlanner:
                 self._insufficient_initial_distant = True
 
         horizontal_distant = (
-            -vehicle.position[0] + neighborhood_vehicles[0].pose.position[0]
+            -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
         )
 
         if self._insufficient_initial_distant is True:
