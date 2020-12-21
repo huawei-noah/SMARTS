@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on Wed  2 Sep 12:30:48 2020 by Eclipse SUMO netedit Version 1.5.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="/Users/kimia_hszd/dev/SMARTS/research/edmonton/intersections/scenarios/pool/4lane_c/40kmh/map.net.xml"/>
+    </input>
+
+    <output>
+        <output-file value="/Users/kimia_hszd/dev/SMARTS/research/edmonton/intersections/scenarios/pool/4lane_c/40kmh/map.net.xml"/>
+    </output>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="true"/>
+        <lefthand value="false"/>
+    </processing>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="-1"/>
+        <rectangular-lane-cut value="false"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="false"/>
+    </pedestrian>
+
+    <report>
+        <aggregate-warnings value="5"/>
+    </report>
+
+</configuration>
+-->
+
+<net version="1.3" junctionCornerDetail="5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="-630882.85,-4856133.12" convBoundary="-34.96,-237.94,360.88,137.01" origBoundary="-79.371708,43.846679,-79.369237,43.847436" projParameter="+proj=utm +zone=17 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"/>
+
+    <type id="highway.bridleway" priority="1" numLanes="1" speed="2.78" allow="pedestrian" oneway="1" width="2.00"/>
+    <type id="highway.bus_guideway" priority="1" numLanes="1" speed="27.78" allow="bus" oneway="1"/>
+    <type id="highway.cycleway" priority="1" numLanes="1" speed="8.33" allow="bicycle" oneway="0" width="1.00"/>
+    <type id="highway.footway" priority="1" numLanes="1" speed="2.78" allow="pedestrian" oneway="1" width="2.00"/>
+    <type id="highway.ford" priority="1" numLanes="1" speed="2.78" allow="army" oneway="0"/>
+    <type id="highway.living_street" priority="2" numLanes="1" speed="2.78" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.motorway" priority="14" numLanes="2" speed="39.44" allow="private emergency authority army vip passenger hov taxi bus coach delivery truck trailer motorcycle evehicle custom1 custom2" oneway="1"/>
+    <type id="highway.motorway_link" priority="9" numLanes="1" speed="22.22" allow="private emergency authority army vip passenger hov taxi bus coach delivery truck trailer motorcycle evehicle custom1 custom2" oneway="1"/>
+    <type id="highway.path" priority="1" numLanes="1" speed="2.78" allow="pedestrian bicycle" oneway="1" width="2.00"/>
+    <type id="highway.pedestrian" priority="1" numLanes="1" speed="2.78" allow="pedestrian" oneway="1" width="2.00"/>
+    <type id="highway.primary" priority="12" numLanes="2" speed="27.78" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.primary_link" priority="7" numLanes="1" speed="22.22" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.raceway" priority="15" numLanes="2" speed="83.33" allow="vip" oneway="0"/>
+    <type id="highway.residential" priority="3" numLanes="1" speed="13.89" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.secondary" priority="11" numLanes="2" speed="27.78" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.secondary_link" priority="6" numLanes="1" speed="22.22" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.service" priority="1" numLanes="1" speed="5.56" allow="pedestrian delivery bicycle" oneway="0"/>
+    <type id="highway.stairs" priority="1" numLanes="1" speed="1.39" allow="pedestrian" oneway="1" width="2.00"/>
+    <type id="highway.step" priority="1" numLanes="1" speed="1.39" allow="pedestrian" oneway="1" width="2.00"/>
+    <type id="highway.steps" priority="1" numLanes="1" speed="1.39" allow="pedestrian" oneway="1" width="2.00"/>
+    <type id="highway.tertiary" priority="10" numLanes="1" speed="22.22" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.tertiary_link" priority="5" numLanes="1" speed="22.22" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.track" priority="1" numLanes="1" speed="5.56" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.trunk" priority="13" numLanes="2" speed="27.78" disallow="pedestrian bicycle tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.trunk_link" priority="8" numLanes="1" speed="22.22" disallow="pedestrian bicycle tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.unclassified" priority="4" numLanes="1" speed="13.89" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="highway.unsurfaced" priority="1" numLanes="1" speed="8.33" disallow="tram rail_urban rail rail_electric ship" oneway="0"/>
+    <type id="railway.light_rail" priority="19" numLanes="1" speed="27.78" allow="rail_urban" oneway="1"/>
+    <type id="railway.preserved" priority="16" numLanes="1" speed="27.78" allow="rail" oneway="1"/>
+    <type id="railway.rail" priority="20" numLanes="1" speed="83.33" allow="rail rail_electric" oneway="1"/>
+    <type id="railway.subway" priority="18" numLanes="1" speed="27.78" allow="rail_urban" oneway="1"/>
+    <type id="railway.tram" priority="17" numLanes="1" speed="13.89" allow="tram" oneway="1"/>
+
+    <edge id=":gneJ23_0" function="internal">
+        <lane id=":gneJ23_0_0" index="0" speed="13.89" length="9.03" shape="145.17,-230.74 144.82,-233.19 143.77,-234.94 142.02,-235.98 139.57,-236.33"/>
+    </edge>
+    <edge id=":gneJ25_0" function="internal">
+        <lane id=":gneJ25_0_0" index="0" speed="13.89" length="2.58" shape="-31.76,-236.20 -32.46,-236.10 -32.96,-235.80 -33.26,-235.30 -33.36,-234.60"/>
+    </edge>
+    <edge id=":junction-intersection_0" function="internal">
+        <lane id=":junction-intersection_0_0" index="0" speed="13.89" length="15.49" shape="145.21,-45.59 144.60,-49.80 142.80,-52.80 139.80,-54.60 135.60,-55.20"/>
+    </edge>
+    <edge id=":junction-intersection_1" function="internal">
+        <lane id=":junction-intersection_1_0" index="0" speed="13.89" length="28.80" shape="145.21,-45.59 145.20,-74.40"/>
+        <lane id=":junction-intersection_1_1" index="1" speed="13.89" length="28.80" shape="148.41,-45.60 148.40,-74.40"/>
+    </edge>
+    <edge id=":junction-intersection_3" function="internal">
+        <lane id=":junction-intersection_3_0" index="0" speed="13.89" length="5.60" shape="148.41,-45.60 149.20,-51.14"/>
+    </edge>
+    <edge id=":junction-intersection_16" function="internal">
+        <lane id=":junction-intersection_16_0" index="0" speed="13.89" length="20.21" shape="149.20,-51.14 149.40,-52.60 152.40,-57.60 157.40,-60.60 164.40,-61.60"/>
+    </edge>
+    <edge id=":junction-intersection_4" function="internal">
+        <lane id=":junction-intersection_4_0" index="0" speed="13.89" length="15.48" shape="164.40,-55.20 160.20,-54.60 157.20,-52.80 155.40,-49.80 154.81,-45.60"/>
+    </edge>
+    <edge id=":junction-intersection_5" function="internal">
+        <lane id=":junction-intersection_5_0" index="0" speed="13.89" length="28.80" shape="164.40,-55.20 135.60,-55.20"/>
+        <lane id=":junction-intersection_5_1" index="1" speed="13.89" length="28.80" shape="164.40,-58.40 135.60,-58.40"/>
+    </edge>
+    <edge id=":junction-intersection_7" function="internal">
+        <lane id=":junction-intersection_7_0" index="0" speed="13.89" length="5.60" shape="164.40,-58.40 158.86,-59.19"/>
+    </edge>
+    <edge id=":junction-intersection_17" function="internal">
+        <lane id=":junction-intersection_17_0" index="0" speed="13.89" length="20.21" shape="158.86,-59.19 157.40,-59.40 152.40,-62.40 149.40,-67.40 148.40,-74.40"/>
+    </edge>
+    <edge id=":junction-intersection_8" function="internal">
+        <lane id=":junction-intersection_8_0" index="0" speed="13.89" length="15.49" shape="154.80,-74.40 155.40,-70.20 157.20,-67.20 160.20,-65.40 164.40,-64.80"/>
+    </edge>
+    <edge id=":junction-intersection_9" function="internal">
+        <lane id=":junction-intersection_9_0" index="0" speed="13.89" length="28.80" shape="154.80,-74.40 154.81,-45.60"/>
+        <lane id=":junction-intersection_9_1" index="1" speed="13.89" length="28.80" shape="151.60,-74.40 151.61,-45.60"/>
+    </edge>
+    <edge id=":junction-intersection_11" function="internal">
+        <lane id=":junction-intersection_11_0" index="0" speed="13.89" length="5.60" shape="151.60,-74.40 150.81,-68.86"/>
+    </edge>
+    <edge id=":junction-intersection_18" function="internal">
+        <lane id=":junction-intersection_18_0" index="0" speed="13.89" length="20.21" shape="150.81,-68.86 150.60,-67.40 147.60,-62.40 142.60,-59.40 135.60,-58.40"/>
+    </edge>
+    <edge id=":junction-intersection_12" function="internal">
+        <lane id=":junction-intersection_12_0" index="0" speed="13.89" length="15.48" shape="135.60,-64.80 139.80,-65.40 142.80,-67.20 144.60,-70.20 145.20,-74.40"/>
+    </edge>
+    <edge id=":junction-intersection_13" function="internal">
+        <lane id=":junction-intersection_13_0" index="0" speed="13.89" length="28.80" shape="135.60,-64.80 164.40,-64.80"/>
+        <lane id=":junction-intersection_13_1" index="1" speed="13.89" length="28.80" shape="135.60,-61.60 164.40,-61.60"/>
+    </edge>
+    <edge id=":junction-intersection_15" function="internal">
+        <lane id=":junction-intersection_15_0" index="0" speed="13.89" length="5.60" shape="135.60,-61.60 141.14,-60.81"/>
+    </edge>
+    <edge id=":junction-intersection_19" function="internal">
+        <lane id=":junction-intersection_19_0" index="0" speed="13.89" length="20.21" shape="141.14,-60.81 142.60,-60.60 147.60,-57.60 150.60,-52.60 151.61,-45.60"/>
+    </edge>
+
+    <edge id="edge-dead-end" from="gneJ25" to="gneJ26" priority="-1">
+        <lane id="edge-dead-end_0" index="0" speed="13.89" length="56.68" shape="-33.36,-234.60 -33.36,-177.92"/>
+    </edge>
+    <edge id="edge-east-EW" from="gneJ11" to="junction-intersection" priority="1">
+        <lane id="edge-east-EW_0" index="0" speed="13.89" length="196.48" shape="360.88,-55.18 164.40,-55.20"/>
+        <lane id="edge-east-EW_1" index="1" speed="13.89" length="196.48" shape="360.88,-58.38 164.40,-58.40"/>
+    </edge>
+    <edge id="edge-east-WE" from="junction-intersection" to="gneJ11" priority="1">
+        <lane id="edge-east-WE_0" index="0" speed="13.89" length="196.48" shape="164.40,-64.80 360.88,-64.78"/>
+        <lane id="edge-east-WE_1" index="1" speed="13.89" length="196.48" shape="164.40,-61.60 360.88,-61.58"/>
+    </edge>
+    <edge id="edge-north-NS" from="gneJ17" to="junction-intersection" priority="1">
+        <lane id="edge-north-NS_0" index="0" speed="13.89" length="182.61" shape="145.29,137.01 145.21,-45.59"/>
+        <lane id="edge-north-NS_1" index="1" speed="13.89" length="182.61" shape="148.49,137.01 148.41,-45.60"/>
+    </edge>
+    <edge id="edge-north-SN" from="junction-intersection" to="gneJ17" priority="1">
+        <lane id="edge-north-SN_0" index="0" speed="13.89" length="182.61" shape="154.81,-45.60 154.89,137.01"/>
+        <lane id="edge-north-SN_1" index="1" speed="13.89" length="182.61" shape="151.61,-45.60 151.69,137.01"/>
+    </edge>
+    <edge id="edge-south-NS" from="junction-intersection" to="gneJ23" priority="1">
+        <lane id="edge-south-NS_0" index="0" speed="13.89" length="156.34" shape="145.20,-74.40 145.17,-230.74"/>
+        <lane id="edge-south-NS_1" index="1" speed="13.89" length="156.34" shape="148.40,-74.40 148.37,-230.74"/>
+    </edge>
+    <edge id="edge-south-SN" from="gneJ23" to="junction-intersection" priority="1">
+        <lane id="edge-south-SN_0" index="0" speed="13.89" length="156.34" shape="154.77,-230.74 154.80,-74.40"/>
+        <lane id="edge-south-SN_1" index="1" speed="13.89" length="156.34" shape="151.57,-230.74 151.60,-74.40"/>
+    </edge>
+    <edge id="edge-south-side" from="gneJ23" to="gneJ25" priority="-1">
+        <lane id="edge-south-side_0" index="0" speed="13.89" length="171.33" shape="139.57,-236.33 -31.76,-236.20"/>
+    </edge>
+    <edge id="edge-west-EW" from="junction-intersection" to="gneJ12" priority="1">
+        <lane id="edge-west-EW_0" index="0" speed="13.89" length="169.07" shape="135.60,-55.20 -33.47,-55.17"/>
+        <lane id="edge-west-EW_1" index="1" speed="13.89" length="169.07" shape="135.60,-58.40 -33.47,-58.37"/>
+    </edge>
+    <edge id="edge-west-WE" from="gneJ12" to="junction-intersection" priority="1">
+        <lane id="edge-west-WE_0" index="0" speed="13.89" length="169.07" shape="-33.47,-64.77 135.60,-64.80"/>
+        <lane id="edge-west-WE_1" index="1" speed="13.89" length="169.07" shape="-33.47,-61.57 135.60,-61.60"/>
+    </edge>
+
+    <junction id="gneJ11" type="dead_end" x="360.88" y="-59.98" incLanes="edge-east-WE_0 edge-east-WE_1" intLanes="" shape="360.88,-59.98 360.88,-66.38 360.88,-59.98"/>
+    <junction id="gneJ12" type="dead_end" x="-33.47" y="-59.97" incLanes="edge-west-EW_0 edge-west-EW_1" intLanes="" shape="-33.47,-59.97 -33.47,-53.57 -33.47,-59.97"/>
+    <junction id="gneJ17" type="dead_end" x="150.09" y="137.01" incLanes="edge-north-SN_0 edge-north-SN_1" intLanes="" shape="150.09,137.01 156.49,137.01 150.09,137.01"/>
+    <junction id="gneJ23" type="priority" x="149.97" y="-237.94" incLanes="edge-south-NS_0 edge-south-NS_1" intLanes=":gneJ23_0_0" shape="143.57,-230.74 156.37,-230.74 155.90,-232.94 154.50,-234.74 152.17,-236.14 148.90,-237.14 144.70,-237.74 139.57,-237.93 139.57,-234.73 141.79,-234.29 142.57,-233.73 143.13,-232.96 143.46,-231.96">
+        <request index="0" response="0" foes="0" cont="0"/>
+    </junction>
+    <junction id="gneJ25" type="priority" x="-34.96" y="-237.80" incLanes="edge-south-side_0" intLanes=":gneJ25_0_0" shape="-34.96,-234.60 -31.76,-234.60 -31.76,-237.80 -33.54,-237.45 -34.16,-237.00 -34.60,-236.38 -34.87,-235.58">
+        <request index="0" response="0" foes="0" cont="0"/>
+    </junction>
+    <junction id="gneJ26" type="dead_end" x="-34.96" y="-177.92" incLanes="edge-dead-end_0" intLanes="" shape="-31.76,-177.92 -34.96,-177.92"/>
+    <junction id="junction-intersection" type="priority" x="150.00" y="-60.00" incLanes="edge-north-NS_0 edge-north-NS_1 edge-east-EW_0 edge-east-EW_1 edge-south-SN_0 edge-south-SN_1 edge-west-WE_0 edge-west-WE_1" intLanes=":junction-intersection_0_0 :junction-intersection_1_0 :junction-intersection_1_1 :junction-intersection_16_0 :junction-intersection_4_0 :junction-intersection_5_0 :junction-intersection_5_1 :junction-intersection_17_0 :junction-intersection_8_0 :junction-intersection_9_0 :junction-intersection_9_1 :junction-intersection_18_0 :junction-intersection_12_0 :junction-intersection_13_0 :junction-intersection_13_1 :junction-intersection_19_0" shape="143.61,-45.59 156.41,-45.60 156.63,-48.04 157.29,-50.04 158.40,-51.60 159.96,-52.71 161.96,-53.38 164.40,-53.60 164.40,-66.40 161.96,-66.62 159.96,-67.29 158.40,-68.40 157.29,-69.96 156.62,-71.96 156.40,-74.40 143.60,-74.40 143.38,-71.95 142.71,-69.95 141.60,-68.40 140.04,-67.29 138.04,-66.62 135.60,-66.40 135.60,-53.60 138.05,-53.38 140.05,-52.71 141.60,-51.60 142.72,-50.04 143.38,-48.04" radius="8.00" rightOfWay="edgePriority">
+        <request index="0"  response="0000000001100000" foes="0000000001100000" cont="0"/>
+        <request index="1"  response="0110000000000000" foes="1111100011100000" cont="0"/>
+        <request index="2"  response="0110000000000000" foes="1111100011100000" cont="0"/>
+        <request index="3"  response="1110011001100000" foes="1110011011100000" cont="1"/>
+        <request index="4"  response="0000011000000000" foes="0000011000000000" cont="0"/>
+        <request index="5"  response="0000000000000110" foes="1000111000001111" cont="0"/>
+        <request index="6"  response="0000000000000110" foes="1000111000001111" cont="0"/>
+        <request index="7"  response="0110011000001110" foes="0110111000001110" cont="1"/>
+        <request index="8"  response="0110000000000000" foes="0110000000000000" cont="0"/>
+        <request index="9"  response="0000000001100000" foes="1110000011111000" cont="0"/>
+        <request index="10" response="0000000001100000" foes="1110000011111000" cont="0"/>
+        <request index="11" response="0110000011100110" foes="1110000011100110" cont="1"/>
+        <request index="12" response="0000000000000110" foes="0000000000000110" cont="0"/>
+        <request index="13" response="0000011000000000" foes="0000111110001110" cont="0"/>
+        <request index="14" response="0000011000000000" foes="0000111110001110" cont="0"/>
+        <request index="15" response="0000111001100110" foes="0000111001101110" cont="1"/>
+    </junction>
+
+    <junction id=":junction-intersection_16_0" type="internal" x="149.20" y="-51.14" incLanes=":junction-intersection_3_0 edge-east-EW_0 edge-east-EW_1 edge-south-SN_0 edge-south-SN_1 edge-west-WE_0 edge-west-WE_1" intLanes=":junction-intersection_5_0 :junction-intersection_5_1 :junction-intersection_7_0 :junction-intersection_8_0 :junction-intersection_9_0 :junction-intersection_9_1 :junction-intersection_13_0 :junction-intersection_13_1 :junction-intersection_15_0"/>
+    <junction id=":junction-intersection_17_0" type="internal" x="158.86" y="-59.19" incLanes=":junction-intersection_7_0 edge-north-NS_0 edge-north-NS_1 edge-south-SN_0 edge-south-SN_1 edge-west-WE_0 edge-west-WE_1" intLanes=":junction-intersection_1_0 :junction-intersection_1_1 :junction-intersection_3_0 :junction-intersection_9_0 :junction-intersection_9_1 :junction-intersection_11_0 :junction-intersection_12_0 :junction-intersection_13_0 :junction-intersection_13_1"/>
+    <junction id=":junction-intersection_18_0" type="internal" x="150.81" y="-68.86" incLanes=":junction-intersection_11_0 edge-east-EW_0 edge-east-EW_1 edge-north-NS_0 edge-north-NS_1 edge-west-WE_0 edge-west-WE_1" intLanes=":junction-intersection_0_0 :junction-intersection_1_0 :junction-intersection_1_1 :junction-intersection_5_0 :junction-intersection_5_1 :junction-intersection_7_0 :junction-intersection_13_0 :junction-intersection_13_1 :junction-intersection_15_0"/>
+    <junction id=":junction-intersection_19_0" type="internal" x="141.14" y="-60.81" incLanes=":junction-intersection_15_0 edge-east-EW_0 edge-east-EW_1 edge-north-NS_0 edge-north-NS_1 edge-south-SN_0 edge-south-SN_1" intLanes=":junction-intersection_1_0 :junction-intersection_1_1 :junction-intersection_3_0 :junction-intersection_4_0 :junction-intersection_5_0 :junction-intersection_5_1 :junction-intersection_9_0 :junction-intersection_9_1 :junction-intersection_11_0"/>
+
+    <connection from="edge-east-EW" to="edge-north-SN" fromLane="0" toLane="0" via=":junction-intersection_4_0" dir="r" state="m"/>
+    <connection from="edge-east-EW" to="edge-west-EW" fromLane="0" toLane="0" via=":junction-intersection_5_0" dir="s" state="m"/>
+    <connection from="edge-east-EW" to="edge-west-EW" fromLane="1" toLane="1" via=":junction-intersection_5_1" dir="s" state="m"/>
+    <connection from="edge-east-EW" to="edge-south-NS" fromLane="1" toLane="1" via=":junction-intersection_7_0" dir="l" state="m"/>
+    <connection from="edge-north-NS" to="edge-west-EW" fromLane="0" toLane="0" via=":junction-intersection_0_0" dir="r" state="m"/>
+    <connection from="edge-north-NS" to="edge-south-NS" fromLane="0" toLane="0" via=":junction-intersection_1_0" dir="s" state="m"/>
+    <connection from="edge-north-NS" to="edge-south-NS" fromLane="1" toLane="1" via=":junction-intersection_1_1" dir="s" state="m"/>
+    <connection from="edge-north-NS" to="edge-east-WE" fromLane="1" toLane="1" via=":junction-intersection_3_0" dir="l" state="m"/>
+    <connection from="edge-south-NS" to="edge-south-side" fromLane="0" toLane="0" via=":gneJ23_0_0" dir="r" state="M"/>
+    <connection from="edge-south-SN" to="edge-east-WE" fromLane="0" toLane="0" via=":junction-intersection_8_0" dir="r" state="m"/>
+    <connection from="edge-south-SN" to="edge-north-SN" fromLane="0" toLane="0" via=":junction-intersection_9_0" dir="s" state="m"/>
+    <connection from="edge-south-SN" to="edge-north-SN" fromLane="1" toLane="1" via=":junction-intersection_9_1" dir="s" state="m"/>
+    <connection from="edge-south-SN" to="edge-west-EW" fromLane="1" toLane="1" via=":junction-intersection_11_0" dir="l" state="m"/>
+    <connection from="edge-south-side" to="edge-dead-end" fromLane="0" toLane="0" via=":gneJ25_0_0" dir="r" state="M"/>
+    <connection from="edge-west-WE" to="edge-south-NS" fromLane="0" toLane="0" via=":junction-intersection_12_0" dir="r" state="m"/>
+    <connection from="edge-west-WE" to="edge-east-WE" fromLane="0" toLane="0" via=":junction-intersection_13_0" dir="s" state="m"/>
+    <connection from="edge-west-WE" to="edge-east-WE" fromLane="1" toLane="1" via=":junction-intersection_13_1" dir="s" state="m"/>
+    <connection from="edge-west-WE" to="edge-north-SN" fromLane="1" toLane="1" via=":junction-intersection_15_0" dir="l" state="m"/>
+
+    <connection from=":gneJ23_0" to="edge-south-side" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from=":gneJ25_0" to="edge-dead-end" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from=":junction-intersection_0" to="edge-west-EW" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from=":junction-intersection_1" to="edge-south-NS" fromLane="0" toLane="0" dir="s" state="M"/>
+    <connection from=":junction-intersection_1" to="edge-south-NS" fromLane="1" toLane="1" dir="s" state="M"/>
+    <connection from=":junction-intersection_3" to="edge-east-WE" fromLane="0" toLane="1" via=":junction-intersection_16_0" dir="l" state="m"/>
+    <connection from=":junction-intersection_16" to="edge-east-WE" fromLane="0" toLane="1" dir="l" state="M"/>
+    <connection from=":junction-intersection_4" to="edge-north-SN" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from=":junction-intersection_5" to="edge-west-EW" fromLane="0" toLane="0" dir="s" state="M"/>
+    <connection from=":junction-intersection_5" to="edge-west-EW" fromLane="1" toLane="1" dir="s" state="M"/>
+    <connection from=":junction-intersection_7" to="edge-south-NS" fromLane="0" toLane="1" via=":junction-intersection_17_0" dir="l" state="m"/>
+    <connection from=":junction-intersection_17" to="edge-south-NS" fromLane="0" toLane="1" dir="l" state="M"/>
+    <connection from=":junction-intersection_8" to="edge-east-WE" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from=":junction-intersection_9" to="edge-north-SN" fromLane="0" toLane="0" dir="s" state="M"/>
+    <connection from=":junction-intersection_9" to="edge-north-SN" fromLane="1" toLane="1" dir="s" state="M"/>
+    <connection from=":junction-intersection_11" to="edge-west-EW" fromLane="0" toLane="1" via=":junction-intersection_18_0" dir="l" state="m"/>
+    <connection from=":junction-intersection_18" to="edge-west-EW" fromLane="0" toLane="1" dir="l" state="M"/>
+    <connection from=":junction-intersection_12" to="edge-south-NS" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from=":junction-intersection_13" to="edge-east-WE" fromLane="0" toLane="0" dir="s" state="M"/>
+    <connection from=":junction-intersection_13" to="edge-east-WE" fromLane="1" toLane="1" dir="s" state="M"/>
+    <connection from=":junction-intersection_15" to="edge-north-SN" fromLane="0" toLane="1" via=":junction-intersection_19_0" dir="l" state="m"/>
+    <connection from=":junction-intersection_19" to="edge-north-SN" fromLane="0" toLane="1" dir="l" state="M"/>
+
+</net>
