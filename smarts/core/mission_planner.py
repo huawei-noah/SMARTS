@@ -41,7 +41,9 @@ class PlanningError(Exception):
 
 
 class MissionPlanner:
-    def __init__(self, waypoints: Waypoints, road_network: SumoRoadNetwork):
+    def __init__(
+        self, waypoints: Waypoints, road_network: SumoRoadNetwork, agent_behavior=None
+    ):
         self._waypoints = waypoints
         self._mission = None
         self._route = None
@@ -49,6 +51,7 @@ class MissionPlanner:
         self._did_plan = False
         self._task_is_triggered = False
         self._uturn_initial_heading = 0
+        self._agent_behavior = agent_behavior
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9

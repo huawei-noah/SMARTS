@@ -386,7 +386,11 @@ class AgentManager:
 
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
-        planner = MissionPlanner(scenario.waypoints, scenario.road_network)
+        planner = MissionPlanner(
+            scenario.waypoints,
+            scenario.road_network,
+            agent_behavior=agent_interface.agent_behavior,
+        )
         planner.plan(mission)
 
         vehicle = sim.vehicle_index.build_agent_vehicle(
