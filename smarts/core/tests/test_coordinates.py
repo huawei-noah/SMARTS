@@ -93,6 +93,12 @@ def test_coordinates_heading():
 
     assert Heading() == 0
 
+    assert Heading(-3.14) == -3.14
+
+    assert Heading(-math.pi - 1) == math.pi - 1
+
+    assert Heading(math.pi + 1) == -math.pi + 1
+
     assert math.isclose(
         Heading(math.pi / 4).relative_to(Heading(math.pi)), Heading(-2.356194490192345)
     )

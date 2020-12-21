@@ -58,8 +58,6 @@ class Heading(float):
             value = value % (2 * math.pi)
             if value > math.pi:
                 value -= 2 * math.pi
-            if value < -math.pi:
-                value += 2 * math.pi
         if x in {..., None}:
             value = 0
         return float.__new__(self, value)
