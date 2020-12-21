@@ -152,14 +152,19 @@ class AgentSpec:
             ("perform_self_test", None),
         ]
 
-        assert None not in kwargs, f"Error kwargs contains invalid key: ({None})"
+        assert None not in kwargs, f"Error: replace contains invalid key: ({None})"
 
         kwargs_copy = kwargs.copy()
         for deprecated, current in replacements:
             if deprecated in kwargs:
-                logger.warning(
-                    f"[DEPRECATED] Please use AgentSpec.replace({current}=<...>) instead of AgentSpec.replace({deprecated}=<...>)\n"
-                )
+                if current:
+                    logger.warning(
+                        f"[DEPRECATED] Please use AgentSpec.replace({current}=<...>) instead of AgentSpec.replace({deprecated}=<...>)\n"
+                    )
+                else:
+                    logger.warning(
+                        f"[DEPRECATED] Attribute {deprecated} no longer has effect."
+                    )
                 assert (
                     current not in kwargs
                 ), f"Mixed current ({current}) and deprecated ({deprecated}) values in replace"
