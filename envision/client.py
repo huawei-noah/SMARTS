@@ -75,18 +75,17 @@ class Client:
         num_retries: int = 5,
         wait_between_retries: float = 0.5,
         output_dir: str = None,
-        client_id: str = None,
+        sim_name: str = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
-        if client_id:
+        client_id = current_time
+        if sim_name:
             # String length limit for display is 20 characters
             # Replace all special (non-alphanumeric) characters to "_" to avoid invalid key values
-            client_id = re.sub("\W+", "_", client_id[:20]) + "_"
-            client_id += current_time
-        else:
-            client_id = current_time
+            sim_name = re.sub("\W+", "_", sim_name[:20])
+            client_id = f"{sim_name}_{client_id}"
 
         if endpoint is None:
             endpoint = "ws://localhost:8081"

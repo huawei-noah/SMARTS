@@ -180,7 +180,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         if not self._headless:
             envision = Envision(
                 endpoint=self._envision_endpoint,
-                client_id=self._sim_name,
+                sim_name=self._sim_name,
                 output_dir=self._envision_record_data_replay_path,
             )
 

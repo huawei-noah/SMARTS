@@ -60,12 +60,27 @@ export default function Header_({
     setEgoView(egoView_);
   }
 
+  function displaySimName(id) {
+    let s = id.split("_");
+
+    let timestamp = s[s.length - 1]; //YYYYmmddHHMMSSff
+    let month = timestamp.substring(4, 6);
+    let day = timestamp.substring(6, 8);
+    let hour = timestamp.substring(8, 10);
+    let minute = timestamp.substring(10, 12);
+    let second = timestamp.substring(12, 14);
+
+    let name = id.slice(0, -(timestamp.length + 1));
+
+    return `${name} ${month}-${day} ${hour}:${minute}:${second}`;
+  }
+
   let selectValue = "";
   if (matchedSimulationId) {
     if (matchedSimulationId == "all") {
       selectValue = "all";
     } else {
-      selectValue = `Simulation ${matchedSimulationId}`;
+      selectValue = `Simulation ${displaySimName(matchedSimulationId)}`;
     }
   }
 
@@ -80,7 +95,7 @@ export default function Header_({
           <Option value="all">All Simulations</Option>
           <OptGroup label="Simulations">
             {simulationIds.map((id) => (
-              <Option key={id} value={id}>{`Sim ${id}`}</Option>
+              <Option key={id} value={id}>{`Sim ${displaySimName(id)}`}</Option>
             ))}
           </OptGroup>
         </Select>
