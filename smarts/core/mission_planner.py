@@ -23,9 +23,8 @@ from typing import Optional
 
 import numpy as np
 
-from smarts.sstudio.types import CutIn, MapZone, UTurn
 from .sumo_road_network import SumoRoadNetwork
-from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
+from .scenario import EndlessGoal, LapMission, Mission, Start
 from .waypoints import Waypoint, Waypoints
 from .route import ShortestRoute, EmptyRoute
 from .coordinates import Heading, Pose
@@ -147,7 +146,7 @@ class MissionPlanner:
         lane = self._road_network.lane_by_id(lane_id)
         return self._road_network.lane_center_at_point(lane, position)
 
-    def waypoint_paths_at(self, sim, pose: Pose, lookahead: float, vehicle=None):
+    def waypoint_paths_at(self, sim, pose: Pose, lookahead: float):
         """Call assumes you're on the correct route already. We do not presently
         "replan" in case the route has changed.
         """
@@ -211,7 +210,7 @@ class MissionPlanner:
 
         return edge_ids
 
-    def cut_in_waypoints(self, sim, pose: Pose, vehicle):
+    def cut_in_waypoints(self, sim, pose: Pose, vehicle, base_waypoint_generator):
         aggressiveness = self._agent_behavior.aggressiveness
 
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
@@ -240,19 +239,26 @@ class MissionPlanner:
         cut_in_offset = np.clip(20 - aggressiveness, 10, 20) + np.clip(
             target_vehicle.speed * 0.1, 0, 10
         )
+        chase_offset = cut_in_offset + target_offset
+        nei_wps = base_waypoint_generator()
+
+        chase_position = self._road_network.world_coord_from_offset(
+            target_lane, chase_offset
+        )
+        dot = (chase_position - position).dot(chase_position - target_position)
         if (
-            abs(offset - (cut_in_offset + target_offset)) > 1
+            abs(dot) > 1
             and lane.getID() != target_lane.getID()
             and self._task_is_triggered is False
-            or self._task_is_triggered and (complete_on_edge_id is not None and edge_id != complete_on_edge_id)
-        ):
-            nei_wps = self._waypoints.waypoint_paths_on_lane_at(
-                position, lane.getID(), 60
+            or (
+                self._task_is_triggered
+                and (complete_on_edge_id is not None and edge_id != complete_on_edge_id)
             )
+        ):
             speed_limit = np.clip(
                 np.clip(
                     (target_vehicle.speed * 1.1)
-                    - 2 * (offset - (cut_in_offset + target_offset)),
+                    - 2 * dot,
                     0.5 * target_vehicle.speed,
                     2 * target_vehicle.speed,
                 ),
