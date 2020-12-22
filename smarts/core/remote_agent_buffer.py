@@ -82,7 +82,7 @@ class RemoteAgentBuffer:
 
         # If present, teardown the local zoo master after we purge the remote agents.
         if self._local_zoo_master is not None:
-            self._zoo_master_conns[0][0].close() # Close the channel to the gRPC server
+            self._zoo_master_conns[0][0].close()  # Close the channel to the gRPC server
             self._local_zoo_master.terminate()
             self._local_zoo_master.join()
 
@@ -123,14 +123,16 @@ class RemoteAgentBuffer:
             if response.status.code == 0:
                 worker_port = response.port
                 break
-            print(f"Failed {ii+1}/{retries} times in attempt to spawn a remote worker process.")
+            print(
+                f"Failed {ii+1}/{retries} times in attempt to spawn a remote worker process."
+            )
         if worker_port == None:
             raise RemoteAgentException(
                 "Remote worker process could not be instantiated by master process."
             )
 
         # Instantiate and return a local RemoteAgent counterpart
-        return RemoteAgent(('localhost', worker_port))
+        return RemoteAgent(("localhost", worker_port))
 
     def _remote_agent_future(self):
         return self._replenish_threadpool.submit(

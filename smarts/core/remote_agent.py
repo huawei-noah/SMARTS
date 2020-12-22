@@ -37,7 +37,7 @@ class RemoteAgent:
     def __init__(self, address):
         self._log = logging.getLogger(self.__class__.__name__)
 
-        self._tp_exec = futures.ThreadPoolExecutor()
+        # self._tp_exec = futures.ThreadPoolExecutor()
         self.last_act_future = None
 
         self.worker_ip, self.worker_port = address
@@ -51,23 +51,26 @@ class RemoteAgent:
             ) from e
         self.stub = agent_pb2_grpc.AgentStub(self.channel)
 
-    def _act(self, obs, timeout):
+    def _act(self, obs):
         try:
-            response = self.stub.Act(
-                agent_pb2.Observation(payload=cloudpickle.dumps(obs)), timeout=timeout)
+            response_future = self.stub.Act.future(
+                agent_pb2.Observation(payload=cloudpickle.dumps(obs))
+            )
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
                 print("***** Remote worker process exceeded response deadline.")
                 return None
-            elif  e.code() == grpc.StatusCode.UNAVAILABLE:    
+            elif e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("+++++ Remote worker process is not avaliable.")
                 # Act is called with a future. Then terminate is called. If act is not done by the time terminate
-                # executes, act returns a server unavailable error. This is a race condition which happens at the 
-                # end of episodes. Solution is to explicitly kill the any active gRPC calls before terminating 
+                # executes, act returns a server unavailable error. This is a race condition which happens at the
+                # end of episodes. Solution is to explicitly kill the any active gRPC calls before terminating
                 # the server.
                 return None
             else:
-                print("EXCEPTION IN remote_agent.py::_act ===================================")
+                print(
+                    "EXCEPTION IN remote_agent.py::_act ==================================="
+                )
                 raise RemoteAgentException(
                     f"Error in retrieving agent action from remote worker process."
                 ) from e
@@ -79,13 +82,14 @@ class RemoteAgent:
                 # print("e.code().value = ", e.code().value)
                 # print(f"---> remote_agent.py::_act = ({self.worker_ip},{self.worker_port})")
                 # print("EXCEPTION IN remote_agent.py::_act ===================================")
-                # return None
-        return cloudpickle.loads(response.action)
+        # return cloudpickle.loads(response.action)
+        return response_future
 
-    def act(self, obs, timeout=None):
+    def act(self, obs):
         # Run task asynchronously and return a Future.
         # Keep track of last action future returned.
-        self.last_act_future = self._tp_exec.submit(self._act, obs, timeout)
+        # self.last_act_future = self._tp_exec.submit(self._act, obs, timeout)
+        self.last_act_future = self._act(obs)
         return self.last_act_future
 
     def start(self, agent_spec: AgentSpec):
@@ -100,7 +104,9 @@ class RemoteAgent:
             # print(f"Cancelling = {self.last_act_future.cancel()}")
             # print(f"!!!!! remote_agent.py::terminate, last_act_future Done = {self.last_act_future.done()} = ({self.worker_ip},{self.worker_port})")
             # if self.last_act_future.running():
-            print(f"!!!!! remote_agent.py::terminate, last_act_future Running = {self.last_act_future.running()} = ({self.worker_ip},{self.worker_port})")
+            print(
+                f"!!!!! remote_agent.py::terminate, last_act_future Running = {self.last_act_future.running()} = ({self.worker_ip},{self.worker_port})"
+            )
 
         # Stop the remote worker process
         try:
@@ -113,8 +119,10 @@ class RemoteAgent:
                 # error is thrown. This error can be ignored.
                 pass
             else:
-                raise RemoteAgentException("Error in terminating remote worker process.") from e
+                raise RemoteAgentException(
+                    "Error in terminating remote worker process."
+                ) from e
         # Close the channel
-        
+
         # Shutdown thread pool executor
-        self._tp_exec.shutdown()
+        # self._tp_exec.shutdown()

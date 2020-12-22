@@ -32,7 +32,8 @@ from smarts.zoo import worker as zoo_worker
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"agent_servicer.py - PID({os.getpid()})")
- 
+
+
 class AgentServicer(agent_pb2_grpc.AgentServicer):
     """Provides methods that implement functionality of Agent Servicer."""
 
@@ -78,18 +79,15 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
 
     def Act(self, request, context):
 
-        def on_rpc_done():
-            # print(f"@@@@@ agent_servicer.py, Act, on_rpc_done - PID({os.getpid()})")
-            pass
+        # def on_rpc_done():
+        #     # print(f"@@@@@ agent_servicer.py, Act, on_rpc_done - PID({os.getpid()})")
+        #     pass
 
-        context.add_callback(on_rpc_done)
+        # context.add_callback(on_rpc_done)
 
         if self._agent == None or self._agent_spec == None:
             return agent_pb2.Action(
-                status=agent_pb2.Status(
-                    code=1, 
-                    msg="Remote agent not built yet."
-                )
+                status=agent_pb2.Status(code=1, msg="Remote agent not built yet.")
             )
 
         adapted_obs = self._agent_spec.observation_adapter(
@@ -103,9 +101,7 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         )
 
     def Stop(self, request, context):
-        self.destroy()
         print(f"PID({os.getpid()}): Agent servicer stopped by client.")
-        context.cancel()
         self._stop_event.set()
         return agent_pb2.Output()
 
@@ -113,6 +109,5 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         print("Shutting down agent worker processes.")
         for proc in self._workers:
             if proc.is_alive():
-                proc.kill()
-                # proc.terminate()
+                proc.terminate()
                 proc.join()
