@@ -22,8 +22,10 @@ import enum
 
 import numpy as np
 
-from typing import Sequence, Optional
+from typing import Sequence, Optional, SupportsFloat, Type, Union
 from dataclasses import dataclass
+
+from typing_extensions import SupportsIndex
 
 from smarts.core.utils.math import (
     fast_quaternion_from_angle,
@@ -46,13 +48,26 @@ class BoundingBox:
 class Heading(float):
     """In this space we use radians, 0 is facing north, and turn counter-clockwise."""
 
+    def __init__(self, value=...):
+        float.__init__(value)
+
+    def __new__(self, x: Union[SupportsFloat, SupportsIndex] = ...) -> "Heading":
+        """A override to constrain heading to -pi to pi"""
+        value = x
+        if isinstance(value, (int, float)):
+            value = value % (2 * math.pi)
+            if value > math.pi:
+                value -= 2 * math.pi
+        if x in {..., None}:
+            value = 0
+        return float.__new__(self, value)
+
     @classmethod
     def from_bullet(cls, bullet_heading):
         """Bullet's space is in radians, 0 faces north, and we turn
         counter-clockwise.
         """
-        heading = bullet_heading % (2 * math.pi)
-        h = Heading(heading)
+        h = Heading(bullet_heading)
         h.source = "bullet"
         return h
 
@@ -61,7 +76,7 @@ class Heading(float):
         """Panda3D's space is in degrees, 0 faces north,
         and we turn counter-clockwise.
         """
-        h = Heading(math.radians(p3d_heading) % (2 * math.pi))
+        h = Heading(math.radians(p3d_heading))
         h.source = "p3d"
         return h
 
@@ -93,11 +108,7 @@ class Heading(float):
         """
         assert isinstance(other, Heading)
 
-        rel_heading = self - other
-        if rel_heading > math.pi:
-            rel_heading -= 2 * math.pi
-        if rel_heading < -math.pi:
-            rel_heading += 2 * math.pi
+        rel_heading = Heading(self - other)
 
         assert -math.pi <= rel_heading <= math.pi, f"{rel_heading}"
 
