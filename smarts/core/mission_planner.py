@@ -205,44 +205,48 @@ class MissionPlanner:
         return edge_ids
 
     def cut_in_waypoints(self, sim, pose: Pose, vehicle):
-        radius = self._mission.task.trigger_radius
+        aggressiveness = self._agent_behavior.aggressiveness
+
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
-            vehicle=vehicle, radius=radius
+            vehicle=vehicle, radius=100
         )
 
         position = pose.position[:2]
         lane = self._road_network.nearest_lane(position)
 
-        if neighborhood_vehicles:
-            nei_vehicle = neighborhood_vehicles[0]
+        if not neighborhood_vehicles or sim.elapsed_sim_time < 1:
+            return []
 
-            target_position = nei_vehicle.pose.position[:2]
-            target_lane = self._road_network.nearest_lane(target_position)
+        target_vehicle = neighborhood_vehicles[0]
+        target_position = target_vehicle.pose.position[:2]
+        target_lane = self._road_network.nearest_lane(target_position)
 
-            offset = self._road_network.offset_into_lane(lane, position)
-            target_offset = self._road_network.offset_into_lane(
-                target_lane, target_position
-            )
+        offset = self._road_network.offset_into_lane(lane, position)
+        target_offset = self._road_network.offset_into_lane(
+            target_lane, target_position
+        )
 
-            if offset < target_offset + 5 and not self._task_is_triggered:
-                return []
+        cut_in_offset = np.clip(20 - aggressiveness, 10, 20)
+        if (
+            abs(offset - (cut_in_offset + target_offset)) > 1
+            and lane.getID() != target_lane.getID()
+            and self._task_is_triggered is False
+        ):
             nei_wps = self._waypoints.waypoint_paths_on_lane_at(
-                target_position, target_lane.getID(), 60
+                position, lane.getID(), 60
             )
-            if abs(position[1] - target_position[1]) < 0.5:
-                nei_wps = self._waypoints.waypoint_paths_on_lane_at(
-                    position, lane.getID(), 60
-                )
-
+            speed_limit = np.clip(
+                (target_vehicle.speed + 5)
+                - 5.2 * (offset - (cut_in_offset + target_offset)),
+                0.8 * target_vehicle.speed,
+                1.2 * target_vehicle.speed,
+            )
         else:
-            if self._task_is_triggered:
-                nei_wps = self._waypoints.waypoint_paths_on_lane_at(
-                    position, lane.getID(), 60
-                )
-            else:
-                return []
-
-        self._task_is_triggered = True
+            self._task_is_triggered = True
+            nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                position, target_lane.getID(), 60
+            )
+            speed_limit = target_vehicle.speed * 1.2
 
         p0 = position
         p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
@@ -261,7 +265,6 @@ class MissionPlanner:
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
-            speed_limit = lane.getSpeed()
 
             wp = Waypoint(
                 pos=pos,
