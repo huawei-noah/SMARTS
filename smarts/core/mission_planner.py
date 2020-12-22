@@ -23,6 +23,7 @@ from typing import Optional
 
 import numpy as np
 
+from .agent_interface import AgentBehavior
 from .sumo_road_network import SumoRoadNetwork
 from .scenario import EndlessGoal, LapMission, Mission, Start
 from .waypoints import Waypoint, Waypoints
@@ -44,7 +45,7 @@ class MissionPlanner:
         self, waypoints: Waypoints, road_network: SumoRoadNetwork, agent_behavior=None
     ):
         self._waypoints = waypoints
-        self._agent_behavior = agent_behavior
+        self._agent_behavior = agent_behavior or AgentBehavior(aggressiveness=5)
         self._mission = None
         self._route = None
         self._road_network = road_network
@@ -211,7 +212,7 @@ class MissionPlanner:
         return edge_ids
 
     def cut_in_waypoints(self, sim, pose: Pose, vehicle, base_waypoint_generator):
-        aggressiveness = self._agent_behavior.aggressiveness
+        aggressiveness = self._agent_behavior.aggressiveness or 5
 
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
             vehicle=vehicle, radius=100
@@ -258,7 +259,7 @@ class MissionPlanner:
             speed_limit = np.clip(
                 np.clip(
                     (target_vehicle.speed * 1.1)
-                    - 2 * dot,
+                    + 2 * dot,
                     0.5 * target_vehicle.speed,
                     2 * target_vehicle.speed,
                 ),

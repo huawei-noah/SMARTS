@@ -989,10 +989,8 @@ class WaypointsSensor(Sensor):
                 )
 
         if waypoints_with_task:
-            print("wp/wt")
             return waypoints_with_task
         else:
-            print("wpwt")
             return lazy_calculate_waypoints()
 
     def teardown(self):
