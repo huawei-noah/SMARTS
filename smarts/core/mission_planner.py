@@ -292,7 +292,7 @@ class MissionPlanner:
         if not neighborhood_vehicles:
             return []
 
-        aggressiveness = self._agent_behavior.aggressiveness
+        aggressiveness = self._agent_behavior.aggressiveness / 10
         if sim.elapsed_sim_time < 0.5:
             return []
         if sim.elapsed_sim_time == 0.5:
@@ -360,10 +360,19 @@ class MissionPlanner:
 
         heading_diff = np.dot(vehicle_heading_vec, initial_heading_vec)
 
+        lane = self._road_network.nearest_lane(vehicle.pose.position[:2])
+        speed_limit = lane.getSpeed() / 2
+
         if heading_diff < -0.9 and pose.position[0] - self._uturn_initial_position < -2:
             # Once it faces the opposite direction and pass the initial
             # uturn point for 2 meters, stop generating u-turn waypoints
-            return []
+            if (
+                pose.position[0] - neighborhood_vehicles[0].pose.position[0] > 12
+                or neighborhood_vehicles[0].pose.position[0] > pose.position[0]
+            ):
+                return []
+            else:
+                speed_limit = neighborhood_vehicles[0].speed
 
         self._task_is_triggered = True
 
@@ -417,7 +426,6 @@ class MissionPlanner:
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
-            speed_limit = lane.getSpeed() / 2
 
             wp = Waypoint(
                 pos=pos,
