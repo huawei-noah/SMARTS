@@ -12,6 +12,7 @@ from smarts.core.sensors import WaypointsSensor
 from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
+from smarts.core.agent_interface import AgentBehavior, AgentInterface
 
 AGENT_ID = "Agent-007"
 
@@ -152,7 +153,9 @@ def test_waypoints_sensor_with_cut_in_task(cut_in_scenarios):
         position=np.array([35, -65, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
     )
 
-    mission_planner = MissionPlanner(scenario.waypoints, scenario.road_network)
+    mission_planner = MissionPlanner(
+        scenario.waypoints, scenario.road_network, AgentBehavior(aggressiveness=3)
+    )
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
 
