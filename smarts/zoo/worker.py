@@ -41,6 +41,7 @@ import importlib
 import logging
 import os
 import signal
+import sys
 import threading
 from concurrent import futures
 
@@ -77,16 +78,18 @@ def serve(port):
     ip = "[::]"
     stop_event = threading.Event()
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=3))
-    agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer.AgentServicer(stop_event), server)
+    agent_servicer_object = agent_servicer.AgentServicer(stop_event)
+    agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer_object, server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
     print(f"Worker - {ip}, {port}, PID({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
         stop_event.set()
-        print(
-            f"Worker - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal."
-        )
+        agent_servicer_object.destroy()
+        server.stop(0)
+        print(f"Worker - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal.")
+        sys.exit(0)
 
     # Catch keyboard interrupt and terminate signal
     signal.signal(signal.SIGINT, stop_server)
@@ -94,9 +97,10 @@ def serve(port):
 
     # Wait to receive server termination signal
     stop_event.wait()
+    agent_servicer_object.destroy()
     server.stop(0)
     print(f"Worker - {ip}, {port}, PID({os.getpid()}): Server exited")
-
+    sys.exit(0)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Run an agent in an independent process.")

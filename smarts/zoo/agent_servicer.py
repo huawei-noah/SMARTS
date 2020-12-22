@@ -43,26 +43,26 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         self._stop_event = stop_event
 
     def __del__(self):
-        print("Cleaning up agent workers.")
-        for worker in self._workers:
-            if worker.is_alive():
-                worker.terminate()
-                worker.join()
+        self.destroy()
 
     def SpawnWorker(self, request, context):
-        port = find_free_port()
-        worker = Process(target=zoo_worker.serve, args=(port,))
-        worker.start()
-        if worker.is_alive():
-            self._workers.append(worker)
-            return agent_pb2.Connection(
-                status=agent_pb2.Status(code=0, msg="Success"), port=port
-            )
+        try:
+            port = find_free_port()
+            proc = Process(target=zoo_worker.serve, args=(port,))
+            proc.start()
+            if proc.is_alive():
+                self._workers.append(proc)
+                return agent_pb2.Connection(
+                    status=agent_pb2.Status(code=0, msg="Success"), port=port
+                )
 
-        return agent_pb2.Connection(status=agent_pb2.Status(code=1, msg="Error"))
+            return agent_pb2.Connection(status=agent_pb2.Status(code=1, msg="Error"))
+        except Exception as e:
+            print("!!!!! SpawnWorker Error !!!!")
+            print(e)
+            raise e
 
     def Build(self, request, context):
-        # try:
         time_start = time.time()
         self._agent_spec = cloudpickle.loads(request.payload)
         pickle_load_time = time.time()
@@ -75,16 +75,21 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
             f"  build ={agent_build_time - pickle_load_time:.2}\n"
         )
         return agent_pb2.Status(code=0, msg="Success")
-        # except Exception as e:
-        #     print("&&&&& CAUGHT THE ERROR !!!!!!!!!!!!!")
-        #     print(f"PID({os.getpid()}): agent_servicer. Build() ")
-        #     raise e
 
     def Act(self, request, context):
-        # try:
+
+        def on_rpc_done():
+            # print(f"@@@@@ agent_servicer.py, Act, on_rpc_done - PID({os.getpid()})")
+            pass
+
+        context.add_callback(on_rpc_done)
+
         if self._agent == None or self._agent_spec == None:
             return agent_pb2.Action(
-                status=agent_pb2.Status(code=1, msg="Remote agent not built yet.")
+                status=agent_pb2.Status(
+                    code=1, 
+                    msg="Remote agent not built yet."
+                )
             )
 
         adapted_obs = self._agent_spec.observation_adapter(
@@ -96,17 +101,18 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
             status=agent_pb2.Status(code=0, msg="Success"),
             action=cloudpickle.dumps(adapted_action),
         )
-        # except Exception as e:
-        #     print("&&&&& CAUGHT THE ERROR !!!!!!!!!!!!!")
-        #     print(f"PID({os.getpid()}): agent_servicer. Act() ")
-        #     raise e
 
     def Stop(self, request, context):
-        # try:
+        self.destroy()
+        print(f"PID({os.getpid()}): Agent servicer stopped by client.")
+        context.cancel()
         self._stop_event.set()
-        print(f"PID({os.getpid()}): Stopped by client.")
         return agent_pb2.Output()
-        # except Exception as e:
-        #     print("&&&&& CAUGHT THE ERROR !!!!!!!!!!!!!")
-        #     print(f"PID({os.getpid()}): agent_servicer. Stop() ")
-        #     raise e
+
+    def destroy(self):
+        print("Shutting down agent worker processes.")
+        for proc in self._workers:
+            if proc.is_alive():
+                proc.kill()
+                # proc.terminate()
+                proc.join()

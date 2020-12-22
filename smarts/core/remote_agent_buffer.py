@@ -74,7 +74,7 @@ class RemoteAgentBuffer:
         for remote_agent_future in self._agent_buffer:
             try:
                 remote_agent = remote_agent_future.result()
-                remote_agent.terminate() # may not terminate
+                remote_agent.terminate()
             except Exception as e:
                 self._log.error(
                     f"Exception while tearing down buffered remote agent: {repr(e)}"
@@ -91,8 +91,8 @@ class RemoteAgentBuffer:
             port = find_free_port()
             local_zoo_master = Process(target=zoo_master.serve, args=(port,))
             local_zoo_master.start()
-        if local_zoo_master.is_alive():
-            return local_zoo_master, ("localhost", port)
+            if local_zoo_master.is_alive():
+                return local_zoo_master, ("localhost", port)
         raise RemoteAgentException("Failed to spawn a local zoo master process.")
 
     def _get_zoo_master_conns(self, zoo_master_addrs):
@@ -116,7 +116,7 @@ class RemoteAgentBuffer:
         zoo_master_conn = random.choice(zoo_master_conns)
 
         # Spawn remote worker and get its port
-        retries = 10
+        retries = 5
         worker_port = None
         for ii in range(retries):
             response = zoo_master_conn[1].SpawnWorker(agent_pb2.Machine())

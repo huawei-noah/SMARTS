@@ -52,18 +52,9 @@ class RemoteAgent:
         self.stub = agent_pb2_grpc.AgentStub(self.channel)
 
     def _act(self, obs, timeout):
-
-        # print("===================================")
-        # print("_act observation type")
-        # # observ2 = cloudpickle.dumps(obs)
-        # print(obs)
-        # # import sys, os
-        # # sys.exit(0)
-        # print("===================================")
-
         try:
             response = self.stub.Act(
-                agent_pb2.Observation(payload=cloudpickle.dumps(obs)), timeout=0.005)
+                agent_pb2.Observation(payload=cloudpickle.dumps(obs)), timeout=timeout)
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
                 print("***** Remote worker process exceeded response deadline.")
@@ -94,8 +85,7 @@ class RemoteAgent:
     def act(self, obs, timeout=None):
         # Run task asynchronously and return a Future.
         # Keep track of last action future returned.
-        print(f"%%%%% Calling the next act = ({self.worker_ip},{self.worker_port})")
-        self.last_act_future = self._tp_exec.submit(self._act, obs, 0.005)
+        self.last_act_future = self._tp_exec.submit(self._act, obs, timeout)
         return self.last_act_future
 
     def start(self, agent_spec: AgentSpec):
@@ -105,20 +95,16 @@ class RemoteAgent:
 
     def terminate(self):
         # If the last action future returned is incomplete, cancel it first.
-        if (self.last_act_future != None):
-            if self.last_act_future.done():
-                print(f"---> remote_agent.py::terminate, last_act_future done = ({self.worker_ip},{self.worker_port})")
-            if self.last_act_future.cancel():
-                print(f"---> remote_agent.py::terminate, last_act_future cancelled = ({self.worker_ip},{self.worker_port})")
-        if (self.last_act_future == None):
-            print(f"---> remote_agent.py::terminate, last_act_future none = ({self.worker_ip},{self.worker_port})")
-
-        print(f"---> remote_agent.py::terminate, CATCH ALL = {self.last_act_future.done()}, ({self.worker_ip},{self.worker_port})")
+        if (self.last_act_future != None) and (not self.last_act_future.done()):
+            self.last_act_future.cancel()
+            # print(f"Cancelling = {self.last_act_future.cancel()}")
+            # print(f"!!!!! remote_agent.py::terminate, last_act_future Done = {self.last_act_future.done()} = ({self.worker_ip},{self.worker_port})")
+            # if self.last_act_future.running():
+            print(f"!!!!! remote_agent.py::terminate, last_act_future Running = {self.last_act_future.running()} = ({self.worker_ip},{self.worker_port})")
 
         # Stop the remote worker process
         try:
-
-            print(f"---> remote_agent.py::terminate, try stub.Stop = ({self.worker_ip},{self.worker_port})")
+            # print(f"---> remote_agent.py::terminate, try stub.Stop = ({self.worker_ip},{self.worker_port})")
             self.stub.Stop(agent_pb2.Input())
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
@@ -129,6 +115,6 @@ class RemoteAgent:
             else:
                 raise RemoteAgentException("Error in terminating remote worker process.") from e
         # Close the channel
-        self.channel.close
+        
         # Shutdown thread pool executor
         self._tp_exec.shutdown()
