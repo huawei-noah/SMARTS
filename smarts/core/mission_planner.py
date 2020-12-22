@@ -51,6 +51,7 @@ class MissionPlanner:
         self._road_network = road_network
         self._did_plan = False
         self._task_is_triggered = False
+        # TODO: These variables should be put in an appropriate place.
         self._uturn_initial_heading = 0
         self._uturn_initial_distant = 0
         self._uturn_initial_velocity = 0
@@ -293,9 +294,9 @@ class MissionPlanner:
             return []
 
         aggressiveness = self._agent_behavior.aggressiveness / 10
-        if sim.elapsed_sim_time < 0.5:
+        if sim.elapsed_sim_time < 5 * sim.timestep_sec:
             return []
-        if sim.elapsed_sim_time == 0.5:
+        if sim.elapsed_sim_time == 5 * sim.timestep_sec:
             self._uturn_initial_distant = (
                 -vehicle.position[0] + neighborhood_vehicles[0].pose.position[0]
             )
