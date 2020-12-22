@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from sys import path
-from ultra.baselines.sac.network import SACNetwork
+from ultra.baselines.sac.sac.network import SACNetwork
 import torch.nn.functional as F
 import pathlib, os, yaml
 from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
@@ -20,7 +20,7 @@ class SACPolicy(Agent):
         policy_params=None,
         checkpoint_dir=None,
     ):
-        print("LOADING THE PARAMS", policy_params, checkpoint_dir)
+        # print("LOADING THE PARAMS", policy_params, checkpoint_dir)
         self.policy_params = policy_params
         self.gamma = float(policy_params["gamma"])
         self.critic_lr = float(policy_params["critic_lr"])
@@ -89,7 +89,7 @@ class SACPolicy(Agent):
         self.current_iteration = 0
         self.steps = 0
         self.init_networks()
-
+        print('********************* SAC POLICY')
         if checkpoint_dir:
             self.load(checkpoint_dir)
 

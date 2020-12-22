@@ -17,24 +17,3 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import click
-
-from .envision import envision_cli
-from .studio import scenario_cli
-from .zoo import zoo_cli
-from .ultra import ultra_cli
-
-
-@click.group()
-def scl():
-    pass
-
-
-scl.add_command(envision_cli)
-scl.add_command(scenario_cli)
-scl.add_command(zoo_cli)
-scl.add_command(ultra_cli)
-
-
-if __name__ == "__main__":
-    scl()

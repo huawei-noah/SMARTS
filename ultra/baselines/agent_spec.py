@@ -11,7 +11,7 @@ from smarts.core.agent_interface import (
 
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
-from ultra.src.adapter import BaselineAdapter
+from ultra.baselines.adapter import BaselineAdapter
 
 
 class UltraAgentSpec(AgentSpec):
@@ -45,7 +45,7 @@ class UltraAgentSpec(AgentSpec):
                         policy_params=spec.agent_params["policy_params"],
                         checkpoint_dir=checkpoint_dir,
                     ),
-                    policy_builder=spec.policy_builder,
+                    agent_builder=spec.policy_builder,
                     observation_adapter=spec.observation_adapter,
                     reward_adapter=spec.reward_adapter,
                 )
@@ -66,8 +66,9 @@ class UltraAgentSpec(AgentSpec):
                 agent_params=dict(
                     policy_params=policy_params, checkpoint_dir=checkpoint_dir
                 ),
-                policy_builder=policy_class,
+                agent_builder=policy_class,
                 observation_adapter=adapter.observation_adapter,
                 reward_adapter=adapter.reward_adapter,
             )
+        print('*******')
         return spec

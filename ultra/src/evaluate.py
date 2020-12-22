@@ -9,11 +9,9 @@ import numpy as np
 import gym, ray, torch, argparse
 import psutil
 from pydoc import locate
-from smarts.core.controllers import ActionSpaceType
-from ultra.env.agent_spec import UltraAgentSpec
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
-
+from smarts.ultra.registry import make
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
@@ -57,7 +55,6 @@ def evaluation_check(
 
 
 # Number of GPUs should be splited between remote functions.
-# @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def evaluate(
     experiment_dir,
@@ -73,11 +70,10 @@ def evaluate(
 ):
 
     torch.set_num_threads(1)
-    spec = UltraAgentSpec(
-        action_type=ActionSpaceType.Continuous,
-        policy_class=policy_class,
+    spec = make(
+        locator="ultra.baselines.sac:sac-v0",
         checkpoint_dir=checkpoint_dir,
-        experiment_dir=experiment_dir,
+        experiment_dir=experiment_dir
     )
 
     env = gym.make(
@@ -93,6 +89,7 @@ def evaluate(
     agent = spec.build_agent()
     summary_log = LogInfo()
     logs = []
+
     for episode in episodes(num_episodes):
         observations = env.reset()
         state = observations[agent_id]["state"]

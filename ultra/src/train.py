@@ -9,11 +9,9 @@ import time
 import psutil, pickle, dill
 import gym, ray, torch, argparse
 from pydoc import locate
-from ultra.env.agent_spec import UltraAgentSpec
-from smarts.core.controllers import ActionSpaceType
+from smarts.ultra.registry import make
 from ultra.utils.episode import episodes
 from ultra.src.evaluate import evaluation_check
-import ultra_sac
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -31,9 +29,9 @@ def train(
     # Initialize Agent and social_vehicle encoding method
     # -------------------------------------------------------
     AGENT_ID = "007"
-    spec = UltraAgentSpec(
-        action_type=ActionSpaceType.Continuous, policy_class=policy_class
-    )
+
+    spec = make(locator="ultra.baselines.sac:sac-v0")
+
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},

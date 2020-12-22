@@ -34,7 +34,7 @@ num_lookahead = 100
 
 class BaselineAdapter:
     def __init__(self):
-        print("****** Baseline adapter initialized!!!!")
+        pass
 
     def observation_adapter(self, env_observation):
         ego_state = env_observation.ego_vehicle_state
