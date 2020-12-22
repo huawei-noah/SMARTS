@@ -100,6 +100,7 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
     sim = mock.Mock()
     vehicle = mock.Mock()
     sim.elapsed_sim_time = 1
+    sim.timestep_sec = 0.1
     nei_vehicle = mock.Mock()
     nei_vehicle.pose = Pose(
         position=np.array([25, -68, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
