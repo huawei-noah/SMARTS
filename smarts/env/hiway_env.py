@@ -38,6 +38,8 @@ class HiWayEnv(gym.Env):
             a list of directories of the scenarios that will be run
         agent_specs:
             a list of agents that will run in the environment
+        sim_name:
+            a string that gives this simulation a name
         headless:
             true|false envision disabled
         visdom:
@@ -71,6 +73,7 @@ class HiWayEnv(gym.Env):
         self,
         scenarios: Sequence[str],
         agent_specs,
+        sim_name=None,
         shuffle_scenarios=True,
         headless=False,
         visdom=False,
@@ -103,7 +106,9 @@ class HiWayEnv(gym.Env):
         envision_client = None
         if not headless:
             envision_client = Envision(
-                endpoint=envision_endpoint, output_dir=envision_record_data_replay_path
+                endpoint=envision_endpoint,
+                sim_name=sim_name,
+                output_dir=envision_record_data_replay_path,
             )
 
         visdom_client = None

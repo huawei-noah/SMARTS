@@ -20,12 +20,13 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-def main(scenarios, headless, num_episodes, seed):
+def main(scenarios, sim_name, headless, num_episodes, seed):
     open_agent_spec = open_agent.entrypoint(debug=False, aggressiveness=3)
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs={AGENT_ID: open_agent_spec},
+        sim_name=sim_name,
         headless=headless,
         visdom=False,
         timestep_sec=0.1,
@@ -58,6 +59,7 @@ if __name__ == "__main__":
 
     main(
         scenarios=args.scenarios,
+        sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,
