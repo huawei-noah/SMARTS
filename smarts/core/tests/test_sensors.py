@@ -112,7 +112,9 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
         position=np.array([33, -65, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
     )
 
-    mission_planner = MissionPlanner(scenario.waypoints, scenario.road_network)
+    mission_planner = MissionPlanner(
+        scenario.waypoints, scenario.road_network, AgentBehavior(aggressiveness=3)
+    )
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
     mission_planner._task_is_triggered = True
