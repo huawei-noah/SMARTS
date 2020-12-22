@@ -205,16 +205,16 @@ class MissionPlanner:
         return edge_ids
 
     def cut_in_waypoints(self, sim, pose: Pose, vehicle):
-
         aggressiveness = self._agent_behavior.aggressiveness
+
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
-            vehicle=vehicle, radius=80
+            vehicle=vehicle, radius=100
         )
 
         position = pose.position[:2]
         lane = self._road_network.nearest_lane(position)
 
-        if not neighborhood_vehicles or sim.elapsed_sim_time < 3:
+        if not neighborhood_vehicles or sim.elapsed_sim_time < 1:
             return []
 
         target_vehicle = neighborhood_vehicles[0]
@@ -238,19 +238,15 @@ class MissionPlanner:
             speed_limit = np.clip(
                 (target_vehicle.speed + 5)
                 - 5.2 * (offset - (cut_in_offset + target_offset)),
-                np.clip(
-                    target_vehicle.speed - 5,
-                    0.6 * target_vehicle.speed,
-                    1.4 * target_vehicle.speed,
-                ),
-                30,
+                0.8 * target_vehicle.speed,
+                1.2 * target_vehicle.speed,
             )
         else:
             self._task_is_triggered = True
             nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                 position, target_lane.getID(), 60
             )
-            speed_limit = target_vehicle.speed * 1.15
+            speed_limit = target_vehicle.speed * 1.2
 
         p0 = position
         p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
