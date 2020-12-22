@@ -152,7 +152,8 @@ class AgentSpec:
             ("perform_self_test", None),
         ]
 
-        assert None not in kwargs, f"Error: replace contains invalid key: ({None})"
+        assert None not in kwargs, f"Error: kwargs input to replace() function contains invalid key `None`: {kwargs}"
+
 
         kwargs_copy = kwargs.copy()
         for deprecated, current in replacements:
