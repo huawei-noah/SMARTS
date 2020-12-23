@@ -48,6 +48,7 @@ class UltraAgentSpec(AgentSpec):
                     agent_builder=spec.policy_builder,
                     observation_adapter=spec.observation_adapter,
                     reward_adapter=spec.reward_adapter,
+                    info_adapter=spec.info_adapter
                 )
                 spec = new_spec
         else:
@@ -69,6 +70,6 @@ class UltraAgentSpec(AgentSpec):
                 agent_builder=policy_class,
                 observation_adapter=adapter.observation_adapter,
                 reward_adapter=adapter.reward_adapter,
+                info_adapter=adapter.info_adapter
             )
-        print('*******')
         return spec

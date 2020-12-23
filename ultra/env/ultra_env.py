@@ -51,7 +51,7 @@ class UltraEnv(HiWayEnv):
             )
 
     def get_task(self, task_id, task_level):
-        with open("ultra/src/config.yaml", "r") as task_file:
+        with open("ultra/config.yaml", "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
             task = scenarios[f"task{task_id}"][task_level]
         return task

@@ -147,8 +147,9 @@ class PPOPolicy(Agent):
         self.step_count += 1
         return to_3d_action(action)
 
-    def step(self, state, action, reward, next_state, done, max_steps_reached):
+    def step(self, state, action, reward, next_state, done, info):
         # dont treat timeout as done equal to True
+        max_steps_reached=info["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
         action = to_2d_action(action)

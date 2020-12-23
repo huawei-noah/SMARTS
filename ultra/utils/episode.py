@@ -21,7 +21,6 @@ class LogInfo:
             "max_speed_violation": 0,
             "ego_num_violations": 0,
             "social_num_violations": 0,
-            "ego_social_safety_reward": 0,
             "ego_linear_jerk": 0.0,
             "ego_angular_jerk": 0.0,
             "final_pos": [0, 0],
@@ -35,36 +34,33 @@ class LogInfo:
             "episode_length": 0,
         }
 
-    def add(self, observations, rewards):
-        self.data["speed"] += observations["ego"]["speed"]
+    def add(self, infos, rewards):
+        self.data["speed"] += infos["speed"]
         self.data["max_speed_violation"] += (
             1
-            if observations["ego"]["speed"]
-            > observations["ego"]["closest_wp"].speed_limit
+            if infos["speed"]
+            > infos["closest_wp"].speed_limit
             else 0
         )
-        self.data["ego_social_safety_reward"] += observations["ego"][
-            "ego_social_safety_reward"
-        ]
-        self.data["dist_center"] += observations["ego"]["dist_center"]
+        self.data["dist_center"] += infos["dist_center"]
         self.data["ego_num_violations"] += int(
-            observations["ego"]["ego_num_violations"] > 0
+            infos["ego_num_violations"] > 0
         )
         self.data["social_num_violations"] += int(
-            observations["ego"]["social_num_violations"] > 0
+            infos["social_num_violations"] > 0
         )
-        self.data["goal_dist"] = observations["ego"]["goal_dist"]
-        self.data["ego_linear_jerk"] += observations["ego"]["linear_jerk"]
-        self.data["ego_angular_jerk"] += observations["ego"]["angular_jerk"]
-        self.data["episode_reward"] += rewards["reward"]
-        self.data["final_pos"] = observations["ego"]["position"]
-        self.data["start_pos"] = observations["ego"]["start"].position
+        self.data["goal_dist"] = infos["goal_dist"]
+        self.data["ego_linear_jerk"] += infos["linear_jerk"]
+        self.data["ego_angular_jerk"] += infos["angular_jerk"]
+        self.data["episode_reward"] += rewards
+        self.data["final_pos"] = infos["position"]
+        self.data["start_pos"] = infos["start"].position
         self.data["dist_travelled"] = math.sqrt(
             (self.data["final_pos"][1] - self.data["start_pos"][1]) ** 2
             + (self.data["final_pos"][0] - self.data["start_pos"][0]) ** 2
         )
         # recording termination cases
-        events = observations["ego"]["events"]
+        events = infos["events"]
         self.data["collision"] = (
             False
             if len(events.collisions) == 0 or events.collisions[0].collidee_id == 0
@@ -83,7 +79,6 @@ class LogInfo:
         self.data["ego_angular_jerk"] /= steps
         self.data["ego_num_violations"] /= steps
         self.data["social_num_violations"] /= steps
-        self.data["ego_social_safety_reward"] /= steps
         self.data["max_speed_violation"] /= steps
 
 
@@ -179,11 +174,11 @@ class Episode:
             os.makedirs(self.ep_log_dir)
 
     def record_step(
-        self, agent_id, observations, total_step=0, rewards=None, loss_output=None
+        self, agent_id, infos, rewards, total_step=0, loss_output=None
     ):
         if loss_output:
             self.log_loss(step=total_step, loss_output=loss_output)
-        self.info[self.active_tag].add(observations[agent_id], rewards[agent_id])
+        self.info[self.active_tag].add(infos[agent_id], rewards[agent_id])
         self.steps += 1
         self.agents_itr[agent_id] += 1
 

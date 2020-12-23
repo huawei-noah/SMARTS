@@ -77,19 +77,8 @@ class BaselineAdapter:
             ego_position=ego_state.position,
             waypoint_paths=env_observation.waypoint_paths,
         )
-        ego = dict(
-            position=ego_state.position,
-            speed=ego_state.speed,
-            steering=ego_state.steering,
-            heading=ego_state.heading,
-            dist_center=abs(ego_dist_center),
-            start=start,
-            goal=goal,
-            path=path,
-            closest_wp=closest_wp,
-            events=env_observation.events,
-        )
-        return dict(state=state, ego=ego, env_observation=env_observation)
+
+        return state #ego=ego, env_observation=env_observation)
 
     def reward_adapter(self, observation, reward):
         env_reward = reward
@@ -179,71 +168,60 @@ class BaselineAdapter:
             # ego_safety_reward,
             # social_safety_reward,
         ]
-        return dict(
-            reward=sum(rewards),
-            log=dict(
-                ego_social_safety_reward=ego_safety_reward + social_safety_reward,
-                ego_num_violations=ego_num_violations,
-                social_num_violations=social_num_violations,
-                goal_dist=goal_dist,
-                linear_jerk=0,
-                angular_jerk=0,
-            ),
+        return sum(rewards)
+
+    def info_adapter(self, observation, reward, info):
+        ego_state = observation.ego_vehicle_state
+        start = observation.ego_vehicle_state.mission.start
+        goal = observation.ego_vehicle_state.mission.goal
+        path = get_path_to_goal(
+            goal=goal, paths=observation.waypoint_paths, start=start
+        )
+        closest_wp, _ = get_closest_waypoint(
+            num_lookahead=num_lookahead,
+            goal_path=path,
+            ego_position=ego_state.position,
+            ego_heading=ego_state.heading,
+        )
+        signed_dist_from_center = closest_wp.signed_lateral_error(ego_state.position)
+        lane_width = closest_wp.lane_width * 0.5
+        ego_dist_center = signed_dist_from_center / lane_width
+
+        linear_jerk = np.linalg.norm(ego_state.linear_jerk)
+        angular_jerk = np.linalg.norm(ego_state.angular_jerk)
+
+        # Distance to goal
+        ego_2d_position = ego_state.position[0:2]
+        goal_dist = distance.euclidean(ego_2d_position, goal.position)
+
+        angle_error = closest_wp.relative_heading(
+            ego_state.heading
+        )  # relative heading radians [-pi, pi]
+
+        # number of violations
+        (ego_num_violations, social_num_violations,) = ego_social_safety(
+            observation,
+            d_min_ego=1.0,
+            t_c_ego=1.0,
+            d_min_social=1.0,
+            t_c_social=1.0,
+            ignore_vehicle_behind=True,
         )
 
-
-# TODO: move to policy
-# ogm = self.get_ogm_from_obs(obs=env_observation)
-# rgb = self.get_rgb_from_obs(obs=env_observation)
-# if self.init:
-#     self.ogm_stack = deque([ogm] * self.history, maxlen=self.history)
-#     self.rgb_stack = deque([rgb] * self.history, maxlen=self.history)
-# else:
-#     self.ogm_stack.append(ogm)
-#     self.rgb_stack.append(rgb)
-# agent_ogm_state = np.concatenate(self.ogm_stack, axis=2).transpose([2, 0, 1])
-# agent_rgb_state = np.concatenate(self.rgb_stack, axis=2).transpose([2, 0, 1])
-
-
-# def get_ogm_from_obs(self, obs):
-#     return resize_im(obs.occupancy_grid_map.data, self.ogm_size)
-
-# def get_rgb_from_obs(self, obs, gray_scale=False):
-#     if gray_scale:
-#         gray_img = cv2.cvtColor(obs.top_down_rgb, cv2.COLOR_RGB2GRAY)
-#         # plt.imsave('here.jpg', gray_img, cmap='gray')
-#         gray_img = gray_img[:, :, np.newaxis]
-#         return resize_im(gray_img, self.rgb_size)
-#     return resize_im(obs.top_down_rgb, self.rgb_size)
-# _INTERSECTION_OBSERVATION_SPACE = gym.spaces.Dict(
-#     {
-#         "ogm": gym.spaces.Box(low=0.0, high=1.0, shape=(1,)),
-#         "rgb": gym.spaces.Box(low=0.0, high=256.0, shape=(1,)),
-#         "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-#         "angle_error": gym.spaces.Box(low=-180, high=180, shape=(1,)),
-#         "speed": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-#         "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-#         "relative_goal_position": gym.spaces.Box(
-#             low=np.array([-1e10, -1e10]), high=np.array([1e10, 1e10]), dtype=np.float32
-#         ),
-#         "action": gym.spaces.Box(
-#             low=np.array([0.0, -1.0]), high=np.array([1.0, 1.0]), dtype=np.float32
-#         ),
-#         "waypoints_lookahead": gym.spaces.Box(
-#             low=np.array([-1e10]), high=np.array([1e10]), dtype=np.float32
-#         ),
-#         "social_vehicles": gym.spaces.Box(
-#             low=np.array([-1e10, -1e10, -1e10, -1e10]),
-#             high=np.array([1e10, 1e10, 1e10, 1e10]),
-#             dtype=np.float32,
-#         ),
-#     }
-# )
-
-# goal_path = get_path_to_goal(goal=goal, paths=paths, start=start)
-# goal_closest_wp, waypoints_lookahead = get_closest_waypoint(
-#     env_observation=env_observation,
-#     path=goal_path,
-#     goal_pos=goal.position,
-#     num_lookahead=self.num_lookahead,
-# )
+        info = dict(
+            position=ego_state.position,
+            speed=ego_state.speed,
+            steering=ego_state.steering,
+            heading=ego_state.heading,
+            dist_center=abs(ego_dist_center),
+            start=start,
+            goal=goal,
+            closest_wp=closest_wp,
+            events=observation.events,
+            ego_num_violations=ego_num_violations,
+            social_num_violations=social_num_violations,
+            goal_dist=goal_dist,
+            linear_jerk=np.linalg.norm(ego_state.linear_jerk),
+            angular_jerk=np.linalg.norm(ego_state.angular_jerk),
+        )
+        return info

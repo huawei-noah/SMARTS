@@ -1,9 +1,3 @@
-policies:
-  ULTRA_SAC: "ultra.baselines.sac.policy.SACPolicy"
-  ULTRA_PPO: "ultra.baselines.ppo.policy.PPOPolicy"
-  ULTRA_TD3: "ultra.baselines.ddpg.policy.TD3Policy"
-  ULTRA_DQN: "ultra.baselines.dqn.policy.DQNPolicy"
-  ULTRA_BDQN: "ultra.baselines.dqn.policy.BehavioralDQNPolicy"
 tasks:
   task00: # unittest
     easy:

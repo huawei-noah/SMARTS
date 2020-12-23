@@ -11,7 +11,7 @@ import gym, ray, torch, argparse
 from pydoc import locate
 from smarts.ultra.registry import make
 from ultra.utils.episode import episodes
-from ultra.src.evaluate import evaluation_check
+from ultra.evaluate import evaluation_check
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -19,7 +19,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def train(
-    task, policy_class, num_episodes, eval_info, timestep_sec, headless, etag, seed
+    task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed
 ):
     torch.set_num_threads(1)
     total_step = 0
@@ -30,8 +30,7 @@ def train(
     # -------------------------------------------------------
     AGENT_ID = "007"
 
-    spec = make(locator="ultra.baselines.sac:sac-v0")
-
+    spec = make(locator=policy_class)
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
@@ -43,9 +42,9 @@ def train(
 
     agent = spec.build_agent()
 
-    for episode in episodes(num_episodes, etag=etag):
+    for episode in episodes(num_episodes, etag=policy_class):
         observations = env.reset()
-        state = observations[AGENT_ID]["state"]
+        state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
         episode.reset()
         experiment_dir = episode.experiment_dir
@@ -62,30 +61,27 @@ def train(
                 finished = True
                 break
             evaluation_check(
-                agent=agent, agent_id=AGENT_ID, episode=episode, **eval_info, **env.info
+                agent=agent, agent_id=AGENT_ID, policy_class=policy_class, episode=episode, **eval_info, **env.info
             )
             action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
-            next_state = observations[AGENT_ID]["state"]
+            next_state = observations[AGENT_ID]
 
-            # retrieve some relavant information from reward processor
-            observations[AGENT_ID]["ego"].update(rewards[AGENT_ID]["log"])
             loss_output = agent.step(
                 state=state,
                 action=action,
-                reward=rewards[AGENT_ID]["reward"],
+                reward=rewards[AGENT_ID],
                 next_state=next_state,
                 done=dones[AGENT_ID],
-                max_steps_reached=observations[AGENT_ID]["ego"][
-                    "events"
-                ].reached_max_episode_steps,
+                info=infos[AGENT_ID]
             )
             episode.record_step(
                 agent_id=AGENT_ID,
-                observations=observations,
+                infos=infos,
                 rewards=rewards,
                 total_step=total_step,
                 loss_output=loss_output,
+                # env_reward=ultra.eval_score
             )
             total_step += 1
             state = next_state
@@ -127,12 +123,7 @@ if __name__ == "__main__":
         type=int,
         default=10000,
     )
-    parser.add_argument(
-        "--policy",
-        help="path to policy class",
-        default="TD3",
-        type=str,
-    )
+
     parser.add_argument(
         "--seed",
         help="environment seed",
@@ -141,37 +132,29 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    with open("ultra/src/config.yaml", "r") as policy_file:
-        policies = yaml.safe_load(policy_file)["policies"]
-        if args.policy in policies:
-            policy_class = locate(policies[args.policy])
-        else:
-            policy_class = locate(args.policy)
-
     num_cpus = max(
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
+    policy_class = "ultra.baselines.sac:sac-v0"
     ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
     ray.init(**ray_kwargs)
-    try:
-        ray.wait(
-            [
-                train.remote(
-                    task=(args.task, args.level),
-                    policy_class=policy_class,
-                    num_episodes=int(args.episodes),
-                    eval_info={
-                        "eval_rate": float(args.eval_rate),
-                        "eval_episodes": int(args.eval_episodes),
-                        "policy_class": policy_class,
-                    },
-                    timestep_sec=float(args.timestep),
-                    headless=args.headless,
-                    etag=args.policy,
-                    seed=args.seed,
-                )
-            ]
-        )
-    finally:
-        time.sleep(1)
-        ray.shutdown()
+    # try:
+    ray.wait(
+        [
+            train.remote(
+                task=(args.task, args.level),
+                num_episodes=int(args.episodes),
+                eval_info={
+                    "eval_rate": float(args.eval_rate),
+                    "eval_episodes": int(args.eval_episodes),
+                },
+                timestep_sec=float(args.timestep),
+                headless=args.headless,
+                policy_class=policy_class,
+                seed=args.seed,
+            )
+        ]
+    )
+    # finally:
+    #     time.sleep(1)
+    #     ray.shutdown()

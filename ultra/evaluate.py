@@ -71,7 +71,7 @@ def evaluate(
 
     torch.set_num_threads(1)
     spec = make(
-        locator="ultra.baselines.sac:sac-v0",
+        locator=policy_class,
         checkpoint_dir=checkpoint_dir,
         experiment_dir=experiment_dir
     )
@@ -92,22 +92,18 @@ def evaluate(
 
     for episode in episodes(num_episodes):
         observations = env.reset()
-        state = observations[agent_id]["state"]
+        state = observations[agent_id]
         dones, infos = {"__all__": False}, None
 
         episode.reset(mode="Evaluation")
         while not dones["__all__"]:
             action = agent.act(state, explore=False)
-            observations, rewards, dones, _ = env.step({agent_id: action})
+            observations, rewards, dones, infos = env.step({agent_id: action})
+            next_state = observations[agent_id]
 
-            next_state = observations[agent_id]["state"]
-            reward = rewards[agent_id]["reward"]
-            observations[agent_id]["ego"].update(rewards[agent_id]["log"])
-
-            done = dones[agent_id]
             state = next_state
             episode.record_step(
-                agent_id=agent_id, observations=observations, rewards=rewards
+                agent_id=agent_id, infos=infos, rewards=rewards
             )
 
         episode.record_episode()
@@ -166,13 +162,7 @@ if __name__ == "__main__":
         glob.glob(f"{args.models}/*"), key=lambda x: int(x.split("/")[-1])
     )
 
-    with open("ultra/src/config.yaml", "r") as policy_file:
-        policies = yaml.safe_load(policy_file)["policies"]
-        if args.policy in policies:
-            policy_class = locate(policies[args.policy])
-        else:
-            policy_class = locate(args.policy)
-
+    policy_class = "ultra.baselines.sac:sac-v0"
     num_cpus = max(
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus

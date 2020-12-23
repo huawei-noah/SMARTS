@@ -89,7 +89,6 @@ class SACPolicy(Agent):
         self.current_iteration = 0
         self.steps = 0
         self.init_networks()
-        print('********************* SAC POLICY')
         if checkpoint_dir:
             self.load(checkpoint_dir)
 
@@ -150,8 +149,9 @@ class SACPolicy(Agent):
             action = mean.detach().cpu().numpy()
         return to_3d_action(action)
 
-    def step(self, state, action, reward, next_state, done, max_steps_reached):
+    def step(self, state, action, reward, next_state, done, info):
         # dont treat timeout as done equal to True
+        max_steps_reached=info["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
         action = to_2d_action(action)
