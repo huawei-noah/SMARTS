@@ -99,11 +99,12 @@ def evaluate(
         while not dones["__all__"]:
             action = agent.act(state, explore=False)
             observations, rewards, dones, infos = env.step({agent_id: action})
+
             next_state = observations[agent_id]
 
             state = next_state
             episode.record_step(
-                agent_id=agent_id, infos=infos, rewards=rewards
+                agent_id=agent_id, infos=infos, rewards=rewards, observations=observations
             )
 
         episode.record_episode()

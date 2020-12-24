@@ -3,6 +3,7 @@ import gym, glob, yaml, subprocess
 from smarts.core.scenario import Scenario
 import socket, errno
 from smarts.env.hiway_env import HiWayEnv
+from ultra.baselines.adapter import BaselineAdapter
 
 
 class UltraEnv(HiWayEnv):
@@ -25,6 +26,7 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
+        self.ultra_scores = BaselineAdapter()
         super().__init__(
             scenarios=_scenarios,
             agent_specs=agent_specs,
@@ -49,6 +51,10 @@ class UltraEnv(HiWayEnv):
                     scenario_roots, list(agent_specs.keys())
                 )
             )
+
+    def assign_env_score(self, observation, highwayenv_score):
+        ultra_score = self.ultra_scores.reward_adapter(observation, highwayenv_score)
+        return ultra_score
 
     def get_task(self, task_id, task_level):
         with open("ultra/config.yaml", "r") as task_file:

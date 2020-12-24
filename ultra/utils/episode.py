@@ -14,6 +14,7 @@ import tableprint as tp
 class LogInfo:
     def __init__(self):
         self.data = {
+            "env_score":0,
             "episode_reward": 0,
             "dist_center": 0,
             "goal_dist": 0,
@@ -34,7 +35,9 @@ class LogInfo:
             "episode_length": 0,
         }
 
-    def add(self, infos, rewards):
+    def add(self, infos, rewards, observations):
+
+        self.data['env_score'] += int(observations['env_score'])
         self.data["speed"] += infos["speed"]
         self.data["max_speed_violation"] += (
             1
@@ -70,8 +73,9 @@ class LogInfo:
         self.data["off_route"] = int(events.off_route)
         self.data["reached_goal"] = int(events.reached_goal)
         self.data["timed_out"] = int(events.reached_max_episode_steps)
-
+        #
     def normalize(self, steps):
+        self.data["env_score"] /= steps
         self.data["dist_center"] /= steps
         self.data["episode_length"] = steps
         self.data["speed"] /= steps
@@ -174,11 +178,11 @@ class Episode:
             os.makedirs(self.ep_log_dir)
 
     def record_step(
-        self, agent_id, infos, rewards, total_step=0, loss_output=None
+        self, agent_id, infos, rewards,observations, total_step=0, loss_output=None
     ):
         if loss_output:
             self.log_loss(step=total_step, loss_output=loss_output)
-        self.info[self.active_tag].add(infos[agent_id], rewards[agent_id])
+        self.info[self.active_tag].add(infos[agent_id], rewards[agent_id], observations[agent_id])
         self.steps += 1
         self.agents_itr[agent_id] += 1
 

@@ -81,7 +81,7 @@ def train(
                 rewards=rewards,
                 total_step=total_step,
                 loss_output=loss_output,
-                # env_reward=ultra.eval_score
+                observations=observations
             )
             total_step += 1
             state = next_state
