@@ -265,10 +265,10 @@ class DQNPolicy(Agent):
         print("Model loaded")
 
     def step(
-        self, state, action, reward, next_state, done, info, others=None
+        self, state, action, reward, next_state, done, others=None
     ):
         # dont treat timeout as done equal to True
-        max_steps_reached=info["events"].reached_max_episode_steps
+        max_steps_reached=state["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
         if self.action_space_type == "continuous":

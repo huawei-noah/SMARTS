@@ -152,8 +152,9 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
-    def assign_env_score(self, observation, env_score):
-        return env_score
+
+    def generate_logs(self, observation, env_score):
+        pass
 
     def step(self, agent_actions):
         agent_actions = {
@@ -179,9 +180,8 @@ class HiWayEnv(gym.Env):
             raw_observation = copy.deepcopy(observation)
             rewards[agent_id] = agent_spec.reward_adapter(observation, reward)
             observations[agent_id] = agent_spec.observation_adapter(observation)
-            observations[agent_id]['env_score'] = self.assign_env_score(raw_observation, raw_reward)
             infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
-
+            infos[agent_id]['logs'] = self.generate_logs(raw_observation, raw_reward)
 
         for done in agent_dones.values():
             self._dones_registered += 1 if done else 0

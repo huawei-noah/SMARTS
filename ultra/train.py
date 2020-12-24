@@ -73,7 +73,6 @@ def train(
                 reward=rewards[AGENT_ID],
                 next_state=next_state,
                 done=dones[AGENT_ID],
-                info=infos[AGENT_ID]
             )
             episode.record_step(
                 agent_id=AGENT_ID,
@@ -81,7 +80,6 @@ def train(
                 rewards=rewards,
                 total_step=total_step,
                 loss_output=loss_output,
-                observations=observations
             )
             total_step += 1
             state = next_state

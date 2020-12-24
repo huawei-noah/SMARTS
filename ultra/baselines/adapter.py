@@ -1,27 +1,15 @@
-import gym
-from smarts.env.custom_observations import Adapter
 import numpy as np
-from collections import deque, defaultdict
-from scipy.spatial.distance import euclidean
-from matplotlib import pyplot as plt
-import cv2
 from scipy.spatial import distance
-import random, copy, math
-import numpy as np
+import random, math
 from sys import path
 
 path.append("./ultra")
 from ultra.utils.common import (
-    resize_im,
     get_closest_waypoint,
-    compute_grad,
     get_path_to_goal,
     ego_social_safety,
-    clip_angle_to_pi,
     rotate2d_vector,
 )
-
-import os
 
 seed = 0
 random.seed(seed)
@@ -76,8 +64,8 @@ class BaselineAdapter:
             goal_path=path,
             ego_position=ego_state.position,
             waypoint_paths=env_observation.waypoint_paths,
+            events=env_observation.events
         )
-
         return state #ego=ego, env_observation=env_observation)
 
     def reward_adapter(self, observation, reward):
@@ -169,59 +157,3 @@ class BaselineAdapter:
             # social_safety_reward,
         ]
         return sum(rewards)
-
-    def info_adapter(self, observation, reward, info):
-        ego_state = observation.ego_vehicle_state
-        start = observation.ego_vehicle_state.mission.start
-        goal = observation.ego_vehicle_state.mission.goal
-        path = get_path_to_goal(
-            goal=goal, paths=observation.waypoint_paths, start=start
-        )
-        closest_wp, _ = get_closest_waypoint(
-            num_lookahead=num_lookahead,
-            goal_path=path,
-            ego_position=ego_state.position,
-            ego_heading=ego_state.heading,
-        )
-        signed_dist_from_center = closest_wp.signed_lateral_error(ego_state.position)
-        lane_width = closest_wp.lane_width * 0.5
-        ego_dist_center = signed_dist_from_center / lane_width
-
-        linear_jerk = np.linalg.norm(ego_state.linear_jerk)
-        angular_jerk = np.linalg.norm(ego_state.angular_jerk)
-
-        # Distance to goal
-        ego_2d_position = ego_state.position[0:2]
-        goal_dist = distance.euclidean(ego_2d_position, goal.position)
-
-        angle_error = closest_wp.relative_heading(
-            ego_state.heading
-        )  # relative heading radians [-pi, pi]
-
-        # number of violations
-        (ego_num_violations, social_num_violations,) = ego_social_safety(
-            observation,
-            d_min_ego=1.0,
-            t_c_ego=1.0,
-            d_min_social=1.0,
-            t_c_social=1.0,
-            ignore_vehicle_behind=True,
-        )
-
-        info = dict(
-            position=ego_state.position,
-            speed=ego_state.speed,
-            steering=ego_state.steering,
-            heading=ego_state.heading,
-            dist_center=abs(ego_dist_center),
-            start=start,
-            goal=goal,
-            closest_wp=closest_wp,
-            events=observation.events,
-            ego_num_violations=ego_num_violations,
-            social_num_violations=social_num_violations,
-            goal_dist=goal_dist,
-            linear_jerk=np.linalg.norm(ego_state.linear_jerk),
-            angular_jerk=np.linalg.norm(ego_state.angular_jerk),
-        )
-        return info

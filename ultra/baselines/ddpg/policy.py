@@ -234,9 +234,9 @@ class TD3Policy(Agent):
 
         return to_3d_action(action)
 
-    def step(self, state, action, reward, next_state, done, info):
+    def step(self, state, action, reward, next_state, done):
         # dont treat timeout as done equal to True
-        max_steps_reached=infos"events"].reached_max_episode_steps
+        max_steps_reached=state["events"].reached_max_episode_steps
         reset_noise = False
         if max_steps_reached:
             done = False

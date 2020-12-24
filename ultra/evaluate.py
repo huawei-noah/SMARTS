@@ -103,8 +103,9 @@ def evaluate(
             next_state = observations[agent_id]
 
             state = next_state
+
             episode.record_step(
-                agent_id=agent_id, infos=infos, rewards=rewards, observations=observations
+                agent_id=agent_id, infos=infos, rewards=rewards
             )
 
         episode.record_episode()
