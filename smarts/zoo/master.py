@@ -25,7 +25,6 @@ import pathlib
 import signal
 import subprocess
 import sys
-import threading
 from concurrent import futures
 
 from smarts.zoo import agent_pb2_grpc
@@ -37,18 +36,18 @@ log = logging.getLogger(f"master.py - PID({os.getpid()})")
 
 def serve(port):
     ip = "[::]"
-    stop_event = threading.Event()
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
-    agent_servicer_object = agent_servicer.AgentServicer(stop_event)
+    agent_servicer_object = agent_servicer.AgentServicer()
     agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer_object, server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
     print(f"Master - {ip}, {port}, PID({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
-        stop_event.set()
+        agent_servicer_object.destroy()
+        server.stop(0)
         print(
-            f"Master - {ip}, {port}, PID({os.getpid()}): Server stopped by interrupt signal."
+            f"Master - {ip}, {port}, PID({os.getpid()}): Received interrupt signal."
         )
 
     # Catch keyboard interrupt and terminate signal
@@ -56,11 +55,7 @@ def serve(port):
     signal.signal(signal.SIGTERM, stop_server)
 
     # Wait to receive server termination signal
-    while not stop_event.isSet():
-        event_is_set = stop_event.wait(5)
-
-    agent_servicer_object.destroy()
-    server.stop(0)
+    server.wait_for_termination()
     print(f"Master - {ip}, {port}, PID({os.getpid()}): Server exited")
 
 

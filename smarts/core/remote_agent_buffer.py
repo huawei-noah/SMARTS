@@ -82,7 +82,7 @@ class RemoteAgentBuffer:
 
         # If present, teardown the local zoo master after we purge the remote agents.
         if self._local_zoo_master is not None:
-            self._zoo_master_conns[0][0].close()  # Close the channel to the gRPC server
+            self._zoo_master_conns[0][1].close()  # Close the channel to the gRPC server
             self._local_zoo_master.terminate()
             self._local_zoo_master.join()
 
@@ -108,7 +108,7 @@ class RemoteAgentBuffer:
                     "Timeout error in connecting to remote zoo server."
                 ) from e
             stub = agent_pb2_grpc.AgentStub(channel)
-            zoo_master_conns.append((channel, stub))
+            zoo_master_conns.append((zoo_master_addr, channel, stub))
         return zoo_master_conns
 
     def _build_remote_agent(self, zoo_master_conns):
@@ -119,7 +119,7 @@ class RemoteAgentBuffer:
         retries = 5
         worker_port = None
         for ii in range(retries):
-            response = zoo_master_conn[1].SpawnWorker(agent_pb2.Machine())
+            response = zoo_master_conn[2].SpawnWorker(agent_pb2.Machine())
             if response.status.code == 0:
                 worker_port = response.port
                 break
@@ -132,7 +132,7 @@ class RemoteAgentBuffer:
             )
 
         # Instantiate and return a local RemoteAgent counterpart
-        return RemoteAgent(("localhost", worker_port))
+        return RemoteAgent(zoo_master_conn[0], ("localhost", worker_port))
 
     def _remote_agent_future(self):
         return self._replenish_threadpool.submit(

@@ -34,26 +34,30 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, address):
+    def __init__(self, master_address, worker_address):
         self._log = logging.getLogger(self.__class__.__name__)
 
         # self._tp_exec = futures.ThreadPoolExecutor()
         self.last_act_future = None
 
-        self.worker_ip, self.worker_port = address
-        self.channel = grpc.insecure_channel(f"{self.worker_ip}:{self.worker_port}")
+        self.master_ip, self.master_port = master_address
+        self.master_channel = grpc.insecure_channel(f"{self.master_ip}:{self.master_port}")
+        self.worker_ip, self.worker_port = worker_address
+        self.worker_channel = grpc.insecure_channel(f"{self.worker_ip}:{self.worker_port}")
         try:
             # Wait until the grpc server is ready or timeout after 30 seconds
-            grpc.channel_ready_future(self.channel).result(timeout=30)
+            grpc.channel_ready_future(self.master_channel).result(timeout=30)
+            grpc.channel_ready_future(self.worker_channel).result(timeout=30)
         except grpc.FutureTimeoutError as e:
             raise RemoteAgentException(
                 "Timeout while connecting to remote worker process."
             ) from e
-        self.stub = agent_pb2_grpc.AgentStub(self.channel)
+        self.master_stub = agent_pb2_grpc.AgentStub(self.master_channel)
+        self.worker_stub = agent_pb2_grpc.AgentStub(self.worker_channel)
 
     def _act(self, obs):
         try:
-            response_future = self.stub.Act.future(
+            response_future = self.worker_stub.Act.future(
                 agent_pb2.Observation(payload=cloudpickle.dumps(obs))
             )
         except grpc.RpcError as e:
@@ -95,7 +99,7 @@ class RemoteAgent:
     def start(self, agent_spec: AgentSpec):
         # Send the AgentSpec to the agent runner
         # Cloudpickle used only for the agent_spec to allow for serialization of lambdas
-        self.stub.Build(agent_pb2.Specification(payload=cloudpickle.dumps(agent_spec)))
+        self.worker_stub.Build(agent_pb2.Specification(payload=cloudpickle.dumps(agent_spec)))
 
     def terminate(self):
         # If the last action future returned is incomplete, cancel it first.
@@ -108,21 +112,23 @@ class RemoteAgent:
                 f"!!!!! remote_agent.py::terminate, last_act_future Running = {self.last_act_future.running()} = ({self.worker_ip},{self.worker_port})"
             )
 
+        # Close worker channel
+        self.worker_channel.close()
         # Stop the remote worker process
         try:
             # print(f"---> remote_agent.py::terminate, try stub.Stop = ({self.worker_ip},{self.worker_port})")
-            self.stub.Stop(agent_pb2.Input())
+            response = self.master_stub.StopWorker(agent_pb2.Port(num=self.worker_port))
+            if response.code != 0:
+                raise RemoteAgentException(f"Error: Trying to stop worker process with invalid address ({self.worker_ip}, {self.worker_port}).")
         except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.UNAVAILABLE:
-                # Server-shutdown rpc executed. Some data transmitted but connection
-                # breaks due to server shutting down. Hence, server `UNAVAILABLE`
-                # error is thrown. This error can be ignored.
-                pass
-            else:
-                raise RemoteAgentException(
-                    "Error in terminating remote worker process."
-                ) from e
-        # Close the channel
-
-        # Shutdown thread pool executor
-        # self._tp_exec.shutdown()
+            # if e.code() == grpc.StatusCode.UNAVAILABLE:
+            #     # Server-shutdown rpc executed. Some data transmitted but connection
+            #     # breaks due to server shutting down. Hence, server `UNAVAILABLE`
+            #     # error is thrown. This error can be ignored.
+            #     pass
+            # else:
+            raise RemoteAgentException(
+                "Error in terminating remote worker process."
+            ) from e
+        # Close master channel
+        self.master_channel.close()

@@ -26,7 +26,7 @@ package agent;
 service Agent {
 
     // Stops the server.
-    rpc Stop(Input) returns (Output) {}
+    rpc StopWorker(Port) returns (Status) {}
 
     // Spawns worker processes.
     // Returns the address (ip, port) of new worker process.
@@ -39,9 +39,9 @@ service Agent {
     rpc Act(Observation) returns (Action) {}
 }
 
-// Dummy input message.
-message Input {
-    optional string msg = 1;
+// Port number.
+message Port {
+    int32 num = 1;
 }
 
 // Dummy output message.

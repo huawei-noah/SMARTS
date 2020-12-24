@@ -37,31 +37,25 @@ log = logging.getLogger(f"agent_servicer.py - PID({os.getpid()})")
 class AgentServicer(agent_pb2_grpc.AgentServicer):
     """Provides methods that implement functionality of Agent Servicer."""
 
-    def __init__(self, stop_event):
+    def __init__(self):
         self._agent = None
         self._agent_spec = None
-        self._workers = []
-        self._stop_event = stop_event
+        self._workers = {}
 
     def __del__(self):
         self.destroy()
 
     def SpawnWorker(self, request, context):
-        try:
-            port = find_free_port()
-            proc = Process(target=zoo_worker.serve, args=(port,))
-            proc.start()
-            if proc.is_alive():
-                self._workers.append(proc)
-                return agent_pb2.Connection(
-                    status=agent_pb2.Status(code=0, msg="Success"), port=port
-                )
+        port = find_free_port()
+        proc = Process(target=zoo_worker.serve, args=(port,))
+        proc.start()
+        if proc.is_alive():
+            self._workers[port] = proc
+            return agent_pb2.Connection(
+                status=agent_pb2.Status(code=0, msg="Success"), port=port
+            )
 
-            return agent_pb2.Connection(status=agent_pb2.Status(code=1, msg="Error"))
-        except Exception as e:
-            print("!!!!! SpawnWorker Error !!!!")
-            print(e)
-            raise e
+        return agent_pb2.Connection(status=agent_pb2.Status(code=1, msg="Error"))
 
     def Build(self, request, context):
         time_start = time.time()
@@ -100,14 +94,24 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
             action=cloudpickle.dumps(adapted_action),
         )
 
-    def Stop(self, request, context):
-        print(f"PID({os.getpid()}): Agent servicer stopped by client.")
-        self._stop_event.set()
-        return agent_pb2.Output()
+    def StopWorker(self, request, context):
+        print(f"Master at PID({os.getpid()}) received stop signal for worker at port {request.num}.")
+
+        # Get worker_process corresponding to the received port number
+        worker_proc = self._workers.get(request.num, None)
+        if worker_proc == None:
+            return agent_pb2.Status(code=1, msg=f"Error: No such worker with a port {request.num} exists.")
+        # Terminate worker process
+        worker_proc.terminate()
+        worker_proc.join()
+        # Delete worker process entry from dictionary
+        del self._workers[request.num]
+
+        return agent_pb2.Status(code=0, msg="Success")
 
     def destroy(self):
         print("Shutting down agent worker processes.")
-        for proc in self._workers:
+        for proc in self._workers.values():
             if proc.is_alive():
                 proc.terminate()
                 proc.join()
