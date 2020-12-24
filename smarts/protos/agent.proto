@@ -25,7 +25,7 @@ package agent;
 // Interface exported by the server.
 service Agent {
 
-    // Stops the server.
+    // Stops the worker.
     rpc StopWorker(Port) returns (Status) {}
 
     // Spawns worker processes.
@@ -42,11 +42,6 @@ service Agent {
 // Port number.
 message Port {
     int32 num = 1;
-}
-
-// Dummy output message.
-message Output {
-    optional string msg = 1;
 }
 
 // Dummy input for SpawnWorker rpc.

@@ -123,7 +123,7 @@ class RemoteAgentBuffer:
             if response.status.code == 0:
                 worker_port = response.port
                 break
-            print(
+            self._log.error(
                 f"Failed {ii+1}/{retries} times in attempt to spawn a remote worker process."
             )
         if worker_port == None:

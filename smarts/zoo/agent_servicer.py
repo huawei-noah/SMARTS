@@ -23,7 +23,10 @@ import logging
 import os
 import time
 
-from multiprocessing import Process
+# from multiprocessing import Process
+import sys
+import pathlib
+import subprocess
 
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import agent_pb2
@@ -47,13 +50,20 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
 
     def SpawnWorker(self, request, context):
         port = find_free_port()
-        proc = Process(target=zoo_worker.serve, args=(port,))
-        proc.start()
-        if proc.is_alive():
+      
+        cmd = [
+            sys.executable,  # path to the current python binary
+            str((pathlib.Path(__file__).parent / "worker.py").absolute().resolve()),
+            "--port",
+            str(port)
+        ]
+
+        proc = subprocess.Popen(cmd)
+        if proc.poll() == None:
             self._workers[port] = proc
             return agent_pb2.Connection(
-                status=agent_pb2.Status(code=0, msg="Success"), port=port
-            )
+                    status=agent_pb2.Status(code=0, msg="Success"), port=port
+                )
 
         return agent_pb2.Connection(status=agent_pb2.Status(code=1, msg="Error"))
 
@@ -72,13 +82,6 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         return agent_pb2.Status(code=0, msg="Success")
 
     def Act(self, request, context):
-
-        # def on_rpc_done():
-        #     # print(f"@@@@@ agent_servicer.py, Act, on_rpc_done - PID({os.getpid()})")
-        #     pass
-
-        # context.add_callback(on_rpc_done)
-
         if self._agent == None or self._agent_spec == None:
             return agent_pb2.Action(
                 status=agent_pb2.Status(code=1, msg="Remote agent not built yet.")
@@ -95,8 +98,8 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         )
 
     def StopWorker(self, request, context):
-        print(
-            f"Master at PID({os.getpid()}) received stop signal for worker at port {request.num}."
+        log.debug(
+            f"Master - pid({os.getpid()}), received stop signal for worker at port {request.num}."
         )
 
         # Get worker_process corresponding to the received port number
@@ -105,17 +108,19 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
             return agent_pb2.Status(
                 code=1, msg=f"Error: No such worker with a port {request.num} exists."
             )
+
         # Terminate worker process
         worker_proc.terminate()
-        worker_proc.join()
+        worker_proc.wait()
+        
         # Delete worker process entry from dictionary
         del self._workers[request.num]
 
         return agent_pb2.Status(code=0, msg="Success")
 
     def destroy(self):
-        print("Shutting down agent worker processes.")
+        log.debug(f"Master - pid({os.getpid()}), shutting down remaining agent worker processes.")
         for proc in self._workers.values():
-            if proc.is_alive():
+            if proc.poll() == None:
                 proc.terminate()
-                proc.join()
+                proc.wait()

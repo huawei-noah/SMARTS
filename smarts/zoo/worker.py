@@ -27,7 +27,7 @@ To protect and isolate Agents from any pollution of global state in the main SMA
 This script is called from within SMARTS to instantiate a remote agent.
 The protocal is as follows:
 
-1. SMARTS Calls: worker.py --port 5467 # sets a unique port per agent
+1. SMARTS calls: worker.py --port 5467 # sets a unique port per agent
 2. worker.py will begin listening on port 5467.
 3. SMARTS connects to (ip, port) as a client.
 4. SMARTS calls `Build()` rpc with `AgentSpec` as input.
@@ -71,21 +71,19 @@ for mod in modules:
 # End front-loaded imports
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"worker.py - PID({os.getpid()})")
-
+log = logging.getLogger(f"worker.py - pid({os.getpid()})")
 
 def serve(port):
     ip = "[::]"
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=3))
-    agent_servicer_object = agent_servicer.AgentServicer()
-    agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer_object, server)
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+    agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer.AgentServicer(), server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
-    print(f"Worker - {ip}, {port}, PID({os.getpid()}): Started serving.")
+    log.debug(f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
         server.stop(0)
-        print(f"Worker - {ip}, {port}, PID({os.getpid()}): Received interrupt signal.")
+        log.debug(f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal.")
 
     # Catch keyboard interrupt and terminate signal
     signal.signal(signal.SIGINT, stop_server)
@@ -93,7 +91,7 @@ def serve(port):
 
     # Wait to receive server termination signal
     server.wait_for_termination()
-    print(f"Worker - {ip}, {port}, PID({os.getpid()}): Server exited")
+    log.debug(f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Server exited")
     sys.exit(0)
 
 

@@ -37,7 +37,6 @@ class RemoteAgent:
     def __init__(self, master_address, worker_address):
         self._log = logging.getLogger(self.__class__.__name__)
 
-        # self._tp_exec = futures.ThreadPoolExecutor()
         self.last_act_future = None
 
         self.master_ip, self.master_port = master_address
@@ -65,38 +64,19 @@ class RemoteAgent:
                 agent_pb2.Observation(payload=cloudpickle.dumps(obs))
             )
         except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
-                print("***** Remote worker process exceeded response deadline.")
-                return None
-            elif e.code() == grpc.StatusCode.UNAVAILABLE:
-                print("+++++ Remote worker process is not avaliable.")
-                # Act is called with a future. Then terminate is called. If act is not done by the time terminate
-                # executes, act returns a server unavailable error. This is a race condition which happens at the
-                # end of episodes. Solution is to explicitly kill the any active gRPC calls before terminating
-                # the server.
-                return None
+            self.terminate()
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise RemoteAgentException("Remote worker process is not avaliable.") from e
             else:
-                print(
-                    "EXCEPTION IN remote_agent.py::_act ==================================="
-                )
                 raise RemoteAgentException(
-                    f"Error in retrieving agent action from remote worker process."
+                    "Error in retrieving agent action from remote worker process."
                 ) from e
 
-                # print("---> Error in remote_agent.py::_act")
-                # print("e = ", e)
-                # print("e.details() = ", e.details())
-                # print("e.code().name = ", e.code().name)
-                # print("e.code().value = ", e.code().value)
-                # print(f"---> remote_agent.py::_act = ({self.worker_ip},{self.worker_port})")
-                # print("EXCEPTION IN remote_agent.py::_act ===================================")
-        # return cloudpickle.loads(response.action)
         return response_future
 
     def act(self, obs):
         # Run task asynchronously and return a Future.
         # Keep track of last action future returned.
-        # self.last_act_future = self._tp_exec.submit(self._act, obs, timeout)
         self.last_act_future = self._act(obs)
         return self.last_act_future
 
@@ -111,32 +91,17 @@ class RemoteAgent:
         # If the last action future returned is incomplete, cancel it first.
         if (self.last_act_future != None) and (not self.last_act_future.done()):
             self.last_act_future.cancel()
-            # print(f"Cancelling = {self.last_act_future.cancel()}")
-            # print(f"!!!!! remote_agent.py::terminate, last_act_future Done = {self.last_act_future.done()} = ({self.worker_ip},{self.worker_port})")
-            # if self.last_act_future.running():
-            print(
-                f"!!!!! remote_agent.py::terminate, last_act_future Running = {self.last_act_future.running()} = ({self.worker_ip},{self.worker_port})"
+            self._log.debug(
+                f"remote_agent.py::terminate(), last action future status = {self.last_act_future.running()} = ({self.worker_ip},{self.worker_port})"
             )
 
         # Close worker channel
         self.worker_channel.close()
         # Stop the remote worker process
-        try:
-            # print(f"---> remote_agent.py::terminate, try stub.Stop = ({self.worker_ip},{self.worker_port})")
-            response = self.master_stub.StopWorker(agent_pb2.Port(num=self.worker_port))
-            if response.code != 0:
-                raise RemoteAgentException(
-                    f"Error: Trying to stop worker process with invalid address ({self.worker_ip}, {self.worker_port})."
-                )
-        except grpc.RpcError as e:
-            # if e.code() == grpc.StatusCode.UNAVAILABLE:
-            #     # Server-shutdown rpc executed. Some data transmitted but connection
-            #     # breaks due to server shutting down. Hence, server `UNAVAILABLE`
-            #     # error is thrown. This error can be ignored.
-            #     pass
-            # else:
+        response = self.master_stub.StopWorker(agent_pb2.Port(num=self.worker_port))
+        if response.code != 0:
             raise RemoteAgentException(
-                "Error in terminating remote worker process."
-            ) from e
+                f"Trying to stop worker process with invalid address ({self.worker_ip}, {self.worker_port})."
+            )
         # Close master channel
         self.master_channel.close()
