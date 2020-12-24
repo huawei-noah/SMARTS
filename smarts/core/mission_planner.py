@@ -232,7 +232,11 @@ class MissionPlanner:
             target_lane, target_position
         )
 
-        cut_in_offset = np.clip(20 - aggressiveness, 10, 20)
+        # cut-in offset should consider the aggressiveness and the speed
+        # of the other vehicle.
+        cut_in_offset = np.clip(15 - aggressiveness, 5, 15) + np.clip(
+            target_vehicle.speed * 0.1, 0, 10
+        )
         if (
             abs(offset - (cut_in_offset + target_offset)) > 1
             and lane.getID() != target_lane.getID()
@@ -242,10 +246,14 @@ class MissionPlanner:
                 position, lane.getID(), 60
             )
             speed_limit = np.clip(
-                (target_vehicle.speed + 5)
-                - 5.2 * (offset - (cut_in_offset + target_offset)),
-                0.8 * target_vehicle.speed,
-                1.2 * target_vehicle.speed,
+                np.clip(
+                    (target_vehicle.speed * 1.2)
+                    - 5.2 * (offset - (cut_in_offset + target_offset)),
+                    0.7 * target_vehicle.speed,
+                    1.5 * target_vehicle.speed,
+                ),
+                2.5,
+                30,
             )
         else:
             self._task_is_triggered = True
