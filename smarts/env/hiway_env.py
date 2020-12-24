@@ -126,7 +126,6 @@ class HiWayEnv(gym.Env):
             zoo_workers=zoo_workers,
             auth_key=auth_key,
         )
-        self.smarts_extras = {}
 
     @property
     def scenario_log(self):
