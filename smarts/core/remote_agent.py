@@ -41,9 +41,13 @@ class RemoteAgent:
         self.last_act_future = None
 
         self.master_ip, self.master_port = master_address
-        self.master_channel = grpc.insecure_channel(f"{self.master_ip}:{self.master_port}")
+        self.master_channel = grpc.insecure_channel(
+            f"{self.master_ip}:{self.master_port}"
+        )
         self.worker_ip, self.worker_port = worker_address
-        self.worker_channel = grpc.insecure_channel(f"{self.worker_ip}:{self.worker_port}")
+        self.worker_channel = grpc.insecure_channel(
+            f"{self.worker_ip}:{self.worker_port}"
+        )
         try:
             # Wait until the grpc server is ready or timeout after 30 seconds
             grpc.channel_ready_future(self.master_channel).result(timeout=30)
@@ -99,7 +103,9 @@ class RemoteAgent:
     def start(self, agent_spec: AgentSpec):
         # Send the AgentSpec to the agent runner
         # Cloudpickle used only for the agent_spec to allow for serialization of lambdas
-        self.worker_stub.Build(agent_pb2.Specification(payload=cloudpickle.dumps(agent_spec)))
+        self.worker_stub.Build(
+            agent_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
+        )
 
     def terminate(self):
         # If the last action future returned is incomplete, cancel it first.
@@ -119,7 +125,9 @@ class RemoteAgent:
             # print(f"---> remote_agent.py::terminate, try stub.Stop = ({self.worker_ip},{self.worker_port})")
             response = self.master_stub.StopWorker(agent_pb2.Port(num=self.worker_port))
             if response.code != 0:
-                raise RemoteAgentException(f"Error: Trying to stop worker process with invalid address ({self.worker_ip}, {self.worker_port}).")
+                raise RemoteAgentException(
+                    f"Error: Trying to stop worker process with invalid address ({self.worker_ip}, {self.worker_port})."
+                )
         except grpc.RpcError as e:
             # if e.code() == grpc.StatusCode.UNAVAILABLE:
             #     # Server-shutdown rpc executed. Some data transmitted but connection

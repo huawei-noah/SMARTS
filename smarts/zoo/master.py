@@ -36,7 +36,7 @@ log = logging.getLogger(f"master.py - PID({os.getpid()})")
 
 def serve(port):
     ip = "[::]"
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=3))
     agent_servicer_object = agent_servicer.AgentServicer()
     agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer_object, server)
     server.add_insecure_port(f"{ip}:{port}")
@@ -46,9 +46,7 @@ def serve(port):
     def stop_server(unused_signum, unused_frame):
         agent_servicer_object.destroy()
         server.stop(0)
-        print(
-            f"Master - {ip}, {port}, PID({os.getpid()}): Received interrupt signal."
-        )
+        print(f"Master - {ip}, {port}, PID({os.getpid()}): Received interrupt signal.")
 
     # Catch keyboard interrupt and terminate signal
     signal.signal(signal.SIGINT, stop_server)
@@ -57,6 +55,7 @@ def serve(port):
     # Wait to receive server termination signal
     server.wait_for_termination()
     print(f"Master - {ip}, {port}, PID({os.getpid()}): Server exited")
+    sys.exit(0)
 
 
 if __name__ == "__main__":

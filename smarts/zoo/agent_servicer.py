@@ -95,12 +95,16 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         )
 
     def StopWorker(self, request, context):
-        print(f"Master at PID({os.getpid()}) received stop signal for worker at port {request.num}.")
+        print(
+            f"Master at PID({os.getpid()}) received stop signal for worker at port {request.num}."
+        )
 
         # Get worker_process corresponding to the received port number
         worker_proc = self._workers.get(request.num, None)
         if worker_proc == None:
-            return agent_pb2.Status(code=1, msg=f"Error: No such worker with a port {request.num} exists.")
+            return agent_pb2.Status(
+                code=1, msg=f"Error: No such worker with a port {request.num} exists."
+            )
         # Terminate worker process
         worker_proc.terminate()
         worker_proc.join()
