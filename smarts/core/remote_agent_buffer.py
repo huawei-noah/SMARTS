@@ -25,12 +25,13 @@ import grpc
 
 from concurrent import futures
 from multiprocessing import Process
+from typing import List, Tuple
 
 from smarts.core.remote_agent import RemoteAgent, RemoteAgentException
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import master as zoo_master
-from smarts.zoo import agent_pb2
-from smarts.zoo import agent_pb2_grpc
+from smarts.zoo import master_pb2
+from smarts.zoo import master_pb2_grpc
 
 
 class RemoteAgentBuffer:
@@ -38,8 +39,8 @@ class RemoteAgentBuffer:
         """
         Args:
             zoo_master_addrs:
-                List of (ip, port) tuples for master processes, which are used to instantiate 
-                worker processes responsible for running remote agents.
+                List of (ip, port) tuples for master processes. Master processes instantiate 
+                worker processes which run remote agents.
             auth_key:
                 Authentication key of type string for communication.
             buffer_size: 
@@ -50,20 +51,45 @@ class RemoteAgentBuffer:
 
         self._log = logging.getLogger(self.__class__.__name__)
 
-        self._local_zoo_master = None
+        # List of dictionaries. Each dictionary provides connection info
+        # for a zoo master. E.g.,
+        # [
+        #     {"address": ("127.0.0.1", 7432)),
+        #      "process": <proc>,
+        #      "channel": <grpc_channel>,
+        #      "stub"   : <grpc_stub>
+        #     },
+        #     {
+        #         ...
+        #     }
+        #     ...
+        # ]
+        self._zoo_master_conns = []
+        self._local_zoo_master = False
 
-        if zoo_master_addrs is None:
-            # The user has not specified any remote zoo masters.
-            # We need to spawn a local zoo master.
-            self._local_zoo_master, local_zoo_master_addr = self._spawn_zoo_master()
-            zoo_master_addrs = [local_zoo_master_addr]
+        # Populate zoo master connection with address and process handles.
+        if not zoo_master_addrs:
+            # Spawn a local zoo master since no remote zoo masters was provided.
+            self._local_zoo_master = True
+            port = find_free_port()
+            self._zoo_master_conns = [
+                {
+                    "address": ("localhost", port),
+                    "process": spawn_local_zoo_master(port),
+                }
+            ]
+        else:
+            self._zoo_master_conns = [{"address": addr} for addr in zoo_master_addrs]
 
-        self._zoo_master_addrs = zoo_master_addrs
-        self._zoo_master_conns = self._get_zoo_master_conns(self._zoo_master_addrs)
+        # Populate zoo master connection with channel and stub details.
+        for conn in self._zoo_master_conns:
+            conn["channel"], conn["stub"] = get_master_channel_stub(conn["address"])
 
         self._buffer_size = buffer_size
         self._replenish_threadpool = futures.ThreadPoolExecutor()
-        self._agent_buffer = [self._remote_agent_future() for _ in range(buffer_size)]
+        self._agent_buffer = [
+            self._remote_agent_future() for _ in range(self._buffer_size)
+        ]
 
         atexit.register(self.destroy)
 
@@ -71,6 +97,7 @@ class RemoteAgentBuffer:
         if atexit:
             atexit.unregister(self.destroy)
 
+        # Teardown any remaining remote agents.
         for remote_agent_future in self._agent_buffer:
             try:
                 remote_agent = remote_agent_future.result()
@@ -80,46 +107,21 @@ class RemoteAgentBuffer:
                     f"Exception while tearing down buffered remote agent: {repr(e)}"
                 )
 
-        # If present, teardown the local zoo master after we purge the remote agents.
-        if self._local_zoo_master is not None:
-            self._zoo_master_conns[0][1].close()  # Close the channel to the gRPC server
-            self._local_zoo_master.terminate()
-            self._local_zoo_master.join()
-
-    def _spawn_zoo_master(self, retries=3):
-        for ii in range(retries):
-            port = find_free_port()
-            local_zoo_master = Process(target=zoo_master.serve, args=(port,))
-            local_zoo_master.start()
-            if local_zoo_master.is_alive():
-                return local_zoo_master, ("localhost", port)
-        raise RemoteAgentException("Failed to spawn a local zoo master process.")
-
-    def _get_zoo_master_conns(self, zoo_master_addrs):
-        zoo_master_conns = []
-        for zoo_master_addr in zoo_master_addrs:
-            master_ip, master_port = zoo_master_addr
-            channel = grpc.insecure_channel(f"{master_ip}:{master_port}")
-            try:
-                # Wait until the grpc server is ready or timeout after 30 seconds
-                grpc.channel_ready_future(channel).result(timeout=30)
-            except grpc.FutureTimeoutError:
-                raise RemoteAgentException(
-                    "Timeout error in connecting to remote zoo server."
-                ) from e
-            stub = agent_pb2_grpc.AgentStub(channel)
-            zoo_master_conns.append((zoo_master_addr, channel, stub))
-        return zoo_master_conns
+        # If available, teardown local zoo master.
+        if self._local_zoo_master:
+            self._zoo_master_conns[0]["channel"].close()
+            self._zoo_master_conns[0]["process"].terminate()
+            self._zoo_master_conns[0]["process"].join()
 
     def _build_remote_agent(self, zoo_master_conns):
-        # Get a random zoo master connection
+        # Get a random zoo master connection.
         zoo_master_conn = random.choice(zoo_master_conns)
 
-        # Spawn remote worker and get its port
+        # Spawn remote worker and get its port.
         retries = 5
         worker_port = None
         for ii in range(retries):
-            response = zoo_master_conn[2].SpawnWorker(agent_pb2.Machine())
+            response = zoo_master_conn["stub"].SpawnWorker(master_pb2.Machine())
             if response.status.code == 0:
                 worker_port = response.port
                 break
@@ -131,8 +133,8 @@ class RemoteAgentBuffer:
                 "Remote worker process could not be instantiated by master process."
             )
 
-        # Instantiate and return a local RemoteAgent counterpart
-        return RemoteAgent(zoo_master_conn[0], ("localhost", worker_port))
+        # Instantiate and return a local RemoteAgent.
+        return RemoteAgent(zoo_master_conn["address"], ("localhost", worker_port))
 
     def _remote_agent_future(self):
         return self._replenish_threadpool.submit(
@@ -153,7 +155,7 @@ class RemoteAgentBuffer:
             # If so, prefer one of these done ones to avoid sim delays.
             future = self._agent_buffer.pop(done_future_indices[0])
         else:
-            # Otherwise, we will block, waiting on a remote agent future
+            # Otherwise, we will block, waiting on a remote agent future.
             self._log.debug(
                 "No ready remote agents, simulation will block until one is available"
             )
@@ -176,3 +178,22 @@ class RemoteAgentBuffer:
                 time.sleep(0.1)
 
         raise Exception("Failed to acquire remote agent")
+
+
+def spawn_local_zoo_master(port):
+    master = Process(target=zoo_master.serve, args=(port,))
+    master.start()
+    return master
+
+
+def get_master_channel_stub(addr):
+    channel = grpc.insecure_channel(f"{addr[0]}:{addr[1]}")
+    try:
+        # Wait until the grpc server is ready or timeout after 30 seconds
+        grpc.channel_ready_future(channel).result(timeout=30)
+    except grpc.FutureTimeoutError:
+        raise RemoteAgentException(
+            "Timeout in connecting to remote zoo master server."
+        ) from e
+    stub = master_pb2_grpc.MasterStub(channel)
+    return channel, stub
