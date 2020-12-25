@@ -97,7 +97,6 @@ def serve(port):
     # Wait to receive server termination signal
     server.wait_for_termination()
     log.debug(f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Server exited")
-    sys.exit(0)
 
 
 if __name__ == "__main__":
