@@ -39,8 +39,6 @@ message Specification {
 
 // Status
 message Status {
-    int32 code = 1;
-    string msg = 2;
 }
 
 // Observation received by the agent
@@ -50,6 +48,5 @@ message Observation {
 
 // Agent's action in response to the observation
 message Action {
-    Status status = 1;
     optional bytes action = 2;
 }

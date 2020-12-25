@@ -61,21 +61,10 @@ class RemoteAgent:
         self._worker_stub = worker_pb2_grpc.WorkerStub(self._worker_channel)
 
     def act(self, obs):
-        try:
-            # Run task asynchronously and return a Future.
-            self._act_future = self._worker_stub.Act.future(
-                worker_pb2.Observation(payload=cloudpickle.dumps(obs))
-            )
-        except grpc.RpcError as e:
-            self.terminate()
-            if e.code() == grpc.StatusCode.UNAVAILABLE:
-                raise RemoteAgentException(
-                    "Remote worker process is not avaliable."
-                ) from e
-            else:
-                raise RemoteAgentException(
-                    "Error in retrieving agent action from remote worker process."
-                ) from e
+        # Run task asynchronously and return a Future.
+        self._act_future = self._worker_stub.Act.future(
+            worker_pb2.Observation(payload=cloudpickle.dumps(obs))
+        )
 
         return self._act_future
 
@@ -98,10 +87,6 @@ class RemoteAgent:
         response = self._master_stub.StopWorker(
             master_pb2.Port(num=self._worker_address[1])
         )
-        if response.code != 0:
-            raise RemoteAgentException(
-                f"Trying to stop worker process with nonexistent address {self._worker_address}."
-            )
 
         # Close master channel
         self._master_channel.close()

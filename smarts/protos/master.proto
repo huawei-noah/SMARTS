@@ -25,12 +25,16 @@ package master;
 // Interface exported by the master server.
 service Master {
 
-    // Stop worker process.
-    rpc StopWorker(Port) returns (Status) {}
-
     // Spawn worker processes.
     // Returns the address (ip, port) of new worker process.
-    rpc SpawnWorker(Machine) returns (Connection) {}
+    rpc SpawnWorker(Machine) returns (Port) {}
+
+    // Stop worker process.
+    rpc StopWorker(Port) returns (Status) {}
+}
+
+// Machine specification
+message Machine {
 }
 
 // Port number
@@ -40,16 +44,4 @@ message Port {
 
 // Status
 message Status {
-    int32 code = 1;
-    string msg = 2;
-}
-
-// Dummy input for SpawnWorker rpc
-message Machine {
-}
-
-// Connection status and port information
-message Connection{
-    Status status = 1;
-    optional int32 port = 2;
 }

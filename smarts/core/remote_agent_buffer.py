@@ -17,11 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import logging
+
 import atexit
-import time
-import random
 import grpc
+import logging
+import random
+import time
 
 from concurrent import futures
 from multiprocessing import Process
@@ -104,8 +105,9 @@ class RemoteAgentBuffer:
                 remote_agent.terminate()
             except Exception as e:
                 self._log.error(
-                    f"Exception while tearing down buffered remote agent: {repr(e)}"
+                    f"Exception while tearing down buffered remote agent. {repr(e)}"
                 )
+                raise e
 
         # If available, teardown local zoo master.
         if self._local_zoo_master:
@@ -118,19 +120,21 @@ class RemoteAgentBuffer:
         zoo_master_conn = random.choice(zoo_master_conns)
 
         # Spawn remote worker and get its port.
-        retries = 5
+        retries = 3
         worker_port = None
         for ii in range(retries):
-            response = zoo_master_conn["stub"].SpawnWorker(master_pb2.Machine())
-            if response.status.code == 0:
-                worker_port = response.port
+            try:
+                response = zoo_master_conn["stub"].SpawnWorker(master_pb2.Machine())
+                worker_port = response.num
                 break
-            self._log.error(
-                f"Failed {ii+1}/{retries} times in attempt to spawn a remote worker process."
-            )
+            except grpc.RpcError as e:
+                self._log.debug(
+                    f"Failed {ii+1}/{retries} times in attempt to spawn a remote worker process. {e}"
+                )
+
         if worker_port == None:
             raise RemoteAgentException(
-                "Remote worker process could not be instantiated by master process."
+                "Remote worker process could not be spawned by master process."
             )
 
         # Instantiate and return a local RemoteAgent.
@@ -157,7 +161,7 @@ class RemoteAgentBuffer:
         else:
             # Otherwise, we will block, waiting on a remote agent future.
             self._log.debug(
-                "No ready remote agents, simulation will block until one is available"
+                "No ready remote agents, simulation will block until one is available."
             )
             future = self._agent_buffer.pop(0)
 
@@ -168,16 +172,16 @@ class RemoteAgentBuffer:
         return remote_agent
 
     def acquire_remote_agent(self, retries=3) -> RemoteAgent:
-        for i in range(retries):
+        for ii in range(retries):
             try:
                 return self._try_to_acquire_remote_agent()
             except Exception as e:
-                self._log.error(
-                    f"Failed to acquire remote agent: {repr(e)} retrying {i} / {retries}"
+                self._log.debug(
+                    f"Failed {ii}/{retries} times in acquiring remote agent. {repr(e)}"
                 )
                 time.sleep(0.1)
 
-        raise Exception("Failed to acquire remote agent")
+        raise RemoteAgentException("Failed to acquire remote agent.")
 
 
 def spawn_local_zoo_master(port):

@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import cloudpickle
+import grpc
 import logging
 import os
 import time
@@ -51,20 +52,17 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
             f"  pickle={pickle_load_time - time_start:.2}\n"
             f"  build ={agent_build_time - pickle_load_time:.2}\n"
         )
-        return worker_pb2.Status(code=0, msg="Success")
+        return worker_pb2.Status()
 
     def Act(self, request, context):
         if self._agent == None or self._agent_spec == None:
-            return worker_pb2.Action(
-                status=worker_pb2.Status(code=1, msg="Remote agent not built yet.")
-            )
+            context.set_details(f"Remote agent not built yet.")
+            context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
+            return worker_pb2.Action()
 
         adapted_obs = self._agent_spec.observation_adapter(
             cloudpickle.loads(request.payload)
         )
         action = self._agent.act(adapted_obs)
         adapted_action = self._agent_spec.action_adapter(action)
-        return worker_pb2.Action(
-            status=worker_pb2.Status(code=0, msg="Success"),
-            action=cloudpickle.dumps(adapted_action),
-        )
+        return worker_pb2.Action(action=cloudpickle.dumps(adapted_action))

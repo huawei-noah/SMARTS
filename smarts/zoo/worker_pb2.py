@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x0cworker.proto\x12\x06worker" \n\rSpecification\x12\x0f\n\x07payload\x18\x01 \x01(\x0c"#\n\x06Status\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\x12\x0b\n\x03msg\x18\x02 \x01(\t"\x1e\n\x0bObservation\x12\x0f\n\x07payload\x18\x01 \x01(\x0c"H\n\x06\x41\x63tion\x12\x1e\n\x06status\x18\x01 \x01(\x0b\x32\x0e.worker.Status\x12\x13\n\x06\x61\x63tion\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x42\t\n\x07_action2h\n\x06Worker\x12\x30\n\x05\x42uild\x12\x15.worker.Specification\x1a\x0e.worker.Status"\x00\x12,\n\x03\x41\x63t\x12\x13.worker.Observation\x1a\x0e.worker.Action"\x00\x62\x06proto3',
+    serialized_pb=b'\n\x0cworker.proto\x12\x06worker" \n\rSpecification\x12\x0f\n\x07payload\x18\x01 \x01(\x0c"\x08\n\x06Status"\x1e\n\x0bObservation\x12\x0f\n\x07payload\x18\x01 \x01(\x0c"(\n\x06\x41\x63tion\x12\x13\n\x06\x61\x63tion\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x42\t\n\x07_action2h\n\x06Worker\x12\x30\n\x05\x42uild\x12\x15.worker.Specification\x1a\x0e.worker.Status"\x00\x12,\n\x03\x41\x63t\x12\x13.worker.Observation\x1a\x0e.worker.Action"\x00\x62\x06proto3',
 )
 
 
@@ -70,46 +70,7 @@ _STATUS = _descriptor.Descriptor(
     file=DESCRIPTOR,
     containing_type=None,
     create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="code",
-            full_name="worker.Status.code",
-            index=0,
-            number=1,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="msg",
-            full_name="worker.Status.msg",
-            index=1,
-            number=2,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
+    fields=[],
     extensions=[],
     nested_types=[],
     enum_types=[],
@@ -119,7 +80,7 @@ _STATUS = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=58,
-    serialized_end=93,
+    serialized_end=66,
 )
 
 
@@ -159,8 +120,8 @@ _OBSERVATION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=95,
-    serialized_end=125,
+    serialized_start=68,
+    serialized_end=98,
 )
 
 
@@ -173,28 +134,9 @@ _ACTION = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="status",
-            full_name="worker.Action.status",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
             name="action",
             full_name="worker.Action.action",
-            index=1,
+            index=0,
             number=2,
             type=12,
             cpp_type=9,
@@ -228,11 +170,10 @@ _ACTION = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=127,
-    serialized_end=199,
+    serialized_start=100,
+    serialized_end=140,
 )
 
-_ACTION.fields_by_name["status"].message_type = _STATUS
 _ACTION.oneofs_by_name["_action"].fields.append(_ACTION.fields_by_name["action"])
 _ACTION.fields_by_name["action"].containing_oneof = _ACTION.oneofs_by_name["_action"]
 DESCRIPTOR.message_types_by_name["Specification"] = _SPECIFICATION
@@ -293,8 +234,8 @@ _WORKER = _descriptor.ServiceDescriptor(
     index=0,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_start=201,
-    serialized_end=305,
+    serialized_start=142,
+    serialized_end=246,
     methods=[
         _descriptor.MethodDescriptor(
             name="Build",

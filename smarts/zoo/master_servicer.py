@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import cloudpickle
+import grpc
 import logging
 import os
 import pathlib
@@ -57,11 +58,11 @@ class MasterServicer(master_pb2_grpc.MasterServicer):
         worker = subprocess.Popen(cmd)
         if worker.poll() == None:
             self._workers[port] = worker
-            return master_pb2.Connection(
-                status=master_pb2.Status(code=0, msg="Success"), port=port
-            )
+            return master_pb2.Port(num=port)
 
-        return master_pb2.Connection(status=master_pb2.Status(code=1, msg="Error"))
+        context.set_details("Error in spawning worker subprocess.")
+        context.set_code(grpc.StatusCode.INTERNAL)
+        return master_pb2.Port()
 
     def StopWorker(self, request, context):
         log.debug(
@@ -71,9 +72,11 @@ class MasterServicer(master_pb2_grpc.MasterServicer):
         # Get worker_process corresponding to the received port number.
         worker = self._workers.get(request.num, None)
         if worker == None:
-            return master_pb2.Status(
-                code=1, msg=f"Error: No such worker with a port {request.num} exists."
+            context.set_details(
+                f"Trying to stop nonexistent worker with a port {request.num}."
             )
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return master_pb2.Status()
 
         # Terminate worker process.
         worker.terminate()
@@ -82,7 +85,7 @@ class MasterServicer(master_pb2_grpc.MasterServicer):
         # Delete worker process entry from dictionary.
         del self._workers[request.num]
 
-        return master_pb2.Status(code=0, msg="Success")
+        return master_pb2.Status()
 
     def destroy(self):
         log.debug(

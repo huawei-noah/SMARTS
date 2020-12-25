@@ -237,9 +237,8 @@ class AgentManager:
             }
         except Exception as e:
             self._log.error(
-                "RemoteAgent: Resolving the remote agent's action (a Future object) generated exception."
+                "Resolving the remote agent's action (a Future object) generated exception."
             )
-            self._log.exception(e)
             raise e
 
         agents_without_actions = [
