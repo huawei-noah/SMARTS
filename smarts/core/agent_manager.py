@@ -41,7 +41,7 @@ class AgentManager:
          time.
     """
 
-    def __init__(self, interfaces, zoo_workers=None, auth_key=None):
+    def __init__(self, interfaces, zoo_workers=None):
         self._log = logging.getLogger(self.__class__.__name__)
         self._remote_agent_buffer = RemoteAgentBuffer(zoo_master_addrs=zoo_workers)
 

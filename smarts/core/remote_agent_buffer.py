@@ -36,14 +36,12 @@ from smarts.zoo import master_pb2_grpc
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_master_addrs=None, auth_key=None, buffer_size=3):
+    def __init__(self, zoo_master_addrs=None, buffer_size=3):
         """
         Args:
             zoo_master_addrs:
                 List of (ip, port) tuples for master processes. Master processes instantiate 
                 worker processes which run remote agents.
-            auth_key:
-                Authentication key of type string for communication.
             buffer_size: 
                 Number of RemoteAgents to pre-initialize and keep running in the background, 
                 must be non-zero (default: 3).
