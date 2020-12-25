@@ -25,8 +25,10 @@ import time
 from concurrent import futures
 
 from smarts.core.agent import AgentSpec
-from smarts.zoo import agent_pb2
-from smarts.zoo import agent_pb2_grpc
+from smarts.zoo import master_pb2
+from smarts.zoo import master_pb2_grpc
+from smarts.zoo import worker_pb2
+from smarts.zoo import worker_pb2_grpc
 
 
 class RemoteAgentException(Exception):
@@ -37,71 +39,69 @@ class RemoteAgent:
     def __init__(self, master_address, worker_address):
         self._log = logging.getLogger(self.__class__.__name__)
 
-        self.last_act_future = None
+        # Track the last action future.
+        self._act_future = None
 
-        self.master_ip, self.master_port = master_address
-        self.master_channel = grpc.insecure_channel(
-            f"{self.master_ip}:{self.master_port}"
+        self._master_channel = grpc.insecure_channel(
+            f"{master_address[0]}:{master_address[1]}"
         )
-        self.worker_ip, self.worker_port = worker_address
-        self.worker_channel = grpc.insecure_channel(
-            f"{self.worker_ip}:{self.worker_port}"
+        self._worker_address = worker_address
+        self._worker_channel = grpc.insecure_channel(
+            f"{worker_address[0]}:{worker_address[1]}"
         )
         try:
-            # Wait until the grpc server is ready or timeout after 30 seconds
-            grpc.channel_ready_future(self.master_channel).result(timeout=30)
-            grpc.channel_ready_future(self.worker_channel).result(timeout=30)
+            # Wait until the grpc server is ready or timeout after 30 seconds.
+            grpc.channel_ready_future(self._master_channel).result(timeout=30)
+            grpc.channel_ready_future(self._worker_channel).result(timeout=30)
         except grpc.FutureTimeoutError as e:
             raise RemoteAgentException(
                 "Timeout while connecting to remote worker process."
             ) from e
-        self.master_stub = agent_pb2_grpc.AgentStub(self.master_channel)
-        self.worker_stub = agent_pb2_grpc.AgentStub(self.worker_channel)
+        self._master_stub = master_pb2_grpc.MasterStub(self._master_channel)
+        self._worker_stub = worker_pb2_grpc.WorkerStub(self._worker_channel)
 
-    def _act(self, obs):
+    def act(self, obs):
         try:
-            response_future = self.worker_stub.Act.future(
-                agent_pb2.Observation(payload=cloudpickle.dumps(obs))
+            # Run task asynchronously and return a Future.
+            self._act_future = self._worker_stub.Act.future(
+                worker_pb2.Observation(payload=cloudpickle.dumps(obs))
             )
         except grpc.RpcError as e:
             self.terminate()
             if e.code() == grpc.StatusCode.UNAVAILABLE:
-                raise RemoteAgentException("Remote worker process is not avaliable.") from e
+                raise RemoteAgentException(
+                    "Remote worker process is not avaliable."
+                ) from e
             else:
                 raise RemoteAgentException(
                     "Error in retrieving agent action from remote worker process."
                 ) from e
 
-        return response_future
-
-    def act(self, obs):
-        # Run task asynchronously and return a Future.
-        # Keep track of last action future returned.
-        self.last_act_future = self._act(obs)
-        return self.last_act_future
+        return self._act_future
 
     def start(self, agent_spec: AgentSpec):
-        # Send the AgentSpec to the agent runner
-        # Cloudpickle used only for the agent_spec to allow for serialization of lambdas
-        self.worker_stub.Build(
-            agent_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
+        # Send the AgentSpec to the agent runner.
+        # Cloudpickle used only for the agent_spec to allow for serialization of lambdas.
+        self._worker_stub.Build(
+            worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
         )
 
     def terminate(self):
         # If the last action future returned is incomplete, cancel it first.
-        if (self.last_act_future != None) and (not self.last_act_future.done()):
-            self.last_act_future.cancel()
-            self._log.debug(
-                f"remote_agent.py::terminate(), last action future status = {self.last_act_future.running()} = ({self.worker_ip},{self.worker_port})"
-            )
+        if (self._act_future is not None) and (not self._act_future.done()):
+            self._act_future.cancel()
 
         # Close worker channel
-        self.worker_channel.close()
+        self._worker_channel.close()
+
         # Stop the remote worker process
-        response = self.master_stub.StopWorker(agent_pb2.Port(num=self.worker_port))
+        response = self._master_stub.StopWorker(
+            master_pb2.Port(num=self._worker_address[1])
+        )
         if response.code != 0:
             raise RemoteAgentException(
-                f"Trying to stop worker process with invalid address ({self.worker_ip}, {self.worker_port})."
+                f"Trying to stop worker process with nonexistent address {self._worker_address}."
             )
+
         # Close master channel
-        self.master_channel.close()
+        self._master_channel.close()

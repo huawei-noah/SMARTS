@@ -20,32 +20,22 @@
 
 syntax = "proto3";
 
-package agent;
+package master;
 
-// Interface exported by the server.
-service Agent {
+// Interface exported by the master server.
+service Master {
 
-    // Stops the worker.
+    // Stop worker process.
     rpc StopWorker(Port) returns (Status) {}
 
-    // Spawns worker processes.
+    // Spawn worker processes.
     // Returns the address (ip, port) of new worker process.
     rpc SpawnWorker(Machine) returns (Connection) {}
-
-    // Builds Agent according the AgentSpec.
-    rpc Build(Specification) returns (Status) {}
-
-    // Agent processes observations and returns action.
-    rpc Act(Observation) returns (Action) {}
 }
 
-// Port number.
+// Port number
 message Port {
     int32 num = 1;
-}
-
-// Dummy input for SpawnWorker rpc.
-message Machine {
 }
 
 // Status
@@ -54,20 +44,12 @@ message Status {
     string msg = 2;
 }
 
+// Dummy input for SpawnWorker rpc
+message Machine {
+}
+
+// Connection status and port information
 message Connection{
     Status status = 1;
     optional int32 port = 2;
-}
-
-message Specification {
-    bytes payload = 1;
-}
-
-message Observation {
-    bytes payload = 1;
-}
-
-message Action {
-    Status status = 1;
-    optional bytes action = 2;
 }

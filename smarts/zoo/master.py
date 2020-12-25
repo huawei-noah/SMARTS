@@ -27,26 +27,28 @@ import subprocess
 import sys
 from concurrent import futures
 
-from smarts.zoo import agent_pb2_grpc
-from smarts.zoo import agent_servicer
+from smarts.zoo import master_pb2_grpc
+from smarts.zoo import master_servicer
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"master.py - PID({os.getpid()})")
+log = logging.getLogger(f"master.py - pid({os.getpid()})")
 
 
 def serve(port):
     ip = "[::]"
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
-    agent_servicer_object = agent_servicer.AgentServicer()
-    agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer_object, server)
+    master_servicer_object = master_servicer.MasterServicer()
+    master_pb2_grpc.add_MasterServicer_to_server(master_servicer_object, server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
     log.debug(f"Master - ip({ip}), port({port}), pid({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
-        agent_servicer_object.destroy()
+        master_servicer_object.destroy()
         server.stop(0)
-        log.debug(f"Master - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal.")
+        log.debug(
+            f"Master - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal."
+        )
 
     # Catch keyboard interrupt and terminate signal
     signal.signal(signal.SIGINT, stop_server)
@@ -63,7 +65,10 @@ if __name__ == "__main__":
         "Listen for requests to allocate agents and execute them on-demand."
     )
     parser.add_argument(
-        "--port", type=int, default=7432, help="Port to listen for remote client connections.",
+        "--port",
+        type=int,
+        default=7432,
+        help="Port to listen for remote client connections.",
     )
 
     args = parser.parse_args()

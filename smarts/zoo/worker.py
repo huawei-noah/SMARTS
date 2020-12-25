@@ -44,8 +44,8 @@ import signal
 import sys
 from concurrent import futures
 
-from smarts.zoo import agent_pb2_grpc
-from smarts.zoo import agent_servicer
+from smarts.zoo import worker_pb2_grpc
+from smarts.zoo import worker_servicer
 
 # Front-load some expensive imports as to not block the simulation
 modules = [
@@ -73,17 +73,22 @@ for mod in modules:
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"worker.py - pid({os.getpid()})")
 
+
 def serve(port):
     ip = "[::]"
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
-    agent_pb2_grpc.add_AgentServicer_to_server(agent_servicer.AgentServicer(), server)
+    worker_pb2_grpc.add_WorkerServicer_to_server(
+        worker_servicer.WorkerServicer(), server
+    )
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
     log.debug(f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
         server.stop(0)
-        log.debug(f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal.")
+        log.debug(
+            f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal."
+        )
 
     # Catch keyboard interrupt and terminate signal
     signal.signal(signal.SIGINT, stop_server)
