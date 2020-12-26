@@ -35,7 +35,7 @@ class ChaseViaPointsAgent(Agent):
         )
 
 
-def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
+def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.Laner, max_episode_steps=max_episode_steps
@@ -47,6 +47,7 @@ def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs={AGENT_ID: agent_spec},
+        sim_name=sim_name,
         headless=headless,
         visdom=False,
         timestep_sec=0.1,
@@ -78,6 +79,7 @@ if __name__ == "__main__":
 
     main(
         scenarios=args.scenarios,
+        sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,

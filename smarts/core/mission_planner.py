@@ -23,7 +23,6 @@ from typing import Optional
 
 import numpy as np
 
-from smarts.sstudio.types import UTurn
 from smarts.sstudio.types import CutIn, MapZone, UTurn
 from .sumo_road_network import SumoRoadNetwork
 from .scenario import EndlessGoal, LapMission, Mission, Start, default_entry_tactic
@@ -42,13 +41,23 @@ class PlanningError(Exception):
 
 
 class MissionPlanner:
-    def __init__(self, waypoints: Waypoints, road_network: SumoRoadNetwork):
+    def __init__(
+        self, waypoints: Waypoints, road_network: SumoRoadNetwork, agent_behavior=None
+    ):
         self._waypoints = waypoints
+        self._agent_behavior = agent_behavior
         self._mission = None
         self._route = None
         self._road_network = road_network
         self._did_plan = False
         self._task_is_triggered = False
+        # TODO: These variables should be put in an appropriate place.
+        self._uturn_initial_heading = 0
+        self._uturn_initial_distant = 0
+        self._uturn_initial_velocity = 0
+        self._uturn_initial_height = 0
+        self._insufficient_initial_distant = False
+        self._uturn_initial_position = 0
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -145,24 +154,13 @@ class MissionPlanner:
             self._did_plan
         ), "Must call plan(...) before being able to invoke the mission planner."
 
-        waypoints_with_task = None
-        if self.mission.task is not None:
-            if isinstance(self.mission.task, UTurn):
-                waypoints_with_task = self.uturn_waypoints(sim, pose, vehicle)
-            elif isinstance(self.mission.task, CutIn):
-                waypoints_with_task = self.cut_in_waypoints(sim, pose, vehicle)
+        edge_ids = self._edge_ids(pose)
+        if edge_ids:
+            return self._waypoints.waypoint_paths_along_route(
+                pose.position, lookahead, edge_ids
+            )
 
-        if waypoints_with_task:
-            return waypoints_with_task
-        else:
-            # If specific waypoints are not not provided, return general waypoints
-            edge_ids = self._edge_ids(pose)
-            if edge_ids:
-                return self._waypoints.waypoint_paths_along_route(
-                    pose.position, lookahead, edge_ids
-                )
-
-            return self._waypoints.waypoint_paths_at(pose, lookahead)
+        return self._waypoints.waypoint_paths_at(pose, lookahead)
 
     def waypoint_paths_on_lane_at(self, pose: Pose, lane_id: str, lookahead: float):
         """Call assumes you're on the correct route already. We do not presently
@@ -213,34 +211,62 @@ class MissionPlanner:
         return edge_ids
 
     def cut_in_waypoints(self, sim, pose: Pose, vehicle):
-        radius = self._mission.task.trigger_radius
+        aggressiveness = self._agent_behavior.aggressiveness
+
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
-            vehicle=vehicle, radius=radius
+            vehicle=vehicle, radius=100
         )
 
-        if not neighborhood_vehicles:
-            return []
-
-        nei_vehicle = neighborhood_vehicles[0]
         position = pose.position[:2]
         lane = self._road_network.nearest_lane(position)
-        target_position = nei_vehicle.pose.position[:2]
+
+        if not neighborhood_vehicles or sim.elapsed_sim_time < 1:
+            return []
+
+        target_vehicle = neighborhood_vehicles[0]
+        target_position = target_vehicle.pose.position[:2]
         target_lane = self._road_network.nearest_lane(target_position)
 
         offset = self._road_network.offset_into_lane(lane, position)
         target_offset = self._road_network.offset_into_lane(
             target_lane, target_position
         )
-        if offset < target_offset + 5:
-            # Need to catch up with the target vehicle first
-            return []
 
-        nei_wps = self._waypoints.waypoint_paths_on_lane_at(
-            target_position, target_lane.getID(), 60
+        # cut-in offset should consider the aggressiveness and the speed
+        # of the other vehicle.
+        cut_in_offset = np.clip(15 - aggressiveness, 5, 15) + np.clip(
+            target_vehicle.speed * 0.1, 0, 10
         )
+        if (
+            abs(offset - (cut_in_offset + target_offset)) > 1
+            and lane.getID() != target_lane.getID()
+            and self._task_is_triggered is False
+        ):
+            nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                position, lane.getID(), 60
+            )
+            speed_limit = np.clip(
+                np.clip(
+                    (target_vehicle.speed * 1.2)
+                    - 5.2 * (offset - (cut_in_offset + target_offset)),
+                    0.7 * target_vehicle.speed,
+                    1.5 * target_vehicle.speed,
+                ),
+                2.5,
+                30,
+            )
+        else:
+            self._task_is_triggered = True
+            nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                position, target_lane.getID(), 60
+            )
+            speed_limit = target_vehicle.speed * 1.2
+
         p0 = position
-        p1 = nei_wps[0][len(nei_wps[0]) // 2].pos
-        p2 = target_position
+        p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
+        p1 = p_temp
+        p2 = nei_wps[0][2 * len(nei_wps[0]) // 3].pos
+
         p3 = nei_wps[0][-1].pos
         p_x, p_y = bezier([p0, p1, p2, p3], 20)
         trajectory = []
@@ -253,7 +279,6 @@ class MissionPlanner:
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
-            speed_limit = lane.getSpeed()
 
             wp = Waypoint(
                 pos=pos,
@@ -269,10 +294,59 @@ class MissionPlanner:
     def uturn_waypoints(self, sim, pose: Pose, vehicle):
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
-        radius = self._mission.task.trigger_radius
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
-            vehicle=vehicle, radius=radius
+            vehicle=vehicle, radius=200
         )
+
+        if not neighborhood_vehicles:
+            return []
+
+        aggressiveness = self._agent_behavior.aggressiveness / 10
+        if sim.elapsed_sim_time < 5 * sim.timestep_sec:
+            return []
+        if sim.elapsed_sim_time == 5 * sim.timestep_sec:
+            self._uturn_initial_distant = (
+                -vehicle.position[0] + neighborhood_vehicles[0].pose.position[0]
+            )
+            self._uturn_initial_velocity = neighborhood_vehicles[0].speed
+            self._uturn_initial_height = 1 * (
+                neighborhood_vehicles[0].pose.position[1] - vehicle.position[1]
+            )
+
+            if (2 * self._uturn_initial_height * 3.14 / 13.8) * neighborhood_vehicles[
+                0
+            ].speed > self._uturn_initial_distant:
+                self._insufficient_initial_distant = True
+
+        horizontal_distant = (
+            -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
+        )
+
+        if self._insufficient_initial_distant is True:
+            if horizontal_distant > 0:
+                return []
+            else:
+                self._task_is_triggered = True
+
+        if (
+            horizontal_distant > 0
+            and self._task_is_triggered is False
+            and (2 * self._uturn_initial_height * 3.14 / 13.8)
+            * neighborhood_vehicles[0].speed
+            > horizontal_distant
+        ):
+            return []
+
+        if (
+            horizontal_distant > 0
+            and self._task_is_triggered is False
+            and horizontal_distant
+            > (1 - aggressiveness) * (self._uturn_initial_distant - 1)
+            + aggressiveness
+            * (2 * self._uturn_initial_height * 3.14 / 13.8)
+            * neighborhood_vehicles[0].speed
+        ):
+            return []
 
         if not neighborhood_vehicles and not self._task_is_triggered:
             return []
@@ -285,8 +359,29 @@ class MissionPlanner:
         start_edge = self._road_network.road_edge_data_for_lane_id(start_lane.getID())
         wp = self._waypoints.closest_waypoint(pose)
         current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
-        if not start_edge.oncoming_edges:
-            return []
+
+        if self._task_is_triggered is False:
+            self._uturn_initial_heading = pose.heading
+            self._uturn_initial_position = pose.position[0]
+
+        vehicle_heading_vec = radians_to_vec(pose.heading)
+        initial_heading_vec = radians_to_vec(self._uturn_initial_heading)
+
+        heading_diff = np.dot(vehicle_heading_vec, initial_heading_vec)
+
+        lane = self._road_network.nearest_lane(vehicle.pose.position[:2])
+        speed_limit = lane.getSpeed() / 2
+
+        if heading_diff < -0.9 and pose.position[0] - self._uturn_initial_position < -2:
+            # Once it faces the opposite direction and pass the initial
+            # uturn point for 2 meters, stop generating u-turn waypoints
+            if (
+                pose.position[0] - neighborhood_vehicles[0].pose.position[0] > 12
+                or neighborhood_vehicles[0].pose.position[0] > pose.position[0]
+            ):
+                return []
+            else:
+                speed_limit = neighborhood_vehicles[0].speed
 
         self._task_is_triggered = True
 
@@ -327,7 +422,7 @@ class MissionPlanner:
             offset = radians_to_vec(heading) * lane_width
             p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
             offset = radians_to_vec(target_heading) * 5
-            p2 = np.array([p1[0] + offset[0], p1[1] + offset[1]])
+            p2 = np.array([p1[0] - offset[0], p1[1] - offset[1]])
 
             p3 = target.pos
             p_x, p_y = bezier([p0, p1, p2, p3], 20)
@@ -340,7 +435,6 @@ class MissionPlanner:
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
-            speed_limit = lane.getSpeed()
 
             wp = Waypoint(
                 pos=pos,

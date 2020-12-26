@@ -15,7 +15,7 @@ class KeepLaneAgent(Agent):
         return "keep_lane"
 
 
-def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
+def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_specs = {
         agent_id: AgentSpec(
             interface=AgentInterface.from_type(
@@ -30,6 +30,7 @@ def main(scenarios, headless, num_episodes, seed, max_episode_steps=None):
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs=agent_specs,
+        sim_name=sim_name,
         headless=headless,
         seed=seed,
     )
@@ -61,6 +62,7 @@ if __name__ == "__main__":
 
     main(
         scenarios=args.scenarios,
+        sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,

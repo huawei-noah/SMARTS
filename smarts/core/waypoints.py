@@ -307,7 +307,8 @@ class Waypoints:
         return [
             sorted(
                 l_wps,
-                key=lambda _lwp: abs(poses[idx].heading.relative_to(_lwp.wp.heading)),
+                key=lambda _lwp: squared_dist(poses[idx].position[:2], _lwp.wp.pos)
+                + abs(poses[idx].heading.relative_to(_lwp.wp.heading)),
             )
             for idx, l_wps in enumerate(linked_waypoints)
         ]

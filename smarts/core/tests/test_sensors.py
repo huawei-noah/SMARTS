@@ -12,6 +12,7 @@ from smarts.core.sensors import WaypointsSensor
 from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
+from smarts.core.agent_interface import AgentBehavior, AgentInterface
 
 AGENT_ID = "Agent-007"
 
@@ -98,11 +99,23 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
     scenario = next(uturn_scenarios)
     sim = mock.Mock()
     vehicle = mock.Mock()
+    sim.elapsed_sim_time = 1
+    sim.timestep_sec = 0.1
+    nei_vehicle = mock.Mock()
+    nei_vehicle.pose = Pose(
+        position=np.array([25, -68, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
+    )
+    sim.neighborhood_vehicles_around_vehicle = mock.MagicMock(
+        return_value=[nei_vehicle]
+    )
+
     vehicle.pose = Pose(
         position=np.array([33, -65, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
     )
 
-    mission_planner = MissionPlanner(scenario.waypoints, scenario.road_network)
+    mission_planner = MissionPlanner(
+        scenario.waypoints, scenario.road_network, AgentBehavior(aggressiveness=3)
+    )
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
     mission_planner._task_is_triggered = True
@@ -138,6 +151,8 @@ def test_waypoints_sensor_with_cut_in_task(cut_in_scenarios):
 
     sim = mock.Mock()
     nei_vehicle = mock.Mock()
+    nei_vehicle.speed = 10
+    sim.elapsed_sim_time = 4
     nei_vehicle.pose = Pose(
         position=np.array([25, -68, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
     )
@@ -150,7 +165,9 @@ def test_waypoints_sensor_with_cut_in_task(cut_in_scenarios):
         position=np.array([35, -65, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
     )
 
-    mission_planner = MissionPlanner(scenario.waypoints, scenario.road_network)
+    mission_planner = MissionPlanner(
+        scenario.waypoints, scenario.road_network, AgentBehavior(aggressiveness=3)
+    )
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
 

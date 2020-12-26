@@ -38,7 +38,7 @@ from panda3d.core import (
 
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.utils.math import squared_dist, vec_2d
-from smarts.sstudio.types import Via
+from smarts.sstudio.types import CutIn, UTurn
 
 from .coordinates import BoundingBox, Heading
 from .events import Events
@@ -82,6 +82,7 @@ class EgoVehicleObservation(NamedTuple):
 
 class RoadWaypoints(NamedTuple):
     lanes: Dict[str, List[Waypoint]]
+    route_waypoints: List[Waypoint]
 
 
 class GridMapMetadata(NamedTuple):
@@ -966,21 +967,36 @@ class WaypointsSensor(Sensor):
         self._lookahead = lookahead
 
     def __call__(self):
-        return self._mission_planner.waypoint_paths_at(
-            sim=self._sim,
-            pose=self._vehicle.pose,
-            lookahead=self._lookahead,
-            vehicle=self._vehicle,
-        )
+        waypoints_with_task = None
+        if self._mission_planner.mission.task is not None:
+            if isinstance(self._mission_planner.mission.task, UTurn):
+                waypoints_with_task = self._mission_planner.uturn_waypoints(
+                    self._sim, self._vehicle.pose, self._vehicle
+                )
+            elif isinstance(self._mission_planner.mission.task, CutIn):
+                waypoints_with_task = self._mission_planner.cut_in_waypoints(
+                    self._sim, self._vehicle.pose, self._vehicle
+                )
+
+        if waypoints_with_task:
+            return waypoints_with_task
+        else:
+            return self._mission_planner.waypoint_paths_at(
+                sim=self._sim,
+                pose=self._vehicle.pose,
+                lookahead=self._lookahead,
+                vehicle=self._vehicle,
+            )
 
     def teardown(self):
         pass
 
 
 class RoadWaypointsSensor(Sensor):
-    def __init__(self, vehicle, sim, horizon=50):
+    def __init__(self, vehicle, sim, mission_planner, horizon=50):
         self._vehicle = vehicle
         self._sim = sim
+        self._mission_planner = mission_planner
         self._horizon = horizon
 
     def __call__(self):
@@ -992,7 +1008,14 @@ class RoadWaypointsSensor(Sensor):
             for lane in edge.getLanes():
                 lane_paths[lane.getID()] = self.paths_for_lane(lane)
 
-        return RoadWaypoints(lanes=lane_paths)
+        route_waypoints = self.route_waypoints()
+
+        return RoadWaypoints(lanes=lane_paths, route_waypoints=route_waypoints)
+
+    def route_waypoints(self):
+        return self._mission_planner.waypoint_paths_at(
+            sim=self._sim, pose=self._vehicle.pose, lookahead=50, vehicle=self._vehicle,
+        )
 
     def paths_for_lane(self, lane, overflow_offset=None):
         if overflow_offset is None:
