@@ -62,9 +62,9 @@ setup(
         "matplotlib",
         "scikit-image",
         # The following are for /smarts/zoo
-        "twisted",
+        "grpcio==1.30.0",
         "PyYAML",
-        "grpcio==1.34.0",
+        "twisted",
     ],
     extras_require={
         "train": [
@@ -76,10 +76,10 @@ setup(
         ],
         "dev": [
             "black==19.10b0",
+            "grpcio-tools==1.30.0",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
-            "grpcio-tools==1.34.0",
         ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
