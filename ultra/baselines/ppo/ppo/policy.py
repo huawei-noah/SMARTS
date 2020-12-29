@@ -1,7 +1,7 @@
 # some parts of this implementation is inspired by https://github.com/Khrylx/PyTorch-RL
 import torch, os, yaml
 import numpy as np
-from ultra.baselines.ppo.network import PPONetwork
+from ultra.baselines.ppo.ppo.network import PPONetwork
 from smarts.core.agent import Agent
 import pathlib
 import os
