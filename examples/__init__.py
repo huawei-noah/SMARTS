@@ -18,6 +18,12 @@ def default_argument_parser(program: str):
         nargs="+",
     )
     parser.add_argument(
+        "--sim-name",
+        help="a string that gives this simulation a name.",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
         "--headless", help="Run the simulation in headless mode.", action="store_true"
     )
     parser.add_argument("--seed", type=int, default=42)
