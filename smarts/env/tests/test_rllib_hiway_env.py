@@ -7,7 +7,7 @@ import pytest
 import ray
 from ray import tune
 from ray.rllib.models import ModelCatalog
-from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
+from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -123,6 +123,7 @@ def test_rllib_hiway_env(rllib_agent):
     analysis = tune.run(
         "PPO",
         name="RLlibHiWayEnv test",
+        mode="max",
         # terminate as soon as possible (this will run one training iteration)
         stop={"time_total_s": 1},
         max_failures=0,  # On failures, exit immediately

@@ -46,7 +46,7 @@ setup(
         #       and ray[rllib] under [train] it  prevents rllib from getting installed.
         #       For simplicity we just install both here. In the future we may want to
         #       address this bug head on to keep our SMARTS base install more lean.
-        "ray[rllib]==0.8.6",  # We use Ray for our multiprocessing needs
+        "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
         # The following are for Scenario Studio
         "yattag",
         # The following are for testing
