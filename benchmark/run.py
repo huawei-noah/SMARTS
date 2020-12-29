@@ -138,7 +138,7 @@ def main(
     )
     analysis = tune.run(**config["run"])
 
-    print(analysis.dataframe().head())
+    print(analysis.dataframe(mode="max").head())
 
 
 def parse_args():

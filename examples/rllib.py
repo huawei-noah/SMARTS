@@ -137,7 +137,7 @@ def main(
         scheduler=pbt,
     )
 
-    print(analysis.dataframe().head())
+    print(analysis.dataframe(mode="max").head())
 
     best_logdir = Path(analysis.get_best_logdir("episode_reward_max"))
     model_path = best_logdir / "model"
