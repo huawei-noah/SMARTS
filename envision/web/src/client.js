@@ -31,7 +31,7 @@ export default class Client {
     this._maxRetries = retries;
     this._glb_cache = {};
 
-    this._socket = {};
+    this._sockets = {};
     this._flushStream = {};
     this._stateQueues = {};
     this._simulationSelectedTime = {};
@@ -51,8 +51,8 @@ export default class Client {
   }
 
   seek(simulationId, seconds) {
-    if (!(simulationId in this._socket)) {
-      this._socket[simulationId] = null;
+    if (!(simulationId in this._sockets)) {
+      this._sockets[simulationId] = null;
     }
 
     if (!(simulationId in this._flushStream)) {
@@ -60,14 +60,14 @@ export default class Client {
     }
 
     if (
-      !this._socket[simulationId] &&
-      this._socket[simulationId].readyState == WebSocket.OPEN
+      !this._sockets[simulationId] &&
+      this._sockets[simulationId].readyState == WebSocket.OPEN
     ) {
       console.warn("Unable to seek because no connected socket exists");
       return;
     }
 
-    this._socket[simulationId].send(JSON.stringify({ seek: seconds }));
+    this._sockets[simulationId].send(JSON.stringify({ seek: seconds }));
     this._flushStream[simulationId] = true;
   }
 
@@ -132,8 +132,8 @@ export default class Client {
   }
 
   async *worldstate(simulationId) {
-    if (!(simulationId in this._socket)) {
-      this._socket[simulationId] = null;
+    if (!(simulationId in this._sockets)) {
+      this._sockets[simulationId] = null;
     }
 
     if (!(simulationId in this._flushStream)) {
@@ -150,8 +150,8 @@ export default class Client {
     while (true) {
       // If we dropped the connection or never connected in the first place
       let isConnected =
-        this._socket[simulationId] &&
-        this._socket[simulationId].readyState == WebSocket.OPEN;
+        this._sockets[simulationId] &&
+        this._sockets[simulationId].readyState == WebSocket.OPEN;
 
       if (isConnected) {
         while (this._stateQueues[simulationId].length > 0) {
@@ -169,7 +169,7 @@ export default class Client {
           yield [item.state, elapsed_times];
         }
       } else {
-        this._socket[simulationId] = await this._obtainStream(
+        this._sockets[simulationId] = await this._obtainStream(
           simulationId,
           this._stateQueues[simulationId],
           this._maxRetries
