@@ -84,7 +84,7 @@ class Client:
         if sim_name:
             # String length limit for display is 20 characters
             # Replace all special (non-alphanumeric) characters to "_" to avoid invalid key values
-            sim_name = re.sub("\W+", "_", sim_name[:20])
+            sim_name = re.sub(r"\W+", "_", sim_name[:20])
             client_id = f"{sim_name}_{client_id}"
 
         if endpoint is None:

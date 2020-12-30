@@ -145,7 +145,7 @@ function App({ client }) {
                     totalTime={totalElapsedTime}
                     onSeek={(seconds) => {
                       setCurrentElapsedTime(seconds);
-                      client.seek(seconds);
+                      client.seek(matchedSimulationId, seconds);
                     }}
                     style={{ height: "80px" }}
                   />
