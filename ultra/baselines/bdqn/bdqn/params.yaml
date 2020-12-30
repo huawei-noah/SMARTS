@@ -2,16 +2,16 @@ action_space_type: discrete
 seed: 765749
 batch_size: 64
 sticky_actions: 1
-lr: 1e-4
+lr: 1e-5
 train_step: 4
 prev_action_size: 2
 target_update: 0.01
-warmup: 100
+warmup: 10000
 gamma: 0.99
 use_ddqn: True
 observation_num_lookahead: 20
 replay_buffer:
-  buffer_size: 1e5
+  buffer_size: 1e6
   batch_size: 64
 social_vehicles:
     encoder_key: precog_encoder

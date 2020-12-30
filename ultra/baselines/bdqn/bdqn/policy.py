@@ -21,7 +21,7 @@ class BehavioralDQNPolicy(DQNPolicy):
     ):
         self.policy_params = policy_params
         network_class = DQNWithSocialEncoder
-        self.epsilon_obj = EpsilonExplore(1.0, 0.05, 100)
+        self.epsilon_obj = EpsilonExplore(1.0, 0.05, 100000)
 
         discrete_action_spaces = [[0], [1]]
         action_size = discrete_action_spaces

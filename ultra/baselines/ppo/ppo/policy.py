@@ -328,12 +328,12 @@ class PPOPolicy(Agent):
             "loss/critic": {
                 "type": "scalar",
                 "data": average_critic_loss,
-                "freq": 1,
+                "freq": self.logging_freq,
             },
             "loss/actor": {
                 "type": "scalar",
                 "data": average_actor_loss,
-                "freq": 1,
+                "freq": self.logging_freq,
             },
             "loss/entropy": {
                 "type": "scalar",

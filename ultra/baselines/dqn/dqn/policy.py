@@ -23,7 +23,7 @@ class DQNPolicy(Agent):
     ):
         self.policy_params = policy_params
         network_class = DQNWithSocialEncoder
-        self.epsilon_obj = EpsilonExplore(1.0, 0.05, 100)
+        self.epsilon_obj = EpsilonExplore(1.0, 0.05, 100000)
         action_space_type = policy_params["action_space_type"]
         if action_space_type == "continuous":
             discrete_action_spaces = [

@@ -16,7 +16,7 @@ replay_buffer:
     buffer_size: 1e6
     batch_size: 32
 social_vehicles:
-    encoder_key: no_encoder
+    encoder_key: precog_encoder
     social_policy_hidden_units: 128
     social_polciy_init_std: 0.5
     social_capacity: 10
