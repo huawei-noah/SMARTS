@@ -52,8 +52,9 @@ setup(
         # The following are for testing
         "pytest",
         "pytest-benchmark",
-        "pytest-xdist",
         "pytest-cov",
+        "pytest-notebook",
+        "pytest-xdist",
         # The following are for /envision
         "tornado",
         "websocket-client",
