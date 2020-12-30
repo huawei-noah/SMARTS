@@ -178,7 +178,7 @@ export default class Client {
 
       // This function can be triggered multiple times for the same simulation id
       // (i.e. everytime this simulation is selected from menu)
-      // We only need to keep the most recent call, all the previous calls can be returned
+      // We only need to keep the most recent call to loop, all the previous calls can be returned
       if (selectedTime < this._simulationSelectedTime[simulationId]) {
         return;
       }
