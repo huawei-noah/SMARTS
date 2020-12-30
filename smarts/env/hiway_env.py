@@ -60,8 +60,8 @@ class HiWayEnv(gym.Env):
             used to specify envision's uri
         envision_record_data_replay_path:
             used to specify envision's data replay output directory
-        zoo_workers:
-            List of (ip, port) tuples of Zoo Workers, used to instantiate remote social agents
+        zoo_addrs:
+            List of (ip, port) tuples of zoo server, used to instantiate remote social agents
     """
 
     metadata = {"render.modes": ["human"]}
@@ -84,7 +84,7 @@ class HiWayEnv(gym.Env):
         endless_traffic=True,
         envision_endpoint=None,
         envision_record_data_replay_path=None,
-        zoo_workers=None,
+        zoo_addrs=None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts.core.seed(seed)
@@ -125,7 +125,7 @@ class HiWayEnv(gym.Env):
             envision=envision_client,
             visdom=visdom_client,
             timestep_sec=timestep_sec,
-            zoo_workers=zoo_workers,
+            zoo_addrs=zoo_addrs,
         )
 
     @property

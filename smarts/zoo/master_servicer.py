@@ -45,7 +45,7 @@ class MasterServicer(master_pb2_grpc.MasterServicer):
     def __del__(self):
         self.destroy()
 
-    def SpawnWorker(self, request, context):
+    def spawn_worker(self, request, context):
         port = find_free_port()
 
         cmd = [
@@ -64,7 +64,7 @@ class MasterServicer(master_pb2_grpc.MasterServicer):
         context.set_code(grpc.StatusCode.INTERNAL)
         return master_pb2.Port()
 
-    def StopWorker(self, request, context):
+    def stop_worker(self, request, context):
         log.debug(
             f"Master - pid({os.getpid()}), received stop signal for worker at port {request.num}."
         )

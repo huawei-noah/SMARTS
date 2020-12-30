@@ -26,10 +26,10 @@ package worker;
 service Worker {
 
     // Builds Agent according the AgentSpec.
-    rpc Build(Specification) returns (Status) {}
+    rpc build(Specification) returns (Status) {}
 
     // Agent processes observations and returns action.
-    rpc Act(Observation) returns (Action) {}
+    rpc act(Observation) returns (Action) {}
 }
 
 // Agent specification
@@ -48,5 +48,5 @@ message Observation {
 
 // Agent's action in response to the observation
 message Action {
-    optional bytes action = 2;
+    bytes action = 1;
 }

@@ -40,7 +40,7 @@ class RemoteAgentBuffer:
         """
         Args:
             zoo_master_addrs:
-                List of (ip, port) tuples for master processes. Master processes instantiate 
+                List of (ip, port) tuples for master processes. Master processes will instantiate 
                 worker processes which run remote agents.
             buffer_size: 
                 Number of RemoteAgents to pre-initialize and keep running in the background, 
@@ -50,8 +50,9 @@ class RemoteAgentBuffer:
 
         self._log = logging.getLogger(self.__class__.__name__)
 
-        # List of dictionaries. Each dictionary provides connection info
-        # for a zoo master. E.g.,
+        # self._zoo_master_conns is a list of dictionaries.
+        # Each dictionary provides connection info for a zoo master.
+        # Example:
         # [
         #     {"address": ("127.0.0.1", 7432)),
         #      "process": <proc>,
@@ -68,7 +69,7 @@ class RemoteAgentBuffer:
 
         # Populate zoo master connection with address and process handles.
         if not zoo_master_addrs:
-            # Spawn a local zoo master since no remote zoo masters was provided.
+            # Spawn a local zoo master since no remote zoo masters were provided.
             self._local_zoo_master = True
             port = find_free_port()
             self._zoo_master_conns = [
@@ -122,7 +123,7 @@ class RemoteAgentBuffer:
         worker_port = None
         for ii in range(retries):
             try:
-                response = zoo_master_conn["stub"].SpawnWorker(master_pb2.Machine())
+                response = zoo_master_conn["stub"].spawn_worker(master_pb2.Machine())
                 worker_port = response.num
                 break
             except grpc.RpcError as e:

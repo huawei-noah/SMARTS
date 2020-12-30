@@ -27,10 +27,10 @@ service Master {
 
     // Spawn worker processes.
     // Returns the address (ip, port) of new worker process.
-    rpc SpawnWorker(Machine) returns (Port) {}
+    rpc spawn_worker(Machine) returns (Port) {}
 
     // Stop worker process.
-    rpc StopWorker(Port) returns (Status) {}
+    rpc stop_worker(Port) returns (Status) {}
 }
 
 // Machine specification

@@ -62,7 +62,7 @@ class RemoteAgent:
 
     def act(self, obs):
         # Run task asynchronously and return a Future.
-        self._act_future = self._worker_stub.Act.future(
+        self._act_future = self._worker_stub.act.future(
             worker_pb2.Observation(payload=cloudpickle.dumps(obs))
         )
 
@@ -71,7 +71,7 @@ class RemoteAgent:
     def start(self, agent_spec: AgentSpec):
         # Send the AgentSpec to the agent runner.
         # Cloudpickle used only for the agent_spec to allow for serialization of lambdas.
-        self._worker_stub.Build(
+        self._worker_stub.build(
             worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
         )
 
@@ -84,7 +84,7 @@ class RemoteAgent:
         self._worker_channel.close()
 
         # Stop the remote worker process
-        response = self._master_stub.StopWorker(
+        response = self._master_stub.stop_worker(
             master_pb2.Port(num=self._worker_address[1])
         )
 

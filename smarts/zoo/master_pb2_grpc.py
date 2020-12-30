@@ -15,13 +15,13 @@ class MasterStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SpawnWorker = channel.unary_unary(
-            "/master.Master/SpawnWorker",
+        self.spawn_worker = channel.unary_unary(
+            "/master.Master/spawn_worker",
             request_serializer=master__pb2.Machine.SerializeToString,
             response_deserializer=master__pb2.Port.FromString,
         )
-        self.StopWorker = channel.unary_unary(
-            "/master.Master/StopWorker",
+        self.stop_worker = channel.unary_unary(
+            "/master.Master/stop_worker",
             request_serializer=master__pb2.Port.SerializeToString,
             response_deserializer=master__pb2.Status.FromString,
         )
@@ -31,7 +31,7 @@ class MasterServicer(object):
     """Interface exported by the master server.
     """
 
-    def SpawnWorker(self, request, context):
+    def spawn_worker(self, request, context):
         """Spawn worker processes.
         Returns the address (ip, port) of new worker process.
         """
@@ -39,7 +39,7 @@ class MasterServicer(object):
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
-    def StopWorker(self, request, context):
+    def stop_worker(self, request, context):
         """Stop worker process.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -49,13 +49,13 @@ class MasterServicer(object):
 
 def add_MasterServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "SpawnWorker": grpc.unary_unary_rpc_method_handler(
-            servicer.SpawnWorker,
+        "spawn_worker": grpc.unary_unary_rpc_method_handler(
+            servicer.spawn_worker,
             request_deserializer=master__pb2.Machine.FromString,
             response_serializer=master__pb2.Port.SerializeToString,
         ),
-        "StopWorker": grpc.unary_unary_rpc_method_handler(
-            servicer.StopWorker,
+        "stop_worker": grpc.unary_unary_rpc_method_handler(
+            servicer.stop_worker,
             request_deserializer=master__pb2.Port.FromString,
             response_serializer=master__pb2.Status.SerializeToString,
         ),
@@ -72,13 +72,12 @@ class Master(object):
     """
 
     @staticmethod
-    def SpawnWorker(
+    def spawn_worker(
         request,
         target,
         options=(),
         channel_credentials=None,
         call_credentials=None,
-        insecure=False,
         compression=None,
         wait_for_ready=None,
         timeout=None,
@@ -87,12 +86,11 @@ class Master(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/master.Master/SpawnWorker",
+            "/master.Master/spawn_worker",
             master__pb2.Machine.SerializeToString,
             master__pb2.Port.FromString,
             options,
             channel_credentials,
-            insecure,
             call_credentials,
             compression,
             wait_for_ready,
@@ -101,13 +99,12 @@ class Master(object):
         )
 
     @staticmethod
-    def StopWorker(
+    def stop_worker(
         request,
         target,
         options=(),
         channel_credentials=None,
         call_credentials=None,
-        insecure=False,
         compression=None,
         wait_for_ready=None,
         timeout=None,
@@ -116,12 +113,11 @@ class Master(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/master.Master/StopWorker",
+            "/master.Master/stop_worker",
             master__pb2.Port.SerializeToString,
             master__pb2.Status.FromString,
             options,
             channel_credentials,
-            insecure,
             call_credentials,
             compression,
             wait_for_ready,

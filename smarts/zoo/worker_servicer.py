@@ -40,7 +40,7 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
         self._agent = None
         self._agent_spec = None
 
-    def Build(self, request, context):
+    def build(self, request, context):
         time_start = time.time()
         self._agent_spec = cloudpickle.loads(request.payload)
         pickle_load_time = time.time()
@@ -54,7 +54,7 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
         )
         return worker_pb2.Status()
 
-    def Act(self, request, context):
+    def act(self, request, context):
         if self._agent == None or self._agent_spec == None:
             context.set_details(f"Remote agent not built yet.")
             context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
