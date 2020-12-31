@@ -258,8 +258,7 @@ class MissionPlanner:
         ):
             speed_limit = np.clip(
                 np.clip(
-                    (target_vehicle.speed * 1.1)
-                    + 2 * dot,
+                    (target_vehicle.speed * 1.1) + 2 * dot,
                     0.5 * target_vehicle.speed,
                     2 * target_vehicle.speed,
                 ),

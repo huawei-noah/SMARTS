@@ -37,7 +37,6 @@ from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import (
     CutIn,
     EntryTactic,
-    JunctionEdgeIDResolver,
     UTurn,
     Via as SSVia,
 )
