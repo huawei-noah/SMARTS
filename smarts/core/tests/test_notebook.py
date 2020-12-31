@@ -3,7 +3,7 @@ import os
 import tempfile
 
 import gym
-import importlib_resources
+import importlib.resources as importlib_resources
 import pytest
 import pytest_notebook.nb_regression as nb
 
