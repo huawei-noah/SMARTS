@@ -58,6 +58,7 @@ class MissionPlanner:
         self._uturn_initial_height = 0
         self._insufficient_initial_distant = False
         self._uturn_initial_position = 0
+        self._cut_in_speed = None
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -234,7 +235,7 @@ class MissionPlanner:
 
         # cut-in offset should consider the aggressiveness and the speed
         # of the other vehicle.
-        cut_in_offset = np.clip(15 - aggressiveness, 5, 15) + np.clip(
+        cut_in_offset = np.clip(20 - aggressiveness, 10, 20) + np.clip(
             target_vehicle.speed * 0.1, 0, 10
         )
         if (
@@ -247,10 +248,10 @@ class MissionPlanner:
             )
             speed_limit = np.clip(
                 np.clip(
-                    (target_vehicle.speed * 1.2)
-                    - 5.2 * (offset - (cut_in_offset + target_offset)),
-                    0.7 * target_vehicle.speed,
-                    1.5 * target_vehicle.speed,
+                    (target_vehicle.speed * 1.1)
+                    - 2 * (offset - (cut_in_offset + target_offset)),
+                    0.5 * target_vehicle.speed,
+                    2 * target_vehicle.speed,
                 ),
                 2.5,
                 30,
@@ -260,7 +261,10 @@ class MissionPlanner:
             nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                 position, target_lane.getID(), 60
             )
-            speed_limit = target_vehicle.speed * 1.2
+            if self._cut_in_speed is None:
+                self._cut_in_speed = target_vehicle.speed * 1.2
+
+            speed_limit = self._cut_in_speed
 
         p0 = position
         p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
