@@ -82,9 +82,9 @@ class Client:
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
         client_id = current_time
         if sim_name:
-            # String length limit for display is 20 characters
+            # Set string length limit to 20 characters for client id and Envision/URL display purpose
             # Replace all special (non-alphanumeric) characters to "_" to avoid invalid key values
-            sim_name = re.sub("\W+", "_", sim_name[:20])
+            sim_name = re.sub(r"\W+", "_", sim_name[:20])
             client_id = f"{sim_name}_{client_id}"
 
         if endpoint is None:
