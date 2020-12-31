@@ -3,11 +3,10 @@ import os
 import tempfile
 
 import gym
-import importlib.resources as importlib_resources
+import importlib_resources
 import pytest
 import pytest_notebook.nb_regression as nb
 
-from smarts.core import tests
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
@@ -71,7 +70,11 @@ def run_scenario(
 def notebook():
     _, tmppath = tempfile.mkstemp(suffix=".ipynb")
     with open(tmppath, "w") as handle:
-        handle.write(importlib_resources.read_text(tests, "test_notebook.ipynb"))
+        import smarts.core.tests
+
+        handle.write(
+            importlib_resources.read_text(smarts.core.tests, "test_notebook.ipynb")
+        )
     yield tmppath
     os.remove(tmppath)
 
