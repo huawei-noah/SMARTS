@@ -17,20 +17,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import cloudpickle
 import logging
 from typing import Set
 
 from envision.types import format_actor_id
-
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
+from smarts.core.mission_planner import MissionPlanner
+from smarts.core.remote_agent_buffer import RemoteAgentBuffer
+from smarts.core.sensors import Sensors
 from smarts.core.utils.id import SocialAgentId
+from smarts.core.vehicle import VehicleState
 from smarts.zoo.registry import make as make_social_agent
-
-from .mission_planner import MissionPlanner
-from .remote_agent_buffer import RemoteAgentBuffer
-from .sensors import Sensors
-from .vehicle import VehicleState
 
 
 class AgentManager:
@@ -41,11 +40,9 @@ class AgentManager:
          time.
     """
 
-    def __init__(self, interfaces, zoo_workers=None, auth_key=None):
+    def __init__(self, interfaces, zoo_addrs=None):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._remote_agent_buffer = RemoteAgentBuffer(
-            zoo_worker_addrs=zoo_workers, auth_key=auth_key
-        )
+        self._remote_agent_buffer = RemoteAgentBuffer(zoo_manager_addrs=zoo_addrs)
 
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
@@ -229,7 +226,9 @@ class AgentManager:
         try:
             social_agent_actions = {
                 agent_id: (
-                    self._remote_social_agents_action[agent_id].result()
+                    cloudpickle.loads(
+                        self._remote_social_agents_action[agent_id].result().action
+                    )
                     if self._remote_social_agents_action.get(agent_id, None)
                     else None
                 )
@@ -237,9 +236,8 @@ class AgentManager:
             }
         except Exception as e:
             self._log.error(
-                "RemoteAgent: Resolving the remote agent's action (a Future object) generated exception."
+                "Resolving the remote agent's action (a Future object) generated exception."
             )
-            self._log.exception(e)
             raise e
 
         agents_without_actions = [
@@ -300,9 +298,7 @@ class AgentManager:
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(
-                obs, timeout=5
-            )
+            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
     def setup_agents(self, sim):
         self.init_ego_agents(sim)
@@ -471,9 +467,7 @@ class AgentManager:
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(
-                obs, timeout=5
-            )
+            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)

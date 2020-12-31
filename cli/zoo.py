@@ -65,15 +65,16 @@ You can now add it to the policy zoo if you want to make it available to scenari
     )
 
 
-@zoo_cli.command(name="worker", help="Start the agent worker")
-@click.argument("auth_key", type=str, default=None)
+@zoo_cli.command(
+    name="manager",
+    help="Start the manager process which instantiates workers. Workers execute remote agents.",
+)
 @click.argument("port", default=7432, type=int)
-def worker(auth_key, port):
-    from smarts.zoo.worker import listen
+def manager(port):
+    from smarts.zoo import manager as zoo_manager
 
-    auth_key = auth_key if auth_key else ""
-    listen(port, auth_key)
+    zoo_manager.serve(port)
 
 
 zoo_cli.add_command(build_policy)
-zoo_cli.add_command(worker)
+zoo_cli.add_command(manager)

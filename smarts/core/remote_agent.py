@@ -18,13 +18,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import cloudpickle
+import grpc
 import logging
 import time
 
 from concurrent import futures
-from multiprocessing.connection import Client
 
-from .agent import AgentSpec
+from smarts.core.agent import AgentSpec
+from smarts.zoo import manager_pb2
+from smarts.zoo import manager_pb2_grpc
+from smarts.zoo import worker_pb2
+from smarts.zoo import worker_pb2_grpc
 
 
 class RemoteAgentException(Exception):
@@ -32,59 +36,57 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, address, socket_family, auth_key, connection_retries=100):
+    def __init__(self, manager_address, worker_address):
         self._log = logging.getLogger(self.__class__.__name__)
-        auth_key_conn = str.encode(auth_key) if auth_key else None
 
-        self._conn = None
-        self._tp_exec = futures.ThreadPoolExecutor()
+        # Track the last action future.
+        self._act_future = None
 
-        for i in range(connection_retries):
-            # Waiting on agent to open it's socket.
-            try:
-                self._conn = Client(
-                    address, family=socket_family, authkey=auth_key_conn
-                )
-                break
-            except Exception:
-                self._log.debug(
-                    f"RemoteAgent retrying connection to agent in: attempt {i}"
-                )
-                time.sleep(0.1)
+        self._manager_channel = grpc.insecure_channel(
+            f"{manager_address[0]}:{manager_address[1]}"
+        )
+        self._worker_address = worker_address
+        self._worker_channel = grpc.insecure_channel(
+            f"{worker_address[0]}:{worker_address[1]}"
+        )
+        try:
+            # Wait until the grpc server is ready or timeout after 30 seconds.
+            grpc.channel_ready_future(self._manager_channel).result(timeout=30)
+            grpc.channel_ready_future(self._worker_channel).result(timeout=30)
+        except grpc.FutureTimeoutError as e:
+            raise RemoteAgentException(
+                "Timeout while connecting to remote worker process."
+            ) from e
+        self._manager_stub = manager_pb2_grpc.ManagerStub(self._manager_channel)
+        self._worker_stub = worker_pb2_grpc.WorkerStub(self._worker_channel)
 
-        if self._conn is None:
-            raise RemoteAgentException("Failed to connect to remote agent")
+    def act(self, obs):
+        # Run task asynchronously and return a Future.
+        self._act_future = self._worker_stub.act.future(
+            worker_pb2.Observation(payload=cloudpickle.dumps(obs))
+        )
 
-    def __del__(self):
-        self.terminate()
-
-    def _act(self, obs, timeout):
-        # Send observation
-        self._conn.send({"type": "obs", "payload": obs})
-        # Receive action
-        if self._conn.poll(timeout):
-            try:
-                return self._conn.recv()
-            except ConnectionResetError as e:
-                self.terminate()
-                raise e
-        else:
-            return None
-
-    def act(self, obs, timeout=None):
-        # Run task asynchronously and return a Future
-        return self._tp_exec.submit(self._act, obs, timeout)
+        return self._act_future
 
     def start(self, agent_spec: AgentSpec):
-        # Send the AgentSpec to the agent runner
-        self._conn.send(
-            # We use cloudpickle only for the agent_spec to allow for serialization of lambdas
-            {"type": "agent_spec", "payload": cloudpickle.dumps(agent_spec)}
+        # Send the AgentSpec to the agent runner.
+        # Cloudpickle used only for the agent_spec to allow for serialization of lambdas.
+        self._worker_stub.build(
+            worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
         )
 
     def terminate(self):
-        if self._conn:
-            self._conn.close()
+        # If the last action future returned is incomplete, cancel it first.
+        if (self._act_future is not None) and (not self._act_future.done()):
+            self._act_future.cancel()
 
-        # Shutdown thread pool executor
-        self._tp_exec.shutdown()
+        # Close worker channel
+        self._worker_channel.close()
+
+        # Stop the remote worker process
+        response = self._manager_stub.stop_worker(
+            manager_pb2.Port(num=self._worker_address[1])
+        )
+
+        # Close manager channel
+        self._manager_channel.close()

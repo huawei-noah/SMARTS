@@ -35,15 +35,7 @@ class ChaseViaPointsAgent(Agent):
         )
 
 
-def main(
-    scenarios,
-    sim_name,
-    headless,
-    num_episodes,
-    seed,
-    auth_key=None,
-    max_episode_steps=None,
-):
+def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.Laner, max_episode_steps=max_episode_steps
@@ -61,8 +53,7 @@ def main(
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
-        # zoo_workers=[("143.110.210.157", 7432)], # Distribute social agents across these workers
-        auth_key=auth_key,
+        # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.
         # envision_record_data_replay_path="./data_replay",
     )
 
@@ -83,14 +74,7 @@ def main(
 
 if __name__ == "__main__":
     parser = default_argument_parser("single-agent-example")
-    parser.add_argument(
-        "--auth_key",
-        type=str,
-        default=None,
-        help="Authentication key for connection to run agent",
-    )
     args = parser.parse_args()
-    auth_key = args.auth_key if args.auth_key else ""
 
     main(
         scenarios=args.scenarios,
@@ -98,5 +82,4 @@ if __name__ == "__main__":
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,
-        auth_key=auth_key,
     )
