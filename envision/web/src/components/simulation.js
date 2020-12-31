@@ -52,7 +52,7 @@ export default function Simulation({
   client,
   showScores,
   egoView,
-  canvasRef,
+  canvasRef = null,
   onElapsedTimesChanged = (current, total) => {},
   style = {},
 }) {
@@ -80,8 +80,9 @@ export default function Simulation({
   });
 
   // Parse extra data attached in glb file
-  function LoadGLTFExtras(loader) {
-    this.name = "load_gltf_extras";
+  function LoadGLTFExtras(loader, scenario_id) {
+    // Register loader locally under different names for different scenarios
+    this.name = `load_gltf_extras_${scenario_id}`;
     this.enabled = true;
 
     if (loader.gltf["extras"]) {
@@ -176,9 +177,12 @@ export default function Simulation({
     let mapFilename = Tools.GetFilename(mapSourceUrl);
 
     // Load extra information attached to the map glb
-    GLTFLoader.RegisterExtension("load_gltf_extras", function (loader) {
-      return new LoadGLTFExtras(loader);
-    });
+    GLTFLoader.RegisterExtension(
+      `load_gltf_extras_${worldState.scenario_id}`,
+      function (loader) {
+        return new LoadGLTFExtras(loader, worldState.scenario_id);
+      }
+    );
 
     SceneLoader.ImportMesh("", mapRootUrl, mapFilename, scene, (meshes) => {
       // Revert root mesh's rotation to match Babylon's coordinate system
@@ -198,7 +202,9 @@ export default function Simulation({
       }
 
       setMapMeshes(meshes);
-      GLTFLoader.UnregisterExtension("load_gltf_extras");
+      GLTFLoader.UnregisterExtension(
+        `load_gltf_extras_${worldState.scenario_id}`
+      );
     });
   }, [scene, worldState.scenario_id]);
 
