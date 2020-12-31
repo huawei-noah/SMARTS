@@ -17,7 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 import {
   Vector3,
@@ -64,8 +64,6 @@ export default function Simulation({
   const [egoDrivenPathModel, setEgoDrivenPathModel] = useState(null);
   const [socialDrivenPathModel, setSocialDrivenPathModel] = useState(null);
 
-  const [mapMeshes, setMapMeshes] = useState([]);
-
   const [roadNetworkBbox, setRoadNetworkBbox] = useState([]);
   const [laneDividerPos, setLaneDividerPos] = useState([]);
   const [edgeDividerPos, setEdgeDividerPos] = useState([]);
@@ -77,6 +75,8 @@ export default function Simulation({
     scene_colors: {},
     scores: [],
   });
+
+  const mapMeshesRef = useRef([]);
 
   // Parse extra data attached in glb file
   function LoadGLTFExtras(loader, scenario_id) {
@@ -166,7 +166,7 @@ export default function Simulation({
       return;
     }
 
-    for (const mesh of mapMeshes) {
+    for (const mesh of mapMeshesRef.current) {
       // doNotRecurse = false, disposeMaterialAndTextures = true
       mesh.dispose(false, true);
     }
@@ -200,7 +200,7 @@ export default function Simulation({
         child.material = material;
       }
 
-      setMapMeshes(meshes);
+      mapMeshesRef.current = meshes;
 
       GLTFLoader.UnregisterExtension(
         `load_gltf_extras_${worldState.scenario_id}`
