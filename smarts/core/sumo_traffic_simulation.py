@@ -112,16 +112,9 @@ class SumoTrafficSimulation:
         if atexit:
             atexit.unregister(self._destroy)
 
-        if self._traci_conn:
-            self._traci_conn.close()
-
-        # Terminate sumo subprocess
-        if self._sumo_proc:
-            self._sumo_proc.stdin.close()
-            self._sumo_proc.stdout.close()
-            self._sumo_proc.stderr.close()
-            self._sumo_proc.terminate()
-            self._sumo_proc.wait()
+        self._close_traci_and_pipes()
+        self._sumo_proc.terminate()
+        self._sumo_proc.wait()
 
     def _initialize_traci_conn(self, num_retries=5):
         # TODO: inline sumo or process pool
@@ -275,7 +268,6 @@ class SumoTrafficSimulation:
             self._sumo_proc.stdin.close()
             self._sumo_proc.stdout.close()
             self._sumo_proc.stderr.close()
-            self._sumo_proc = None
 
         if self._traci_conn:
             self._traci_conn.close()
