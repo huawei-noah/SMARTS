@@ -62,7 +62,7 @@ setup(
         "twisted",
     ],
     extras_require={
-        "tests": [
+        "test": [
             # The following are for testing
             "pytest",
             "pytest-benchmark",
