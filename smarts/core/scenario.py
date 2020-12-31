@@ -126,7 +126,7 @@ class Mission:
     route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
-    task: Tuple[UTurn, CutIn] = None
+    task: Tuple[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
 
     @property

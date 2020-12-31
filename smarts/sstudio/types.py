@@ -411,7 +411,7 @@ class Mission:
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
 
-    task: Tuple[UTurn, CutIn] = None
+    task: Tuple[CutIn, UTurn] = None
     """A task for the actor to accomplish."""
 
 
