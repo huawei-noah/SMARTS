@@ -24,13 +24,12 @@ from typing import Set
 from envision.types import format_actor_id
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
-from smarts.core.utils.id import SocialAgentId
-from smarts.zoo.registry import make as make_social_agent
-
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.remote_agent_buffer import RemoteAgentBuffer
 from smarts.core.sensors import Sensors
+from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
+from smarts.zoo.registry import make as make_social_agent
 
 
 class AgentManager:

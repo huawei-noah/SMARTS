@@ -121,14 +121,14 @@ class RemoteAgentBuffer:
         # Spawn remote worker and get its port.
         retries = 3
         worker_port = None
-        for ii in range(retries):
+        for retry in range(retries):
             try:
                 response = zoo_master_conn["stub"].spawn_worker(master_pb2.Machine())
                 worker_port = response.num
                 break
             except grpc.RpcError as e:
                 self._log.debug(
-                    f"Failed {ii+1}/{retries} times in attempt to spawn a remote worker process. {e}"
+                    f"Failed {retry+1}/{retries} times in attempt to spawn a remote worker process. {e}"
                 )
 
         if worker_port == None:
@@ -171,12 +171,12 @@ class RemoteAgentBuffer:
         return remote_agent
 
     def acquire_remote_agent(self, retries=3) -> RemoteAgent:
-        for ii in range(retries):
+        for retry in range(retries):
             try:
                 return self._try_to_acquire_remote_agent()
             except Exception as e:
                 self._log.debug(
-                    f"Failed {ii}/{retries} times in acquiring remote agent. {repr(e)}"
+                    f"Failed {retry+1}/{retries} times in acquiring remote agent. {repr(e)}"
                 )
                 time.sleep(0.1)
 
