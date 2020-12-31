@@ -232,6 +232,7 @@ export default function Vehicles({
     for (const meshId of nextVehicleMeshIds) {
       let state = worldState.traffic[meshId];
       let mesh = vehicleMeshes[meshId];
+
       // Unavailable until the mesh template has been loaded
       if (!mesh) {
         continue;
