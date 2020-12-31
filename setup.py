@@ -76,6 +76,8 @@ setup(
             "scipy==1.4.1",
             "torch==1.4.0",
             "torchvision==0.5.0",
+            "jupyter-client==6.1.7",
+            "jupyter-core==4.7.0",
         ],
         "dev": [
             "black==19.10b0",
