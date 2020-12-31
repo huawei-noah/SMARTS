@@ -20,10 +20,10 @@
 
 syntax = "proto3";
 
-package master;
+package manager;
 
-// Interface exported by the master server.
-service Master {
+// Interface exported by the manager.
+service Manager {
 
     // Spawn worker processes.
     // Returns the address (ip, port) of new worker process.

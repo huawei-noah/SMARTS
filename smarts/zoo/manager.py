@@ -27,27 +27,27 @@ import subprocess
 import sys
 from concurrent import futures
 
-from smarts.zoo import master_pb2_grpc
-from smarts.zoo import master_servicer
+from smarts.zoo import manager_pb2_grpc
+from smarts.zoo import manager_servicer
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"master.py - pid({os.getpid()})")
+log = logging.getLogger(f"manager.py - pid({os.getpid()})")
 
 
 def serve(port):
     ip = "[::]"
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
-    master_servicer_object = master_servicer.MasterServicer()
-    master_pb2_grpc.add_MasterServicer_to_server(master_servicer_object, server)
+    manager_servicer_object = manager_servicer.ManagerServicer()
+    manager_pb2_grpc.add_ManagerServicer_to_server(manager_servicer_object, server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
-    log.debug(f"Master - ip({ip}), port({port}), pid({os.getpid()}): Started serving.")
+    log.debug(f"Manager - ip({ip}), port({port}), pid({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
-        master_servicer_object.destroy()
+        manager_servicer_object.destroy()
         server.stop(0)
         log.debug(
-            f"Master - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal."
+            f"Manager - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal."
         )
 
     # Catch keyboard interrupt and terminate signal
@@ -56,7 +56,7 @@ def serve(port):
 
     # Wait to receive server termination signal
     server.wait_for_termination()
-    log.debug(f"Master - ip({ip}), port({port}), pid({os.getpid()}): Server exited")
+    log.debug(f"Manager - ip({ip}), port({port}), pid({os.getpid()}): Server exited")
 
 
 if __name__ == "__main__":

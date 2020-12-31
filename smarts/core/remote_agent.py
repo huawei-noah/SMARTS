@@ -25,8 +25,8 @@ import time
 from concurrent import futures
 
 from smarts.core.agent import AgentSpec
-from smarts.zoo import master_pb2
-from smarts.zoo import master_pb2_grpc
+from smarts.zoo import manager_pb2
+from smarts.zoo import manager_pb2_grpc
 from smarts.zoo import worker_pb2
 from smarts.zoo import worker_pb2_grpc
 
@@ -36,14 +36,14 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, master_address, worker_address):
+    def __init__(self, manager_address, worker_address):
         self._log = logging.getLogger(self.__class__.__name__)
 
         # Track the last action future.
         self._act_future = None
 
-        self._master_channel = grpc.insecure_channel(
-            f"{master_address[0]}:{master_address[1]}"
+        self._manager_channel = grpc.insecure_channel(
+            f"{manager_address[0]}:{manager_address[1]}"
         )
         self._worker_address = worker_address
         self._worker_channel = grpc.insecure_channel(
@@ -51,13 +51,13 @@ class RemoteAgent:
         )
         try:
             # Wait until the grpc server is ready or timeout after 30 seconds.
-            grpc.channel_ready_future(self._master_channel).result(timeout=30)
+            grpc.channel_ready_future(self._manager_channel).result(timeout=30)
             grpc.channel_ready_future(self._worker_channel).result(timeout=30)
         except grpc.FutureTimeoutError as e:
             raise RemoteAgentException(
                 "Timeout while connecting to remote worker process."
             ) from e
-        self._master_stub = master_pb2_grpc.MasterStub(self._master_channel)
+        self._manager_stub = manager_pb2_grpc.ManagerStub(self._manager_channel)
         self._worker_stub = worker_pb2_grpc.WorkerStub(self._worker_channel)
 
     def act(self, obs):
@@ -84,9 +84,9 @@ class RemoteAgent:
         self._worker_channel.close()
 
         # Stop the remote worker process
-        response = self._master_stub.stop_worker(
-            master_pb2.Port(num=self._worker_address[1])
+        response = self._manager_stub.stop_worker(
+            manager_pb2.Port(num=self._worker_address[1])
         )
 
-        # Close master channel
-        self._master_channel.close()
+        # Close manager channel
+        self._manager_channel.close()

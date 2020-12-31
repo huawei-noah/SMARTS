@@ -28,16 +28,16 @@ import sys
 import time
 
 from smarts.core.utils.networking import find_free_port
-from smarts.zoo import master_pb2
-from smarts.zoo import master_pb2_grpc
+from smarts.zoo import manager_pb2
+from smarts.zoo import manager_pb2_grpc
 from smarts.zoo import worker as zoo_worker
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"master_servicer.py - pid({os.getpid()})")
+log = logging.getLogger(f"manager_servicer.py - pid({os.getpid()})")
 
 
-class MasterServicer(master_pb2_grpc.MasterServicer):
-    """Provides methods that implement functionality of Master Servicer."""
+class ManagerServicer(manager_pb2_grpc.ManagerServicer):
+    """Provides methods that implement functionality of Manager Servicer."""
 
     def __init__(self):
         self._workers = {}
@@ -58,15 +58,15 @@ class MasterServicer(master_pb2_grpc.MasterServicer):
         worker = subprocess.Popen(cmd)
         if worker.poll() == None:
             self._workers[port] = worker
-            return master_pb2.Port(num=port)
+            return manager_pb2.Port(num=port)
 
         context.set_details("Error in spawning worker subprocess.")
         context.set_code(grpc.StatusCode.INTERNAL)
-        return master_pb2.Port()
+        return manager_pb2.Port()
 
     def stop_worker(self, request, context):
         log.debug(
-            f"Master - pid({os.getpid()}), received stop signal for worker at port {request.num}."
+            f"Manager - pid({os.getpid()}), received stop signal for worker at port {request.num}."
         )
 
         # Get worker_process corresponding to the received port number.
@@ -76,7 +76,7 @@ class MasterServicer(master_pb2_grpc.MasterServicer):
                 f"Trying to stop nonexistent worker with a port {request.num}."
             )
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            return master_pb2.Status()
+            return manager_pb2.Status()
 
         # Terminate worker process.
         worker.terminate()
@@ -85,11 +85,11 @@ class MasterServicer(master_pb2_grpc.MasterServicer):
         # Delete worker process entry from dictionary.
         del self._workers[request.num]
 
-        return master_pb2.Status()
+        return manager_pb2.Status()
 
     def destroy(self):
         log.debug(
-            f"Master - pid({os.getpid()}), shutting down remaining agent worker processes."
+            f"Manager - pid({os.getpid()}), shutting down remaining agent worker processes."
         )
         for worker in self._workers.values():
             if worker.poll() == None:

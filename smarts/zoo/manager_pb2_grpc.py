@@ -2,11 +2,11 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import smarts.zoo.master_pb2 as master__pb2
+import smarts.zoo.manager_pb2 as manager__pb2
 
 
-class MasterStub(object):
-    """Interface exported by the master server.
+class ManagerStub(object):
+    """Interface exported by the manager.
     """
 
     def __init__(self, channel):
@@ -16,19 +16,19 @@ class MasterStub(object):
             channel: A grpc.Channel.
         """
         self.spawn_worker = channel.unary_unary(
-            "/master.Master/spawn_worker",
-            request_serializer=master__pb2.Machine.SerializeToString,
-            response_deserializer=master__pb2.Port.FromString,
+            "/manager.Manager/spawn_worker",
+            request_serializer=manager__pb2.Machine.SerializeToString,
+            response_deserializer=manager__pb2.Port.FromString,
         )
         self.stop_worker = channel.unary_unary(
-            "/master.Master/stop_worker",
-            request_serializer=master__pb2.Port.SerializeToString,
-            response_deserializer=master__pb2.Status.FromString,
+            "/manager.Manager/stop_worker",
+            request_serializer=manager__pb2.Port.SerializeToString,
+            response_deserializer=manager__pb2.Status.FromString,
         )
 
 
-class MasterServicer(object):
-    """Interface exported by the master server.
+class ManagerServicer(object):
+    """Interface exported by the manager.
     """
 
     def spawn_worker(self, request, context):
@@ -47,28 +47,28 @@ class MasterServicer(object):
         raise NotImplementedError("Method not implemented!")
 
 
-def add_MasterServicer_to_server(servicer, server):
+def add_ManagerServicer_to_server(servicer, server):
     rpc_method_handlers = {
         "spawn_worker": grpc.unary_unary_rpc_method_handler(
             servicer.spawn_worker,
-            request_deserializer=master__pb2.Machine.FromString,
-            response_serializer=master__pb2.Port.SerializeToString,
+            request_deserializer=manager__pb2.Machine.FromString,
+            response_serializer=manager__pb2.Port.SerializeToString,
         ),
         "stop_worker": grpc.unary_unary_rpc_method_handler(
             servicer.stop_worker,
-            request_deserializer=master__pb2.Port.FromString,
-            response_serializer=master__pb2.Status.SerializeToString,
+            request_deserializer=manager__pb2.Port.FromString,
+            response_serializer=manager__pb2.Status.SerializeToString,
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "master.Master", rpc_method_handlers
+        "manager.Manager", rpc_method_handlers
     )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
 # This class is part of an EXPERIMENTAL API.
-class Master(object):
-    """Interface exported by the master server.
+class Manager(object):
+    """Interface exported by the manager.
     """
 
     @staticmethod
@@ -86,9 +86,9 @@ class Master(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/master.Master/spawn_worker",
-            master__pb2.Machine.SerializeToString,
-            master__pb2.Port.FromString,
+            "/manager.Manager/spawn_worker",
+            manager__pb2.Machine.SerializeToString,
+            manager__pb2.Port.FromString,
             options,
             channel_credentials,
             call_credentials,
@@ -113,9 +113,9 @@ class Master(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/master.Master/stop_worker",
-            master__pb2.Port.SerializeToString,
-            master__pb2.Status.FromString,
+            "/manager.Manager/stop_worker",
+            manager__pb2.Port.SerializeToString,
+            manager__pb2.Status.FromString,
             options,
             channel_credentials,
             call_credentials,
