@@ -21,24 +21,22 @@ class ChaseViaPointsAgent(Agent):
             len(obs.via_data.near_via_points) < 1
             or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
         ):
-            return "keep_lane"
+            return (obs.waypoint_paths[0][0].speed_limit, 0)
 
         nearest = obs.via_data.near_via_points[0]
         if nearest.lane_index == obs.ego_vehicle_state.lane_index:
-            speed_dif = obs.ego_vehicle_state.speed - nearest.required_speed
-            return "slow_down" if speed_dif > 1 else "keep_lane"
+            return (nearest.required_speed, 0)
 
         return (
-            "change_lane_left"
-            if nearest.lane_index > obs.ego_vehicle_state.lane_index
-            else "change_lane_right"
+            nearest.required_speed,
+            1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
         )
 
 
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
-            AgentType.Laner, max_episode_steps=max_episode_steps
+            AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
         ),
         agent_builder=ChaseViaPointsAgent,
     )

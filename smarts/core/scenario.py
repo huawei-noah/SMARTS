@@ -34,7 +34,12 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic, UTurn, Via as SSVia
+from smarts.sstudio.types import (
+    CutIn,
+    EntryTactic,
+    UTurn,
+    Via as SSVia,
+)
 
 from .coordinates import Heading
 from .data_model import SocialAgent
@@ -120,7 +125,7 @@ class Mission:
     route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
-    task: Tuple[UTurn] = None
+    task: Tuple[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
 
     @property
