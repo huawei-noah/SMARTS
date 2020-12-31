@@ -212,7 +212,7 @@ class MissionPlanner:
         return edge_ids
 
     def cut_in_waypoints(self, sim, pose: Pose, vehicle, base_waypoint_generator):
-        aggressiveness = self._agent_behavior.aggressiveness or 5
+        aggressiveness = self._agent_behavior.aggressiveness or 0
 
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
             vehicle=vehicle, radius=100
