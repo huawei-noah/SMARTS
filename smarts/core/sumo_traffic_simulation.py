@@ -17,30 +17,29 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import atexit
 import logging
+import numpy as np
 import os
 import random
-from smarts.core.utils.logging import surpress_stdout
 import subprocess
 import time
-from typing import List, Sequence
 
-import numpy as np
-from shapely.geometry import Polygon, box as shapely_box
 from shapely.affinity import rotate as shapely_rotate
+from shapely.geometry import Polygon, box as shapely_box
+from typing import List, Sequence
 
 import traci.constants as tc
 from traci.exceptions import FatalTraCIError, TraCIException
 
 from smarts.core import gen_id
-from .colors import SceneColors
-from .coordinates import Heading, Pose
-from .provider import ProviderState, ProviderTLS, ProviderTrafficLight
-from .vehicle import VEHICLE_CONFIGS, VehicleState
-
-# We need to import .utils.sumo before we can use traci
-from .utils.sumo import SUMO_PATH, traci
-from .utils import networking
+from smarts.core.colors import SceneColors
+from smarts.core.coordinates import Heading, Pose
+from smarts.core.provider import ProviderState, ProviderTLS, ProviderTrafficLight
+from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
+from smarts.core.utils import networking
+from smarts.core.utils.logging import surpress_stdout
+from smarts.core.utils.sumo import SUMO_PATH, traci
 
 
 class SumoTrafficSimulation:
@@ -90,6 +89,8 @@ class SumoTrafficSimulation:
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
 
+        atexit.register(self._destroy)
+
     def __repr__(self):
         return f"""SumoTrafficSim(
   _scenario={repr(self._scenario)},
@@ -106,6 +107,21 @@ class SumoTrafficSimulation:
 
     def __str__(self):
         return repr(self)
+
+    def _destroy(self):
+        if atexit:
+            atexit.unregister(self._destroy)
+
+        if self._traci_conn:
+            self._traci_conn.close()
+
+        # Terminate sumo subprocess
+        if self._sumo_proc:
+            self._sumo_proc.stdin.close()
+            self._sumo_proc.stdout.close()
+            self._sumo_proc.stderr.close()
+            self._sumo_proc.terminate()
+            self._sumo_proc.wait()
 
     def _initialize_traci_conn(self, num_retries=5):
         # TODO: inline sumo or process pool
