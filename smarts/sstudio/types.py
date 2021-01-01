@@ -527,8 +527,8 @@ class MapZone(Zone):
             if len(lane_shape) == 1:
                 return lane_shape[0]
 
+            # We assume that there are only two splited shapes to choose from
             keep_index = 0
-
             if lane_shape[1].minimum_rotated_rectangle.contains(
                 Point(expected_midpoint)
             ):
