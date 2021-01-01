@@ -513,9 +513,7 @@ class MapZone(Zone):
             else:
                 return float(offset)
 
-        def pick_remaining_shape_after_split(
-            geometry_collection, expected_midpoint, lane
-        ):
+        def pick_remaining_shape_after_split(geometry_collection, expected_point, lane):
             lane_shape = geometry_collection
             if not isinstance(lane_shape, GeometryCollection):
                 return lane_shape
@@ -529,9 +527,7 @@ class MapZone(Zone):
 
             # We assume that there are only two splited shapes to choose from
             keep_index = 0
-            if lane_shape[1].minimum_rotated_rectangle.contains(
-                Point(expected_midpoint)
-            ):
+            if lane_shape[1].minimum_rotated_rectangle.contains(expected_point):
                 # 0 is the discard piece, keep the other
                 keep_index = 1
 
@@ -570,8 +566,10 @@ class MapZone(Zone):
             # Second cut takes into account shortening of geometry by `min_cut`.
             max_cut = min(min_cut + geom_length, lane_length)
 
-            midpoint = road_network.world_coord_from_offset(
-                lane, lane_offset + geom_length * 0.5
+            midpoint = Point(
+                road_network.world_coord_from_offset(
+                    lane, lane_offset + geom_length * 0.5
+                )
             )
 
             lane_shape = road_network.split_lane_shape_at_offset(
