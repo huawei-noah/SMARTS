@@ -23,7 +23,7 @@ import collections.abc as collections_abc
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-from shapely.geometry import GeometryCollection, MultiPolygon, Polygon
+from shapely.geometry import GeometryCollection, MultiPolygon, Polygon, Point
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
@@ -513,6 +513,32 @@ class MapZone(Zone):
             else:
                 return float(offset)
 
+        def pick_remaining_shape_after_split(
+            geometry_collection, expected_midpoint, lane
+        ):
+            lane_shape = geometry_collection
+            if not isinstance(lane_shape, GeometryCollection):
+                return lane_shape
+
+            # For simplicty, we only deal w/ the == 1 or 2 case
+            if len(lane_shape) not in {1, 2}:
+                return None
+
+            if len(lane_shape) == 1:
+                return lane_shape[0]
+
+            keep_index = 0
+
+            if lane_shape[1].minimum_rotated_rectangle.contains(
+                Point(expected_midpoint)
+            ):
+                # 0 is the discard piece, keep the other
+                keep_index = 1
+
+            lane_shape = lane_shape[keep_index]
+
+            return lane_shape
+
         lane_shapes = []
         edge_id, lane_idx, offset = self.start
         edge = road_network.edge_by_id(edge_id)
@@ -544,25 +570,23 @@ class MapZone(Zone):
             # Second cut takes into account shortening of geometry by `min_cut`.
             max_cut = min(min_cut + geom_length, lane_length)
 
+            midpoint = road_network.world_coord_from_offset(
+                lane, lane_offset + geom_length * 0.5
+            )
+
             lane_shape = road_network.split_lane_shape_at_offset(
                 lane_shape, lane, min_cut
             )
-            if isinstance(lane_shape, GeometryCollection):
-                if len(lane_shape) not in {1, 2}:
-                    continue
-                else:
-                    lane_shape = lane_shape[0]
+            lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
+            if lane_shape is None:
+                continue
 
             lane_shape = road_network.split_lane_shape_at_offset(
                 lane_shape, lane, max_cut,
             )
-            if isinstance(lane_shape, GeometryCollection):
-                if len(lane_shape) not in {1, 2}:
-                    continue
-                elif len(lane_shape) == 1:
-                    lane_shape = lane_shape[0]
-                else:
-                    lane_shape = lane_shape[1]
+            lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
+            if lane_shape is None:
+                continue
 
             lane_shapes.append(lane_shape)
 
