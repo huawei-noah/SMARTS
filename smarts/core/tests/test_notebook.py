@@ -23,13 +23,7 @@ class KeepLaneAgent(Agent):
 
 
 def run_scenario(
-    scenarios,
-    sim_name,
-    headless,
-    num_episodes,
-    seed,
-    auth_key=None,
-    max_episode_steps=None,
+    scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None,
 ):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
@@ -48,7 +42,6 @@ def run_scenario(
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
-        auth_key=auth_key,
     )
 
     for episode in episodes(n=num_episodes):
