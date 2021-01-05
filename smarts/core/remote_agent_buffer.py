@@ -137,7 +137,7 @@ class RemoteAgentBuffer:
             )
 
         # Instantiate and return a local RemoteAgent.
-        return RemoteAgent(zoo_manager_conn["address"], ("localhost", worker_port))
+        return RemoteAgent(zoo_manager_conn["address"], (zoo_manager_conn["address"][0], worker_port))
 
     def _remote_agent_future(self):
         return self._replenish_threadpool.submit(
