@@ -131,4 +131,7 @@ def test_rllib_hiway_env(rllib_agent):
     )
 
     # trial status will be ERROR if there are any issues with the environment
-    assert analysis.get_best_trial("episode_reward_mean").status == "TERMINATED"
+    assert (
+        analysis.get_best_trial("episode_reward_mean", analysis="max").status
+        == "TERMINATED"
+    )
