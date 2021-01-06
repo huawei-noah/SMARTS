@@ -55,7 +55,6 @@ def train(
                 os.makedirs(experiment_dir)
             with open(f"{experiment_dir}/spec.pkl", "wb") as spec_output:
                 dill.dump(spec, spec_output, pickle.HIGHEST_PROTOCOL)
-
         while not dones["__all__"]:
             if episode.get_itr(AGENT_ID) >= 1000000:  # 1M observation break
                 finished = True
@@ -133,9 +132,10 @@ if __name__ == "__main__":
     num_cpus = max(
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
+
     policy_class = "ultra.baselines.sac:sac-v0"
-    ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
-    ray.init(**ray_kwargs)
+    # ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
+    ray.init() #**ray_kwargs)
     # try:
     ray.wait(
         [
