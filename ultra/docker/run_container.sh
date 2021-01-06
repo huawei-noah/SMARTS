@@ -36,6 +36,6 @@ docker run \
        --volume=/usr/lib32/nvidia-384:/usr/lib32/nvidia-384 \
        --runtime=nvidia \
        --device /dev/dri \
-       --volume=$DIR:/ultra \
+       --volume=$DIR:/SMARTS \
        --name=ultra \
        ultra:gpu
