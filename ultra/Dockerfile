@@ -131,11 +131,11 @@ RUN apt-get autoremove && \
 RUN mkdir -p /SMARTS
 COPY ./setup.py /SMARTS/
 
-
-RUN python3.7 -m venv /SMARTS/.venv
-RUN bash -c 'echo -p python --version'
-RUN /bin/bash -c "source /SMARTS/.venv/bin/activate"
-RUN cd /SMARTS && pip install -e .
+# Mounting would override these
+#RUN python3.7 -m venv /SMARTS/.venv
+#RUN bash -c 'echo -p python --version'
+#RUN /bin/bash -c "source /SMARTS/.venv/bin/activate"
+#:RUN cd /SMARTS && pip install -e .
 
 
 # XXX: This is an optimization since prior we were uploading the pip
