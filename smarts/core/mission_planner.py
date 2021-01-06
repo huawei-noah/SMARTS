@@ -329,6 +329,7 @@ class MissionPlanner:
         lane_id_list = []
         for idx in oncoming_lanes:
             lane_id_list.append(idx.getID())
+
         if n_lane.getID() not in lane_id_list:
             return []
         # The aggressiveness is mapped from [0,10] to [0,0.8] domain which
@@ -339,12 +340,12 @@ class MissionPlanner:
 
         if not self._uturn_is_initialized:
             self._uturn_initial_distant = (
-                -vehicle.position[0] + neighborhood_vehicles[0].pose.position[0]
+                -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
             )
 
             self._uturn_initial_velocity = neighborhood_vehicles[0].speed
             self._uturn_initial_height = 1 * (
-                neighborhood_vehicles[0].pose.position[1] - vehicle.position[1]
+                neighborhood_vehicles[0].pose.position[1] - vehicle.pose.position[1]
             )
 
             if (2 * self._uturn_initial_height * 3.14 / 13.8) * neighborhood_vehicles[
@@ -357,7 +358,7 @@ class MissionPlanner:
             -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
         )
         vertical_distant = (
-            neighborhood_vehicles[0].pose.position[1] - vehicle.position[1]
+            neighborhood_vehicles[0].pose.position[1] - vehicle.pose.position[1]
         )
 
         if self._insufficient_initial_distant is True:

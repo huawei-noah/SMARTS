@@ -103,19 +103,20 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
     sim.timestep_sec = 0.1
     nei_vehicle = mock.Mock()
     nei_vehicle.pose = Pose(
-        position=np.array([25, -68, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
+        position=np.array([93, -59, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
     )
+    nei_vehicle.speed = 13.8
     sim.neighborhood_vehicles_around_vehicle = mock.MagicMock(
         return_value=[nei_vehicle]
     )
 
     vehicle.pose = Pose(
-        position=np.array([33, -65, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
+        position=np.array([25, -61, 0]), orientation=[0, 0, 0, 0], heading_=Heading(0),
     )
-
     mission_planner = MissionPlanner(
         scenario.waypoints, scenario.road_network, AgentBehavior(aggressiveness=3)
     )
+
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
     mission_planner._task_is_triggered = True
