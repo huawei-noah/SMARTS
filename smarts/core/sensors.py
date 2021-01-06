@@ -138,7 +138,6 @@ class Observation:
     neighborhood_vehicle_states: List[VehicleObservation]
     waypoint_paths: List[List[Waypoint]]
     distance_travelled: float
-
     # TODO: Convert to `namedtuple` or only return point cloud
     # [points], [hits], [(ray_origin, ray_directino)]
     lidar_point_cloud: Tuple[
@@ -149,6 +148,7 @@ class Observation:
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
     via_data: Vias = None
+
 
 
 @dataclass

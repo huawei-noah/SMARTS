@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import logging
+import logging, copy
 from typing import Sequence
 
 import gym
@@ -152,6 +152,10 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
+
+    def generate_logs(self, observation, env_score):
+        pass
+
     def step(self, agent_actions):
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
@@ -159,6 +163,7 @@ class HiWayEnv(gym.Env):
         }
 
         observations, rewards, agent_dones, extras = self._smarts.step(agent_actions)
+
 
         infos = {
             agent_id: {"score": value, "env_obs": observations[agent_id]}
@@ -171,9 +176,12 @@ class HiWayEnv(gym.Env):
             reward = rewards[agent_id]
             info = infos[agent_id]
 
+            raw_reward = reward
+            raw_observation = copy.deepcopy(observation)
             rewards[agent_id] = agent_spec.reward_adapter(observation, reward)
             observations[agent_id] = agent_spec.observation_adapter(observation)
             infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
+            infos[agent_id]['logs'] = self.generate_logs(raw_observation, raw_reward)
 
         for done in agent_dones.values():
             self._dones_registered += 1 if done else 0
@@ -187,7 +195,6 @@ class HiWayEnv(gym.Env):
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
-
         observations = {
             agent_id: self._agent_specs[agent_id].observation_adapter(obs)
             for agent_id, obs in env_observations.items()

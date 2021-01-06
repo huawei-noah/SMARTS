@@ -1,0 +1,29 @@
+action_size: 2
+update_rate: 5
+policy_delay: 2
+noise_clip: 0.5
+policy_noise: 0.2
+warmup: 10000
+actor_lr: 1e-4
+critic_lr: 1e-3
+critic_wd: 0.0
+actor_wd: 0.0
+critic_tau: 0.01
+actor_tau: 0.01
+seed: 2
+gamma: 0.99
+batch_size: 128
+sigma: 0.3
+theta: 0.15
+dt: 1e-2
+observation_num_lookahead: 20
+replay_buffer:
+    buffer_size: 1e6
+    batch_size: 128
+social_vehicles:
+    encoder_key: no_encoder
+    social_policy_hidden_units: 128
+    social_polciy_init_std: 0.5
+    social_capacity: 5
+    num_social_features: 4
+    seed: 2
