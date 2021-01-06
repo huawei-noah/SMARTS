@@ -116,7 +116,6 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
     mission_planner = MissionPlanner(
         scenario.waypoints, scenario.road_network, AgentBehavior(aggressiveness=3)
     )
-
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
     mission_planner._task_is_triggered = True
