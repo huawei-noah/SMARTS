@@ -11,7 +11,7 @@ import psutil
 from pydoc import locate
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
-from smarts.ultra.registry import make
+from smarts.zoo.registry import make
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 

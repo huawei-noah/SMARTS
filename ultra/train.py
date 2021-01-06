@@ -9,7 +9,7 @@ import time
 import psutil, pickle, dill
 import gym, ray, torch, argparse
 from pydoc import locate
-from smarts.ultra.registry import make
+from smarts.zoo.registry import make
 from ultra.utils.episode import episodes
 from ultra.evaluate import evaluation_check
 
