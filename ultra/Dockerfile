@@ -23,7 +23,7 @@ ENV GIT_SSL_NO_VERIFY true
 #------------------------------------------------------------------------------
 #RUN apt-get update && apt-get install -y openssh-server
 RUN apt-get install ca-certificates
-COPY ultra/docker/certs/ /usr/local/share/ca-certificates/extra/
+COPY docker/certs/ /usr/local/share/ca-certificates/extra/
 RUN update-ca-certificates
 RUN apt-get install apt-transport-https
 
