@@ -408,15 +408,11 @@ class ScenarioAnalysis(BaseAnalysis):
         )
 
         self.save_histogram(
-            num_vehicle_list,
-            f"{save_dir}/num_vehicles.png",
-            "num_vehicles",
+            num_vehicle_list, f"{save_dir}/num_vehicles.png", "num_vehicles",
         )
 
         self.save_histogram(
-            failed_list,
-            f"{save_dir}/failed_vehicles.png",
-            "failed_vehicles",
+            failed_list, f"{save_dir}/failed_vehicles.png", "failed_vehicles",
         )
 
         print("Solved south-west:{:.2f}".format(solved_south_west / total_south_west))

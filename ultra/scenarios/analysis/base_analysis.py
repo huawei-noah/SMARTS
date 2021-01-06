@@ -328,9 +328,7 @@ class BaseAnalysis:
                         stopwatcher_state,
                         stopwatcher_exit,
                     ) = self.process_social_vehicles(
-                        agent_obs.neighborhood_vehicle_states,
-                        timestep_sec,
-                        step,
+                        agent_obs.neighborhood_vehicle_states, timestep_sec, step,
                     )
                     if stopwatcher_state:
                         has_stopwatcher = True

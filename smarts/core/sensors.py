@@ -150,7 +150,6 @@ class Observation:
     via_data: Vias = None
 
 
-
 @dataclass
 class Collision:
     collidee_id: str

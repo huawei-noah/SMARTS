@@ -68,16 +68,8 @@ def generate_stopwatcher(
         begin=begin_time,
         end=begin_time + 3600,  # 1 hour
         route=Route(
-            begin=(
-                f"edge-{stopwatcher_route[0]}",
-                start_lane_id,
-                "base",
-            ),
-            end=(
-                f"edge-{stopwatcher_route[1]}",
-                end_lane_id,
-                "max",
-            ),
+            begin=(f"edge-{stopwatcher_route[0]}", start_lane_id, "base",),
+            end=(f"edge-{stopwatcher_route[1]}", end_lane_id, "max",),
         ),
         rate=1,
         actors={behavior: 1.0},

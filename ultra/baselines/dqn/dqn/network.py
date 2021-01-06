@@ -57,11 +57,7 @@ class DQNCNN(nn.Module):
 
 class DQNFC(nn.Module):
     def __init__(
-        self,
-        num_actions,
-        state_size,
-        hidden_dim=256,
-        activation=nn.ReLU,
+        self, num_actions, state_size, hidden_dim=256, activation=nn.ReLU,
     ):
         super(DQNFC, self).__init__()
 

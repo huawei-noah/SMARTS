@@ -174,12 +174,8 @@ class Actor(nn.Module):
             nn.Linear(hidden_units, hidden_units),
             nn.ReLU(),
         )
-        self.mu = nn.Sequential(
-            nn.Linear(hidden_units, action_size),
-        )
-        self.log_std = nn.Sequential(
-            nn.Linear(hidden_units, action_size),
-        )
+        self.mu = nn.Sequential(nn.Linear(hidden_units, action_size),)
+        self.log_std = nn.Sequential(nn.Linear(hidden_units, action_size),)
 
         self.LOG_STD_MAX = 2
         self.LOG_STD_MIN = -20

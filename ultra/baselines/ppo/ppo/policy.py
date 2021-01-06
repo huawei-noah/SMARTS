@@ -18,9 +18,7 @@ from ultra.baselines.common.state_preprocessor import *
 
 class PPOPolicy(Agent):
     def __init__(
-        self,
-        policy_params=None,
-        checkpoint_dir=None,
+        self, policy_params=None, checkpoint_dir=None,
     ):
         self.policy_params = policy_params
         self.batch_size = int(policy_params["batch_size"])
@@ -149,7 +147,7 @@ class PPOPolicy(Agent):
 
     def step(self, state, action, reward, next_state, done):
         # dont treat timeout as done equal to True
-        max_steps_reached=state["events"].reached_max_episode_steps
+        max_steps_reached = state["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
         action = to_2d_action(action)
@@ -170,11 +168,7 @@ class PPOPolicy(Agent):
         self.states.append(state)
         self.rewards.append(torch.FloatTensor([reward]).to(self.device))
         self.actions.append(
-            torch.FloatTensor(
-                action.reshape(
-                    self.action_size,
-                )
-            ).to(self.device)
+            torch.FloatTensor(action.reshape(self.action_size,)).to(self.device)
         )
         self.terminals.append(1.0 - float(done * 1))
 

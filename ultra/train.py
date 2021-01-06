@@ -1,14 +1,11 @@
 import os
 from ultra.utils.ray import default_ray_kwargs
-import numpy as np
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
-import yaml
 import time
 import psutil, pickle, dill
 import gym, ray, torch, argparse
-from pydoc import locate
 from smarts.zoo.registry import make
 from ultra.utils.episode import episodes
 from ultra.evaluate import evaluation_check
@@ -18,9 +15,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
-def train(
-    task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed
-):
+def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
@@ -60,7 +55,12 @@ def train(
                 finished = True
                 break
             evaluation_check(
-                agent=agent, agent_id=AGENT_ID, policy_class=policy_class, episode=episode, **eval_info, **env.info
+                agent=agent,
+                agent_id=AGENT_ID,
+                policy_class=policy_class,
+                episode=episode,
+                **eval_info,
+                **env.info,
             )
             action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
@@ -122,10 +122,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--seed",
-        help="environment seed",
-        default=2,
-        type=int,
+        "--seed", help="environment seed", default=2, type=int,
     )
     args = parser.parse_args()
 
@@ -135,7 +132,7 @@ if __name__ == "__main__":
 
     policy_class = "ultra.baselines.sac:sac-v0"
     # ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
-    ray.init() #**ray_kwargs)
+    ray.init()  # **ray_kwargs)
     # try:
     ray.wait(
         [

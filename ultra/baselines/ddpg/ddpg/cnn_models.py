@@ -16,12 +16,7 @@ def hidden_init(layer):
 
 class ActorNetwork(torch.nn.Module):
     def __init__(
-        self,
-        input_channels,
-        low_dim_state_size,
-        action_space,
-        seed,
-        hidden_dim=512,
+        self, input_channels, low_dim_state_size, action_space, seed, hidden_dim=512,
     ):
         super(ActorNetwork, self).__init__()
         self.state_space = low_dim_state_size
@@ -56,12 +51,7 @@ class ActorNetwork(torch.nn.Module):
 
 class CriticNetwork(torch.nn.Module):
     def __init__(
-        self,
-        input_channels,
-        low_dim_state_size,
-        action_space,
-        seed,
-        hidden_dim=512,
+        self, input_channels, low_dim_state_size, action_space, seed, hidden_dim=512,
     ):
         super(CriticNetwork, self).__init__()
         self.seed = torch.manual_seed(seed)

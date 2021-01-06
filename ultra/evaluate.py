@@ -12,6 +12,7 @@ from pydoc import locate
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
 from smarts.zoo.registry import make
+
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
@@ -73,7 +74,7 @@ def evaluate(
     spec = make(
         locator=policy_class,
         checkpoint_dir=checkpoint_dir,
-        experiment_dir=experiment_dir
+        experiment_dir=experiment_dir,
     )
 
     env = gym.make(
@@ -104,9 +105,7 @@ def evaluate(
 
             state = next_state
 
-            episode.record_step(
-                agent_id=agent_id, infos=infos, rewards=rewards
-            )
+            episode.record_step(agent_id=agent_id, infos=infos, rewards=rewards)
 
         episode.record_episode()
         logs.append(episode.info[episode.active_tag].data)
@@ -136,10 +135,7 @@ if __name__ == "__main__":
         default="easy",
     )
     parser.add_argument(
-        "--policy",
-        help="path to policy class",
-        default="TD3",
-        type=str,
+        "--policy", help="path to policy class", default="TD3", type=str,
     )
     parser.add_argument("--models", default="models/", help="directory to saved models")
     parser.add_argument(
