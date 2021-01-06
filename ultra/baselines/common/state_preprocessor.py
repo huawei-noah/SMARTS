@@ -3,9 +3,7 @@ from ultra.utils.common import normalize_im, to_2d_action, to_3d_action
 from collections.abc import Iterable
 import numpy as np
 from smarts.core.sensors import VehicleObservation
-from ultra.baselines.common.social_vehicle_extraction import (
-    get_social_vehicles,
-)
+from ultra.baselines.common.social_vehicle_extraction import get_social_vehicles
 from ultra.utils.common import (
     get_closest_waypoint,
     rotate2d_vector,

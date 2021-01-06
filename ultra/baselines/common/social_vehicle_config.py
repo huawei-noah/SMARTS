@@ -1,7 +1,5 @@
 from ultra.baselines.common.social_vehicle_extraction import *
-from ultra.baselines.common.social_vehicles_encoders.pointnet_encoder import (
-    PNEncoder,
-)
+from ultra.baselines.common.social_vehicles_encoders.pointnet_encoder import PNEncoder
 from ultra.baselines.common.social_vehicles_encoders.pointnet_encoder_batched import (
     PNEncoderBatched,
 )

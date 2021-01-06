@@ -64,9 +64,9 @@ class BaselineAdapter:
             goal_path=path,
             ego_position=ego_state.position,
             waypoint_paths=env_observation.waypoint_paths,
-            events=env_observation.events
+            events=env_observation.events,
         )
-        return state #ego=ego, env_observation=env_observation)
+        return state  # ego=ego, env_observation=env_observation)
 
     def reward_adapter(self, observation, reward):
         env_reward = reward

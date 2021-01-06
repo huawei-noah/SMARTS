@@ -2,7 +2,8 @@ from setuptools import setup, find_packages
 from glob import glob
 from pathlib import Path
 from collections import defaultdict
-#TODO rename to ULTRA_baselines
+
+# TODO rename to ULTRA_baselines
 
 setup(
     name="ultra",

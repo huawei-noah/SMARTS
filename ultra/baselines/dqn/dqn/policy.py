@@ -17,9 +17,7 @@ class DQNPolicy(Agent):
     lane_actions = ["keep_lane", "slow_down", "change_lane_left", "change_lane_right"]
 
     def __init__(
-        self,
-        policy_params=None,
-        checkpoint_dir=None,
+        self, policy_params=None, checkpoint_dir=None,
     ):
         self.policy_params = policy_params
         network_class = DQNWithSocialEncoder
@@ -129,12 +127,10 @@ class DQNPolicy(Agent):
             "social_feature_encoder_params": self.social_feature_encoder_params,
         }
         self.online_q_network = network_class(
-            num_actions=self.num_actions,
-            **(network_params if network_params else {}),
+            num_actions=self.num_actions, **(network_params if network_params else {}),
         ).to(self.device)
         self.target_q_network = network_class(
-            num_actions=self.num_actions,
-            **(network_params if network_params else {}),
+            num_actions=self.num_actions, **(network_params if network_params else {}),
         ).to(self.device)
         self.update_target_network()
 
@@ -264,11 +260,9 @@ class DQNPolicy(Agent):
         )
         print("Model loaded")
 
-    def step(
-        self, state, action, reward, next_state, done, others=None
-    ):
+    def step(self, state, action, reward, next_state, done, others=None):
         # dont treat timeout as done equal to True
-        max_steps_reached=state["events"].reached_max_episode_steps
+        max_steps_reached = state["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
         if self.action_space_type == "continuous":

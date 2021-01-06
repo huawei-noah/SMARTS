@@ -7,12 +7,14 @@ import numpy as np
 from scipy.spatial import distance
 import math
 from sys import path
+
 path.append("./ultra")
 from ultra.utils.common import (
     get_closest_waypoint,
     get_path_to_goal,
     ego_social_safety,
 )
+
 
 class UltraEnv(HiWayEnv):
     def __init__(
@@ -113,7 +115,7 @@ class UltraEnv(HiWayEnv):
             goal_dist=goal_dist,
             linear_jerk=np.linalg.norm(ego_state.linear_jerk),
             angular_jerk=np.linalg.norm(ego_state.angular_jerk),
-            env_score = self.ultra_scores.reward_adapter(observation, highwayenv_score)
+            env_score=self.ultra_scores.reward_adapter(observation, highwayenv_score),
         )
         return info
 
