@@ -128,19 +128,23 @@ RUN apt-get autoremove && \
 # Copy src files
 #------------------------------------------------------------------------------
 # Install SMARTS
-COPY ./setup.py /ULTRA/
-RUN cd /ULTRA && pip install -e .
+RUN mkdir -p /SMARTS
+COPY ./setup.py /SMARTS/
 
-# COPY ./ /hiway
-# WORKDIR /hiway
+
+RUN python3.7 -m venv /SMARTS/.venv
+RUN bash -c 'echo -p python --version'
+RUN /bin/bash -c "source /SMARTS/.venv/bin/activate"
+RUN cd /SMARTS && pip install -e .
+
 
 # XXX: This is an optimization since prior we were uploading the pip
 # dependencies + our hiway package alongside the scoring program.
 # Putting it here keeps the file size smaller. Alternatively, with buy-in we
 # could install the hiway package directly if we are ok w/ distributing it
 # this way. These requirements are generated via ./gen_requirements_txt.sh
-COPY ultra/docker/requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+# COPY docker/requirements.txt /tmp/requirements.txt
+# RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # XXX: We deal w/ this issue on CodaLab: https://github.com/tensorflow/tensorflow/issues/19584
 # RUN pip install https://github.com/mdsimmo/tensorflow-community-wheels/releases/download/1.13.1_cpu_py3_6_amd64/tf_nightly-1.13.1-cp36-cp36m-linux_x86_64.whl
@@ -150,11 +154,8 @@ ARG TINI_VERSION=v0.18.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 
-COPY ultra/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
-
-# Copy ULTRA source code into Docker
-COPY . /ULTRA
 
 #------------------------------------------------------------------------------
 # Entrypoint
