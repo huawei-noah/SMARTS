@@ -1,4 +1,4 @@
-from smarts.ultra.registry import register
+from smarts.zoo.registry import register
 from .sac.sac.policy import SACPolicy
 from .ppo.ppo.policy import PPOPolicy
 from .dqn.dqn.policy import DQNPolicy
