@@ -109,7 +109,6 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
     analysis = tune.run(
         "PPO",
         name=experiment_name,
-        mode="max",
         stop={"training_iteration": training_iteration},
         max_failures=10,
         local_dir=log_path,

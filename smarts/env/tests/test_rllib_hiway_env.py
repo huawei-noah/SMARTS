@@ -123,7 +123,6 @@ def test_rllib_hiway_env(rllib_agent):
     analysis = tune.run(
         "PPO",
         name="RLlibHiWayEnv test",
-        mode="max",
         # terminate as soon as possible (this will run one training iteration)
         stop={"time_total_s": 1},
         max_failures=0,  # On failures, exit immediately
