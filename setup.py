@@ -49,11 +49,6 @@ setup(
         "ray[rllib]==0.8.6",  # We use Ray for our multiprocessing needs
         # The following are for Scenario Studio
         "yattag",
-        # The following are for testing
-        "pytest",
-        "pytest-benchmark",
-        "pytest-xdist",
-        "pytest-cov",
         # The following are for /envision
         "tornado",
         "websocket-client",
@@ -67,6 +62,14 @@ setup(
         "twisted",
     ],
     extras_require={
+        "test": [
+            # The following are for testing
+            "pytest",
+            "pytest-benchmark",
+            "pytest-cov",
+            "pytest-notebook",
+            "pytest-xdist",
+        ],
         "train": [
             "tensorflow==2.2.1",
             # XXX: TF requires specific version of scipy

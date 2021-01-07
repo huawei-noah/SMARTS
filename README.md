@@ -75,6 +75,7 @@ pip install --upgrade pip
 pip install -e .[train]
 
 # make sure you can run tests (and verify they are passing)
+pip install -e .[test]
 make test
 
 # then you can run a scenario, see following section for more details
