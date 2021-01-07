@@ -45,7 +45,7 @@ class MissionPlanner:
         self, waypoints: Waypoints, road_network: SumoRoadNetwork, agent_behavior=None
     ):
         self._waypoints = waypoints
-        self._agent_behavior = agent_behavior
+        self._agent_behavior = agent_behavior or AgentBehavior(aggressiveness=5)
         self._mission = None
         self._route = None
         self._road_network = road_network
