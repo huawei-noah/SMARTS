@@ -59,6 +59,7 @@ class MissionPlanner:
         self._insufficient_initial_distant = False
         self._uturn_initial_position = 0
         self._cut_in_speed = None
+        self._uturn_is_initialized = False
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -308,31 +309,56 @@ class MissionPlanner:
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
-            vehicle=vehicle, radius=200
+            vehicle=vehicle, radius=140
         )
 
         if not neighborhood_vehicles:
             return []
 
-        aggressiveness = self._agent_behavior.aggressiveness / 10
-        if sim.elapsed_sim_time < 5 * sim.timestep_sec:
+        n_lane = self._road_network.nearest_lane(
+            neighborhood_vehicles[0].pose.position[:2]
+        )
+        start_lane = self._road_network.nearest_lane(
+            self._mission.start.position,
+            include_junctions=False,
+            include_special=False,
+        )
+        start_edge = self._road_network.road_edge_data_for_lane_id(start_lane.getID())
+        oncoming_edge = start_edge.oncoming_edges[0]
+        oncoming_lanes = oncoming_edge.getLanes()
+        lane_id_list = []
+        for idx in oncoming_lanes:
+            lane_id_list.append(idx.getID())
+
+        if n_lane.getID() not in lane_id_list:
             return []
-        if sim.elapsed_sim_time == 5 * sim.timestep_sec:
+        # The aggressiveness is mapped from [0,10] to [0,0.8] domain which
+        # represents the portion of intitial distantce which is used for
+        # triggering the u-turn task.
+        aggressiveness = 0.8 * self._agent_behavior.aggressiveness / 10
+        distant_threshold = 30
+
+        if not self._uturn_is_initialized:
             self._uturn_initial_distant = (
-                -vehicle.position[0] + neighborhood_vehicles[0].pose.position[0]
+                -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
             )
+
             self._uturn_initial_velocity = neighborhood_vehicles[0].speed
             self._uturn_initial_height = 1 * (
-                neighborhood_vehicles[0].pose.position[1] - vehicle.position[1]
+                neighborhood_vehicles[0].pose.position[1] - vehicle.pose.position[1]
             )
 
             if (2 * self._uturn_initial_height * 3.14 / 13.8) * neighborhood_vehicles[
                 0
-            ].speed > self._uturn_initial_distant:
+            ].speed + distant_threshold > self._uturn_initial_distant:
                 self._insufficient_initial_distant = True
+            self._uturn_is_initialized = True
 
         horizontal_distant = (
             -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
+        )
+        vertical_distant = (
+            neighborhood_vehicles[0].pose.position[1] - vehicle.pose.position[1]
         )
 
         if self._insufficient_initial_distant is True:
@@ -344,32 +370,20 @@ class MissionPlanner:
         if (
             horizontal_distant > 0
             and self._task_is_triggered is False
-            and (2 * self._uturn_initial_height * 3.14 / 13.8)
-            * neighborhood_vehicles[0].speed
-            > horizontal_distant
-        ):
-            return []
-
-        if (
-            horizontal_distant > 0
-            and self._task_is_triggered is False
             and horizontal_distant
             > (1 - aggressiveness) * (self._uturn_initial_distant - 1)
             + aggressiveness
-            * (2 * self._uturn_initial_height * 3.14 / 13.8)
-            * neighborhood_vehicles[0].speed
+            * (
+                (2 * self._uturn_initial_height * 3.14 / 13.8)
+                * neighborhood_vehicles[0].speed
+                + distant_threshold
+            )
         ):
             return []
 
         if not neighborhood_vehicles and not self._task_is_triggered:
             return []
 
-        start_lane = self._road_network.nearest_lane(
-            self._mission.start.position,
-            include_junctions=False,
-            include_special=False,
-        )
-        start_edge = self._road_network.road_edge_data_for_lane_id(start_lane.getID())
         wp = self._waypoints.closest_waypoint(pose)
         current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
 
@@ -384,6 +398,11 @@ class MissionPlanner:
 
         lane = self._road_network.nearest_lane(vehicle.pose.position[:2])
         speed_limit = lane.getSpeed() / 2
+        vehicle_dist = np.linalg.norm(
+            vehicle.pose.position[:2] - neighborhood_vehicles[0].pose.position[:2]
+        )
+        if vehicle_dist < 5.5:
+            speed_limit = 1.5 * lane.getSpeed()
 
         if heading_diff < -0.9 and pose.position[0] - self._uturn_initial_position < -2:
             # Once it faces the opposite direction and pass the initial
@@ -398,8 +417,6 @@ class MissionPlanner:
 
         self._task_is_triggered = True
 
-        oncoming_edge = start_edge.oncoming_edges[0]
-        oncoming_lanes = oncoming_edge.getLanes()
         target_lane_index = self._mission.task.target_lane_index
         target_lane_index = min(target_lane_index, len(oncoming_lanes) - 1)
         target_lane = oncoming_lanes[target_lane_index]
