@@ -7,7 +7,7 @@ import pytest
 import ray
 from ray import tune
 from ray.rllib.models import ModelCatalog
-from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
+from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
 
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -131,7 +131,4 @@ def test_rllib_hiway_env(rllib_agent):
     )
 
     # trial status will be ERROR if there are any issues with the environment
-    assert (
-        analysis.get_best_trial("episode_reward_mean", mode="max").status
-        == "TERMINATED"
-    )
+    assert analysis.get_best_trial("episode_reward_mean").status == "TERMINATED"
