@@ -25,11 +25,10 @@ from pathlib import Path
 from ray import tune
 
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface
 from smarts.core.scenario import Scenario
 
 from benchmark.agents import load_config
-from benchmark.agents.common import SimpleCallbacks
+from benchmark.common import SimpleCallbacks
 
 
 RUN_NAME = Path(__file__).stem
@@ -62,12 +61,7 @@ def main(
         agent_ids = [f"AGENT-{i}" for i in range(agent_missions_count)]
 
     config = load_config(config_file)
-    agents = {
-        agent_id: AgentSpec(
-            **config["agent"], interface=AgentInterface(**config["interface"])
-        )
-        for agent_id in agent_ids
-    }
+    agents = {agent_id: AgentSpec(**config["agent"]) for agent_id in agent_ids}
 
     config["env_config"].update(
         {

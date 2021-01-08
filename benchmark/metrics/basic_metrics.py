@@ -103,11 +103,12 @@ class MetricHandler:
     """ MetricHandler serves for the metric """
 
     def __init__(self, num_episode):
-        """Create a MetricHandler instance.
+        """Create a MetricHandler instance to record the
 
         Parameters
         ----------
         num_episode
+            int, the num of e
         """
         self._logs = [EvaluatedEpisode() for _ in range(num_episode)]
 

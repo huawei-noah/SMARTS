@@ -27,7 +27,8 @@ def parse_args():
     )
     parser.add_argument("--checkpoint", type=str, required=True)
     parser.add_argument("--num_steps", type=int, default=1000)
-    parser.add_argument("--num_episodes", type=int, default=10)
+    parser.add_argument("--num_runs", type=int, default=10)
+    # TODO(ming): eliminate this arg
     parser.add_argument(
         "--paradigm",
         type=str,
@@ -50,6 +51,8 @@ def main(
     paradigm="decentralized",
     headless=False,
 ):
+
+    # TODO(ming): spawn this block as a function
     scenario_path = Path(scenario).absolute()
     agent_missions_count = Scenario.discover_agent_missions_count(scenario_path)
     if agent_missions_count == 0:

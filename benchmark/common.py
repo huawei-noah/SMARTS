@@ -24,6 +24,7 @@ import numpy as np
 import copy
 
 from typing import Dict, Sequence
+from collections import defaultdict
 
 from scipy.spatial import distance
 
@@ -41,16 +42,26 @@ from smarts.core.scenario import PositionalGoal
 
 SPACE_LIB = dict(
     # normalized distance to lane center
-    distance_to_center=lambda _: gym.spaces.Box(low=-1e3, high=1e3, shape=(1,)),
-    heading_errors=lambda look: gym.spaces.Box(low=-1.0, high=1.0, shape=(look[0],),),
-    speed=lambda _: gym.spaces.Box(low=-330.0, high=330.0, shape=(1,)),
-    steering=lambda _: gym.spaces.Box(low=-1.0, high=1.0, shape=(1,)),
-    goal_relative_pos=lambda _: gym.spaces.Box(low=-1e2, high=1e2, shape=(2,)),
-    neighbor=lambda neighbor_num: gym.spaces.Box(
-        low=-1e3, high=1e3, shape=(neighbor_num * 5,),
+    distance_to_center=lambda _: gym.spaces.Box(
+        low=-float("inf"), high=float("inf"), shape=(1,)
     ),
-    img_gray=lambda shape: gym.spaces.Box(low=0.0, high=1.0, shape=shape),
-    lane_its_info=lambda _: gym.spaces.Box(low=-1e10, high=1e10, shape=(16,)),
+    heading_errors=lambda look: gym.spaces.Box(
+        low=-float("inf"), high=float("inf"), shape=(look[0],),
+    ),
+    speed=lambda _: gym.spaces.Box(low=-float("inf"), high=float("inf"), shape=(1,)),
+    steering=lambda _: gym.spaces.Box(low=-float("inf"), high=float("inf"), shape=(1,)),
+    goal_relative_pos=lambda _: gym.spaces.Box(
+        low=-float("inf"), high=float("inf"), shape=(2,)
+    ),
+    neighbor=lambda neighbor_num: gym.spaces.Box(
+        low=-float("inf"), high=float("inf"), shape=(neighbor_num * 5,),
+    ),
+    img_gray=lambda shape: gym.spaces.Box(
+        low=-float("inf"), high=float("inf"), shape=shape
+    ),
+    lane_its_info=lambda _: gym.spaces.Box(
+        low=-float("inf"), high=float("inf"), shape=(16,)
+    ),
     # To discover micro information around ego car in 16*16m ogm
     # proximity array around ego car
     proximity=lambda _: gym.spaces.Box(low=-1e10, high=1e10, shape=(8,)),
@@ -137,8 +148,7 @@ def trans_ego_center(ego_lane_index, origin_info):
 
 class ActionSpace:
     @staticmethod
-    def from_type(action_type: int):
-        space_type = ActionSpaceType(action_type)
+    def from_type(space_type):
         if space_type == ActionSpaceType.Continuous:
             return gym.spaces.Box(
                 low=np.array([0.0, 0.0, -1.0]),
@@ -830,8 +840,7 @@ class SimpleCallbacks(DefaultCallbacks):
 
 class ActionAdapter:
     @staticmethod
-    def from_type(action_type):
-        space_type = ActionSpaceType(action_type)
+    def from_type(space_type):
         if space_type == ActionSpaceType.Continuous:
             return ActionAdapter.continuous_action_adapter
         elif space_type == ActionSpaceType.Lane:
@@ -871,10 +880,10 @@ def subscribe_features(**kwargs):
     return res
 
 
-def cal_obs(env_obs: Observation, space, feature_configs):
-    obs = None
+def cal_obs(env_obs, space, feature_configs):
     if isinstance(space, gym.spaces.Dict):
         obs = dict()
+        env_obs = (env_obs,) if not isinstance(env_obs, Sequence) else env_obs
         for name in space.spaces:
             if hasattr(CalObs, f"cal_{name}"):
                 args = (
@@ -882,13 +891,11 @@ def cal_obs(env_obs: Observation, space, feature_configs):
                     if not isinstance(feature_configs[name], Sequence)
                     else feature_configs[name]
                 )
-                obs[name] = getattr(CalObs, f"cal_{name}")(env_obs, *args)
-    elif isinstance(space, gym.spaces.Tuple):
-        obs = []
-        for _env_obs, _space in zip(env_obs, space.spaces):
-            obs.append(cal_obs(_env_obs, _space, feature_configs))
+                obs[name] = tuple(
+                    getattr(CalObs, f"cal_{name}")(x, *args) for x in env_obs
+                )
     else:
-        raise NotImplementedError(f"space: {space}")
+        raise TypeError(f"Unexpected space type={type(space)}")
     return obs
 
 
@@ -1024,99 +1031,6 @@ def get_reward_adapter(observation_adapter, adapter_type="vanilla"):
         bonus += 0.05 * env_reward
         return bonus + penalty
 
-    def stack_frame(last_env_obs, env_obs, env_reward):
-        penalty, bonus = 0.0, 0.0
-
-        obs = observation_adapter(env_obs)
-        last_env_obs = env_obs[-1]
-
-        # ======== Penalty: too close to neighbor vehicles
-        # if the mean ttc or mean speed or mean dist is higher than before, get penalty
-        # otherwise, get bonus
-        neighbor_features = obs.get("neighbor", None)
-        if neighbor_features is not None:
-            new_neighbor_feature = neighbor_features[-1].reshape((-1, 5))
-            mean_dist = np.mean(new_neighbor_feature[:, 0])
-            mean_ttc = np.mean(new_neighbor_feature[:, 2])
-
-            last_neighbor_feature = neighbor_features[-2].reshape((-1, 5))
-            mean_dist2 = np.mean(last_neighbor_feature[:, 0])
-            # mean_speed2 = np.mean(last_neighbor_feature[:, 1])
-            mean_ttc2 = np.mean(last_neighbor_feature[:, 2])
-            penalty += (
-                0.03 * (mean_dist - mean_dist2)
-                # - 0.01 * (mean_speed - mean_speed2)
-                + 0.01 * (mean_ttc - mean_ttc2)
-            )
-
-        # ======== Penalty: distance to goal =========
-        goal = last_env_obs.ego_vehicle_state.mission.goal
-        ego_2d_position = last_env_obs.ego_vehicle_state.position[:2]
-        if hasattr(goal, "position"):
-            goal_position = goal.position
-        else:
-            goal_position = ego_2d_position
-        goal_dist = distance.euclidean(ego_2d_position, goal_position)
-        penalty += -0.01 * goal_dist
-
-        old_obs = env_obs[-2]
-        old_goal = old_obs.ego_vehicle_state.mission.goal
-        old_ego_2d_position = old_obs.ego_vehicle_state.position[:2]
-        if hasattr(old_goal, "position"):
-            old_goal_position = old_goal.position
-        else:
-            old_goal_position = old_ego_2d_position
-        old_goal_dist = distance.euclidean(old_ego_2d_position, old_goal_position)
-        penalty += 0.1 * (old_goal_dist - goal_dist)  # 0.05
-
-        # ======== Penalty: distance to the center
-        diff_dist_to_center_penalty = np.abs(obs["distance_to_center"][-2]) - np.abs(
-            obs["distance_to_center"][-1]
-        )
-        penalty += 0.01 * diff_dist_to_center_penalty[0]
-
-        # ======== Penalty & Bonus: event (collision, off_road, reached_goal, reached_max_episode_steps)
-        ego_events = last_env_obs.events
-        # ::collision
-        penalty += -50.0 if len(ego_events.collisions) > 0 else 0.0
-        # ::off road
-        penalty += -50.0 if ego_events.off_road else 0.0
-        # ::reach goal
-        if ego_events.reached_goal:
-            bonus += 20.0
-
-        # ::reached max_episode_step
-        if ego_events.reached_max_episode_steps:
-            penalty += -0.5
-        else:
-            bonus += 0.5
-
-        # ======== Penalty: heading error penalty
-        # if obs.get("heading_errors", None):
-        #     heading_errors = obs["heading_errors"][-1]
-        #     penalty_heading_errors = -0.03 * heading_errors[:2]
-        #
-        #     heading_errors2 = obs["heading_errors"][-2]
-        #     penalty_heading_errors += -0.01 * (heading_errors[:2] - heading_errors2[:2])
-        #     penalty += np.mean(penalty_heading_errors)
-
-        # ======== Penalty: penalise sharp turns done at high speeds =======
-        if last_env_obs.ego_vehicle_state.speed > 60:
-            steering_penalty = -pow(
-                (last_env_obs.ego_vehicle_state.speed - 60)
-                / 20
-                * last_env_obs.ego_vehicle_state.steering
-                / 4,
-                2,
-            )
-        else:
-            steering_penalty = 0
-        penalty += 0.1 * steering_penalty
-
-        # ========= Bonus: environment reward (distance travelled) ==========
-        bonus += 0.05 * env_reward
-        return bonus + penalty
-
     def cruising(env_obs, env_reward):
         global lane_crash_flag
         global intersection_crash_flag
@@ -1155,12 +1069,9 @@ def get_reward_adapter(observation_adapter, adapter_type="vanilla"):
 
         return (total_reward + total_penalty) / 200.0
 
-    return {
-        "vanilla": vanilla,
-        "single_frame": single_frame,
-        "stack_frame": stack_frame,
-        "cruising": cruising,
-    }[adapter_type]
+    return {"vanilla": vanilla, "single_frame": single_frame, "cruising": cruising,}[
+        adapter_type
+    ]
 
 
 def get_distance_from_center(env_obs):
@@ -1175,3 +1086,14 @@ def get_distance_from_center(env_obs):
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
     return norm_dist_from_center
+
+
+def pretty_dict(d, indent=0):
+    res = ""
+    for k, v in d.items():
+        res += "\t" * indent + str(k)
+        if isinstance(v, dict):
+            res += "\n" + pretty_dict(v, indent + 1)
+        else:
+            res += ": " + str(v) + "\n"
+    return res

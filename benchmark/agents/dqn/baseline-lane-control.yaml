@@ -1,10 +1,13 @@
-name: maac-baseline-lane-controller
+name: dqn-baseline-lane-controller
 
 agent:
   state:
+    # default is simple
     wrapper:
-      name: Simple
+      name: FrameStack
+      num_stack: 3
     features:
+      goal_relative_pos: True
       distance_to_center: True
       speed: True
       steering: True
@@ -13,6 +16,7 @@ agent:
   action:
     type: 1   # 0 for continuous, 1 for discrete
 
+# agent interface
 interface:
   max_episode_steps: 1000
   neighborhood_vehicles:
@@ -20,6 +24,7 @@ interface:
   waypoints:
     lookahead: 50   # larger than size of heading errors
 
+# policy
 policy:
   framework: rllib
   trainer:
