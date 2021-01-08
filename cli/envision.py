@@ -28,10 +28,26 @@ def envision_cli():
 
 
 @envision_cli.command(name="start")
-@click.option("-p", "--port", default=8081)
-@click.option("-s", "--scenarios", multiple=True, default=["scenarios"])
-def start_server(port, scenarios):
-    run(scenarios, port)
+@click.option("-p", "--port", help="Port Envision will run on.", default=8081)
+@click.option(
+    "-s",
+    "--scenarios",
+    help="A list of directories where scenarios are stored.",
+    multiple=True,
+    default=["scenarios"],
+)
+@click.option(
+    "-c",
+    "--max_capacity",
+    help=(
+        "Max capacity in MB of Envision's playback buffer. The larger the more contiguous history "
+        "Envision can store."
+    ),
+    default=500,
+    type=float,
+)
+def start_server(port, scenarios, max_capacity):
+    run(scenario_dirs=scenarios, max_capacity_mb=max_capacity, port=port)
 
 
 envision_cli.add_command(start_server)

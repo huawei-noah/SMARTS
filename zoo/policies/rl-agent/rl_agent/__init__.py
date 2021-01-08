@@ -1,4 +1,3 @@
-from pathlib import Path
 import importlib.resources as pkg_resources
 
 from smarts.core.agent import AgentSpec
@@ -10,11 +9,11 @@ from .lane_space import (
     get_observation_adapter,
 )
 from .agent import RLAgent
-from . import checkpoint
 from smarts.zoo.registry import register
+import rl_agent
 
 
-VERSION = 0.1
+VERSION = "0.1.1"
 
 
 def entrypoint(
@@ -27,7 +26,7 @@ def entrypoint(
     target_speed=15,
     lane_change_speed=12.5,
 ):
-    with pkg_resources.path(checkpoint, "checkpoint") as checkpoint_path:
+    with pkg_resources.path(rl_agent, "checkpoint") as checkpoint_path:
         return AgentSpec(
             interface=agent_interface,
             observation_adapter=get_observation_adapter(
@@ -42,7 +41,7 @@ def entrypoint(
                 target_speed=target_speed, lane_change_speed=lane_change_speed,
             ),
             agent_builder=lambda: RLAgent(
-                load_path=str(checkpoint_path.absolute()),
+                load_path=str((checkpoint_path / "checkpoint").absolute()),
                 policy_name="default_policy",
                 observation_space=OBSERVATION_SPACE,
                 action_space=ACTION_SPACE,

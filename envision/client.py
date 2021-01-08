@@ -17,14 +17,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import re
 import time
 import uuid
 import json
 import logging
 import threading
+from datetime import datetime
 from queue import Queue
 from typing import Union
 from pathlib import Path
+import warnings
 
 import websocket
 import numpy as np
@@ -72,9 +75,17 @@ class Client:
         num_retries: int = 5,
         wait_between_retries: float = 0.5,
         output_dir: str = None,
+        sim_name: str = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
-        client_id = str(uuid.uuid4())[:8]
+
+        current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
+        client_id = current_time
+        if sim_name:
+            # Set string length limit to 20 characters for client id and Envision/URL display purpose
+            # Replace all special (non-alphanumeric) characters to "_" to avoid invalid key values
+            sim_name = re.sub(r"\W+", "_", sim_name[:20])
+            client_id = f"{sim_name}_{client_id}"
 
         if endpoint is None:
             endpoint = "ws://localhost:8081"
@@ -159,6 +170,11 @@ class Client:
             self._log.debug("Connection to Envision closed")
 
         def on_error(ws, error):
+            if str(error) == "'NoneType' object has no attribute 'sock'":
+                # XXX: websocket-client library outputs some strange logs, just
+                #      surpress them for now.
+                return
+
             self._log.error(f"Connection to Envision terminated with: {error}")
 
         def on_open(ws):
@@ -177,18 +193,25 @@ class Client:
 
             tries = 1
             while tries <= num_retries and not connection_established:
-                self._log.info(
-                    f"Attempting to connect to Envision tries={tries}/{num_retries}"
-                )
                 ws = websocket.WebSocketApp(
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
-                ws.run_forever()
+
+                with warnings.catch_warnings():
+                    # XXX: websocket-client library seems to have leaks on connection
+                    #      retry that cause annoying warnings within Python 3.8+
+                    warnings.filterwarnings("ignore", category=ResourceWarning)
+                    ws.run_forever()
 
                 connection_established = getattr(
                     threadlocal, "connection_established", False
                 )
+
                 if not connection_established:
+                    self._log.info(
+                        f"Attempting to connect to Envision tries={tries}/{num_retries}"
+                    )
+
                     tries += 1
                     time.sleep(wait_between_retries)
 
@@ -213,6 +236,7 @@ class Client:
     def teardown(self):
         self._state_queue.put(Client.QueueDone())
         self._logging_queue.put(Client.QueueDone())
+
         if self._thread:
             self._thread.join(timeout=3)
             self._thread = None

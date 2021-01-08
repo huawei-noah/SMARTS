@@ -16,7 +16,7 @@ class Id(str):
     @classmethod
     def new(cls, dtype: str):
         """E.g. boid-93572825"""
-        return Id(dtype=dtype, identifier=str(uuid.uuid4())[:8])
+        return cls(dtype=dtype, identifier=str(uuid.uuid4())[:8])
 
     @classmethod
     def parse(cls, id_: str):
@@ -26,7 +26,7 @@ class Id(str):
                 f"id={id_} is invalid, format should be <type>-<8_char_uuid>"
             )
 
-        return Id(dtype=id_[:split], identifier=id_[split + 1 :])
+        return cls(dtype=id_[:split], identifier=id_[split + 1 :])
 
     @property
     def dtype(self):
@@ -46,4 +46,4 @@ class SocialAgentId(Id):
     @classmethod
     def new(cls, name: str, group: str = None):
         identifier = "-".join([group, name]) if group is not None else name
-        return SocialAgentId(dtype=SocialAgentId.DTYPE, identifier=identifier)
+        return cls(dtype=SocialAgentId.DTYPE, identifier=identifier)

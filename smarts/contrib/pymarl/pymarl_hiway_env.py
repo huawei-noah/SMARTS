@@ -53,6 +53,8 @@ class PyMARLHiWayEnv:
             a dictionary of agent_ids to agents that will run in the environment (required)
         scenarios:
             a list of directories of the scenarios that will be run (required)
+        sim_name:
+            a string that gives this simulation a name (default None)
         envision_record_data_replay_path:
             used to specify envision's data replay output directory (default None)
         envision_endpoint:
@@ -123,6 +125,7 @@ class PyMARLHiWayEnv:
         if not self._headless:
             envision = Envision(
                 endpoint=config.get("envision_endpoint", None),
+                sim_name=config.get("sim_name", None),
                 output_dir=config.get("envision_record_data_replay_path", None),
             )
 

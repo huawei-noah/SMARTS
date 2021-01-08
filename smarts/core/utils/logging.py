@@ -17,9 +17,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import ctypes
 import logging
-from time import time
+import os
+import sys
 from contextlib import contextmanager
+from io import UnsupportedOperation
+from time import time
 
 
 @contextmanager
@@ -29,3 +33,62 @@ def timeit(name: str):
     ellapsed_time = (time() - start) * 1000
 
     logging.info(f'"{name}" took: {ellapsed_time:4f}ms')
+
+
+def isnotebook():
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":
+            return True  # Jupyter notebook or qtconsole
+    except NameError:
+        pass
+
+    return False
+
+
+libc = ctypes.CDLL(None)
+try:
+    c_stdout = ctypes.c_void_p.in_dll(libc, "stdout")
+except:
+    # macOS
+    c_stdout = ctypes.c_void_p.in_dll(libc, "__stdoutp")
+
+
+def try_fsync(fd):
+    try:
+        os.fsync(fd)
+    except OSError:
+        # On GH actions was returning an OSError: [Errno 22] Invalid argument
+        pass
+
+
+@contextmanager
+def surpress_stdout():
+    original_stdout = sys.stdout
+    try:
+        original_stdout_fno = sys.stdout.fileno()
+    except UnsupportedOperation as e:
+        if not isnotebook():
+            raise e
+        ## This case is notebook which does not have issues with the c_printf
+        try:
+            yield
+        finally:
+            return
+    dup_stdout_fno = os.dup(original_stdout_fno)
+
+    devnull_fno = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull_fno, original_stdout_fno)
+    sys.stdout = os.fdopen(devnull_fno, "w")
+
+    try:
+        yield
+    finally:
+        sys.stdout.flush()
+        libc.fflush(c_stdout)
+        try_fsync(devnull_fno)
+        os.close(devnull_fno)
+
+        os.dup2(dup_stdout_fno, original_stdout_fno)
+        os.close(dup_stdout_fno)
+        sys.stdout = original_stdout

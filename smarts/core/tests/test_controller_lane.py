@@ -18,7 +18,7 @@ AGENT_ID = "Agent-007"
     params=[
         ("keep_lane", AgentType.Laner),
         ((10, 0), AgentType.LanerWithSpeed),
-        ((18, 0), AgentType.LanerWithSpeed),
+        ((16, 0), AgentType.LanerWithSpeed),
     ]
 )
 def agent_and_agent_type(request):
@@ -34,7 +34,6 @@ def agent_and_agent_type(request):
 
 @pytest.fixture(
     params=[
-        ("maps/turning_radius/mapzshape.net.xml", "edge-east-SE"),
         ("maps/turning_radius/map55.net.xml", "edge-south-NS"),
         ("maps/turning_radius/map78.net.xml", "edge-south-NS"),
         ("maps/turning_radius/map90.net.xml", "edge-south-NS"),

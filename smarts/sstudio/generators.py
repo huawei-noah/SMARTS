@@ -17,17 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 import os
 import random
-import logging
 import tempfile
 
 import sh
 from yattag import Doc, indent
 
-from smarts.core.waypoints import Waypoints
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.core.utils.sumo import sumolib
+from smarts.core.waypoints import Waypoints
 
 from . import types
 
@@ -110,10 +111,7 @@ class RandomRouteGenerator:
 
 class TrafficGenerator:
     def __init__(
-        self,
-        scenario_dir: str,
-        log_dir: str = "/tmp/smarts/_duarouter_routing",
-        overwrite: bool = False,
+        self, scenario_dir: str, log_dir: str = None, overwrite: bool = False,
     ):
         """
         scenario: The path to the scenario directory
@@ -125,7 +123,7 @@ class TrafficGenerator:
         self._road_network_path = os.path.join(self._scenario, "map.net.xml")
         self._road_network = None
         self._random_route_generator = None
-        self._log_dir = os.path.abspath(log_dir)
+        self._log_dir = self._resolve_log_dir(log_dir)
 
     def plan_and_save(
         self, traffic: types.Traffic, name: str, output_dir: str = None, seed: int = 42
@@ -206,6 +204,7 @@ class TrafficGenerator:
                     speedDev=actor.speed.sigma,
                     sigma=sigma,
                     minGap=min_gap,
+                    maxSpeed=actor.max_speed,
                     **actor.lane_changing_model,
                     **actor.junction_model,
                 )
@@ -250,9 +249,12 @@ class TrafficGenerator:
                 )
             )
 
-    def resolve_edge_length(self, edge_id, lane_id):
+    def _cache_road_network(self):
         if not self._road_network:
             self._road_network = SumoRoadNetwork.from_file(self._road_network_path)
+
+    def resolve_edge_length(self, edge_id, lane_id):
+        self._cache_road_network()
         lane = self._road_network.edge_by_id(edge_id).getLanes()[lane_id]
         return lane.getLength()
 
@@ -267,3 +269,14 @@ class TrafficGenerator:
             )
 
         return next(self._random_route_generator)
+
+    @property
+    def road_network(self):
+        self._cache_road_network()
+        return self._road_network
+
+    def _resolve_log_dir(self, log_dir):
+        if log_dir is None:
+            log_dir = make_dir_in_smarts_log_dir("_duarouter_routing")
+
+        return os.path.abspath(log_dir)

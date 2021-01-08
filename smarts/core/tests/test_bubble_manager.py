@@ -1,3 +1,4 @@
+import math
 import pytest
 import smarts.sstudio.types as t
 from smarts.core.coordinates import Heading, Pose
@@ -72,7 +73,9 @@ def test_bubble_manager_state_change(smarts, mock_provider):
 
     for position, (shadowed, hijacked) in state_at_position.items():
         mock_provider.override_next_provider_state(
-            vehicles=[(vehicle_id, Pose.from_center(position, Heading(-90)), 10,)]
+            vehicles=[
+                (vehicle_id, Pose.from_center(position, Heading(-math.pi / 2)), 10)
+            ]
         )
 
         # Providers must be disjoint
@@ -111,7 +114,9 @@ def test_bubble_manager_limit(smarts, mock_provider):
         vehicles = [
             (
                 v_id,
-                Pose.from_center((80 + y * 0.5 + x * 0.25, y * 4 - 4, 0), Heading(80)),
+                Pose.from_center(
+                    (80 + y * 0.5 + x * 0.25, y * 4 - 4, 0), Heading(math.pi / 2)
+                ),
                 10,
             )
             for y, v_id in enumerate(vehicle_ids)
@@ -132,7 +137,11 @@ def test_vehicle_spawned_in_bubble_is_not_captured(smarts, mock_provider):
     for x in range(20):
         mock_provider.override_next_provider_state(
             vehicles=[
-                (vehicle_id, Pose.from_center((100 + x, 0, 0), Heading(-90)), 10,)
+                (
+                    vehicle_id,
+                    Pose.from_center((100 + x, 0, 0), Heading(-math.pi / 2)),
+                    10,
+                )
             ]
         )
         smarts.step({})
@@ -145,7 +154,13 @@ def test_vehicle_spawned_outside_bubble_is_captured(smarts, mock_provider):
     got_hijacked = False
     for x in range(20):
         mock_provider.override_next_provider_state(
-            vehicles=[(vehicle_id, Pose.from_center((90 + x, 0, 0), Heading(-90)), 10,)]
+            vehicles=[
+                (
+                    vehicle_id,
+                    Pose.from_center((90 + x, 0, 0), Heading(-math.pi / 2)),
+                    10,
+                )
+            ]
         )
         smarts.step({})
         if smarts.vehicle_index.vehicle_is_hijacked(vehicle_id):

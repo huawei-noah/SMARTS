@@ -50,8 +50,10 @@ class LaneFollowingControllerState:
         self.heading_error_gain = None
         self.lateral_error_gain = None
         self.lateral_integral_error = 0
+        self.integral_speed_error = 0
         self.steering_state = 0
         self.throttle_state = 0
+        self.speed_error = 0
         self.min_curvature_location = (None, None)
 
 
@@ -77,7 +79,7 @@ class LaneFollowingController:
         # This lookahead value is coupled with a few calculations below, changing it
         # may affect stability of the controller.
         wp_paths = sensor_state.mission_planner.waypoint_paths_at(
-            vehicle.pose, lookahead=30
+            sim, vehicle.pose, lookahead=30
         )
         current_lane = LaneFollowingController.find_current_lane(
             wp_paths, vehicle.position
@@ -149,13 +151,13 @@ class LaneFollowingController:
         # 5.56 m/s (20 km/h), 6.94 m/s (25 km/h) are desired speed for different thresholds
         #   for road curviness
         # 0.5 , 0.8 are dimensionless thresholds for road_curviness.
-        # 0.8 and 0.6 are the longitudinal velocity controller
+        # 1.8 and 0.6 are the longitudinal velocity controller
         # proportional gains for different road curvinesss.
-        if road_curviness < 0.5:
+        if road_curviness < 0.3:
             raw_throttle = (
-                -METER_PER_SECOND_TO_KM_PER_HR * 0.8 * (vehicle.speed - target_speed)
+                -METER_PER_SECOND_TO_KM_PER_HR * 1.8 * (vehicle.speed - target_speed)
             )
-        elif road_curviness > 0.5 and road_curviness < 0.8:
+        elif road_curviness > 0.3 and road_curviness < 0.8:
             raw_throttle = (
                 -0.6
                 * METER_PER_SECOND_TO_KM_PER_HR
@@ -167,6 +169,23 @@ class LaneFollowingController:
                 * METER_PER_SECOND_TO_KM_PER_HR
                 * (vehicle.speed - np.clip(target_speed, 0, 5.56))
             )
+
+        speed_error = vehicle.speed - target_speed
+        state.integral_speed_error += speed_error * sim.timestep_sec
+        velocity_error_damping_term = (
+            speed_error - state.speed_error
+        ) / sim.timestep_sec
+        # 0.2 is the coefficent of d-controller for speed tracking
+        # 0.1 is the coefficent of I-controller for speed tracking
+        # 5.5 is the gain of feedforward term. This term is directly
+        # related to the steering angle, this is added to further enhance
+        # the speed tracking performance.
+        raw_throttle += (
+            -0.2 * velocity_error_damping_term
+            - 0.1 * state.integral_speed_error
+            + abs(5.5 * math.sin(state.steering_state * vehicle.max_steering_wheel))
+        )
+        state.speed_error = speed_error
         # If the distance of the vehicle to the ahead point for which
         # the waypoint curvature is less than min_curvature is less than
         # 2 meters, then push forward the waypoint which is used to
@@ -201,6 +220,9 @@ class LaneFollowingController:
             ),
         )
 
+        curvature_radius = TrajectoryTrackingController.curvature_calculation(
+            trajectory
+        )
         brake_norm = 0
         if raw_throttle < 0:
             brake_norm = np.clip(-raw_throttle, 0, 1)
@@ -211,9 +233,16 @@ class LaneFollowingController:
             # gain is set to 4.5, the lower the value, the vehicle becomes
             # more agile but may result in instability in harsh curves
             # with high speeds.
+            if vehicle.speed > 70 / 3.6 and abs(curvature_radius) <= 1e3:
+                traction_gain = 4.5
+            elif 40 / 3.6 <= vehicle.speed <= 70 / 3.6 and abs(curvature_radius) <= 3:
+                traction_gain = 2.5
+            else:
+                traction_gain = 0.5
+
             throttle_norm = np.clip(
                 raw_throttle
-                - 4.5
+                - traction_gain
                 * METER_PER_SECOND_TO_KM_PER_HR
                 * abs(vehicle.chassis.longitudinal_lateral_speed[1]),
                 0,
@@ -227,9 +256,6 @@ class LaneFollowingController:
         # curvature is added to enhance the transient performance when
         # the road curvature changes locally.
         state.lateral_integral_error += sim.timestep_sec * controller_lat_error
-        curvature_radius = TrajectoryTrackingController.curvature_calculation(
-            trajectory
-        )
         # The feed forward term for the  steering controller. This
         # term is proportionate to Ux^2/R. The coefficient 0.15 is
         # chosen to enhance the transient tracking performance.
@@ -247,15 +273,19 @@ class LaneFollowingController:
             * (1 / curvature_radius)
             * (vehicle.speed) ** 2
         )
+        normalized_speed = np.clip(vehicle.speed * 3.6 / 100, 0, 1)
+        heading_speed_gain = lerp(0.5, 14, normalized_speed)
+        yaw_rate_speed_gain = lerp(5.75, 11.75, normalized_speed)
+        lateral_speed_gain = np.clip(lerp(-1, 14, normalized_speed), 1, 2)
         steering_norm = np.clip(
-            -1
+            -heading_speed_gain
             * math.degrees(state.heading_error_gain)
             * (
                 abs_heading_error
                 * np.sign(reference_heading - (vehicle.heading % (2 * math.pi)))
             )
-            + 1 * state.lateral_error_gain * (controller_lat_error)
-            + 2.75 * vehicle.chassis.yaw_rate[2]
+            + lateral_speed_gain * state.lateral_error_gain * (controller_lat_error)
+            + yaw_rate_speed_gain * vehicle.chassis.yaw_rate[2]
             + 0.3 * state.lateral_integral_error
             - steering_controller_feed_forward,
             -1,

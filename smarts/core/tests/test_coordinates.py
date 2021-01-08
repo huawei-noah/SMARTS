@@ -1,11 +1,8 @@
 import math
 import numpy as np
 import pytest
-import pybullet
-import pybullet_utils.bullet_client as bc
 
 from smarts.core.coordinates import Pose, Heading
-from smarts.core.utils.math import fast_quaternion_from_angle
 
 
 @pytest.fixture
@@ -90,3 +87,40 @@ def test_conversion_bullet(original_pose):
         assert math.isclose(
             p_from_explicit_offset.position[0], original_pose.position[0], abs_tol=2e-07
         )
+
+
+def test_coordinates_heading():
+
+    assert Heading() == 0
+
+    assert Heading(-3.14) == -3.14
+
+    assert Heading(-math.pi - 1) == math.pi - 1
+
+    assert Heading(math.pi + 1) == -math.pi + 1
+
+    assert math.isclose(
+        Heading(math.pi / 4).relative_to(Heading(math.pi)), Heading(-2.356194490192345)
+    )
+    assert math.isclose(
+        Heading(0).relative_to(Heading(math.pi + 1)), Heading(math.pi - 1)
+    )
+    assert math.isclose(
+        Heading(math.pi + 1).relative_to(Heading(0)), Heading(-math.pi + 1)
+    )
+    assert math.isclose(
+        Heading(math.pi + 1).relative_to(Heading(-math.pi - 1)), Heading(2)
+    )
+
+    assert math.isclose(
+        Heading(2 * math.pi).relative_to(Heading(-2 * math.pi)), Heading(0)
+    )
+    assert math.isclose(
+        Heading(2 * math.pi).relative_to(Heading(-2 * math.pi - 1)), Heading(1)
+    )
+    assert math.isclose(
+        Heading(2 * math.pi).relative_to(Heading(4 * math.pi)), Heading(0)
+    )
+    assert math.isclose(
+        Heading(-2 * math.pi).relative_to(Heading(-4 * math.pi)), Heading(0)
+    )

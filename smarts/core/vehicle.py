@@ -17,29 +17,31 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os
+import yaml
 import importlib.resources as pkg_resources
 import logging
 from dataclasses import dataclass
 
 import numpy
 from direct.showbase.ShowBase import ShowBase
-from pybullet_utils.bullet_client import BulletClient
 
 from . import models
-from .chassis import Chassis, AckermannChassis, BoxChassis
+from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
 from .masks import RenderMasks
 from .sensors import (
     AccelerometerSensor,
-    DrivenPathSensor,
     DrivableAreaGridMapSensor,
+    DrivenPathSensor,
     LidarSensor,
     NeighborhoodVehiclesSensor,
     OGMSensor,
     RGBSensor,
     RoadWaypointsSensor,
     TripMeterSensor,
+    ViaSensor,
     WaypointsSensor,
 )
 from .utils.math import rotate_around_point
@@ -182,6 +184,11 @@ class Vehicle:
         return self._chassis.dimensions.length
 
     @property
+    def max_steering_wheel(self):
+        self._assert_initialized()
+        return self._chassis.max_steering_wheel
+
+    @property
     def width(self):
         self._assert_initialized()
         return self._chassis.dimensions.width
@@ -292,7 +299,7 @@ class Vehicle:
         vehicle_id,
         agent_interface,
         mission_planner,
-        filepath,
+        vehicle_filepath,
         tire_filepath,
         trainable,
         surface_patches,
@@ -314,6 +321,27 @@ class Vehicle:
             SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
         )
 
+        if agent_interface.vehicle_type == "sedan":
+            urdf_name = "vehicle"
+        elif agent_interface.vehicle_type == "bus":
+            urdf_name = "bus"
+        else:
+            raise Exception("Vehicle type does not exist!!!")
+
+        if (vehicle_filepath is None) or not os.path.exists(vehicle_filepath):
+            with pkg_resources.path(models, urdf_name + ".urdf") as path:
+                vehicle_filepath = str(path.absolute())
+
+        if (controller_filepath is None) or not os.path.exists(controller_filepath):
+            with pkg_resources.path(
+                models, "controller_parameters.yaml"
+            ) as controller_path:
+                controller_filepath = str(controller_path.absolute())
+        with open(controller_filepath, "r") as controller_file:
+            controller_parameters = yaml.safe_load(controller_file)[
+                agent_interface.vehicle_type
+            ]
+
         vehicle = Vehicle(
             id=vehicle_id,
             pose=start_pose,
@@ -321,10 +349,10 @@ class Vehicle:
             chassis=AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=filepath,
+                vehicle_filepath=vehicle_filepath,
                 tire_parameters_filepath=tire_filepath,
                 friction_map=surface_patches,
-                controller_parameters_filepath=controller_filepath,
+                controller_parameters=controller_parameters,
                 initial_speed=initial_speed,
             ),
             color=vehicle_color,
@@ -376,6 +404,7 @@ class Vehicle:
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
                 WaypointsSensor(
+                    sim=sim,
                     vehicle=vehicle,
                     mission_planner=mission_planner,
                     lookahead=agent_interface.waypoints.lookahead,
@@ -387,6 +416,7 @@ class Vehicle:
                 RoadWaypointsSensor(
                     vehicle=vehicle,
                     sim=sim,
+                    mission_planner=mission_planner,
                     horizon=agent_interface.road_waypoints.horizon,
                 )
             )
@@ -433,6 +463,15 @@ class Vehicle:
                     sensor_params=agent_interface.lidar.sensor_params,
                 )
             )
+
+        vehicle.attach_via_sensor(
+            ViaSensor(
+                vehicle=vehicle,
+                mission_planner=mission_planner,
+                lane_acquisition_range=40,
+                speed_accuracy=1.5,
+            )
+        )
 
     def step(self, current_simulation_time):
         self._chassis.step(current_simulation_time)
@@ -487,6 +526,7 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
+            "via_sensor",
         ]
         for sensor_name in sensor_names:
 

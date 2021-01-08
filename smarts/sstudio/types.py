@@ -17,22 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import re
-import math
+import logging
 import random
-import itertools
 import collections.abc as collections_abc
 from dataclasses import dataclass, field
-from typing import Sequence, Tuple, Dict, Any, Union, Optional
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-import numpy as np
-from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
+from shapely.geometry import GeometryCollection, MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
-from smarts.core.utils.id import SocialAgentId
-from smarts.core.waypoints import Waypoint, Waypoints
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.utils.id import SocialAgentId
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -167,6 +163,8 @@ class TrafficActor(Actor):
     """Imperfection within range [0..1]"""
     min_gap: Distribution = Distribution(mean=2.5, sigma=0)
     """Minimum gap in meters."""
+    max_speed: float = 55.5
+    """The vehicle's maximum velocity (in m/s), defaults 200 km/h for vehicles"""
     vehicle_type: str = "passenger"
     """The type of vehicle this actor uses. ("passenger", "bus", "coach", "truck", "trailer")"""
     lane_changing_model: LaneChangingModel = field(
@@ -310,6 +308,40 @@ class Flow:
 
 
 @dataclass(frozen=True)
+class JunctionEdgeIDResolver:
+    """ A utility for resolving a junction connection edge """
+
+    start_edge_id: str
+    start_lane_index: int
+    end_edge_id: str
+    end_lane_index: int
+
+    def to_edge(self, sumo_road_network: SumoRoadNetwork):
+        return sumo_road_network.get_edge_in_junction(
+            self.start_edge_id,
+            self.start_lane_index,
+            self.end_edge_id,
+            self.end_lane_index,
+        )
+
+
+@dataclass
+class Via:
+    """A point on an edge that an actor must pass through"""
+
+    edge_id: Union[str, JunctionEdgeIDResolver]
+    """The edge this via is on"""
+    lane_index: int
+    """The lane this via sits on"""
+    lane_offset: int
+    """The offset along the lane where this via sits"""
+    required_speed: float
+    """The speed that a vehicle should travel through this via"""
+    hit_distance: float = -1
+    """The distance at which this waypoint can be hit. Negative means half the lane radius."""
+
+
+@dataclass(frozen=True)
 class Traffic:
     """The descriptor for traffic."""
 
@@ -337,17 +369,50 @@ class TrapEntryTactic(EntryTactic):
 
 
 @dataclass(frozen=True)
+class UTurn:
+    trigger_radius: int = 100
+    """This task will be triggered if any vehicles within this radius"""
+
+    target_lane_index: int = 0
+
+    @property
+    def name(self):
+        return "uturn"
+
+
+@dataclass(frozen=True)
+class CutIn:
+    trigger_radius: int = 30
+    """This task will be triggered if any vehicles within this radius"""
+
+    complete_on_edge_id: Union[str, JunctionEdgeIDResolver] = None
+    """The edge this task will be completed on"""
+
+    @property
+    def name(self):
+        return "cut_in"
+
+
+@dataclass(frozen=True)
 class Mission:
     """The descriptor for an actor's mission."""
 
     route: Route
     """The route for the actor to attempt to follow."""
+
+    via: Tuple[Via, ...] = ()
+    """Points on an edge that an actor must pass through"""
+
     start_time: float = 0.1
     """The earliest simulation time that this mission starts but may start later in couple with
     `entry_tactic`.
     """
+
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
+
+    task: Tuple[CutIn, UTurn] = None
+    """A task for the actor to accomplish."""
 
 
 @dataclass(frozen=True)
@@ -364,6 +429,8 @@ class EndlessMission:
     offset:
         The offset in metres into the lane. Also acceptable\\: 'max', 'random'
     """
+    via: Tuple[Via, ...] = ()
+    """Points on an edge that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
     entry_tactic: EntryTactic = None
@@ -380,6 +447,8 @@ class LapMission:
     """The route for the actor to attempt to follow"""
     num_laps: int
     """The amount of times to repeat the mission"""
+    via: Tuple[Via, ...] = ()
+    """Points on an edge that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
     entry_tactic: EntryTactic = None
@@ -400,6 +469,8 @@ class GroupedLapMission:
     """The number of actors to be part of the group"""
     num_laps: int
     """The amount of times to repeat the mission"""
+    via: Tuple[Via, ...] = ()
+    """Points on an edge that an actor must pass through"""
 
 
 @dataclass(frozen=True)
@@ -431,50 +502,85 @@ class MapZone(Zone):
     """The number of lanes from right to left that this zone covers."""
 
     def to_geometry(self, road_network: SumoRoadNetwork) -> Polygon:
-        def resolve_offset(offset, geometry_length, lane_length, buffer_from_ends):
-            if offset == "base" or offset == 0:
-                return buffer_from_ends
+        def resolve_offset(offset, geometry_length, lane_length):
+            if offset == "base":
+                return 0
             # push off of end of lane
             elif offset == "max":
-                return lane_length - geometry_length - buffer_from_ends
+                return lane_length - geometry_length
             elif offset == "random":
-                return random.uniform(
-                    0, lane_length - geometry_length - buffer_from_ends
-                )
+                return random.uniform(0, lane_length - geometry_length)
             else:
                 return float(offset)
+
+        def pick_remaining_shape_after_split(geometry_collection, length, lane):
+            lane_shape = geometry_collection
+            if not isinstance(lane_shape, GeometryCollection):
+                return lane_shape
+
+            # For simplicty, we only deal w/ the == 1 or 2 case
+            if len(lane_shape) not in {1, 2}:
+                return None
+
+            if len(lane_shape) == 1:
+                return lane_shape[0]
+
+            expected_bbox_area = lane.getWidth() * length
+            keep_index = 0
+            if (lane_shape[0].minimum_rotated_rectangle.area - expected_bbox_area) < (
+                lane_shape[1].minimum_rotated_rectangle.area - expected_bbox_area
+            ):
+                # 0 is the discard piece, keep the other
+                keep_index = 1
+            lane_shape = lane_shape[keep_index]
+
+            return lane_shape
 
         lane_shapes = []
         edge_id, lane_idx, offset = self.start
         edge = road_network.edge_by_id(edge_id)
+        buffer_from_ends = 1e-6
         for lane_idx in range(lane_idx, lane_idx + self.n_lanes):
             lane = edge.getLanes()[lane_idx]
             lane_length = lane.getLength()
-            geom_length = max(self.length - 1e-6, 1e-6)
+            geom_length = self.length
 
-            assert lane_length > geom_length  # Geom is too long for lane
+            if geom_length > lane_length:
+                logging.debug(
+                    f"Geometry is too long={geom_length} with offset={offset} for "
+                    f"lane={lane.getID()}, using length={lane_length} instead"
+                )
+                geom_length = lane_length
+
             assert geom_length > 0  # Geom length is negative
 
-            lane_shape = SumoRoadNetwork.buffered_lane_or_edge(
+            lane_shape = SumoRoadNetwork._buffered_lane_or_edge(
                 lane, width=lane.getWidth() + 0.3
             )
 
-            min_cut = resolve_offset(offset, geom_length, lane_length, 1e-6)
+            lane_offset = resolve_offset(offset, geom_length, lane_length)
+            lane_offset += buffer_from_ends
+            geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
+            lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
+
+            min_cut = min(lane_offset, lane_length)
             # Second cut takes into account shortening of geometry by `min_cut`.
-            max_cut = min(min_cut + geom_length, lane_length - min_cut - 1e-6)
+            max_cut = min(min_cut + geom_length, lane_length - min_cut)
 
             lane_shape = road_network.split_lane_shape_at_offset(
-                Polygon(lane_shape), lane, min_cut
+                lane_shape, lane, min_cut
             )
-
-            if isinstance(lane_shape, GeometryCollection):
-                if len(lane_shape) < 2:
-                    break
-                lane_shape = lane_shape[1]
+            lane_shape = pick_remaining_shape_after_split(lane_shape, min_cut, lane)
+            if lane_shape is None:
+                continue
 
             lane_shape = road_network.split_lane_shape_at_offset(
                 lane_shape, lane, max_cut,
-            )[0]
+            )
+            lane_shape = pick_remaining_shape_after_split(lane_shape, max_cut, lane)
+            if lane_shape is None:
+                continue
+
             lane_shapes.append(lane_shape)
 
         geom = unary_union(MultiPolygon(lane_shapes))

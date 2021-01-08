@@ -17,23 +17,33 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+import "antd/dist/antd.dark.css";
+
 import regeneratorRuntime from "regenerator-runtime";
 import React from "react";
 import ReactDOM from "react-dom";
 import { HashRouter as Router } from "react-router-dom";
 import Client from "./client.js";
 import App from "./components/app.js";
-import "antd/dist/antd.dark.css";
+import { ToastProvider } from "react-toast-notifications";
+import Snack from "./components/snack";
 
 let client = new Client({
-  endpoint: "http://localhost:8081",
+  endpoint: window.location.origin,
   delay: 2000,
   retries: 10,
 });
 
 ReactDOM.render(
-  <Router>
-    <App client={client} />
-  </Router>,
+  <ToastProvider
+    autoDismiss
+    autoDismissTimeout={3000}
+    components={{ Toast: Snack }}
+    placement="top-center"
+  >
+    <Router>
+      <App client={client} />
+    </Router>
+  </ToastProvider>,
   document.getElementById("root")
 );

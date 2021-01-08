@@ -17,19 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import atexit
 import cloudpickle
+import grpc
 import logging
-import pathlib
-import subprocess
-import sys
-import tempfile
 import time
 
 from concurrent import futures
-from multiprocessing.connection import Client
 
-from .agent import AgentSpec
+from smarts.core.agent import AgentSpec
+from smarts.zoo import manager_pb2
+from smarts.zoo import manager_pb2_grpc
+from smarts.zoo import worker_pb2
+from smarts.zoo import worker_pb2_grpc
 
 
 class RemoteAgentException(Exception):
@@ -37,78 +36,57 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, connection_retries=100):
-        atexit.register(self.terminate)
-
+    def __init__(self, manager_address, worker_address):
         self._log = logging.getLogger(self.__class__.__name__)
-        sock_file = tempfile.mktemp()
-        cmd = [
-            sys.executable,  # path to the current python binary
-            str(
-                (pathlib.Path(__file__).parent.parent / "zoo" / "run_agent.py")
-                .absolute()
-                .resolve()
-            ),
-            sock_file,
-        ]
 
-        self._log.debug(f"Spawning remote agent proc: {cmd}")
+        # Track the last action future.
+        self._act_future = None
 
-        self._agent_proc = subprocess.Popen(cmd)
-        self._conn = None
-        self._tp_exec = futures.ThreadPoolExecutor()
+        self._manager_channel = grpc.insecure_channel(
+            f"{manager_address[0]}:{manager_address[1]}"
+        )
+        self._worker_address = worker_address
+        self._worker_channel = grpc.insecure_channel(
+            f"{worker_address[0]}:{worker_address[1]}"
+        )
+        try:
+            # Wait until the grpc server is ready or timeout after 30 seconds.
+            grpc.channel_ready_future(self._manager_channel).result(timeout=30)
+            grpc.channel_ready_future(self._worker_channel).result(timeout=30)
+        except grpc.FutureTimeoutError as e:
+            raise RemoteAgentException(
+                "Timeout while connecting to remote worker process."
+            ) from e
+        self._manager_stub = manager_pb2_grpc.ManagerStub(self._manager_channel)
+        self._worker_stub = worker_pb2_grpc.WorkerStub(self._worker_channel)
 
-        for i in range(connection_retries):
-            # Waiting on agent to open it's socket.
-            try:
-                self._conn = Client(sock_file, family="AF_UNIX")
-                break
-            except FileNotFoundError:
-                self._log.debug(
-                    f"RemoteAgent retrying connection to agent in: attempt {i}"
-                )
-                time.sleep(0.1)
+    def act(self, obs):
+        # Run task asynchronously and return a Future.
+        self._act_future = self._worker_stub.act.future(
+            worker_pb2.Observation(payload=cloudpickle.dumps(obs))
+        )
 
-        if self._conn is None:
-            raise RemoteAgentException("Failed to connect to remote agent")
-
-    def __del__(self):
-        self.terminate()
-
-    def _act(self, obs, timeout):
-        # Send observation
-        self._conn.send({"type": "obs", "payload": obs})
-        # Receive action
-        if self._conn.poll(timeout):
-            try:
-                return self._conn.recv()
-            except ConnectionResetError as e:
-                self.terminate()
-                raise e
-        else:
-            return None
-
-    def act(self, obs, timeout=None):
-        # Run task asynchronously and return a Future
-        return self._tp_exec.submit(self._act, obs, timeout)
+        return self._act_future
 
     def start(self, agent_spec: AgentSpec):
-        # Send the AgentSpec to the agent runner
-        self._conn.send(
-            # We use cloudpickle only for the agent_spec to allow for serialization of lambdas
-            {"type": "agent_spec", "payload": cloudpickle.dumps(agent_spec)}
+        # Send the AgentSpec to the agent runner.
+        # Cloudpickle used only for the agent_spec to allow for serialization of lambdas.
+        self._worker_stub.build(
+            worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
         )
 
     def terminate(self):
-        atexit.unregister(self.terminate)
-        if self._agent_proc:
-            if self._conn:
-                self._conn.close()
+        # If the last action future returned is incomplete, cancel it first.
+        if (self._act_future is not None) and (not self._act_future.done()):
+            self._act_future.cancel()
 
-            if self._agent_proc.poll() is not None:
-                self._agent_proc.kill()
-                self._agent_proc.wait()
-            self._agent_proc = None
+        # Close worker channel
+        self._worker_channel.close()
 
-        # Shutdown thread pool executor
-        self._tp_exec.shutdown()
+        # Stop the remote worker process
+        response = self._manager_stub.stop_worker(
+            manager_pb2.Port(num=self._worker_address[1])
+        )
+
+        # Close manager channel
+        self._manager_channel.close()

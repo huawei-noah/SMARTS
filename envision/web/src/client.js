@@ -30,6 +30,11 @@ export default class Client {
     this._delay = delay;
     this._maxRetries = retries;
     this._glb_cache = {};
+
+    this._sockets = {};
+    this._flushStream = {};
+    this._stateQueues = {};
+    this._simulationSelectedTime = {};
   }
 
   async fetchSimulationIds() {
@@ -37,12 +42,33 @@ export default class Client {
     url.pathname = "simulations";
     let response = await fetch(url);
     if (!response.ok) {
-      console.error("Unable to fetch simulation IDs.");
+      console.error("Unable to fetch simulation IDs");
       return [];
     } else {
       let data = await response.json();
       return data.simulations;
     }
+  }
+
+  seek(simulationId, seconds) {
+    if (!(simulationId in this._sockets)) {
+      this._sockets[simulationId] = null;
+    }
+
+    if (!(simulationId in this._flushStream)) {
+      this._flushStream[simulationId] = false;
+    }
+
+    if (
+      !this._sockets[simulationId] &&
+      this._sockets[simulationId].readyState == WebSocket.OPEN
+    ) {
+      console.warn("Unable to seek because no connected socket exists");
+      return;
+    }
+
+    this._sockets[simulationId].send(JSON.stringify({ seek: seconds }));
+    this._flushStream[simulationId] = true;
   }
 
   async _obtainStream(simulationId, stateQueue, remainingRetries) {
@@ -63,7 +89,8 @@ export default class Client {
         };
 
         socket.onmessage = (event) => {
-          let data = JSON.parse(event.data, (_, value) =>
+          let data = JSON.parse(event.data);
+          let state = JSON.parse(data.state, (_, value) =>
             value === "NaN"
               ? Nan
               : value === "Infinity"
@@ -72,7 +99,11 @@ export default class Client {
               ? -Infinity
               : value
           );
-          stateQueue.push(data);
+          stateQueue.push({
+            state: state,
+            current_elapsed_time: data.current_elapsed_time,
+            total_elapsed_time: data.total_elapsed_time,
+          });
         };
 
         socket.onerror = (error) => {
@@ -101,23 +132,55 @@ export default class Client {
   }
 
   async *worldstate(simulationId) {
-    let socket = null;
-    let stateQueue = [];
+    if (!(simulationId in this._sockets)) {
+      this._sockets[simulationId] = null;
+    }
+
+    if (!(simulationId in this._flushStream)) {
+      this._flushStream[simulationId] = false;
+    }
+
+    if (!(simulationId in this._stateQueues)) {
+      this._stateQueues[simulationId] = [];
+    }
+
+    this._simulationSelectedTime[simulationId] = Date.now();
+    let selectedTime = this._simulationSelectedTime[simulationId];
 
     while (true) {
       // If we dropped the connection or never connected in the first place
-      let isConnected = socket && socket.readyState === WebSocket.OPEN;
+      let isConnected =
+        this._sockets[simulationId] &&
+        this._sockets[simulationId].readyState == WebSocket.OPEN;
 
       if (isConnected) {
-        while (stateQueue.length > 0) {
-          yield stateQueue.pop();
+        while (this._stateQueues[simulationId].length > 0) {
+          if (this._flushStream[simulationId]) {
+            this._flushStream[simulationId] = false;
+            this._stateQueues[simulationId].length = 0;
+            continue;
+          }
+
+          let item = this._stateQueues[simulationId].pop();
+          let elapsed_times = [
+            item.current_elapsed_time,
+            item.total_elapsed_time,
+          ];
+          yield [item.state, elapsed_times];
         }
       } else {
-        socket = await this._obtainStream(
+        this._sockets[simulationId] = await this._obtainStream(
           simulationId,
-          stateQueue,
+          this._stateQueues[simulationId],
           this._maxRetries
         );
+      }
+
+      // This function can be triggered multiple times for the same simulation id
+      // (i.e. everytime this simulation is selected from menu)
+      // We only need to keep the most recent call to loop, all the previous calls can be returned
+      if (selectedTime < this._simulationSelectedTime[simulationId]) {
+        return;
       }
 
       // TODO: Make this "truly" async...

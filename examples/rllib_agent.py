@@ -4,7 +4,7 @@ import gym
 import numpy as np
 
 from ray.rllib.models import ModelCatalog
-from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
+from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.rllib.utils import try_import_tf
 
 from smarts.core.agent_interface import AgentInterface, AgentType

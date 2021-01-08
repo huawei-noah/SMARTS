@@ -52,11 +52,19 @@ class ActionSpaceType(Enum):
 class Controllers:
     @staticmethod
     def perform_action(
-        sim, agent_id, vehicle, action, controller_state, sensor_state, action_space
+        sim,
+        agent_id,
+        vehicle,
+        action,
+        controller_state,
+        sensor_state,
+        action_space,
+        vehicle_type,
     ):
         if action is None:
             return
-
+        if vehicle_type == "bus":
+            assert action_space == ActionSpaceType.Trajectory
         if action_space == ActionSpaceType.Continuous:
             vehicle.control(
                 throttle=np.clip(action[0], 0.0, 1.0),
@@ -114,15 +122,19 @@ class Controllers:
 
 class ControllerState:
     @staticmethod
-    def from_action_space(action_space, vehicle_position, sim):
+    def from_action_space(action_space, vehicle_pose, sim):
         if action_space == ActionSpaceType.Lane:
             # TAI: we should probably be fetching these waypoint through the mission planner
-            target_lane_id = sim.waypoints.closest_waypoint(vehicle_position).lane_id
+            target_lane_id = sim.waypoints.closest_waypoint(
+                vehicle_pose, filter_from_count=4
+            ).lane_id
             return LaneFollowingControllerState(target_lane_id)
 
         if action_space == ActionSpaceType.LaneWithContinuousSpeed:
             # TAI: we should probably be fetching these waypoint through the mission planner
-            target_lane_id = sim.waypoints.closest_waypoint(vehicle_position).lane_id
+            target_lane_id = sim.waypoints.closest_waypoint(
+                vehicle_pose, filter_from_count=4
+            ).lane_id
             return LaneFollowingControllerState(target_lane_id)
 
         if action_space == ActionSpaceType.ActuatorDynamic:

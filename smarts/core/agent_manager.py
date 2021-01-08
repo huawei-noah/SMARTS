@@ -17,20 +17,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import cloudpickle
 import logging
 from typing import Set
 
 from envision.types import format_actor_id
-
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
+from smarts.core.mission_planner import MissionPlanner
+from smarts.core.remote_agent_buffer import RemoteAgentBuffer
+from smarts.core.sensors import Sensors
 from smarts.core.utils.id import SocialAgentId
+from smarts.core.vehicle import VehicleState
 from smarts.zoo.registry import make as make_social_agent
-
-from .mission_planner import MissionPlanner
-from .remote_agent_buffer import RemoteAgentBuffer
-from .sensors import Sensors
-from .vehicle import VehicleState
 
 
 class AgentManager:
@@ -41,9 +40,9 @@ class AgentManager:
          time.
     """
 
-    def __init__(self, interfaces):
+    def __init__(self, interfaces, zoo_addrs=None):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._remote_agent_buffer = RemoteAgentBuffer()
+        self._remote_agent_buffer = RemoteAgentBuffer(zoo_manager_addrs=zoo_addrs)
 
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
@@ -136,7 +135,7 @@ class AgentManager:
         dones = {
             agent_id: agent_id not in self.pending_agent_ids
             for agent_id in self.agent_ids
-            if agent_id not in sim.vehicle_index.agent_vehicle_ids
+            if agent_id not in sim.vehicle_index.agent_vehicle_ids()
         }
 
         for agent_id in self.active_agents:
@@ -160,10 +159,6 @@ class AgentManager:
                 observations[agent_id], dones[agent_id] = Sensors.observe_batch(
                     sim, agent_id, sensor_states, {v.id: v for v in vehicles}
                 )
-
-                # XXX: For now we collapse all vehicle dones into a single done
-                dones[agent_id] = any(dones[agent_id].values())
-
                 rewards[agent_id] = {
                     vehicle_id: self._vehicle_reward(vehicle_id, sim)
                     for vehicle_id in sensor_states.keys()
@@ -209,17 +204,13 @@ class AgentManager:
     def _vehicle_score(self, vehicle_id, sim):
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
-    def step_agent_sensors(self, sim):
-        for agent_id in self.active_agents:
-            for vehicle_id in sim.vehicle_index.vehicle_ids_by_actor_id(
-                agent_id, include_shadowers=True
-            ):
-                sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle_id)
-                Sensors.step(self, sensor_state)
+    def step_sensors(self, sim):
+        for vehicle_id, sensor_state in sim.vehicle_index.sensor_states_items():
+            Sensors.step(self, sensor_state)
 
-                vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
-                for sensor in vehicle.sensors.values():
-                    sensor.step()
+            vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
+            for sensor in vehicle.sensors.values():
+                sensor.step()
 
     def _filter_for_active_ego(self, dict_):
         return {
@@ -235,7 +226,9 @@ class AgentManager:
         try:
             social_agent_actions = {
                 agent_id: (
-                    self._remote_social_agents_action[agent_id].result()
+                    cloudpickle.loads(
+                        self._remote_social_agents_action[agent_id].result().action
+                    )
                     if self._remote_social_agents_action.get(agent_id, None)
                     else None
                 )
@@ -243,9 +236,8 @@ class AgentManager:
             }
         except Exception as e:
             self._log.error(
-                "RemoteAgent: Resolving the remote agent's action (a Future object) generated exception."
+                "Resolving the remote agent's action (a Future object) generated exception."
             )
-            self._log.exception(e)
             raise e
 
         agents_without_actions = [
@@ -272,7 +264,7 @@ class AgentManager:
         returned action should not be executed on the vehicle until it is hijacked
         by the agent.
         """
-        vehicle_ids_controlled_by_agents = sim.vehicle_index.agent_vehicle_ids
+        vehicle_ids_controlled_by_agents = sim.vehicle_index.agent_vehicle_ids()
         controlling_agent_ids = set(
             [
                 sim.vehicle_index.actor_id_from_vehicle_id(v_id)
@@ -306,9 +298,7 @@ class AgentManager:
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(
-                obs, timeout=5
-            )
+            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
     def setup_agents(self, sim):
         self.init_ego_agents(sim)
@@ -392,7 +382,11 @@ class AgentManager:
 
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
-        planner = MissionPlanner(scenario.waypoints, scenario.road_network)
+        planner = MissionPlanner(
+            scenario.waypoints,
+            scenario.road_network,
+            agent_behavior=agent_interface.agent_behavior,
+        )
         planner.plan(mission)
 
         vehicle = sim.vehicle_index.build_agent_vehicle(
@@ -473,9 +467,7 @@ class AgentManager:
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(
-                obs, timeout=5
-            )
+            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)
