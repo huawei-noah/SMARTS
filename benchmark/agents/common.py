@@ -42,18 +42,12 @@ from smarts.core.scenario import PositionalGoal
 SPACE_LIB = dict(
     # normalized distance to lane center
     distance_to_center=lambda _: gym.spaces.Box(low=-1e3, high=1e3, shape=(1,)),
-    heading_errors=lambda look: gym.spaces.Box(
-        low=-1.0,
-        high=1.0,
-        shape=(look[0],),
-    ),
+    heading_errors=lambda look: gym.spaces.Box(low=-1.0, high=1.0, shape=(look[0],),),
     speed=lambda _: gym.spaces.Box(low=-330.0, high=330.0, shape=(1,)),
     steering=lambda _: gym.spaces.Box(low=-1.0, high=1.0, shape=(1,)),
     goal_relative_pos=lambda _: gym.spaces.Box(low=-1e2, high=1e2, shape=(2,)),
     neighbor=lambda neighbor_num: gym.spaces.Box(
-        low=-1e3,
-        high=1e3,
-        shape=(neighbor_num * 5,),
+        low=-1e3, high=1e3, shape=(neighbor_num * 5,),
     ),
     img_gray=lambda shape: gym.spaces.Box(low=0.0, high=1.0, shape=shape),
     lane_its_info=lambda _: gym.spaces.Box(low=-1e10, high=1e10, shape=(16,)),

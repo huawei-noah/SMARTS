@@ -100,7 +100,15 @@ class MetricKeys:
 
 
 class MetricHandler:
+    """ MetricHandler serves for the metric """
+
     def __init__(self, num_episode):
+        """Create a MetricHandler instance.
+
+        Parameters
+        ----------
+        num_episode
+        """
         self._logs = [EvaluatedEpisode() for _ in range(num_episode)]
 
     def log_step(self, observations, rewards, dones, infos, episode):
@@ -145,9 +153,7 @@ class MetricHandler:
                 f_path = os.path.join(csv_dir, f_name)
                 agent_id = f_path.split(".")[0]
                 print(f"Got file `{f_name}` for agent-{agent_id}")
-                with open(
-                    f_path,
-                ) as f:
+                with open(f_path,) as f:
                     reader = csv.reader(f, delimiter=",")
                     _ = next(reader)
                     agent_record[agent_id]["Speed"] = next(reader)[1:]

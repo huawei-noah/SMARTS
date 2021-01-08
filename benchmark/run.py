@@ -117,8 +117,7 @@ def main(
     )
 
     experiment_name = EXPERIMENT_NAME.format(
-        scenario=scenario_path.stem,
-        n_agent=len(agents),
+        scenario=scenario_path.stem, n_agent=len(agents),
     )
 
     log_dir = Path(log_dir).expanduser().absolute() / RUN_NAME
@@ -145,9 +144,7 @@ def main(
 def parse_args():
     parser = argparse.ArgumentParser("Benchmark learning")
     parser.add_argument(
-        "scenario",
-        type=str,
-        help="Scenario name",
+        "scenario", type=str, help="Scenario name",
     )
     parser.add_argument(
         "--paradigm",

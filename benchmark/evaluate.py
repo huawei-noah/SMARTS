@@ -23,9 +23,7 @@ from benchmark.metrics import basic_metrics as metrics
 def parse_args():
     parser = argparse.ArgumentParser("Run evaluation")
     parser.add_argument(
-        "scenario",
-        type=str,
-        help="Scenario name",
+        "scenario", type=str, help="Scenario name",
     )
     parser.add_argument("--checkpoint", type=str, required=True)
     parser.add_argument("--num_steps", type=int, default=1000)

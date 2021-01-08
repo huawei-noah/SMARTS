@@ -40,10 +40,10 @@ class RemoteAgentBuffer:
         """
         Args:
             zoo_manager_addrs:
-                List of (ip, port) tuples for manager processes. Manager will instantiate 
+                List of (ip, port) tuples for manager processes. Manager will instantiate
                 worker processes which run remote agents.
-            buffer_size: 
-                Number of RemoteAgents to pre-initialize and keep running in the background, 
+            buffer_size:
+                Number of RemoteAgents to pre-initialize and keep running in the background,
                 must be non-zero (default: 3).
         """
         assert buffer_size > 0
