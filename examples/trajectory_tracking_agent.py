@@ -38,7 +38,7 @@ class TrackingAgent(Agent):
         return trajectory
 
 
-def main(scenarios, headless, num_episodes, seed):
+def main(scenarios, sim_name, headless, num_episodes, seed):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Tracker, max_episode_steps=None),
         agent_builder=TrackingAgent,
@@ -48,6 +48,7 @@ def main(scenarios, headless, num_episodes, seed):
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs={AGENT_ID: agent_spec},
+        sim_name=sim_name,
         headless=headless,
         visdom=False,
         timestep_sec=0.1,
@@ -77,6 +78,7 @@ if __name__ == "__main__":
 
     main(
         scenarios=args.scenarios,
+        sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,

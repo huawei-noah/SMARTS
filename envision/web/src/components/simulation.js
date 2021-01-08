@@ -17,7 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 import {
   Vector3,
@@ -40,6 +40,7 @@ import Vehicles from "./vehicles.js";
 import DrivenPaths from "./driven_paths.js";
 import MissionRoutes from "./mission_routes.js";
 import Waypoints from "./waypoints.js";
+import TrafficDividers from "./traffic_dividers.js";
 
 import AgentScores from "./agent_scores";
 import earcut from "earcut";
@@ -52,7 +53,7 @@ export default function Simulation({
   client,
   showScores,
   egoView,
-  canvasRef,
+  canvasRef = null,
   onElapsedTimesChanged = (current, total) => {},
   style = {},
 }) {
@@ -63,13 +64,9 @@ export default function Simulation({
   const [egoDrivenPathModel, setEgoDrivenPathModel] = useState(null);
   const [socialDrivenPathModel, setSocialDrivenPathModel] = useState(null);
 
-  const [mapMeshes, setMapMeshes] = useState([]);
-
   const [roadNetworkBbox, setRoadNetworkBbox] = useState([]);
   const [laneDividerPos, setLaneDividerPos] = useState([]);
   const [edgeDividerPos, setEdgeDividerPos] = useState([]);
-  const [laneDividerGeometry, setLaneDividerGeometry] = useState([]);
-  const [edgeDividerGeometry, setEdgeDividerGeometry] = useState(null);
 
   const [worldState, setWorldState] = useState({
     traffic: [],
@@ -79,9 +76,12 @@ export default function Simulation({
     scores: [],
   });
 
+  const mapMeshesRef = useRef([]);
+
   // Parse extra data attached in glb file
-  function LoadGLTFExtras(loader) {
-    this.name = "load_gltf_extras";
+  function LoadGLTFExtras(loader, scenario_id) {
+    // Register loader locally under different names for different scenarios
+    this.name = `load_gltf_extras_${scenario_id}`;
     this.enabled = true;
 
     if (loader.gltf["extras"]) {
@@ -166,7 +166,7 @@ export default function Simulation({
       return;
     }
 
-    for (const mesh of mapMeshes) {
+    for (const mesh of mapMeshesRef.current) {
       // doNotRecurse = false, disposeMaterialAndTextures = true
       mesh.dispose(false, true);
     }
@@ -176,9 +176,12 @@ export default function Simulation({
     let mapFilename = Tools.GetFilename(mapSourceUrl);
 
     // Load extra information attached to the map glb
-    GLTFLoader.RegisterExtension("load_gltf_extras", function (loader) {
-      return new LoadGLTFExtras(loader);
-    });
+    GLTFLoader.RegisterExtension(
+      `load_gltf_extras_${worldState.scenario_id}`,
+      function (loader) {
+        return new LoadGLTFExtras(loader, worldState.scenario_id);
+      }
+    );
 
     SceneLoader.ImportMesh("", mapRootUrl, mapFilename, scene, (meshes) => {
       // Revert root mesh's rotation to match Babylon's coordinate system
@@ -197,61 +200,13 @@ export default function Simulation({
         child.material = material;
       }
 
-      setMapMeshes(meshes);
-      GLTFLoader.UnregisterExtension("load_gltf_extras");
+      mapMeshesRef.current = meshes;
+
+      GLTFLoader.UnregisterExtension(
+        `load_gltf_extras_${worldState.scenario_id}`
+      );
     });
   }, [scene, worldState.scenario_id]);
-
-  // Lane dividers
-  useEffect(() => {
-    if (scene == null || worldState.scenario_id == null) {
-      return;
-    }
-
-    for (const geom of laneDividerGeometry) {
-      geom.dispose();
-    }
-
-    let newLaneDividers = laneDividerPos.map((lines, idx) => {
-      let points = lines.map((p) => new Vector3(p[0], 0.1, p[1]));
-      let dashLine = MeshBuilder.CreateDashedLines(
-        `lane-divider-${idx}`,
-        { points: points, updatable: false, dashSize: 1, gapSize: 2 },
-        scene
-      );
-      dashLine.color = new Color4(...worldState.scene_colors["lane_divider"]);
-      return dashLine;
-    });
-
-    setLaneDividerGeometry(newLaneDividers);
-  }, [scene, JSON.stringify(laneDividerPos)]);
-
-  // Edge dividers
-  useEffect(() => {
-    if (scene == null || worldState.scenario_id == null) {
-      return;
-    }
-
-    if (edgeDividerGeometry != null) {
-      edgeDividerGeometry.dispose();
-    }
-
-    let edgeDividerPoints = edgeDividerPos.map((lines) => {
-      let points = lines.map((p) => new Vector3(p[0], 0.1, p[1]));
-      return points;
-    });
-
-    let newEdgeDividers = MeshBuilder.CreateLineSystem(
-      "edge-dividers",
-      { lines: edgeDividerPoints, updatable: false },
-      scene
-    );
-    newEdgeDividers.color = new Color4(
-      ...worldState.scene_colors["edge_divider"]
-    );
-
-    setEdgeDividerGeometry(newEdgeDividers);
-  }, [scene, JSON.stringify(edgeDividerPos)]);
 
   return (
     <div
@@ -271,7 +226,6 @@ export default function Simulation({
           height: "100%",
         }}
       />
-      <Bubbles scene={scene} worldState={worldState} />
       <Camera
         scene={scene}
         roadNetworkBbox={roadNetworkBbox}
@@ -283,6 +237,7 @@ export default function Simulation({
         vehicleRootUrl={`${client.endpoint.origin}/assets/models/`}
         egoView={egoView}
       />
+      <Bubbles scene={scene} worldState={worldState} />
       <DrivenPaths
         scene={scene}
         worldState={worldState}
@@ -295,6 +250,12 @@ export default function Simulation({
         worldState={worldState}
         egoWaypointModel={egoWaypointModel}
         socialWaypointModel={socialWaypointModel}
+      />
+      <TrafficDividers
+        scene={scene}
+        worldState={worldState}
+        laneDividerPos={laneDividerPos}
+        edgeDividerPos={edgeDividerPos}
       />
       {showScores ? (
         <AgentScores

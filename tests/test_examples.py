@@ -12,6 +12,7 @@ def test_examples(example):
     main = importlib.import_module(f"examples.{example}").main
     main(
         scenarios=["scenarios/loop"],
+        sim_name=None,
         headless=True,
         num_episodes=1,
         seed=42,
@@ -24,6 +25,7 @@ def test_multi_instance_example():
     main(
         training_scenarios=["scenarios/loop"],
         evaluation_scenarios=["scenarios/loop"],
+        sim_name=None,
         headless=True,
         num_episodes=1,
         seed=42,
