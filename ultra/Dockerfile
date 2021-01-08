@@ -1,22 +1,6 @@
 FROM nvidia/cuda:10.1-cudnn7-runtime-ubuntu18.04
-# FROM registry.kyber.team/kyber/lcc-team/cuda10.1-pytorch1.4-ubuntu18.04:latest
 
 ARG DEBIAN_FRONTEND=noninteractive
-
-#------------------------------------------------------------------------------
-# Environment variables inside docker
-#------------------------------------------------------------------------------
-# Uncomment inside Huawei domain
-ENV http_proxy http://localhost:3128
-ENV HTTP_PROXY http://localhost:3128
-ENV https_proxy http://localhost:3128
-ENV HTTPS_PROXY http://localhost:3128
-ENV ftp_proxy http://localhost:3128
-ENV FTP_PROXY http://localhost:3128
-ENV no_proxy 127.0.0.1,10.218.163.63,localhost,.huawei.com,.kyber.team
-ENV NO_PROXY 127.0.0.1,10.218.163.63,localhost,.huawei.com,.kyber.team
-
-ENV GIT_SSL_NO_VERIFY true
 
 #------------------------------------------------------------------------------
 # Certificate Setup
