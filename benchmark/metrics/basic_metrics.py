@@ -77,7 +77,7 @@ class EvaluatedEpisode(EpisodeLog):
             else:
                 self.ego_speed[agent_id].append(info["speed"])
                 self.num_collision[agent_id] += len(info["events"].collisions)
-                self.distance_to_goal[agent_id] = info["distance_to_goal"]
+                self.distance_to_goal[agent_id].append(info["distance_to_goal"])
                 self.agent_step[agent_id] += 1
 
         self.steps += 1
@@ -122,9 +122,9 @@ class MetricHandler:
                     writer.writerow(headers)
                     writer.writerow(["Speed"] + logger.ego_speed[agent_id])
                     writer.writerow(["GDistance"] + logger.distance_to_goal[agent_id])
-                    writer.writerow(
-                        ["EDistance"] + logger.distance_to_ego_car[agent_id]
-                    )
+                    # writer.writerow(
+                    #     ["EDistance"] + logger.distance_to_ego_car[agent_id]
+                    # )
                     # writer.writerow(["Acceleration"] + logger.acceleration[agent_id])
                     writer.writerow(
                         ["Num_Collision"] + [logger.num_collision[agent_id]]
@@ -152,7 +152,7 @@ class MetricHandler:
                     _ = next(reader)
                     agent_record[agent_id]["Speed"] = next(reader)[1:]
                     agent_record[agent_id]["GDistance"] = next(reader)[1:]
-                    agent_record[agent_id]["EDistance"] = next(reader)[1:]
+                    # agent_record[agent_id]["EDistance"] = next(reader)[1:]
                     # agent_record[agent_id]["Acceleration"] = next(reader)[1:]
                     agent_record[agent_id]["Num_Collision"] = next(reader)
         return agent_record

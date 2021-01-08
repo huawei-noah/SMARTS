@@ -147,7 +147,7 @@ def rollout(trainer, env_name, num_steps, num_episodes=0):
         for p, m in policy_map.items()
     }
 
-    metrics_obj = metrics.Metric(num_episodes)
+    metrics_obj = metrics.MetricHandler(num_episodes)
 
     for episode in range(num_episodes):
         mapping_cache = {}  # in case policy_agent_mapping is stochastic
@@ -222,7 +222,7 @@ def rollout(trainer, env_name, num_steps, num_episodes=0):
         print("\nEpisode #{}: steps: {} reward: {}".format(episode, step, reward_total))
         if done:
             episode += 1
-    print("\n metrics: {}".format(metrics_obj.compute()))
+    metrics_obj.write_to_csv(csv_dir="./log")
 
 
 if __name__ == "__main__":
@@ -231,7 +231,7 @@ if __name__ == "__main__":
         scenario=args.scenario,
         config_file=args.config_file,
         checkpoint=args.checkpoint,
-        num_steps=args.checkpoint,
+        num_steps=args.num_steps,
         num_episodes=args.num_episodes,
         paradigm=args.paradigm,
         headless=args.headless,

@@ -3,7 +3,7 @@ name: ppo-baseline
 agent:
   state:
     wrapper:
-      name: FrameStacked
+      name: Simple
     features:
       # relative position of goal
       goal_relative_pos: True
@@ -18,7 +18,7 @@ agent:
       # at most eight neighboring vehicles' driving states
       neighbor: 8
       # bird's-eye view gray-scale image with the agent at the center
-      img_gray: (28, 28)
+      # img_gray: (28, 28)
 
   action:
     type: 1  # 0 for continuous, 1 for discrete
@@ -38,7 +38,7 @@ policy:
     name: PPOTrainer
 
 run:
-  checkpoint_freq: 40
+  checkpoint_freq: 2
   checkpoint_at_end: True
   max_failures: 1000
   resume: False
