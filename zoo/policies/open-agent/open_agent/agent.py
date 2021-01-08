@@ -310,7 +310,7 @@ def build_problem(N, SV_N, WP_N, ts):
 
             min_dist = VehicleModel.LENGTH
             cost += gain.obstacle * cs.fmax(
-                -1, min_dist ** 2 - ((ego.x - sv.x) ** 2 + (ego.y - sv.y) ** 2),
+                -1, min_dist ** 2 - ((ego.x - sv.x) ** 2 + 9 * (ego.y - sv.y) ** 2),
             )
 
     # To stabilize the trajectory, we attach a higher weight to the final x_ref
@@ -504,8 +504,8 @@ class OpEnAgent(Agent):
             + flat_wps
             + [impatience, wps[0].speed_limit]
         )
-
-        resp = self.solver.run(solver_params, initial_guess=self.prev_solution)
+        neutral_bias = [0 for i in range(12)]
+        resp = self.solver.run(solver_params, initial_guess=neutral_bias)
 
         self.last_position = ego.position
 

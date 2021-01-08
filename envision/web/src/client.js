@@ -31,8 +31,10 @@ export default class Client {
     this._maxRetries = retries;
     this._glb_cache = {};
 
-    this._socket = null;
-    this._flushStream = false;
+    this._sockets = {};
+    this._flushStream = {};
+    this._stateQueues = {};
+    this._simulationSelectedTime = {};
   }
 
   async fetchSimulationIds() {
@@ -48,14 +50,25 @@ export default class Client {
     }
   }
 
-  seek(seconds) {
-    if (!this._socket && this._socket.readyState == WebSocket.OPEN) {
+  seek(simulationId, seconds) {
+    if (!(simulationId in this._sockets)) {
+      this._sockets[simulationId] = null;
+    }
+
+    if (!(simulationId in this._flushStream)) {
+      this._flushStream[simulationId] = false;
+    }
+
+    if (
+      !this._sockets[simulationId] &&
+      this._sockets[simulationId].readyState == WebSocket.OPEN
+    ) {
       console.warn("Unable to seek because no connected socket exists");
       return;
     }
 
-    this._socket.send(JSON.stringify({ seek: seconds }));
-    this._flushStream = true;
+    this._sockets[simulationId].send(JSON.stringify({ seek: seconds }));
+    this._flushStream[simulationId] = true;
   }
 
   async _obtainStream(simulationId, stateQueue, remainingRetries) {
@@ -119,22 +132,36 @@ export default class Client {
   }
 
   async *worldstate(simulationId) {
-    let stateQueue = [];
+    if (!(simulationId in this._sockets)) {
+      this._sockets[simulationId] = null;
+    }
+
+    if (!(simulationId in this._flushStream)) {
+      this._flushStream[simulationId] = false;
+    }
+
+    if (!(simulationId in this._stateQueues)) {
+      this._stateQueues[simulationId] = [];
+    }
+
+    this._simulationSelectedTime[simulationId] = Date.now();
+    let selectedTime = this._simulationSelectedTime[simulationId];
 
     while (true) {
       // If we dropped the connection or never connected in the first place
       let isConnected =
-        this._socket && this._socket.readyState == WebSocket.OPEN;
+        this._sockets[simulationId] &&
+        this._sockets[simulationId].readyState == WebSocket.OPEN;
 
       if (isConnected) {
-        while (stateQueue.length > 0) {
-          if (this._flushStream) {
-            this._flushStream = false;
-            stateQueue.length = 0;
+        while (this._stateQueues[simulationId].length > 0) {
+          if (this._flushStream[simulationId]) {
+            this._flushStream[simulationId] = false;
+            this._stateQueues[simulationId].length = 0;
             continue;
           }
 
-          let item = stateQueue.pop();
+          let item = this._stateQueues[simulationId].pop();
           let elapsed_times = [
             item.current_elapsed_time,
             item.total_elapsed_time,
@@ -142,11 +169,18 @@ export default class Client {
           yield [item.state, elapsed_times];
         }
       } else {
-        this._socket = await this._obtainStream(
+        this._sockets[simulationId] = await this._obtainStream(
           simulationId,
-          stateQueue,
+          this._stateQueues[simulationId],
           this._maxRetries
         );
+      }
+
+      // This function can be triggered multiple times for the same simulation id
+      // (i.e. everytime this simulation is selected from menu)
+      // We only need to keep the most recent call to loop, all the previous calls can be returned
+      if (selectedTime < this._simulationSelectedTime[simulationId]) {
+        return;
       }
 
       // TODO: Make this "truly" async...

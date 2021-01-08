@@ -17,11 +17,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import re
 import time
 import uuid
 import json
 import logging
 import threading
+from datetime import datetime
 from queue import Queue
 from typing import Union
 from pathlib import Path
@@ -73,9 +75,17 @@ class Client:
         num_retries: int = 5,
         wait_between_retries: float = 0.5,
         output_dir: str = None,
+        sim_name: str = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
-        client_id = str(uuid.uuid4())[:8]
+
+        current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
+        client_id = current_time
+        if sim_name:
+            # Set string length limit to 20 characters for client id and Envision/URL display purpose
+            # Replace all special (non-alphanumeric) characters to "_" to avoid invalid key values
+            sim_name = re.sub(r"\W+", "_", sim_name[:20])
+            client_id = f"{sim_name}_{client_id}"
 
         if endpoint is None:
             endpoint = "ws://localhost:8081"

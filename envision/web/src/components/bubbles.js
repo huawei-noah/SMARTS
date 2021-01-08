@@ -35,10 +35,9 @@ export default function Bubbles({ scene, worldState }) {
   }
 
   const bubbleGeometryRef = useRef([]);
-  let bubbleGeometry = bubbleGeometryRef.current;
 
   useEffect(() => {
-    for (const geom of bubbleGeometry) {
+    for (const geom of bubbleGeometryRef.current) {
       // doNotRecurse = false, disposeMaterialAndTextures = true
       geom.dispose(false, true);
     }
@@ -64,6 +63,7 @@ export default function Bubbles({ scene, worldState }) {
       polygon.material = material;
       return polygon;
     });
+
     bubbleGeometryRef.current = newBubbleGeometry;
   }, [scene, JSON.stringify(worldState.bubbles)]);
   return null;

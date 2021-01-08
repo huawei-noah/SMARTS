@@ -80,7 +80,7 @@ class HumanKeyboardAgent(Agent):
 
 
 def main(
-    scenarios, headless, num_episodes, seed,
+    scenarios, sim_name, headless, num_episodes, seed,
 ):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
@@ -93,6 +93,7 @@ def main(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs={AGENT_ID: agent_spec},
+        sim_name=sim_name,
         headless=headless,
         timestep_sec=0.1,
         seed=seed,
@@ -119,6 +120,7 @@ if __name__ == "__main__":
 
     main(
         scenarios=args.scenarios,
+        sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,

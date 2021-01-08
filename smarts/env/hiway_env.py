@@ -38,6 +38,8 @@ class HiWayEnv(gym.Env):
             a list of directories of the scenarios that will be run
         agent_specs:
             a list of agents that will run in the environment
+        sim_name:
+            a string that gives this simulation a name
         headless:
             true|false envision disabled
         visdom:
@@ -58,10 +60,8 @@ class HiWayEnv(gym.Env):
             used to specify envision's uri
         envision_record_data_replay_path:
             used to specify envision's data replay output directory
-        zoo_workers:
-            List of (ip, port) tuples of Zoo Workers, used to instantiate remote social agents
-        auth_key:
-            Authentication key of type string for communication with Zoo Workers
+        zoo_addrs:
+            List of (ip, port) tuples of zoo server, used to instantiate remote social agents
     """
 
     metadata = {"render.modes": ["human"]}
@@ -71,6 +71,7 @@ class HiWayEnv(gym.Env):
         self,
         scenarios: Sequence[str],
         agent_specs,
+        sim_name=None,
         shuffle_scenarios=True,
         headless=False,
         visdom=False,
@@ -83,8 +84,7 @@ class HiWayEnv(gym.Env):
         endless_traffic=True,
         envision_endpoint=None,
         envision_record_data_replay_path=None,
-        zoo_workers=None,
-        auth_key=None,
+        zoo_addrs=None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts.core.seed(seed)
@@ -103,7 +103,9 @@ class HiWayEnv(gym.Env):
         envision_client = None
         if not headless:
             envision_client = Envision(
-                endpoint=envision_endpoint, output_dir=envision_record_data_replay_path
+                endpoint=envision_endpoint,
+                sim_name=sim_name,
+                output_dir=envision_record_data_replay_path,
             )
 
         visdom_client = None
@@ -123,8 +125,7 @@ class HiWayEnv(gym.Env):
             envision=envision_client,
             visdom=visdom_client,
             timestep_sec=timestep_sec,
-            zoo_workers=zoo_workers,
-            auth_key=auth_key,
+            zoo_addrs=zoo_addrs,
         )
 
     @property

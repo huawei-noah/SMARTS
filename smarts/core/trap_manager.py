@@ -89,7 +89,7 @@ class TrapManager:
             ):
                 continue
 
-            mission_planner.plan(mission)
+            mission = mission_planner.plan(mission)
 
             trap = self._mission2trap(road_network, mission)
             self.add_trap_for_agent_id(agent_id, trap)
@@ -240,7 +240,11 @@ class TrapManager:
     @staticmethod
     def _hijack_vehicle(sim, vehicle_id, agent_id, mission):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        planner = MissionPlanner(sim.scenario.waypoints, sim.scenario.road_network)
+        planner = MissionPlanner(
+            sim.scenario.waypoints,
+            sim.scenario.road_network,
+            agent_interface.agent_behavior,
+        )
         planner.plan(mission=mission)
 
         # Apply agent vehicle association.
@@ -255,7 +259,11 @@ class TrapManager:
     @staticmethod
     def _make_vehicle(sim, agent_id, mission, initial_speed):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        planner = MissionPlanner(sim.scenario.waypoints, sim.scenario.road_network)
+        planner = MissionPlanner(
+            sim.scenario.waypoints,
+            sim.scenario.road_network,
+            agent_interface.agent_behavior,
+        )
         planner.plan(mission=mission)
         # 3. Apply agent vehicle association.
         vehicle = sim.vehicle_index.build_agent_vehicle(
