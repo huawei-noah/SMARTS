@@ -50,9 +50,11 @@ class FrameStack(Wrapper):
         def func(env_obs_seq):
             assert isinstance(env_obs_seq, Sequence)
             observation = cal_obs(env_obs_seq, observation_space, feature_configs)
-            observation = dict(
-                map(lambda kv: (kv[0], np.stack(kv[1])), observation.items())
-            )
+            # TODO(ming): mute array-like observation here, then we need to customize a preprocessor for
+            #  gym.spaces.Tuple
+            # observation = dict(
+            #     map(lambda kv: (kv[0], np.stack(kv[1])), observation.items())
+            # )
             return observation
 
         return func
