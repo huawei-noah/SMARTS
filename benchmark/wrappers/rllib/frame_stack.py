@@ -5,8 +5,55 @@ import numpy as np
 import gym
 
 from scipy.spatial import distance
+
 from benchmark.common import cal_obs, ActionAdapter
 from benchmark.wrappers.rllib.wrapper import Wrapper
+
+from ray.rllib.models.preprocessors import get_preprocessor
+from ray.rllib.models import Preprocessor
+from ray.rllib.utils.annotations import override
+from ray import logger
+
+
+def _get_preprocessor(space: gym.spaces.Space):
+    if isinstance(space, gym.spaces.Tuple):
+        preprocessor = TupleStackingPreprocessor
+    else:
+        preprocessor = get_preprocessor(space)
+    return preprocessor
+
+
+class TupleStackingPreprocessor(Preprocessor):
+    @override(Preprocessor)
+    def _init_shape(self, obs_space: gym.Space, options: dict):
+        assert isinstance(self._obs_space, gym.spaces.Tuple)
+        size = None
+        self.preprocessors = []
+        for i in range(len(self._obs_space.spaces)):
+            space = self._obs_space.spaces[i]
+            logger.debug("Creating sub-preprocessor for {}".format(space))
+            preprocessor = _get_preprocessor(space)(space, self._options)
+            self.preprocessors.append(preprocessor)
+            if size is not None:
+                assert size == preprocessor.size
+            else:
+                size = preprocessor.size
+        return len(self._obs_space.spaces), size
+
+    @override(Preprocessor)
+    def transform(self, observation):
+        self.check_shape(observation)
+        array = np.zeros(self.shape[0] * self.shape[1])
+        self.write(observation, array, 0)
+        array.reshape(self.shape)
+        return array
+
+    @override(Preprocessor)
+    def write(self, observation, array, offset):
+        assert len(observation) == len(self.preprocessors), observation
+        for o, p in zip(observation, self.preprocessors):
+            p.write(o, array, offset)
+            offset += p.size
 
 
 class FrameStack(Wrapper):
@@ -14,9 +61,9 @@ class FrameStack(Wrapper):
 
     def __init__(self, config):
         super(FrameStack, self).__init__(config)
+        config = config["custom_config"]
         self.num_stack = config["num_stack"]
 
-        config = config["custom_config"]
         self.observation_adapter = config["observation_adapter"]
         self.action_adapter = config["action_adapter"]
         self.info_adapter = config["info_adapter"]
@@ -30,10 +77,11 @@ class FrameStack(Wrapper):
         if isinstance(observation_space, gym.spaces.Box):
             return gym.spaces.Tuple([observation_space] * frame_num)
         elif isinstance(observation_space, gym.spaces.Dict):
-            spaces = {}
-            for k, space in observation_space.spaces.items():
-                spaces[k] = FrameStack.get_observation_space(space, wrapper_config)
-            return gym.spaces.Dict(spaces)
+            # inner_spaces = {}
+            # for k, space in observation_space.spaces.items():
+            #     inner_spaces[k] = FrameStack.get_observation_space(space, wrapper_config)
+            # dict_space = gym.spaces.Dict(spaces)
+            return gym.spaces.Tuple([observation_space] * frame_num)
         else:
             raise TypeError(
                 f"Unexpected observation space type: {type(observation_space)}"
@@ -50,11 +98,6 @@ class FrameStack(Wrapper):
         def func(env_obs_seq):
             assert isinstance(env_obs_seq, Sequence)
             observation = cal_obs(env_obs_seq, observation_space, feature_configs)
-            # TODO(ming): mute array-like observation here, then we need to customize a preprocessor for
-            #  gym.spaces.Tuple
-            # observation = dict(
-            #     map(lambda kv: (kv[0], np.stack(kv[1])), observation.items())
-            # )
             return observation
 
         return func
@@ -77,6 +120,10 @@ class FrameStack(Wrapper):
             raise NotImplementedError
 
         return res
+
+    @staticmethod
+    def get_preprocessor():
+        return TupleStackingPreprocessor
 
     def _get_observations(self, raw_frames):
         """Update frame stack with given single frames,
@@ -127,13 +174,13 @@ class FrameStack(Wrapper):
     def get_reward_adapter(observation_adapter):
         def func(env_obs_seq, env_reward):
             penalty, bonus = 0.0, 0.0
-            obs_np = observation_adapter(env_obs_seq)
+            obs_seq = observation_adapter(env_obs_seq)
 
             # ======== Penalty: too close to neighbor vehicles
             # if the mean ttc or mean speed or mean dist is higher than before, get penalty
             # otherwise, get bonus
             last_env_obs = env_obs_seq[-1]
-            neighbor_features_np = obs_np.get("neighbor", None)
+            neighbor_features_np = np.asarray([e.get("neighbor") for e in obs_seq])
             if neighbor_features_np is not None:
                 new_neighbor_feature_np = neighbor_features_np[-1].reshape((-1, 5))
                 mean_dist = np.mean(new_neighbor_feature_np[:, 0])
@@ -170,9 +217,12 @@ class FrameStack(Wrapper):
             penalty += 0.1 * (old_goal_dist - goal_dist)  # 0.05
 
             # ======== Penalty: distance to the center
-            diff_dist_to_center_penalty = np.abs(
-                obs_np["distance_to_center"][-2]
-            ) - np.abs(obs_np["distance_to_center"][-1])
+            distance_to_center_np = np.asarray(
+                [e["distance_to_center"] for e in obs_seq]
+            )
+            diff_dist_to_center_penalty = np.abs(distance_to_center_np[-2]) - np.abs(
+                distance_to_center_np[-1]
+            )
             penalty += 0.01 * diff_dist_to_center_penalty[0]
 
             # ======== Penalty & Bonus: event (collision, off_road, reached_goal, reached_max_episode_steps)

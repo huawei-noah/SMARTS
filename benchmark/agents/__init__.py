@@ -82,7 +82,9 @@ def _make_rllib_config(config, mode="training"):
         None,
         policy_obs_space,
         policy_action_space,
-        config["policy"].get("config", {}),
+        config["policy"].get(
+            "config", {"custom_preprocessor": wrapper_cls.get_preprocessor()}
+        ),
     )
 
     """ Parse agent interface configuration """
@@ -107,14 +109,16 @@ def _make_rllib_config(config, mode="training"):
     """ Pack environment configuration """
     config["run"]["config"].update({"env": wrapper_cls})
     config["env_config"] = {
-        **wrapper_config,
         "custom_config": {
+            **wrapper_config,
             "reward_adapter": wrapper_cls.get_reward_adapter(observation_adapter),
             "observation_adapter": observation_adapter,
             "action_adapter": action_adapter,
             "info_adapter": metrics.agent_info_adapter
             if mode == "evaluation"
             else common.default_info_adapter,
+            "observation_space": policy_obs_space,
+            "action_space": policy_action_space,
         },
     }
     config["agent"] = {"interface": AgentInterface(**interface_config)}
@@ -127,7 +131,7 @@ def _make_rllib_config(config, mode="training"):
 
 
 def load_config(config_file, mode="training", framework="rllib"):
-    """ Load algorithm configuration from yaml file.
+    """Load algorithm configuration from yaml file.
 
     This function support algorithm implemented with RLlib.
     """

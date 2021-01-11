@@ -21,7 +21,6 @@ import math
 import gym
 import cv2
 import numpy as np
-import copy
 
 from typing import Dict, Sequence
 from collections import defaultdict
@@ -29,10 +28,10 @@ from collections import defaultdict
 from scipy.spatial import distance
 
 from ray.rllib.agents.callbacks import DefaultCallbacks
-from ray.rllib.evaluation.observation_function import ObservationFunction
 from ray.rllib.evaluation import MultiAgentEpisode, RolloutWorker
 from ray.rllib.env import BaseEnv
 from ray.rllib.policy import Policy
+from ray import logger
 
 from smarts.core.sensors import Observation
 from smarts.core.utils.math import vec_2d
@@ -776,8 +775,8 @@ class SimpleCallbacks(DefaultCallbacks):
         episode: MultiAgentEpisode,
         **kwargs,
     ):
-        print("episode {} started".format(episode.episode_id))
-        episode.user_data["ego_speed"] = dict()
+        logger.info("episode {} started".format(episode.episode_id))
+        episode.user_data["ego_speed"] = defaultdict(lambda: [])
         episode.user_data["step_heading_error"] = dict()
 
     def on_episode_step(
@@ -788,20 +787,11 @@ class SimpleCallbacks(DefaultCallbacks):
         **kwargs,
     ):
         ego_speed = episode.user_data["ego_speed"]
-        for _id, obs in episode._agent_to_last_raw_obs.items():
+        for agent_id, obs in episode._agent_to_last_raw_obs.items():
+            if isinstance(obs, list):
+                obs = obs[-1]  # keep the lastest frame
             if isinstance(obs, dict):
-                if ego_speed.get(_id) is None:
-                    ego_speed[_id] = []
-
-                if obs.get("speed") is not None:
-                    ego_speed[_id].append(obs["speed"])
-            elif isinstance(obs, list):
-                if ego_speed.get(_id) is None:
-                    for i in range(len(obs)):
-                        ego_speed[f"{_id}:AGENT-{i}"] = []
-                if obs[0].get("speed", None) is not None:
-                    for i, _obs in enumerate(obs):
-                        ego_speed[f"{_id}:AGENT-{i}"].append(_obs["speed"])
+                ego_speed[agent_id].append(obs.get("speed", -1.0))
 
     def on_episode_end(
         self,
@@ -813,7 +803,7 @@ class SimpleCallbacks(DefaultCallbacks):
     ):
         ego_speed = episode.user_data["ego_speed"]
         mean_ego_speed = {
-            _id: np.mean(speed_hist) for _id, speed_hist in ego_speed.items()
+            agent_id: np.mean(speed_hist) for agent_id, speed_hist in ego_speed.items()
         }
 
         distance_travelled = dict()
@@ -828,14 +818,14 @@ class SimpleCallbacks(DefaultCallbacks):
         dist_list = list(map(lambda x: round(x, 3), distance_travelled.values()))
         reward_list = list(map(lambda x: round(x, 3), episode.agent_rewards.values()))
 
-        for _id, speed in mean_ego_speed.items():
-            episode.custom_metrics[f"mean_ego_speed_{_id}"] = speed
-        for _id, distance in distance_travelled.items():
-            episode.custom_metrics[f"distance_travelled_{_id}"] = distance
-
-        print(
-            f"episode {episode.episode_id} ended with {episode.length} steps: [mean_speed]: {speed_list} [distance_travelled]: {dist_list} [reward]: {reward_list}"
+        episode.custom_metrics[f"mean_ego_speed"] = sum(speed_list) / max(
+            1, len(speed_list)
         )
+        episode.custom_metrics[f"distance_travelled"] = sum(dist_list) / max(
+            1, len(dist_list)
+        )
+
+        logger.info(f"episode {episode.episode_id} ended with {episode.length} steps")
 
 
 class ActionAdapter:
@@ -882,8 +872,7 @@ def subscribe_features(**kwargs):
 
 def cal_obs(env_obs, space, feature_configs):
     if isinstance(space, gym.spaces.Dict):
-        obs = dict()
-        env_obs = (env_obs,) if not isinstance(env_obs, Sequence) else env_obs
+        obs_np = {}
         for name in space.spaces:
             if hasattr(CalObs, f"cal_{name}"):
                 args = (
@@ -891,12 +880,15 @@ def cal_obs(env_obs, space, feature_configs):
                     if not isinstance(feature_configs[name], Sequence)
                     else feature_configs[name]
                 )
-                obs[name] = tuple(
-                    getattr(CalObs, f"cal_{name}")(x, *args) for x in env_obs
-                )
+            obs_np[name] = getattr(CalObs, f"cal_{name}")(env_obs, *args)
+    elif isinstance(space, gym.spaces.Tuple):
+        obs_np = []
+        assert isinstance(env_obs, Sequence)
+        for obs, sub_space in zip(env_obs, space.spaces):
+            obs_np.append(cal_obs(obs, sub_space, feature_configs))
     else:
         raise TypeError(f"Unexpected space type={type(space)}")
-    return obs
+    return obs_np
 
 
 def default_info_adapter(observation, shaped_reward: float, raw_info: dict):

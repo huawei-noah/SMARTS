@@ -1,6 +1,6 @@
 import copy
 
-from ray.rllib.env.multi_agent_env import MultiAgentEnv
+from ray.rllib.env import MultiAgentEnv
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 
 
@@ -16,6 +16,10 @@ class Wrapper(MultiAgentEnv):
 
     @staticmethod
     def get_action_space(action_space, wrapper_config=None):
+        raise NotImplementedError
+
+    @staticmethod
+    def get_preprocessor():
         raise NotImplementedError
 
     @staticmethod
