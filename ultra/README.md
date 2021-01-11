@@ -59,18 +59,18 @@ We currently support PPO/SAC/TD3/DQN policies, for adding you own policy please 
 - Train
   Training runs the policy with default configuration:
   `
-  {train episodes: 10000, maxsteps:600, timestep:0.1 sec, evaluation rate: 1000, evaluation episodes:100}
+  {train episodes: 1000000, maxsteps: 1200, timestep: 0.1 sec, evaluation rate: 10000, evaluation episodes: 200}
   `
   - For each experiment a folder with timestamp is added automatically under `logs/` and it saves tensorboad log, models and pkls
-  - For every 1000 observation, evaluation is called automatically and policy is saved under `logs/your-expierment-name/models/`
+  - For every 10000 observation, evaluation is called automatically and policy is saved under `logs/your-expierment-name/models/`
   ```sh
-  $ python ultra/src/train.py --task 1 --level easy 
+  $ python ultra/train.py --task 1 --level easy 
   # other arguments example: --episodes 20000 --eval-rate 500 --eval-episodes 200 --timestep 1 --headless
   ```
 ### Run Evaluation Separately
 After training your agent, your models should be saved under `logs/your-experiment-name/models/` and you can re-run the evaluation:
   ```sh
-  $ python ultra/src/evaluate.py --task 1 --level easy --models logs/your-expierment-name/models
+  $ python ultra/evaluate.py --task 1 --level easy --models logs/your-expierment-name/models
   # other arguments --episodes 20000 --timestep 1 --headless
   ```
 
