@@ -91,10 +91,14 @@ def get_statistics(data: list):
 
 class Metric:
     def __init__(self, num_episode):
+        self.num_episode = num_episode
         self._logs = [EvaluatedEpisode() for _ in range(num_episode)]
 
     def log_step(self, observations, rewards, dones, infos, episode):
         self._logs[episode].record_step(observations, rewards, dones, infos)
+
+    def reset(self):
+        self._logs = [EvaluatedEpisode() for _ in range(self.num_episode)]
 
     def compute(self):
         res = dict()

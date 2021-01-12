@@ -34,6 +34,9 @@ from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicControllerState,
     ActuatorDynamicController,
 )
+from smarts.core.controllers.trajectory_interpolation_controller import (
+    TrajectoryInterpolationController,
+)
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
@@ -47,6 +50,7 @@ class ActionSpaceType(Enum):
     Trajectory = 5
     MultiTargetPose = 6  # for boid control
     MPC = 7
+    TrajectoryWithTime = 8  # for pure interpolation controller
 
 
 class Controllers:
@@ -113,6 +117,10 @@ class Controllers:
                 perform_lane_following(target_speed=12.5, lane_change=1)
             elif action == "change_lane_right":
                 perform_lane_following(target_speed=12.5, lane_change=-1)
+        elif action_space == ActionSpaceType.TrajectoryWithTime:
+            TrajectoryInterpolationController.perform_trajectory_interpolation(
+                sim, agent_id, vehicle, action, controller_state
+            )
         else:
             raise ValueError(
                 f"perform_action(action_space={action_space}, ...) has failed "

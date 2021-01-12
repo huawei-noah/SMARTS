@@ -143,6 +143,7 @@ class SMARTS(ShowBase):
             ActionSpaceType.LaneWithContinuousSpeed,
             ActionSpaceType.Trajectory,
             ActionSpaceType.MPC,
+            ActionSpaceType.TrajectoryWithTime,
         }
 
         # Set up indices
