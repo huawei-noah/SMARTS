@@ -6,7 +6,7 @@ test: build-all-scenarios
 		--cov=smarts \
 		--doctest-modules \
 		--forked \
-		--dist=loadscope \
+		--dist=loadfile \
 		-n `nproc --ignore 1` \
 		--durations=0 \
 		./tests ./smarts/core ./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
