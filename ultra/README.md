@@ -74,6 +74,60 @@ After training your agent, your models should be saved under `logs/your-experime
   # other arguments --episodes 20000 --timestep 1 --headless
   ```
 
+### Adding a Custom Agent
+1. **Create Your Agent**
+    Similar to the baseline agents available in `ultra/baselines/` a custom agent minimally contains a `<your_agent_name>/setup.py`, `<your_agent_name>/<your_agent_name>/__init__.py`, `<your_agent_name>/<your_agent_name>/policy.py`, and a `<your_agent_name>/<your_agent_name>/params.yaml`.
+    - The creation of `setup.py` and `__init__.py` can be done by following the implementations of these files available in the baseline agents.
+    - The `params.yaml` file contains parameters for your policy class to use.
+    - The `policy.py` file contains your agent. Minimally, it must have a class that inherits from `smarts.core.agent.Agent`, and this class must define at least the following three methods:
+      - ```python
+        # Given your params.yaml as a dictionary in the form of policy_params, and
+        # a checkpoint directory, checkpoint_dir, initialize an instance of your
+        # agent.
+        def __init__(self, policy_params, checkpoint_dir):
+            pass
+        ```
+      - ```python
+        # Given a state (and an option to explore), return an action according to
+        # your agent's "action space type" (see step 2).
+        def act(self, state, explore: bool):
+            pass
+        ```
+      - ```python
+        # Step your agent (e.g. add the experience to the replay buffer and have the
+        # neural network learn from experiences).
+        def step(self, state, action, reward, next_state, done, others):
+            pass
+        ```
+      See the baseline agents for examples of implemenations of these methods.
+2. **Allow for Agent Registration**
+    Once your agent is configured as above, we must ensure that it can be registered. In the package containing your agent, add the following  to the package's `__init__.py`
+    ```python
+    from smarts.zoo.registry import register
+    from smarts.core.controllers import ActionSpaceType
+    from ultra.baselines.agent_spec import UltraAgentSpec
+
+    from <your.agents.package.name>.<your_agent_name>.<your_agent_name>.policy import <YourAgentsPolicyClass>
+
+    register(
+        locator="<your_agent_name>-v<your_agent_version_number>",
+        entry_point=lambda **kwargs: UltraAgentSpec(
+            action_type=ActionSpaceType.<YourActionSpaceType>,
+            policy_class=<YourAgentsPolicyClass>,
+            **kwargs
+        ),
+    )
+    ```
+    For example, the package containing the baseline agents, `ultra.baselines`, has `ultra/baselines/__init__.py` that registers each baseline agent with its ULTRA Agent Specification.
+    Additionally, see `smarts/core/controllers/__init__.py` to view available action space types and how they are performed.
+
+3. **Use Your Agent**
+    Finally, in `train.py` or `evaluate.py`, ensure that the `policy_class` variable references your agent using the string format shown below in order to use your agent for training or evaluation respectively:
+    ```python
+    policy_class = "<your.agents.package.name>.<your_agent_name>:<your_agent_name>-v<your_agent_version_number>"
+    ```
+    Now you can run training and evaluation on your custom agent using the commands in the previous sections.
+
 ### Server
 - Server name, address, and destination path `${DST}` for storage
 
