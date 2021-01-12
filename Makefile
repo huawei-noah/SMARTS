@@ -8,10 +8,12 @@ test: build-all-scenarios
 		--forked \
 		--dist=loadscope \
 		-n `nproc --ignore 1` \
+		--durations=0 \
 		./tests ./smarts/core ./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
 		--ignore=./smarts/env/tests/test_learning.py \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
-		--ignore=./smarts/env/tests/test_benchmark.py
+		--ignore=./smarts/env/tests/test_benchmark.py #\
+		# | tee pytest.log
 
 .PHONY: benchmark
 benchmark: build-all-scenarios
