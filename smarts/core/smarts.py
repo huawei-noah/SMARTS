@@ -46,6 +46,7 @@ from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
 from .masks import RenderMasks
 from .motion_planner_provider import MotionPlannerProvider
+from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .provider import ProviderState
 from .scenario import Scenario
 from .sensors import Collision
@@ -113,10 +114,12 @@ class SMARTS(ShowBase):
         self._traffic_sim = traffic_sim
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
+        self._trajectory_interpolation_provider = TrajectoryInterpolationProvider()
         self._providers = [
             self._traffic_sim,
             self._motion_planner_provider,
             self._traffic_history_provider,
+            self._trajectory_interpolation_provider,
         ]
 
         # We buffer provider state between steps to compensate for TRACI's timestep delay

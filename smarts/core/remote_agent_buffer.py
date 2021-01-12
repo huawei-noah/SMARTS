@@ -22,15 +22,15 @@ import atexit
 import logging
 import random
 import time
+import subprocess
+import pathlib
+import sys
 from concurrent import futures
-from multiprocessing import Process
-from typing import List, Tuple
 
 import grpc
 
 from smarts.core.remote_agent import RemoteAgent, RemoteAgentException
 from smarts.core.utils.networking import find_free_port
-from smarts.zoo import manager as zoo_manager
 from smarts.zoo import manager_pb2, manager_pb2_grpc
 
 
@@ -111,7 +111,7 @@ class RemoteAgentBuffer:
         if self._local_zoo_manager:
             self._zoo_manager_conns[0]["channel"].close()
             self._zoo_manager_conns[0]["process"].terminate()
-            self._zoo_manager_conns[0]["process"].join()
+            self._zoo_manager_conns[0]["process"].wait()
 
     def _build_remote_agent(self, zoo_manager_conns):
         # Get a random zoo manager connection.
@@ -185,8 +185,13 @@ class RemoteAgentBuffer:
 
 
 def spawn_local_zoo_manager(port):
-    manager = Process(target=zoo_manager.serve, args=(port,))
-    manager.start()
+    cmd = [
+        sys.executable,  # Path to the current Python binary.
+        str((pathlib.Path(__file__).parent / "../zoo/manager.py").absolute().resolve()),
+        f"--port={port}",
+    ]
+
+    manager = subprocess.Popen(cmd, close_fds=True)
     return manager
 
 
