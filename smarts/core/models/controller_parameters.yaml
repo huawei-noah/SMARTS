@@ -6,7 +6,7 @@ sedan:
             throttle_filter_constant: 3
             velocity_gain: 5.1
             velocity_integral_gain: 0
-            traction_gain: 8
+            traction_gain: 6
             final_lateral_error_derivative_gain: 0.25
             final_heading_error_derivative_gain: 3.1
             initial_look_ahead_distant: 3
