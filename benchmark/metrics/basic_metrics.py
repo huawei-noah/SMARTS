@@ -33,6 +33,17 @@ from scipy.spatial import distance
 from smarts.core.utils.episodes import EpisodeLog
 
 
+def pretty_dict(d, indent=0):
+    res = ""
+    for k, v in d.items():
+        res += "\t" * indent + str(k)
+        if isinstance(v, dict):
+            res += "\n" + pretty_dict(v, indent + 1)
+        else:
+            res += ": " + str(v) + "\n"
+    return res
+
+
 def agent_info_adapter(obs, shaped_reward: float, raw_info: dict):
     info = dict()
     info["speed"] = obs.ego_vehicle_state.speed
@@ -114,6 +125,10 @@ class MetricHandler:
 
     def log_step(self, observations, rewards, dones, infos, episode):
         self._logs[episode].record_step(observations, rewards, dones, infos)
+
+    def show_plots(self):
+        # TODO(ming): show behavior analysis plots
+        raise NotImplementedError
 
     def write_to_csv(self, csv_dir):
         csv_dir = f"{csv_dir}/{int(time.time())}"
@@ -197,4 +212,4 @@ class MetricHandler:
             record[MetricKeys.AVE_COMR] /= len(sub_dirs)
             record[MetricKeys.AVE_CR] /= len(sub_dirs)
 
-        print(agent_metrics)
+        print(pretty_dict(agent_metrics))

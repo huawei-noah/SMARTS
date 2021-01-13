@@ -104,8 +104,6 @@ def _make_rllib_config(config, mode="training"):
 
     interface_config["action"] = ActionSpaceType(action_type)
 
-    """ Pack agent configuration """
-
     """ Pack environment configuration """
     config["run"]["config"].update({"env": wrapper_cls})
     config["env_config"] = {

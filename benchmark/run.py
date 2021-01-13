@@ -24,10 +24,7 @@ from gym.spaces import Tuple
 from pathlib import Path
 from ray import tune
 
-from smarts.core.agent import AgentSpec
-from smarts.core.scenario import Scenario
-
-from benchmark.agents import load_config
+from benchmark import gen_config
 from benchmark.common import SimpleCallbacks
 
 
@@ -53,54 +50,11 @@ def main(
                 ray.state.cluster_resources()
             )
         )
-    scenario_path = Path(scenario).absolute()
-    agent_missions_count = Scenario.discover_agent_missions_count(scenario_path)
-    if agent_missions_count == 0:
-        agent_ids = ["default_policy"]
-    else:
-        agent_ids = [f"AGENT-{i}" for i in range(agent_missions_count)]
-
-    config = load_config(config_file)
-    agents = {agent_id: AgentSpec(**config["agent"]) for agent_id in agent_ids}
-
-    config["env_config"].update(
-        {
-            "seed": 42,
-            "scenarios": [str(scenario_path)],
-            "headless": headless,
-            "agent_specs": agents,
-        }
+    config = gen_config(
+        scenario=scenario, config_file=config_file, paradigm=paradigm, headless=headless
     )
 
-    obs_space, act_space = config["policy"][1:3]
     tune_config = config["run"]["config"]
-
-    if paradigm == "centralized":
-        config["env_config"].update(
-            {
-                "obs_space": Tuple([obs_space] * agent_missions_count),
-                "act_space": Tuple([act_space] * agent_missions_count),
-                "groups": {"group": agent_ids},
-            }
-        )
-        tune_config.update(config["policy"][-1])
-    else:
-        policies = {}
-
-        for k in agents:
-            policies[k] = config["policy"][:-1] + (
-                {**config["policy"][-1], "agent_id": k},
-            )
-
-        tune_config.update(
-            {
-                "multiagent": {
-                    "policies": policies,
-                    "policy_mapping_fn": lambda agent_id: agent_id,
-                },
-            }
-        )
-
     tune_config.update(
         {
             "env_config": config["env_config"],
@@ -110,6 +64,7 @@ def main(
         }
     )
 
+    # TODO(ming): change scenario name (not path)
     experiment_name = EXPERIMENT_NAME.format(
         scenario=scenario_path.stem, n_agent=len(agents),
     )

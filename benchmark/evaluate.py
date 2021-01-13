@@ -3,8 +3,7 @@ import ray
 import collections
 import gym
 
-from pathlib import Path
-
+from ray import logger
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from ray.rllib.env.base_env import _DUMMY_AGENT_ID
 from ray.rllib.rollout import default_policy_agent_mapping, DefaultMapping
@@ -12,11 +11,7 @@ from ray.rllib.evaluation.worker_set import WorkerSet
 from ray.rllib.env import MultiAgentEnv
 from ray.rllib.utils.spaces.space_utils import flatten_to_single_ndarray
 
-from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.scenario import Scenario
-
-from benchmark.agents import load_config
+from benchmark import gen_config
 from benchmark.metrics import basic_metrics as metrics
 
 
@@ -39,6 +34,8 @@ def parse_args():
         "--headless", default=False, action="store_true", help="Turn on headless mode"
     )
     parser.add_argument("--config_file", "-f", type=str, required=True)
+    parser.add_argument("--log_dir", type=str, default="./log/results")
+    parser.add_argument("--plot", action="store_true")
     return parser.parse_args()
 
 
@@ -46,65 +43,26 @@ def main(
     scenario,
     config_file,
     checkpoint,
+    log_dir,
     num_steps=1000,
     num_episodes=10,
     paradigm="decentralized",
     headless=False,
+    show_plots=False,
 ):
 
-    # TODO(ming): spawn this block as a function
-    scenario_path = Path(scenario).absolute()
-    agent_missions_count = Scenario.discover_agent_missions_count(scenario_path)
-    if agent_missions_count == 0:
-        agent_ids = ["default_policy"]
-    else:
-        agent_ids = [f"AGENT-{i}" for i in range(agent_missions_count)]
-
-    config = load_config(config_file, mode="evaluate")
-    agents = {
-        agent_id: AgentSpec(
-            **config["agent"], interface=AgentInterface(**config["interface"])
-        )
-        for agent_id in agent_ids
-    }
-
-    config["env_config"].update(
-        {
-            "seed": 42,
-            "scenarios": [str(scenario_path)],
-            "headless": headless,
-            "agent_specs": agents,
-        }
+    config = gen_config(
+        scenario=scenario,
+        config_file=config_file,
+        checkpoint=checkpoint,
+        num_steps=num_steps,
+        num_episodes=num_episodes,
+        paradigm=paradigm,
+        headless=headless,
     )
 
-    obs_space, act_space = config["policy"][1:3]
-    tune_config = config["run"]["config"]
-
-    if paradigm == "centralized":
-        config["env_config"].update(
-            {
-                "obs_space": gym.spaces.Tuple([obs_space] * agent_missions_count),
-                "act_space": gym.spaces.Tuple([act_space] * agent_missions_count),
-                "groups": {"group": agent_ids},
-            }
-        )
-        tune_config.update(config["policy"][-1])
-    else:
-        policies = {}
-        for k in agents:
-            policies[k] = config["policy"][:-1] + (
-                {**config["policy"][-1], "agent_id": k},
-            )
-        tune_config.update(
-            {
-                "multiagent": {
-                    "policies": policies,
-                    "policy_mapping_fn": lambda agent_id: agent_id,
-                }
-            }
-        )
-
     ray.init()
+    tune_config = config["run"]["config"]
     trainer_cls = config["trainer"]
     trainer_config = {"env_config": config["env_config"]}
     if paradigm != "centralized":
@@ -115,11 +73,11 @@ def main(
     trainer = trainer_cls(env=tune_config["env"], config=trainer_config)
 
     trainer.restore(checkpoint)
-    rollout(trainer, None, num_steps, num_episodes)
+    rollout(trainer, None, num_steps, num_episodes, show_plots)
     trainer.stop()
 
 
-def rollout(trainer, env_name, num_steps, num_episodes=0):
+def rollout(trainer, env_name, num_steps, num_episodes, show_plots):
     """Reference: https://github.com/ray-project/ray/blob/master/rllib/rollout.py"""
     policy_agent_mapping = default_policy_agent_mapping
     if hasattr(trainer, "workers") and isinstance(trainer.workers, WorkerSet):
@@ -148,7 +106,7 @@ def rollout(trainer, env_name, num_steps, num_episodes=0):
         for p, m in policy_map.items()
     }
 
-    metrics_obj = metrics.MetricHandler(num_episodes)
+    metrics_handler = metrics.MetricHandler(num_episodes)
 
     for episode in range(num_episodes):
         mapping_cache = {}  # in case policy_agent_mapping is stochastic
@@ -196,7 +154,7 @@ def rollout(trainer, env_name, num_steps, num_episodes=0):
             action = action if multiagent else action[_DUMMY_AGENT_ID]
             next_obs, reward, done, info = env.step(action)
 
-            metrics_obj.log_step(multi_obs, reward, done, info, episode=episode)
+            metrics_handler.log_step(multi_obs, reward, done, info, episode=episode)
 
             if multiagent:
                 for agent_id, r in reward.items():
@@ -220,10 +178,14 @@ def rollout(trainer, env_name, num_steps, num_episodes=0):
 
             step += 1
             obs = next_obs
-        print("\nEpisode #{}: steps: {} reward: {}".format(episode, step, reward_total))
+        logger.info(
+            "\nEpisode #{}: steps: {} reward: {}".format(episode, step, reward_total)
+        )
         if done:
             episode += 1
-    metrics_obj.write_to_csv(csv_dir="./log")
+    metrics_handler.write_to_csv(csv_dir=args.log_dir)
+    if show_plots:
+        metrics_handler.show_plots()
 
 
 if __name__ == "__main__":
@@ -236,4 +198,6 @@ if __name__ == "__main__":
         num_episodes=args.num_episodes,
         paradigm=args.paradigm,
         headless=args.headless,
+        show_plots=args.plot,
+        log_dir=args.log_dir,
     )
