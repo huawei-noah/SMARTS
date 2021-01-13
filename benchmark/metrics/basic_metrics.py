@@ -32,6 +32,9 @@ from scipy.spatial import distance
 
 from smarts.core.utils.episodes import EpisodeLog
 
+from benchmark.metrics.behavior_analysis import BehaviorMetric
+from benchmark.metrics import plot
+
 
 def pretty_dict(d, indent=0):
     res = ""
@@ -127,8 +130,16 @@ class MetricHandler:
         self._logs[episode].record_step(observations, rewards, dones, infos)
 
     def show_plots(self):
-        # TODO(ming): show behavior analysis plots
-        raise NotImplementedError
+        behavior_metric = BehaviorMetric()
+        results = behavior_metric.compute(self)
+        values, labels = [], []
+        for k, v in results.items():
+            values.append(v)
+            labels.append(k)
+        values = np.asarray(values)
+        plot.radar_plots(
+            values, labels, behavior_metric.features, title="Behavior Analysis"
+        )
 
     def write_to_csv(self, csv_dir):
         csv_dir = f"{csv_dir}/{int(time.time())}"
