@@ -4,7 +4,6 @@ test: build-all-scenarios
 	# repeatable we fix the seed.
 	PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules\
-		--forked \
 		--durations=0 \
 		./tests ./smarts/core ./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
 		--ignore=./smarts/env/tests/test_learning.py \
