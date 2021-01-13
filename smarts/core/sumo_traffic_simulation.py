@@ -656,6 +656,8 @@ class SumoTrafficSimulation:
 
             traffic_lights = []
             for link, state in zip(links, light_states):
+                if not link:
+                    continue
                 lane_start, lane_end, lane_via = [
                     self._scenario.road_network.lane_by_id(lane) for lane in link[0]
                 ]

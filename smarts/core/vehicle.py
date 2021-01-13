@@ -531,9 +531,9 @@ class Vehicle:
         for sensor_name in sensor_names:
 
             def attach_sensor(self, sensor, sensor_name=sensor_name):
-                assert (
-                    getattr(self, f"_{sensor_name}", None) is None
-                ), f"{sensor_name} already added"
+                # assert (
+                #     getattr(self, f"_{sensor_name}", None) is None
+                # ), f"{sensor_name} already added"
                 setattr(self, f"_{sensor_name}", sensor)
                 self._sensors[sensor_name] = sensor
 
