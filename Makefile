@@ -83,7 +83,7 @@ header-test:
 
 .PHONY: gen-header
 gen-header:
-	./COPYRIGHT.sh
+	./gen_header.sh
 
 .PHONY: clean
 clean:

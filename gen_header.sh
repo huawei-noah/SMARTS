@@ -8,6 +8,10 @@ files="$python_files $js_files"
 # Check and add license notice
 for file in $files; do
     if !(grep -q "Copyright (C)" $file); then
-        sed 's/^/# /' LICENSE | cat - $file >$file.new && mv $file.new $file
+        if (echo $file == '*.py'); then
+            echo $file
+        fi
+        #if 
+        #sed 's/^/# /' LICENSE | cat - $file >$file.new && mv $file.new $file
     fi
 done

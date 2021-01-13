@@ -9,6 +9,9 @@ jobs:
     runs-on: ubuntu-18.04
     container: huaweinoah/smarts:v0.4.3-pre
     steps:
-      - name: test-header
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: test header
         run: |
+          cd $GITHUB_WORKSPACE
           make header-test
