@@ -9,6 +9,6 @@ jobs:
     runs-on: ubuntu-18.04
     container: huaweinoah/smarts:v0.4.3-pre
     steps:
-      - name: test header
-      run: |
-        make header-test
+      - name: test-header
+        run: |
+          make header-test
