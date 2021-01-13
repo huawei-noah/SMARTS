@@ -5,10 +5,10 @@ on: [push]
 env:
   venv_dir: .venv
 jobs:
-  test-formatting:
+  test-header:
     runs-on: ubuntu-18.04
     container: huaweinoah/smarts:v0.4.3-pre
     steps:
-      - name: header test
+      - name: test header
       run: |
         make header-test
