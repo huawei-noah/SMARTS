@@ -122,7 +122,7 @@ After training your agent, your models should be saved under `logs/your-experime
     Additionally, see `smarts/core/controllers/__init__.py` to view available action space types and how they are performed.
 
 3. **Use Your Agent**
-    Finally, in `train.py` or `evaluate.py`, ensure that the `policy_class` variable references your agent using the string format shown below in order to use your agent for training or evaluation respectively:
+    Finally, in order to use your agent for training or evaluation, in `train.py` or `evaluate.py` respectively, ensure that the `policy_class` variable references your agent using the following string format:
     ```python
     policy_class = "<your.agents.package.name>.<your_agent_name>:<your_agent_name>-v<your_agent_version_number>"
     ```
