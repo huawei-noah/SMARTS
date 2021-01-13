@@ -11,8 +11,7 @@ for file in $files; do
         if [[ $file == *'.py' ]]; then
             sed 's/^/# /' LICENSE | cat - $file >$file.new && mv $file.new $file
         else
-            sed 's/^/// /' LICENSE | cat - $file >$file.new && mv $file.new $file
+            sed 's/^/\/\/ /' LICENSE | cat - $file >$file.new && mv $file.new $file
         fi
-        if 
     fi
 done
