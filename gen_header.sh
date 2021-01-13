@@ -19,7 +19,7 @@ for file in $files; do
     if !(grep -q "Copyright (C)" $file); then
         if [[ $file == *'.py' ]]; then
             sed 's/^/# /' LICENSE | cat - $file >$file.new && mv $file.new $file
-        else
+        elif [[ $file == *'.js' ]]; then
             sed 's/^/\/\/ /' LICENSE | cat - $file >$file.new && mv $file.new $file
         fi
         echo "Added copyright header in $file"
