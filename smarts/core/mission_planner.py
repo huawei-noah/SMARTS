@@ -216,7 +216,7 @@ class MissionPlanner:
         aggressiveness = self._agent_behavior.aggressiveness or 0
 
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
-            vehicle=vehicle, radius=100
+            vehicle=vehicle, radius=150
         )
 
         position = pose.position[:2]
