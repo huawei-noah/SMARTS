@@ -77,6 +77,10 @@ sumo-gui: $(scenario)/map.net.xml
 	sumo-gui \
 		-n ./$(scenario)/map.net.xml
 
+.PHONY: header-test
+header-test:
+	./header_test.sh
+
 .PHONY: clean
 clean:
 	# we use `rm -f` for discard errors when the file does not exist
