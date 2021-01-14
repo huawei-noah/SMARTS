@@ -40,13 +40,13 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           . "${venv_dir}/bin/activate"
-          build-all-scenarios
+          scl scenario build-all-scenarios
           PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
             --forked \
             --dist=loadscope \
             -n auto \
             --durations=0 \
-            "${{ matrix.tests }}" \
+            ${{ matrix.tests }} \
             --ignore=./smarts/env/tests/test_learning.py \
             --ignore=./smarts/env/tests/test_benchmark.py
