@@ -12,11 +12,11 @@ jobs:
       matrix:
         tests:
           - "./tests"
-		      - "./smarts/core"
-		      - "./smarts/env"
-		      - "./smarts/contrib"
-		      - "./smarts/sstudio"
-		      - "./envision"
+          - "./smarts/core"
+          - "./smarts/env"
+          - "./smarts/contrib"
+          - "./smarts/sstudio"
+          - "./envision"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
