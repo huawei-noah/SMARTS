@@ -7,7 +7,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-18.04
-    container: huaweinoah/smarts:v0.4.3-pre
+    container: huaweinoah/smarts:v0.4.9
     strategy:
       matrix:
         tests:
@@ -40,7 +40,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           . "${venv_dir}/bin/activate"
-          scl scenario build-all-scenarios
+          make build-all-scenarios
           PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
             --forked \
