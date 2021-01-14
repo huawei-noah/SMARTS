@@ -11,12 +11,12 @@ jobs:
     strategy:
       matrix:
         tests:
-          - "./tests"
-          - "./smarts/core"
-          - "./smarts/env"
-          - "./smarts/contrib"
-          - "./smarts/sstudio"
-          - "./envision"
+          - ./tests
+          - ./smarts/core
+          - ./smarts/env
+          - ./smarts/contrib
+          - ./smarts/sstudio
+          - ./envision
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -47,6 +47,6 @@ jobs:
             --dist=loadscope \
             -n auto \
             --durations=0 \
-            ${{ matrix.tests }} \
+            "${{ matrix.tests }}" \
             --ignore=./smarts/env/tests/test_learning.py \
             --ignore=./smarts/env/tests/test_benchmark.py
