@@ -4,7 +4,6 @@ on: [push]
 
 env:
   venv_dir: .venv
-
 jobs:
   test1:
     runs-on: ubuntu-18.04
@@ -50,8 +49,8 @@ jobs:
             -logfile ./xdummy.log \
             -config /etc/X11/xorg.conf :1 &
           cd $GITHUB_WORKSPACE
-          python3.7 -m venv "${venv_dir}"
-          . "${venv_dir}/bin/activate"
+          python3.7 -m venv venv
+          . venv/bin/activate
           pip install --upgrade pip
           pip install wheel
           pip install -r requirements.txt
@@ -59,5 +58,5 @@ jobs:
       - name: Run smoke tests
         run: |
           cd $GITHUB_WORKSPACE
-          . "${venv_dir}/bin/activate"
+          . venv/bin/activate
           make test2
