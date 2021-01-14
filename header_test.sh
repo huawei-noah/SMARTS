@@ -16,4 +16,6 @@ done
 
 if [ $exit_code = 1 ]; then
     exit 1
+else
+    echo "Header test passed"
 fi
