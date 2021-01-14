@@ -26,25 +26,13 @@ import csv
 import time
 import os
 
-from collections import defaultdict, namedtuple, OrderedDict
-from dataclasses import dataclass, field
+from collections import defaultdict, namedtuple
 from scipy.spatial import distance
 
-from smarts.core.utils.episodes import EpisodeLog
 
-from benchmark.metrics.behavior_analysis import BehaviorMetric
-from benchmark.metrics import plot
-
-
-def pretty_dict(d, indent=0):
-    res = ""
-    for k, v in d.items():
-        res += "\t" * indent + str(k)
-        if isinstance(v, dict):
-            res += "\n" + pretty_dict(v, indent + 1)
-        else:
-            res += ": " + str(v) + "\n"
-    return res
+from benchmark.metrics.metrics import BehaviorMetric
+from benchmark.metrics import MetricHandler
+from benchmark.utils import plot, episode_log, format
 
 
 def agent_info_adapter(obs, shaped_reward: float, raw_info: dict):
@@ -66,37 +54,6 @@ def min_max_mean(data: list):
     return {"min": np.min(data), "max": np.max(data), "mean": np.mean(data)}
 
 
-@dataclass
-class EvaluatedEpisode(EpisodeLog):
-    ego_speed: dict = field(default_factory=lambda: defaultdict(lambda: []))
-    num_collision: dict = field(default_factory=lambda: defaultdict(lambda: 0))
-    distance_to_goal: dict = field(default_factory=lambda: defaultdict(lambda: []))
-    distance_to_ego_car: dict = field(default_factory=lambda: defaultdict(lambda: []))
-    acceleration: dict = field(default_factory=lambda: defaultdict(lambda: 0.0))
-    reach_goal: dict = field(default_factory=lambda: defaultdict(lambda: False))
-    agent_step: dict = field(default_factory=lambda: defaultdict(lambda: 0))
-
-    def record_step(self, observations=None, rewards=None, dones=None, infos=None):
-        for agent_id, info in infos.items():
-            if info.get("_group_info") is not None:
-                for i, _info in enumerate(info["_group_info"]):
-                    name = f"{agent_id}:AGENT-{i}"
-                    self.ego_speed[name] = np.mean(_info["speed"])
-
-                    self.num_collision[name] += len(_info["events"].collisions)
-
-                    if dones[agent_id]:
-                        self.reach_goal[name] = _info["events"].reached_goal
-                        self.distance_to_goal[name] = _info["distance_to_goal"]
-            else:
-                self.ego_speed[agent_id].append(info["speed"])
-                self.num_collision[agent_id] += len(info["events"].collisions)
-                self.distance_to_goal[agent_id].append(info["distance_to_goal"])
-                self.agent_step[agent_id] += 1
-
-        self.steps += 1
-
-
 MinMeanMax = namedtuple("MinMeanMax", "min, mean, max")
 
 
@@ -113,7 +70,7 @@ class MetricKeys:
     MIN_G = "Min Goal Distance"
 
 
-class MetricHandler:
+class BasicMetricHandler(MetricHandler):
     """ MetricHandler serves for the metric """
 
     def __init__(self, num_episode):
@@ -124,9 +81,16 @@ class MetricHandler:
         num_episode
             int, the num of e
         """
-        self._logs = [EvaluatedEpisode() for _ in range(num_episode)]
+        super(BasicMetricHandler, self).__init__()
+        # XXX(ming): seems we need to bind callback function to each log item
 
-    def log_step(self, observations, rewards, dones, infos, episode):
+        self._logs = [episode_log.BasicEpisodeLog() for _ in range(num_episode)]
+
+    @property
+    def logs(self):
+        return self._logs
+
+    def log_step(self, episode, observations, rewards, dones, infos):
         self._logs[episode].record_step(observations, rewards, dones, infos)
 
     def show_plots(self):
@@ -223,4 +187,4 @@ class MetricHandler:
             record[MetricKeys.AVE_COMR] /= len(sub_dirs)
             record[MetricKeys.AVE_CR] /= len(sub_dirs)
 
-        print(pretty_dict(agent_metrics))
+        print(format.pretty_dict(agent_metrics))
