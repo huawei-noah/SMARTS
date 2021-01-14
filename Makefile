@@ -5,7 +5,50 @@ test: build-all-scenarios
 	PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules \
 		--forked \
+		--dist=loadscope \
+		-n auto \
 		--durations=0 \
+		./tests \ 
+		./smarts/core \
+		./smarts/env \ 
+		./smarts/contrib \ 
+		./smarts/sstudio \
+		./envision \
+		--ignore=./smarts/env/tests/test_learning.py \
+		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+		--ignore=./smarts/env/tests/test_benchmark.py
+
+.PHONY: test1
+test1: build-all-scenarios
+	# sstudio uses hash(...) as part of some of its type IDs. To make the tests
+	# repeatable we fix the seed.
+	PYTHONHASHSEED=42 pytest -v \
+		--doctest-modules \
+		--forked \
+		--dist=loadscope \
+		-n auto \
+		--durations=0 \
+		./tests \ 
+		./smarts/core \
+		./tests ./smarts/core ./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
+		--ignore=./smarts/env/tests/test_learning.py \
+		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+		--ignore=./smarts/env/tests/test_benchmark.py
+
+.PHONY: test2
+test2: build-all-scenarios
+	# sstudio uses hash(...) as part of some of its type IDs. To make the tests
+	# repeatable we fix the seed.
+	PYTHONHASHSEED=42 pytest -v \
+		--doctest-modules \
+		--forked \
+		--dist=loadscope \
+		-n auto \
+		--durations=0 \
+		./smarts/env \ 
+		./smarts/contrib \ 
+		./smarts/sstudio \
+		./envision \
 		./tests ./smarts/core ./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
 		--ignore=./smarts/env/tests/test_learning.py \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
