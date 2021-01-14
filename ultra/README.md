@@ -70,7 +70,7 @@ We currently support PPO/SAC/TD3/DQN policies, for adding you own policy please 
 ### Run Evaluation Separately
 After training your agent, your models should be saved under `logs/your-experiment-name/models/` and you can re-run the evaluation:
   ```sh
-  $ python ultra/evaluate.py --task 1 --level easy --models logs/your-expierment-name/models
+  $ python ultra/evaluate.py --task 1 --level easy --models logs/your-experiment-name/models
   # other arguments --episodes 20000 --timestep 1 --headless
   ```
 
