@@ -5,9 +5,18 @@ on: [push]
 env:
   venv_dir: .venv
 jobs:
-  test1:
+  test:
     runs-on: ubuntu-18.04
     container: huaweinoah/smarts:v0.4.3-pre
+    strategy:
+      matrix:
+        tests:
+          - ./tests
+		      - ./smarts/core
+		      - ./smarts/env
+		      - ./smarts/contrib
+		      - ./smarts/sstudio
+		      - ./envision
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -31,32 +40,13 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           . "${venv_dir}/bin/activate"
-          make test1
-
-  test2:
-    runs-on: ubuntu-18.04
-    container: huaweinoah/smarts:v0.4.3-pre
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Package Setup
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
-          cd $GITHUB_WORKSPACE
-          python3.7 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install wheel
-          pip install -r requirements.txt
-          pip install --upgrade -e .[train]
-      - name: Run smoke tests
-        run: |
-          cd $GITHUB_WORKSPACE
-          . venv/bin/activate
-          make test2
+          build-all-scenarios
+          PYTHONHASHSEED=42 pytest -v \
+            --doctest-modules \
+            --forked \
+            --dist=loadscope \
+            -n auto \
+            --durations=0 \
+            ${{ matrix.tests }} \
+            --ignore=./smarts/env/tests/test_learning.py \
+            --ignore=./smarts/env/tests/test_benchmark.py
