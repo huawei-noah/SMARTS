@@ -42,7 +42,7 @@ class Wrapper(MultiAgentEnv):
     def _get_rewards(self, observations, rewards):
         return rewards
 
-    def _get_infos(self, observations, rewards, infos):
+    def _get_infos(self, env_observations, rewards, infos):
         return infos
 
     def _update_last_observation(self, observations):

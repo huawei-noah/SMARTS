@@ -20,7 +20,6 @@
 import yaml
 import gym
 import importlib
-import pprint
 import re
 
 from pathlib import Path
@@ -35,8 +34,9 @@ from smarts.core.agent_interface import (
 from smarts.core.controllers import ActionSpaceType
 
 from benchmark.wrappers import rllib as rllib_wrappers
-from benchmark.metrics import basic_metrics as metrics
+from benchmark.metrics import handlers as metrics
 from benchmark import common
+from benchmark.utils import format
 
 
 def _get_trainer(path, name):
@@ -114,7 +114,7 @@ def _make_rllib_config(config, mode="training"):
             "action_adapter": action_adapter,
             "info_adapter": metrics.agent_info_adapter
             if mode == "evaluation"
-            else common.default_info_adapter,
+            else None,
             "observation_space": policy_obs_space,
             "action_space": policy_action_space,
         },
@@ -123,7 +123,7 @@ def _make_rllib_config(config, mode="training"):
     config["trainer"] = _get_trainer(**config["policy"]["trainer"])
     config["policy"] = policy_config
 
-    print(common.pretty_dict(config))
+    print(format.pretty_dict(config))
 
     return config
 

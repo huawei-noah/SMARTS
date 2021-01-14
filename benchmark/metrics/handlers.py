@@ -26,39 +26,29 @@ import csv
 import time
 import os
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from scipy.spatial import distance
 
 
 from benchmark.metrics.metrics import BehaviorMetric
 from benchmark.metrics import MetricHandler
 from benchmark.utils import plot, episode_log, format
+from benchmark.common import CalObs
 
 
-def agent_info_adapter(obs, shaped_reward: float, raw_info: dict):
+def agent_info_adapter(env_obs, shaped_reward: float, raw_info: dict):
     info = dict()
-    info["speed"] = obs.ego_vehicle_state.speed
-    info["collision"] = 1 if len(obs.events.collisions) > 0 else 0
+    info["speed"] = env_obs.ego_vehicle_state.speed
+    info["collision"] = 1 if len(env_obs.events.collisions) > 0 else 0
 
-    goal = obs.ego_vehicle_state.mission.goal
+    goal = env_obs.ego_vehicle_state.mission.goal
     goal_pos = goal.position
-    ego_2d_pos = obs.ego_vehicle_state.position[:2]
+    ego_2d_pos = env_obs.ego_vehicle_state.position[:2]
 
     info["distance_to_goal"] = distance.euclidean(ego_2d_pos, goal_pos)
-    info["events"] = obs.events
+    info["distance_to_center"] = CalObs.cal_distance_to_center(env_obs, "")
 
     return info
-
-
-def min_max_mean(data: list):
-    return {"min": np.min(data), "max": np.max(data), "mean": np.mean(data)}
-
-
-MinMeanMax = namedtuple("MinMeanMax", "min, mean, max")
-
-
-def get_statistics(data: list):
-    return MinMeanMax(np.min(data), np.mean(data), np.max(data))
 
 
 class MetricKeys:
@@ -90,20 +80,20 @@ class BasicMetricHandler(MetricHandler):
     def logs(self):
         return self._logs
 
-    def log_step(self, episode, observations, rewards, dones, infos):
-        self._logs[episode].record_step(observations, rewards, dones, infos)
+    def log_step(self, episode, observations, actions, rewards, dones, infos):
+        self._logs[episode].record_step(observations, actions, rewards, dones, infos)
 
     def show_plots(self):
+        """ Show behavior metric plots, support only one algorithm now. """
+
         behavior_metric = BehaviorMetric()
         results = behavior_metric.compute(self)
-        values, labels = [], []
+        values, features = [], []
         for k, v in results.items():
             values.append(v)
-            labels.append(k)
-        values = np.asarray(values)
-        plot.radar_plots(
-            values, labels, behavior_metric.features, title="Behavior Analysis"
-        )
+            features.append(k)
+        values = np.asarray([values])
+        plot.radar_plots(values, ["TEST"], features, title="Behavior Analysis")
 
     def write_to_csv(self, csv_dir):
         csv_dir = f"{csv_dir}/{int(time.time())}"
@@ -129,7 +119,7 @@ class BasicMetricHandler(MetricHandler):
                         ["Num_Collision"] + [logger.num_collision[agent_id]]
                     )
 
-    def read_episode(self, csv_dir):
+    def read_logs(self, csv_dir):
         agent_record = defaultdict(
             lambda: {
                 "Speed": None,

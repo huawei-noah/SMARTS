@@ -15,7 +15,7 @@ def gen_config(**kwargs):
     else:
         agent_ids = [f"AGENT-{i}" for i in range(agent_missions_count)]
 
-    config = load_config(kwargs["config_file"], mode="evaluate")
+    config = load_config(kwargs["config_file"], mode=kwargs.get("mode", "training"))
     agents = {agent_id: AgentSpec(**config["agent"]) for agent_id in agent_ids}
 
     config["env_config"].update(

@@ -1,3 +1,4 @@
+#!/usr/bin/env python -W ignore::DeprecationWarning
 # Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,8 +20,10 @@
 # THE SOFTWARE.
 import argparse
 import ray
+import os
 
-from gym.spaces import Tuple
+import tensorflow.python.util.deprecation as deprecation
+
 from pathlib import Path
 from ray import tune
 
@@ -28,8 +31,10 @@ from benchmark import gen_config
 from benchmark.common import SimpleCallbacks
 
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 RUN_NAME = Path(__file__).stem
 EXPERIMENT_NAME = "{scenario}-{n_agent}"
+deprecation._PRINT_DEPRECATION_WARNINGS = False
 
 
 def main(
@@ -66,7 +71,7 @@ def main(
 
     # TODO(ming): change scenario name (not path)
     experiment_name = EXPERIMENT_NAME.format(
-        scenario=scenario_path.stem, n_agent=len(agents),
+        scenario=scenario.split("/")[-1], n_agent=4,
     )
 
     log_dir = Path(log_dir).expanduser().absolute() / RUN_NAME

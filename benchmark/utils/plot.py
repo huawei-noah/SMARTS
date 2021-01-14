@@ -12,6 +12,8 @@ def radar_plots(values, labels, features, title):
     values = np.concatenate((values.T, [values.T[0]])).T
     angles = np.concatenate((angles, [angles[0]]))
 
+    print(">>>>>>>>>>>> shape of values and angles:", values.shape, angles.shape)
+
     fig = plt.figure()
     ax = fig.add_subplot(111, polar=True)
 
@@ -30,9 +32,16 @@ def radar_plots(values, labels, features, title):
     plt.show()
 
 
-radar_plots(
-    values=np.random.randn(5, 5),
-    labels=["PPO", "DQN", "MADDPG", "A2C", "DPG"],
-    features=["Safety", "Agility", "Stability", "Control Diversity", "Cut-In Ratio"],
-    title="Behavior Analysis",
-)
+if __name__ == "__main":
+    radar_plots(
+        values=np.random.randn(5, 5),
+        labels=["PPO", "DQN", "MADDPG", "A2C", "DPG"],
+        features=[
+            "Safety",
+            "Agility",
+            "Stability",
+            "Control Diversity",
+            "Cut-In Ratio",
+        ],
+        title="Behavior Analysis",
+    )

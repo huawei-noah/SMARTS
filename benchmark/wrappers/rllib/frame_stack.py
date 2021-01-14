@@ -151,6 +151,16 @@ class FrameStack(Wrapper):
             rewards[k] = self.reward_adapter(list(self.frames[k]), env_rewards[k])
         return rewards
 
+    def _get_infos(self, env_obs, rewards, infos):
+        if self.info_adapter is None:
+            return infos
+
+        res = {}
+        agent_ids = list(env_obs.keys())
+        for k in agent_ids:
+            res[k] = self.info_adapter(env_obs[k], rewards[k], infos[k])
+        return res
+
     def step(self, agent_actions):
         env_observations, env_rewards, dones, infos = super(FrameStack, self).step(
             agent_actions

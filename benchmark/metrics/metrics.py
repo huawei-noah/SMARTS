@@ -28,16 +28,20 @@ class BehaviorMetric:
     def _compute_safety_index(self, agent_collisions_seq):
         non_collision = []
         for agent_collisions in agent_collisions_seq:
-            non_collision.append(1 if sum(agent_collisions.valuese()) > 0 else 0)
-        self.safety = np.mean(non_collision)[0]
+            sum_collision = sum(agent_collisions.values())
+            non_collision.append(int(sum_collision > 0))
+        self.safety = np.mean(non_collision)
 
     def _compute_agility_index(self, agent_speed_seq):
         # compute average speed
         average_speed = []
         for agent_speed in agent_speed_seq:
             # compute ave speed of this group
-            average_speed.append(np.mean(list(agent_speed.values())))
-        self.agility = np.mean(average_speed)[0]
+            mean_speed_list = []
+            for speed_list in agent_speed.values():
+                mean_speed_list.append(np.mean(speed_list))
+            average_speed.append(np.mean(mean_speed_list))
+        self.agility = np.mean(average_speed)
 
     def _compute_stability_index(self, agent_central_dist_seq):
         agent_vars = defaultdict(lambda: [])
@@ -51,7 +55,7 @@ class BehaviorMetric:
         for agent, vars in agent_vars.items():
             stability.append(np.mean(vars))
 
-        self.stability = np.mean(stability)[0]
+        self.stability = np.mean(stability)
 
     def _compute_diversity_index(self, agent_operation_seq):
         # only work for discrete actions
@@ -69,7 +73,7 @@ class BehaviorMetric:
             # calculate the entropy
             entropy.append(sum([v * math.log(v) for v in operation_probs.values()]))
 
-        self.control_diversity = np.mean(entropy)[0]
+        self.control_diversity = np.mean(entropy)
 
     def compute(self, handler: MetricHandler) -> Dict[str, float]:
         """ Compute behavior analysis metrics

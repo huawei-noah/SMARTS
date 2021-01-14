@@ -32,7 +32,7 @@ policy:
     name: DQNTrainer
 
 run:
-  checkpoint_freq: 40
+  checkpoint_freq: 4
   checkpoint_at_end: True
   max_failures: 1000
   resume: False
@@ -40,7 +40,7 @@ run:
   stop:
     time_total_s: 14400
   config:
-    log_level: WARN
+    log_level: ERROR
     num_workers: 1
     num_gpus: 0
     horizon: 1000
