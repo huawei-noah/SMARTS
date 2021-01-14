@@ -7,7 +7,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-18.04
-    container: huaweinoah/smarts:v0.4.9
+    container: huaweinoah/smarts:v0.4.3-pre
     strategy:
       matrix:
         tests:
