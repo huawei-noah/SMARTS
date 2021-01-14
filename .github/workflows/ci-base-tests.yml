@@ -11,12 +11,13 @@ jobs:
     strategy:
       matrix:
         tests:
-          - ./tests
-          - ./smarts/core
-          - ./smarts/env
-          - ./smarts/contrib
-          - ./smarts/sstudio
           - ./envision
+          - ./smarts/contrib
+          - ./smarts/core
+          - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
+          - ./smarts/env/tests/test_rllib_hiway_env.py
+          - ./smarts/sstudio
+          - ./tests
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -48,5 +49,6 @@ jobs:
             -n auto \
             --durations=0 \
             ${{ matrix.tests }} \
+            --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_learning.py \
             --ignore=./smarts/env/tests/test_benchmark.py
