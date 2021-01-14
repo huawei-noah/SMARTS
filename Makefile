@@ -28,7 +28,7 @@ test1: build-all-scenarios
 		--dist=loadscope \
 		-n auto \
 		--durations=0 \
-		./tests ./smarts/core \
+		./tests ./smarts/core ./smarts/contrib ./smarts/sstudio ./envision \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py 
 
 .PHONY: test2
@@ -41,7 +41,7 @@ test2: build-all-scenarios
 		--dist=loadscope \
 		-n auto \
 		--durations=0 \
-		./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
+		./smarts/env \
 		--ignore=./smarts/env/tests/test_learning.py \
 		--ignore=./smarts/env/tests/test_benchmark.py
 
