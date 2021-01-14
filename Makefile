@@ -3,7 +3,6 @@ test: build-all-scenarios
 	# sstudio uses hash(...) as part of some of its type IDs. To make the tests
 	# repeatable we fix the seed.
 	PYTHONHASHSEED=42 pytest -v \
-		--cov=smarts \
 		--doctest-modules \
 		--forked \
 		--durations=0 \
