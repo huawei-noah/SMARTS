@@ -14,7 +14,7 @@ from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
 
 
-class UltraAgentSpec(AgentSpec):
+class BaselineAgentSpec(AgentSpec):
     def __init__(
         self,
         policy_class,

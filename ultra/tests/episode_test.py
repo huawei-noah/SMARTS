@@ -3,7 +3,7 @@ from ultra.baselines.ppo.policy import PPOPolicy
 import gym, ray
 from ultra.utils.episode import episodes
 import numpy as np
-from ultra.env.agent_spec import UltraAgentSpec
+from ultra.env.agent_spec import BaselineAgentSpec
 from smarts.core.controllers import ActionSpaceType
 
 AGENT_ID = "001"
@@ -156,7 +156,7 @@ def prepare_test_env_agent(headless=True):
     timestep_sec = 0.1
     # [throttle, brake, steering]
     policy_class = PPOPolicy
-    spec = UltraAgentSpec(
+    spec = BaselineAgentSpec(
         action_type=ActionSpaceType.Continuous,
         policy_class=policy_class,
         max_episode_steps=10,

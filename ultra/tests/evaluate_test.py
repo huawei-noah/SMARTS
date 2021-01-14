@@ -2,7 +2,7 @@
 # from ultra.baselines.ppo.policy import PPOPolicy
 # from ultra.src.evaluate import evaluate, evaluation_check
 # from ultra.utils.episode import episodes
-# from ultra.env.agent_spec import UltraAgentSpec
+# from ultra.env.agent_spec import BaselineAgentSpec
 # from smarts.core.controllers import ActionSpaceType
 #
 # seed = 2
@@ -107,7 +107,7 @@
 #     timestep_sec = 0.1
 #     # [throttle, brake, steering]
 #     policy_class = PPOPolicy
-#     spec = UltraAgentSpec(
+#     spec = BaselineAgentSpec(
 #         action_type=ActionSpaceType.Continuous,
 #         policy_class=policy_class,
 #         max_episode_steps=10,
