@@ -7,14 +7,8 @@ test: build-all-scenarios
 		--doctest-modules \
 		--forked \
 		--dist=loadscope \
-		-n auto \
-		--durations=0 \
-		./envision \
-		./smarts/contrib \ 
-		./smarts/core \
-		./smarts/env \ 
-		./smarts/sstudio \
-		./tests \ 
+		-n `nproc --ignore 1` \
+		./tests ./smarts/core ./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
 		--ignore=./smarts/env/tests/test_learning.py \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/env/tests/test_benchmark.py
