@@ -119,6 +119,37 @@ class UltraEnv(HiWayEnv):
         )
         return info
 
+
+    def step(self, agent_actions):
+        agent_actions = {
+            agent_id: self._agent_specs[agent_id].action_adapter(action)
+            for agent_id, action in agent_actions.items()
+        }
+
+        observations, rewards, agent_dones, extras = self._smarts.step(agent_actions)
+
+        infos = {
+            agent_id: {"score": value, "env_obs": observations[agent_id]}
+            for agent_id, value in extras["scores"].items()
+        }
+
+        for agent_id in observations:
+            agent_spec = self._agent_specs[agent_id]
+            observation = observations[agent_id]
+            reward = rewards[agent_id]
+            info = infos[agent_id]
+
+            rewards[agent_id] = agent_spec.reward_adapter(observation, reward)
+            observations[agent_id] = agent_spec.observation_adapter(observation)
+            infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
+            infos[agent_id]["logs"] = self.generate_logs(observation, reward)
+
+        for done in agent_dones.values():
+            self._dones_registered += 1 if done else 0
+
+        agent_dones["__all__"] = self._dones_registered == len(self._agent_specs)
+
+        return observations, rewards, agent_dones, infos
     def get_task(self, task_id, task_level):
         with open("ultra/config.yaml", "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
