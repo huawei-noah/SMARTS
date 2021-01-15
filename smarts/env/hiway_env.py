@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import logging, copy
+import logging
 from typing import Sequence
 
 import gym
@@ -187,6 +187,7 @@ class HiWayEnv(gym.Env):
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
+        
         observations = {
             agent_id: self._agent_specs[agent_id].observation_adapter(obs)
             for agent_id, obs in env_observations.items()
