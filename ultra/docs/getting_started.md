@@ -6,6 +6,10 @@ The following shows how to generate left-turn scenarios for a specific task, the
 
 To begin, start by generating scenarios for a left-turn task. Each task has various left-turn scenarios that aim to teach the agent something. Task 1 trains the agent to generalize its knowledge on the type of intersection. This is done by creating left-turn scenarios in t-intersections for training, and left-turn scenarios in cross-intersections for testing. All supported tasks are listed under `ultra/scenarios/`.
 
+Task 1 Training Scenario|Task 1 Testing Scenario
+:----------------------:|:---------------------:
+<img src="_static/task1_train.png" width="340" height="220"/> | <img src="_static/task1_test.png" width="340" height="220"/>
+
 - If you have not yet generated the maps used by the ULTRA scenarios (available in `ultra/scenarios/pool/`), run the following command:
   ```sh
   $ scl scenario build-all ultra/scenarios/pool
