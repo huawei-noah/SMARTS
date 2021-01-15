@@ -37,9 +37,9 @@ jobs:
         id: cache-pip
         uses: actions/cache@v2
         with:
-          path: ${{ env.venv_dir }}
+          path: $GITHUB_WORKSPACE/${{env.venv_dir}}
           # Check if there is a cache hit for the corresponding requirements.txt and setup.py files
-          key: pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
+          key: pip-${{hashFiles('requirements.txt')}}-${{hashFiles('setup.py')}}
       - name: Install dependencies
         # if: steps.cache-pip.outputs.cache-hit != 'true'
         run: |
@@ -61,7 +61,7 @@ jobs:
             --dist=loadscope \
             -n auto \
             --durations=0 \
-            ${{ matrix.tests }} \
+            ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_learning.py \
             --ignore=./smarts/env/tests/test_benchmark.py
