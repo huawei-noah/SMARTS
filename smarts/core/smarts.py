@@ -334,6 +334,11 @@ class SMARTS(ShowBase):
 
         return observations_for_ego
 
+    def switch_ego_agent(self, agent_interfaces, zoo_addrs=None):
+        # check why takes long
+        self._agent_manager = AgentManager(agent_interfaces, zoo_addrs)
+        self._is_setup = False
+
     def setup(self, scenario: Scenario):
         self._scenario = scenario
 

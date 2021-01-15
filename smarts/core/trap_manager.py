@@ -145,6 +145,7 @@ class TrapManager:
                 ),
             )
             for v_id in sorted_vehicle_ids:
+                break
                 vehicle = vehicles[v_id]
                 point = Point(vehicle.position)
 
@@ -153,7 +154,7 @@ class TrapManager:
 
                 if not point.within(trap.geometry):
                     continue
-
+                print(f"trap geometry: {trap.geometry} point: {point}")
                 captures_by_agent_id[agent_id].append(
                     (
                         v_id,
@@ -171,6 +172,8 @@ class TrapManager:
         # Use fed in trapped vehicles.
         agents_given_vehicle = set()
         used_traps = []
+        print(f"agent manager: {sim._agent_manager.pending_agent_ids}")
+        print(f"self.traps: {self._traps.keys()}")
         for agent_id in sim._agent_manager.pending_agent_ids:
             if agent_id not in self._traps:
                 continue
@@ -183,6 +186,8 @@ class TrapManager:
                 continue
 
             vehicle = None
+            # 1st
+            print(f"Reached 1st {captures}")
             if len(captures) > 0:
                 vehicle_id, trap, mission = rand.choice(captures)
                 vehicle = TrapManager._hijack_vehicle(
@@ -251,6 +256,7 @@ class TrapManager:
         sim.vehicle_index.start_agent_observation(
             sim, vehicle_id, agent_id, agent_interface, planner
         )
+        print("reached 2")
         vehicle = sim.vehicle_index.switch_control_to_agent(
             sim, vehicle_id, agent_id, recreate=True, hijacking=False
         )
@@ -317,7 +323,7 @@ class TrapManager:
             )
 
             drive_distance = lane_speed * default_zone_dist
-
+            # sets trap zone area here
             start_offset_in_lane = vehicle_offset_into_lane - drive_distance
             start_offset_in_lane = clip(start_offset_in_lane, 1e-6, lane_length - 1e-6)
             length = max(1e-6, vehicle_offset_into_lane - start_offset_in_lane)

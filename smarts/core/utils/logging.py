@@ -32,7 +32,7 @@ def timeit(name: str):
     yield
     ellapsed_time = (time() - start) * 1000
 
-    logging.info(f'"{name}" took: {ellapsed_time:4f}ms')
+    print(f'"{name}" took: {ellapsed_time:4f}ms')
 
 
 def isnotebook():

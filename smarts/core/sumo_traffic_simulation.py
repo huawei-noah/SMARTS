@@ -692,7 +692,9 @@ class SumoTrafficSimulation:
         self._reserved_areas[vehicle_id] = reserved_location
 
     def remove_traffic_vehicle(self, vehicle_id: str):
+        print(self._traci_conn.vehicle)
         self._traci_conn.vehicle.remove(vehicle_id)
+        print(self._sumo_vehicle_ids)
         self._sumo_vehicle_ids.remove(vehicle_id)
 
     def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):

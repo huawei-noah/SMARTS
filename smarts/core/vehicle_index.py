@@ -356,6 +356,8 @@ class VehicleIndex:
     def switch_control_to_agent(
         self, sim, vehicle_id, agent_id, boid=False, hijacking=False, recreate=False
     ):
+        # 3rd
+        print(f"Switching control of agent {agent_id} to {vehicle_id}")
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
 
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
@@ -363,6 +365,7 @@ class VehicleIndex:
             # XXX: Recreate is presently broken for bubbles because it impacts the
             #      sumo traffic sim sync(...) logic in how it detects a vehicle as
             #      being hijacked vs joining. Presently it's still used for trapping.
+            print(f"before _switch_contorl-to_agent: {vehicle_id} {agent_id}")
             return self._switch_control_to_agent_recreate(
                 sim, vehicle_id, agent_id, boid, hijacking
             )
@@ -495,8 +498,12 @@ class VehicleIndex:
         )
 
         # Remove the old vehicle
+        print(f"new vehicle id: {new_vehicle.id}")
+        print(f"removing old {vehicle.id}")
         self.teardown_vehicles_by_vehicle_ids([vehicle.id])
         # HACK: Directly remove the vehicle from the traffic provider
+        
+        # SHOULD REMOVE vehicle in traffic_history provider instead of sumo
         sim._traffic_sim.remove_traffic_vehicle(vehicle.id)
 
         # Take control of the new vehicle

@@ -1,4 +1,5 @@
 import logging
+import time
 
 from smarts.core.smarts import SMARTS
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -6,6 +7,7 @@ from smarts.core.agent import AgentSpec, Agent
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.scenario import Scenario
 from envision.client import Client as Envision
+from smarts.core.utils.logging import timeit
 
 from examples import default_argument_parser
 
@@ -23,8 +25,10 @@ def main(scenarios, headless, seed):
     for _ in scenarios:
         scenario = next(scenarios_iterator)
         agent_missions = scenario.discover_missions_of_traffic_histories()
-
+        print(f"All id length: {len(agent_missions.keys())}")
         for agent_id, mission in agent_missions.items():
+            # if agent_id not in set(["1","7","10","11"]):
+            #     continue
             scenario.set_ego_missions({agent_id: mission})
 
             agent_spec = AgentSpec(
@@ -35,14 +39,14 @@ def main(scenarios, headless, seed):
             )
 
             agent = agent_spec.build_agent()
-
-            smarts = SMARTS(
-                agent_interfaces={agent_id: agent_spec.interface},
-                traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
-                envision=Envision(),
-            )
+            with timeit("Setup smarts"):
+                smarts = SMARTS(
+                    agent_interfaces={agent_id: agent_spec.interface},
+                    traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
+                    envision=Envision(),
+                )
             observations = smarts.reset(scenario)
-
+            print(f"id: {agent_id}")
             dones = {agent_id: False}
             while not dones[agent_id]:
                 agent_obs = observations[agent_id]
@@ -51,7 +55,7 @@ def main(scenarios, headless, seed):
                 observations, rewards, dones, infos = smarts.step(
                     {agent_id: agent_action}
                 )
-
+            print("\n")
             smarts.destroy()
 
 
