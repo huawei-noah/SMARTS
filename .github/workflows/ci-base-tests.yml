@@ -32,17 +32,17 @@ jobs:
         id: cache-pip
         uses: actions/cache@v2
         with:
-          path: ~/.cache/pip
+          path: ${{ env.pythonLocation }}
           # Check if there is a cache hit for the corresponding requirements.txt and setup.py files
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
+          key: ${{ env.pythonLocation }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         if: steps.cache-pip.outputs.cache-hit != 'true'
         run: |
           cd $GITHUB_WORKSPACE
-          pip install --upgrade pip
-          pip install wheel
-          pip install -r requirements.txt
-          pip install --upgrade -e .[train,test]
+          pip install --upgrade --upgrade-strategy eager pip
+          pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade --upgrade-strategy eager -r requirements.txt
+          pip install --upgrade --upgrade-strategy eager -e .[train,test]
       - name: Run smoke tests
         run: |
           cd $GITHUB_WORKSPACE
