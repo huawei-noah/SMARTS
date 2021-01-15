@@ -31,9 +31,9 @@ setup(
         "filelock",
         "lz4",
         "networkx",
+        "opencv-python",
         "pandas",
         "psutil",
-        "opencv-python",
         "visdom",
         "pybullet",
         "sklearn",  # KDTree from sklearn is used by waypoints
