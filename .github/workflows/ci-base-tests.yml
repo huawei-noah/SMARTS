@@ -3,7 +3,7 @@ name: SMARTS CI
 on: [push]
 
 env:
-  python_dir: /usr/lib/python3.7/
+  python_dir: /usr/local/lib/python3.7
 jobs:
   test:
     runs-on: ubuntu-18.04
