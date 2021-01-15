@@ -36,10 +36,9 @@ jobs:
         id: cache-pip
         uses: actions/cache@v2
         with:
-          path: |
-            ${{ env.pip_cache }}
+          path: ${{ env.pip_cache }}
           # Check if there is a cache hit for the corresponding requirements.txt and setup.py files
-          key: ${{ env.pip_cache }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
+          key: python3.7-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         # if: steps.cache-pip.outputs.cache-hit != 'true'
         run: |
