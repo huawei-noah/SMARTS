@@ -27,7 +27,7 @@ def main(scenarios, headless, seed):
         agent_missions = scenario.discover_missions_of_traffic_histories()
         print(f"All id length: {len(agent_missions.keys())}")
         for agent_id, mission in agent_missions.items():
-            # if agent_id not in set(["1","7","10","11"]):
+            # if agent_id not in set(["1","2","3","7","10","11"]):
             #     continue
             scenario.set_ego_missions({agent_id: mission})
 

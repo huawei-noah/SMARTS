@@ -68,6 +68,7 @@ class RemoteAgentBuffer:
         self._local_zoo_manager = False
 
         # Populate zoo manager connection with address and process handles.
+        print(f"zoo address: {zoo_manager_addrs}")
         if not zoo_manager_addrs:
             # Spawn a local zoo manager since no remote zoo managers were provided.
             self._local_zoo_manager = True
@@ -109,6 +110,7 @@ class RemoteAgentBuffer:
                 raise e
 
         # If available, teardown local zoo manager.
+        print(f"zoo manager connections: {len(self._zoo_manager_conns)}")
         if self._local_zoo_manager:
             self._zoo_manager_conns[0]["channel"].close()
             self._zoo_manager_conns[0]["process"].terminate()
@@ -201,4 +203,5 @@ def get_manager_channel_stub(addr):
             "Timeout in connecting to remote zoo manager."
         )
     stub = manager_pb2_grpc.ManagerStub(channel)
+    print("gRPC succeeded")
     return channel, stub
