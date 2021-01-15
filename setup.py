@@ -27,6 +27,7 @@ setup(
         "numpy",
         "shapely",
         "trimesh",  # Used for writing .glb files
+        "rich",
         "rtree",  # Used by sumolib
         "filelock",
         "lz4",
@@ -40,7 +41,6 @@ setup(
         "tableprint",
         "pynput",  # Used by HumanKeyboardAgent
         "sh",
-        "rich",
         "supervisor",
         # HACK: There is a bug where if we only install the base ray dependency here
         #       and ray[rllib] under [train] it  prevents rllib from getting installed.
