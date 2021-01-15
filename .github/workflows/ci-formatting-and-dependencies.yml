@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Test Pip Packages
+      - name: Test pip packages
         run: |
           cd $GITHUB_WORKSPACE
           ./test_pip_packages.sh
