@@ -20,7 +20,7 @@ Read the [documentation](https://gitlab.smartsai.xyz/smarts/ULTRA/-/wikis/Benchm
 Ignore this step if you already have the SMARTS environment installed.
 #### Setup Natively
   ```sh
-  python3.7 -m venv .smarts
+  python3.7 -m venv .ultra
   # 1-activate virtual environment to install all dependencies
   source .ultra/bin/activate
   # 2-install black for formatting (if you wish to contribute)
