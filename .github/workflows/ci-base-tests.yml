@@ -7,10 +7,6 @@ on: [push]
   # scl_exec: /usr/local/bin/scl
   # pip_cache: ~/.cache/pip 
   # venv_dir: .venv
-defaults:
-  run:
-    shell: bash
-    working-directory: $GITHUB_WORKSPACE 
 jobs:
   test:
     runs-on: ubuntu-18.04
