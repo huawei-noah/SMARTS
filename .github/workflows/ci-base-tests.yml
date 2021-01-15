@@ -38,15 +38,15 @@ jobs:
         with:
           path: ${{ env.pip_cache }}
           # Check if there is a cache hit for the corresponding requirements.txt and setup.py files
-          key: python3.7-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
+          key: pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         # if: steps.cache-pip.outputs.cache-hit != 'true'
         run: |
           cd $GITHUB_WORKSPACE
-          pip install --upgrade --upgrade-strategy eager pip
-          pip install --upgrade --upgrade-strategy eager wheel
-          pip install --upgrade --upgrade-strategy eager -r requirements.txt
-          pip install --upgrade --upgrade-strategy eager -e .[train,test]
+          sudo -H pip install --upgrade --upgrade-strategy eager pip
+          sudo -H pip install --upgrade --upgrade-strategy eager wheel
+          sudo -H pip install --upgrade --upgrade-strategy eager -r requirements.txt
+          sudo -H pip install --upgrade --upgrade-strategy eager -e .[train,test]
       - name: Run smoke tests
         run: |
           cd $GITHUB_WORKSPACE
