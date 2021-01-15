@@ -517,7 +517,6 @@ class MapZone(Zone):
             lane_shape = geometry_collection
             if not isinstance(lane_shape, GeometryCollection):
                 return lane_shape
-
             # For simplicty, we only deal w/ the == 1 or 2 case
             if len(lane_shape) not in {1, 2}:
                 return None
@@ -527,17 +526,23 @@ class MapZone(Zone):
 
             # We assume that there are only two splited shapes to choose from
             keep_index = 0
+            print(f"After keep_index = 0")
+            print(lane_shape[1])
+            print(f"This method causes the error: {lane_shape[1].minimum_rotated_rectangle.contains(expected_point)}")
             if lane_shape[1].minimum_rotated_rectangle.contains(expected_point):
+                print("Entered")
                 # 0 is the discard piece, keep the other
                 keep_index = 1
-
+            print("After lane_shape[1].minimum_rotated_rectangle.contains(expected_point):")
             lane_shape = lane_shape[keep_index]
-
+            print("After lane_shape = lane_shape[keep_index]")
             return lane_shape
 
         lane_shapes = []
         edge_id, lane_idx, offset = self.start
         edge = road_network.edge_by_id(edge_id)
+        print("After edge = road_network.edge_by_id(edge_id)")
+
         buffer_from_ends = 1e-6
         for lane_idx in range(lane_idx, lane_idx + self.n_lanes):
             lane = edge.getLanes()[lane_idx]
@@ -552,15 +557,18 @@ class MapZone(Zone):
                 geom_length = lane_length
 
             assert geom_length > 0  # Geom length is negative
-
+            print("After assert geom_length > 0")
             lane_shape = SumoRoadNetwork._buffered_lane_or_edge(
                 lane, width=lane.getWidth() + 0.3
             )
+            print("After SumoRoadNetwork._buffered_lane_or_edge")
 
             lane_offset = resolve_offset(offset, geom_length, lane_length)
+            print("After lane_offset = resolve_offset(offset, geom_length, lane_length)")
             lane_offset += buffer_from_ends
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
+            print("After lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)")
 
             min_cut = min(lane_offset, lane_length)
             # Second cut takes into account shortening of geometry by `min_cut`.
@@ -571,18 +579,23 @@ class MapZone(Zone):
                     lane, lane_offset + geom_length * 0.5
                 )
             )
+            print("After Midepoint = Point(")
 
             lane_shape = road_network.split_lane_shape_at_offset(
                 lane_shape, lane, min_cut
             )
+            print("After lane_shape = road_network.split_lane_shape_at_offset(")
             lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
+            print("After pick_remaining_shape_after_split 1")
             if lane_shape is None:
                 continue
 
             lane_shape = road_network.split_lane_shape_at_offset(
                 lane_shape, lane, max_cut,
             )
+            print("After lane_shape = road_network.split_lane_shape_at_offset(")
             lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
+            print("After pick_remaining_shape_after_split 2")
             if lane_shape is None:
                 continue
 

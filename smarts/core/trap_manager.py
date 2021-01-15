@@ -68,9 +68,13 @@ class TrapManager:
     """Facilitates ego hijacking of social vehicles"""
 
     def __init__(self, scenario):
+        print("Enterred TrapManager")
         self._log = logging.getLogger(self.__class__.__name__)
+        print("After TrapManager self._log")
         self._traps: Dict[Trap] = defaultdict(None)
+        print("After TrapManager self._traps")
         self.init_traps(scenario.road_network, scenario.waypoints, scenario.missions)
+        print("After TrapManager self.init_traps")
 
     def init_traps(self, road_network, waypoints, missions):
         self._traps.clear()
@@ -79,20 +83,23 @@ class TrapManager:
             mission_planner = MissionPlanner(waypoints, road_network)
             if mission is None:
                 mission = mission_planner.random_endless_mission()
-
+            print("After MissionPlanner")
             if not mission.entry_tactic:
                 mission = replace(mission, entry_tactic=default_entry_tactic())
-
+            print("After Mission replace")
             if (
                 not isinstance(mission.entry_tactic, TrapEntryTactic)
                 and mission.entry_tactic
-            ):
+            ):  
+                print("continued")
                 continue
 
             mission = mission_planner.plan(mission)
-
+            print("after mission_planner plan")
             trap = self._mission2trap(road_network, mission)
+            print("after _mission2trap")
             self.add_trap_for_agent_id(agent_id, trap)
+            print("after add_trap_for_agent_id")
 
     def add_trap_for_agent_id(self, agent_id, trap: Trap):
         self._traps[agent_id] = trap
@@ -172,8 +179,8 @@ class TrapManager:
         # Use fed in trapped vehicles.
         agents_given_vehicle = set()
         used_traps = []
-        print(f"agent manager: {sim._agent_manager.pending_agent_ids}")
-        print(f"self.traps: {self._traps.keys()}")
+        # print(f"agent manager: {sim._agent_manager.pending_agent_ids}")
+        # print(f"self.traps: {self._traps.keys()}")
         for agent_id in sim._agent_manager.pending_agent_ids:
             if agent_id not in self._traps:
                 continue
@@ -303,44 +310,62 @@ class TrapManager:
         zone = mission.entry_tactic.zone
         default_entry_speed = mission.entry_tactic.default_entry_speed
         n_lane = None
-
+        print("after n_lane = None")
         if default_entry_speed is None:
             n_lane = n_lane or road_network.nearest_lane(mission.start.position)
+            print("after n_lane = n_lane or road_network")
             default_entry_speed = n_lane.getSpeed()
+            print("after default_entry_speed")
 
         if zone is None:
             n_lane = n_lane or road_network.nearest_lane(mission.start.position)
+            print("after n_lane = n_lane or road_network.nearest_lane(mission.start.position)")
             lane_speed = n_lane.getSpeed()
+            print("after lane_speed = n_lane.getSpeed()")
+
             start_edge_id = n_lane.getEdge().getID()
+            print("after start_edge_id")
             start_lane = n_lane.getIndex()
+            print("after start_lane = n_lane.getIndex()")
             lane_length = n_lane.getLength()
+            print("after lane_length = n_lane.getLength()")
             start_pos = mission.start.position
+            print("after start_pos = mission.start.position")
             vehicle_offset_into_lane = road_network.offset_into_lane(
                 n_lane, (start_pos[0], start_pos[1])
             )
+            print("after vehicle_offset_into_lane = road_network.offset_into_lane(")
             vehicle_offset_into_lane = clip(
                 vehicle_offset_into_lane, 1e-6, lane_length - 1e-6
             )
+            print("vehicle_offset_into_lane = clip(")
 
             drive_distance = lane_speed * default_zone_dist
             # sets trap zone area here
             start_offset_in_lane = vehicle_offset_into_lane - drive_distance
             start_offset_in_lane = clip(start_offset_in_lane, 1e-6, lane_length - 1e-6)
+            print("after start_offset_in_lane = clip(start_offset_in_lane, 1e-6, lane_length - 1e-6)")
             length = max(1e-6, vehicle_offset_into_lane - start_offset_in_lane)
+            print("after length = max(1e-6, vehicle_offset_into_lane - start_offset_in_lane)")
 
             zone = MapZone(
                 start=(start_edge_id, start_lane, start_offset_in_lane),
                 length=length,
                 n_lanes=1,
             )
+            print("after zone = MapZone")
 
+        print("Before initialize Trap")
+        geometry_arg = zone.to_geometry(road_network)
+        print("After geometry_arg")
         trap = Trap(
-            geometry=zone.to_geometry(road_network),
+            geometry=geometry_arg,
             remaining_time_to_activation=activation_delay,
             patience=patience,
             mission=mission,
             exclusion_prefixes=mission.entry_tactic.exclusion_prefixes,
             default_entry_speed=default_entry_speed,
         )
+        print("after Trap initiliazation")
 
         return trap

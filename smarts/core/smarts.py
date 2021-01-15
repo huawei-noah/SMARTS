@@ -315,14 +315,12 @@ class SMARTS(ShowBase):
 
         # Tell history provide to ignore vehicles if we have assigned mission to them
         self._traffic_history_provider.set_replaced_ids(scenario.missions.keys())
-
         self.taskMgr.clock.reset()
         self._elapsed_sim_time = 0
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
         observations, _, _, _ = self._agent_manager.observe(self)
         observations_for_ego = self._agent_manager.reset_agents(observations)
-
         # Visualization
         self._try_emit_visdom_obs(observations)
 
@@ -331,7 +329,6 @@ class SMARTS(ShowBase):
                 observations_for_ego, _, _, _ = self.step({})
 
         self._reset_providers()
-
         return observations_for_ego
 
     def switch_ego_agent(self, agent_interfaces, zoo_addrs=None):
@@ -343,8 +340,9 @@ class SMARTS(ShowBase):
         self._scenario = scenario
 
         self._root_np = NodePath("sim")
+        print("after _root_np")
         self._root_np.reparentTo(self.render)
-
+        print("after reparentTo")
         with pkg_resources.path(
             glsl, "unlit_shader.vert"
         ) as vshader_path, pkg_resources.path(
@@ -355,19 +353,32 @@ class SMARTS(ShowBase):
                 vertex=str(vshader_path.absolute()),
                 fragment=str(fshader_path.absolute()),
             )
+            print("after fshader_path")
         self._root_np.setShader(unlit_shader)
+        print("after setShader")
         self._setup_road_network()
+        print("after _setup_road_network")
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
+        print("after _vehicles_np")
 
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_network)
+        print("after _bubble_manager")
         self._trap_manager = TrapManager(scenario)
+        print("after _trap_manager")
 
         self._setup_bullet_client(self._bullet_client)
+        print("after _setup_bullet_client")
+
         provider_state = self._setup_providers(self._scenario)
         self._agent_manager.setup_agents(self)
+        print("after provider_state")
 
+        self._agent_manager.setup_agents(self)
+        print("after setup_agents")
         self._harmonize_providers(provider_state)
+        print("after _harmonize_providers")
         self._last_provider_state = provider_state
+        print("after _last_provider_state")
 
         self._is_setup = True
 
