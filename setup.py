@@ -55,9 +55,9 @@ setup(
         "pytest-xdist",
         "pytest-cov",
         # The following are for /envision
+        "cloudpickle<1.4.0",
         "tornado",
         "websocket-client",
-        "cloudpickle<1.4.0",
         # The following are for the /smarts/algorithms
         "matplotlib",
         "scikit-image",
