@@ -26,7 +26,6 @@ setup(
         "panda3d-gltf",
         "numpy",
         "shapely",
-        "trimesh",  # Used for writing .glb files
         "rich",
         "rtree",  # Used by sumolib
         "filelock",
@@ -39,6 +38,7 @@ setup(
         "pybullet",
         "sklearn",  # KDTree from sklearn is used by waypoints
         "tableprint",
+        "trimesh",  # Used for writing .glb files
         "pynput",  # Used by HumanKeyboardAgent
         "sh",
         "supervisor",

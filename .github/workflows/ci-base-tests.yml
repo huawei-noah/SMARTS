@@ -32,7 +32,9 @@ jobs:
         id: cache-pip
         uses: actions/cache@v2
         with:
-          path: .venv, /usr/local/bin/scl
+          path: 
+            .venv
+            /usr/local/bin/scl
           # Check if there is a cache hit for the corresponding requirements.txt and setup.py files
           key: pip-${{hashFiles('requirements.txt')}}-${{hashFiles('setup.py')}}
       - name: Install requirements.txt
