@@ -21,7 +21,7 @@ from itertools import cycle
 from typing import Set
 
 from .controllers import ActionSpaceType
-from .coordinates import Pose, Heading
+from .coordinates import BoundingBox, Pose, Heading
 from .provider import ProviderState
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
@@ -34,26 +34,19 @@ class TrafficHistoryProvider:
 
     def setup(self, scenario) -> ProviderState:
         self._is_setup = True
-        self._traffic_histories = scenario.discover_traffic_histories() or [{}]
-        self._current_traffic_history = next(self.histories)
+        self._current_traffic_history = scenario.traffic_history
         return ProviderState()
-
-    @property
-    def histories(self):
-        for history in cycle(self._traffic_histories):
-            yield history
 
     def set_replaced_ids(self, vehicle_ids: list):
         self.replaced_vehicle_ids.update(vehicle_ids)
 
     def reset(self):
-        self._current_traffic_history = next(self.histories)
+        pass
 
     def teardown(self):
         self._is_setup = False
         self._frame = None
         self._current_traffic_history = None
-        self._traffic_histories = None
         self.replaced_vehicle_ids = set()
 
     @property

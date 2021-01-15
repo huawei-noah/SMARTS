@@ -19,23 +19,57 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import itertools
 import pytest
+from unittest.mock import MagicMock
 
 from smarts.core.scenario import Scenario
-from smarts.core.utils.id import SocialAgentId
-from smarts.sstudio import gen_social_agent_missions, gen_missions
+from smarts.core.traffic_history_provider import TrafficHistoryProvider
+from smarts.sstudio import gen_social_agent_missions
 from smarts.sstudio.types import Mission, Route, SocialAgentActor
 from helpers.scenario import temp_scenario
 
 AGENT_ID = "Agent-007"
 
+traffic_history_1 = {
+    "0.1": {
+        "1": {
+            "vehicle_id": "1",
+            "vehicle_type": "car",
+            "position": [1068.124, 959.455, 0],
+            "speed": 5.128410474991252,
+            "heading": -4.675796326794897,
+            "vehicle_length": 4.22,
+            "vehicle_width": 1.72,
+        },
+        "2": {
+            "vehicle_id": "2",
+            "vehicle_type": "car",
+            "position": [1041.407, 956.583, 0],
+            "speed": 2.9067860258367832,
+            "heading": 1.4512036732051032,
+            "vehicle_length": 4.16,
+            "vehicle_width": 1.78,
+        },
+    }
+}
+
+traffic_history_2 = {
+    "0.2": {
+        "13": {
+            "vehicle_id": "13",
+            "vehicle_type": "car",
+            "position": [1058.951, 950.98, 0],
+            "speed": 8.8529150566353,
+            "heading": 1.5092036732051035,
+            "vehicle_length": 4.4,
+            "vehicle_width": 1.92,
+        },
+    }
+}
+
 
 @pytest.fixture
-def scenario_root():
-    # TODO: We may want to consider referencing to concrete scenarios in our tests
-    #       rather than generating them. The benefit of generting however is that
-    #       we can change the test criteria and scenario code in unison.
+def create_scenario():
     with temp_scenario(name="cycles", map="maps/6lane.net.xml") as scenario_root:
         actors = [
             SocialAgentActor(
@@ -43,7 +77,7 @@ def scenario_root():
                 agent_locator="zoo.policies:non-interactive-agent-v0",
                 policy_kwargs={"speed": speed},
             )
-            for speed in [10, 30, 80]
+            for speed in [10, 30]
         ]
 
         for name, (edge_start, edge_end) in [
@@ -55,45 +89,38 @@ def scenario_root():
             route = Route(
                 begin=("edge-north-NS", 1, 0), end=("edge-south-NS", 1, "max")
             )
-            missions = [Mission(route=route)] * 2  # double up
+            missions = [Mission(route=route)] * 2
             gen_social_agent_missions(
                 scenario_root, social_agent_actor=actors, name=name, missions=missions,
             )
 
-        gen_missions(
-            scenario_root,
-            missions=[
-                Mission(
-                    Route(begin=("edge-west-WE", 0, 0), end=("edge-east-WE", 0, "max"))
-                )
-            ],
-        )
         yield scenario_root
 
 
-def test_scenario_variations_of_social_agents(scenario_root):
+def test_mutiple_traffic_data(create_scenario):
+    Scenario.discover_traffic_histories = MagicMock(
+        return_value=[traffic_history_1, traffic_history_2]
+    )
     iterator = Scenario.variations_for_all_scenario_roots(
-        [str(scenario_root)], [AGENT_ID]
+        [str(create_scenario)], [AGENT_ID], shuffle_scenarios=False
     )
     scenarios = list(iterator)
 
-    assert len(scenarios) == 6, "3 social agents x 2 missions each "
-    for s in scenarios:
-        assert len(s.social_agents) == 4, "4 social agents"
-        assert len(s.missions) == 5, "4 missions for social agents + 1 for ego"
+    assert len(scenarios) == 8  # 2 social agents x 2 missions x 2 histories
 
-    # Ensure correct social agents are being spawned
-    all_social_agent_ids = set()
-    for s in scenarios:
-        all_social_agent_ids |= set(s.social_agents.keys())
+    traffic_history_provider = TrafficHistoryProvider()
 
-    groups = ["group-1", "group-2", "group-3", "group-4"]
-    speeds = [10, 30, 80]
-    expected_social_agent_ids = {
-        SocialAgentId.new(f"non-interactive-agent-{speed}-v0", group=group)
-        for group, speed in itertools.product(groups, speeds)
-    }
+    use_first_history = True
+    for scenario in scenarios:
+        if use_first_history:
+            assert scenario.traffic_history is traffic_history_1
+        else:
+            assert scenario.traffic_history is traffic_history_2
 
-    assert (
-        len(all_social_agent_ids - expected_social_agent_ids) == 0
-    ), "All the correct social agent IDs were used"
+        traffic_history_provider.setup(scenario)
+        assert (
+            traffic_history_provider._current_traffic_history
+            == scenario.traffic_history
+        )
+
+        use_first_history = not use_first_history

@@ -95,7 +95,7 @@ class SMARTS(ShowBase):
             raise Exception(
                 "SMARTS: Error in initializing framework for opening graphical display and creating scene graph. "
                 "A typical reason is display not found. Try running with different configurations of "
-                "`export Display=` using `:0`, `:1`... . If this does not work please consult "
+                "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "
                 "the documentation."
             ) from e
 
@@ -181,6 +181,13 @@ class SMARTS(ShowBase):
             self.destroy()
             raise  # re-raise
 
+    def _check_if_acting_on_active_agents(self, agent_actions):
+        for agent_id in agent_actions.keys():
+            if agent_id not in self._agent_manager.ego_agent_ids:
+                self._log.warning(
+                    f"Attempted to perform actions on non-existing agent, {agent_id} "
+                )
+
     def _step(self, agent_actions):
         """Steps through the simulation while applying the given agent actions.
         Returns the observations, rewards, and done signals.
@@ -210,6 +217,7 @@ class SMARTS(ShowBase):
 
         # 2. Step all providers and harmonize state
         provider_state = self._step_providers(all_agent_actions, dt)
+        self._check_if_acting_on_active_agents(agent_actions)
 
         # 3. Step bubble manager and trap manager
         self._vehicle_index.sync()
