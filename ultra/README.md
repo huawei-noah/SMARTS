@@ -2,7 +2,6 @@
 [![pipeline status](https://gitlab.smartsai.xyz/smarts/ULTRA/badges/master/pipeline.svg)](https://gitlab.smartsai.xyz/smarts/ULTRA/-/commits/master)
 
 # ULTRA
-
 Unprotected Left Turn using Reinforcement-learning Agents
 ---
 Ultra provides a gym-based environment using SMARTS for tackling intersection navigation and more specifically unprotected left turn.
@@ -15,12 +14,11 @@ Here is the summary of key features:
  - train/test custom RL algorithms against benchmark results
 
 ### Benchmark
-
 Read the [documentation](https://gitlab.smartsai.xyz/smarts/ULTRA/-/wikis/Benchmark)
 
-
-ignore this step if you already have smarts environment
 ### Setup
+Ignore this step if you already have the SMARTS environment installed.
+#### Setup Natively
   ```sh
   python3.7 -m venv .smarts
   # 1-activate virtual environment to install all dependencies
@@ -31,61 +29,7 @@ ignore this step if you already have smarts environment
   pip install -e .
   ```
 
-### Generate scenarios
-
-Supported tasks are listed under `ultra/scenarios/`.
-
-- For first time generating the maps:
-  ```sh
-  $ scl scenario build-all ultra/scenarios/pool
-  ```
-  > Maps only need to be compiled once and you don't need to run them again unless they are modifed
-- Generate scenarios:
-  ``` sh
-  # task 1 generate 1000 sscenarios (800 train, 200 test) and supports 2 levels of difficulties for more info refer to our documentaion
-  $ python ultra/scenarios/interface.py generate --task 1 --level easy
-  ```
-  > After running the command above, train and test scenarios are added under the task directory
-
-### Run envision in the background
-if you are running the train and evalaution in headless mode, ignore this step
-```sh
-$ ./ultra/env/envision_base.sh
-```
-envision runs as a background process, you can view the visualization on `localhost:8081/`
-
-### Train and Evalutaion
-We currently support PPO/SAC/TD3/DQN policies, for adding you own policy please follow the guidelines in [documentation](https://gitlab.smartsai.xyz/smarts/ULTRA/-/wikis/Benchmark)
-- Train
-  Training runs the policy with default configuration:
-  `
-  {train episodes: 1000000, maxsteps: 1200, timestep: 0.1 sec, evaluation rate: 10000, evaluation episodes: 200}
-  `
-  - For each experiment a folder with timestamp is added automatically under `logs/` and it saves tensorboad log, models and pkls
-  - For every 10000 observation, evaluation is called automatically and policy is saved under `logs/your-expierment-name/models/`
-  ```sh
-  $ python ultra/train.py --task 1 --level easy 
-  # other arguments example: --episodes 20000 --eval-rate 500 --eval-episodes 200 --timestep 1 --headless
-  ```
-### Run Evaluation Separately
-After training your agent, your models should be saved under `logs/your-experiment-name/models/` and you can re-run the evaluation:
-  ```sh
-  $ python ultra/evaluate.py --task 1 --level easy --models logs/your-expierment-name/models
-  # other arguments --episodes 20000 --timestep 1 --headless
-  ```
-
-### Server
-- Server name, address, and destination path `${DST}` for storage
-
-  |Server|Address|${DST}|
-  |:----|:----|:----|
-  |CX3|10.193.241.233|/data/research|
-  |CX4|10.193.241.234|/data/research|
-  |Compute-4|10.193.192.17|/data/$USER|
-  |Compute-11|10.193.192.113|/data/$USER|
-  |GX3|10.193.241.239|/data/research|  
-
-### Docker
+#### Setup with Docker
 - SMARTS is pre-installed and ULTRA source files are copied automatically into Docker image.
 - Build a docker image alone
   ```sh
@@ -122,3 +66,19 @@ After training your agent, your models should be saved under `logs/your-experime
   # Exit the interactive docker container
   $ ctrl-p ctrl-q
   ```
+
+
+### Server
+- Server name, address, and destination path `${DST}` for storage
+
+  |Server|Address|${DST}|
+  |:----|:----|:----|
+  |CX3|10.193.241.233|/data/research|
+  |CX4|10.193.241.234|/data/research|
+  |Compute-4|10.193.192.17|/data/$USER|
+  |Compute-11|10.193.192.113|/data/$USER|
+  |GX3|10.193.241.239|/data/research|  
+
+### Get Started with ULTRA
+- [Start training a baseline agent](docs/getting_started.md)
+- [Create a custom agent](docs/custom_agent.md)
