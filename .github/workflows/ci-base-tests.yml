@@ -3,7 +3,8 @@ name: SMARTS CI
 on: [push]
 
 env:
-  python_dir: /usr/local/lib/python3.7
+  python_dir: /usr/local/lib/python3.7 
+  scl_exec: /usr/local/bin/scl
 jobs:
   test:
     runs-on: ubuntu-18.04
@@ -34,7 +35,9 @@ jobs:
         id: cache-pip
         uses: actions/cache@v2
         with:
-          path: ${{ env.python_dir }}
+          path: |
+            ${{ env.python_dir }}
+            ${{ env.scl_exec }}
           # Check if there is a cache hit for the corresponding requirements.txt and setup.py files
           key: ${{ env.python_dir }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
       - name: Install dependencies
