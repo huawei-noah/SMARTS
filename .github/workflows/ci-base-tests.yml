@@ -3,8 +3,9 @@ name: SMARTS CI
 on: [push]
 
 env:
-  python_dir: /usr/local/lib/python3.7 
-  scl_exec: /usr/local/bin/scl
+  # python_dir: /usr/local/lib/python3.7 
+  # scl_exec: /usr/local/bin/scl
+  pip_cache: ~/.cache/pip
 jobs:
   test:
     runs-on: ubuntu-18.04
@@ -36,12 +37,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            ${{ env.python_dir }}
-            ${{ env.scl_exec }}
+            ${{ env.pip_cache }}
           # Check if there is a cache hit for the corresponding requirements.txt and setup.py files
-          key: ${{ env.python_dir }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
+          key: ${{ env.pip_cache }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
       - name: Install dependencies
-        if: steps.cache-pip.outputs.cache-hit != 'true'
+        # if: steps.cache-pip.outputs.cache-hit != 'true'
         run: |
           cd $GITHUB_WORKSPACE
           pip install --upgrade --upgrade-strategy eager pip
@@ -62,5 +62,3 @@ jobs:
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_learning.py \
             --ignore=./smarts/env/tests/test_benchmark.py
-
-            
