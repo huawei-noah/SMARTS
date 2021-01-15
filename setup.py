@@ -25,7 +25,6 @@ setup(
         "panda3d",
         "panda3d-gltf",
         "numpy",
-        "shapely",
         "rich",
         "rtree",  # Used by sumolib
         "filelock",
@@ -41,6 +40,7 @@ setup(
         "trimesh",  # Used for writing .glb files
         "pynput",  # Used by HumanKeyboardAgent
         "sh",
+        "shapely",
         "supervisor",
         # HACK: There is a bug where if we only install the base ray dependency here
         #       and ray[rllib] under [train] it  prevents rllib from getting installed.
