@@ -34,18 +34,23 @@ jobs:
             -logfile ./xdummy.log \
             -config /etc/X11/xorg.conf :1 &
       - name: Cache pip
+        id: cache-pip
         uses: actions/cache@v2
         with:
           path: .venv
           # Check if there is a cache hit for the corresponding requirements.txt and setup.py files
           key: pip-${{hashFiles('requirements.txt')}}-${{hashFiles('setup.py')}}
-      - name: Install dependencies
+      - name: Install requirements.txt
+        if: steps.cache-pip.outputs.cache-hit != 'true'
         run: |
           python3.7 -m venv .venv
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -r requirements.txt
+      - name: Install setup.py
+        run: |
+          . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager -e .[train,test]
       - name: Run smoke tests
         run: |
