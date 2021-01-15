@@ -46,10 +46,10 @@ jobs:
           cd $GITHUB_WORKSPACE
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
-          pip install --upgrade --upgrade-strategy eager pip
-          pip install --upgrade --upgrade-strategy eager wheel
-          pip install --upgrade --upgrade-strategy eager -r requirements.txt
-          pip install --upgrade --upgrade-strategy eager -e .[train,test]
+          pip install --user --upgrade --upgrade-strategy eager pip
+          pip install --user --upgrade --upgrade-strategy eager wheel
+          pip install --user --upgrade --upgrade-strategy eager -r requirements.txt
+          pip install --user --upgrade --upgrade-strategy eager -e .[train,test]
       - name: Run smoke tests
         run: |
           cd $GITHUB_WORKSPACE
