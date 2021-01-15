@@ -5,7 +5,7 @@ on: [push]
 env:
   # python_dir: /usr/local/lib/python3.7 
   # scl_exec: /usr/local/bin/scl
-  # pip_cache: ~/.cache/pip
+  # pip_cache: ~/.cache/pip 
   venv_dir: .venv
 jobs:
   test:
