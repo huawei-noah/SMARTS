@@ -199,6 +199,6 @@ def get_manager_channel_stub(addr):
     except grpc.FutureTimeoutError:
         raise RemoteAgentException(
             "Timeout in connecting to remote zoo manager."
-        ) from e
+        )
     stub = manager_pb2_grpc.ManagerStub(channel)
     return channel, stub
