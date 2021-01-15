@@ -5,7 +5,8 @@ on: [push]
 env:
   # python_dir: /usr/local/lib/python3.7 
   # scl_exec: /usr/local/bin/scl
-  pip_cache: ~/.cache/pip
+  # pip_cache: ~/.cache/pip
+  venv_dir: .venv
 jobs:
   test:
     runs-on: ubuntu-18.04
@@ -36,20 +37,23 @@ jobs:
         id: cache-pip
         uses: actions/cache@v2
         with:
-          path: ${{ env.pip_cache }}
+          path: ${{ env.venv_dir }}
           # Check if there is a cache hit for the corresponding requirements.txt and setup.py files
           key: pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         # if: steps.cache-pip.outputs.cache-hit != 'true'
         run: |
           cd $GITHUB_WORKSPACE
-          sudo -H pip install --upgrade --upgrade-strategy eager pip
-          sudo -H pip install --upgrade --upgrade-strategy eager wheel
-          sudo -H pip install --upgrade --upgrade-strategy eager -r requirements.txt
-          sudo -H pip install --upgrade --upgrade-strategy eager -e .[train,test]
+          python3.7 -m venv ${{venv_dir}}
+          . ${{venv_dir}}/bin/activate
+          pip install --upgrade --upgrade-strategy eager pip
+          pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade --upgrade-strategy eager -r requirements.txt
+          pip install --upgrade --upgrade-strategy eager -e .[train,test]
       - name: Run smoke tests
         run: |
           cd $GITHUB_WORKSPACE
+          . ${{venv_dir}}/bin/activate
           make build-all-scenarios
           PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
