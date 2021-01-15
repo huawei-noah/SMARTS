@@ -249,9 +249,12 @@ class TrafficGenerator:
                 )
             )
 
-    def resolve_edge_length(self, edge_id, lane_id):
+    def _cache_road_network(self):
         if not self._road_network:
             self._road_network = SumoRoadNetwork.from_file(self._road_network_path)
+
+    def resolve_edge_length(self, edge_id, lane_id):
+        self._cache_road_network()
         lane = self._road_network.edge_by_id(edge_id).getLanes()[lane_id]
         return lane.getLength()
 
@@ -266,6 +269,11 @@ class TrafficGenerator:
             )
 
         return next(self._random_route_generator)
+
+    @property
+    def road_network(self):
+        self._cache_road_network()
+        return self._road_network
 
     def _resolve_log_dir(self, log_dir):
         if log_dir is None:

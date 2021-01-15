@@ -1,13 +1,9 @@
-import sys
-import os
 import argparse
 
 from zoo.evaluation.metrics.kinematics.kinematics_evaluation import KinematicsEvaluation
 from zoo.evaluation.metrics.diversity.diversity_evaluation import DiversityEvaluation
 from zoo.evaluation.metrics.collision.collision_data_parse import CollisionEvaluation
 from zoo.evaluation.metrics.offroad.offroad_data_parse import OffroadEvaluation
-from zoo.evaluation.metrics.evaluation_report import EvaluationReport
-from zoo.evaluation.metrics.rank_report import RankReport
 
 
 def run_all_evaluation(
@@ -33,13 +29,6 @@ def run_all_evaluation(
     for evaluation_type in evaluation_type_list:
         evaluation_type_object = evaluation_items[evaluation_type]
         evaluation_type_object.run_evaluation()
-    scenarios_name_list = sorted(os.listdir(scenario_path))
-    evaluation_report_object = EvaluationReport(
-        scenarios_name_list, agent_group, json_file_path
-    )
-    evaluation_report_object.result_output()
-    rank_report_object = RankReport(agent_group, json_file_path)
-    rank_report_object.result_output()
 
 
 if __name__ == "__main__":

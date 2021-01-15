@@ -960,7 +960,7 @@ class NeighborhoodVehiclesSensor(Sensor):
 
 
 class WaypointsSensor(Sensor):
-    def __init__(self, sim, vehicle, mission_planner, lookahead=50):
+    def __init__(self, sim, vehicle, mission_planner: MissionPlanner, lookahead=50):
         self._sim = sim
         self._vehicle = vehicle
         self._mission_planner = mission_planner
@@ -968,6 +968,13 @@ class WaypointsSensor(Sensor):
 
     def __call__(self):
         waypoints_with_task = None
+
+        @lru_cache(1)
+        def lazy_calculate_waypoints():
+            return self._mission_planner.waypoint_paths_at(
+                sim=self._sim, pose=self._vehicle.pose, lookahead=self._lookahead,
+            )
+
         if self._mission_planner.mission.task is not None:
             if isinstance(self._mission_planner.mission.task, UTurn):
                 waypoints_with_task = self._mission_planner.uturn_waypoints(
@@ -975,18 +982,16 @@ class WaypointsSensor(Sensor):
                 )
             elif isinstance(self._mission_planner.mission.task, CutIn):
                 waypoints_with_task = self._mission_planner.cut_in_waypoints(
-                    self._sim, self._vehicle.pose, self._vehicle
+                    self._sim,
+                    self._vehicle.pose,
+                    self._vehicle,
+                    lazy_calculate_waypoints,
                 )
 
         if waypoints_with_task:
             return waypoints_with_task
         else:
-            return self._mission_planner.waypoint_paths_at(
-                sim=self._sim,
-                pose=self._vehicle.pose,
-                lookahead=self._lookahead,
-                vehicle=self._vehicle,
-            )
+            return lazy_calculate_waypoints()
 
     def teardown(self):
         pass
@@ -1014,7 +1019,7 @@ class RoadWaypointsSensor(Sensor):
 
     def route_waypoints(self):
         return self._mission_planner.waypoint_paths_at(
-            sim=self._sim, pose=self._vehicle.pose, lookahead=50, vehicle=self._vehicle,
+            sim=self._sim, pose=self._vehicle.pose, lookahead=50,
         )
 
     def paths_for_lane(self, lane, overflow_offset=None):

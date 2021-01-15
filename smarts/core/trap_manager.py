@@ -89,7 +89,7 @@ class TrapManager:
             ):
                 continue
 
-            mission_planner.plan(mission)
+            mission = mission_planner.plan(mission)
 
             trap = self._mission2trap(road_network, mission)
             self.add_trap_for_agent_id(agent_id, trap)

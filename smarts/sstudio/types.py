@@ -23,7 +23,7 @@ import collections.abc as collections_abc
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-from shapely.geometry import GeometryCollection, MultiPolygon, Polygon
+from shapely.geometry import GeometryCollection, MultiPolygon, Polygon, Point
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
@@ -307,11 +307,29 @@ class Flow:
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
 
+@dataclass(frozen=True)
+class JunctionEdgeIDResolver:
+    """ A utility for resolving a junction connection edge """
+
+    start_edge_id: str
+    start_lane_index: int
+    end_edge_id: str
+    end_lane_index: int
+
+    def to_edge(self, sumo_road_network: SumoRoadNetwork):
+        return sumo_road_network.get_edge_in_junction(
+            self.start_edge_id,
+            self.start_lane_index,
+            self.end_edge_id,
+            self.end_lane_index,
+        )
+
+
 @dataclass
 class Via:
     """A point on an edge that an actor must pass through"""
 
-    edge_id: str
+    edge_id: Union[str, JunctionEdgeIDResolver]
     """The edge this via is on"""
     lane_index: int
     """The lane this via sits on"""
@@ -367,6 +385,9 @@ class CutIn:
     trigger_radius: int = 30
     """This task will be triggered if any vehicles within this radius"""
 
+    complete_on_edge_id: Union[str, JunctionEdgeIDResolver] = None
+    """The edge this task will be completed on"""
+
     @property
     def name(self):
         return "cut_in"
@@ -390,7 +411,7 @@ class Mission:
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
 
-    task: Tuple[UTurn, CutIn] = None
+    task: Tuple[CutIn, UTurn] = None
     """A task for the actor to accomplish."""
 
 
@@ -492,7 +513,7 @@ class MapZone(Zone):
             else:
                 return float(offset)
 
-        def pick_remaining_shape_after_split(geometry_collection, length, lane):
+        def pick_remaining_shape_after_split(geometry_collection, expected_point, lane):
             lane_shape = geometry_collection
             if not isinstance(lane_shape, GeometryCollection):
                 return lane_shape
@@ -504,13 +525,12 @@ class MapZone(Zone):
             if len(lane_shape) == 1:
                 return lane_shape[0]
 
-            expected_bbox_area = lane.getWidth() * length
+            # We assume that there are only two splited shapes to choose from
             keep_index = 0
-            if (lane_shape[0].minimum_rotated_rectangle.area - expected_bbox_area) < (
-                lane_shape[1].minimum_rotated_rectangle.area - expected_bbox_area
-            ):
+            if lane_shape[1].minimum_rotated_rectangle.contains(expected_point):
                 # 0 is the discard piece, keep the other
                 keep_index = 1
+
             lane_shape = lane_shape[keep_index]
 
             return lane_shape
@@ -544,19 +564,25 @@ class MapZone(Zone):
 
             min_cut = min(lane_offset, lane_length)
             # Second cut takes into account shortening of geometry by `min_cut`.
-            max_cut = min(min_cut + geom_length, lane_length - min_cut)
+            max_cut = min(min_cut + geom_length, lane_length)
+
+            midpoint = Point(
+                road_network.world_coord_from_offset(
+                    lane, lane_offset + geom_length * 0.5
+                )
+            )
 
             lane_shape = road_network.split_lane_shape_at_offset(
                 lane_shape, lane, min_cut
             )
-            lane_shape = pick_remaining_shape_after_split(lane_shape, min_cut, lane)
+            lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
             if lane_shape is None:
                 continue
 
             lane_shape = road_network.split_lane_shape_at_offset(
                 lane_shape, lane, max_cut,
             )
-            lane_shape = pick_remaining_shape_after_split(lane_shape, max_cut, lane)
+            lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
             if lane_shape is None:
                 continue
 
