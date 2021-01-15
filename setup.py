@@ -26,11 +26,11 @@ setup(
         "panda3d-gltf",
         "numpy",
         "shapely",
-        "networkx",
         "trimesh",  # Used for writing .glb files
         "rtree",  # Used by sumolib
-        "lz4",
         "filelock",
+        "lz4",
+        "networkx",
         "pandas",
         "psutil",
         "opencv-python",
