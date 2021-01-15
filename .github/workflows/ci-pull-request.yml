@@ -30,7 +30,7 @@ jobs:
           pip install wheel
           pip install -r requirements.txt
           pip install -e .[train]
-      - name: SMARTS Benchmark
+      - name: SMARTS benchmark
         run: |
           cd $GITHUB_WORKSPACE
           . "${venv_dir}/bin/activate"
