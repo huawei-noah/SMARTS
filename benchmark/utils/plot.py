@@ -12,8 +12,6 @@ def radar_plots(values, labels, features, title):
     values = np.concatenate((values.T, [values.T[0]])).T
     angles = np.concatenate((angles, [angles[0]]))
 
-    print(">>>>>>>>>>>> shape of values and angles:", values.shape, angles.shape)
-
     fig = plt.figure()
     ax = fig.add_subplot(111, polar=True)
 

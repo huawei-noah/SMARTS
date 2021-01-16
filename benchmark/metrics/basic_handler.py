@@ -30,7 +30,7 @@ from collections import defaultdict
 from scipy.spatial import distance
 
 
-from benchmark.metrics.metrics import BehaviorMetric
+from benchmark.metrics.basic_metrics import BehaviorMetric
 from benchmark.metrics import MetricHandler
 from benchmark.utils import plot, episode_log, format
 from benchmark.common import CalObs

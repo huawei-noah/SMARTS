@@ -22,8 +22,6 @@ import argparse
 import ray
 import os
 
-import tensorflow.python.util.deprecation as deprecation
-
 from pathlib import Path
 from ray import tune
 
@@ -34,7 +32,6 @@ from benchmark.common import SimpleCallbacks
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 RUN_NAME = Path(__file__).stem
 EXPERIMENT_NAME = "{scenario}-{n_agent}"
-deprecation._PRINT_DEPRECATION_WARNINGS = False
 
 
 def main(

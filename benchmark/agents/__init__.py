@@ -34,7 +34,7 @@ from smarts.core.agent_interface import (
 from smarts.core.controllers import ActionSpaceType
 
 from benchmark.wrappers import rllib as rllib_wrappers
-from benchmark.metrics import handlers as metrics
+from benchmark.metrics import basic_handler as metrics
 from benchmark import common
 from benchmark.utils import format
 

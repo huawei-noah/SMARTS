@@ -4,7 +4,7 @@ import os
 
 from benchmark import gen_config
 from benchmark.utils.rollout import rollout
-from benchmark.metrics import handlers
+from benchmark.metrics import basic_handler
 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -69,7 +69,7 @@ def main(
     trainer = trainer_cls(env=tune_config["env"], config=trainer_config)
 
     trainer.restore(checkpoint)
-    metrics_handler = handlers.BasicMetricHandler(num_episodes)
+    metrics_handler = basic_handler.BasicMetricHandler(num_episodes)
     rollout(
         trainer, None, metrics_handler, num_steps, num_episodes, log_dir, show_plots
     )

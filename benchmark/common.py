@@ -740,13 +740,14 @@ class CalObs:
         return features
 
     @staticmethod
-    def cal_img_gray(env_obs: Observation, height, width):
-        resize = [height, width]
+    def cal_img_gray(env_obs: Observation, *args):
+        # args = (height, width)
+        resize = args
 
         def rgb2gray(rgb):
             return np.dot(rgb[..., :3], [0.2989, 0.5870, 0.1140])
 
-        rgb_ndarray = env_obs.top_down_rgb
+        rgb_ndarray = env_obs.top_down_rgb.data
         gray_scale = (
             cv2.resize(
                 rgb2gray(rgb_ndarray), dsize=resize, interpolation=cv2.INTER_CUBIC
