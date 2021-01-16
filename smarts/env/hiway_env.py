@@ -186,7 +186,7 @@ class HiWayEnv(gym.Env):
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
-        
+
         observations = {
             agent_id: self._agent_specs[agent_id].observation_adapter(obs)
             for agent_id, obs in env_observations.items()

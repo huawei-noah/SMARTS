@@ -119,7 +119,6 @@ class UltraEnv(HiWayEnv):
         )
         return info
 
-
     def step(self, agent_actions):
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
@@ -150,6 +149,7 @@ class UltraEnv(HiWayEnv):
         agent_dones["__all__"] = self._dones_registered == len(self._agent_specs)
 
         return observations, rewards, agent_dones, infos
+
     def get_task(self, task_id, task_level):
         with open("ultra/config.yaml", "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
