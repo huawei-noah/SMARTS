@@ -25,22 +25,22 @@ setup(
         "panda3d",
         "panda3d-gltf",
         "numpy",
-        "shapely",
-        "networkx",
-        "trimesh",  # Used for writing .glb files
+        "rich",
         "rtree",  # Used by sumolib
-        "lz4",
         "filelock",
+        "lz4",
+        "networkx",
+        "opencv-python",
         "pandas",
         "psutil",
-        "opencv-python",
         "visdom",
         "pybullet",
         "sklearn",  # KDTree from sklearn is used by waypoints
         "tableprint",
+        "trimesh",  # Used for writing .glb files
         "pynput",  # Used by HumanKeyboardAgent
         "sh",
-        "rich",
+        "shapely",
         "supervisor",
         # HACK: There is a bug where if we only install the base ray dependency here
         #       and ray[rllib] under [train] it  prevents rllib from getting installed.
@@ -50,9 +50,9 @@ setup(
         # The following are for Scenario Studio
         "yattag",
         # The following are for /envision
+        "cloudpickle<1.4.0",
         "tornado",
         "websocket-client",
-        "cloudpickle<1.4.0",
         # The following are for the /smarts/algorithms
         "matplotlib",
         "scikit-image",
