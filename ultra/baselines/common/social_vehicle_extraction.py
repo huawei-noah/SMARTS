@@ -259,16 +259,10 @@ def find_relative_location(position, target_position, heading):
     #   Details: https://math.stackexchange.com/questions/274712/calculate-on-which-side-of-a-straight-line-is-a-given-point-located
     if abs(x_diff) > abs(y_diff):
         orientation = HORIZONTAL
-        if x_diff < 0:
-            location = REAR
-        else:
-            location = FRONT
+        location = REAR if x_diff < 0 else FRONT
     else:
         orientation = VERTICAL
-        if y_diff > 0:
-            location = FRONT
-        else:
-            location = REAR
+        location = FRONT if y_diff > 0 else REAR
     return location, orientation
 
 
