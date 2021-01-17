@@ -75,7 +75,7 @@ After training your agent, your models should be saved under `logs/your-experime
 - SMARTS is pre-installed and ULTRA source files are copied automatically into Docker image.
 - Build a docker image alone
   ```sh
-  $ cd path/to/repository/SMARTS/
+  $ cd path/to/repository/SMARTS/ultra
   $ docker build -t <container name> --network=host .
   # or run make
   ```
