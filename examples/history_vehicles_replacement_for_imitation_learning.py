@@ -29,8 +29,6 @@ def main(scenarios, headless, seed):
         agent_missions = scenario.discover_missions_of_traffic_histories()
 
         for agent_id, mission in agent_missions.items():
-            # if agent_id not in set(["10","11"]):
-            #     continue
             print(f"agent id: {agent_id}")
             scenario.set_ego_missions({agent_id: mission})
 
@@ -43,33 +41,16 @@ def main(scenarios, headless, seed):
             agent = agent_spec.build_agent()
 
             if first_time:
-                print("smarts initial setup")
-                start = time.time()
                 smarts = SMARTS(
                     agent_interfaces={agent_id: agent_spec.interface},
                     traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
                     envision=Envision(),
                 )
                 first_time = False
-                end = time.time()
-                print(f"smarts done setup: {end - start}\n")
             else:
-                print("smarts setup")
-                start = time.time()
                 smarts.switch_ego_agent({agent_id: agent_spec.interface})
-                # smarts = SMARTS(
-                #     agent_interfaces={agent_id: agent_spec.interface},
-                #     traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
-                #     envision=Envision(),
-                # )
-                end = time.time()
-                print(f"smarts done setup: {end - start}\n")
 
-            print("smarts reset")
-            start = time.time()
             observations = smarts.reset(scenario)
-            end = time.time()
-            print(f"smarts done reset: {end - start}\n")
 
             print(agent_id)
             dones = {agent_id: False}

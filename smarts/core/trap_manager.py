@@ -145,6 +145,9 @@ class TrapManager:
                 ),
             )
             for v_id in sorted_vehicle_ids:
+                if sim.scenario.traffic_history != {}:
+                    break
+
                 vehicle = vehicles[v_id]
                 point = Point(vehicle.position)
 
