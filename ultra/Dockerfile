@@ -7,7 +7,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 #------------------------------------------------------------------------------
 #RUN apt-get update && apt-get install -y openssh-server
 RUN apt-get install ca-certificates
-COPY docker/certs/ /usr/local/share/ca-certificates/extra/
 RUN update-ca-certificates
 RUN apt-get install apt-transport-https
 
@@ -115,24 +114,6 @@ RUN apt-get autoremove && \
 RUN mkdir -p /SMARTS
 COPY ./setup.py /SMARTS/
 
-# Mounting would override these
-#RUN python3.7 -m venv /SMARTS/.venv
-#RUN bash -c 'echo -p python --version'
-#RUN /bin/bash -c "source /SMARTS/.venv/bin/activate"
-#:RUN cd /SMARTS && pip install -e .
-
-
-# XXX: This is an optimization since prior we were uploading the pip
-# dependencies + our hiway package alongside the scoring program.
-# Putting it here keeps the file size smaller. Alternatively, with buy-in we
-# could install the hiway package directly if we are ok w/ distributing it
-# this way. These requirements are generated via ./gen_requirements_txt.sh
-# COPY docker/requirements.txt /tmp/requirements.txt
-# RUN pip install --no-cache-dir -r /tmp/requirements.txt
-
-# XXX: We deal w/ this issue on CodaLab: https://github.com/tensorflow/tensorflow/issues/19584
-# RUN pip install https://github.com/mdsimmo/tensorflow-community-wheels/releases/download/1.13.1_cpu_py3_6_amd64/tf_nightly-1.13.1-cp36-cp36m-linux_x86_64.whl
-
 # Add https://github.com/krallin/tini
 ARG TINI_VERSION=v0.18.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
@@ -141,6 +122,9 @@ RUN chmod +x /tini
 #RUN chmod +x /usr/local/bin/entrypoint.sh
 
 
+#------------------------------------------------------------------------------
+# Entrypoint
+#------------------------------------------------------------------------------
 # For Envision
 EXPOSE 8081
 
@@ -149,10 +133,7 @@ EXPOSE 8081
 RUN echo "/usr/bin/Xorg " \
     "-noreset +extension GLX +extension RANDR +extension RENDER" \
     "-logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch $DISPLAY &" >> ~/.bashrc
-#------------------------------------------------------------------------------
-# Entrypoint
-#------------------------------------------------------------------------------
-# ENTRYPOINT ["/tini", "--", "entrypoint.sh"]
+
 CMD ["/bin/bash"]
 # Once in container can then run,
 #   python3 examples/competition

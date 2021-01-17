@@ -20,11 +20,11 @@ ignore this step if you already have smarts environment
   ```sh
   python3.7 -m venv .smarts
   # 1-activate virtual environment to install all dependencies
-  source .ultra/bin/activate
+  source .smarts/bin/activate
   # 2-install black for formatting (if you wish to contribute)
   pip install black
   # 3-install dependencies
-  pip install -e .
+  pip install -e .[train]
   ```
 
 ### Generate scenarios
@@ -75,7 +75,7 @@ After training your agent, your models should be saved under `logs/your-experime
 - SMARTS is pre-installed and ULTRA source files are copied automatically into Docker image.
 - Build a docker image alone
   ```sh
-  $ cd path/to/repository/ULTRA/
+  $ cd path/to/repository/SMARTS/
   $ docker build -t <container name> --network=host .
+  # or run make
   ```
-- By default, `ULTRA/logs` folder is mapped from Docker container to local storage at `${DST}/logs`.
