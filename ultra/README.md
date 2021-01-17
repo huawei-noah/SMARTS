@@ -69,10 +69,21 @@ After training your agent, your models should be saved under `logs/your-experime
   ```
 
 ### Docker
-- SMARTS is pre-installed and ULTRA source files are copied automatically into Docker image.
-- Build a docker image alone
+- Build a docker image and run container
   ```sh
   $ cd path/to/repository/SMARTS/ultra
-  $ docker build -t <container name> --network=host .
-  # or run make
+  $ docker build -t <container name> --network=host . # or run make
+  $ docker run \
+         -it \
+         --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+         --privileged \
+         --env="XAUTHORITY=/tmp/.docker.xauth" \
+         --env="QT_X11_NO_MITSHM=1" \
+         --volume=/usr/lib/nvidia-384:/usr/lib/nvidia-384 \
+         --volume=/usr/lib32/nvidia-384:/usr/lib32/nvidia-384 \
+         --runtime=nvidia \
+         --device /dev/dri \
+         --volume=$DIR:/SMARTS \ #  fill $DIR with the path to SMARTS to mount
+         --name=ultra \
+         ultra:gpu
   ```
