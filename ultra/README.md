@@ -14,10 +14,6 @@ Here is the summary of key features:
  - configurable train/test parameters
  - train/test custom RL algorithms against benchmark results
 
-### Benchmark
-
-Read the [documentation](https://gitlab.smartsai.xyz/smarts/ULTRA/-/wikis/Benchmark)
-
 
 ignore this step if you already have smarts environment
 ### Setup
@@ -55,7 +51,8 @@ $ ./ultra/env/envision_base.sh
 envision runs as a background process, you can view the visualization on `localhost:8081/`
 
 ### Train and Evalutaion
-We currently support PPO/SAC/TD3/DQN policies, for adding you own policy please follow the guidelines in [documentation](https://gitlab.smartsai.xyz/smarts/ULTRA/-/wikis/Benchmark)
+We currently support PPO/SAC/TD3/DQN policies
+
 - Train
   Training runs the policy with default configuration:
   `
@@ -64,7 +61,7 @@ We currently support PPO/SAC/TD3/DQN policies, for adding you own policy please 
   - For each experiment a folder with timestamp is added automatically under `logs/` and it saves tensorboad log, models and pkls
   - For every 10000 observation, evaluation is called automatically and policy is saved under `logs/your-expierment-name/models/`
   ```sh
-  $ python ultra/train.py --task 1 --level easy 
+  $ python ultra/train.py --task 1 --level easy
   # other arguments example: --episodes 20000 --eval-rate 500 --eval-episodes 200 --timestep 1 --headless
   ```
 ### Run Evaluation Separately
@@ -74,17 +71,6 @@ After training your agent, your models should be saved under `logs/your-experime
   # other arguments --episodes 20000 --timestep 1 --headless
   ```
 
-### Server
-- Server name, address, and destination path `${DST}` for storage
-
-  |Server|Address|${DST}|
-  |:----|:----|:----|
-  |CX3|10.193.241.233|/data/research|
-  |CX4|10.193.241.234|/data/research|
-  |Compute-4|10.193.192.17|/data/$USER|
-  |Compute-11|10.193.192.113|/data/$USER|
-  |GX3|10.193.241.239|/data/research|  
-
 ### Docker
 - SMARTS is pre-installed and ULTRA source files are copied automatically into Docker image.
 - Build a docker image alone
@@ -92,33 +78,4 @@ After training your agent, your models should be saved under `logs/your-experime
   $ cd path/to/repository/ULTRA/
   $ docker build -t <container name> --network=host .
   ```
-- Build, push, load, and run interactive docker cotainer in detached mode in remote server
-  ```sh
-  $ sudo apt-get install sshpass
-  $ cd path/to/repository/ULTRA/
-  $ source ./ultra/docker/remote.sh <username> <password> <server name> <container name> .
-  ```
-  - \<username>       : username for server   
-  - \<password>       : password for server   
-  - \<server name>    : CX3, CX4, Compute-4, Compute-11, or GX3   
-  - \<container name> : string with all lower case, e.g., ultratest
-- Docker container has a default memory limit of 100GB. To change, edit the line `--memory=100g` in `ULTRA/ultra/docker/remote.sh`.
 - By default, `ULTRA/logs` folder is mapped from Docker container to local storage at `${DST}/logs`.
-- To map additional Docker container volumes such as `ULTRA/ultra/scenarios/task1` to local storage, edit `ULTRA/ultra/docker/remote.sh` to include `--volume=${DST}/ultra/scenarios/task1/:/ULTRA/ultra/scenarios/task1/`.
-- Some regular commands
-  ```sh
-  # Copy folder into remote server
-  $ sshpass -p <password> scp -r <folder to copy> <username>@<server address>:<destination path>
-  $ sshpass -p abcd1234 scp -r ${PWD}/ultra/scenarios/task3 z84216771@10.193.241.239:/data/research/ultra/scenarios/
-
-  # Login into remote server
-  $ sshpass -p <password> ssh <username>@<server address>
-  $ sshpass -p abcd1234 ssh z84216771@10.193.241.239
-
-  # Enter the interactive docker container
-  $ docker exec -ti <container name> bash
-  $ docker exec -ti ultratest bash
-
-  # Exit the interactive docker container
-  $ ctrl-p ctrl-q
-  ```
