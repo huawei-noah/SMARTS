@@ -273,6 +273,10 @@ class SumoTrafficSimulation:
             self._traci_conn.close()
             self._traci_conn = None
 
+    def _remove_all_vehicles(self):
+        for vehicle_id in self._non_sumo_vehicle_ids.union(self._sumo_vehicle_ids):
+            self._traci_conn.vehicle.remove(vehicle_id)
+
     def teardown(self):
         self._log.debug("Tearing down SUMO traffic sim %s" % self)
         if not self._is_setup:
@@ -281,6 +285,7 @@ class SumoTrafficSimulation:
 
         assert self._is_setup
 
+        self._remove_all_vehicles()
         self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
         self._sumo_vehicle_ids = set()
