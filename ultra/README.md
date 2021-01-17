@@ -1,6 +1,3 @@
-[![coverage report](https://gitlab.smartsai.xyz/smarts/ULTRA/badges/master/coverage.svg)](https://gitlab.smartsai.xyz/smarts/ULTRA/-/commits/master)
-[![pipeline status](https://gitlab.smartsai.xyz/smarts/ULTRA/badges/master/pipeline.svg)](https://gitlab.smartsai.xyz/smarts/ULTRA/-/commits/master)
-
 # ULTRA
 
 Unprotected Left Turn using Reinforcement-learning Agents
