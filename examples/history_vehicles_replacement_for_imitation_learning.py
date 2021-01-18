@@ -20,8 +20,11 @@ class KeepLaneAgent(Agent):
 
 def main(scenarios, headless, seed):
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
-    first_time = True
-    smarts = None
+    smarts = SMARTS(
+        agent_interfaces={},
+        traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
+        envision=Envision(),
+    )
 
     for _ in scenarios:
         scenario = next(scenarios_iterator)
@@ -38,15 +41,7 @@ def main(scenarios, headless, seed):
             )
             agent = agent_spec.build_agent()
 
-            if first_time:
-                smarts = SMARTS(
-                    agent_interfaces={agent_id: agent_spec.interface},
-                    traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
-                    envision=Envision(),
-                )
-                first_time = False
-            else:
-                smarts.switch_ego_agent({agent_id: agent_spec.interface})
+            smarts.switch_ego_agent({agent_id: agent_spec.interface})
 
             observations = smarts.reset(scenario)
 

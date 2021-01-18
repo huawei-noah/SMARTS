@@ -146,7 +146,7 @@ class TrapManager:
             )
             for v_id in sorted_vehicle_ids:
                 # Skip the capturing process if history traffic is used
-                if sim.scenario.traffic_history != {}:
+                if sim.scenario.traffic_history:
                     break
 
                 vehicle = vehicles[v_id]
