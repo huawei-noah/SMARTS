@@ -165,12 +165,18 @@ class BoxChassis(Chassis):
     @property
     def contact_points(self) -> Sequence:
         contact_points = _query_bullet_contact_points(
-            self._client, self._bullet_body, -1
+            self._bullet_body._client, self._bullet_body._bullet_id, -1
         )
         return [
             ContactPoint(bullet_id=p[2], contact_point=p[5], contact_point_other=p[6])
             for p in contact_points
         ]
+
+    def step(self, current_simulation_time):
+        pass
+
+    def set_pose(self, pose: Pose):
+        self.control(pose, 0)
 
     @property
     def bullet_id(self) -> str:

@@ -21,7 +21,7 @@ import math
 import numpy as np
 
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.chassis import AckermannChassis
+from smarts.core.chassis import AckermannChassis, BoxChassis
 
 from smarts.core.controllers.trajectory_tracking_controller import (
     TrajectoryTrackingControllerState,
@@ -72,7 +72,8 @@ class TrajectoryInterpolationController:
             raise RuntimeError(
                 "Next step time is %f, but cant be located at input traj" % time
             )
-
+        print(f"Time: {time}")
+        print(trajectory[:, end_index - 1])
         return trajectory[:, end_index - 1], trajectory[:, end_index]
 
     @classmethod
@@ -95,13 +96,13 @@ class TrajectoryInterpolationController:
             ValueError: Error when input trajectory has nan field.
             RuntimeError: Error when input trajectory is empty
         """
-        assert isinstance(vehicle.chassis, AckermannChassis)
+        assert isinstance(vehicle.chassis, BoxChassis)
         if len(trajectory[TIME_INDEX]) <= 0:
             raise RuntimeError("Input trajectory is empty!")
         if cls.ndarray_has_nan(trajectory):
             raise ValueError("Has nan in trajectory")
 
-        ms0, ms1 = cls.locate_motion_state(trajectory, sim.timestep_sec)
+        ms0, ms1 = cls.locate_motion_state(trajectory, sim._elapsed_sim_time)
 
         speed = 0.0
         pose = []
@@ -111,7 +112,7 @@ class TrajectoryInterpolationController:
             pose = Pose.from_center(center_position, center_heading)
             speed = 0.0
         else:
-            ms = cls.interpolate(ms0, ms1, sim.timestep_sec)
+            ms = cls.interpolate(ms0, ms1, sim._elapsed_sim_time)
 
             center_position = ms[X_INDEX : Y_INDEX + 1]
             center_heading = Heading(ms[THETA_INDEX])

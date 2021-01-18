@@ -18,10 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
+from smarts.core.controllers import ActionSpaceType
 import yaml
 import importlib.resources as pkg_resources
 import logging
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy
 from direct.showbase.ShowBase import ShowBase
@@ -134,6 +136,7 @@ class Vehicle:
         self._sumo_vehicle_type = sumo_vehicle_type
         self._action_space = action_space
         self._speed = None
+        self._has_stepped = False
 
         self._meta_create_sensor_functions()
         self._sensors = {}
@@ -342,11 +345,14 @@ class Vehicle:
                 agent_interface.vehicle_type
             ]
 
-        vehicle = Vehicle(
-            id=vehicle_id,
-            pose=start_pose,
-            showbase=sim,
-            chassis=AckermannChassis(
+        chassis = None
+        is_kinematic = agent_interface.action == ActionSpaceType.TrajectoryWithTime
+        if is_kinematic:
+            chassis = BoxChassis(
+                pose=start_pose, speed=0, dimensions=chassis_dims, bullet_client=sim.bc,
+            )
+        else:
+            chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
                 vehicle_filepath=vehicle_filepath,
@@ -354,7 +360,13 @@ class Vehicle:
                 friction_map=surface_patches,
                 controller_parameters=controller_parameters,
                 initial_speed=initial_speed,
-            ),
+            )
+
+        vehicle = Vehicle(
+            id=vehicle_id,
+            pose=start_pose,
+            showbase=sim,
+            chassis=chassis,
             color=vehicle_color,
         )
 
@@ -474,6 +486,7 @@ class Vehicle:
         )
 
     def step(self, current_simulation_time):
+        self._has_stepped = True
         self._chassis.step(current_simulation_time)
 
     def control(self, *args, **kwargs):
@@ -483,8 +496,18 @@ class Vehicle:
         pos, heading = self._chassis.pose.as_panda3d()
         self._np.setPosHpr(*pos, heading, 0, 0)
 
+    @lru_cache(maxsize=1)
+    def _warn_non_kinematic_vehicle_set_pose(self):
+        is_kinematic = self._action_space == ActionSpaceType.TrajectoryWithTime
+        if self._has_stepped and not is_kinematic:
+            logging.warning(
+                f"Agent `{self._id}` has called set pose after step."
+                "This may cause collision problems"
+            )
+
     # TODO: Merge this w/ speed setter as a set GCD call?
     def set_pose(self, pose: Pose):
+        self._warn_non_kinematic_vehicle_set_pose()
         self._chassis.set_pose(pose)
 
     def swap_chassis(self, chassis: Chassis):
