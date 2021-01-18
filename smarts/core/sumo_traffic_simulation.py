@@ -693,7 +693,7 @@ class SumoTrafficSimulation:
 
     def remove_traffic_vehicle(self, vehicle_id: str):
         self._traci_conn.vehicle.remove(vehicle_id)
-        self._sumo_vehicle_ids.remove(vehicle_id)
+        #self._sumo_vehicle_ids.remove(vehicle_id)
 
     def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):
         p = sumo_vehicle_state[vehicle_id][tc.VAR_POSITION]

@@ -369,6 +369,10 @@ class SMARTS(ShowBase):
     def add_provider(self, provider):
         self._providers.append(provider)
 
+    def switch_ego_agent(self, agent_interface):
+        self._agent_manager.switch_initial_agent(agent_interface)
+        self._is_setup = False
+
     def _setup_road_network(self):
         glb_path = self.scenario.map_glb_filepath
         if self._road_network_np:
@@ -696,7 +700,6 @@ class SMARTS(ShowBase):
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
                 provider_state.filter(self._vehicle_index.agent_vehicle_ids())
-
             accumulated_provider_state.merge(provider_state)
 
         self._harmonize_providers(accumulated_provider_state)
