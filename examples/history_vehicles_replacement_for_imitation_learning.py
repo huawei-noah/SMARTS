@@ -29,7 +29,6 @@ def main(scenarios, headless, seed):
         agent_missions = scenario.discover_missions_of_traffic_histories()
 
         for agent_id, mission in agent_missions.items():
-            print(f"agent id: {agent_id}")
             scenario.set_ego_missions({agent_id: mission})
 
             agent_spec = AgentSpec(
@@ -52,7 +51,6 @@ def main(scenarios, headless, seed):
 
             observations = smarts.reset(scenario)
 
-            print(agent_id)
             dones = {agent_id: False}
             while not dones[agent_id]:
                 agent_obs = observations[agent_id]
