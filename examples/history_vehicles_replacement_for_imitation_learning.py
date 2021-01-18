@@ -1,5 +1,4 @@
 import logging
-import time
 
 from smarts.core.smarts import SMARTS
 from smarts.core.agent_interface import AgentInterface, AgentType

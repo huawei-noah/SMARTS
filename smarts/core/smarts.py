@@ -700,6 +700,7 @@ class SMARTS(ShowBase):
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
                 provider_state.filter(self._vehicle_index.agent_vehicle_ids())
+
             accumulated_provider_state.merge(provider_state)
 
         self._harmonize_providers(accumulated_provider_state)
