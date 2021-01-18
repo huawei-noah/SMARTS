@@ -1,9 +1,10 @@
-name: SMARTS CI Header Test
+name: SMARTS CI Header
 
 on: [push]
 
 env:
   venv_dir: .venv
+
 jobs:
   test-header:
     runs-on: ubuntu-18.04
@@ -11,7 +12,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: header-test
+      - name: Check header
         run: |
           cd $GITHUB_WORKSPACE
           make header-test
