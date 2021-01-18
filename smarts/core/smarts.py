@@ -449,6 +449,7 @@ class SMARTS(ShowBase):
 
     def destroy(self):
         self.teardown()
+        self._traffic_sim.destroy()
 
         if self._envision:
             self._envision.teardown()
