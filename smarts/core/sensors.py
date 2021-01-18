@@ -48,6 +48,8 @@ from .masks import RenderMasks
 from .scenario import Mission, Via
 from .waypoints import Waypoint
 
+logger = logging.getLogger(__name__)
+
 
 class VehicleObservation(NamedTuple):
     id: str
@@ -138,7 +140,7 @@ class Observation:
     neighborhood_vehicle_states: List[VehicleObservation]
     waypoint_paths: List[List[Waypoint]]
     distance_travelled: float
-    
+
     # TODO: Convert to `namedtuple` or only return point cloud
     # [points], [hits], [(ray_origin, ray_directino)]
     lidar_point_cloud: Tuple[
@@ -291,6 +293,13 @@ class Sensors:
             sim, agent_id, vehicle, sensor_state
         )
 
+        if (
+            done
+            and sensor_state.steps_completed == 1
+            and agent_id in sim.agent_manager.ego_agent_ids
+        ):
+            logger.warning(f"{agent_id} is done on the first step")
+
         return (
             Observation(
                 events=events,
@@ -359,6 +368,7 @@ class Sensors:
             wrong_way=is_wrong_way,
             not_moving=is_not_moving,
         )
+
         return done, events
 
     @classmethod
@@ -564,6 +574,10 @@ class SensorState:
     @property
     def mission_planner(self):
         return self._mission_planner
+
+    @property
+    def steps_completed(self):
+        return self._step
 
 
 class CameraSensor(Sensor):

@@ -1,0 +1,17 @@
+name: SMARTS CI Header Test
+
+on: [push]
+
+env:
+  venv_dir: .venv
+jobs:
+  test-header:
+    runs-on: ubuntu-18.04
+    container: huaweinoah/smarts:v0.4.3-pre
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: header-test
+        run: |
+          cd $GITHUB_WORKSPACE
+          make header-test
