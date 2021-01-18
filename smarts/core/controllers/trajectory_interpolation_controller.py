@@ -72,8 +72,6 @@ class TrajectoryInterpolationController:
             raise RuntimeError(
                 "Next step time is %f, but cant be located at input traj" % time
             )
-        print(f"Time: {time}")
-        print(trajectory[:, end_index - 1])
         return trajectory[:, end_index - 1], trajectory[:, end_index]
 
     @classmethod
