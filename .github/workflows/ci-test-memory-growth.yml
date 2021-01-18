@@ -1,9 +1,12 @@
 name: SMARTS CI Memory
 
 on:
-  push:
-    branches:
-      - disabled
+  schedule:
+    - cron: '0 23 * * 2'
+      # Time is in UTC
+      # Runs at 11.00pm, UTC  , every Tuesday
+      # Runs at  6.00pm, UTC-5, every Tuesday
+  workflow_dispatch:
 
 env:
   venv_dir: .venv
@@ -15,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: develop
       - name: Setup package
         run: |
           /usr/bin/Xorg \
