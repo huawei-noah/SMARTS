@@ -48,10 +48,6 @@ class ProviderState:
     def merge(self, other: "ProviderState"):
         our_vehicles = {v.vehicle_id for v in self.vehicles}
         other_vehicles = {v.vehicle_id for v in other.vehicles}
-        # print(f"Our: {our_vehicles} \n Other: {other_vehicles}")
-        for v in our_vehicles:
-            if v in other_vehicles:
-                other_vehicles.remove(v)
         assert our_vehicles.isdisjoint(other_vehicles)
 
         our_tlss = {tls.tls_id for tls in self.traffic_light_systems}
