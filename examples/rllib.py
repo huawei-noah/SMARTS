@@ -139,7 +139,7 @@ def main(
 
     print(analysis.dataframe().head())
 
-    best_logdir = Path(analysis.get_best_logdir("episode_reward_max"))
+    best_logdir = Path(analysis.get_best_logdir("episode_reward_max", mode="max"))
     model_path = best_logdir / "model"
 
     copy_tree(str(model_path), save_model_path, overwrite=True)
