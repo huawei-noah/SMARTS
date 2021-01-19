@@ -89,8 +89,6 @@ class SumoTrafficSimulation:
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
 
-        atexit.register(self._destroy)
-
     def __repr__(self):
         return f"""SumoTrafficSim(
   _scenario={repr(self._scenario)},
@@ -108,11 +106,10 @@ class SumoTrafficSimulation:
     def __str__(self):
         return repr(self)
 
-    def _destroy(self):
-        if atexit:
-            atexit.unregister(self._destroy)
-
+    def destroy(self):
         self._close_traci_and_pipes()
+        if not self._is_setup:
+            return
         self._sumo_proc.terminate()
         self._sumo_proc.wait()
 
