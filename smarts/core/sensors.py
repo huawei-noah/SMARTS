@@ -298,7 +298,7 @@ class Sensors:
             and sensor_state.steps_completed == 1
             and agent_id in sim.agent_manager.ego_agent_ids
         ):
-            logger.warning(f"{agent_id} is done on the first step")
+            logger.warning(f"Agent Id: {agent_id} is done on the first step")
 
         return (
             Observation(

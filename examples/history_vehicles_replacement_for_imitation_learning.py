@@ -20,6 +20,12 @@ class KeepLaneAgent(Agent):
 
 def main(scenarios, headless, seed):
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
+    smarts = SMARTS(
+        agent_interfaces={},
+        traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
+        envision=Envision(),
+    )
+
     for _ in scenarios:
         scenario = next(scenarios_iterator)
         agent_missions = scenario.discover_missions_of_traffic_histories()
@@ -33,14 +39,10 @@ def main(scenarios, headless, seed):
                 ),
                 agent_builder=KeepLaneAgent,
             )
-
             agent = agent_spec.build_agent()
 
-            smarts = SMARTS(
-                agent_interfaces={agent_id: agent_spec.interface},
-                traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
-                envision=Envision(),
-            )
+            smarts.switch_ego_agent({agent_id: agent_spec.interface})
+
             observations = smarts.reset(scenario)
 
             dones = {agent_id: False}
@@ -52,7 +54,7 @@ def main(scenarios, headless, seed):
                     {agent_id: agent_action}
                 )
 
-            smarts.destroy()
+    smarts.destroy()
 
 
 if __name__ == "__main__":
