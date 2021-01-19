@@ -91,4 +91,11 @@ def surpress_stdout():
 
         os.dup2(dup_stdout_fno, original_stdout_fno)
         os.close(dup_stdout_fno)
-        sys.stdout = original_stdout
+        try:
+            sys.stdout.close()
+        except OSError as e:
+            # This happens in some environments and is fine so we should ignore just it
+            if e.errno != 9:  # [Errno 9] Bad file descriptor
+                raise e
+        finally:
+            sys.stdout = original_stdout
