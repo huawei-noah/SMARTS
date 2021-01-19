@@ -60,11 +60,11 @@ class SumoTrafficSimulation:
         self,
         headless=True,
         time_resolution=0.1,
-        num_clients=1,
         num_external_sumo_clients=0,
         sumo_port=None,
         auto_start=True,
         endless_traffic=True,
+        allow_reload=True,
         debug=True,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -88,6 +88,7 @@ class SumoTrafficSimulation:
         self._endless_traffic = endless_traffic
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
+        self._allow_reload = allow_reload
 
         atexit.register(self._destroy)
 
@@ -240,7 +241,7 @@ class SumoTrafficSimulation:
 
         if restart_sumo:
             self._initialize_traci_conn()
-        else:
+        elif self._allow_reload:
             self._traci_conn.load(self._base_sumo_load_params())
 
         assert self._traci_conn is not None, "No active traci conn"
@@ -286,7 +287,8 @@ class SumoTrafficSimulation:
         assert self._is_setup
 
         self._remove_all_vehicles()
-        self._cumulative_sim_seconds = 0
+        if self._allow_reload:
+            self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
         self._sumo_vehicle_ids = set()
         self._is_setup = False
