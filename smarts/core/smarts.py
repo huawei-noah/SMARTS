@@ -449,7 +449,6 @@ class SMARTS(ShowBase):
 
     def destroy(self):
         self.teardown()
-        self._traffic_sim.destroy()
 
         if self._envision:
             self._envision.teardown()
@@ -458,6 +457,7 @@ class SMARTS(ShowBase):
             self._visdom.teardown()
 
         self._agent_manager.destroy()
+        self._traffic_sim.destroy()
         self._bullet_client.disconnect()
 
         super().destroy()
