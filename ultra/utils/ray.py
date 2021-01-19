@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,24 +19,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import click
-
-from .envision import envision_cli
-from .studio import scenario_cli
-from .zoo import zoo_cli
-from .ultra import ultra_cli
+import ray
+from packaging import version
 
 
-@click.group()
-def scl():
-    pass
+def default_ray_kwargs(**kwargs):
+    ray_kwargs = {}
+    _system_config = {
+        # Needed to deal with cores that lock up for > 10 seconds
+        "num_heartbeats_timeout": 10000,
+        # "raylet_heartbeat_timeout_milliseconds": 10,
+        # "object_timeout_milliseconds": 200,
+    }
+    if version.parse(ray.__version__) > version.parse("0.8"):
+        ray_kwargs["_system_config"] = _system_config
+    else:
+        ray_kwargs["_internal_config"] = _system_config
+    ray_kwargs.update(kwargs)
+
+    return ray_kwargs
 
 
-scl.add_command(envision_cli)
-scl.add_command(scenario_cli)
-scl.add_command(zoo_cli)
-scl.add_command(ultra_cli)
-
-
-if __name__ == "__main__":
-    scl()
+# TODO: Perhaps start cluster manually instead of `ray.init()`
+# See https://github.com/ray-project/ray/blob/174bef56d452b6f86db167ecb80e7f23176079b6/python/ray/tests/conftest.py#L110

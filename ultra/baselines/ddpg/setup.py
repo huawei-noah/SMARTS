@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,24 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import click
+from setuptools import setup
 
-from .envision import envision_cli
-from .studio import scenario_cli
-from .zoo import zoo_cli
-from .ultra import ultra_cli
-
-
-@click.group()
-def scl():
-    pass
-
-
-scl.add_command(envision_cli)
-scl.add_command(scenario_cli)
-scl.add_command(zoo_cli)
-scl.add_command(ultra_cli)
-
-
-if __name__ == "__main__":
-    scl()
+setup(
+    name="ddpg",
+    description="Ultra DDPG agent",
+    version="0.1.1",
+    packages=["ddpg"],
+    include_package_data=True,
+    install_requires=["tensorflow==1.15", "smarts"],
+)
