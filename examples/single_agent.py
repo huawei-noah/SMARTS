@@ -46,13 +46,13 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         scenarios=scenarios,
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
-        headless=headless,
+        headless=True,
         visdom=False,
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
         # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.
-        # envision_record_data_replay_path="./data_replay",
+        envision_record_data_replay_path="./data_replay",
     )
 
     for episode in episodes(n=num_episodes):
