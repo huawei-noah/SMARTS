@@ -40,6 +40,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         ),
         agent_builder=ChaseViaPointsAgent,
     )
+
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
