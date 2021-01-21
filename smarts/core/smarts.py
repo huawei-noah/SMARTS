@@ -22,6 +22,7 @@ import logging
 import os
 from collections import defaultdict
 from typing import List, Sequence
+from time import time
 
 import gltf
 import numpy

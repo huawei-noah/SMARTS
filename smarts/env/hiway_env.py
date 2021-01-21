@@ -106,7 +106,7 @@ class HiWayEnv(gym.Env):
                 endpoint=envision_endpoint,
                 sim_name=sim_name,
                 output_dir=envision_record_data_replay_path,
-                headless=headless
+                headless=headless,
             )
 
         visdom_client = None
