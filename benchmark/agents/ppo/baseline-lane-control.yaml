@@ -3,7 +3,8 @@ name: ppo-baseline
 agent:
   state:
     wrapper:
-      name: Simple
+      name: FrameStack
+      num_stack: 3
     features:
       # relative position of goal
       goal_relative_pos: True

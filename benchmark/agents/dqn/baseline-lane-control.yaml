@@ -13,16 +13,16 @@ agent:
       steering: True
       heading_errors: [20, continuous]
       neighbor: 8
-      img_gray: [28, 28]
+      # img_gray: [28, 28]
   action:
     type: 1   # 0 for continuous, 1 for discrete
 
 # agent interface
 interface:
   max_episode_steps: 1000
-  rgb:
-    width: 50
-    height: 50
+  # rgb:
+  #   width: 50
+  #   height: 50
   neighborhood_vehicles:
     radius: 50
   waypoints:
@@ -32,11 +32,12 @@ interface:
 policy:
   framework: rllib
   trainer:
+    # specify the import path and trainer name
     path: ray.rllib.agents.dqn
     name: DQNTrainer
 
 run:
-  checkpoint_freq: 4
+  checkpoint_freq: 40
   checkpoint_at_end: True
   max_failures: 1000
   resume: False
@@ -45,7 +46,7 @@ run:
     time_total_s: 14400
   config:
     log_level: ERROR
-    num_workers: 1
+    num_workers: 60
     num_gpus: 0
     horizon: 1000
     # learning

@@ -162,6 +162,10 @@ class FrameStack(Wrapper):
         return res
 
     def step(self, agent_actions):
+        agent_actions = {
+            agent_id: self.action_adapter(action)
+            for agent_id, action in agent_actions.items()
+        }
         env_observations, env_rewards, dones, infos = super(FrameStack, self).step(
             agent_actions
         )

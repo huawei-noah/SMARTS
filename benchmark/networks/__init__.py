@@ -18,4 +18,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from .centralized_ac import CentralizedActorCriticModel
-from .commnet import CommNet
+
+# from .commnet import CommNet

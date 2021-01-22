@@ -3,8 +3,10 @@ name: a2c-baseline-lane-controller
 agent:
   state:
     wrapper:
-      name: Simple
+      name: FrameStack
+      num_stack: 3
     features:
+      goal_relative_pos: True
       distance_to_center: True
       speed: True
       steering: True
@@ -35,8 +37,8 @@ run:
   stop:
     time_total_s: 14400
   config:
-    log_level: WARN
-    num_workers: 1
+    log_level: ERROR
+    num_workers: 60
     num_gpus: 0
     horizon: 1000
     # learning
