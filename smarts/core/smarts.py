@@ -369,6 +369,10 @@ class SMARTS(ShowBase):
     def add_provider(self, provider):
         self._providers.append(provider)
 
+    def switch_ego_agent(self, agent_interface):
+        self._agent_manager.switch_initial_agent(agent_interface)
+        self._is_setup = False
+
     def _setup_road_network(self):
         glb_path = self.scenario.map_glb_filepath
         if self._road_network_np:
