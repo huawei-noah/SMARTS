@@ -1,3 +1,24 @@
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 from pathlib import Path
 
 import gym
@@ -7,7 +28,7 @@ import pytest
 import ray
 from ray import tune
 from ray.rllib.models import ModelCatalog
-from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
+from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
 
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -131,7 +152,4 @@ def test_rllib_hiway_env(rllib_agent):
     )
 
     # trial status will be ERROR if there are any issues with the environment
-    assert (
-        analysis.get_best_trial("episode_reward_mean", mode="max").status
-        == "TERMINATED"
-    )
+    assert analysis.get_best_trial("episode_reward_mean").status == "TERMINATED"
