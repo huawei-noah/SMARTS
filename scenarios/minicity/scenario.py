@@ -14,10 +14,11 @@ traffic = t.Traffic(
             actors={
                 t.TrafficActor(
                     name="car",
-                    vehicle_type=random.choice(
+                    vehicle_type=random.choices(
                         ["passenger", "bus", "coach", "truck", "trailer",],
                         weights=[5, 1, 1, 1, 1],
-                    ),
+                        k=1,
+                    )[0],
                 ): 1
             },
         )
