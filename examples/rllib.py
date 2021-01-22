@@ -2,6 +2,7 @@ import argparse
 from datetime import timedelta
 import logging
 import multiprocessing
+from os import stat
 import random
 from pathlib import Path
 from typing import Dict
@@ -26,11 +27,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 # Add custom metrics to your tensorboard using these callbacks
-# see: https://ray.readthedocs.io/en/latest/rllib-training.html#callbacks-and-custom-metrics
+# See: https://ray.readthedocs.io/en/latest/rllib-training.html#callbacks-and-custom-metrics
 class Callbacks(DefaultCallbacks):
+    @staticmethod
     def on_episode_start(
-        self,
-        *,
         worker: RolloutWorker,
         base_env: BaseEnv,
         policies: Dict[PolicyID, Policy],
@@ -41,9 +41,8 @@ class Callbacks(DefaultCallbacks):
 
         episode.user_data["ego_speed"] = []
 
+    @staticmethod
     def on_episode_step(
-        self,
-        *,
         worker: RolloutWorker,
         base_env: BaseEnv,
         episode: MultiAgentEpisode,
@@ -55,9 +54,8 @@ class Callbacks(DefaultCallbacks):
         obs = episode.last_raw_obs_for(single_agent_id)
         episode.user_data["ego_speed"].append(obs["speed"])
 
+    @staticmethod
     def on_episode_end(
-        self,
-        *,
         worker: RolloutWorker,
         base_env: BaseEnv,
         policies: Dict[PolicyID, Policy],
