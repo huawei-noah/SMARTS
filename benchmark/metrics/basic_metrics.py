@@ -89,18 +89,23 @@ class BehaviorMetric:
             a dictionary mapping instance
         """
 
-        episode_logs: List[BasicEpisodeLog] = handler.logs
-        self._compute_agility_index([log.ego_speed for log in episode_logs])
-        self._compute_safety_index([log.num_collision for log in episode_logs])
-        self._compute_stability_index([log.distance_to_center for log in episode_logs])
-        self._compute_diversity_index([log.operations for log in episode_logs])
+        episode_logs_mapping: Dict[str, List[BasicEpisodeLog]] = handler.logs_mapping
+        results = {}
 
-        return {
-            "Agility": self.agility,
-            "Safety": self.safety,
-            "Stability": self.stability,
-            "Diversity": self.control_diversity,
-        }
+        for algorithm, episode_logs in episode_logs_mapping.items():
+            self._compute_agility_index([log.ego_speed for log in episode_logs])
+            self._compute_safety_index([log.num_collision for log in episode_logs])
+            self._compute_stability_index(
+                [log.distance_to_center for log in episode_logs]
+            )
+            self._compute_diversity_index([log.operations for log in episode_logs])
+
+            results[algorithm] = {
+                "Agility": self.agility,
+                "Safety": self.safety,
+                "Stability": self.stability,
+                "Diversity": self.control_diversity,
+            }
 
 
 @dataclass

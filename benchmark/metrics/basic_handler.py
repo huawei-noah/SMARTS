@@ -63,37 +63,43 @@ class MetricKeys:
 class BasicMetricHandler(MetricHandler):
     """ MetricHandler serves for the metric """
 
-    def __init__(self, num_episode):
+    def __init__(self):
         """Create a MetricHandler instance to record the
-
-        Parameters
-        ----------
-        num_episode
-            int, the num of e
         """
         super(BasicMetricHandler, self).__init__()
-        # XXX(ming): seems we need to bind callback function to each log item
+        self._logs_mapping = dict()
+        self._logs = None
 
-        self._logs = [episode_log.BasicEpisodeLog() for _ in range(num_episode)]
+    def set_log(self, algorithm, num_episodes):
+        self._logs = [episode_log.BasicEpisodeLog() for _ in range(num_episodes)]
+        self._logs_mapping[algorithm] = self._logs
 
     @property
-    def logs(self):
-        return self._logs
+    def logs_mapping(self):
+        return self._logs_mapping
 
     def log_step(self, episode, observations, actions, rewards, dones, infos):
         self._logs[episode].record_step(observations, actions, rewards, dones, infos)
 
-    def show_plots(self):
+    def show_plots(self, **kwargs):
         """ Show behavior metric plots, support only one algorithm now. """
 
         behavior_metric = BehaviorMetric()
-        results = behavior_metric.compute(self)
-        values, features = [], []
-        for k, v in results.items():
-            values.append(v)
-            features.append(k)
-        values = np.asarray([values])
-        plot.radar_plots(values, ["TEST"], features, title="Behavior Analysis")
+        results, metric_keys = behavior_metric.compute(self)
+        value_dict = {}
+        for algorithm, result in results.items():
+            for k, v in result.items():
+                value_dict[k].append(v)
+        values = []
+        for k in metric_keys:
+            # normalization
+            tmp = np.asarray(value_dict[k])
+            tmp = (tmp - tmp.min) / np.max(tmp.max() - tmp.min(), 1.0)
+            values.append(tmp)
+        values = np.asarray(values)
+        plot.radar_plots(
+            values, list(results.keys()), metric_keys, title="Behavior Analysis"
+        )
 
     def write_to_csv(self, csv_dir):
         csv_dir = f"{csv_dir}/{int(time.time())}"

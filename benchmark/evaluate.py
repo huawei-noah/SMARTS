@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument(
         "--headless", default=False, action="store_true", help="Turn on headless mode"
     )
-    parser.add_argument("--config_file", "-f", type=str, required=True)
+    parser.add_argument("--config_files", "-f", type=str, nargs="+", required=True)
     parser.add_argument("--log_dir", type=str, default="./log/results")
     parser.add_argument("--plot", action="store_true")
     return parser.parse_args()
@@ -36,7 +36,7 @@ def parse_args():
 
 def main(
     scenario,
-    config_file,
+    config_files,
     checkpoint,
     log_dir,
     num_steps=1000,
@@ -46,41 +46,47 @@ def main(
     show_plots=False,
 ):
 
-    config = gen_config(
-        scenario=scenario,
-        config_file=config_file,
-        checkpoint=checkpoint,
-        num_steps=num_steps,
-        num_episodes=num_episodes,
-        paradigm=paradigm,
-        headless=headless,
-        mode="evaluation",
-    )
-
     ray.init()
-    tune_config = config["run"]["config"]
-    trainer_cls = config["trainer"]
-    trainer_config = {"env_config": config["env_config"]}
-    if paradigm != "centralized":
-        trainer_config.update({"multiagent": tune_config["multiagent"]})
-    else:
-        trainer_config.update({"model": tune_config["model"]})
+    metrics_handler = basic_handler.BasicMetricHandler()
 
-    trainer = trainer_cls(env=tune_config["env"], config=trainer_config)
+    for config_file in config_files:
+        config = gen_config(
+            scenario=scenario,
+            config_file=config_file,
+            checkpoint=checkpoint,
+            num_steps=num_steps,
+            num_episodes=num_episodes,
+            paradigm=paradigm,
+            headless=headless,
+            mode="evaluation",
+        )
 
-    trainer.restore(checkpoint)
-    metrics_handler = basic_handler.BasicMetricHandler(num_episodes)
-    rollout(
-        trainer, None, metrics_handler, num_steps, num_episodes, log_dir, show_plots
-    )
-    trainer.stop()
+        tune_config = config["run"]["config"]
+        trainer_cls = config["trainer"]
+        trainer_config = {"env_config": config["env_config"]}
+        if paradigm != "centralized":
+            trainer_config.update({"multiagent": tune_config["multiagent"]})
+        else:
+            trainer_config.update({"model": tune_config["model"]})
+
+        trainer = trainer_cls(env=tune_config["env"], config=trainer_config)
+
+        trainer.restore(checkpoint)
+        metrics_handler.set_log(
+            algorithm=config_file.split("/")[-2], num_episodes=num_episodes
+        )
+        rollout(trainer, None, metrics_handler, num_steps, num_episodes, log_dir)
+        trainer.stop()
+
+    if show_plots:
+        metrics_handler.show_plots()
 
 
 if __name__ == "__main__":
     args = parse_args()
     main(
         scenario=args.scenario,
-        config_file=args.config_file,
+        config_files=args.config_files,
         checkpoint=args.checkpoint,
         num_steps=args.num_steps,
         num_episodes=args.num_runs,

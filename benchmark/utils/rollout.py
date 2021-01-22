@@ -8,13 +8,10 @@ from ray.rllib.env import MultiAgentEnv
 from ray.rllib.utils.spaces.space_utils import flatten_to_single_ndarray
 
 
-def rollout(
-    trainer, env_name, metrics_handler, num_steps, num_episodes, log_dir, show_plots
-):
+def rollout(trainer, env_name, metrics_handler, num_steps, num_episodes, log_dir):
     """Reference: https://github.com/ray-project/ray/blob/master/rllib/rollout.py"""
     policy_agent_mapping = default_policy_agent_mapping
     assert hasattr(trainer, "workers") and isinstance(trainer.workers, WorkerSet)
-    # if hasattr(trainer, "workers") and isinstance(trainer.workers, WorkerSet):
     env = trainer.workers.local_worker().env
     multiagent = isinstance(env, MultiAgentEnv)
     if trainer.workers.local_worker().multiagent:
@@ -22,17 +19,6 @@ def rollout(
     policy_map = trainer.workers.local_worker().policy_map
     state_init = {p: m.get_initial_state() for p, m in policy_map.items()}
     use_lstm = {p: len(s) > 0 for p, s in state_init.items()}
-    # else:
-    #     env = gym.make(env_name)
-    #     multiagent = False
-    #     try:
-    #         policy_map = {DEFAULT_POLICY_ID: trainer.policy}
-    #     except AttributeError:
-    #         raise AttributeError(
-    #             "Agent ({}) does not have a `policy` property! This is needed "
-    #             "for performing (trained) agent rollouts.".format(trainer)
-    #         )
-    #     use_lstm = {DEFAULT_POLICY_ID: False}
 
     action_init = {
         p: flatten_to_single_ndarray(m.action_space.sample())
@@ -123,4 +109,4 @@ def rollout(
             episode += 1
     metrics_handler.write_to_csv(csv_dir=log_dir)
     if show_plots:
-        metrics_handler.show_plots()
+        metrics_handler.show_plots(**plot_kwargs)

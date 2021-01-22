@@ -23,10 +23,10 @@ from abc import abstractmethod, ABCMeta
 
 class MetricHandler(metaclass=ABCMeta):
     def __init__(self):
-        pass
+        self._logs_mapping = None
 
     @property
-    def logs(self):
+    def logs_mapping(self):
         raise NotImplementedError
 
     @abstractmethod
