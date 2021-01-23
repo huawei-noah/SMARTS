@@ -29,11 +29,13 @@ import psutil, pickle, dill
 import  ray, torch, argparse
 from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
+from ultra.baselines.rllib_agent import RLlibAgent
+from smarts.core.controllers import ActionSpaceType
+from ultra.baselines.ppo.ppo.policy import PPOPolicy
 num_gpus = 1 if torch.cuda.is_available() else 0
 
-
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-@ray.remote(num_gpus=num_gpus / 2)
+# @ray.remote(num_gpus=num_gpus / 2)
 def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
     torch.set_num_threads(1)
     total_step = 0
@@ -44,7 +46,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     # -------------------------------------------------------
     AGENT_ID = "007"
 
-    spec = make(locator=policy_class)
+    # spec = make(locator=policy_class)
     # env = gym.make(
     #     "ultra.env:ultra-v0",
     #     agent_specs={AGENT_ID: spec},
@@ -54,21 +56,52 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     #     seed=seed,
     # )
 
+    rllib_agent = RLlibAgent(action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy)
+
+    episode = Episode()
+    pbt = PopulationBasedTraining(
+        time_attr="time_total_s",
+        metric="episode_reward_mean",
+        mode="max",
+        perturbation_interval=300,
+        resample_probability=0.25,
+    )
+    # rllib_policies = {
+    #     "default_policy": (
+    #         None,
+    #         rllib_agent.observation_space,
+    #         rllib_agent.action_space,
+    #         {"model": {"custom_model": TrainingModel.NAME}},
+    #     )
+    # }
     tune_config = {
         "env": RLlibUltraEnv,
         "log_level": "WARN",
-        "num_workers": num_workers,
+        "num_workers": 1,
         "env_config": {
-            "seed": tune.sample_from(lambda spec: random.randint(0, 300)),
-            "scenarios": [str(Path(scenario).expanduser().resolve().absolute())],
+            "seed": seed,
+            "scenario_info": task,
             "headless": headless,
-            "agent_specs": {
-                f"AGENT-{i}": rllib_agent["agent_spec"] for i in range(num_agents)
-            },
+            "agent_specs": {f"AGENT-007": rllib_agent.spec}
         },
-        "multiagent": {"policies": rllib_policies},
-        "callbacks": Callbacks,
+        "multiagent": {},
+        "callbacks": None,
     }
+    analysis = tune.run(
+        "PG",
+        name=experiment_name,
+        stop={"time_total_s": time_total_s},
+        checkpoint_freq=1,
+        checkpoint_at_end=True,
+        local_dir=str(result_dir),
+        resume=resume_training,
+        restore=checkpoint,
+        max_failures=3,
+        num_samples=num_samples,
+        export_formats=["model", "checkpoint"],
+        config=tune_config,
+        scheduler=pbt,
+    )
 
 
 if __name__ == "__main__":
@@ -112,23 +145,19 @@ if __name__ == "__main__":
 
     policy_class = "ultra.baselines.sac:sac-v0"
     # ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
-    ray.init()  # **ray_kwargs)
+    # ray.init()  # **ray_kwargs)
     # try:
-    ray.wait(
-        [
-            train.remote(
-                task=(args.task, args.level),
-                num_episodes=int(args.episodes),
-                eval_info={
-                    "eval_rate": float(args.eval_rate),
-                    "eval_episodes": int(args.eval_episodes),
-                },
-                timestep_sec=float(args.timestep),
-                headless=args.headless,
-                policy_class=policy_class,
-                seed=args.seed,
-            )
-        ]
+    train(
+        task=(args.task, args.level),
+        num_episodes=int(args.episodes),
+        eval_info={
+            "eval_rate": float(args.eval_rate),
+            "eval_episodes": int(args.eval_episodes),
+        },
+        timestep_sec=float(args.timestep),
+        headless=args.headless,
+        policy_class=policy_class,
+        seed=args.seed,
     )
     # finally:
     #     time.sleep(1)
