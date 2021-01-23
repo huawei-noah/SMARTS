@@ -27,15 +27,70 @@ os.environ["MKL_NUM_THREADS"] = "1"
 import time
 import psutil, pickle, dill
 import  ray, torch, argparse
+from ray import tune
 from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
 from ultra.baselines.rllib_agent import RLlibAgent
 from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.ppo.ppo.policy import PPOPolicy
+from ray.tune.schedulers import PopulationBasedTraining
+from ray.rllib.evaluation.episode import MultiAgentEpisode
+from ray.rllib.policy.policy import Policy
+from ray.rllib.utils.typing import PolicyID
+from ray.rllib.env.base_env import BaseEnv
+from ray.rllib.evaluation.rollout_worker import RolloutWorker
+from ray.rllib.agents.callbacks import DefaultCallbacks
+from typing import Dict
+
+
+
 num_gpus = 1 if torch.cuda.is_available() else 0
 
-# @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-# @ray.remote(num_gpus=num_gpus / 2)
+class Callbacks(DefaultCallbacks):
+    @staticmethod
+    def on_episode_start(
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        policies: Dict[PolicyID, Policy],
+        episode: MultiAgentEpisode,
+        env_index: int,
+        **kwargs,
+    ):
+        print('M')
+        episode.user_data["ego_speed"] = []
+
+    @staticmethod
+    def on_episode_step(
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        episode: MultiAgentEpisode,
+        env_index: int,
+        **kwargs,
+    ):
+        print('X')
+        single_agent_id = list(episode._agent_to_last_obs)[0]
+        obs = episode.last_raw_obs_for(single_agent_id)
+        episode.user_data["ego_speed"].append(obs["speed"])
+
+    @staticmethod
+    def on_episode_end(
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        policies: Dict[PolicyID, Policy],
+        episode: MultiAgentEpisode,
+        env_index: int,
+        **kwargs,
+    ):
+
+        mean_ego_speed = np.mean(episode.user_data["ego_speed"])
+        print(
+            f"ep. {episode.episode_id:<12} ended;"
+            f" length={episode.length:<6}"
+            f" mean_ego_speed={mean_ego_speed:.2f}"
+        )
+        episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
+
+
 def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
     torch.set_num_threads(1)
     total_step = 0
@@ -58,13 +113,16 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
 
     rllib_agent = RLlibAgent(action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy)
 
-    episode = Episode()
+    # episode = Episode()
     pbt = PopulationBasedTraining(
         time_attr="time_total_s",
         metric="episode_reward_mean",
         mode="max",
         perturbation_interval=300,
         resample_probability=0.25,
+        hyperparam_mutations={
+            "lr": [1e-3]
+        },
     )
     # rllib_policies = {
     #     "default_policy": (
@@ -85,19 +143,19 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "agent_specs": {f"AGENT-007": rllib_agent.spec}
         },
         "multiagent": {},
-        "callbacks": None,
+        "callbacks": Callbacks,
     }
     analysis = tune.run(
         "PG",
-        name=experiment_name,
-        stop={"time_total_s": time_total_s},
+        name="exp_1",
+        stop={"time_total_s": 1200},
         checkpoint_freq=1,
         checkpoint_at_end=True,
-        local_dir=str(result_dir),
-        resume=resume_training,
-        restore=checkpoint,
+        local_dir='ray_results/',
+        resume=False,
+        restore="ray_results/",
         max_failures=3,
-        num_samples=num_samples,
+        num_samples=1,
         export_formats=["model", "checkpoint"],
         config=tune_config,
         scheduler=pbt,
