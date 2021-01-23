@@ -39,10 +39,7 @@ from ultra.utils.common import (
 
 class RLlibUltraEnv(RLlibHiWayEnv):
     def __init__(
-        self,
-        config,
-        eval_mode=False,
-        ordered_scenarios=False,
+        self, config, eval_mode=False, ordered_scenarios=False,
     ):
         self.scenario_info = scenario_info
         self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
@@ -52,9 +49,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
         self.ultra_scores = BaselineAdapter()
-        super().__init__(
-            config=config
-        )
+        super().__init__(config=config)
 
         if ordered_scenarios:
             scenario_roots = []

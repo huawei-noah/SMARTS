@@ -26,7 +26,7 @@ from ultra.utils.ray import default_ray_kwargs
 os.environ["MKL_NUM_THREADS"] = "1"
 import time
 import psutil, pickle, dill
-import  ray, torch, argparse
+import ray, torch, argparse
 from ray import tune
 from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
@@ -43,8 +43,8 @@ from ray.rllib.agents.callbacks import DefaultCallbacks
 from typing import Dict
 
 
-
 num_gpus = 1 if torch.cuda.is_available() else 0
+
 
 class Callbacks(DefaultCallbacks):
     @staticmethod
@@ -56,7 +56,7 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        print('M')
+        print("M")
         episode.user_data["ego_speed"] = []
 
     @staticmethod
@@ -67,7 +67,7 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        print('X')
+        print("X")
         single_agent_id = list(episode._agent_to_last_obs)[0]
         obs = episode.last_raw_obs_for(single_agent_id)
         episode.user_data["ego_speed"].append(obs["speed"])
@@ -111,7 +111,9 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     #     seed=seed,
     # )
 
-    rllib_agent = RLlibAgent(action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy)
+    rllib_agent = RLlibAgent(
+        action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy
+    )
 
     # episode = Episode()
     pbt = PopulationBasedTraining(
@@ -120,9 +122,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         mode="max",
         perturbation_interval=300,
         resample_probability=0.25,
-        hyperparam_mutations={
-            "lr": [1e-3]
-        },
+        hyperparam_mutations={"lr": [1e-3]},
     )
     # rllib_policies = {
     #     "default_policy": (
@@ -140,7 +140,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "seed": seed,
             "scenario_info": task,
             "headless": headless,
-            "agent_specs": {f"AGENT-007": rllib_agent.spec}
+            "agent_specs": {f"AGENT-007": rllib_agent.spec},
         },
         "multiagent": {},
         "callbacks": Callbacks,
@@ -151,7 +151,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         stop={"time_total_s": 1200},
         checkpoint_freq=1,
         checkpoint_at_end=True,
-        local_dir='ray_results/',
+        local_dir="ray_results/",
         resume=False,
         restore="ray_results/",
         max_failures=3,
