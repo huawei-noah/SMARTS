@@ -169,7 +169,7 @@ if __name__ == "__main__":
         "--headless", help="run without envision", type=bool, default=False
     )
     parser.add_argument(
-        "--spec", help="spec file includes adapters and policy parameters", type=str
+        "--experiment-dir", help="spec file includes adapters and policy parameters", type=str
     )
     args = parser.parse_args()
 
@@ -197,7 +197,7 @@ if __name__ == "__main__":
             episode.info[episode.active_tag] = ray.get(
                 [
                     evaluate.remote(
-                        experiment_dir=args.spec,
+                        experiment_dir=args.experiment_dir,
                         agent_id=agent_id,
                         policy_class=policy_class,
                         seed=episode.eval_count,
