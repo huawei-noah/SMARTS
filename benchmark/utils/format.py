@@ -1,5 +1,5 @@
 def pretty_dict(d, indent=0):
-    """ Pretty the output format of a dictionary.
+    """Pretty the output format of a dictionary.
 
     Parameters
     ----------

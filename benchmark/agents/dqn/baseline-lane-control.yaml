@@ -37,7 +37,7 @@ policy:
     name: DQNTrainer
 
 run:
-  checkpoint_freq: 40
+  checkpoint_freq: 4
   checkpoint_at_end: True
   max_failures: 1000
   resume: False
@@ -50,3 +50,6 @@ run:
     num_gpus: 0
     horizon: 1000
     # learning
+
+checkpoint:
+  ./log/results/run/4lane-4/DQN_FrameStack_0_2021-01-25_16-59-276f728x1g/checkpoint_4/checkpoint-4

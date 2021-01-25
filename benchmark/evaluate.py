@@ -36,7 +36,6 @@ def parse_args():
     parser.add_argument(
         "scenario", type=str, help="Scenario name",
     )
-    parser.add_argument("--checkpoint", type=str, required=True)
     parser.add_argument("--num_steps", type=int, default=1000)
     parser.add_argument("--num_runs", type=int, default=10)
     # TODO(ming): eliminate this arg
@@ -58,7 +57,6 @@ def parse_args():
 def main(
     scenario,
     config_files,
-    checkpoint,
     log_dir,
     num_steps=1000,
     num_episodes=10,
@@ -74,7 +72,6 @@ def main(
         config = gen_config(
             scenario=scenario,
             config_file=config_file,
-            checkpoint=checkpoint,
             num_steps=num_steps,
             num_episodes=num_episodes,
             paradigm=paradigm,
@@ -92,7 +89,7 @@ def main(
 
         trainer = trainer_cls(env=tune_config["env"], config=trainer_config)
 
-        trainer.restore(checkpoint)
+        trainer.restore(config["checkpoint"])
         metrics_handler.set_log(
             algorithm=config_file.split("/")[-2], num_episodes=num_episodes
         )
@@ -108,7 +105,6 @@ if __name__ == "__main__":
     main(
         scenario=args.scenario,
         config_files=args.config_files,
-        checkpoint=args.checkpoint,
         num_steps=args.num_steps,
         num_episodes=args.num_runs,
         paradigm=args.paradigm,

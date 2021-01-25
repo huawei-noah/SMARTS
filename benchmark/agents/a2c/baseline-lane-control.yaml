@@ -29,7 +29,7 @@ policy:
     name: A2CTrainer
 
 run:
-  checkpoint_freq: 40
+  checkpoint_freq: 4
   checkpoint_at_end: True
   max_failures: 1000
   resume: False
@@ -52,3 +52,6 @@ run:
     min_iter_time_s: 5
     sample_async: True
     lambda: 1.0
+
+checkpoint:
+  ./log/results/run/4lane-4/A2C_FrameStack_0_2021-01-25_17-03-39ssr7i8t5/checkpoint_4/checkpoint-4

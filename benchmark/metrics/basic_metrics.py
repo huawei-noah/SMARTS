@@ -1,8 +1,8 @@
 import math
 import numpy as np
 
-from typing import Dict, Any, List
-from collections import defaultdict
+from typing import Dict, Any, List, Tuple
+from collections import defaultdict, OrderedDict
 
 from dataclasses import dataclass
 
@@ -75,8 +75,8 @@ class BehaviorMetric:
 
         self.control_diversity = np.mean(entropy)
 
-    def compute(self, handler: MetricHandler) -> Dict[str, float]:
-        """ Compute behavior analysis metrics
+    def compute(self, handler: MetricHandler) -> Tuple[Dict[str, Any], List[str]]:
+        """Compute behavior analysis metrics
 
         Parameters
         ----------
@@ -100,12 +100,21 @@ class BehaviorMetric:
             )
             self._compute_diversity_index([log.operations for log in episode_logs])
 
-            results[algorithm] = {
-                "Agility": self.agility,
-                "Safety": self.safety,
-                "Stability": self.stability,
-                "Diversity": self.control_diversity,
-            }
+            results[algorithm] = OrderedDict(
+                {
+                    "Agility": self.agility,
+                    "Safety": self.safety,
+                    "Stability": self.stability,
+                    "Diversity": self.control_diversity,
+                }
+            )
+
+        print("results:\n", results)
+
+        _result = list(results.values())[0]
+        metric_keys = list(_result.keys())
+
+        return results, metric_keys
 
 
 @dataclass

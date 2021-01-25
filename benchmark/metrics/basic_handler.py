@@ -64,8 +64,7 @@ class BasicMetricHandler(MetricHandler):
     """ MetricHandler serves for the metric """
 
     def __init__(self):
-        """Create a MetricHandler instance to record the
-        """
+        """Create a MetricHandler instance to record the"""
         super(BasicMetricHandler, self).__init__()
         self._logs_mapping = dict()
         self._logs = None
@@ -86,7 +85,7 @@ class BasicMetricHandler(MetricHandler):
 
         behavior_metric = BehaviorMetric()
         results, metric_keys = behavior_metric.compute(self)
-        value_dict = {}
+        value_dict = defaultdict(lambda: [])
         for algorithm, result in results.items():
             for k, v in result.items():
                 value_dict[k].append(v)
@@ -94,9 +93,12 @@ class BasicMetricHandler(MetricHandler):
         for k in metric_keys:
             # normalization
             tmp = np.asarray(value_dict[k])
-            tmp = (tmp - tmp.min) / np.max(tmp.max() - tmp.min(), 1.0)
+            tmp = (tmp - tmp.min()) / np.maximum(tmp.max() - tmp.min(), 1.0)
             values.append(tmp)
-        values = np.asarray(values)
+        values = np.asarray(values).T
+        print(
+            f">>>>>>>>>>>>>>>> shapes of: {values.shape}, {list(results.keys())}, {len(metric_keys)}"
+        )
         plot.radar_plots(
             values, list(results.keys()), metric_keys, title="Behavior Analysis"
         )
