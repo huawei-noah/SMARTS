@@ -228,11 +228,19 @@ If you're comfortable using docker or are on a platform without suitable support
 
 ```bash
 docker run --rm -it -v $(PWD):/src -p 8081:8081 huaweinoah/smarts:<version>
-# E.g. docker run --rm -it -v $(PWD):/src -p 8081:8081 huaweinoah/smarts:v0.4.3-pre
+# E.g. docker run --rm -it -v $(PWD):/src -p 8081:8081 huaweinoah/smarts:v0.4.12
 # <press enter>
 
 # Run Envision server in the background
+# This will only need to be run if you want visualisation
 $ scl envision start -s ./scenarios -p 8081 &
+
+# Build an example
+# This needs to be done the first time and after changes to the example
+$ scl scenario build scenarios/loop --clean
+
+# Run an example
+# add --headless if you do not need visualisation
 $ python examples/single_agent.py scenarios/loop
 
 # On your most machine visit http://localhost:8081 to see the running simulation in
