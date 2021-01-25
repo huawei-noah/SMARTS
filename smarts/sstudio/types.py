@@ -372,6 +372,7 @@ class TrapEntryTactic(EntryTactic):
 class UTurn:
     trigger_radius: int = 100
     """This task will be triggered if any vehicles within this radius"""
+    initial_speed: float = 10
 
     target_lane_index: int = 0
 
