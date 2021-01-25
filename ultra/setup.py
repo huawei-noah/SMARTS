@@ -3,8 +3,8 @@ from glob import glob
 from pathlib import Path
 from collections import defaultdict
 
-# TODO rename to ULTRA_baselines
-
+''' Modified setup.py to include option for changing SMARTS version or by default
+the latest stable version SMARTS will used'''
 setup(
     name="ultra",
     description="Unprotected Left Turn using Reinforcement-learning Agents",
