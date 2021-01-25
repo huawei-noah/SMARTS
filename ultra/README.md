@@ -17,6 +17,7 @@ Get started by choosing an option below.
 - [Setting up ULTRA](docs/setup.md)
 - [Train and Evaluate a Basline Agent](docs/getting_started.md)
 - [Create a Custom Agent](docs/custom_agent.md)
+- [More about ULTRA Agents](docs/agent.md)
 
 ### Citing ULTRA
 For a longer introduction to ULTRA, including its purpose, concepts, and benchmarks, please see [ULTRA: A reinforcement learning generatlization benchmark for autonomous driving](https://ml4ad.github.io/files/papers2020/ULTRA:%20A%20reinforcement%20learning%20generalization%20benchmark%20for%20autonomous%20driving.pdf).
