@@ -22,11 +22,11 @@ $ python run.py <scenario> -f <config_file>
 # E.x. python run.py scenarios/intersections/4lane -f agents/ppo/baseline-lane-control.yaml
 ```
 
-To run the evaluation procedure,
+To run the evaluation procedure for multiple algorithms,
 
 ```bash
 # from benchmarks/
-$ python evaluate.py <scenario> -f <config_file> --checkpoint <checkpoint_path>
+$ python evaluate.py <scenario> -f <config_files>
 # E.x. python evaluate.py scenarios/intersections/4lane \
 #          -f agents/ppo/baseline-lane-control.yaml \
 #          --checkpoint ./log/results/run/4lane-4/PPO_Simple_977c1_00000_0_2020-10-14_00-06-10
