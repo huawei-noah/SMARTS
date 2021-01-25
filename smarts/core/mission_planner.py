@@ -302,11 +302,13 @@ class MissionPlanner:
 
         ego_position = pose.position[:2]
         ego_lane = self._road_network.nearest_lane(ego_position)
-        ego_wps=self._waypoints.waypoint_paths_on_lane_at(ego_position, ego_lane.getID(), 60)
-        ego_wps_des_speed=[]
+        ego_wps = self._waypoints.waypoint_paths_on_lane_at(
+            ego_position, ego_lane.getID(), 60
+        )
+        ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
 
-            new_wp= Waypoint(
+            new_wp = Waypoint(
                 pos=ego_wps[0][px].pos,
                 heading=ego_wps[0][px].heading,
                 lane_width=ego_wps[0][px].lane_width,
@@ -315,7 +317,7 @@ class MissionPlanner:
                 lane_index=ego_wps[0][px].lane_index,
             )
             ego_wps_des_speed.append(new_wp)
-        ego_wps_des_speed=[ego_wps_des_speed]
+        ego_wps_des_speed = [ego_wps_des_speed]
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
             vehicle=vehicle, radius=140
         )
