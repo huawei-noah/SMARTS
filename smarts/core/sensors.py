@@ -992,17 +992,11 @@ class WaypointsSensor(Sensor):
         if self._mission_planner.mission.task is not None:
             if isinstance(self._mission_planner.mission.task, UTurn):
                 waypoints_with_task = self._mission_planner.uturn_waypoints(
-                    self._sim,
-                    self._vehicle.pose,
-                    self._vehicle,
-                    self._mission_planner.mission.task.initial_speed,
+                    self._sim, self._vehicle.pose, self._vehicle
                 )
             elif isinstance(self._mission_planner.mission.task, CutIn):
                 waypoints_with_task = self._mission_planner.cut_in_waypoints(
-                    self._sim,
-                    self._vehicle.pose,
-                    self._vehicle,
-                    lazy_calculate_waypoints,
+                    self._sim, self._vehicle.pose, self._vehicle
                 )
 
         if waypoints_with_task:
