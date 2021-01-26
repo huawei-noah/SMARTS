@@ -79,7 +79,7 @@ class Client:
         headless: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
-        self.headless = headless
+        self._headless = headless
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
         client_id = current_time
@@ -98,7 +98,7 @@ class Client:
             self._logging_thread = self._spawn_logging_thread(output_dir, client_id)
             self._logging_thread.start()
 
-        if not self.headless:
+        if not self._headless:
             self._state_queue = Queue()
             self._thread = self._connect(
                 endpoint=f"{endpoint}/simulations/{client_id}/broadcast",
@@ -225,7 +225,7 @@ class Client:
         )
 
     def send(self, state: types.State):
-        if not self.headless and self._thread.is_alive():
+        if not self._headless and self._thread.is_alive():
             self._state_queue.put(state)
         if self._logging_thread:
             self._logging_queue.put(state)
@@ -237,12 +237,12 @@ class Client:
         self._state_queue.put(state)
 
     def teardown(self):
-        if not self.headless:
+        if not self._headless:
             self._state_queue.put(Client.QueueDone())
 
         self._logging_queue.put(Client.QueueDone())
 
-        if not self.headless and self._thread:
+        if not self._headless and self._thread:
             self._thread.join(timeout=3)
             self._thread = None
 
