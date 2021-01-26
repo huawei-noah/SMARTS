@@ -212,7 +212,7 @@ class MissionPlanner:
 
         return edge_ids
 
-    def cut_in_waypoints(self, sim, pose: Pose, vehicle, base_waypoint_generator):
+    def cut_in_waypoints(self, sim, pose: Pose, vehicle):
         aggressiveness = self._agent_behavior.aggressiveness or 0
 
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
@@ -296,7 +296,7 @@ class MissionPlanner:
             trajectory.append(wp)
         return [trajectory]
 
-    def uturn_waypoints(self, sim, pose: Pose, vehicle, initial_speed):
+    def uturn_waypoints(self, sim, pose: Pose, vehicle):
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
 
@@ -305,6 +305,9 @@ class MissionPlanner:
         ego_wps = self._waypoints.waypoint_paths_on_lane_at(
             ego_position, ego_lane.getID(), 60
         )
+        if self._mission.task.initial_speed is None:
+            default_speed = ego_wps[0][0].lane_speed
+        default_speed = self._mission.task.initial_speed
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
 
@@ -312,7 +315,7 @@ class MissionPlanner:
                 pos=ego_wps[0][px].pos,
                 heading=ego_wps[0][px].heading,
                 lane_width=ego_wps[0][px].lane_width,
-                speed_limit=initial_speed,
+                speed_limit=default_speed,
                 lane_id=ego_wps[0][px].lane_id,
                 lane_index=ego_wps[0][px].lane_index,
             )
