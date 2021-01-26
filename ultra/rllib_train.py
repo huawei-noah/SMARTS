@@ -140,6 +140,8 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "seed": seed,
             "scenario_info": task,
             "headless": headless,
+            "eval_mode": False,
+            "ordered_scenarios": False,
             "agent_specs": {f"AGENT-007": rllib_agent.spec},
         },
         "multiagent": {},

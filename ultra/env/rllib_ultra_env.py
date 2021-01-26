@@ -38,22 +38,21 @@ from ultra.utils.common import (
 
 
 class RLlibUltraEnv(RLlibHiWayEnv):
-    def __init__(
-        self, config, eval_mode=False, ordered_scenarios=False,
-    ):
-        self.scenario_info = scenario_info
-        self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
-        if not eval_mode:
+    def __init__(self, config):
+        self.scenario_info = config["scenario_info"]
+        self.scenarios = self.get_task(self.scenario_info[0], self.scenario_info[1])
+        if not config["eval_mode"]:
             _scenarios = glob.glob(f"{self.scenarios['train']}")
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
+        config["scenarios"] = _scenarios
         self.ultra_scores = BaselineAdapter()
         super().__init__(config=config)
 
-        if ordered_scenarios:
+        if config["ordered_scenarios"]:
             scenario_roots = []
-            for root in _scenarios:
+            for root in config["scenarios"]:
                 if Scenario.is_valid_scenario(root):
                     # The case that this is a scenario root
                     scenario_roots.append(root)
@@ -63,7 +62,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             # Also see `smarts.env.HiwayEnv`
             self._scenarios_iterator = cycle(
                 Scenario.variations_for_all_scenario_roots(
-                    scenario_roots, list(agent_specs.keys())
+                    scenario_roots, list(config["agent_specs"].keys())
                 )
             )
 
