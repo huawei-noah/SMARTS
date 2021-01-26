@@ -5,11 +5,11 @@
 Ultra provides a gym-based environment using SMARTS for tackling intersection navigation and more specifically unprotected left turn.
 
 Here is the summary of key features:
- - Creating customized scenarios with different levels of difficulty.
- - Defining and analyzing traffic designs including low-mid-high densities.
- - Defining and analyzing social-vehicle behaviors.
+ - Customizable scenarios with different levels of difficulty.
+ - Analysis tools to evaluate traffic designs including low-mid-high densities.
+ - Tools to support analyzing social-vehicle behaviors.
  - Configurable train and test parameters.
- - Train and test custom RL algorithms against benchmark results.
+ - Benchmark results to train and test custom RL algorithms against.
 
 ## Index
 
