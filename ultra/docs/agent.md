@@ -1,6 +1,14 @@
 # ULTRA Agents
 
-An ULTRA agent specification inherits from SMARTS's `AgentSpec`. As a result, an agent interface, agent parameters, an agent class, and observation, reward, info, and action adapters can be specified. For example, the baseline agents of ULTRA use the `BaslineAgentSpec` available in `ultra/baselines/agent_spec.py`.
+An ULTRA agent specification inherits from SMARTS's `AgentSpec`. The baseline agents of ULTRA use the `BaslineAgentSpec` available in `ultra/baselines/agent_spec.py`. However, the following are the attributes of an `AgentSpec` available for customization:  
+* agent interface
+* agent parameters
+* agent policy class
+* observation adapter
+* reward adapter
+* info adapter
+* action adapter
+
 ```python
 # The baseline agent specification.
 spec = AgentSpec(
