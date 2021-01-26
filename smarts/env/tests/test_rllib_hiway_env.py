@@ -88,7 +88,9 @@ def rllib_agent():
     return {
         "agent_spec": AgentSpec(
             interface=AgentInterface.from_type(
-                AgentType.Standard, max_episode_steps=500
+                AgentType.Standard,
+                # We use a low number of steps here since this is a test
+                max_episode_steps=10,
             ),
             observation_adapter=observation_adapter,
             reward_adapter=reward_adapter,
@@ -145,7 +147,7 @@ def test_rllib_hiway_env(rllib_agent):
         "PPO",
         name="RLlibHiWayEnv test",
         # terminate as soon as possible (this will run one training iteration)
-        stop={"time_total_s": 1},
+        stop={"training_iteration": 1},
         max_failures=0,  # On failures, exit immediately
         local_dir=make_dir_in_smarts_log_dir("smarts_rllib_smoke_test"),
         config=tune_confg,
