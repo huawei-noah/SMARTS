@@ -49,7 +49,7 @@ For example, the package containing the baseline agents, `ultra.baselines`, has 
 Additionally, see `smarts/core/controllers/__init__.py` to view available action space types and how they are performed.
 
 ## Use Your Agent
-Finally, in `train.py` or `evaluate.py`, ensure that the `policy_class` variable references your agent using the string format shown below in order to use your agent for training or evaluation respectively:
+In `train.py` or `evaluate.py`, ensure that the `policy_class` variable references your agent using the string format shown below in order to use your agent for training or evaluation respectively:
 ```python
 policy_class = "<your.agents.package.name>.<your_agent_name>:<your_agent_name>-v<your_agent_version_number>"
 ```
