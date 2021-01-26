@@ -40,7 +40,6 @@ from smarts.sstudio.types import BoidAgentActor
 from smarts.sstudio.types import Bubble as SSBubble
 from smarts.sstudio.types import SocialAgentActor
 from smarts.zoo.registry import make as make_social_agent
-from smarts.core.utils.logging import timeit
 
 
 class BubbleTransition(Enum):
