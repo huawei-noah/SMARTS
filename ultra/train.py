@@ -36,7 +36,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
-def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
+def train(scenario_info, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
@@ -50,7 +50,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=task,
+        scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     ray.wait(
         [
             train.remote(
-                task=(args.task, args.level),
+                scenario_info=(args.task, args.level),
                 num_episodes=int(args.episodes),
                 eval_info={
                     "eval_rate": float(args.eval_rate),
