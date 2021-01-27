@@ -574,7 +574,11 @@ class SMARTS(ShowBase):
                     agent_id
                 )
                 agent_action_space = agent_interface.action_space
+<<<<<<< HEAD
                 if agent_action_space in self._dynamic_action_spaces:
+=======
+                if agent_action_space in self._pybullet_action_spaces:
+>>>>>>> Clean up
                     # This is a pybullet agent, we were the source of this vehicle state.
                     # No need to make any changes
                     continue
@@ -582,12 +586,9 @@ class SMARTS(ShowBase):
                     # This is not a pybullet agent, but it has an avatar in this world
                     # to make it's observations. Update the avatar to match the new
                     # state of this vehicle
-                    # print(f'Reached here agent {agent_id} {agent_action_space}')
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-                    # print(type(pybullet_vehicle.chassis))
                     # pybullet_vehicle.set_pose(vehicle.pose)
                     # pybullet_vehicle.set_speed(vehicle.speed)
-                    # pybullet_vehicle.control(throttle=0.8) too fast
                     pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
             else:
                 # This vehicle is a social vehicle

@@ -453,9 +453,9 @@ class BubbleManager:
             recreate=False,
             agent_interface=agent_interface,
         )
+
         for provider in sim.providers:
             interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-            # print(f"{agent_id} action: {interface.action} provider action: {provider.action_spaces}")
             if interface.action_space in provider.action_spaces:
                 provider.create_vehicle(
                     VehicleState(

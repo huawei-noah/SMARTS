@@ -373,8 +373,8 @@ class VehicleIndex:
             return self._switch_control_to_agent_recreate(
                 sim, vehicle_id, agent_id, boid, hijacking
             )
-        vehicle = self._vehicles[vehicle_id]
 
+        vehicle = self._vehicles[vehicle_id]
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
         if agent_interface and agent_interface.action in sim._pybullet_action_spaces:
@@ -400,8 +400,7 @@ class VehicleIndex:
                 is_hijacked=hijacking,
             )
         )
-        interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        print(f"Before: {agent_id} action: {interface}")  # interfce none here
+
         return vehicle
 
     @clear_cache

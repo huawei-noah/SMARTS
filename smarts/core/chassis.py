@@ -372,7 +372,6 @@ class AckermannChassis(Chassis):
         return pose
 
     def set_pose(self, pose: Pose):
-        # print('Got here')
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id, position, orientation
