@@ -152,6 +152,7 @@ class BoxChassis(Chassis):
             self._bullet_body._bullet_id, -1, 0x0, 0x0
         )
         self.control(pose, speed)
+        self._client = bullet_client
 
     def control(self, pose: Pose, speed: float):
         self._pose = pose

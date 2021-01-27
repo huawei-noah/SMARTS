@@ -354,7 +354,14 @@ class VehicleIndex:
 
     @clear_cache
     def switch_control_to_agent(
-        self, sim, vehicle_id, agent_id, boid=False, hijacking=False, recreate=False
+        self,
+        sim,
+        vehicle_id,
+        agent_id,
+        boid=False,
+        hijacking=False,
+        recreate=False,
+        agent_interface=None,
     ):
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
 
@@ -367,15 +374,20 @@ class VehicleIndex:
                 sim, vehicle_id, agent_id, boid, hijacking
             )
         vehicle = self._vehicles[vehicle_id]
-        # check bubble manager
-        # print(f"here in vehicle index: {agent_id}")
-        # make box model for bubble agents, check PR
 
-        # should be here?
-        # interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        # print(f"{agent_id} action: {interface.action}")
-        ackermann_chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
-        vehicle.swap_chassis(ackermann_chassis)
+        chassis = None
+        # change this to dynamic_action_spaces later when pr merged
+        if agent_interface and agent_interface.action in sim._pybullet_action_spaces:
+            chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
+        else:
+            chassis = BoxChassis(
+                pose=vehicle.pose,
+                speed=vehicle.speed,
+                dimensions=vehicle.state.dimensions,
+                bullet_client=sim.bc,
+            )
+
+        vehicle.swap_chassis(chassis)
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = _ControlEntity(*self._controlled_by[v_index][0])
@@ -389,7 +401,7 @@ class VehicleIndex:
             )
         )
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        print(f"Before: {agent_id} action: {interface}") # interfce none here
+        print(f"Before: {agent_id} action: {interface}")  # interfce none here
         return vehicle
 
     @clear_cache

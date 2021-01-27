@@ -585,10 +585,10 @@ class SMARTS(ShowBase):
                     # print(f'Reached here agent {agent_id} {agent_action_space}')
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                     # print(type(pybullet_vehicle.chassis))
-                    pybullet_vehicle.set_pose(vehicle.pose)
-                    pybullet_vehicle.set_speed(vehicle.speed)
-                    #pybullet_vehicle.control(throttle=0.8) too fast
-                    # pybullet_vehicle.control()
+                    # pybullet_vehicle.set_pose(vehicle.pose)
+                    # pybullet_vehicle.set_speed(vehicle.speed)
+                    # pybullet_vehicle.control(throttle=0.8) too fast
+                    pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
