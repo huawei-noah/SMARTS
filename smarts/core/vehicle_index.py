@@ -366,8 +366,14 @@ class VehicleIndex:
             return self._switch_control_to_agent_recreate(
                 sim, vehicle_id, agent_id, boid, hijacking
             )
-
         vehicle = self._vehicles[vehicle_id]
+        # check bubble manager
+        # print(f"here in vehicle index: {agent_id}")
+        # make box model for bubble agents, check PR
+
+        # should be here?
+        # interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+        # print(f"{agent_id} action: {interface.action}")
         ackermann_chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
         vehicle.swap_chassis(ackermann_chassis)
 
@@ -382,7 +388,8 @@ class VehicleIndex:
                 is_hijacked=hijacking,
             )
         )
-
+        interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+        print(f"Before: {agent_id} action: {interface}") # interfce none here
         return vehicle
 
     @clear_cache

@@ -582,9 +582,13 @@ class SMARTS(ShowBase):
                     # This is not a pybullet agent, but it has an avatar in this world
                     # to make it's observations. Update the avatar to match the new
                     # state of this vehicle
+                    # print(f'Reached here agent {agent_id} {agent_action_space}')
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+                    # print(type(pybullet_vehicle.chassis))
                     pybullet_vehicle.set_pose(vehicle.pose)
                     pybullet_vehicle.set_speed(vehicle.speed)
+                    #pybullet_vehicle.control(throttle=0.8) too fast
+                    # pybullet_vehicle.control()
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():

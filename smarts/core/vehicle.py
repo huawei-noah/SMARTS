@@ -342,6 +342,13 @@ class Vehicle:
                 agent_interface.vehicle_type
             ]
 
+        print(f"action: {agent_interface.action}")
+        # vehicle_chasis = BoxChassis(
+        #     pose=vehicle_state.pose,
+        #     speed=vehicle_state.speed,
+        #     dimensions=vehicle_state.dimensions,
+        #     bullet_client=sim.bc
+        # )
         vehicle = Vehicle(
             id=vehicle_id,
             pose=start_pose,

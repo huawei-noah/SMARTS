@@ -442,7 +442,7 @@ class BubbleManager:
             agent_id = BubbleManager._make_boid_social_agent_id(social_agent_actor)
         else:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
-
+        print("Before switch")
         vehicle = sim.vehicle_index.switch_control_to_agent(
             sim,
             vehicle_id,
@@ -451,9 +451,11 @@ class BubbleManager:
             hijacking=True,
             recreate=False,
         )
-
+        interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+        print(f"After: {agent_id} action: {interface.action}")
         for provider in sim.providers:
             interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+            # print(f"{agent_id} action: {interface.action} provider action: {provider.action_spaces}")
             if interface.action_space in provider.action_spaces:
                 provider.create_vehicle(
                     VehicleState(
