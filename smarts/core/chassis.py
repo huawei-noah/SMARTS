@@ -166,7 +166,7 @@ class BoxChassis(Chassis):
     @property
     def contact_points(self) -> Sequence:
         contact_points = _query_bullet_contact_points(
-            self._client, self._bullet_body, -1
+            self._client, self.bullet_id, -1
         )
         return [
             ContactPoint(bullet_id=p[2], contact_point=p[5], contact_point_other=p[6])
