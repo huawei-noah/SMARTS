@@ -112,7 +112,7 @@ RUN apt-get autoremove && \
 #------------------------------------------------------------------------------
 # Install SMARTS
 RUN mkdir -p /SMARTS
-COPY ./setup.py /SMARTS/
+#COPY ./setup.py /SMARTS/
 
 # Add https://github.com/krallin/tini
 ARG TINI_VERSION=v0.18.0
