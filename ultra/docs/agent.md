@@ -31,10 +31,10 @@ spec = AgentSpec(
 )
 ```
 
-- The `interface` is a SMARTS `AgentInterface` that specifies how the agent will interface with the environment. For example, the types of observations (whether they include images, neighbouring social vehicles, accelerometer data, etc.), vehicle type, and action type can be specified with the agent interface.
-- The `agent_params` are the parameters that are passed to the agent builder class.
-- The `agent_builder` is a class inheriting from SMARTS's `Agent`. This class must define `act` and `step` methods.
-- The `observation_adapter` is a function that takes a raw environment observation and returns a modified observation readable by the agent. See more about observation adapters [here](observations.md).
-- The `reward_adapter` is a function that takes a raw environment observation and a raw environment reward and returns a number corresponding to the agent's reward. See more about reward adapters [here](rewards.md).
-- The `action_adapter` is a function that takes an action of some form and returns an action.
-- The `info_adapter` is a function that takes a raw environment observation, a raw environment reward, and raw environment info, returning a dictionary of information about the agent.
+- `interface` is a SMARTS `AgentInterface` that specifies how the agent will interface with the environment. For example, the types of observations (whether they include images, neighbouring social vehicles, accelerometer data, etc.), vehicle type, and action type can be specified with the agent interface.
+- `agent_params` are the parameters that are passed to the agent builder class.
+- `agent_builder` is a class inheriting from SMARTS's `Agent`. This class must define `act` and `step` methods.
+- `observation_adapter` is a function that takes a raw environment observation and returns a modified observation readable by the agent. See more about observation adapters [here](observations.md).
+- `reward_adapter` is a function that takes a raw environment observation and a raw environment reward and returns a number corresponding to the agent's reward. See more about reward adapters [here](rewards.md).
+- `action_adapter` is a function that takes an action of some form and returns an action.
+- `info_adapter` is a function that takes a raw environment observation, a raw environment reward, and raw environment info, returning a dictionary of information about the agent.
