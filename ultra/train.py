@@ -36,7 +36,9 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
-def train(scenario_info, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
+def train(
+    scenario_info, num_episodes, policy_class, eval_info, timestep_sec, headless, seed
+):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
@@ -144,7 +146,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--seed", help="Environment seed", default=2, type=int,
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
     )
     args = parser.parse_args()
 
