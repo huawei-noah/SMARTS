@@ -11,6 +11,10 @@ Here is the summary of key features:
  - Configurable train and test parameters.
  - Benchmark results to train and test custom RL algorithms against.
 
+<p align="center">
+  <img src="docs/_static/ultra_envision.gif" alt="ULTRA demo GIF">
+</p>
+
 ## Index
 
 Get started by choosing an option below.
