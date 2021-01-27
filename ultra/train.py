@@ -120,31 +120,31 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--level",
-        help="Tasks available : [easy, medium, hard, no-traffic]",
+        help="Levels available : [easy, medium, hard, no-traffic]",
         type=str,
         default="easy",
     )
     parser.add_argument(
-        "--episodes", help="number of training episodes", type=int, default=1000000
+        "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
-        "--timestep", help="environment timestep (sec)", type=float, default=0.1
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="run without envision", type=bool, default=False
+        "--headless", help="Run without envision", type=bool, default=False
     )
     parser.add_argument(
-        "--eval-episodes", help="number of evaluation episodes", type=int, default=200
+        "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
     )
     parser.add_argument(
         "--eval-rate",
-        help="evaluation rate based on number of observations",
+        help="Evaluation rate based on number of observations",
         type=int,
         default=10000,
     )
 
     parser.add_argument(
-        "--seed", help="environment seed", default=2, type=int,
+        "--seed", help="Environment seed", default=2, type=int,
     )
     args = parser.parse_args()
 
