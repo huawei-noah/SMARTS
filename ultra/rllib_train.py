@@ -40,11 +40,18 @@ from ray.rllib.utils.typing import PolicyID
 from ray.rllib.env.base_env import BaseEnv
 from ray.rllib.evaluation.rollout_worker import RolloutWorker
 from ray.rllib.agents.callbacks import DefaultCallbacks
+from ray.rllib.models import ModelCatalog
+from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
+
 from typing import Dict
 
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
+class TrainingModel(FullyConnectedNetwork):
+    NAME = "FullyConnectedNetwork"
+
+ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
 
 class Callbacks(DefaultCallbacks):
     @staticmethod
@@ -56,7 +63,7 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        print("M")
+        print("**********  M ********")
         episode.user_data["ego_speed"] = []
 
     @staticmethod
@@ -122,16 +129,20 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         mode="max",
         perturbation_interval=300,
         resample_probability=0.25,
-        hyperparam_mutations={"lr": [1e-3]},
+        hyperparam_mutations={
+            "lr": [1e-3,5e-4, 1e-4, 5e-5, 1e-5],
+            "rollout_fragment_length": lambda: 200,
+            "train_batch_size": lambda: 2000,
+        },
     )
-    # rllib_policies = {
-    #     "default_policy": (
-    #         None,
-    #         rllib_agent.observation_space,
-    #         rllib_agent.action_space,
-    #         {"model": {"custom_model": TrainingModel.NAME}},
-    #     )
-    # }
+    rllib_policies = {
+        "default_policy": (
+            None,
+            rllib_agent.observation_space,
+            rllib_agent.action_space,
+            {"model": {"custom_model": TrainingModel.NAME}},
+        )
+    }
     tune_config = {
         "env": RLlibUltraEnv,
         "log_level": "WARN",
@@ -144,7 +155,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "ordered_scenarios": False,
             "agent_specs": {f"AGENT-007": rllib_agent.spec},
         },
-        "multiagent": {},
+        "multiagent": {"policies": rllib_policies},
         "callbacks": Callbacks,
     }
     analysis = tune.run(

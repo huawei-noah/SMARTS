@@ -1,5 +1,6 @@
 from ultra.baselines.agent_spec import BaselineAgentSpec
-
+import gym
+import numpy as np
 
 class RLlibAgent:
     def __init__(self, action_type, policy_class):
@@ -24,17 +25,17 @@ class RLlibAgent:
                 ),
                 "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
                 "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,)),
-                "social_vehicles": gym.spaces.Box(low=0, high=1e10, shape=(1000,)),
+                "social_vehicles": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
                 "road_speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
                 # ----------
                 # don't normalize the following:
                 "start": gym.spaces.Box(low=0, high=1e10, shape=(2,)),
                 "goal": gym.spaces.Box(low=0, high=1e10, shape=(2,)),
                 "heading": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                "goal_path": gym.spaces.Box(low=0, high=1e10, shape=(1000,)),
+                "goal_path": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
                 "ego_position": gym.spaces.Box(low=0, high=1e10, shape=(2,)),
-                "waypoint_paths": gym.spaces.Box(low=0, high=1e10, shape=(1000,)),
-                "events": gym.spaces.Box(low=0, high=100, shape=(10,)),
+                "waypoint_paths": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
+                "events": gym.spaces.Box(low=0, high=100, shape=(15,)),
             }
         )
 
