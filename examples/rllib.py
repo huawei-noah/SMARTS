@@ -1,12 +1,21 @@
 import argparse
+from datetime import timedelta
 import logging
 import multiprocessing
+from os import stat
 import random
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 from ray import tune
+from ray.rllib.env.base_env import BaseEnv
+from ray.rllib.evaluation.episode import MultiAgentEpisode
+from ray.rllib.evaluation.rollout_worker import RolloutWorker
+from ray.rllib.policy.policy import Policy
+from ray.rllib.utils.typing import PolicyID
 from ray.tune.schedulers import PopulationBasedTraining
+from ray.rllib.agents.callbacks import DefaultCallbacks
 
 import smarts
 from smarts.core.utils.file import copy_tree
@@ -18,28 +27,50 @@ logging.basicConfig(level=logging.INFO)
 
 
 # Add custom metrics to your tensorboard using these callbacks
-# see: https://ray.readthedocs.io/en/latest/rllib-training.html#callbacks-and-custom-metrics
-def on_episode_start(info):
-    episode = info["episode"]
-    episode.user_data["ego_speed"] = []
+# See: https://ray.readthedocs.io/en/latest/rllib-training.html#callbacks-and-custom-metrics
+class Callbacks(DefaultCallbacks):
+    @staticmethod
+    def on_episode_start(
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        policies: Dict[PolicyID, Policy],
+        episode: MultiAgentEpisode,
+        env_index: int,
+        **kwargs,
+    ):
 
+        episode.user_data["ego_speed"] = []
 
-def on_episode_step(info):
-    episode = info["episode"]
-    single_agent_id = list(episode._agent_to_last_obs)[0]
-    obs = episode.last_raw_obs_for(single_agent_id)
-    episode.user_data["ego_speed"].append(obs["speed"])
+    @staticmethod
+    def on_episode_step(
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        episode: MultiAgentEpisode,
+        env_index: int,
+        **kwargs,
+    ):
 
+        single_agent_id = list(episode._agent_to_last_obs)[0]
+        obs = episode.last_raw_obs_for(single_agent_id)
+        episode.user_data["ego_speed"].append(obs["speed"])
 
-def on_episode_end(info):
-    episode = info["episode"]
-    mean_ego_speed = np.mean(episode.user_data["ego_speed"])
-    print(
-        f"ep. {episode.episode_id:<12} ended;"
-        f" length={episode.length:<6}"
-        f" mean_ego_speed={mean_ego_speed:.2f}"
-    )
-    episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
+    @staticmethod
+    def on_episode_end(
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        policies: Dict[PolicyID, Policy],
+        episode: MultiAgentEpisode,
+        env_index: int,
+        **kwargs,
+    ):
+
+        mean_ego_speed = np.mean(episode.user_data["ego_speed"])
+        print(
+            f"ep. {episode.episode_id:<12} ended;"
+            f" length={episode.length:<6}"
+            f" mean_ego_speed={mean_ego_speed:.2f}"
+        )
+        episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
 
 
 def explore(config):
@@ -53,6 +84,8 @@ def main(
     scenario,
     headless,
     time_total_s,
+    rollout_fragment_length,
+    train_batch_size,
     seed,
     num_samples,
     num_agents,
@@ -62,6 +95,10 @@ def main(
     checkpoint_num,
     save_model_path,
 ):
+    assert train_batch_size > 0, f"{train_batch_size.__name__} cannot be less than 1."
+    if rollout_fragment_length > train_batch_size:
+        rollout_fragment_length = train_batch_size
+
     pbt = PopulationBasedTraining(
         time_attr="time_total_s",
         metric="episode_reward_mean",
@@ -69,10 +106,11 @@ def main(
         perturbation_interval=300,
         resample_probability=0.25,
         # Specifies the mutations of these hyperparams
+        # See: `ray.rllib.agents.trainer.COMMON_CONFIG` for common hyperparams
         hyperparam_mutations={
             "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
-            "rollout_fragment_length": lambda: random.randint(128, 16384),
-            "train_batch_size": lambda: random.randint(2000, 160000),
+            "rollout_fragment_length": lambda: rollout_fragment_length,
+            "train_batch_size": lambda: train_batch_size,
         },
         # Specifies additional mutations after hyperparam_mutations is applied
         custom_explore_fn=explore,
@@ -104,11 +142,7 @@ def main(
             },
         },
         "multiagent": {"policies": rllib_policies},
-        "callbacks": {
-            "on_episode_start": on_episode_start,
-            "on_episode_step": on_episode_step,
-            "on_episode_end": on_episode_end,
-        },
+        "callbacks": Callbacks,
     }
 
     experiment_name = "rllib_example_multi"
@@ -139,7 +173,7 @@ def main(
 
     print(analysis.dataframe().head())
 
-    best_logdir = Path(analysis.get_best_logdir("episode_reward_max"))
+    best_logdir = Path(analysis.get_best_logdir("episode_reward_max", mode="max"))
     model_path = best_logdir / "model"
 
     copy_tree(str(model_path), save_model_path, overwrite=True)
@@ -166,10 +200,22 @@ if __name__ == "__main__":
         help="Number of times to sample from hyperparameter space",
     )
     parser.add_argument(
+        "--rollout_fragment_length",
+        type=int,
+        default=200,
+        help="Episodes are divided into fragments of this many steps for each rollout. In this example this will be ensured to be `1=<rollout_fragment_length<=train_batch_size`",
+    )
+    parser.add_argument(
+        "--train_batch_size",
+        type=int,
+        default=2000,
+        help="The training batch size. This value must be > 0.",
+    )
+    parser.add_argument(
         "--time_total_s",
         type=int,
         default=1 * 60 * 60,  # 1 hour
-        help="Total time in seconds to run the simulation for",
+        help="Total time in seconds to run the simulation for. This is a rough end time as it will be checked per training batch.",
     )
     parser.add_argument(
         "--seed",
@@ -214,6 +260,8 @@ if __name__ == "__main__":
         scenario=args.scenario,
         headless=args.headless,
         time_total_s=args.time_total_s,
+        rollout_fragment_length=args.rollout_fragment_length,
+        train_batch_size=args.train_batch_size,
         seed=args.seed,
         num_samples=args.num_samples,
         num_agents=args.num_agents,
