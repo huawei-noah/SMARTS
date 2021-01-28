@@ -37,7 +37,9 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
-def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed, log_dir):
+def train(
+    task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed, log_dir
+):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
@@ -149,12 +151,18 @@ if __name__ == "__main__":
         type=int,
         default=10000,
     )
-    
+
     parser.add_argument(
-        "--seed", help="environment seed", default=2, type=int,
+        "--seed",
+        help="environment seed",
+        default=2,
+        type=int,
     )
     parser.add_argument(
-        "--log-dir", help="log directory location", default="logs", type=str,
+        "--log-dir",
+        help="log directory location",
+        default="logs",
+        type=str,
     )
     args = parser.parse_args()
 
@@ -162,18 +170,18 @@ if __name__ == "__main__":
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
 
-    with open("/home/jenish/Desktop/temp/SMARTS/ultra/agent_pool.json", 'r') as f:
-        objects = ijson.items(f, 'agents')
+    with open("/home/jenish/Desktop/temp/SMARTS/ultra/agent_pool.json", "r") as f:
+        objects = ijson.items(f, "agents")
         for o in objects:
             policy_pool = o
         if args.policy in policy_pool.keys():
             policy_path = policy_pool[args.policy]["path"]
             policy_locator = policy_pool[args.policy]["locator"]
         else:
-            raise ImportError('Invalid policy name. Please try again')
+            raise ImportError("Invalid policy name. Please try again")
 
     # Required string for smarts' class registry
-    policy_class = str(policy_path) + ':' + str(policy_locator)
+    policy_class = str(policy_path) + ":" + str(policy_locator)
 
     # ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
     ray.init()  # **ray_kwargs)
@@ -191,7 +199,7 @@ if __name__ == "__main__":
                 headless=args.headless,
                 policy_class=policy_class,
                 seed=args.seed,
-                log_dir=args.log_dir
+                log_dir=args.log_dir,
             )
         ]
     )
