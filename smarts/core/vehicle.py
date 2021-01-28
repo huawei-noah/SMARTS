@@ -45,6 +45,7 @@ from .sensors import (
     WaypointsSensor,
 )
 from .utils.math import rotate_around_point
+from functools import lru_cache
 
 
 @dataclass(frozen=True)
@@ -148,6 +149,7 @@ class Vehicle:
         # TODO: Move this into the VehicleGeometry class
         self._np = self._build_model(pose, config, showbase)
         self._initialized = True
+        self._has_stepped = False
 
     def _assert_initialized(self):
         assert self._initialized, f"Vehicle({self.id}) is not initialized"
@@ -474,6 +476,7 @@ class Vehicle:
         )
 
     def step(self, current_simulation_time):
+        self._has_stepped = True
         self._chassis.step(current_simulation_time)
 
     def control(self, *args, **kwargs):
@@ -482,6 +485,14 @@ class Vehicle:
     def sync_to_panda3d(self):
         pos, heading = self._chassis.pose.as_panda3d()
         self._np.setPosHpr(*pos, heading, 0, 0)
+
+    @lru_cache(maxsize=1)
+    def _warn_non_kinematic_vehicle_set_pose(self):
+        if self._has_stepped and isinstance(self._chassis, AckermannChassis):
+            logging.warning(
+                f"Agent `{self._id}` has called set pose after step."
+                "This may cause collision problems"
+            )
 
     # TODO: Merge this w/ speed setter as a set GCD call?
     def set_pose(self, pose: Pose):

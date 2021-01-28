@@ -61,6 +61,7 @@ class Controllers:
         action_space,
         vehicle_type,
     ):
+        #print("Reached perform action")
         if action is None:
             return
         if vehicle_type == "bus":
@@ -71,6 +72,8 @@ class Controllers:
                 brake=np.clip(action[1], 0.0, 1.0),
                 steering=np.clip(action[2], -1, 1),
             )
+        elif action_space == ActionSpaceType.TargetPose:
+            print("Reached controller here")
         elif action_space == ActionSpaceType.ActuatorDynamic:
             ActuatorDynamicController.perform_action(
                 vehicle, action, controller_state, dt_sec=sim.timestep_sec

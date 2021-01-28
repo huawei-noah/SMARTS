@@ -163,6 +163,7 @@ class SMARTS(ShowBase):
         self._ground_bullet_id = None
 
     def step(self, agent_actions):
+        print("Start stepping")
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
 
@@ -589,6 +590,7 @@ class SMARTS(ShowBase):
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                     # pybullet_vehicle.set_pose(vehicle.pose)
                     # pybullet_vehicle.set_speed(vehicle.speed)
+                    #print(f'printing chassis {pybullet_vehicle._chassis}') # this is ackerman chassis in the test
                     pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
             else:
                 # This vehicle is a social vehicle
@@ -697,7 +699,7 @@ class SMARTS(ShowBase):
             if agent_controls_vehicles(agent_id)
             and matches_provider_action_spaces(agent_id, self._dynamic_action_spaces)
         }
-        accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions))
+        accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions)) ## controllers and actions checked here _pybullet_provider_step
 
         for provider in self.providers:
             provider_state = self._step_provider(
@@ -709,7 +711,7 @@ class SMARTS(ShowBase):
 
             accumulated_provider_state.merge(provider_state)
 
-        self._harmonize_providers(accumulated_provider_state)
+        self._harmonize_providers(accumulated_provider_state) # pybullet provider used here
         return accumulated_provider_state
 
     def _step_provider(self, provider, actions, dt, elapsed_sim_time):
