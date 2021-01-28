@@ -574,11 +574,7 @@ class SMARTS(ShowBase):
                     agent_id
                 )
                 agent_action_space = agent_interface.action_space
-<<<<<<< HEAD
                 if agent_action_space in self._dynamic_action_spaces:
-=======
-                if agent_action_space in self._pybullet_action_spaces:
->>>>>>> Clean up
                     # This is a pybullet agent, we were the source of this vehicle state.
                     # No need to make any changes
                     continue
