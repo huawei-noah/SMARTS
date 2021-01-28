@@ -2,6 +2,7 @@ from ultra.baselines.agent_spec import BaselineAgentSpec
 import gym
 import numpy as np
 
+
 class RLlibAgent:
     def __init__(self, action_type, policy_class):
         self._spec = BaselineAgentSpec(
@@ -38,20 +39,20 @@ class RLlibAgent:
                 "relative_goal_position": gym.spaces.Box(
                     low=np.array([-1e10, -1e10]), high=np.array([1e10, 1e10])
                 ),
-                # "distance_from_center": gym.spaces.Box(
-                #     low=-1e10, high=1e10, shape=(1,)
-                # ),
-                # "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
-                # "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,)),
+                "distance_from_center": gym.spaces.Box(
+                    low=-1e10, high=1e10, shape=(1,)
+                ),
+                "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+                "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,)),
                 # # "social_vehicles": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
-                # "road_speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                "road_speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
                 # # ----------
                 # # don't normalize the following:
-                # "start": gym.spaces.Box(low=0, high=1e10, shape=(2,)),
-                # "goal": gym.spaces.Box(low=0, high=1e10, shape=(2,)),
-                # # "heading": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                "start": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
+                "goal": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
+                "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
                 # # "goal_path": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
-                # "ego_position": gym.spaces.Box(low=0, high=1e10, shape=(2,)),
+                "ego_position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
                 # "waypoint_paths": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
                 # "events": gym.spaces.Box(low=0, high=100, shape=(15,)),
             }

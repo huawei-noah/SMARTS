@@ -22,6 +22,7 @@
 import os
 from ultra.utils.ray import default_ray_kwargs
 from pathlib import Path
+
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
 import time
@@ -49,10 +50,13 @@ from typing import Dict
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
+
 class TrainingModel(FullyConnectedNetwork):
     NAME = "FullyConnectedNetwork"
 
+
 ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
+
 
 class Callbacks(DefaultCallbacks):
     @staticmethod
@@ -131,7 +135,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         perturbation_interval=300,
         resample_probability=0.25,
         hyperparam_mutations={
-            "lr": [1e-3,5e-4, 1e-4, 5e-5, 1e-5],
+            "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
             "rollout_fragment_length": lambda: 200,
             "train_batch_size": lambda: 2000,
         },
