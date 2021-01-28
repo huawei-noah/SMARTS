@@ -48,6 +48,7 @@
 **/.spyproject
 **/supervisord.log
 **/supervisord.pid
+**/*.tar
 **/.tox/
 **/traffic_histories.pkl
 **/*.trips.xml
@@ -58,5 +59,7 @@
 
 # Keep manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml
+!smarts/sstudio/tests/*.rou.xml
+
 # Keep model assets
 !**/models/*.glb
