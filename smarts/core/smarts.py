@@ -483,6 +483,10 @@ class SMARTS(ShowBase):
         return self._bullet_client.getDynamicsInfo(self._ground_bullet_id, -1)[9]
 
     @property
+    def dynamic_action_spaces(self):
+        return self._dynamic_action_spaces
+
+    @property
     def traffic_sim(self) -> SumoTrafficSimulation:
         return self._traffic_sim
 

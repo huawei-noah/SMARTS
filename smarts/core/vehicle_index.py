@@ -377,7 +377,7 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
-        if agent_interface and agent_interface.action in sim._dynamic_action_spaces:
+        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
             chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
         else:
             chassis = BoxChassis(
