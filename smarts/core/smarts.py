@@ -461,6 +461,7 @@ class SMARTS(ShowBase):
             self._visdom.teardown()
 
         self._agent_manager.destroy()
+        self._traffic_sim.destroy()
         self._bullet_client.disconnect()
 
         super().destroy()

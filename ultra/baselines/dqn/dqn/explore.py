@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,24 +19,31 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import click
-
-from .envision import envision_cli
-from .studio import scenario_cli
-from .zoo import zoo_cli
-from .ultra import ultra_cli
+import numpy as np
+from torch import nn
 
 
-@click.group()
-def scl():
-    pass
+class EpsilonExplore:
+    def __init__(self, max_epsilon, min_epsilon, decay):
+        self.max_epsilon = max_epsilon
+        self.min_epsilon = min_epsilon
+        self.decay = decay
+        self.epsilon = max_epsilon
+        self.epsilon_step = 0
 
+    def get_epsilon(self):
+        return self.epsilon
 
-scl.add_command(envision_cli)
-scl.add_command(scenario_cli)
-scl.add_command(zoo_cli)
-scl.add_command(ultra_cli)
-
-
-if __name__ == "__main__":
-    scl()
+    def step(self):
+        if isinstance(self.decay, int):
+            delta = (self.max_epsilon - self.min_epsilon) / self.decay
+            self.epsilon = np.clip(
+                self.max_epsilon - delta * self.epsilon_step,
+                self.min_epsilon,
+                self.max_epsilon,
+            )
+        else:
+            self.epsilon = np.clip(
+                self.epsilon * self.decay, self.min_epsilon, self.max_epsilon
+            )
+        self.epsilon_step += 1

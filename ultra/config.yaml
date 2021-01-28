@@ -1,0 +1,38 @@
+tasks:
+  task00: # unittest
+    easy:
+      train: "ultra/tests/task/train_mock*"
+      test:  "ultra/tests/task/test_mock*"
+  task0:
+    no-traffic:
+      train: "ultra/scenarios/task1/train_no-traffic*"
+      test:  "ultra/scenarios/task1/train_no-traffic*"
+    easy:
+      train: "ultra/scenarios/task1/train_easy*"
+      test:  "ultra/scenarios/task1/train_easy*"
+    medium:
+      train: "ultra/scenarios/task1/train_medium*"
+      test:  "ultra/scenarios/task1/train_medium*"
+    hard:
+      train: "ultra/scenarios/task1/train_hard*"
+      test:  "ultra/scenarios/task1/train_hard*"
+  task1:
+    no-traffic:
+      train: "ultra/scenarios/task1/train_no-traffic*"
+      test:  "ultra/scenarios/task1/test_no-traffic*"
+    easy:
+      train: "ultra/scenarios/task1/train_easy*"
+      test:  "ultra/scenarios/task1/test_easy*"
+    medium:
+      train: "ultra/scenarios/task1/train_medium*"
+      test:  "ultra/scenarios/task1/test_medium*"
+    hard:
+      train: "ultra/scenarios/task1/train_hard*"
+      test:  "ultra/scenarios/task1/test_hard*"
+  task2:
+    lo-hi:
+      train: "ultra/scenarios/task2/train_lo-hi*"
+      test:  "ultra/scenarios/task2/test_lo-hi*"
+    hi-lo:
+      train: "ultra/scenarios/task2/train_hi-lo*"
+      test:  "ultra/scenarios/task2/test_hi-lo*"
