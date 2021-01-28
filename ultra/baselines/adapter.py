@@ -68,24 +68,24 @@ class BaselineAdapter:
         relative_goal_position_rotated = rotate2d_vector(
             relative_goal_position, -ego_state.heading
         )
-
+        print(type(relative_goal_position_rotated))
         state = dict(
-            speed=ego_state.speed,
-            relative_goal_position=relative_goal_position_rotated,
-            distance_from_center=ego_dist_center,
-            steering=ego_state.steering,
-            angle_error=closest_wp.relative_heading(ego_state.heading),
-            social_vehicles=env_observation.neighborhood_vehicle_states,
-            road_speed=closest_wp.speed_limit,
-            # ----------
-            # dont normalize the following,
-            start=start.position,
-            goal=goal.position,
-            heading=ego_state.heading,
-            goal_path=path,
-            ego_position=ego_state.position,
-            waypoint_paths=env_observation.waypoint_paths,
-            events=env_observation.events,
+            speed=np.array([ego_state.speed]),
+            relative_goal_position=np.asarray(relative_goal_position_rotated),
+            # distance_from_center=ego_dist_center,
+            # steering=ego_state.steering,
+            # angle_error=closest_wp.relative_heading(ego_state.heading),
+            # # social_vehicles=env_observation.neighborhood_vehicle_states,
+            # road_speed=closest_wp.speed_limit,
+            # # ----------
+            # # dont normalize the following,
+            # start=start.position,
+            # goal=goal.position,
+            # heading=ego_state.heading,
+            # # goal_path=path,
+            # ego_position=ego_state.position,
+            # waypoint_paths=env_observation.waypoint_paths,
+            # events=env_observation.events,
         )
         return state  # ego=ego, env_observation=env_observation)
 

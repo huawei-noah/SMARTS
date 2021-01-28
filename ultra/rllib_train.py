@@ -21,12 +21,13 @@
 # THE SOFTWARE.
 import os
 from ultra.utils.ray import default_ray_kwargs
-
+from pathlib import Path
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
 import time
 import psutil, pickle, dill
 import ray, torch, argparse
+import numpy as np
 from ray import tune
 from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
@@ -158,15 +159,18 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         "multiagent": {"policies": rllib_policies},
         "callbacks": Callbacks,
     }
+    result_dir = "ray_results"
+    result_dir = Path(result_dir).expanduser().resolve().absolute()
+
     analysis = tune.run(
         "PG",
         name="exp_1",
         stop={"time_total_s": 1200},
         checkpoint_freq=1,
         checkpoint_at_end=True,
-        local_dir="ray_results/",
+        local_dir=str(result_dir),
         resume=False,
-        restore="ray_results/",
+        restore=None,
         max_failures=3,
         num_samples=1,
         export_formats=["model", "checkpoint"],
