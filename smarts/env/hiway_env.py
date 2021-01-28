@@ -101,11 +101,12 @@ class HiWayEnv(gym.Env):
         }
 
         envision_client = None
-        if not headless:
+        if not headless or envision_record_data_replay_path:
             envision_client = Envision(
                 endpoint=envision_endpoint,
                 sim_name=sim_name,
                 output_dir=envision_record_data_replay_path,
+                headless=headless,
             )
 
         visdom_client = None

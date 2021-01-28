@@ -136,7 +136,7 @@ class SMARTS(ShowBase):
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
         self._bullet_client = bc.BulletClient(pybullet.DIRECT)
-        self._pybullet_action_spaces = {
+        self._dynamic_action_spaces = {
             ActionSpaceType.Continuous,
             ActionSpaceType.Lane,
             ActionSpaceType.ActuatorDynamic,
@@ -574,7 +574,7 @@ class SMARTS(ShowBase):
                     agent_id
                 )
                 agent_action_space = agent_interface.action_space
-                if agent_action_space in self._pybullet_action_spaces:
+                if agent_action_space in self._dynamic_action_spaces:
                     # This is a pybullet agent, we were the source of this vehicle state.
                     # No need to make any changes
                     continue
@@ -613,7 +613,7 @@ class SMARTS(ShowBase):
         pybullet_agent_ids = {
             agent_id
             for agent_id, interface in self._agent_manager.agent_interfaces.items()
-            if interface.action_space in self._pybullet_action_spaces
+            if interface.action_space in self._dynamic_action_spaces
         }
 
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
@@ -690,7 +690,7 @@ class SMARTS(ShowBase):
             agent_id: action
             for agent_id, action in actions.items()
             if agent_controls_vehicles(agent_id)
-            and matches_provider_action_spaces(agent_id, self._pybullet_action_spaces)
+            and matches_provider_action_spaces(agent_id, self._dynamic_action_spaces)
         }
         accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions))
 
