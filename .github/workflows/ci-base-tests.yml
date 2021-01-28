@@ -47,5 +47,6 @@ jobs:
             -n auto \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+            --ignore=./smarts/env/tests/test_benchmark.py \
             --ignore=./smarts/env/tests/test_learning.py \
-            --ignore=./smarts/env/tests/test_benchmark.py
+            -k 'not test_long_determinism'
