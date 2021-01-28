@@ -1,9 +1,12 @@
-name: SMARTS CI Master
+name: SMARTS CI Memory
 
 on:
-  push:
-    branches:
-      - disabled
+  schedule:
+    - cron: '0 23 * * 4'
+      # Time is in UTC
+      # Runs at 11.00pm, UTC  , every Thursday
+      # Runs at  6.00pm, UTC-5, every Thursday
+  workflow_dispatch:
 
 env:
   venv_dir: .venv
@@ -15,7 +18,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Package setup
+        with:
+          ref: develop
+      - name: Setup package
         run: |
           /usr/bin/Xorg \
             -noreset \
@@ -25,15 +30,15 @@ jobs:
             -logfile ./xdummy.log \
             -config /etc/X11/xorg.conf :1 &
           cd $GITHUB_WORKSPACE
-          python3.7 -m venv "${venv_dir}"
-          . "${venv_dir}/bin/activate"
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel
           pip install pympler
           pip install -r requirements.txt
-          pip install -e .[train]
+          pip install -e .[train,test]
       - name: Test memory growth
         run: |
           cd $GITHUB_WORKSPACE
-          . "${venv_dir}/bin/activate"
+          . ${{env.venv_dir}}/bin/activate
           make test-memory-growth

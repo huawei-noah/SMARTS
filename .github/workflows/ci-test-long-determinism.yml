@@ -1,11 +1,11 @@
-name: SMARTS CI Learning
+name: SMARTS CI Long Determinism
 
 on:
   schedule:
-    - cron: '0 23 * * 2'
+    - cron: '0 23 * * 6'
       # Time is in UTC
-      # Runs at 11.00pm, UTC  , every Tuesday
-      # Runs at  6.00pm, UTC-5, every Tuesday
+      # Runs at 11.00pm, UTC  , every Saturday
+      # Runs at  6.00pm, UTC-5, every Saturday
   workflow_dispatch:
 
 env:
@@ -33,11 +33,10 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
-          pip install wheel
           pip install -r requirements.txt
           pip install -e .[train,test]
-      - name: Verify learning
+      - name: Verify long determinism
         run: |
           cd $GITHUB_WORKSPACE
           . ${{env.venv_dir}}/bin/activate
-          make test-learning
+          make test-long-determinism

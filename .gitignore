@@ -108,6 +108,7 @@ traffic_histories.pkl
 
 # Manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml
+!smarts/sstudio/tests/*.rou.xml
 
 # but keep model assets
 !**/models/*.glb

@@ -1,9 +1,10 @@
-name: SMARTS CI
+name: SMARTS CI Format & Dependencies
 
 on: [push]
 
 env:
   venv_dir: .venv
+
 jobs:
   test-formatting:
     runs-on: ubuntu-18.04
@@ -11,7 +12,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Run Black code formatter
+      - name: Check Black code format
         run: |
           cd $GITHUB_WORKSPACE
           pip install --upgrade pip

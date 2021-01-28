@@ -8,14 +8,11 @@ test: build-all-scenarios
 		--forked \
 		--dist=loadscope \
 		-n `nproc --ignore 1` \
-		./tests ./smarts/core ./smarts/env ./smarts/contrib ./smarts/sstudio ./envision \
-		--ignore=./smarts/env/tests/test_learning.py \
+		./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
-		--ignore=./smarts/env/tests/test_benchmark.py
-
-.PHONY: benchmark
-benchmark: build-all-scenarios
-	pytest -v ./smarts/env/tests/test_benchmark.py
+		--ignore=./smarts/env/tests/test_benchmark.py \
+		--ignore=./smarts/env/tests/test_learning.py \
+		-k 'not test_long_determinism'
 
 .PHONY: test-learning
 test-learning: build-all-scenarios
@@ -29,6 +26,17 @@ test-memory-growth: build-all-scenarios
 		--dist=loadscope \
 		-n `nproc --ignore 1` \
 		./smarts/core/tests/test_smarts_memory_growth.py
+
+.PHONY: test-long-determinism
+test-long-determinism: 
+	scl scenario build --clean scenarios/minicity
+	PYTHONHASHSEED=42 pytest -v \
+		--forked \
+		./smarts/env/tests/test_determinism.py::test_long_determinism
+
+.PHONY: benchmark
+benchmark: build-all-scenarios
+	pytest -v ./smarts/env/tests/test_benchmark.py
 
 .PHONY: test-zoo
 test-zoo: build-all-scenarios

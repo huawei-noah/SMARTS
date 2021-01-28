@@ -35,8 +35,7 @@ bubbles = [
         zone=t.PositionalZone(pos=(100, 100), size=(20, 20)),
         margin=2,
         actor=t.SocialAgentActor(
-            name="motion-planner-agent",
-            agent_locator=f"{agent_prefabs}:motion-planner-agent-v0",
+            name="keep-lane-agent", agent_locator=f"{agent_prefabs}:zoo-agent-v0",
         ),
     ),
 ]

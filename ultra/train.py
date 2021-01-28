@@ -34,6 +34,7 @@ from ultra.evaluate import evaluation_check
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
+
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed, log_dir):
@@ -112,6 +113,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
 
     env.close()
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("intersection-single-agent")
     parser.add_argument(
@@ -147,6 +149,7 @@ if __name__ == "__main__":
         type=int,
         default=10000,
     )
+    
     parser.add_argument(
         "--seed", help="environment seed", default=2, type=int,
     )
