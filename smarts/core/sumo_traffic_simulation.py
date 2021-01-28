@@ -66,7 +66,7 @@ class SumoTrafficSimulation:
         endless_traffic=True,
         allow_reload=True,
         debug=True,
-        kybersim_mode=False
+        kybersim_mode=False,
     ):
         self._kybersim_mode = kybersim_mode
         self._log = logging.getLogger(self.__class__.__name__)
@@ -278,7 +278,9 @@ class SumoTrafficSimulation:
         if self._kybersim_mode:
             vehicles_to_remove = self._non_sumo_vehicle_ids
         else:
-            vehicles_to_remove = self._non_sumo_vehicle_ids.union(self._sumo_vehicle_ids)
+            vehicles_to_remove = self._non_sumo_vehicle_ids.union(
+                self._sumo_vehicle_ids
+            )
 
         for vehicle_id in vehicles_to_remove:
             self._traci_conn.vehicle.remove(vehicle_id)
