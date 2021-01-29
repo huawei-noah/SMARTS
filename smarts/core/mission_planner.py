@@ -212,7 +212,7 @@ class MissionPlanner:
 
         return edge_ids
 
-    def cut_in_waypoints(self, sim, pose: Pose, vehicle, base_waypoint_generator):
+    def cut_in_waypoints(self, sim, pose: Pose, vehicle):
         aggressiveness = self._agent_behavior.aggressiveness or 0
 
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
@@ -299,12 +299,35 @@ class MissionPlanner:
     def uturn_waypoints(self, sim, pose: Pose, vehicle):
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
+
+        ego_position = pose.position[:2]
+        ego_lane = self._road_network.nearest_lane(ego_position)
+        ego_wps = self._waypoints.waypoint_paths_on_lane_at(
+            ego_position, ego_lane.getID(), 60
+        )
+        if self._mission.task.initial_speed is None:
+            default_speed = ego_wps[0][0].speed_limit
+        else:
+            default_speed = self._mission.task.initial_speed
+        ego_wps_des_speed = []
+        for px in range(len(ego_wps[0])):
+
+            new_wp = Waypoint(
+                pos=ego_wps[0][px].pos,
+                heading=ego_wps[0][px].heading,
+                lane_width=ego_wps[0][px].lane_width,
+                speed_limit=default_speed,
+                lane_id=ego_wps[0][px].lane_id,
+                lane_index=ego_wps[0][px].lane_index,
+            )
+            ego_wps_des_speed.append(new_wp)
+        ego_wps_des_speed = [ego_wps_des_speed]
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
             vehicle=vehicle, radius=140
         )
 
         if not neighborhood_vehicles:
-            return []
+            return ego_wps_des_speed
 
         n_lane = self._road_network.nearest_lane(
             neighborhood_vehicles[0].pose.position[:2]
@@ -322,7 +345,7 @@ class MissionPlanner:
             lane_id_list.append(idx.getID())
 
         if n_lane.getID() not in lane_id_list:
-            return []
+            return ego_wps_des_speed
         # The aggressiveness is mapped from [0,10] to [0,0.8] domain which
         # represents the portion of intitial distantce which is used for
         # triggering the u-turn task.
@@ -354,7 +377,7 @@ class MissionPlanner:
 
         if self._insufficient_initial_distant is True:
             if horizontal_distant > 0:
-                return []
+                return ego_wps_des_speed
             else:
                 self._task_is_triggered = True
 
@@ -370,10 +393,10 @@ class MissionPlanner:
                 + distant_threshold
             )
         ):
-            return []
+            return ego_wps_des_speed
 
         if not neighborhood_vehicles and not self._task_is_triggered:
-            return []
+            return ego_wps_des_speed
 
         wp = self._waypoints.closest_waypoint(pose)
         current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
@@ -402,7 +425,7 @@ class MissionPlanner:
                 pose.position[0] - neighborhood_vehicles[0].pose.position[0] > 12
                 or neighborhood_vehicles[0].pose.position[0] > pose.position[0]
             ):
-                return []
+                return ego_wps_des_speed
             else:
                 speed_limit = neighborhood_vehicles[0].speed
 
