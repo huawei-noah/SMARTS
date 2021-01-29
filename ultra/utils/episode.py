@@ -232,7 +232,7 @@ class Episode:
         with open(f"{pkls_dir}/results.pkl", "wb") as handle:
             dill.dump(self.all_data[self.active_tag], handle)
 
-        if save_codes and not os.path.exists(self.code_dir):  # just save once
+        if save_codes and not os.path.exists(self.code_dir):  # save once
             self.make_dir(self.code_dir)
             for code_path in save_codes:
                 try:

@@ -44,9 +44,6 @@ def train(
     total_step = 0
     finished = False
 
-    # --------------------------------------------------------
-    # Initialize Agent and social_vehicle encoding method
-    # -------------------------------------------------------
     AGENT_ID = "007"
 
     spec = make(locator=policy_class)
