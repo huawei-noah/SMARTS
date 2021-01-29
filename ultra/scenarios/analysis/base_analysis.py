@@ -320,10 +320,10 @@ class BaseAnalysis:
                 )
                 total_vehicles = int(metadata["total_vehicles"])
                 print(
-                    f"Processing Scenario {len(visited_scenario)}/{len(scenarios)}:{scenario_path} "
+                    f"Processing Scenario {len(visited_scenario)}/{len(scenarios)}: {scenario_path} "
                 )
-                print("Total number of vehicles", total_vehicles)
-                print(f"Running egoless:{ego_less}")
+                print(f"Total number of vehicles: {total_vehicles}")
+                print(f"Running egoless: {ego_less}")
 
                 self.reset_scenario_cache()
                 step, episode_time = 0, 0.0
@@ -376,12 +376,12 @@ class BaseAnalysis:
                     if len(visited_scenario) % video_rate == 0:
                         images.append(
                             draw_intersection(
-                                ego=agent_obs.ego_vehicle_state,
-                                social_vehicle_states=self.social_vehicles_states,
+                                ego=agent_obs.ego_vehicle_state.position,
+                                social_vehicle_states=agent_obs.neighborhood_vehicle_states,
                                 goal_path=path,
                                 all_waypoints=all_waypoints,
                                 step=step,
-                                timestep_sec=timestep_sec,
+                                lookaheads=[waypoint.pos for waypoint in path],
                                 goal=goal.position[0:2],
                                 start=start.position[0:2],
                                 intersection_tag=intersection_tag,

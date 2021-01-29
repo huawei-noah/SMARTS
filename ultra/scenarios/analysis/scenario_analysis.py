@@ -436,7 +436,10 @@ class ScenarioAnalysis(BaseAnalysis):
             failed_list, f"{save_dir}/failed_vehicles.png", "failed_vehicles",
         )
 
-        print("Solved south-west:{:.2f}".format(solved_south_west / total_south_west))
+        if total_south_west > 0:
+            print("Solved south-west: {:.2f}".format(solved_south_west / total_south_west))
+        else:
+            print("No vehicles moved from south to west.")
 
     def save_data(self, save_dir):
         with open(f"{save_dir}/analysis.pkl", "wb") as handle:
