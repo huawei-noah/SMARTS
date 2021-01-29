@@ -262,8 +262,8 @@ class MissionPlanner:
             nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                 position, target_lane.getID(), 60
             )
-            if self._cut_in_speed is None:
-                self._cut_in_speed = target_vehicle.speed * 1.2
+
+            self._cut_in_speed = target_vehicle.speed * 1.2
 
             speed_limit = self._cut_in_speed
 
@@ -424,29 +424,14 @@ class MissionPlanner:
             len(oncoming_lanes) - target_lane_index
         )
 
-        if current_edge.getID() != oncoming_edge.getID():
-            # agent at the start edge
-            p0 = pose.position[:2]
-            distance = (
-                15 * abs(abs(target_heading - heading) - math.pi / 2) / (math.pi / 2)
-            )
-            offset = radians_to_vec(heading) * distance
-            p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
+        p0 = pose.position[:2]
+        offset = radians_to_vec(heading) * lane_width
+        p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
+        offset = radians_to_vec(target_heading) * 5
+        p3 = target.pos
+        p2 = np.array([p3[0] - offset[0], p3[1] - offset[1]])
 
-            offset = radians_to_vec(heading + math.pi / 2) * (lane_width * lanes)
-            p2 = np.array([p1[0] + offset[0], p1[1] + offset[1]])
-            p3 = target.pos
-            p_x, p_y = bezier([p0, p1, p2, p3], 20)
-        else:
-            # agent at the oncoming edge
-            p0 = pose.position[:2]
-            offset = radians_to_vec(heading) * lane_width
-            p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
-            offset = radians_to_vec(target_heading) * 5
-            p2 = np.array([p1[0] - offset[0], p1[1] - offset[1]])
-
-            p3 = target.pos
-            p_x, p_y = bezier([p0, p1, p2, p3], 20)
+        p_x, p_y = bezier([p0, p1, p2, p3], 20)
 
         trajectory = []
         for i in range(len(p_x)):
