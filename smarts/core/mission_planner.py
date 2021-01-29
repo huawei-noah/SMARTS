@@ -306,8 +306,9 @@ class MissionPlanner:
             ego_position, ego_lane.getID(), 60
         )
         if self._mission.task.initial_speed is None:
-            default_speed = ego_wps[0][0].lane_speed
-        default_speed = self._mission.task.initial_speed
+            default_speed = ego_wps[0][0].speed_limit
+        else:
+            default_speed = self._mission.task.initial_speed
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
 
