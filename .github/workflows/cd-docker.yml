@@ -1,4 +1,4 @@
-name: SAMRTS CD Docker
+name: SMARTS CD Docker
 
 on:
   release:
