@@ -700,7 +700,9 @@ class SMARTS(ShowBase):
             if agent_controls_vehicles(agent_id)
             and matches_provider_action_spaces(agent_id, self._dynamic_action_spaces)
         }
-        accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions)) ## controllers and actions checked here _pybullet_provider_step
+        accumulated_provider_state.merge(
+            self._pybullet_provider_step(pybullet_actions)
+        )  ## controllers and actions checked here _pybullet_provider_step
 
         for provider in self.providers:
             provider_state = self._step_provider(
@@ -712,7 +714,9 @@ class SMARTS(ShowBase):
 
             accumulated_provider_state.merge(provider_state)
 
-        self._harmonize_providers(accumulated_provider_state) # pybullet provider used here
+        self._harmonize_providers(
+            accumulated_provider_state
+        )  # pybullet provider used here
         return accumulated_provider_state
 
     def _step_provider(self, provider, actions, dt, elapsed_sim_time):

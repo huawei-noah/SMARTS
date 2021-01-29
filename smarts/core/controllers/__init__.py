@@ -61,7 +61,7 @@ class Controllers:
         action_space,
         vehicle_type,
     ):
-        #print("Reached perform action")
+        # print("Reached perform action")
         if action is None:
             return
         if vehicle_type == "bus":
