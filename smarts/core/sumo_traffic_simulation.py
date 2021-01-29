@@ -66,9 +66,9 @@ class SumoTrafficSimulation:
         endless_traffic=True,
         allow_reload=True,
         debug=True,
-        kybersim_mode=False,
+        integration_mode=False,
     ):
-        self._kybersim_mode = kybersim_mode
+        self._integration_mode = integration_mode
         self._log = logging.getLogger(self.__class__.__name__)
 
         self._debug = debug
@@ -275,7 +275,7 @@ class SumoTrafficSimulation:
 
     def _remove_all_vehicles(self):
         vehicles_to_remove = None
-        if self._kybersim_mode:
+        if self._integration_mode:
             vehicles_to_remove = self._non_sumo_vehicle_ids
         else:
             vehicles_to_remove = self._non_sumo_vehicle_ids.union(
