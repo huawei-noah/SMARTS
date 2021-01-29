@@ -50,6 +50,7 @@ from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
+from smarts.core.chassis import AckermannChassis, BoxChassis
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.pybullet import bullet_client as bc
@@ -163,7 +164,6 @@ class SMARTS(ShowBase):
         self._ground_bullet_id = None
 
     def step(self, agent_actions):
-        print("Start stepping")
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
 
@@ -588,10 +588,11 @@ class SMARTS(ShowBase):
                     # to make it's observations. Update the avatar to match the new
                     # state of this vehicle
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-                    # pybullet_vehicle.set_pose(vehicle.pose)
-                    # pybullet_vehicle.set_speed(vehicle.speed)
-                    #print(f'printing chassis {pybullet_vehicle._chassis}') # this is ackerman chassis in the test
-                    pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
+                    if isinstance(pybullet_vehicle, BoxChassis):
+                        pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
+                    else:
+                        pybullet_vehicle.set_pose(vehicle.pose)
+                        pybullet_vehicle.set_speed(vehicle.speed)
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
