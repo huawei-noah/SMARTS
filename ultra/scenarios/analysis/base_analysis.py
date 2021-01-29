@@ -349,7 +349,9 @@ class BaseAnalysis:
                         stopwatcher_state,
                         stopwatcher_exit,
                     ) = self.process_social_vehicles(
-                        agent_obs.neighborhood_vehicle_states, timestep_sec, step,
+                        agent_obs.neighborhood_vehicle_states,
+                        timestep_sec,
+                        step,
                     )
                     if stopwatcher_state:
                         has_stopwatcher = True
@@ -376,12 +378,14 @@ class BaseAnalysis:
                     if len(visited_scenario) % video_rate == 0:
                         images.append(
                             draw_intersection(
-                                ego=agent_obs.ego_vehicle_state.position,
+                                ego_position=agent_obs.ego_vehicle_state.position,
                                 social_vehicle_states=agent_obs.neighborhood_vehicle_states,
                                 goal_path=path,
                                 all_waypoints=all_waypoints,
                                 step=step,
-                                lookaheads=[waypoint.pos for waypoint in path],
+                                lookaheads_positions=[
+                                    waypoint.pos for waypoint in path
+                                ],
                                 goal=goal.position[0:2],
                                 start=start.position[0:2],
                                 intersection_tag=intersection_tag,
