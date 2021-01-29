@@ -588,7 +588,7 @@ class SMARTS(ShowBase):
                     # to make it's observations. Update the avatar to match the new
                     # state of this vehicle
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-                    if isinstance(pybullet_vehicle, BoxChassis):
+                    if isinstance(pybullet_vehicle.chassis, BoxChassis):
                         pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
                     else:
                         pybullet_vehicle.set_pose(vehicle.pose)
