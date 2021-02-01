@@ -48,10 +48,10 @@ def isnotebook():
 
 libc = ctypes.CDLL(None)
 try:
-    c_stdout = ctypes.c_void_p.in_dll(libc, "stdout")
+    c_stderr = ctypes.c_void_p.in_dll(libc, "stderr")
 except:
     # macOS
-    c_stdout = ctypes.c_void_p.in_dll(libc, "__stdoutp")
+    c_stderr = ctypes.c_void_p.in_dll(libc, "__stderrp")
 
 
 def try_fsync(fd):
@@ -63,10 +63,10 @@ def try_fsync(fd):
 
 
 @contextmanager
-def surpress_stdout():
-    original_stdout = sys.stdout
+def suppress_stdout():
+    original_stderr = sys.stderr
     try:
-        original_stdout_fno = sys.stdout.fileno()
+        original_stderr_fno = sys.stderr.fileno()
     except UnsupportedOperation as e:
         if not isnotebook():
             raise e
@@ -75,27 +75,27 @@ def surpress_stdout():
             yield
         finally:
             return
-    dup_stdout_fno = os.dup(original_stdout_fno)
+    dup_stderr_fno = os.dup(original_stderr_fno)
 
     devnull_fno = os.open(os.devnull, os.O_WRONLY)
-    os.dup2(devnull_fno, original_stdout_fno)
-    sys.stdout = os.fdopen(devnull_fno, "w")
+    os.dup2(devnull_fno, original_stderr_fno)
+    sys.stderr = os.fdopen(devnull_fno, "w")
 
     try:
         yield
     finally:
-        sys.stdout.flush()
-        libc.fflush(c_stdout)
+        sys.stderr.flush()
+        libc.fflush(c_stderr)
         try_fsync(devnull_fno)
         os.close(devnull_fno)
 
-        os.dup2(dup_stdout_fno, original_stdout_fno)
-        os.close(dup_stdout_fno)
+        os.dup2(dup_stderr_fno, original_stderr_fno)
+        os.close(dup_stderr_fno)
         try:
-            sys.stdout.close()
+            sys.stderr.close()
         except OSError as e:
             # This happens in some environments and is fine so we should ignore just it
             if e.errno != 9:  # [Errno 9] Bad file descriptor
                 raise e
         finally:
-            sys.stdout = original_stdout
+            sys.stderr = original_stderr

@@ -35,7 +35,7 @@ from smarts.core.coordinates import Heading, Pose
 from smarts.core.provider import ProviderState, ProviderTLS, ProviderTrafficLight
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 from smarts.core.utils import networking
-from smarts.core.utils.logging import surpress_stdout
+from smarts.core.utils.logging import suppress_stdout
 from smarts.core.utils.sumo import SUMO_PATH, traci
 
 import traci.constants as tc
@@ -143,7 +143,7 @@ class SumoTrafficSimulation:
             )
             time.sleep(0.05)  # give SUMO time to start
             try:
-                with surpress_stdout():
+                with suppress_stdout():
                     self._traci_conn = traci.connect(
                         sumo_port,
                         numRetries=100,

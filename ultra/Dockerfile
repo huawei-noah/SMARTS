@@ -112,14 +112,14 @@ RUN apt-get autoremove && \
 #------------------------------------------------------------------------------
 # Install SMARTS
 RUN mkdir -p /SMARTS
-COPY ./setup.py /SMARTS/
+#COPY ./setup.py /SMARTS/
 
 # Add https://github.com/krallin/tini
 ARG TINI_VERSION=v0.18.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
-#COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-#RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 
 #------------------------------------------------------------------------------
@@ -130,9 +130,7 @@ EXPOSE 8081
 
 # TODO: Find a better place to put this (e.g. through systemd). As it stands now ctrl-c
 #       could close x-server. Even though it's "running in the background".
-RUN echo "/usr/bin/Xorg " \
-    "-noreset +extension GLX +extension RANDR +extension RENDER" \
-    "-logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch $DISPLAY &" >> ~/.bashrc
+ENTRYPOINT ["/tini", "--", "entrypoint.sh"]
 
 CMD ["/bin/bash"]
 # Once in container can then run,

@@ -19,8 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, sys
-import ijson
+import os
 from ultra.utils.ray import default_ray_kwargs
 
 # Set environment to better support Ray
@@ -38,19 +37,22 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def train(
-    task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed, log_dir
+    scenario_info, num_episodes, policy_class, eval_info, timestep_sec, headless, seed
 ):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
 
+    # --------------------------------------------------------
+    # Initialize Agent and social_vehicle encoding method
+    # -------------------------------------------------------
     AGENT_ID = "007"
 
     spec = make(locator=policy_class)
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=task,
+        scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
@@ -58,7 +60,7 @@ def train(
 
     agent = spec.build_agent()
 
-    for episode in episodes(num_episodes, etag=policy_class, dir=log_dir):
+    for episode in episodes(num_episodes, etag=policy_class):
         observations = env.reset()
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
@@ -116,50 +118,38 @@ def train(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("intersection-single-agent")
     parser.add_argument(
-        "--task", help="Tasks available : [0, 1, 2, 3]", type=str, default="1"
+        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
     parser.add_argument(
         "--level",
-        help="Tasks available : [easy, medium, hard, no-traffic]",
+        help="Levels available : [easy, medium, hard, no-traffic]",
         type=str,
         default="easy",
     )
     parser.add_argument(
-        "--policy",
-        help="Policies available : [PPO, SAC, TD3, DQN]",
-        type=str,
-        default="sac",
+        "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
-        "--episodes", help="number of training episodes", type=int, default=1000000
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--timestep", help="environment timestep (sec)", type=float, default=0.1
+        "--headless", help="Run without envision", type=bool, default=False
     )
     parser.add_argument(
-        "--headless", help="run without envision", type=bool, default=False
-    )
-    parser.add_argument(
-        "--eval-episodes", help="number of evaluation episodes", type=int, default=200
+        "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
     )
     parser.add_argument(
         "--eval-rate",
-        help="evaluation rate based on number of observations",
+        help="Evaluation rate based on number of observations",
         type=int,
         default=10000,
     )
 
     parser.add_argument(
         "--seed",
-        help="environment seed",
+        help="Environment seed",
         default=2,
         type=int,
-    )
-    parser.add_argument(
-        "--log-dir",
-        help="log directory location",
-        default="logs",
-        type=str,
     )
     args = parser.parse_args()
 
@@ -167,25 +157,12 @@ if __name__ == "__main__":
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
 
-    with open("ultra/agent_pool.json", "r") as f:
-        objects = ijson.items(f, "agents")
-        for o in objects:
-            policy_pool = o
-        if args.policy in policy_pool.keys():
-            policy_path = policy_pool[args.policy]["path"]
-            policy_locator = policy_pool[args.policy]["locator"]
-        else:
-            raise ImportError("Invalid policy name. Please try again")
-
-    # Required string for smarts' class registry
-    policy_class = str(policy_path) + ":" + str(policy_locator)
-
-
+    policy_class = "ultra.baselines.sac:sac-v0"
     ray.init()
     ray.wait(
         [
             train.remote(
-                task=(args.task, args.level),
+                scenario_info=(args.task, args.level),
                 num_episodes=int(args.episodes),
                 eval_info={
                     "eval_rate": float(args.eval_rate),
@@ -195,7 +172,6 @@ if __name__ == "__main__":
                 headless=args.headless,
                 policy_class=policy_class,
                 seed=args.seed,
-                log_dir=args.log_dir,
             )
         ]
     )

@@ -122,7 +122,7 @@ class PyMARLHiWayEnv:
         }
 
         envision = None
-        if not self._headless:
+        if not self._headless or config.get("envision_record_data_replay_path", None):
             envision = Envision(
                 endpoint=config.get("envision_endpoint", None),
                 sim_name=config.get("sim_name", None),
