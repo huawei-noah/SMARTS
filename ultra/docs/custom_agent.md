@@ -48,8 +48,17 @@ register(
 For example, the package containing the baseline agents, `ultra.baselines`, has `ultra/baselines/__init__.py` that registers each baseline agent with its ULTRA Agent Specification.
 Additionally, see `smarts/core/controllers/__init__.py` to view available action space types and how they are performed.
 
+In `ultra/agent_pool.json`, add your agent's information:
+```json
+  "<your_agent_name>" : {
+    "path" : "<your.agents.package.name>",
+    "name" : "<your_agent_name>",
+    "locator : "<your_agent_name>-<your_agent_version_number>",
+  }
+```
+
 ## Use Your Agent
-In `train.py` or `evaluate.py`, ensure that the `policy_class` variable references your agent using the string format shown below in order to use your agent for training or evaluation respectively:
-```python
-policy_class = "<your.agents.package.name>.<your_agent_name>:<your_agent_name>-v<your_agent_version_number>"
+When running `train.py` or `evaluate.py`, ensure the `--policy` flag is set as `<your_agent_name>`. For example:
+```sh
+$ python ultra/train.py --task 1 --level easy --policy <your_agent_name>
 ```
