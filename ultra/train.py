@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os, sys
-import ijson
+import json
 from ultra.utils.ray import default_ray_kwargs
 
 # Set environment to better support Ray
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--policy",
-        help="Policies available : [PPO, SAC, DDPG, DQN, BDQN]",
+        help="Policies available : [ppo, sac, ddpg, dqn, bdqn]",
         type=str,
         default="sac",
     )
@@ -162,12 +162,10 @@ if __name__ == "__main__":
     )  # remove `logical=False` to use all cpus
 
     with open("ultra/agent_pool.json", "r") as f:
-        objects = ijson.items(f, "agents")
-        for o in objects:
-            policy_pool = o
-        if args.policy in policy_pool.keys():
-            policy_path = policy_pool[args.policy]["path"]
-            policy_locator = policy_pool[args.policy]["locator"]
+        data = json.load(f) 
+        if args.policy in data['agents'].keys():
+            policy_path = data['agents'][args.policy]["path"]
+            policy_locator = data['agents'][args.policy]["locator"]
         else:
             raise ImportError("Invalid policy name. Please try again")
 
