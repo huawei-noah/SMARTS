@@ -34,6 +34,7 @@ from .scenario import EndlessGoal, LapMission, Mission, Start
 from .sumo_road_network import SumoRoadNetwork
 from .utils.math import vec_to_radians, radians_to_vec, evaluate_bezier as bezier
 from .waypoints import Waypoint, Waypoints
+from dataclasses import replace
 
 
 class PlanningError(Exception):
@@ -311,16 +312,9 @@ class MissionPlanner:
             default_speed = self._mission.task.initial_speed
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
-
-            new_wp = Waypoint(
-                pos=ego_wps[0][px].pos,
-                heading=ego_wps[0][px].heading,
-                lane_width=ego_wps[0][px].lane_width,
-                speed_limit=default_speed,
-                lane_id=ego_wps[0][px].lane_id,
-                lane_index=ego_wps[0][px].lane_index,
-            )
+            new_wp = replace(ego_wps[0][px], speed_limit=default_speed)
             ego_wps_des_speed.append(new_wp)
+
         ego_wps_des_speed = [ego_wps_des_speed]
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
             vehicle=vehicle, radius=140
