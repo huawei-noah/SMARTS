@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
+import json
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -156,10 +157,10 @@ if __name__ == "__main__":
         default="easy",
     )
     parser.add_argument(
-        "--model-name",
-        help="Name of model being evaluated",
-        default="unnamed-model",
+        "--policy",
+        help="Policies available : [ppo, sac, ddpg, dqn, bdqn]",
         type=str,
+        default="sac",
     )
     parser.add_argument("--models", default="models/", help="Directory to saved models")
     parser.add_argument(
@@ -187,7 +188,17 @@ if __name__ == "__main__":
         glob.glob(f"{args.models}/*"), key=lambda x: int(x.split("/")[-1])
     )
 
-    policy_class = "ultra.baselines.sac:sac-v0"
+    with open("ultra/agent_pool.json", "r") as f:
+        data = json.load(f)
+        if args.policy in data["agents"].keys():
+            policy_path = data["agents"][args.policy]["path"]
+            policy_locator = data["agents"][args.policy]["locator"]
+        else:
+            raise ImportError("Invalid policy name. Please try again")
+
+    # Required string for smarts' class registry
+    policy_class = str(policy_path) + ":" + str(policy_locator)
+
     num_cpus = max(
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
