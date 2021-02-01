@@ -53,7 +53,7 @@ In `ultra/agent_pool.json`, add your agent's information:
   "<your_agent_name>" : {
     "path" : "<your.agents.package.name>",
     "name" : "<your_agent_name>",
-    "locator : "<your_agent_name>-<your_agent_version_number>",
+    "locator : "<your_agent_name>-v<your_agent_version_number>",
   }
 ```
 
