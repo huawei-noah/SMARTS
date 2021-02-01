@@ -344,11 +344,10 @@ class Vehicle:
                 agent_interface.vehicle_type
             ]
 
-        vehicle = Vehicle(
-            id=vehicle_id,
-            pose=start_pose,
-            showbase=sim,
-            chassis=AckermannChassis(
+        chassis = None
+        # change this to dynamic_action_spaces later when pr merged
+        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+            chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
                 vehicle_filepath=vehicle_filepath,
@@ -356,7 +355,20 @@ class Vehicle:
                 friction_map=surface_patches,
                 controller_parameters=controller_parameters,
                 initial_speed=initial_speed,
-            ),
+            )
+        else:
+            chassis = BoxChassis(
+                pose=start_pose,
+                speed=initial_speed,
+                dimensions=chassis_dims,
+                bullet_client=sim.bc,
+            )
+
+        vehicle = Vehicle(
+            id=vehicle_id,
+            pose=start_pose,
+            showbase=sim,
+            chassis=chassis,
             color=vehicle_color,
         )
 

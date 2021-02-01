@@ -326,7 +326,6 @@ class SMARTS(ShowBase):
 
         # Visualization
         self._try_emit_visdom_obs(observations)
-
         if len(self._agent_manager.ego_agent_ids):
             while len(observations_for_ego) < 1:
                 observations_for_ego, _, _, _ = self.step({})
@@ -584,7 +583,7 @@ class SMARTS(ShowBase):
                     # to make it's observations. Update the avatar to match the new
                     # state of this vehicle
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-                    assert isinstance(pybullet_vehicle.chassis, BoxChassis):
+                    assert isinstance(pybullet_vehicle.chassis, BoxChassis)
                     pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
             else:
                 # This vehicle is a social vehicle

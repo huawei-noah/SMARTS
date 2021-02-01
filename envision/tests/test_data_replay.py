@@ -102,7 +102,9 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
         for i in range(NUM_EPISODES):
             agent = agent_spec.build_agent()
             scenario = next(scenarios_iterator)
+            print("before reset")
             obs = smarts.reset(scenario)
+            print('after  reset')
 
             done = False
             while not done:
@@ -111,6 +113,7 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
                 action = agent_spec.action_adapter(action)
                 obs, _, dones, _ = smarts.step({AGENT_ID: action})
                 done = dones[AGENT_ID]
+            print("Finished looping")
 
     # 1. Inspect sent data during SMARTS simulation
 
