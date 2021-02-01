@@ -158,9 +158,7 @@ if __name__ == "__main__":
     )  # remove `logical=False` to use all cpus
 
     policy_class = "ultra.baselines.sac:sac-v0"
-    # ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
-    ray.init()  # **ray_kwargs)
-    # try:
+    ray.init()
     ray.wait(
         [
             train.remote(
@@ -177,6 +175,3 @@ if __name__ == "__main__":
             )
         ]
     )
-    # finally:
-    #     time.sleep(1)
-    #     ray.shutdown()
