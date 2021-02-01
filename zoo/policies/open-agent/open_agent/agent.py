@@ -13,14 +13,18 @@ import opengen as og
 
 from smarts.core.agent import Agent
 from smarts.core.coordinates import Heading
-
 from .version import VERSION, SOLVER_VERSION
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
 
 
 def angle_error(a, b):
-    return cs.fmin((a - b) ** 2.0, (a - (b + math.pi * 2.0)) ** 2.0)
+
+    return cs.if_else(
+        a - b >= 0,
+        cs.fmin((a - b) ** 2.0, (a - (b + math.pi * 2.0)) ** 2.0),
+        cs.fmin((a - b) ** 2.0, (a - (b - math.pi * 2.0)) ** 2.0),
+    )
 
 
 @dataclass
@@ -202,7 +206,7 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
     # This calculates the weighted combination of lateral error and
     # heading error, TODO: Define new variable or integrates the coefficents
     # into the default values.
-    weighted_cost = 10 * distant_to_first[3] + 5.1 * cs.fabs(distant_to_first[2])
+    weighted_cost = 10 * distant_to_first[3] + 6.2 * cs.fabs(distant_to_first[2])
     for xref_t in x_ref_iter:
 
         distant_to_point = sum(xref_t.weighted_distance_to(point, gain)[:2])
@@ -215,7 +219,7 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
         weighted_cost = cs.if_else(
             distant_to_point <= min_xref_t_cost,
             10 * xref_t.weighted_distance_to(point, gain)[3]
-            + 5.1 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
+            + 6.2 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
             weighted_cost,
         )
 
