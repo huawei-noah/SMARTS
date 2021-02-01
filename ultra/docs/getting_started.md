@@ -47,15 +47,7 @@ Task 1 Training Scenario|Task 1 Testing Scenario
 
 Implementations of baseline agents are available in `ultra/baselines/`. Notice, policies such as PPO, SAC, DDPG, and DQN are implemented as baselines. We will run a DQN on Task 1's "easy" level in this example.
 
-- First, in `ultra/train.py`, change the following line:
-  ```python
-  policy_class = "ultra.baselines.sac:sac-v0"
-  ```
-  to
-  ```python
-  policy_class = "ultra.baselines.dqn:dqn-v0"
-  ```
-- Next, we will execute `ultra/train.py`. The following is a list of available arguments.
+- Execute `ultra/train.py`. The following is a list of available arguments.
   - `--task`: The task number to run (default is 1).
   - `--level`: The level of the task (default is easy).
   - `--episodes`: The number of training episodes to run (default is 1000000).
@@ -64,15 +56,17 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--eval-episodes`: The number of evaluation episodes (default is 200).
   - `--eval-rate`: The rate at which evaluation occurs based on the number of observations (default is 10000).
   - `--seed`: The environment seed (default is 2).
+  - `--policy`: The policy (agent) to train (default is sac).
+  - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
 
   Run the following command to train our DQN agent with a quick training session (if you started Envision in the previous section, refresh your browser to observe the training):
   ```sh
-  $ python ultra/train.py --task 1 --level easy --episodes 10 --eval-episodes 5 --eval-rate 100
+  $ python ultra/train.py --task 1 --level easy --episodes 10 --eval-episodes 5 --eval-rate 100 --policy dqn
   ```
   > This will train our DQN on 10 episodes and evaluate its performance every 100 observations. You will notice that it will switch between training episodes and evaluation episodes.
 - During training, a folder `logs/<timestamped_experiment_name>` is produced. It contains:
   - A tensorboard log (`events.out.tfevents.<...>`)
-  - Models at different observation steps (`<observation_number>/online.pth`, `<observation_number>/target.pth`)
+  - Models at different observation steps (`models/<observation_number>/online.pth`, `models/<observation_number>/target.pth`)
   - A pickled specification of your agent (`spec.pkl`), and
   - Pickled results from training and evaluation (`Evaluation/resuts.pkl` and `Train/results.pkl`).
 
@@ -80,15 +74,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
 
 After training your agent, your models should be saved under `logs/<timestamped_experiment_name>` and you can re-run the evaluation.
 
-- First, similar to training, we must first change the following line in `ultra/evaluate.py`:
-  ```python
-  policy_class = "ultra.baselines.sac:sac-v0"
-  ```
-  to
-  ```python
-  policy_class = "ultra.baselines.dqn:dqn-v0"
-  ```
-- Now let's re-run the evaluation with `ultra/evaluation.py`. Available arguments include:
+- Re-run the evaluation with `ultra/evaluation.py`. Available arguments include:
   - `--task`: The task number to run (default is 1).
   - `--level`: The level of the task (default is easy).
   - `--policy`: A string tag on the evaluation experiment directory (default is TD3).
@@ -97,10 +83,11 @@ After training your agent, your models should be saved under `logs/<timestamped_
   - `--timestep`: The environment timestep in seconds (default is 0.1).
   - `--headless`: Whether to run evaluation without Envision (default is False).
   - `--experiment-dir`: The path to the spec file that includes adapters and policy parameters.
+  - `--policy`: The policy (agent) to evaluate (default is sac).
 
   For example, let's re-run our DQN's evaluation with the following command:
   ```sh
-  $ python ultra/evaluate.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/ --episodes 5
+  $ python ultra/evaluate.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/ --episodes 5 --policy dqn
   ```
   > This will produce another experiment directory under `logs/` containing the results of the evaluation.
 
