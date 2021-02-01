@@ -19,6 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os, sys
+import json
 import os
 from ultra.utils.ray import default_ray_kwargs
 
@@ -37,15 +39,19 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def train(
-    scenario_info, num_episodes, policy_class, eval_info, timestep_sec, headless, seed
+    scenario_info,
+    num_episodes,
+    policy_class,
+    eval_info,
+    timestep_sec,
+    headless,
+    seed,
+    log_dir,
 ):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
 
-    # --------------------------------------------------------
-    # Initialize Agent and social_vehicle encoding method
-    # -------------------------------------------------------
     AGENT_ID = "007"
 
     spec = make(locator=policy_class)
@@ -60,7 +66,7 @@ def train(
 
     agent = spec.build_agent()
 
-    for episode in episodes(num_episodes, etag=policy_class):
+    for episode in episodes(num_episodes, etag=policy_class, dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
@@ -127,6 +133,12 @@ if __name__ == "__main__":
         default="easy",
     )
     parser.add_argument(
+        "--policy",
+        help="Policies available : [ppo, sac, ddpg, dqn, bdqn]",
+        type=str,
+        default="sac",
+    )
+    parser.add_argument(
         "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
@@ -148,13 +160,29 @@ if __name__ == "__main__":
     parser.add_argument(
         "--seed", help="Environment seed", default=2, type=int,
     )
+    parser.add_argument(
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
+    )
     args = parser.parse_args()
 
     num_cpus = max(
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
 
-    policy_class = "ultra.baselines.sac:sac-v0"
+    with open("ultra/agent_pool.json", "r") as f:
+        data = json.load(f)
+        if args.policy in data["agents"].keys():
+            policy_path = data["agents"][args.policy]["path"]
+            policy_locator = data["agents"][args.policy]["locator"]
+        else:
+            raise ImportError("Invalid policy name. Please try again")
+
+    # Required string for smarts' class registry
+    policy_class = str(policy_path) + ":" + str(policy_locator)
+
     ray.init()
     ray.wait(
         [
@@ -169,6 +197,7 @@ if __name__ == "__main__":
                 headless=args.headless,
                 policy_class=policy_class,
                 seed=args.seed,
+                log_dir=args.log_dir,
             )
         ]
     )
