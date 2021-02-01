@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import gym
-import pytest
 import numpy as np
+import pytest
 
 # Reference: https://stackoverflow.com/a/53978543/2783780
 try:
@@ -34,13 +34,8 @@ from smarts.core.agent import AgentSpec, Agent
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.utils.episodes import episodes
 
-MAX_STEPS_PER_EPISODE = 20
-EPISODE_COUNT = 3
-CAPTURE_STEP = 5
 
-
-@pytest.fixture
-def agent_spec():
+def agent_spec(max_steps_per_episode):
     return AgentSpec(
         interface=AgentInterface(
             drivable_area_grid_map=True,
@@ -48,7 +43,7 @@ def agent_spec():
             rgb=True,
             lidar=True,
             waypoints=True,
-            max_episode_steps=MAX_STEPS_PER_EPISODE,
+            max_episode_steps=max_steps_per_episode,
             debug=True,
             neighborhood_vehicles=True,
             action=ActionSpaceType.Lane,
@@ -57,18 +52,18 @@ def agent_spec():
     )
 
 
-def run(agent_spec, callback):
+def run(agent_spec, callback, scenarios, episode_count, capture_step):
     AGENT_ID = "Agent-007"
     env = gym.make(
         "smarts.env:hiway-v0",
-        scenarios=["scenarios/intersections/2lane"],
+        scenarios=[scenarios],
         agent_specs={AGENT_ID: agent_spec},
         headless=True,
         timestep_sec=0.01,
         seed=42,
     )
     i = 0
-    for episode in episodes(n=EPISODE_COUNT):
+    for episode in episodes(n=episode_count):
         agent = agent_spec.build_agent()
         observations = env.reset()
 
@@ -82,8 +77,8 @@ def run(agent_spec, callback):
 
             episode.record_step(observations, rewards, dones, infos)
 
-            if i % CAPTURE_STEP == 0:
-                callback(rewards, agent_obs, dones, int(i / CAPTURE_STEP))
+            if i % capture_step == 0:
+                callback(rewards, agent_obs, dones, int(i / capture_step))
             i += 1
 
     env.close()
@@ -106,7 +101,7 @@ def axis_dive(now_axis, prev_axis):
             assert now == prev
 
 
-def test_short_length_determinism(agent_spec):
+def determinism(agent_spec, scenarios, episode_count, capture_step):
     rewards_capture = []
     dones_capture = []
     observations_capture = []
@@ -197,5 +192,25 @@ def test_short_length_determinism(agent_spec):
         # "top_down_rgb",
         axis_dive(agent_obs.top_down_rgb.data, orig_agent_obs.top_down_rgb.data)
 
-    run(agent_spec, capture_callback)
-    run(agent_spec, check_callback)
+    run(agent_spec, capture_callback, scenarios, episode_count, capture_step)
+    run(agent_spec, check_callback, scenarios, episode_count, capture_step)
+
+
+def test_short_determinism():
+    max_steps_per_episode = 20
+    episode_count = 3
+    capture_step = 5
+    scenarios = "scenarios/intersections/2lane"
+    determinism(
+        agent_spec(max_steps_per_episode), scenarios, episode_count, capture_step
+    )
+
+
+def test_long_determinism():
+    max_steps_per_episode = 55000
+    episode_count = 1
+    capture_step = 13750
+    scenarios = "scenarios/intersections/2lane"
+    determinism(
+        agent_spec(max_steps_per_episode), scenarios, episode_count, capture_step
+    )

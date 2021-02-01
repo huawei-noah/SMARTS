@@ -24,7 +24,6 @@ import logging
 import os
 import time
 
-from smarts.core.utils.networking import find_free_port
 from smarts.zoo import worker_pb2
 from smarts.zoo import worker_pb2_grpc
 from smarts.zoo import worker as zoo_worker
