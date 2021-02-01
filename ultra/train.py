@@ -116,44 +116,44 @@ def train(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("intersection-single-agent")
     parser.add_argument(
-        "--task", help="Tasks available : [0, 1, 2, 3]", type=str, default="1"
+        "--task", help="Tasks available : [1, 2]", type=str, default="1"
     )
     parser.add_argument(
         "--level",
-        help="Tasks available : [easy, medium, hard, no-traffic]",
+        help="Levels available : [easy, medium, hard, no-traffic]",
         type=str,
         default="easy",
     )
     parser.add_argument(
         "--policy",
-        help="Policies available : [PPO, SAC, TD3, DQN]",
+        help="Policies available : [PPO, SAC, DDPG, DQN, BDQN]",
         type=str,
         default="sac",
     )
     parser.add_argument(
-        "--episodes", help="number of training episodes", type=int, default=1000000
+        "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
-        "--timestep", help="environment timestep (sec)", type=float, default=0.1
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="run without envision", type=bool, default=False
+        "--headless", help="Run without envision", type=bool, default=False
     )
     parser.add_argument(
-        "--eval-episodes", help="number of evaluation episodes", type=int, default=200
+        "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
     )
     parser.add_argument(
         "--eval-rate",
-        help="evaluation rate based on number of observations",
+        help="Evaluation rate based on number of observations",
         type=int,
         default=10000,
     )
 
     parser.add_argument(
-        "--seed", help="environment seed", default=2, type=int,
+        "--seed", help="Environment seed", default=2, type=int,
     )
     parser.add_argument(
-        "--log-dir", help="log directory location", default="logs", type=str,
+        "--log-dir", help="Log directory location", default="logs", type=str,
     )
     args = parser.parse_args()
 
@@ -161,7 +161,7 @@ if __name__ == "__main__":
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
 
-    with open("/home/jenish/Desktop/temp/SMARTS/ultra/agent_pool.json", "r") as f:
+    with open("ultra/agent_pool.json", "r") as f:
         objects = ijson.items(f, "agents")
         for o in objects:
             policy_pool = o
