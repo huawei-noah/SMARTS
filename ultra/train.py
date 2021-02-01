@@ -44,12 +44,6 @@ def train(
     total_step = 0
     finished = False
 
-<<<<<<< HEAD
-    # --------------------------------------------------------
-    # Initialize Agent and social_vehicle encoding method
-    # -------------------------------------------------------
-=======
->>>>>>> fix-develop_branch_desync
     AGENT_ID = "007"
 
     spec = make(locator=policy_class)
@@ -156,12 +150,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-<<<<<<< HEAD
-        "--seed", help="environment seed", default=2, type=int,
-    )
-    parser.add_argument(
-        "--log-dir", help="log directory location", default="logs", type=str,
-=======
         "--seed",
         help="environment seed",
         default=2,
@@ -172,7 +160,6 @@ if __name__ == "__main__":
         help="log directory location",
         default="logs",
         type=str,
->>>>>>> fix-develop_branch_desync
     )
     args = parser.parse_args()
 
@@ -180,11 +167,7 @@ if __name__ == "__main__":
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
 
-<<<<<<< HEAD
     with open("ultra/agent_pool.json", "r") as f:
-=======
-    with open("/home/jenish/Desktop/temp/SMARTS/ultra/agent_pool.json", "r") as f:
->>>>>>> fix-develop_branch_desync
         objects = ijson.items(f, "agents")
         for o in objects:
             policy_pool = o

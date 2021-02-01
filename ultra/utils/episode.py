@@ -232,11 +232,7 @@ class Episode:
         with open(f"{pkls_dir}/results.pkl", "wb") as handle:
             dill.dump(self.all_data[self.active_tag], handle)
 
-<<<<<<< HEAD
-        if save_codes and not os.path.exists(self.code_dir):  # just save once
-=======
         if save_codes and not os.path.exists(self.code_dir):  # save once
->>>>>>> fix-develop_branch_desync
             self.make_dir(self.code_dir)
             for code_path in save_codes:
                 try:
@@ -252,9 +248,6 @@ def episodes(n, etag=None, dir=None):
     log_dir = dir
     col_width = 18
     with tp.TableContext(
-<<<<<<< HEAD
-        [f"Episode", f"Sim/Wall", f"Total Steps", f"Steps/Sec", f"Score",],
-=======
         [
             f"Episode",
             f"Sim/Wall",
@@ -262,7 +255,6 @@ def episodes(n, etag=None, dir=None):
             f"Steps/Sec",
             f"Score",
         ],
->>>>>>> fix-develop_branch_desync
         width=col_width,
         style="round",
     ) as table:
