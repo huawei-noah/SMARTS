@@ -272,7 +272,7 @@ class SumoTrafficSimulation:
             self._traci_conn = None
 
     def _remove_all_vehicles(self):
-        for vehicle_id in self._non_sumo_vehicle_ids.union(self._sumo_vehicle_ids):
+        for vehicle_id in self._non_sumo_vehicle_ids:  # only remove agents
             self._traci_conn.vehicle.remove(vehicle_id)
 
     def teardown(self):

@@ -453,7 +453,6 @@ class BubbleManager:
             recreate=False,
             agent_interface=agent_interface,
         )
-        print("Reached bubble manager hijacking")
 
         for provider in sim.providers:
             interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)

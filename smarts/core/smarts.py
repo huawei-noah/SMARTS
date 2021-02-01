@@ -579,20 +579,13 @@ class SMARTS(ShowBase):
                     agent_id
                 )
                 agent_action_space = agent_interface.action_space
-                if agent_action_space in self._dynamic_action_spaces:
-                    # This is a pybullet agent, we were the source of this vehicle state.
-                    # No need to make any changes
-                    continue
-                else:
+                if agent_action_space not in self._dynamic_action_spaces:
                     # This is not a pybullet agent, but it has an avatar in this world
                     # to make it's observations. Update the avatar to match the new
                     # state of this vehicle
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-                    if isinstance(pybullet_vehicle.chassis, BoxChassis):
-                        pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
-                    else:
-                        pybullet_vehicle.set_pose(vehicle.pose)
-                        pybullet_vehicle.set_speed(vehicle.speed)
+                    assert isinstance(pybullet_vehicle.chassis, BoxChassis):
+                    pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
@@ -702,7 +695,7 @@ class SMARTS(ShowBase):
         }
         accumulated_provider_state.merge(
             self._pybullet_provider_step(pybullet_actions)
-        )  ## controllers and actions checked here _pybullet_provider_step
+        )
 
         for provider in self.providers:
             provider_state = self._step_provider(
@@ -716,7 +709,7 @@ class SMARTS(ShowBase):
 
         self._harmonize_providers(
             accumulated_provider_state
-        )  # pybullet provider used here
+        )
         return accumulated_provider_state
 
     def _step_provider(self, provider, actions, dt, elapsed_sim_time):
