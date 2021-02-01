@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import os, sys
 import json
+import os
 from ultra.utils.ray import default_ray_kwargs
 
 # Set environment to better support Ray
@@ -38,7 +39,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def train(
-    task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed, log_dir
+    scenario_info, num_episodes, policy_class, eval_info, timestep_sec, headless, seed, log_dir
 ):
     torch.set_num_threads(1)
     total_step = 0
@@ -50,7 +51,7 @@ def train(
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=task,
+        scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
@@ -116,7 +117,7 @@ def train(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("intersection-single-agent")
     parser.add_argument(
-        "--task", help="Tasks available : [1, 2]", type=str, default="1"
+        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
     parser.add_argument(
         "--level",
@@ -172,13 +173,11 @@ if __name__ == "__main__":
     # Required string for smarts' class registry
     policy_class = str(policy_path) + ":" + str(policy_locator)
 
-    # ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
-    ray.init()  # **ray_kwargs)
-    # try:
+    ray.init()
     ray.wait(
         [
             train.remote(
-                task=(args.task, args.level),
+                scenario_info=(args.task, args.level),
                 num_episodes=int(args.episodes),
                 eval_info={
                     "eval_rate": float(args.eval_rate),
@@ -192,6 +191,3 @@ if __name__ == "__main__":
             )
         ]
     )
-    # finally:
-    #     time.sleep(1)
-    #     ray.shutdown()
