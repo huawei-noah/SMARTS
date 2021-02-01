@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         tests:
-          - ./ultra/tests/
+          - ./ultra/tests/ --ignore=./ultra/tests/test_train.py
     steps:
       - name: Checkout
         uses: actions/checkout@v2
