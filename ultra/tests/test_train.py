@@ -1,4 +1,6 @@
-import unittest, ray, os, ijson, sys
+import unittest, ray, os, sys
+import gym
+import ijson
 import shutil
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
@@ -58,7 +60,7 @@ class TrainTest(unittest.TestCase):
             self.assertTrue(False)
             ray.shutdown()
     
-    def test_train_all_agents(self):
+    def test_check_agents_from_pool(self):
         seed = 2
         
         with open("ultra/agent_pool.json", 'r') as f:
@@ -69,34 +71,12 @@ class TrainTest(unittest.TestCase):
                     policy_path = policy_pool[policy]["path"]
                     policy_locator = policy_pool[policy]["locator"]
                     policy_class = str(policy_path) + ':' + str(policy_locator)
-                    print(policy_class)
-                    ray.init(ignore_reinit_error=True)
                     try:
-                        ray.get(
-                            train.remote(
-                                task=("00", "easy"),
-                                policy_class=policy_class,
-                                num_episodes=1,
-                                eval_info={
-                                    "eval_rate": 1000,
-                                    "eval_episodes": 2,
-                                },
-                                timestep_sec=0.1,
-                                headless=True,
-                                seed=2,
-                                log_dir="ultra/tests/logs"
-                            )
-                        )
-                        self.assertTrue(True)
-                        ray.shutdown()
+                        spec = make(locator=policy_class)
+                        agent = spec.build_agent()
                     except ImportError as err:
-                        print(err)
                         self.assertTrue(False)
-                        ray.shutdown()
-                    except ray.exceptions.WorkerCrashedError as err:
-                        print(err)
-                        self.assertTrue(False)
-                        ray.shutdown()
+                    
     
     def test_spec_is_instance_agentspec(self):
         policy_class = "ultra.baselines.sac:sac-v0"
