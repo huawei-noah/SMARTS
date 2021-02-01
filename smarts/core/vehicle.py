@@ -499,7 +499,7 @@ class Vehicle:
         self._np.setPosHpr(*pos, heading, 0, 0)
 
     @lru_cache(maxsize=1)
-    def _warn_non_kinematic_vehicle_set_pose(self):
+    def _warn_AckermannChassis_set_pose(self):
         if self._has_stepped and isinstance(self._chassis, AckermannChassis):
             logging.warning(
                 f"Agent `{self._id}` has called set pose after step."
@@ -508,6 +508,7 @@ class Vehicle:
 
     # TODO: Merge this w/ speed setter as a set GCD call?
     def set_pose(self, pose: Pose):
+        self._warn_AckermannChassis_set_pose()
         self._chassis.set_pose(pose)
 
     def swap_chassis(self, chassis: Chassis):
