@@ -9,14 +9,7 @@ jobs:
     strategy:
       matrix:
         tests:
-          - ./ultra/tests/test_adapter.py
-          - ./ultra/tests/test_analysis.py
-          - ./ultra/tests/test_env.py
-          - ./ultra/tests/test_episode.py
-          - ./ultra/tests/test_evaluate.py
-          - ./ultra/tests/test_scenarios.py
-          - ./ultra/tests/test_social_vehicles.py
-          - ./ultra/tests/test_train.py
+          - ./ultra/tests/
     steps:
       - name: Checkout
         uses: actions/checkout@v2
