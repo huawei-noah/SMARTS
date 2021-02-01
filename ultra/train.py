@@ -39,7 +39,14 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def train(
-    scenario_info, num_episodes, policy_class, eval_info, timestep_sec, headless, seed, log_dir
+    scenario_info,
+    num_episodes,
+    policy_class,
+    eval_info,
+    timestep_sec,
+    headless,
+    seed,
+    log_dir,
 ):
     torch.set_num_threads(1)
     total_step = 0
@@ -151,10 +158,16 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--seed", help="Environment seed", default=2, type=int,
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
     )
     parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
     )
     args = parser.parse_args()
 
@@ -163,10 +176,10 @@ if __name__ == "__main__":
     )  # remove `logical=False` to use all cpus
 
     with open("ultra/agent_pool.json", "r") as f:
-        data = json.load(f) 
-        if args.policy in data['agents'].keys():
-            policy_path = data['agents'][args.policy]["path"]
-            policy_locator = data['agents'][args.policy]["locator"]
+        data = json.load(f)
+        if args.policy in data["agents"].keys():
+            policy_path = data["agents"][args.policy]["path"]
+            policy_locator = data["agents"][args.policy]["locator"]
         else:
             raise ImportError("Invalid policy name. Please try again")
 
