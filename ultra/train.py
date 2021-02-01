@@ -158,7 +158,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--seed", help="Environment seed", default=2, type=int,
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
     )
     parser.add_argument(
         "--log-dir",
