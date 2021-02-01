@@ -98,12 +98,12 @@ class TrainTest(unittest.TestCase):
                         self.assertTrue(False)
                         ray.shutdown()
     
-    def test_spec_is_instance_AgentSpec(self):
+    def test_spec_is_instance_agentspec(self):
         policy_class = "ultra.baselines.sac:sac-v0"
         spec = make(locator=policy_class)
         self.assertIsInstance(spec, AgentSpec)
 
-    def test_agent_is_instance_Policy(self):
+    def test_agent_is_instance_policy(self):
         policy_class = "ultra.baselines.sac:sac-v0"
         spec = make(locator=policy_class)
         agent = spec.build_agent()

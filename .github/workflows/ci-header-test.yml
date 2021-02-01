@@ -1,6 +1,9 @@
 name: SMARTS CI Header Test
 
-on: [push]
+on:
+  push:
+    branches:
+      - disabled
 
 env:
   venv_dir: .venv

@@ -1,7 +1,9 @@
 name: SMARTS CI
 
-on: [push]
-
+on:
+  push:
+    branches:
+      - disabled
 env:
   venv_dir: .venv
 jobs:
