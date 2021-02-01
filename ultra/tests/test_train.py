@@ -1,6 +1,6 @@
 import unittest, ray, os, sys
 import gym
-import ijson
+import json
 import shutil
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
@@ -12,69 +12,68 @@ seed = 2
 
 
 class TrainTest(unittest.TestCase):
-    @unittest.skip
-    def test_train_cli(self):
-        try:
-            os.system(
-                "python ultra/train.py --task 00 --level easy --episodes 1 --log-dir ultra/tests/logs"
-            )
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
+    # @unittest.skip
+    # def test_train_cli(self):
+    #     try:
+    #         os.system(
+    #             "python ultra/train.py --task 00 --level easy --episodes 1 --log-dir ultra/tests/logs"
+    #         )
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
 
-    def test_locate_log_directory(self):
-        log_dir = "ultra/tests/logs"
-        try:
-            os.system(
-                f"python ultra/train.py --task 00 --level easy --policy ppo --episodes 1 --log-dir {log_dir}"
-            )
-        except Exception as err:
-            print(err)
+    # def test_locate_log_directory(self):
+    #     log_dir = "ultra/tests/logs"
+    #     try:
+    #         os.system(
+    #             f"python ultra/train.py --task 00 --level easy --policy ppo --episodes 1 --log-dir {log_dir}"
+    #         )
+    #     except Exception as err:
+    #         print(err)
 
-        if os.path.exists(log_dir):
-            self.assertTrue(True)
+    #     if os.path.exists(log_dir):
+    #         self.assertTrue(True)
 
-    def test_train_single_agent(self):
-        seed = 2
-        policy_class = "ultra.baselines.sac:sac-v0"
+    # def test_train_single_agent(self):
+    #     seed = 2
+    #     policy_class = "ultra.baselines.sac:sac-v0"
 
-        ray.init(ignore_reinit_error=True)
-        try:
-            ray.get(
-                train.remote(
-                    task=("00", "easy"),
-                    policy_class=policy_class,
-                    num_episodes=1,
-                    eval_info={"eval_rate": 1000, "eval_episodes": 2,},
-                    timestep_sec=0.1,
-                    headless=True,
-                    seed=2,
-                    log_dir="ultra/tests/logs",
-                )
-            )
-            self.assertTrue(True)
-            ray.shutdown()
-        except ray.exceptions.WorkerCrashedError as err:
-            print(err)
-            self.assertTrue(False)
-            ray.shutdown()
+    #     ray.init(ignore_reinit_error=True)
+    #     try:
+    #         ray.get(
+    #             train.remote(
+    #                 task=("00", "easy"),
+    #                 policy_class=policy_class,
+    #                 num_episodes=1,
+    #                 eval_info={"eval_rate": 1000, "eval_episodes": 2,},
+    #                 timestep_sec=0.1,
+    #                 headless=True,
+    #                 seed=2,
+    #                 log_dir="ultra/tests/logs",
+    #             )
+    #         )
+    #         self.assertTrue(True)
+    #         ray.shutdown()
+    #     except ray.exceptions.WorkerCrashedError as err:
+    #         print(err)
+    #         self.assertTrue(False)
+    #         ray.shutdown()
 
     def test_check_agents_from_pool(self):
         seed = 2
+        policy = ''
 
-        with open("ultra/agent_pool.json", "r") as f:
-            objects = ijson.items(f, "agents")
-            for o in objects:
-                policy_pool = o
-                for policy in policy_pool:
-                    policy_path = policy_pool[policy]["path"]
-                    policy_locator = policy_pool[policy]["locator"]
-                    policy_class = str(policy_path) + ":" + str(policy_locator)
-                    try:
-                        spec = make(locator=policy_class)
-                        agent = spec.build_agent()
-                    except ImportError as err:
-                        self.assertTrue(False)
+        with open("ultra/agent_pool.json") as f:
+            data = json.load(f) 
+            for policy in data['agents'].keys():
+                policy_path = data['agents'][policy]["path"]
+                policy_locator = data['agents'][policy]["locator"]
+                policy_class = str(policy_path) + ":" + str(policy_locator)
+                try:
+                    spec = make(locator=policy_class)
+                    agent = spec.build_agent()
+                except ImportError as err:
+                    self.assertTrue(False)
 
     def test_spec_is_instance_agentspec(self):
         policy_class = "ultra.baselines.sac:sac-v0"

@@ -156,7 +156,10 @@ if __name__ == "__main__":
         default="easy",
     )
     parser.add_argument(
-        "--model-name", help="Name of model being evaluated", default="unnamed-model", type=str,
+        "--model-name",
+        help="Name of model being evaluated",
+        default="unnamed-model",
+        type=str,
     )
     parser.add_argument("--models", default="models/", help="Directory to saved models")
     parser.add_argument(
@@ -169,7 +172,9 @@ if __name__ == "__main__":
         "--headless", help="Run without envision", type=bool, default=False
     )
     parser.add_argument(
-        "--experiment-dir", help="Path to spec file that includes adapters and policy parameters", type=str
+        "--experiment-dir",
+        help="Path to spec file that includes adapters and policy parameters",
+        type=str,
     )
 
     args = parser.parse_args()
