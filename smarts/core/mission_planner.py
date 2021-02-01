@@ -58,7 +58,6 @@ class MissionPlanner:
         self._uturn_initial_height = 0
         self._insufficient_initial_distant = False
         self._uturn_initial_position = 0
-        self._cut_in_speed = None
         self._uturn_is_initialized = False
 
     def random_endless_mission(
@@ -263,9 +262,9 @@ class MissionPlanner:
                 position, target_lane.getID(), 60
             )
 
-            self._cut_in_speed = target_vehicle.speed * 1.2
+            cut_in_speed = target_vehicle.speed * 1.2
 
-            speed_limit = self._cut_in_speed
+            speed_limit = cut_in_speed
 
         p0 = position
         p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
