@@ -37,26 +37,22 @@ class AdapterTest(unittest.TestCase):
         self.assertTrue("ego_position" in observations[AGENT_ID])
         self.assertTrue("waypoint_paths" in observations[AGENT_ID])
 
-    # def test_rewards_adapter(self):
-    #     @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
-    #     def run_experiment():
-    #         agent, env = prepare_test_env_agent()
-    #         observations = env.reset()
-    #         state = observations[AGENT_ID]
-    #         action = agent.act(state, explore=True)
-    #         observations, rewards, dones, infos = env.step({AGENT_ID: action})
-    #         env.close()
-    #         return rewards
+    def test_rewards_adapter(self):
+        @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
+        def run_experiment():
+            agent, env = prepare_test_env_agent()
+            observations = env.reset()
+            state = observations[AGENT_ID]
+            action = agent.act(state, explore=True)
+            observations, rewards, dones, infos = env.step({AGENT_ID: action})
+            env.close()
+            return rewards
 
-    #     ray.init(ignore_reinit_error=True)
-    #     rewards = ray.get(run_experiment.remote())
-    #     ray.shutdown()
-    #     self.assertTrue("ego_social_safety_reward" in rewards[AGENT_ID]["log"])
-    #     self.assertTrue("ego_num_violations" in rewards[AGENT_ID]["log"])
-    #     self.assertTrue("social_num_violations" in rewards[AGENT_ID]["log"])
-    #     self.assertTrue("goal_dist" in rewards[AGENT_ID]["log"])
-    #     self.assertTrue("linear_jerk" in rewards[AGENT_ID]["log"])
-    #     self.assertTrue("angular_jerk" in rewards[AGENT_ID]["log"])
+        ray.init(ignore_reinit_error=True)
+        rewards = ray.get(run_experiment.remote())
+        ray.shutdown()
+        self.assertIsInstance(rewards, dict)
+        self.assertIsInstance(rewards[AGENT_ID], float)
 
     def test_rewards_returns(self):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
