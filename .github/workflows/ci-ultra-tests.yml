@@ -36,11 +36,13 @@ jobs:
         run: |
           python3.7 -m venv .venv
           . .venv/bin/activate
+          pip install dill
+          pip install ijson
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -r requirements.txt
           pip install --upgrade --upgrade-strategy eager -e .[train,test]
-      - name: Run smoke tests
+      - name: Run base ultra tests
         run: |
           . .venv/bin/activate
           make build-all-scenarios
