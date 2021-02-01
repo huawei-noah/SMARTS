@@ -36,7 +36,9 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
-def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
+def train(
+    scenario_info, num_episodes, policy_class, eval_info, timestep_sec, headless, seed
+):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
@@ -50,7 +52,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=task,
+        scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
@@ -116,35 +118,38 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("intersection-single-agent")
     parser.add_argument(
-        "--task", help="Tasks available : [0, 1, 2, 3]", type=str, default="1"
+        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
     parser.add_argument(
         "--level",
-        help="Tasks available : [easy, medium, hard, no-traffic]",
+        help="Levels available : [easy, medium, hard, no-traffic]",
         type=str,
         default="easy",
     )
     parser.add_argument(
-        "--episodes", help="number of training episodes", type=int, default=1000000
+        "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
-        "--timestep", help="environment timestep (sec)", type=float, default=0.1
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="run without envision", type=bool, default=False
+        "--headless", help="Run without envision", type=bool, default=False
     )
     parser.add_argument(
-        "--eval-episodes", help="number of evaluation episodes", type=int, default=200
+        "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
     )
     parser.add_argument(
         "--eval-rate",
-        help="evaluation rate based on number of observations",
+        help="Evaluation rate based on number of observations",
         type=int,
         default=10000,
     )
 
     parser.add_argument(
-        "--seed", help="environment seed", default=2, type=int,
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
     )
     args = parser.parse_args()
 
@@ -153,13 +158,11 @@ if __name__ == "__main__":
     )  # remove `logical=False` to use all cpus
 
     policy_class = "ultra.baselines.sac:sac-v0"
-    # ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
-    ray.init()  # **ray_kwargs)
-    # try:
+    ray.init()
     ray.wait(
         [
             train.remote(
-                task=(args.task, args.level),
+                scenario_info=(args.task, args.level),
                 num_episodes=int(args.episodes),
                 eval_info={
                     "eval_rate": float(args.eval_rate),
@@ -172,6 +175,3 @@ if __name__ == "__main__":
             )
         ]
     )
-    # finally:
-    #     time.sleep(1)
-    #     ray.shutdown()

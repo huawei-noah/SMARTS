@@ -151,26 +151,27 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--level",
-        help="Tasks available : [easy, medium, hard]",
+        help="Levels available : [easy, medium, hard, no-traffic]",
         type=str,
         default="easy",
     )
     parser.add_argument(
-        "--policy", help="path to policy class", default="TD3", type=str,
+        "--model-name", help="Name of model being evaluated", default="unnamed-model", type=str,
     )
-    parser.add_argument("--models", default="models/", help="directory to saved models")
+    parser.add_argument("--models", default="models/", help="Directory to saved models")
     parser.add_argument(
-        "--episodes", help="number of training episodes", type=int, default=200
-    )
-    parser.add_argument(
-        "--timestep", help="environment timestep (sec)", type=float, default=0.1
+        "--episodes", help="Number of training episodes", type=int, default=200
     )
     parser.add_argument(
-        "--headless", help="run without envision", type=bool, default=False
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--experiment-dir", help="spec file includes adapters and policy parameters", type=str
+        "--headless", help="Run without envision", type=bool, default=False
     )
+    parser.add_argument(
+        "--experiment-dir", help="Path to spec file that includes adapters and policy parameters", type=str
+    )
+
     args = parser.parse_args()
 
     # --------------------------------------------------------
