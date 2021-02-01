@@ -1,6 +1,10 @@
 name: ULTRA CI
 
-on: [push]
+on:
+  push:
+    branches:
+      - disabled
+
 
 jobs:
   test:
