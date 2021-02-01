@@ -84,8 +84,6 @@ class EpisodeTest(unittest.TestCase):
             #     # self.assertTrue(
             #     #     abs(result[key] - episode.info["Train"].data[key]) <= 0.001
             #     # )
-            
-                
 
     def test_episode_counter(self):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
@@ -103,7 +101,7 @@ class EpisodeTest(unittest.TestCase):
                     action = agent.act(state, explore=True)
                     observations, rewards, dones, infos = env.step({AGENT_ID: action})
                     next_state = observations[AGENT_ID]
-                    #observations[AGENT_ID].update(rewards[AGENT_ID])
+                    # observations[AGENT_ID].update(rewards[AGENT_ID])
                     loss_output = agent.step(
                         state=state,
                         action=action,
@@ -138,6 +136,7 @@ class EpisodeTest(unittest.TestCase):
 
     # def test_save_code(self):
     #     self.assertTrue(True)
+
 
 def prepare_test_env_agent(headless=True):
     timestep_sec = 0.1

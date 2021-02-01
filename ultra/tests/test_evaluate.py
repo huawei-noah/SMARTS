@@ -8,6 +8,7 @@ seed = 2
 policy_class = "ultra.baselines.ppo:ppo-v0"
 AGENT_ID = "001"
 
+
 class EvaluateTest(unittest.TestCase):
     # def test_evaluation_check(self):
     #     # @ray.remote(max_calls=1, num_gpus=0)
@@ -98,6 +99,7 @@ class EvaluateTest(unittest.TestCase):
         except Exception as err:
             print(err)
             self.assertTrue(False)
+
 
 def prepare_test_env_agent(headless=True):
     timestep_sec = 0.1

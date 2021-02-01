@@ -11,6 +11,7 @@ seed = 2
 
 adapter = BaselineAdapter()
 
+
 class AdapterTest(unittest.TestCase):
     def test_observation_features(self):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
@@ -71,6 +72,7 @@ class AdapterTest(unittest.TestCase):
         self.assertTrue(isinstance(rewards, dict))
         self.assertTrue(isinstance(rewards[AGENT_ID], float))
 
+
 def prepare_test_env_agent(headless=True):
     timestep_sec = 0.1
     # [throttle, brake, steering]
@@ -86,4 +88,3 @@ def prepare_test_env_agent(headless=True):
     )
     agent = spec.build_agent()
     return agent, env
-

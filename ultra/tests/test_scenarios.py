@@ -22,7 +22,7 @@ class ScenariosTest(unittest.TestCase):
         save_dir = "ultra/tests/scenarios/maps/easy/"
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
-            
+
         build_scenarios(
             task="task00",
             level_name="easy",
