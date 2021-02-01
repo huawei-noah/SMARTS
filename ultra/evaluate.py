@@ -147,7 +147,7 @@ def evaluate(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("intersection-single-agent-evaluation")
     parser.add_argument(
-        "--task", help="Tasks available : [1, 2]", type=str, default="1"
+        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
     parser.add_argument(
         "--level",
