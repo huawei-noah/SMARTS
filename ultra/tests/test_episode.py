@@ -106,6 +106,7 @@ class EpisodeTest(unittest.TestCase):
             #     #     abs(result[key] - episode.info["Train"].data[key]) <= 0.001
             #     # )
 
+    @unittest.skip
     def test_episode_counter(self):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
         def run_experiment():
