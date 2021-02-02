@@ -24,12 +24,14 @@ jobs:
             -config /etc/X11/xorg.conf :1 &
       - name: Install dependencies
         run: |
-          cd ultra/
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install --upgrade pip
-          pip install -e .
-      - name: Run ultra tests
+          pip instal dill
+          pip install --upgrade --upgrade-strategy eager pip
+          pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade --upgrade-strategy eager -r requirements.txt
+          pip install --upgrade --upgrade-strategy eager -e .[train,test]
+      - name: Run smoke tests
         run: |
           . .venv/bin/activate
           make build-all-scenarios
@@ -39,4 +41,3 @@ jobs:
             --dist=no \
             -n auto \
             ${{matrix.tests}}
-
