@@ -1,4 +1,4 @@
-name: ULTRA CI
+name: ULTRA CI Base Tests
 
 on: [push, pull_request]
 

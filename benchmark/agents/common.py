@@ -986,7 +986,10 @@ def get_reward_adapter(observation_adapter, adapter_type="vanilla"):
             goal_dist = distance.euclidean(ego_2d_pos, goal_pos)
             penalty += 0.1 * (last_goal_dist - goal_dist)
         else:
-            raise ValueError(f"Goal type: {type(goal)} has no attr named: position.")
+            raise ValueError(
+                f"Goal type: {type(goal)} has no attr named: `position`."
+                "Please use a `mission` with a `goal` that has the `position` attribute in your scenario!"
+            )
 
         # ======== Penalty: distance to the center
         if last_obs.get("distance_to_center") is not None:
