@@ -1,6 +1,10 @@
-name: SMARTS CI Base Tests
+name: ULTRA CI
 
-on: [push]
+on:
+  push:
+    branches:
+      - disabled
+
 
 jobs:
   test:
@@ -9,13 +13,7 @@ jobs:
     strategy:
       matrix:
         tests:
-          - ./envision
-          - ./smarts/contrib
-          - ./smarts/core
-          - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
-          - ./smarts/env/tests/test_rllib_hiway_env.py
-          - ./smarts/sstudio
-          - ./tests
+          - ./ultra/tests/ --ignore=./ultra/tests/test_train.py
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -28,15 +26,26 @@ jobs:
             +extension RENDER \
             -logfile ./xdummy.log \
             -config /etc/X11/xorg.conf :1 &
+      # - name: Cache pip
+      #   id: cache-pip
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: |
+      #       .venv
+      #       /usr/local/bin/scl
+      #     key: pip-${{hashFiles('requirements.txt')}}-${{hashFiles('setup.py')}}
       - name: Install dependencies
+        # if: steps.cache-pip.outputs.cache-hit != 'true'
         run: |
           python3.7 -m venv .venv
           . .venv/bin/activate
+          pip install dill
+          pip install ijson
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -r requirements.txt
           pip install --upgrade --upgrade-strategy eager -e .[train,test]
-      - name: Run smoke tests
+      - name: Run base ultra tests
         run: |
           . .venv/bin/activate
           make build-all-scenarios
@@ -45,8 +54,5 @@ jobs:
             --forked \
             --dist=no \
             -n auto \
-            ${{matrix.tests}} \
-            --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
-            --ignore=./smarts/env/tests/test_benchmark.py \
-            --ignore=./smarts/env/tests/test_learning.py \
-            -k 'not test_long_determinism'
+            ${{matrix.tests}}
+
