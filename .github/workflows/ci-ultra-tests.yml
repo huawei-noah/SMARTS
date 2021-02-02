@@ -22,6 +22,7 @@ jobs:
             +extension RENDER \
             -logfile ./xdummy.log \
             -config /etc/X11/xorg.conf :1 &
+      - name: Install dependencies
         run: |
           python3.7 -m venv .venv
           . .venv/bin/activate
