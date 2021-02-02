@@ -18,6 +18,7 @@ Here is the summary of key features:
 ## Index
 
 Get started by choosing an option below.
+- [Flowchart of ULTRA's interface with SMARTS](docs/_static/ULTRA-flowchart-v1.jpg)
 - [Setting up ULTRA](docs/setup.md)
 - [Train and Evaluate a Basline Agent](docs/getting_started.md)
 - [Create a Custom Agent](docs/custom_agent.md)
