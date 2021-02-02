@@ -24,6 +24,7 @@ coverage==5.3
 cycler==0.10.0
 Cython==0.29.21
 decorator==4.4.2
+dill==0.3.3
 dm-tree==0.1.5
 evdev==1.3.0
 execnet==1.7.1

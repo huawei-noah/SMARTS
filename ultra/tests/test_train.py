@@ -33,48 +33,54 @@ seed = 2
 
 
 class TrainTest(unittest.TestCase):
-    # @unittest.skip
-    # def test_train_cli(self):
-    #     try:
-    #         os.system(
-    #             "python ultra/train.py --task 00 --level easy --episodes 1 --log-dir ultra/tests/logs"
-    #         )
-    #     except Exception as err:
-    #         print(err)
-    #         self.assertTrue(False)
+    def test_train_cli(self):
+        try:
+            os.system(
+                "python ultra/train.py --task 00 --level easy --episodes 1 --log-dir ultra/tests/logs"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
 
-    # def test_locate_log_directory(self):
-    #     log_dir = "ultra/tests/logs"
-    #     try:
-    #         os.system(
-    #             f"python ultra/train.py --task 00 --level easy --policy ppo --episodes 1 --log-dir {log_dir}"
-    #         )
-    #     except Exception as err:
-    #         print(err)
+    def test_locate_log_directory(self):
+        log_dir = "ultra/tests/logs"
+        try:
+            os.system(
+                f"python ultra/train.py --task 00 --level easy --policy ppo --episodes 1 --log-dir {log_dir}"
+            )
+        except Exception as err:
+            print(err)
 
-    #     if os.path.exists(log_dir):
-    #         self.assertTrue(True)
+        if os.path.exists(log_dir):
+            self.assertTrue(True)
 
     # def test_train_single_agent(self):
+    #     if os.path.exists("ultra/tests/logs"):
+    #         shutil.rmtree("ultra/tests/logs")
+
+    #     os.system("pkill -9 ray")
+
     #     seed = 2
     #     policy_class = "ultra.baselines.sac:sac-v0"
 
-    #     ray.init(ignore_reinit_error=True)
     #     try:
-    #         ray.get(
-    #             train.remote(
-    #                 task=("00", "easy"),
-    #                 policy_class=policy_class,
-    #                 num_episodes=1,
-    #                 eval_info={"eval_rate": 1000, "eval_episodes": 2,},
-    #                 timestep_sec=0.1,
-    #                 headless=True,
-    #                 seed=2,
-    #                 log_dir="ultra/tests/logs",
-    #             )
+    #         ray.init(ignore_reinit_error=True)
+    #         ray.wait(
+    #             [
+    #                 train.remote(
+    #                     scenario_info=("00", "easy"),
+    #                     policy_class=policy_class,
+    #                     num_episodes=1,
+    #                     eval_info={"eval_rate": 1000, "eval_episodes": 2,},
+    #                     timestep_sec=0.1,
+    #                     headless=True,
+    #                     seed=2,
+    #                     log_dir="ultra/tests/logs",
+    #                 )
+    #             ]
     #         )
-    #         self.assertTrue(True)
     #         ray.shutdown()
+    #         self.assertTrue(True)
     #     except ray.exceptions.WorkerCrashedError as err:
     #         print(err)
     #         self.assertTrue(False)
