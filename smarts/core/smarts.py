@@ -50,6 +50,7 @@ from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
+from smarts.core.chassis import AckermannChassis, BoxChassis
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.pybullet import bullet_client as bc
@@ -325,7 +326,6 @@ class SMARTS(ShowBase):
 
         # Visualization
         self._try_emit_visdom_obs(observations)
-
         if len(self._agent_manager.ego_agent_ids):
             while len(observations_for_ego) < 1:
                 observations_for_ego, _, _, _ = self.step({})
@@ -483,6 +483,10 @@ class SMARTS(ShowBase):
         return self._bullet_client.getDynamicsInfo(self._ground_bullet_id, -1)[9]
 
     @property
+    def dynamic_action_spaces(self):
+        return self._dynamic_action_spaces
+
+    @property
     def traffic_sim(self) -> SumoTrafficSimulation:
         return self._traffic_sim
 
@@ -574,17 +578,13 @@ class SMARTS(ShowBase):
                     agent_id
                 )
                 agent_action_space = agent_interface.action_space
-                if agent_action_space in self._dynamic_action_spaces:
-                    # This is a pybullet agent, we were the source of this vehicle state.
-                    # No need to make any changes
-                    continue
-                else:
+                if agent_action_space not in self._dynamic_action_spaces:
                     # This is not a pybullet agent, but it has an avatar in this world
                     # to make it's observations. Update the avatar to match the new
                     # state of this vehicle
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-                    pybullet_vehicle.set_pose(vehicle.pose)
-                    pybullet_vehicle.set_speed(vehicle.speed)
+                    assert isinstance(pybullet_vehicle.chassis, BoxChassis)
+                    pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
