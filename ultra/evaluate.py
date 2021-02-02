@@ -177,7 +177,6 @@ if __name__ == "__main__":
         help="Path to spec file that includes adapters and policy parameters",
         type=str,
     )
-
     args = parser.parse_args()
 
     # --------------------------------------------------------
@@ -198,7 +197,6 @@ if __name__ == "__main__":
 
     # Required string for smarts' class registry
     policy_class = str(policy_path) + ":" + str(policy_locator)
-
     num_cpus = max(
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
