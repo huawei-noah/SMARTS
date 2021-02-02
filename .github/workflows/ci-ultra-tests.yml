@@ -30,13 +30,8 @@ jobs:
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -r requirements.txt
           pip install --upgrade --upgrade-strategy eager -e .[train,test]
-      - name: Run smoke tests
+      - name: Run ultra tests
         run: |
           . .venv/bin/activate
           make build-all-scenarios
-          PYTHONHASHSEED=42 pytest -v \
-            --doctest-modules \
-            --forked \
-            --dist=no \
-            -n auto \
-            ${{matrix.tests}}
+          pytest -v ./ultra/tests/ 
