@@ -1,6 +1,6 @@
 name: SMARTS CI Header
 
-on: [push]
+on: [push, pull_request]
 
 env:
   venv_dir: .venv
