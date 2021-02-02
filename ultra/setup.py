@@ -38,7 +38,6 @@ setup(
     install_requires=[
         "smarts[train]==0.4.6",  # Stable version
         "setuptools>=41.0.0,!=50.0",
-        "ijson",
         "dill",
         "black==19.10b0",
     ],
