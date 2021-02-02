@@ -26,7 +26,7 @@ jobs:
         run: |
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip instal dill
+          pip install dill
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -r requirements.txt
