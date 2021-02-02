@@ -23,11 +23,11 @@ jobs:
             -logfile ./xdummy.log \
             -config /etc/X11/xorg.conf :1 &
         run: |
-          cd /ULTRA
+          cd ULTRA/
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install --upgrade --upgrade-strategy eager pip
-          pip install --upgrade --upgrade-strategy eager -e .
+          pip install --upgrade pip
+          pip install -e .
       - name: Run ultra tests
         run: |
           . .venv/bin/activate
