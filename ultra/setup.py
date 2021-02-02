@@ -25,8 +25,8 @@ from glob import glob
 from pathlib import Path
 from collections import defaultdict
 
-""" Modified setup.py to include options for changing SMARTS version or set default
-to the latest stable version of SMARTS """
+""" Modified setup.py to include option for changing SMARTS version or, by default,
+the latest stable version SMARTS will used """
 setup(
     name="ultra",
     description="Unprotected Left Turn using Reinforcement-learning Agents",
@@ -38,7 +38,6 @@ setup(
     install_requires=[
         "smarts[train]==0.4.6",  # Stable version
         "setuptools>=41.0.0,!=50.0",
-        "ijson",
         "dill",
         "black==19.10b0",
     ],
