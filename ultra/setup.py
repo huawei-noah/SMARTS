@@ -28,7 +28,7 @@ from collections import defaultdict
 """ Modified setup.py to include option for changing SMARTS version or, by default,
 the latest stable version SMARTS will used """
 setup(
-    name="ultra",
+    name="ultra-rl",
     description="Unprotected Left Turn using Reinforcement-learning Agents",
     version="0.1",
     packages=find_packages(),
