@@ -1,6 +1,6 @@
 name: SMARTS CI Format & Dependencies
 
-on: [push]
+on: [push, pull_request]
 
 env:
   venv_dir: .venv
@@ -8,6 +8,7 @@ env:
 jobs:
   test-formatting:
     runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.3-pre
     steps:
       - name: Checkout
@@ -25,6 +26,7 @@ jobs:
 
   test-requirements:
     runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.3-pre
     steps:
       - name: Checkout

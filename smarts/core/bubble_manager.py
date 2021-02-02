@@ -443,6 +443,7 @@ class BubbleManager:
         else:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
+        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         vehicle = sim.vehicle_index.switch_control_to_agent(
             sim,
             vehicle_id,
@@ -450,6 +451,7 @@ class BubbleManager:
             boid=bubble.is_boid,
             hijacking=True,
             recreate=False,
+            agent_interface=agent_interface,
         )
 
         for provider in sim.providers:
