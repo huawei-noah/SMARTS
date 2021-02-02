@@ -214,7 +214,7 @@ if __name__ == "__main__":
             episode.info[episode.active_tag] = ray.get(
                 [
                     evaluate.remote(
-                        experiment_dir=args.spec,
+                        experiment_dir=args.experiment_dir,
                         agent_id=agent_id,
                         policy_class=policy_class,
                         seed=episode.eval_count,
