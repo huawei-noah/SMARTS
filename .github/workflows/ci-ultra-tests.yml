@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         tests:
-          - ./ultra/tests/
+          - ./ultra/tests/ --ignore=./ultra/tests/test_train.py
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -35,8 +35,11 @@ jobs:
         run: |
           python3.7 -m venv .venv
           . .venv/bin/activate
-          cd ultra/
-          pip install -e .
+          pip install dill
+          pip install --upgrade --upgrade-strategy eager pip
+          pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade --upgrade-strategy eager -r requirements.txt
+          pip install --upgrade --upgrade-strategy eager -e .[train,test]
       - name: Run base ultra tests
         run: |
           . .venv/bin/activate
