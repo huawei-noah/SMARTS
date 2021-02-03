@@ -48,6 +48,7 @@ def evaluation_check(
     scenario_info,
     timestep_sec,
     headless,
+    log_dir,
 ):
     agent_itr = episode.get_itr(agent_id)
 
@@ -68,6 +69,7 @@ def evaluation_check(
                     num_episodes=eval_episodes,
                     headless=headless,
                     timestep_sec=timestep_sec,
+                    log_dir=log_dir,
                 )
             ]
         )[0]
@@ -159,7 +161,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--models", default="models/", help="Directory to saved models")
     parser.add_argument(
-        "--episodes", help="Number of training episodes", type=int, default=200
+        "--episodes", help="Number of training episodes", type=int, default=5
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
@@ -183,11 +185,14 @@ if __name__ == "__main__":
     m = re.search(
         "ultra\.baselines\.[a-zA-Z0-9]+\:[a-zA-Z0-9]+\-[a-zA-Z0-9]+", args.models
     )
-    policy_class = m.group(0)
-    print(args.models)
-    print(policy_class)
 
+    try:
+        policy_class = m.group(0)
+    except AttributeError as e:
+        policy_class = "ultra.baselines.ppo:ppo-v0"
+    
     if not os.path.exists(args.models):
+        print(args.models)
         raise "Models not Found"
 
     if not os.listdir(args.models):

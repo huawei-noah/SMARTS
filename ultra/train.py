@@ -89,6 +89,7 @@ def train(
                 agent_id=AGENT_ID,
                 policy_class=policy_class,
                 episode=episode,
+                log_dir=log_dir,
                 **eval_info,
                 **env.info,
             )
@@ -164,10 +165,10 @@ if __name__ == "__main__":
         "--log-dir", help="Log directory location", default="logs", type=str,
     )
 
+    args = parser.parse_args()
+    
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
-
-    args = parser.parse_args()
 
     num_cpus = max(
         1, psutil.cpu_count(logical=False) - 1
