@@ -81,7 +81,7 @@ def train(
                 dill.dump(spec, spec_output, pickle.HIGHEST_PROTOCOL)
 
         while not dones["__all__"]:
-            if episode.get_itr(AGENT_ID) >= 1000000:  # 1M observation break
+            if episode.get_itr(AGENT_ID) >= 1000000:
                 finished = True
                 break
             evaluation_check(

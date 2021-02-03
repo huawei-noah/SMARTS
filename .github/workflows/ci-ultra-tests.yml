@@ -1,18 +1,16 @@
 name: ULTRA CI Base Tests
 
-on:
-  push:
-    branches:
-      - disabled
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.3-pre
     strategy:
       matrix:
         tests:
-          - ./ultra/tests/ --ignore=./ultra/tests/test_train.py
+          - ./ultra/tests/ 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -29,19 +27,12 @@ jobs:
         run: |
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install dill
-          pip install ijson
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -r requirements.txt
           pip install --upgrade --upgrade-strategy eager -e .[train,test]
-      - name: Run smoke tests
+      - name: Run ultra tests
         run: |
           . .venv/bin/activate
           make build-all-scenarios
-          PYTHONHASHSEED=42 pytest -v \
-            --doctest-modules \
-            --forked \
-            --dist=no \
-            -n auto \
-            ${{matrix.tests}}
+          pytest -v ./ultra/tests/ 
