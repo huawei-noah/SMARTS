@@ -163,6 +163,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log-dir", help="Log directory location", default="logs", type=str,
     )
+
+    if not os.path.exists(args.log_dir):
+        os.makedirs(args.log_dir)
+
     args = parser.parse_args()
 
     num_cpus = max(

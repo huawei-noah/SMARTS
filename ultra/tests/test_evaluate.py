@@ -30,7 +30,7 @@ policy_class = "ultra.baselines.ppo:ppo-v0"
 AGENT_ID = "001"
 
 
-class EvaluateTest(unittest.TestCase):
+#class EvaluateTest(unittest.TestCase):
     # def test_evaluation_check(self):
     #     # @ray.remote(max_calls=1, num_gpus=0)
     #     def run_experiment():
@@ -88,52 +88,52 @@ class EvaluateTest(unittest.TestCase):
     #         print(err)
     #         self.assertTrue(False)
 
-    def test_evaluate_cli(self):
-        try:
-            os.system(
-                "python ultra/evaluate.py --task 00 --level easy --policy ppo --models ultra/tests/ppo_models/models --episodes 1"
-            )
-            self.assertTrue(True)
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
+#     def test_evaluate_cli(self):
+#         try:
+#             os.system(
+#                 "python ultra/evaluate.py --task 00 --level easy --policy ppo --models ultra/tests/ppo_models/models --episodes 1"
+#             )
+#             self.assertTrue(True)
+#         except Exception as err:
+#             print(err)
+#             self.assertTrue(False)
 
-    def test_evaluate_agent(self):
-        seed = 2
-        model = glob.glob("ultra/tests/ppo_models/models/*")[0]
+#     def test_evaluate_agent(self):
+#         seed = 2
+#         model = glob.glob("ultra/tests/ppo_models/models/*")[0]
 
-        ray.init(ignore_reinit_error=True)
-        try:
-            evaluate.remote(
-                experiment_dir=None,
-                agent_id="AGENT_001",
-                policy_class=policy_class,
-                seed=seed,
-                itr_count=0,
-                checkpoint_dir=model,
-                scenario_info=("00", "easy"),
-                num_episodes=2,
-                timestep_sec=0.1,
-                headless=True,
-            )
-            self.assertTrue(True)
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
+#         ray.init(ignore_reinit_error=True)
+#         try:
+#             evaluate.remote(
+#                 experiment_dir=None,
+#                 agent_id="AGENT_001",
+#                 policy_class=policy_class,
+#                 seed=seed,
+#                 itr_count=0,
+#                 checkpoint_dir=model,
+#                 scenario_info=("00", "easy"),
+#                 num_episodes=2,
+#                 timestep_sec=0.1,
+#                 headless=True,
+#             )
+#             self.assertTrue(True)
+#         except Exception as err:
+#             print(err)
+#             self.assertTrue(False)
 
 
-def prepare_test_env_agent(headless=True):
-    timestep_sec = 0.1
-    # [throttle, brake, steering]
-    policy_class = "ultra.baselines.ppo:ppo-v0"
-    spec = make(locator=policy_class)
-    env = gym.make(
-        "ultra.env:ultra-v0",
-        agent_specs={AGENT_ID: spec},
-        scenario_info=("00", "easy"),
-        headless=headless,
-        timestep_sec=timestep_sec,
-        seed=seed,
-    )
-    agent = spec.build_agent()
-    return agent, env
+# def prepare_test_env_agent(headless=True):
+#     timestep_sec = 0.1
+#     # [throttle, brake, steering]
+#     policy_class = "ultra.baselines.ppo:ppo-v0"
+#     spec = make(locator=policy_class)
+#     env = gym.make(
+#         "ultra.env:ultra-v0",
+#         agent_specs={AGENT_ID: spec},
+#         scenario_info=("00", "easy"),
+#         headless=headless,
+#         timestep_sec=timestep_sec,
+#         seed=seed,
+#     )
+#     agent = spec.build_agent()
+#     return agent, env

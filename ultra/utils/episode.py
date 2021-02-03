@@ -127,7 +127,12 @@ class Episode:
                 self.experiment_name = f"{self.experiment_name}-{etag}"
         else:
             self.experiment_name = experiment_name
-        self.log_dir = log_dir
+
+        if log_dir is None:
+            self.log_dir = "logs"
+        else:
+            self.log_dir = log_dir
+
         self.experiment_dir = f"{self.log_dir}/{self.experiment_name}"
         self.model_dir = f"{self.log_dir}/{self.experiment_name}/models"
         self.code_dir = f"{self.log_dir}/{self.experiment_name}/codes"
