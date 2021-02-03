@@ -59,15 +59,15 @@ function App({ client }) {
       let ids = await client.fetchSimulationIds();
       if (ids.length > 0) {
         if (!matchedSimulationId || !ids.includes(matchedSimulationId)) {
-          history.push(`/${ids[ids.length-1]}`);
+          history.push(`/${ids[ids.length - 1]}`);
         }
       }
       setSimulationIds(ids);
-    }
+    };
 
     // checks if there is new simulation running every 3 seconds.
     const interval = setInterval(fetchRunningSim, 3000);
-    return () => clearInterval(interval)
+    return () => clearInterval(interval);
   }, []);
 
   async function onStartRecording() {

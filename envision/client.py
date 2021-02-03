@@ -135,10 +135,7 @@ class Client:
         timestep_sec: float = 0.1,
         wait_between_retries: float = 0.5,
     ):
-        client = Client(
-            endpoint=endpoint,
-            wait_between_retries=wait_between_retries,
-        )
+        client = Client(endpoint=endpoint, wait_between_retries=wait_between_retries,)
         with open(path, "r") as f:
             for line in f:
                 line = line.rstrip("\n")
@@ -149,10 +146,7 @@ class Client:
             logging.info("Finished Envision data replay")
 
     def _connect(
-        self,
-        endpoint,
-        queue,
-        wait_between_retries: float = 0.05,
+        self, endpoint, queue, wait_between_retries: float = 0.05,
     ):
         threadlocal = threading.local()
 
@@ -207,9 +201,7 @@ class Client:
                 )
 
                 if not connection_established:
-                    self._log.info(
-                        f"Attempting to connect to Envision tries={tries}"
-                    )
+                    self._log.info(f"Attempting to connect to Envision tries={tries}")
                 else:
                     # when connection closed, retry again every 5 seconds
                     wait_between_retries = 5
