@@ -41,6 +41,7 @@ class PPOPolicy(Agent):
     def __init__(
         self, policy_params=None, checkpoint_dir=None,
     ):
+        print(">>>>>   PPO")
         self.policy_params = policy_params
         self.batch_size = int(policy_params["batch_size"])
         self.hidden_units = int(policy_params["hidden_units"])

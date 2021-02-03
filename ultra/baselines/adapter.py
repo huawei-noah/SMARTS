@@ -41,16 +41,18 @@ num_lookahead = 100
 #     agent.action_space_type
 #     pass
 
+
 class Dummy:
-    def __init__(self, id, p):# , position):
+    def __init__(self, id, p):  # , position):
         # self.id = id
         self.position = p
 
     def sample(self):
-        return "0", [0,0,0]
+        return "0", [0, 0, 0]
+
 
 class BaselineAdapter:
-    def __init__(self,is_rllib=False):
+    def __init__(self, is_rllib=False):
         self.is_rllib = is_rllib
         pass
 
@@ -62,22 +64,26 @@ class BaselineAdapter:
     #     return states
     def rllib_social_vehciles(self, social_vehicles):
         output = []
-        print('>>>>', social_vehicles)
         for obj in social_vehicles:
-            output.append(OrderedDict(
-                position = np.asarray(obj.position),
-                heading=np.array([obj.heading]),
-                speed=np.array([obj.speed])
-            ))
-        # print(len(output), '*******')
-        # # while len(output)<10:
-        # #     output.append(dict(np.asarray([0,0,0]),np.array([0]),np.array([0])))
-        # #     print(len(output))
-        return np.asarray(output)
+            output.append(
+                dict(
+                    position=np.asarray(obj.position),
+                    heading=np.array([obj.heading]),
+                    speed=np.array([obj.speed]),
+                )
+            )
+        while len(output) < 10:
+            output.append(
+                dict(
+                    position=np.asarray([0, 0, 0]),
+                    heading=np.array([0]),
+                    speed=np.array([0]),
+                )
+            )
+        return tuple(output)
 
-
-    def rllib_helper(self,obj):
-        if not  hasattr(obj,"__dict__"):
+    def rllib_helper(self, obj):
+        if not hasattr(obj, "__dict__"):
             return np.array([obj])
         result = {}
         for key, val in obj.__dict__.items():
@@ -86,7 +92,7 @@ class BaselineAdapter:
             element = []
             if isinstance(val, list):
                 if all(isinstance(x, (int, float)) for x in val):
-                    element=np.asarray(val)
+                    element = np.asarray(val)
                 else:
                     for item in val:
                         element.append(self.rllib_helper(item))
@@ -120,20 +126,24 @@ class BaselineAdapter:
         )
 
         state = dict(
-            # speed=np.array([ego_state.speed]),
-            # relative_goal_position=np.asarray(relative_goal_position_rotated),
-            # distance_from_center=np.array([ego_dist_center]),
-            # steering=np.array([ego_state.steering]),
-            # angle_error=np.array([closest_wp.relative_heading(ego_state.heading)]),
-            social_vehicles= env_observation.neighborhood_vehicle_states if not self.is_rllib else self.rllib_social_vehciles([env_observation.neighborhood_vehicle_states[0]]),
-            # road_speed=np.array([closest_wp.speed_limit]),
+            speed=np.array([ego_state.speed]),
+            relative_goal_position=np.asarray(relative_goal_position_rotated),
+            distance_from_center=np.array([ego_dist_center]),
+            steering=np.array([ego_state.steering]),
+            angle_error=np.array([closest_wp.relative_heading(ego_state.heading)]),
+            social_vehicles=env_observation.neighborhood_vehicle_states
+            if not self.is_rllib
+            else self.rllib_social_vehciles(
+                env_observation.neighborhood_vehicle_states[:10]
+            ),
+            road_speed=np.array([closest_wp.speed_limit]),
             # # ----------
             # # dont normalize the following,
-            # start=np.asarray(start.position),
-            # goal=np.asarray(goal.position),
-            # heading=np.array([ego_state.heading]),
+            start=np.asarray(start.position),
+            goal=np.asarray(goal.position),
+            heading=np.array([ego_state.heading]),
             # # # goal_path=path,
-            # ego_position=np.asarray(ego_state.position),
+            ego_position=np.asarray(ego_state.position),
             # waypoint_paths=env_observation.waypoint_paths,
             # events=env_observation.events,
         )

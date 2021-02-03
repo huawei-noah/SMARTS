@@ -6,13 +6,11 @@ import random
 from ultra.baselines.adapter import Dummy
 from smarts.core.sensors import VehicleObservation
 
+
 class String(gym.Space):
     def __init__(
-                self,
-                shape=None,
-                min_length=1,
-                max_length=180,
-            ):
+        self, shape=None, min_length=1, max_length=180,
+    ):
         self.shape = shape
         self.min_length = min_length
         self.max_length = max_length
@@ -28,6 +26,8 @@ class String(gym.Space):
 
     def contains(self, x):
         return type(x) is "str" and len(x) > self.min and len(x) < self.max
+
+
 #
 # class Socials(gym.Space):
 #     def __init__(
@@ -46,10 +46,11 @@ class String(gym.Space):
 #     def contains(self, x):
 #         return  x in self.dummies
 
+
 class RLlibAgent:
     def __init__(self, action_type, policy_class):
         self._spec = BaselineAgentSpec(
-            action_type=action_type, policy_class=policy_class,is_rllib=True
+            action_type=action_type, policy_class=policy_class, is_rllib=True
         )
 
     @property
@@ -78,28 +79,39 @@ class RLlibAgent:
     def observation_space(self):
         return gym.spaces.Dict(
             {
-                # "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                # "relative_goal_position": gym.spaces.Box(
-                #     low=np.array([-1e10, -1e10]), high=np.array([1e10, 1e10])
-                # ),
-                # "distance_from_center": gym.spaces.Box(
-                #     low=-1e10, high=1e10, shape=(1,)
-                # ),
-                # "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-                # "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,)),
-                "social_vehicles": gym.spaces.Tuple([gym.spaces.Dict({
-                    'position':gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
-                    "heading":gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-                    "speed":gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                })]),
-                # "road_speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                # # # ----------
-                # # # don't normalize the following:
-                # "start": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
-                # "goal": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
-                # "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+                "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                "relative_goal_position": gym.spaces.Box(
+                    low=np.array([-1e10, -1e10]), high=np.array([1e10, 1e10])
+                ),
+                "distance_from_center": gym.spaces.Box(
+                    low=-1e10, high=1e10, shape=(1,)
+                ),
+                "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+                "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,)),
+                "social_vehicles": gym.spaces.Tuple(
+                    [
+                        gym.spaces.Dict(
+                            {
+                                "position": gym.spaces.Box(
+                                    low=-1e10, high=1e10, shape=(3,)
+                                ),
+                                "heading": gym.spaces.Box(
+                                    low=-1e10, high=1e10, shape=(1,)
+                                ),
+                                "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                            }
+                        )
+                        for i in range(10)
+                    ]
+                ),
+                "road_speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                # # ----------
+                # # don't normalize the following:
+                "start": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
+                "goal": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
+                "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
                 # # # "goal_path": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
-                # "ego_position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
+                "ego_position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
                 # "waypoint_paths": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
                 # "events": gym.spaces.Box(low=0, high=100, shape=(15,)),
             }

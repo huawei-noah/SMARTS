@@ -44,7 +44,7 @@ class BaselineAgentSpec(AgentSpec):
         task=None,
         max_episode_steps=1200,
         experiment_dir=None,
-        is_rllib=False
+        is_rllib=False,
     ):
         pass
 
@@ -56,7 +56,7 @@ class BaselineAgentSpec(AgentSpec):
         task=None,
         max_episode_steps=1200,
         experiment_dir=None,
-        is_rllib=False
+        is_rllib=False,
     ):
         if experiment_dir:
             print(f"LOADING SPEC from {experiment_dir}/spec.pkl")

@@ -36,9 +36,17 @@ FRONT = 3
 def extract_social_vehicle_state_default(
     social_vehicle, ego_vehicle_pos, ego_vehicle_heading, social_vehicle_config=None
 ):
+    print("??????")
     social_vehicle_position = social_vehicle.position[0:2] - ego_vehicle_pos[0:2]
     social_vehicle_position_rotated = rotate2d_vector(
         social_vehicle_position, -ego_vehicle_heading
+    )
+    print(
+        "*******   ",
+        social_vehicle.position[0:2],
+        social_vehicle.heading,
+        social_vehicle.speed,
+        "    2    ****",
     )
     return [
         (social_vehicle_position_rotated[0]) / 100.0,
@@ -51,6 +59,7 @@ def extract_social_vehicle_state_default(
 def extract_social_vehicle_state_pointnet(
     social_vehicle, ego_vehicle_pos, ego_vehicle_heading, social_vehicle_config
 ):
+    print("??????>>>>>>>")
     speed_norm = 30
     heading_diff = social_vehicle.heading - ego_vehicle_heading
     # vector length is prop to the speed
@@ -60,6 +69,13 @@ def extract_social_vehicle_state_pointnet(
     social_vehicle_position = social_vehicle.position[0:2] - ego_vehicle_pos[0:2]
     social_vehicle_position_rotated = rotate2d_vector(
         social_vehicle_position, -ego_vehicle_heading
+    )
+    print(
+        "*******   ",
+        social_vehicle.position[0:2],
+        social_vehicle.heading,
+        social_vehicle.speed,
+        "     1    ****",
     )
     return [
         (social_vehicle_position_rotated[0]) / 100.0,

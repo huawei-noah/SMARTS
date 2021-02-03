@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
+import os, gym
 from ultra.utils.ray import default_ray_kwargs
 from pathlib import Path
 
@@ -35,6 +35,8 @@ from ultra.env.rllib_ultra_env import RLlibUltraEnv
 from ultra.baselines.rllib_agent import RLlibAgent
 from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.ppo.ppo.policy import PPOPolicy
+from ultra.baselines.ppo.ppo.network import PPONetwork
+
 from ray.tune.schedulers import PopulationBasedTraining
 from ray.rllib.evaluation.episode import MultiAgentEpisode
 from ray.rllib.policy.policy import Policy
@@ -44,18 +46,63 @@ from ray.rllib.evaluation.rollout_worker import RolloutWorker
 from ray.rllib.agents.callbacks import DefaultCallbacks
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
+import pprint
+import ray.rllib.agents.ppo as ppo
+from smarts.core.controllers import ActionSpaceType
+from smarts.core.agent_interface import (
+    AgentInterface,
+    AgentType,
+    OGM,
+    Waypoints,
+    NeighborhoodVehicles,
+)
 
+from ultra.baselines.common.yaml_loader import load_yaml
+from smarts.core.agent import AgentSpec
+from ultra.baselines.adapter import BaselineAdapter
 from typing import Dict
 
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-class TrainingModel(FullyConnectedNetwork):
-    NAME = "FullyConnectedNetwork"
+OBSERVATION_SPACE = gym.spaces.Dict(
+    {
+        "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+        "relative_goal_position": gym.spaces.Box(
+            low=np.array([-1e10, -1e10]), high=np.array([1e10, 1e10])
+        ),
+        "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+        "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+        "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,)),
+        "social_vehicles": gym.spaces.Tuple(
+            [
+                gym.spaces.Dict(
+                    {
+                        "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
+                        "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+                        "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                    }
+                )
+                for i in range(10)
+            ]
+        ),
+        "road_speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+        # # ----------
+        # # don't normalize the following:
+        "start": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
+        "goal": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
+        "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+        # # # "goal_path": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
+        "ego_position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
+        # "waypoint_paths": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
+        # "events": gym.spaces.Box(low=0, high=100, shape=(15,)),
+    }
+)
 
-
-ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
+ACTION_SPACE = gym.spaces.Box(
+    low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32,
+)
 
 
 class Callbacks(DefaultCallbacks):
@@ -68,7 +115,6 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        print("**********  M ********")
         episode.user_data["ego_speed"] = []
 
     @staticmethod
@@ -79,7 +125,6 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        print("X")
         single_agent_id = list(episode._agent_to_last_obs)[0]
         obs = episode.last_raw_obs_for(single_agent_id)
         episode.user_data["ego_speed"].append(obs["speed"])
@@ -107,12 +152,121 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     torch.set_num_threads(1)
     total_step = 0
     finished = False
-
+    ray.init(ignore_reinit_error=True)
     # --------------------------------------------------------
     # Initialize Agent and social_vehicle encoding method
     # -------------------------------------------------------
     AGENT_ID = "007"
+    config = ppo.DEFAULT_CONFIG.copy()
+    config["log_level"] = "WARN"  # the default, at this time
+    config["num_workers"] = 4  # default = 2
+    config["train_batch_size"] = 10000  # default = 4000
+    config["sgd_minibatch_size"] = 256  # default = 128
+    config["evaluation_num_episodes"] = 50  # default = 10
+    config["framework"] = "torch"
 
+    from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+    from ultra.baselines.common.state_preprocessor import get_state_description
+
+    social_capacity = 10
+    num_social_features = 4
+
+    social_params = dict(
+        encoder_key="no_encoder",
+        social_policy_hidden_units=128,
+        social_polciy_init_std=0.5,
+        social_capacity=social_capacity,
+        num_social_features=num_social_features,
+        seed=2,
+    )
+    social_vehicle_config = get_social_vehicle_configs(**social_params)
+    social_vehicle_encoder = social_vehicle_config["encoder"]
+    observation_num_lookahead = 20
+
+    state_description = get_state_description(
+        social_vehicle_config=social_params,
+        observation_waypoints_lookahead=observation_num_lookahead,
+        action_size=2,
+    )
+
+    state_size = sum(state_description["low_dim_states"].values())
+    print(">>>>", social_vehicle_encoder)
+    social_feature_encoder_class = social_vehicle_encoder[
+        "social_feature_encoder_class"
+    ]
+    social_feature_encoder_params = social_vehicle_encoder[
+        "social_feature_encoder_params"
+    ]
+    if social_feature_encoder_class:
+        state_size += social_feature_encoder_class(
+            **social_feature_encoder_params
+        ).output_dim
+    else:
+        state_size += social_capacity * num_social_features
+
+    print("state_size", state_size)
+
+    from ultra.baselines.ppo.ppo.rllib_network import TorchPPOModel
+
+    ModelCatalog.register_custom_model("ppo_model", TorchPPOModel)
+
+    adapter = BaselineAdapter(is_rllib=True)
+    agent = ppo.PPOTrainer(
+        env=RLlibUltraEnv,
+        config={
+            "framework": "torch",
+            "multiagent": {
+                "policies": {
+                    "default_policy": (
+                        None,
+                        OBSERVATION_SPACE,
+                        ACTION_SPACE,
+                        {
+                            "model": {
+                                "custom_model": "ppo_model",
+                                "custom_model_config": {}
+                                # "action_size": 2,
+                                # "state_size":state_size,
+                                # "init_std":0.5,
+                                # "hidden_units": 512,
+                                # "seed": 2,
+                                # "social_feature_encoder_class":social_feature_encoder_class,
+                                # "social_feature_encoder_params":social_feature_encoder_params,
+                            }
+                        },
+                    )
+                }
+            },
+            "env_config": {
+                "seed": 2,
+                "scenario_info": task,
+                "headless": headless,
+                "eval_mode": False,
+                "ordered_scenarios": False,
+                "agent_specs": {
+                    f"AGENT-007": AgentSpec(
+                        interface=AgentInterface(
+                            waypoints=Waypoints(lookahead=20),
+                            neighborhood_vehicles=NeighborhoodVehicles(200),
+                            action=ActionSpaceType.Continuous,
+                            rgb=False,
+                            max_episode_steps=5,
+                            debug=True,
+                        ),
+                        agent_params={},
+                        agent_builder=None,
+                        observation_adapter=adapter.observation_adapter,
+                        reward_adapter=adapter.reward_adapter,
+                    )
+                },
+            },
+        },
+    )
+    print(M)
+    policy = agent.get_policy()
+    model = policy.model
+
+    print(model.base_model.summary())
     # spec = make(locator=policy_class)
     # env = gym.make(
     #     "ultra.env:ultra-v0",
@@ -123,64 +277,64 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     #     seed=seed,
     # )
 
-    rllib_agent = RLlibAgent(
-        action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy
-    )
-
-    # episode = Episode()
-    pbt = PopulationBasedTraining(
-        time_attr="time_total_s",
-        metric="episode_reward_mean",
-        mode="max",
-        perturbation_interval=300,
-        resample_probability=0.25,
-        hyperparam_mutations={
-            "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
-            "rollout_fragment_length": lambda: 200,
-            "train_batch_size": lambda: 2000,
-        },
-    )
-    rllib_policies = {
-        "default_policy": (
-            None,
-            rllib_agent.observation_space,
-            rllib_agent.action_space,
-            {"model": {"custom_model": TrainingModel.NAME}},
-        )
-    }
-    tune_config = {
-        "env": RLlibUltraEnv,
-        "log_level": "WARN",
-        "num_workers": 1,
-        "env_config": {
-            "seed": seed,
-            "scenario_info": task,
-            "headless": headless,
-            "eval_mode": False,
-            "ordered_scenarios": False,
-            "agent_specs": {f"AGENT-007": rllib_agent.spec},
-        },
-        "multiagent": {"policies": rllib_policies},
-        "callbacks": Callbacks,
-    }
-    result_dir = "ray_results"
-    result_dir = Path(result_dir).expanduser().resolve().absolute()
-
-    analysis = tune.run(
-        "PG",
-        name="exp_1",
-        stop={"time_total_s": 1200},
-        checkpoint_freq=1,
-        checkpoint_at_end=True,
-        local_dir=str(result_dir),
-        resume=False,
-        restore=None,
-        max_failures=3,
-        num_samples=1,
-        export_formats=["model", "checkpoint"],
-        config=tune_config,
-        scheduler=pbt,
-    )
+    # rllib_agent = RLlibAgent(
+    #     action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy
+    # )
+    #
+    # # episode = Episode()
+    # pbt = PopulationBasedTraining(
+    #     time_attr="time_total_s",
+    #     metric="episode_reward_mean",
+    #     mode="max",
+    #     perturbation_interval=300,
+    #     resample_probability=0.25,
+    #     hyperparam_mutations={
+    #         "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
+    #         "rollout_fragment_length": lambda: 200,
+    #         "train_batch_size": lambda: 2000,
+    #     },
+    # )
+    # rllib_policies = {
+    #     "default_policy": (
+    #         None,
+    #         rllib_agent.observation_space,
+    #         rllib_agent.action_space,
+    #         {"model": {"custom_model": TrainingModel.NAME}},
+    #     )
+    # }
+    # tune_config = {
+    #     "env": RLlibUltraEnv,
+    #     "log_level": "WARN",
+    #     "num_workers": 1,
+    #     "env_config": {
+    #         "seed": seed,
+    #         "scenario_info": task,
+    #         "headless": headless,
+    #         "eval_mode": False,
+    #         "ordered_scenarios": False,
+    #         "agent_specs": {f"AGENT-007": rllib_agent.spec},
+    #     },
+    #     "multiagent": {"policies": rllib_policies},
+    #     "callbacks": Callbacks,
+    # }
+    # result_dir = "ray_results"
+    # result_dir = Path(result_dir).expanduser().resolve().absolute()
+    #
+    # analysis = tune.run(
+    #     "PG",
+    #     name="exp_1",
+    #     stop={"time_total_s": 1200},
+    #     checkpoint_freq=1,
+    #     checkpoint_at_end=True,
+    #     local_dir=str(result_dir),
+    #     resume=False,
+    #     restore=None,
+    #     max_failures=3,
+    #     num_samples=1,
+    #     export_formats=["model", "checkpoint"],
+    #     config=tune_config,
+    #     scheduler=pbt,
+    # )
 
 
 if __name__ == "__main__":

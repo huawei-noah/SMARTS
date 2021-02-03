@@ -136,6 +136,7 @@ def preprocess_state(
         if social_capacity > 0
         else []
     )
+    print("Social vheicles", len(state["social_vehicles"]))
     # check if any social capacity is 0
     social_vehicle_dimension = state_description["social_vehicles"]
     social_vehicles = torch.empty(0, 0)
