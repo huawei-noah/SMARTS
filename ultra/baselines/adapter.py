@@ -24,6 +24,7 @@ from scipy.spatial import distance
 import random, math
 from sys import path
 from collections import OrderedDict
+from ultra.baselines.common.state_preprocessor import *
 
 path.append("./ultra")
 from ultra.utils.common import (
@@ -52,8 +53,22 @@ class Dummy:
 
 
 class BaselineAdapter:
-    def __init__(self, is_rllib=False):
+    def __init__(self,
+        state_description,
+        social_capacity,
+        observation_num_lookahead,
+        social_vehicle_config,
+        is_rllib=False):
         self.is_rllib = is_rllib
+        self.state_description = state_description
+        self.state_preprocessor = StatePreprocessor(
+            preprocess_state, to_2d_action, self.state_description
+        )
+        # self.social_feature_encoder = model_config['custom_model_config']['social_feature_encoder_class']
+        self.social_capacity = social_capacity
+        self.social_vehicle_config = social_vehicle_config
+        # self.prev_action = np.zeros(model_config['custom_model_config']['action_size'])
+        self.observation_num_lookahead = observation_num_lookahead
         pass
 
     # def observation_adapter_rllib(self, env_observation):
@@ -81,6 +96,8 @@ class BaselineAdapter:
                 )
             )
         return tuple(output)
+
+
 
     def rllib_helper(self, obj):
         if not hasattr(obj, "__dict__"):
@@ -142,11 +159,23 @@ class BaselineAdapter:
             start=np.asarray(start.position),
             goal=np.asarray(goal.position),
             heading=np.array([ego_state.heading]),
-            # # # goal_path=path,
+            goal_path= path ,
             ego_position=np.asarray(ego_state.position),
-            # waypoint_paths=env_observation.waypoint_paths,
+            waypoint_paths=env_observation.waypoint_paths,
             # events=env_observation.events,
         )
+
+        state = self.state_preprocessor(state=input_dict['obs'],
+            normalize=True,
+            device='cpu',
+            social_capacity=self.social_capacity,
+            observation_num_lookahead=self.observation_num_lookahead,
+            social_vehicle_config=self.social_vehicle_config,
+            # prev_action=self.prev_action
+        )
+
+        print(state)
+        print(N)
         return state  # ego=ego, env_observation=env_observation)
 
     def reward_adapter(self, observation, reward):

@@ -93,7 +93,16 @@ OBSERVATION_SPACE = gym.spaces.Dict(
         "start": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
         "goal": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
         "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-        # # # "goal_path": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
+        "goal_path": gym.spaces.Tuple(
+            [
+                gym.spaces.Dict(
+                    {
+                        "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
+                    }
+                )
+                for i in range(10)
+            ]
+        ),
         "ego_position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
         # "waypoint_paths": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
         # "events": gym.spaces.Box(low=0, high=100, shape=(15,)),
@@ -101,7 +110,7 @@ OBSERVATION_SPACE = gym.spaces.Dict(
 )
 
 ACTION_SPACE = gym.spaces.Box(
-    low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32,
+    low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32, shape=(3,)
 )
 
 
@@ -128,6 +137,8 @@ class Callbacks(DefaultCallbacks):
         single_agent_id = list(episode._agent_to_last_obs)[0]
         obs = episode.last_raw_obs_for(single_agent_id)
         episode.user_data["ego_speed"].append(obs["speed"])
+        print(obs)
+        print(N)
 
     @staticmethod
     def on_episode_end(
@@ -152,18 +163,19 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     torch.set_num_threads(1)
     total_step = 0
     finished = False
-    ray.init(ignore_reinit_error=True)
+    ray.init(num_cpus=1)
     # --------------------------------------------------------
     # Initialize Agent and social_vehicle encoding method
     # -------------------------------------------------------
     AGENT_ID = "007"
     config = ppo.DEFAULT_CONFIG.copy()
-    config["log_level"] = "WARN"  # the default, at this time
-    config["num_workers"] = 4  # default = 2
-    config["train_batch_size"] = 10000  # default = 4000
-    config["sgd_minibatch_size"] = 256  # default = 128
-    config["evaluation_num_episodes"] = 50  # default = 10
-    config["framework"] = "torch"
+    print('>>>>>', config)
+    # config["log_level"] = "WARN"  # the default, at this time
+    # config["num_workers"] = 4  # default = 2
+    # config["train_batch_size"] = 10000  # default = 4000
+    # config["sgd_minibatch_size"] = 256  # default = 128
+    # config["evaluation_num_episodes"] = 50  # default = 10
+    # config["framework"] = "torch"
 
     from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
     from ultra.baselines.common.state_preprocessor import get_state_description
@@ -204,17 +216,24 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     else:
         state_size += social_capacity * num_social_features
 
-    print("state_size", state_size)
+
 
     from ultra.baselines.ppo.ppo.rllib_network import TorchPPOModel
 
     ModelCatalog.register_custom_model("ppo_model", TorchPPOModel)
 
-    adapter = BaselineAdapter(is_rllib=True)
-    agent = ppo.PPOTrainer(
+    adapter = BaselineAdapter(is_rllib=True,
+        state_description=state_description,
+        social_capacity=social_capacity,
+        observation_num_lookahead=observation_num_lookahead,
+        social_vehicle_config=social_vehicle_config)
+    print('MADE ADAPTER **********')
+    trainer = ppo.PPOTrainer(
         env=RLlibUltraEnv,
         config={
             "framework": "torch",
+            # "train_batch_size": 5,
+            # "log_level":"WARN",
             "multiagent": {
                 "policies": {
                     "default_policy": (
@@ -224,14 +243,19 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
                         {
                             "model": {
                                 "custom_model": "ppo_model",
-                                "custom_model_config": {}
-                                # "action_size": 2,
-                                # "state_size":state_size,
-                                # "init_std":0.5,
-                                # "hidden_units": 512,
-                                # "seed": 2,
-                                # "social_feature_encoder_class":social_feature_encoder_class,
-                                # "social_feature_encoder_params":social_feature_encoder_params,
+                                "custom_model_config": {
+                                    "state_description":state_description,
+                                    'social_vehicle_config':social_vehicle_config,
+                                    'observation_num_lookahead':observation_num_lookahead,
+                                    'social_capacity':social_capacity,
+                                    "action_size": 2,
+                                    "state_size":state_size,
+                                    "init_std":0.5,
+                                    "hidden_units": 512,
+                                    "seed": 2,
+                                    "social_feature_encoder_class":social_feature_encoder_class,
+                                    "social_feature_encoder_params":social_feature_encoder_params
+                                }
                             }
                         },
                     )
@@ -243,6 +267,10 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
                 "headless": headless,
                 "eval_mode": False,
                 "ordered_scenarios": False,
+                "state_description":state_description,
+                "social_capacity":social_capacity,
+                "observation_num_lookahead":observation_num_lookahead,
+                "social_vehicle_config":social_vehicle_config,
                 "agent_specs": {
                     f"AGENT-007": AgentSpec(
                         interface=AgentInterface(
@@ -262,11 +290,11 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             },
         },
     )
-    print(M)
-    policy = agent.get_policy()
-    model = policy.model
-
-    print(model.base_model.summary())
+    print("Done")
+    # policy = agent.get_policy()
+    # model = policy.model
+    #
+    # print(model.base_model.summary())
     # spec = make(locator=policy_class)
     # env = gym.make(
     #     "ultra.env:ultra-v0",

@@ -181,9 +181,9 @@ class PPOPolicy(Agent):
             social_capacity=self.social_capacity,
             observation_num_lookahead=self.observation_num_lookahead,
             social_vehicle_config=self.social_vehicle_config,
-            prev_action=self.prev_action,
+            # prev_action=self.prev_action,
         )
-
+        # state['action'] = self.prev_actio
         # pass social_vehicle_rep through the network
         self.log_probs.append(self.current_log_prob.to(self.device))
         self.values.append(self.current_value.to(self.device))

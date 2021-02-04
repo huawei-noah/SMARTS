@@ -99,5 +99,5 @@ def get_social_vehicle_configs(
             "social_feature_encoder_class": None,  # No Encoder; Examples at the bottom of this page
             "social_feature_encoder_params": {},
         }
-    print(">>>>>", config["encoder"], encoder_key)
+    # print(">>>>>", config["encoder"], encoder_key)
     return config

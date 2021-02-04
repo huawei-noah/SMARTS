@@ -74,7 +74,7 @@ def preprocess_state(
     observation_num_lookahead,
     social_capacity,
     social_vehicle_config,
-    prev_action,
+    # prev_action,
     normalize=False,
     unsqueeze=False,
     device=None,
@@ -89,11 +89,13 @@ def preprocess_state(
         image = normalize_im(image) if normalize else image
         images[k] = image
 
-    if "action" in state:
-        state["action"] = convert_action_func(state["action"])
+    # if "action" in state:
+    #     state["action"] = convert_action_func(state["action"])
 
     # -------------------------------------
     # filter lookaheads from goal_path
+    # print('>>>>>>', state['steering'], len(state['steering']))
+
     _, lookahead_wps = get_closest_waypoint(
         num_lookahead=observation_num_lookahead,
         goal_path=state["goal_path"],
@@ -104,7 +106,7 @@ def preprocess_state(
 
     # -------------------------------------
     # keep prev_action
-    state["action"] = prev_action
+    # state["action"] = prev_action
 
     # -------------------------------------
     # normalize states and concat
@@ -136,7 +138,7 @@ def preprocess_state(
         if social_capacity > 0
         else []
     )
-    print("Social vheicles", len(state["social_vehicles"]))
+    print(M)
     # check if any social capacity is 0
     social_vehicle_dimension = state_description["social_vehicles"]
     social_vehicles = torch.empty(0, 0)
@@ -166,7 +168,7 @@ def get_state_description(
             "steering": 1,
             "angle_error": 1,
             "relative_goal_position": 2,
-            "action": int(action_size),  # 2
+            # "action": int(action_size),  # 2
             "waypoints_lookahead": 2 * int(observation_waypoints_lookahead),
             "road_speed": 1,
         },
@@ -183,7 +185,7 @@ def _normalize(key, val):
         "steering": 3.14,  # radians
         "angle_error": 3.14,  # radians
         "relative_goal_position": 100.0,
-        "action": 1.0,  # 2
+        # "action": 1.0,  # 2
         "waypoints_lookahead": 10.0,
         "road_speed": 30.0,
     }
