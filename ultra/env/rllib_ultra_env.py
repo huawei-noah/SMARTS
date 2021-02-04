@@ -38,7 +38,7 @@ from ultra.utils.common import (
 
 
 class RLlibUltraEnv(RLlibHiWayEnv):
-    def __init__(self,config):
+    def __init__(self, config):
         self.scenario_info = config["scenario_info"]
         self.scenarios = self.get_task(self.scenario_info[0], self.scenario_info[1])
         if not config["eval_mode"]:
@@ -48,11 +48,12 @@ class RLlibUltraEnv(RLlibHiWayEnv):
 
         config["scenarios"] = _scenarios
         self.ultra_scores = BaselineAdapter(
-            state_description=config['state_description'],
-            social_capacity=config['social_capacity'],
-            observation_num_lookahead=config['observation_num_lookahead'],
-            social_vehicle_config=config['social_vehicle_config'],
-            is_rllib=True)
+            state_description=config["state_description"],
+            social_capacity=config["social_capacity"],
+            observation_num_lookahead=config["observation_num_lookahead"],
+            social_vehicle_config=config["social_vehicle_config"],
+            is_rllib=True,
+        )
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:

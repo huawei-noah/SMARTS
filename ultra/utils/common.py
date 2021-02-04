@@ -239,10 +239,12 @@ def ego_social_safety(
 
     return ego_num_violations, social_num_violations
 
+
 def get_distance(p1, p2):
-    print('p1',p1, p2.shape)
-    print('p2', p2, len(p2))
-    return np.linalg.norm(np.array(p1[:2]) - np.array(p2[:2]))
+    print("p1", p1, p2.shape)
+    print("p2", p2, len(p2))
+    return np.linalg.norm(np.array(p1.pose.position[:2]) - np.array(p2[:2]))
+
 
 def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
 
@@ -252,8 +254,8 @@ def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
     min_dist_idx = -1
     for i, wp in enumerate(goal_path):
         print(wp)
-        print('=//////',ego_position)
-        print('++++++++')
+        print("=//////", ego_position)
+        print("++++++++")
         if wp.dist_to(ego_position) < min_dist:
             min_dist = get_distance(wp, ego_position)
             min_dist_idx = i

@@ -27,14 +27,15 @@ from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFCNet
 from ultra.baselines.common.state_preprocessor import *
 from ultra.baselines.ppo.ppo.network import PPONetwork
 
+
 class TorchPPOModel(TorchModelV2, nn.Module):
     """Example of interpreting repeated observations."""
 
     def __init__(self, obs_space, action_space, num_outputs, model_config, name):
-        #why num_outputs==6 and it is not configured based on action_space??
+        # why num_outputs==6 and it is not configured based on action_space??
         super().__init__(obs_space, action_space, num_outputs, model_config, name)
         nn.Module.__init__(self)
-        print('NAME   ', name)
+        print("NAME   ", name)
         # self.model = TorchFCNet(
         #     obs_space, action_space, num_outputs, model_config, name
         # )
@@ -42,19 +43,23 @@ class TorchPPOModel(TorchModelV2, nn.Module):
             obs_space, action_space, num_outputs, model_config, name
         )
         self.torchmodel = PPONetwork(
-            action_size=model_config['custom_model_config']['action_size'],
-            state_size=model_config['custom_model_config']['state_size'],
-            hidden_units=model_config['custom_model_config']['hidden_units'],
-            init_std=model_config['custom_model_config']['init_std'],
-            seed=model_config['custom_model_config']['seed'],
-            social_feature_encoder_class=model_config['custom_model_config']['social_feature_encoder_class'],
-            social_feature_encoder_params = model_config['custom_model_config']['social_feature_encoder_params']
+            action_size=model_config["custom_model_config"]["action_size"],
+            state_size=model_config["custom_model_config"]["state_size"],
+            hidden_units=model_config["custom_model_config"]["hidden_units"],
+            init_std=model_config["custom_model_config"]["init_std"],
+            seed=model_config["custom_model_config"]["seed"],
+            social_feature_encoder_class=model_config["custom_model_config"][
+                "social_feature_encoder_class"
+            ],
+            social_feature_encoder_params=model_config["custom_model_config"][
+                "social_feature_encoder_params"
+            ],
         )
         # self.state_description = model_config['custom_model_config']['state_description']
         # self.state_preprocessor = StatePreprocessor(
         #     preprocess_state, to_2d_action, self.state_description
         # )
-        print('-------------------------')
+        print("-------------------------")
         # self.social_feature_encoder = model_config['custom_model_config']['social_feature_encoder_class']
         # self.social_capacity = model_config['custom_model_config']['social_capacity']
         # self.social_vehicle_config = model_config['custom_model_config']['social_vehicle_config']
@@ -72,7 +77,7 @@ class TorchPPOModel(TorchModelV2, nn.Module):
 
         # print("The unpacked input tensors:", input_dict["obs"])
 
-        print('EGO POSITION',len(input_dict['obs']['ego_position']))
+        print("EGO POSITION", len(input_dict["obs"]["ego_position"]))
         # state = self.state_preprocessor(state=input_dict['obs'],
         #     normalize=True,
         #     device='cpu',
@@ -107,13 +112,12 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         #     return a, aux_losses
         # else:
         #     return a, {}
-        print('**** state',state)
-        print('**** obs', input_dict['obs'].keys())
+        print("**** state", state)
+        print("**** obs", input_dict["obs"].keys())
         # action = self.torchmodel(state)
         # print('ACTION', action)
         # return action
         return self.model.forward(input_dict, state, seq_lens)
-
 
     def value_function(self):
         return self.model.value_function()

@@ -96,9 +96,7 @@ OBSERVATION_SPACE = gym.spaces.Dict(
         "goal_path": gym.spaces.Tuple(
             [
                 gym.spaces.Dict(
-                    {
-                        "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
-                    }
+                    {"pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),}
                 )
                 for i in range(10)
             ]
@@ -110,7 +108,10 @@ OBSERVATION_SPACE = gym.spaces.Dict(
 )
 
 ACTION_SPACE = gym.spaces.Box(
-    low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32, shape=(3,)
+    low=np.array([0.0, 0.0, -1.0]),
+    high=np.array([1.0, 1.0, 1.0]),
+    dtype=np.float32,
+    shape=(3,),
 )
 
 
@@ -125,7 +126,7 @@ class Callbacks(DefaultCallbacks):
         **kwargs,
     ):
         episode.user_data["ego_speed"] = []
-        print('episode started......')
+        print("episode started......")
 
     @staticmethod
     def on_episode_step(
@@ -164,7 +165,9 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     torch.set_num_threads(1)
     total_step = 0
     finished = False
-    ray.init(num_cpus=1)
+    num_cpus = max(1, psutil.cpu_count(logical=False) - 1)
+    print(">>>>>>", num_cpus)
+    ray.init()  # num_cpus=num_cpus)
     # --------------------------------------------------------
     # Initialize Agent and social_vehicle encoding method
     # -------------------------------------------------------
@@ -217,18 +220,18 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     else:
         state_size += social_capacity * num_social_features
 
-
-
     from ultra.baselines.ppo.ppo.rllib_network import TorchPPOModel
 
     ModelCatalog.register_custom_model("ppo_model", TorchPPOModel)
 
-    adapter = BaselineAdapter(is_rllib=True,
+    adapter = BaselineAdapter(
+        is_rllib=True,
         state_description=state_description,
         social_capacity=social_capacity,
         observation_num_lookahead=observation_num_lookahead,
-        social_vehicle_config=social_vehicle_config)
-    print('MADE ADAPTER **********')
+        social_vehicle_config=social_vehicle_config,
+    )
+    print("MADE ADAPTER **********")
 
     result_dir = "ray_results"
     result_dir = Path(result_dir).expanduser().resolve().absolute()
@@ -255,22 +258,24 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             None,
             OBSERVATION_SPACE,
             ACTION_SPACE,
-            {"model": {
-                "custom_model": "ppo_model",
-                "custom_model_config": {
-                    "state_description":state_description,
-                    'social_vehicle_config':social_vehicle_config,
-                    'observation_num_lookahead':observation_num_lookahead,
-                    'social_capacity':social_capacity,
-                    "action_size": 2,
-                    "state_size":state_size,
-                    "init_std":0.5,
-                    "hidden_units": 512,
-                    "seed": 2,
-                    "social_feature_encoder_class":social_feature_encoder_class,
-                    "social_feature_encoder_params":social_feature_encoder_params
+            {
+                "model": {
+                    "custom_model": "ppo_model",
+                    "custom_model_config": {
+                        "state_description": state_description,
+                        "social_vehicle_config": social_vehicle_config,
+                        "observation_num_lookahead": observation_num_lookahead,
+                        "social_capacity": social_capacity,
+                        "action_size": 2,
+                        "state_size": state_size,
+                        "init_std": 0.5,
+                        "hidden_units": 512,
+                        "seed": 2,
+                        "social_feature_encoder_class": social_feature_encoder_class,
+                        "social_feature_encoder_params": social_feature_encoder_params,
+                    },
                 }
-            }},
+            },
         )
     }
     tune_config = {
@@ -283,26 +288,28 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "seed": seed,
             "scenario_info": task,
             "headless": headless,
-            "state_description":state_description,
-            "social_capacity":social_capacity,
-            "observation_num_lookahead":observation_num_lookahead,
-            "social_vehicle_config":social_vehicle_config,
+            "state_description": state_description,
+            "social_capacity": social_capacity,
+            "observation_num_lookahead": observation_num_lookahead,
+            "social_vehicle_config": social_vehicle_config,
             "eval_mode": False,
             "ordered_scenarios": False,
-            "agent_specs": {f"AGENT-007": AgentSpec(
-                interface=AgentInterface(
-                    waypoints=Waypoints(lookahead=20),
-                    neighborhood_vehicles=NeighborhoodVehicles(200),
-                    action=ActionSpaceType.Continuous,
-                    rgb=False,
-                    max_episode_steps=5,
-                    debug=True,
-                ),
-                agent_params={},
-                agent_builder=None,
-                observation_adapter=adapter.observation_adapter,
-                reward_adapter=adapter.reward_adapter,
-            )},
+            "agent_specs": {
+                f"AGENT-007": AgentSpec(
+                    interface=AgentInterface(
+                        waypoints=Waypoints(lookahead=20),
+                        neighborhood_vehicles=NeighborhoodVehicles(200),
+                        action=ActionSpaceType.Continuous,
+                        rgb=False,
+                        max_episode_steps=5,
+                        debug=True,
+                    ),
+                    agent_params={},
+                    agent_builder=None,
+                    observation_adapter=adapter.observation_adapter,
+                    reward_adapter=adapter.reward_adapter,
+                )
+            },
         },
         "multiagent": {"policies": rllib_policies},
     }
@@ -324,7 +331,8 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         config=tune_config,
         scheduler=pbt,
     )
-    print('DOne*****')
+    print("DOne*****")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("intersection-single-agent")

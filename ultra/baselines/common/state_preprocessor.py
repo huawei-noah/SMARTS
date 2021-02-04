@@ -46,7 +46,7 @@ class StatePreprocessor:
         social_capacity,
         observation_num_lookahead,
         social_vehicle_config,
-        prev_action,
+        # prev_action,
         draw=False,
         normalize=False,
         unsqueeze=False,
@@ -62,7 +62,7 @@ class StatePreprocessor:
             device=device,
             convert_action_func=self.convert_action_func,
             social_vehicle_config=social_vehicle_config,
-            prev_action=prev_action,
+            # prev_action=prev_action,
             draw=draw,
         )
 

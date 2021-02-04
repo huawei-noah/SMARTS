@@ -53,12 +53,14 @@ class Dummy:
 
 
 class BaselineAdapter:
-    def __init__(self,
+    def __init__(
+        self,
         state_description,
         social_capacity,
         observation_num_lookahead,
         social_vehicle_config,
-        is_rllib=False):
+        is_rllib=False,
+    ):
         self.is_rllib = is_rllib
         self.state_description = state_description
         self.state_preprocessor = StatePreprocessor(
@@ -96,8 +98,6 @@ class BaselineAdapter:
                 )
             )
         return tuple(output)
-
-
 
     def rllib_helper(self, obj):
         if not hasattr(obj, "__dict__"):
@@ -159,15 +159,16 @@ class BaselineAdapter:
             start=np.asarray(start.position),
             goal=np.asarray(goal.position),
             heading=np.array([ego_state.heading]),
-            goal_path= path ,
+            goal_path=path,
             ego_position=np.asarray(ego_state.position),
             waypoint_paths=env_observation.waypoint_paths,
             # events=env_observation.events,
         )
 
-        state = self.state_preprocessor(state=input_dict['obs'],
+        state = self.state_preprocessor(
+            state=state,
             normalize=True,
-            device='cpu',
+            device="cpu",
             social_capacity=self.social_capacity,
             observation_num_lookahead=self.observation_num_lookahead,
             social_vehicle_config=self.social_vehicle_config,
