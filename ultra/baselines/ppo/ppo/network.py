@@ -118,7 +118,7 @@ class PPONetwork(nn.Module):
         social_feature_encoder_params=None,
     ):
         super(PPONetwork, self).__init__()
-
+        print('PPO NETWORK', hidden_units, state_size,action_size,init_std)
         if seed is not None:
             torch.manual_seed(seed)
         self.social_feature_encoder_class = social_feature_encoder_class

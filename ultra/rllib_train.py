@@ -125,6 +125,7 @@ class Callbacks(DefaultCallbacks):
         **kwargs,
     ):
         episode.user_data["ego_speed"] = []
+        print('episode started......')
 
     @staticmethod
     def on_episode_step(
@@ -138,7 +139,7 @@ class Callbacks(DefaultCallbacks):
         obs = episode.last_raw_obs_for(single_agent_id)
         episode.user_data["ego_speed"].append(obs["speed"])
         print(obs)
-        print(N)
+        # print(N)
 
     @staticmethod
     def on_episode_end(
@@ -168,8 +169,8 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     # Initialize Agent and social_vehicle encoding method
     # -------------------------------------------------------
     AGENT_ID = "007"
-    config = ppo.DEFAULT_CONFIG.copy()
-    print('>>>>>', config)
+    # config = ppo.DEFAULT_CONFIG.copy()
+    # print('>>>>>', config)
     # config["log_level"] = "WARN"  # the default, at this time
     # config["num_workers"] = 4  # default = 2
     # config["train_batch_size"] = 10000  # default = 4000
@@ -228,142 +229,102 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         observation_num_lookahead=observation_num_lookahead,
         social_vehicle_config=social_vehicle_config)
     print('MADE ADAPTER **********')
-    trainer = ppo.PPOTrainer(
-        env=RLlibUltraEnv,
-        config={
-            "framework": "torch",
-            # "train_batch_size": 5,
-            # "log_level":"WARN",
-            "multiagent": {
-                "policies": {
-                    "default_policy": (
-                        None,
-                        OBSERVATION_SPACE,
-                        ACTION_SPACE,
-                        {
-                            "model": {
-                                "custom_model": "ppo_model",
-                                "custom_model_config": {
-                                    "state_description":state_description,
-                                    'social_vehicle_config':social_vehicle_config,
-                                    'observation_num_lookahead':observation_num_lookahead,
-                                    'social_capacity':social_capacity,
-                                    "action_size": 2,
-                                    "state_size":state_size,
-                                    "init_std":0.5,
-                                    "hidden_units": 512,
-                                    "seed": 2,
-                                    "social_feature_encoder_class":social_feature_encoder_class,
-                                    "social_feature_encoder_params":social_feature_encoder_params
-                                }
-                            }
-                        },
-                    )
-                }
-            },
-            "env_config": {
-                "seed": 2,
-                "scenario_info": task,
-                "headless": headless,
-                "eval_mode": False,
-                "ordered_scenarios": False,
-                "state_description":state_description,
-                "social_capacity":social_capacity,
-                "observation_num_lookahead":observation_num_lookahead,
-                "social_vehicle_config":social_vehicle_config,
-                "agent_specs": {
-                    f"AGENT-007": AgentSpec(
-                        interface=AgentInterface(
-                            waypoints=Waypoints(lookahead=20),
-                            neighborhood_vehicles=NeighborhoodVehicles(200),
-                            action=ActionSpaceType.Continuous,
-                            rgb=False,
-                            max_episode_steps=5,
-                            debug=True,
-                        ),
-                        agent_params={},
-                        agent_builder=None,
-                        observation_adapter=adapter.observation_adapter,
-                        reward_adapter=adapter.reward_adapter,
-                    )
-                },
-            },
+
+    result_dir = "ray_results"
+    result_dir = Path(result_dir).expanduser().resolve().absolute()
+
+    # print("Done")
+    # policy = trainer.get_policy()
+    # model = policy.model
+
+    # # episode = Episode()
+    pbt = PopulationBasedTraining(
+        time_attr="time_total_s",
+        metric="episode_reward_mean",
+        mode="max",
+        perturbation_interval=300,
+        resample_probability=0.25,
+        hyperparam_mutations={
+            "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
+            "rollout_fragment_length": lambda: 200,
+            "train_batch_size": lambda: 2000,
         },
     )
-    print("Done")
-    # policy = agent.get_policy()
-    # model = policy.model
-    #
-    # print(model.base_model.summary())
-    # spec = make(locator=policy_class)
-    # env = gym.make(
-    #     "ultra.env:ultra-v0",
-    #     agent_specs={AGENT_ID: spec},
-    #     scenario_info=task,
-    #     headless=headless,
-    #     timestep_sec=timestep_sec,
-    #     seed=seed,
-    # )
+    rllib_policies = {
+        "default_policy": (
+            None,
+            OBSERVATION_SPACE,
+            ACTION_SPACE,
+            {"model": {
+                "custom_model": "ppo_model",
+                "custom_model_config": {
+                    "state_description":state_description,
+                    'social_vehicle_config':social_vehicle_config,
+                    'observation_num_lookahead':observation_num_lookahead,
+                    'social_capacity':social_capacity,
+                    "action_size": 2,
+                    "state_size":state_size,
+                    "init_std":0.5,
+                    "hidden_units": 512,
+                    "seed": 2,
+                    "social_feature_encoder_class":social_feature_encoder_class,
+                    "social_feature_encoder_params":social_feature_encoder_params
+                }
+            }},
+        )
+    }
+    tune_config = {
+        "env": RLlibUltraEnv,
+        "log_level": "WARN",
+        "callbacks": Callbacks,
+        "framework": "torch",
+        "num_workers": 1,
+        "env_config": {
+            "seed": seed,
+            "scenario_info": task,
+            "headless": headless,
+            "state_description":state_description,
+            "social_capacity":social_capacity,
+            "observation_num_lookahead":observation_num_lookahead,
+            "social_vehicle_config":social_vehicle_config,
+            "eval_mode": False,
+            "ordered_scenarios": False,
+            "agent_specs": {f"AGENT-007": AgentSpec(
+                interface=AgentInterface(
+                    waypoints=Waypoints(lookahead=20),
+                    neighborhood_vehicles=NeighborhoodVehicles(200),
+                    action=ActionSpaceType.Continuous,
+                    rgb=False,
+                    max_episode_steps=5,
+                    debug=True,
+                ),
+                agent_params={},
+                agent_builder=None,
+                observation_adapter=adapter.observation_adapter,
+                reward_adapter=adapter.reward_adapter,
+            )},
+        },
+        "multiagent": {"policies": rllib_policies},
+    }
+    result_dir = "ray_results"
+    result_dir = Path(result_dir).expanduser().resolve().absolute()
 
-    # rllib_agent = RLlibAgent(
-    #     action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy
-    # )
-    #
-    # # episode = Episode()
-    # pbt = PopulationBasedTraining(
-    #     time_attr="time_total_s",
-    #     metric="episode_reward_mean",
-    #     mode="max",
-    #     perturbation_interval=300,
-    #     resample_probability=0.25,
-    #     hyperparam_mutations={
-    #         "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
-    #         "rollout_fragment_length": lambda: 200,
-    #         "train_batch_size": lambda: 2000,
-    #     },
-    # )
-    # rllib_policies = {
-    #     "default_policy": (
-    #         None,
-    #         rllib_agent.observation_space,
-    #         rllib_agent.action_space,
-    #         {"model": {"custom_model": TrainingModel.NAME}},
-    #     )
-    # }
-    # tune_config = {
-    #     "env": RLlibUltraEnv,
-    #     "log_level": "WARN",
-    #     "num_workers": 1,
-    #     "env_config": {
-    #         "seed": seed,
-    #         "scenario_info": task,
-    #         "headless": headless,
-    #         "eval_mode": False,
-    #         "ordered_scenarios": False,
-    #         "agent_specs": {f"AGENT-007": rllib_agent.spec},
-    #     },
-    #     "multiagent": {"policies": rllib_policies},
-    #     "callbacks": Callbacks,
-    # }
-    # result_dir = "ray_results"
-    # result_dir = Path(result_dir).expanduser().resolve().absolute()
-    #
-    # analysis = tune.run(
-    #     "PG",
-    #     name="exp_1",
-    #     stop={"time_total_s": 1200},
-    #     checkpoint_freq=1,
-    #     checkpoint_at_end=True,
-    #     local_dir=str(result_dir),
-    #     resume=False,
-    #     restore=None,
-    #     max_failures=3,
-    #     num_samples=1,
-    #     export_formats=["model", "checkpoint"],
-    #     config=tune_config,
-    #     scheduler=pbt,
-    # )
-
+    analysis = tune.run(
+        "PPO",
+        name="exp_1",
+        stop={"time_total_s": 1200},
+        checkpoint_freq=1,
+        checkpoint_at_end=True,
+        local_dir=str(result_dir),
+        resume=False,
+        restore=None,
+        max_failures=3,
+        num_samples=1,
+        export_formats=["model", "checkpoint"],
+        config=tune_config,
+        scheduler=pbt,
+    )
+    print('DOne*****')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("intersection-single-agent")
