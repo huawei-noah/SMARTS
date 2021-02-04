@@ -54,37 +54,38 @@ class TrainTest(unittest.TestCase):
         if os.path.exists(log_dir):
             self.assertTrue(True)
 
-    # def test_train_single_agent(self):
-    #     if os.path.exists("ultra/tests/logs"):
-    #         shutil.rmtree("ultra/tests/logs")
+    def test_train_single_agent(self):
+        if os.path.exists("ultra/tests/logs"):
+            shutil.rmtree("ultra/tests/logs")
 
-    #     os.system("pkill -9 ray")
+        os.system("pkill -9 ray")
 
-    #     seed = 2
-    #     policy_class = "ultra.baselines.sac:sac-v0"
+        seed = 2
+        policy_class = "ultra.baselines.sac:sac-v0"
 
-    #     try:
-    #         ray.init(ignore_reinit_error=True)
-    #         ray.wait(
-    #             [
-    #                 train.remote(
-    #                     scenario_info=("00", "easy"),
-    #                     policy_class=policy_class,
-    #                     num_episodes=1,
-    #                     eval_info={"eval_rate": 1000, "eval_episodes": 2,},
-    #                     timestep_sec=0.1,
-    #                     headless=True,
-    #                     seed=2,
-    #                     log_dir="ultra/tests/logs",
-    #                 )
-    #             ]
-    #         )
-    #         ray.shutdown()
-    #         self.assertTrue(True)
-    #     except ray.exceptions.WorkerCrashedError as err:
-    #         print(err)
-    #         self.assertTrue(False)
-    #         ray.shutdown()
+        ray.shutdown()
+        try:
+            ray.init(ignore_reinit_error=True)
+            ray.wait(
+                [
+                    train.remote(
+                        scenario_info=("00", "easy"),
+                        policy_class=policy_class,
+                        num_episodes=1,
+                        eval_info={"eval_rate": 1000, "eval_episodes": 2,},
+                        timestep_sec=0.1,
+                        headless=True,
+                        seed=2,
+                        log_dir="ultra/tests/logs",
+                    )
+                ]
+            )
+            ray.shutdown()
+            self.assertTrue(True)
+        except ray.exceptions.WorkerCrashedError as err:
+            print(err)
+            self.assertTrue(False)
+            ray.shutdown()
 
     def test_check_agents_from_pool(self):
         seed = 2
@@ -116,5 +117,3 @@ class TrainTest(unittest.TestCase):
     def tearDown(self):
         if os.path.exists("ultra/tests/logs"):
             shutil.rmtree("ultra/tests/logs")
-
-        os.system("pkill -9 ray")

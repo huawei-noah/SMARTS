@@ -116,7 +116,7 @@ def evaluate(
     summary_log = LogInfo()
     logs = []
 
-    for episode in episodes(num_episodes, etag=policy_class, dir=log_dir):
+    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[agent_id]
         dones, infos = {"__all__": False}, None
@@ -183,17 +183,17 @@ if __name__ == "__main__":
         os.makedirs(args.log_dir)
 
     m = re.search(
-        "ultra\.baselines\.[a-zA-Z0-9]+\:[a-zA-Z0-9]+\-[a-zA-Z0-9]+", args.models
+        "ultra\.[a-zA-Z0-9]+\.[a-zA-Z0-9]+\:[a-zA-Z0-9]+\-[a-zA-Z0-9]+", args.models
     )
 
     try:
         policy_class = m.group(0)
     except AttributeError as e:
-        policy_class = "ultra.baselines.ppo:ppo-v0"
-    
+        # default policy class
+        policy_class = "ultra.baselines.sac:sac-v0"
+
     if not os.path.exists(args.models):
-        print(args.models)
-        raise "Models not Found"
+        raise "Path to model is invalid"
 
     if not os.listdir(args.models):
         raise "No models to evaluate"
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     try:
         agent_id = "AGENT_008"
         for episode in episodes(
-            len(sorted_models), etag=policy_class, dir=args.log_dir
+            len(sorted_models), etag=policy_class, log_dir=args.log_dir
         ):
             model = sorted_models[episode.index]
             print("model: ", model)

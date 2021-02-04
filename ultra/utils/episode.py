@@ -249,8 +249,7 @@ class Episode:
                     pass
 
 
-def episodes(n, etag=None, dir=None):
-    log_dir = dir
+def episodes(n, etag=None, log_dir=None):
     col_width = 18
     with tp.TableContext(
         [f"Episode", f"Sim/Wall", f"Total Steps", f"Steps/Sec", f"Score",],

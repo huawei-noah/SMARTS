@@ -66,7 +66,7 @@ def train(
 
     agent = spec.build_agent()
 
-    for episode in episodes(num_episodes, etag=policy_class, dir=log_dir):
+    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    
+
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
 
