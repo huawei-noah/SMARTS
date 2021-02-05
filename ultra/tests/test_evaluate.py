@@ -36,7 +36,7 @@ class EvaluateTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         os.system(
-            "python ultra/scenarios/interface.py generate --task 00 --level eval_test --root-dir ultra/tests/scenarios/ --save-dir ultra/tests/task/eval_test/eval"
+            "python ultra/scenarios/interface.py generate --task 00 --level eval_test --root-dir ultra/tests/scenarios --save-dir ultra/tests/task/eval_test/eval"
         )
 
         path = "ultra/tests/sac_test_models"
@@ -45,6 +45,19 @@ class EvaluateTest(unittest.TestCase):
             os.system(
                 "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 8 --eval-rate 350 --eval-episodes 1 --log-dir ultra/tests/sac_test_models"
             )
+
+    def test_a_folders(self):
+        path = "ultra/tests/sac_test_models"
+        if not os.path.exists(path):
+            self.assertTrue(False)
+
+        path = glob.glob("ultra/tests/sac_test_models/*/models")[0]
+        if len(os.listdir(path)) == 0:
+            self.assertTrue(False)
+
+        path = "ultra/tests/task/eval_test"
+        if len(os.listdir(path)) <= 2:
+            self.assertTrue(False)
 
     def test_evaluation_check(self):
         log_dir = "ultra/tests/output_eval_check_logs"
@@ -125,7 +138,7 @@ class EvaluateTest(unittest.TestCase):
 
     def test_evaluate_cli(self):
         log_dir = "ultra/tests/output_eval_cli_logs/"
-        model_dir = glob.glob("ultra/tests/sac_test_models/*/models/")[0]
+        model_dir = glob.glob("ultra/tests/sac_test_models/*/models")[0]
         ray.shutdown()
         try:
             os.system(
@@ -135,12 +148,6 @@ class EvaluateTest(unittest.TestCase):
         except Exception as err:
             print(err)
             self.assertTrue(False)
-
-        if not os.listdir(log_dir):
-            raise "Evaluation failed to generate new experiment folder"
-            self.assertTrue(False)
-        else:
-            shutil.rmtree(log_dir)
 
     def test_evaluate_agent(self):
         seed = 2
@@ -171,12 +178,6 @@ class EvaluateTest(unittest.TestCase):
         except Exception as err:
             print(err)
             self.assertTrue(False)
-
-        # if not os.listdir(log_dir):
-        #     raise "Evaluation failed to generate new experiment folder"
-        #     self.assertTrue(False)
-        # else:
-        #     shutil.rmtree(log_dir)
 
     # @classmethod
     # def tearDownClass(cls):
