@@ -35,6 +35,4 @@ jobs:
         run: |
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
-          "python ultra/scenarios/interface.py generate --task 00 --level eval_test --root-dir ultra/tests/scenarios --save-dir ultra/tests/task/eval_test/eval"
-          python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 8 --eval-rate 350 --eval-episodes 1 --log-dir ultra/tests/sac_test_models
           pytest -v ./ultra/tests/ 
