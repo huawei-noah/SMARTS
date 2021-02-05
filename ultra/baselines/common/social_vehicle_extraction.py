@@ -23,9 +23,10 @@ import numpy as np
 import random
 from scipy.spatial.distance import euclidean
 from collections import defaultdict
-
+from smarts.core.waypoints import Waypoint
 from ultra.utils.common import rotate2d_vector
-
+from smarts.core.sensors import VehicleObservation
+from smarts.core.coordinates import BoundingBox, Heading
 
 HORIZONTAL = 0
 VERTICAL = 1
@@ -36,17 +37,9 @@ FRONT = 3
 def extract_social_vehicle_state_default(
     social_vehicle, ego_vehicle_pos, ego_vehicle_heading, social_vehicle_config=None
 ):
-    print("??????")
     social_vehicle_position = social_vehicle.position[0:2] - ego_vehicle_pos[0:2]
     social_vehicle_position_rotated = rotate2d_vector(
         social_vehicle_position, -ego_vehicle_heading
-    )
-    print(
-        "*******   ",
-        social_vehicle.position[0:2],
-        social_vehicle.heading,
-        social_vehicle.speed,
-        "    2    ****",
     )
     return [
         (social_vehicle_position_rotated[0]) / 100.0,
@@ -59,7 +52,6 @@ def extract_social_vehicle_state_default(
 def extract_social_vehicle_state_pointnet(
     social_vehicle, ego_vehicle_pos, ego_vehicle_heading, social_vehicle_config
 ):
-    print("??????>>>>>>>")
     speed_norm = 30
     heading_diff = social_vehicle.heading - ego_vehicle_heading
     # vector length is prop to the speed
@@ -69,13 +61,6 @@ def extract_social_vehicle_state_pointnet(
     social_vehicle_position = social_vehicle.position[0:2] - ego_vehicle_pos[0:2]
     social_vehicle_position_rotated = rotate2d_vector(
         social_vehicle_position, -ego_vehicle_heading
-    )
-    print(
-        "*******   ",
-        social_vehicle.position[0:2],
-        social_vehicle.heading,
-        social_vehicle.speed,
-        "     1    ****",
     )
     return [
         (social_vehicle_position_rotated[0]) / 100.0,
@@ -92,6 +77,7 @@ def get_social_vehicles(
     social_vehicle_config,
     waypoint_paths,
 ):
+    neighborhood_vehicles = correct_vehicles(neighborhood_vehicles)
     extractor_func = social_vehicle_config["social_vehicle_extractor_func"]
     encoder_key = social_vehicle_config["encoder_key"]
     if social_vehicle_config["encoder"]["use_leading_vehicles"]:
@@ -115,6 +101,30 @@ def get_social_vehicles(
     return social_vehicles
 
 
+def correct_vehicles(vehicles):
+    if isinstance(vehicles, tuple):
+        new_vehicles = []
+        for v in vehicles:
+            new_vehicles.append(
+                VehicleObservation(
+                    id=v["vehicle_id"][0],
+                    position=v["pose"]["position"][:2],
+                    bounding_box=BoundingBox(
+                        length=v["bounding_box"]["length"][0],
+                        width=v["bounding_box"]["width"][0],
+                        height=v["bounding_box"]["height"][0],
+                    ),
+                    heading=Heading(v["heading"][0]),
+                    speed=v["speed"][0],
+                    edge_id=v["edge_id"][0],
+                    lane_id=v["lane_id"][0],
+                    lane_index=v["lane_index"][0],
+                )
+            )
+        return new_vehicles
+    return vehicles
+
+
 def get_social_vehicles_states_sorted_by_distance(
     ego_vehicle_pos,
     ego_vehicle_heading,
@@ -122,7 +132,7 @@ def get_social_vehicles_states_sorted_by_distance(
     social_vehicle_config,
     extractor_func,
 ):
-    social_vehicles = neighborhood_vehicles
+    social_vehicles = correct_vehicles(neighborhood_vehicles)
     social_vehicles.sort(
         key=lambda vehicle: get_distance(vehicle, ego_vehicle_pos), reverse=False
     )
@@ -153,6 +163,21 @@ def get_social_vehicles_leading(
 
     # find ego lane information
     ego_wps = [path[0] for path in waypoint_paths]
+    new_ego_wps = []
+    for i in range(len(ego_wps)):
+        if isinstance(ego_wps[i], dict):
+            new_ego_wps.append(
+                Waypoint(
+                    pos=ego_wps[i]["pose"]["position"][:2],
+                    heading=ego_wps[i]["heading"],
+                    lane_width=ego_wps[i]["lane_width"],
+                    speed_limit=ego_wps[i]["speed_limit"],
+                    lane_id=ego_wps[i]["lane_id"],
+                    lane_index="",
+                )
+            )
+    ego_wps = ego_wps if not new_ego_wps else new_ego_wps
+
     ego_closest_waypoint, prev_ego_wp = None, None
     ego_closest_waypoint_min_dist = float("inf")
     for i, wp in enumerate(ego_wps):
@@ -161,12 +186,14 @@ def get_social_vehicles_leading(
             prev_ego_wp = ego_wps[max(i - 1, 0)]
             ego_closest_waypoint = wp
             ego_closest_waypoint_min_dist = temp_dist
+
     ego_lane_id = ego_closest_waypoint.lane_id
     ego_lane_index = ego_closest_waypoint.lane_index
 
     # if vehicle is within the max_dist consider:
     #   1- find vehicles on ego lane , and only keep the closest front and rear vehicles
     #   2- find vehicles on other lanes
+    neighborhood_vehicles = correct_vehicles(neighborhood_vehicles)
     for vehicle in neighborhood_vehicles:
         dist = get_distance(vehicle, ego_vehicle_pos)
         if dist < max_dist_social_vehicle:

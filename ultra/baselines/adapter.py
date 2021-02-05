@@ -84,19 +84,72 @@ class BaselineAdapter:
         for obj in social_vehicles:
             output.append(
                 dict(
-                    position=np.asarray(obj.position),
+                    vehicle_id=np.array([obj.id]),
+                    pose=dict(position=np.asarray(obj.position)),
                     heading=np.array([obj.heading]),
                     speed=np.array([obj.speed]),
+                    lane_id=np.array([obj.lane_id]),
+                    bounding_box=dict(
+                        length=np.array([obj.bounding_box.length]),
+                        width=np.array([obj.bounding_box.width]),
+                        height=np.array([obj.bounding_box.height]),
+                    ),
+                    lane_index=np.array([obj.lane_index]),
+                    edge_id=np.array([obj.edge_id]),
                 )
             )
         while len(output) < 10:
             output.append(
                 dict(
-                    position=np.asarray([0, 0, 0]),
+                    vehicle_id=np.array([0]),
+                    pose=dict(position=np.asarray([0, 0, 0])),
                     heading=np.array([0]),
                     speed=np.array([0]),
+                    lane_id=np.array([0]),
+                    bounding_box=dict(
+                        length=np.array([0]), width=np.array([0]), height=np.array([0])
+                    ),
+                    lane_index=np.array([0]),
+                    edge_id=np.array([0]),
                 )
             )
+        return tuple(output)
+
+    def rllib_path(self, path):
+        output = []
+        for point in path[:100]:
+            output.append(
+                dict(
+                    pose=dict(position=np.asarray(point.pos)),
+                    heading=np.array([point.heading]),
+                    speed_limit=np.array([point.speed_limit]),
+                    lane_width=np.array([point.lane_width]),
+                    lane_id=np.array([point.lane_id]),
+                    # lane_index=np.array([point.lane_id])
+                )
+            )
+        while len(output) < 100:
+            output.append(
+                dict(
+                    pose=dict(position=np.asarray([0, 0, 0])),
+                    heading=np.array([0]),
+                    speed_limit=np.array([0]),
+                    lane_width=np.array([0]),
+                    lane_id=np.array([0]),
+                    # lane_index=np.array([0])
+                )
+            )
+        return tuple(output)
+
+    def rllib_paths(self, paths):
+        # 5 paths, each path 200 points
+        output = []
+        for path in paths[:5]:
+            output.append(self.rllib_path(path))
+
+        while len(output) < 5:
+            output.append(self.rllib_path([]))
+
         return tuple(output)
 
     def rllib_helper(self, obj):
@@ -119,6 +172,7 @@ class BaselineAdapter:
         return dict(result)
 
     def observation_adapter(self, env_observation):
+
         ego_state = env_observation.ego_vehicle_state
         start = env_observation.ego_vehicle_state.mission.start
         goal = env_observation.ego_vehicle_state.mission.goal
@@ -159,9 +213,11 @@ class BaselineAdapter:
             start=np.asarray(start.position),
             goal=np.asarray(goal.position),
             heading=np.array([ego_state.heading]),
-            goal_path=path,
+            goal_path=path if not self.is_rllib else self.rllib_path(path),
             ego_position=np.asarray(ego_state.position),
-            waypoint_paths=env_observation.waypoint_paths,
+            waypoint_paths=env_observation.waypoint_paths
+            if not self.is_rllib
+            else self.rllib_paths(env_observation.waypoint_paths),
             # events=env_observation.events,
         )
 
@@ -175,8 +231,7 @@ class BaselineAdapter:
             # prev_action=self.prev_action
         )
 
-        print(state)
-        print(N)
+        print("ADAPTER", state)
         return state  # ego=ego, env_observation=env_observation)
 
     def reward_adapter(self, observation, reward):

@@ -72,12 +72,15 @@ class TorchPPOModel(TorchModelV2, nn.Module):
 
     def forward(self, input_dict, state, seq_lens):
         # print('****',input_dict['obs'].keys())
-        # print('>>>>', input_dict['obs']['angle_error'].shape)
-        # print('<<<<<', len(input_dict['obs']['social_vehicles']), input_dict['obs']['social_vehicles'][0])
+        print(">>>>", input_dict["obs"]["angle_error"].shape)
+        print(
+            "<<<<<",
+            len(input_dict["obs"]["social_vehicles"]),
+            input_dict["obs"]["social_vehicles"][0],
+        )
 
         # print("The unpacked input tensors:", input_dict["obs"])
 
-        print("EGO POSITION", len(input_dict["obs"]["ego_position"]))
         # state = self.state_preprocessor(state=input_dict['obs'],
         #     normalize=True,
         #     device='cpu',

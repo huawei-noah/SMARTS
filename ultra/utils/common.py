@@ -29,12 +29,16 @@ from skimage.transform import resize
 import ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
 import math
+from smarts.core.waypoints import Waypoint
 
 
 def rotate2d_vector(vectors, angle):
+    if isinstance(angle, np.ndarray):
+        angle = angle[0]
     ae_cos = np.cos(angle)
     ae_sin = np.sin(angle)
     rot_matrix = np.array([[ae_cos, -ae_sin], [ae_sin, ae_cos]])
+
     vectors_rotated = np.inner(vectors, rot_matrix)
     return vectors_rotated
 
@@ -240,24 +244,35 @@ def ego_social_safety(
     return ego_num_violations, social_num_violations
 
 
-def get_distance(p1, p2):
-    print("p1", p1, p2.shape)
-    print("p2", p2, len(p2))
-    return np.linalg.norm(np.array(p1.pose.position[:2]) - np.array(p2[:2]))
-
-
 def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
+    ego_heading = (
+        ego_heading if not isinstance(ego_heading, np.ndarray) else ego_heading[0]
+    )
 
-    closest_wp = min(goal_path, key=lambda wp: get_distance(wp, ego_position))
+    # check wp objects
+    new_goal_path = []
+    for i in range(len(goal_path)):
+        if isinstance(goal_path[i], dict):
+            new_goal_path.append(
+                Waypoint(
+                    pos=goal_path[i]["pose"]["position"][:2],
+                    heading=goal_path[i]["heading"],
+                    lane_width=goal_path[i]["lane_width"],
+                    speed_limit=goal_path[i]["speed_limit"],
+                    lane_id=goal_path[i]["lane_id"],
+                    lane_index="",
+                )
+            )
+    goal_path = goal_path if not new_goal_path else new_goal_path
+
+    closest_wp = min(goal_path, key=lambda wp: wp.dist_to(ego_position))
 
     min_dist = float("inf")
     min_dist_idx = -1
     for i, wp in enumerate(goal_path):
-        print(wp)
-        print("=//////", ego_position)
-        print("++++++++")
+
         if wp.dist_to(ego_position) < min_dist:
-            min_dist = get_distance(wp, ego_position)
+            min_dist = wp.dist_to(ego_position)
             min_dist_idx = i
             closest_wp = wp
 
@@ -276,7 +291,7 @@ def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
         ]
 
     waypoints_lookahead = rotate2d_vector(waypoints_lookahead, -ego_heading)
-
+    print(waypoints_lookahead.shape)
     return closest_wp, waypoints_lookahead
 
 

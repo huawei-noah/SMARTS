@@ -25,7 +25,7 @@ from pathlib import Path
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
-import time
+import time, string
 import psutil, pickle, dill
 import ray, torch, argparse
 import numpy as np
@@ -62,8 +62,28 @@ from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
 from typing import Dict
 
-
 num_gpus = 1 if torch.cuda.is_available() else 0
+
+
+class String(gym.Space):
+    def __init__(
+        self, shape=None, min_length=1, max_length=180,
+    ):
+        self.shape = shape
+        self.min_length = min_length
+        self.max_length = max_length
+        self.letters = string.ascii_letters + " .,!-"
+
+    def sample(self):
+        length = random.randint(self.min_length, self.max_length)
+        string = ""
+        for i in range(length):
+            letter = random.choice(self.letters)
+            string += letter
+        return string
+
+    def contains(self, x):
+        return type(x) is "str" and len(x) > self.min and len(x) < self.max
 
 
 OBSERVATION_SPACE = gym.spaces.Dict(
@@ -79,9 +99,32 @@ OBSERVATION_SPACE = gym.spaces.Dict(
             [
                 gym.spaces.Dict(
                     {
-                        "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
+                        "pose": gym.spaces.Dict(
+                            {
+                                "position": gym.spaces.Box(
+                                    low=-1e10, high=1e10, shape=(3,)
+                                )
+                            }
+                        ),
                         "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
                         "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                        "vehicle_id": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+                        "lane_id": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                        "edge_id": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                        "lane_index": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                        "bounding_box": gym.spaces.Dict(
+                            {
+                                "length": gym.spaces.Box(
+                                    low=-1e10, high=1e10, shape=(1,)
+                                ),
+                                "width": gym.spaces.Box(
+                                    low=-1e10, high=1e10, shape=(1,)
+                                ),
+                                "height": gym.spaces.Box(
+                                    low=-1e10, high=1e10, shape=(1,)
+                                ),
+                            }
+                        ),
                     }
                 )
                 for i in range(10)
@@ -96,13 +139,55 @@ OBSERVATION_SPACE = gym.spaces.Dict(
         "goal_path": gym.spaces.Tuple(
             [
                 gym.spaces.Dict(
-                    {"pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),}
+                    {
+                        "pose": gym.spaces.Dict(
+                            {
+                                "position": gym.spaces.Box(
+                                    low=-1e10, high=1e10, shape=(3,)
+                                )
+                            }
+                        ),
+                        "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+                        "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                        "lane_width": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                        "lane_id": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                    }
                 )
-                for i in range(10)
+                for i in range(100)
             ]
         ),
         "ego_position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
-        # "waypoint_paths": gym.spaces.Box(low=0, high=1e10, shape=(300,)),
+        "waypoint_paths": gym.spaces.Tuple(
+            [
+                gym.spaces.Tuple(
+                    [
+                        gym.spaces.Dict(
+                            {
+                                "pose": gym.spaces.Dict(
+                                    {
+                                        "position": gym.spaces.Box(
+                                            low=-1e10, high=1e10, shape=(3,)
+                                        )
+                                    }
+                                ),
+                                "heading": gym.spaces.Box(
+                                    low=-1e10, high=1e10, shape=(1,)
+                                ),
+                                "speed_limit": gym.spaces.Box(
+                                    low=0, high=1e10, shape=(1,)
+                                ),
+                                "lane_width": gym.spaces.Box(
+                                    low=0, high=1e10, shape=(1,)
+                                ),
+                                "lane_id": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                            }
+                        )
+                        for i in range(100)
+                    ]
+                )
+                for j in range(5)
+            ]
+        )
         # "events": gym.spaces.Box(low=0, high=100, shape=(15,)),
     }
 )
@@ -172,14 +257,6 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     # Initialize Agent and social_vehicle encoding method
     # -------------------------------------------------------
     AGENT_ID = "007"
-    # config = ppo.DEFAULT_CONFIG.copy()
-    # print('>>>>>', config)
-    # config["log_level"] = "WARN"  # the default, at this time
-    # config["num_workers"] = 4  # default = 2
-    # config["train_batch_size"] = 10000  # default = 4000
-    # config["sgd_minibatch_size"] = 256  # default = 128
-    # config["evaluation_num_episodes"] = 50  # default = 10
-    # config["framework"] = "torch"
 
     from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
     from ultra.baselines.common.state_preprocessor import get_state_description

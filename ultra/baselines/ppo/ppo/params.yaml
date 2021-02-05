@@ -14,7 +14,7 @@ seed: 2
 logging_freq: 2
 observation_num_lookahead: 20
 social_vehicles:
-    encoder_key: no_encoder
+    encoder_key: pointnet_encoder
     social_policy_hidden_units: 128
     social_polciy_init_std: 0.5
     social_capacity: 10

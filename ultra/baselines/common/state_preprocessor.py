@@ -127,6 +127,7 @@ def preprocess_state(
     # -------------------------------------
     # apply social vehicle encoder
     # only process if state is not encoded already
+
     state["social_vehicles"] = (
         get_social_vehicles(
             ego_vehicle_pos=state["ego_position"],
@@ -138,7 +139,7 @@ def preprocess_state(
         if social_capacity > 0
         else []
     )
-    print(M)
+
     # check if any social capacity is 0
     social_vehicle_dimension = state_description["social_vehicles"]
     social_vehicles = torch.empty(0, 0)
