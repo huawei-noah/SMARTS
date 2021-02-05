@@ -35,11 +35,15 @@ AGENT_ID = "001"
 class EvaluateTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        model_path = "ultra/tests/sac_test_models"
-        if not os.path.exists(model_path):
+        os.system(
+            "python ultra/scenarios/interface.py generate --task 00 --level eval_test --root-dir ultra/tests/scenarios/ --save-dir ultra/tests/task/eval_test/eval"
+        )
+        
+        path = "ultra/tests/sac_test_models"
+        if not os.path.exists(path):
             # Generate models before evaluation tests
             os.system(
-                "python ultra/train.py --task 1 --level easy --policy sac --headless True --episodes 10 --eval-rate 200 --eval-episodes 3 --log-dir ultra/tests/sac_test_models "
+                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 8 --eval-rate 350 --eval-episodes 1 --log-dir ultra/tests/sac_test_models"
             )
 
     def test_evaluation_check(self):
@@ -73,7 +77,7 @@ class EvaluateTest(unittest.TestCase):
                         eval_rate=10,
                         eval_episodes=1,
                         policy_class=policy_class,
-                        scenario_info=("00", "easy"),
+                        scenario_info=("00", "eval_test"),
                         timestep_sec=0.1,
                         headless=True,
                         log_dir=log_dir,
@@ -125,7 +129,7 @@ class EvaluateTest(unittest.TestCase):
         ray.shutdown()
         try:
             os.system(
-                f"python ultra/evaluate.py --task 1 --level easy --models {model_dir} --episodes 2 --log-dir {log_dir} --headless True"
+                f"python ultra/evaluate.py --task 00 --level eval_test --models {model_dir} --episodes 1 --log-dir {log_dir} --headless True"
             )
             self.assertTrue(True)
         except Exception as err:
@@ -140,8 +144,8 @@ class EvaluateTest(unittest.TestCase):
 
     def test_evaluate_agent(self):
         seed = 2
-        model = glob.glob("ultra/tests/sac_test_models/*/models/299")
-        log_dir = "ultra/tests/output_eval_agent_logs/"
+        model = glob.glob("ultra/tests/sac_test_models/*/models/")[0]
+        log_dir = "ultra/tests/output_eval_agent_logs"
         policy_class = "ultra.baselines.sac:sac-v0"
 
         if not os.path.exists(log_dir):
@@ -157,8 +161,8 @@ class EvaluateTest(unittest.TestCase):
                 seed=seed,
                 itr_count=0,
                 checkpoint_dir=model,
-                scenario_info=("1", "easy"),
-                num_episodes=2,
+                scenario_info=("00", "eval_test"),
+                num_episodes=1,
                 timestep_sec=0.1,
                 headless=True,
                 log_dir=log_dir,
@@ -168,9 +172,15 @@ class EvaluateTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
-    @classmethod
-    def tearDownClass(cls):
-        os.system("ray stop")
+        # if not os.listdir(log_dir):
+        #     raise "Evaluation failed to generate new experiment folder"
+        #     self.assertTrue(False)
+        # else:
+        #     shutil.rmtree(log_dir)
+            
+    # @classmethod
+    # def tearDownClass(cls):
+    #     os.system("ray stop")
 
 
 def prepare_test_env_agent(headless=True):
@@ -184,7 +194,7 @@ def prepare_test_env_agent(headless=True):
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=("00", "easy"),
+        scenario_info=("00", "eval_test"),
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,

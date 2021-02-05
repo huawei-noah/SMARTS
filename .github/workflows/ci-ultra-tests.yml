@@ -35,6 +35,4 @@ jobs:
         run: |
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
-          python ultra/scenarios/interface.py generate --task 1 --level easy
-          python ultra/train.py --task 1 --level easy --policy sac --headless True --episodes 10 --eval-rate 200 --eval-episodes 3 --log-dir ultra/tests/sac_test_models 
           pytest -v ./ultra/tests/ 
