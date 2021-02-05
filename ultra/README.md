@@ -1,6 +1,6 @@
 # ULTRA
 
-## Unprotected Left Turn using Robust Agents
+## Unprotected Left Turn for Robust Agents
 
 Ultra provides a gym-based environment using SMARTS for tackling intersection navigation and more specifically unprotected left turn.
 

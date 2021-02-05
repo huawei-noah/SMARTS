@@ -35,7 +35,7 @@ with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
 the latest stable version SMARTS will used """
 setup(
     name="ultra-rl",
-    description="Unprotected Left Turn using Reinforcement-learning Agents",
+    description="Unprotected Left Turn for Robust Agents",
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.1",
