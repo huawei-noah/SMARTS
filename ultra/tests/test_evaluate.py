@@ -38,7 +38,7 @@ class EvaluateTest(unittest.TestCase):
         os.system(
             "python ultra/scenarios/interface.py generate --task 00 --level eval_test --root-dir ultra/tests/scenarios/ --save-dir ultra/tests/task/eval_test/eval"
         )
-        
+
         path = "ultra/tests/sac_test_models"
         if not os.path.exists(path):
             # Generate models before evaluation tests
@@ -177,7 +177,7 @@ class EvaluateTest(unittest.TestCase):
         #     self.assertTrue(False)
         # else:
         #     shutil.rmtree(log_dir)
-            
+
     # @classmethod
     # def tearDownClass(cls):
     #     os.system("ray stop")
