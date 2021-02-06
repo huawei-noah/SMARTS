@@ -437,7 +437,9 @@ class ScenarioAnalysis(BaseAnalysis):
         )
 
         if total_south_west > 0:
-            print("Solved south-west: {:.2f}".format(solved_south_west / total_south_west))
+            print(
+                "Solved south-west: {:.2f}".format(solved_south_west / total_south_west)
+            )
         else:
             print("No vehicles moved from south to west.")
 

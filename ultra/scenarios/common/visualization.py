@@ -140,14 +140,7 @@ def draw_intersection(
         pos_x = fig_offset_x + int(state.position[0] * fig_mul)
         pos_y = fig_offset_y - int(state.position[1] * fig_mul)
         canvas = cv2.circle(
-            canvas,
-            (
-                pos_x,
-                pos_y,
-            ),
-            radius=1,
-            color=(10, 10, 30),
-            thickness=2,
+            canvas, (pos_x, pos_y,), radius=1, color=(10, 10, 30), thickness=2,
         )
         # canvas = cv2.putText(
         #     canvas, str(v_id), (pos_x + 4, pos_y + 4), font, 0.3, behavior_color, 1,

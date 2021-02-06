@@ -1,6 +1,6 @@
 # ULTRA
 
-## Unprotected Left Turn using Reinforcement-learning Agents
+## Unprotected Left Turn for Robust Agents
 
 Ultra provides a gym-based environment using SMARTS for tackling intersection navigation and more specifically unprotected left turn.
 
@@ -20,7 +20,7 @@ Here is the summary of key features:
 Get started by choosing an option below.
 - [Flowchart of ULTRA's interface with SMARTS](docs/_static/ULTRA-flowchart-v1.jpg)
 - [Setting up ULTRA](docs/setup.md)
-- [Train and Evaluate a Basline Agent](docs/getting_started.md)
+- [Train and Evaluate a Baseline Agent](docs/getting_started.md)
 - [Create a Custom Agent](docs/custom_agent.md)
 - [More about ULTRA Agents](docs/agent.md)
 
