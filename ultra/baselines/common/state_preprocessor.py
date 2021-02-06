@@ -81,13 +81,13 @@ def preprocess_state(
     draw=False,
 ):
     state = state.copy()
-    images = {}
-    for k in state_description["images"]:
-        image = torch.from_numpy(state[k])
-        image = image.unsqueeze(0) if unsqueeze else image
-        image = image.to(device) if device else image
-        image = normalize_im(image) if normalize else image
-        images[k] = image
+    # images = {}
+    # for k in state_description["images"]:
+    #     image = torch.from_numpy(state[k])
+    #     image = image.unsqueeze(0) if unsqueeze else image
+    #     image = image.to(device) if device else image
+    #     image = normalize_im(image) if normalize else image
+    #     images[k] = image
 
     # if "action" in state:
     #     state["action"] = convert_action_func(state["action"])
@@ -151,10 +151,13 @@ def preprocess_state(
     social_vehicles = social_vehicles.to(device) if device else social_vehicles
 
     out = {
-        "images": images,
-        "low_dim_states": low_dim_states,
-        "social_vehicles": social_vehicles,
+        # "images": images,
+        "low_dim_states": low_dim_states.numpy(),
+        "social_vehicles": social_vehicles.numpy(),
     }
+    print(out["low_dim_states"].shape, type(out["low_dim_states"]))
+    print(out["social_vehicles"].shape, type(out["social_vehicles"]))
+    print('SHAPES ^^^^^^^^^^^^')
     return out
 
 

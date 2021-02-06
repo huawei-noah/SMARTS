@@ -85,112 +85,26 @@ class String(gym.Space):
     def contains(self, x):
         return type(x) is "str" and len(x) > self.min and len(x) < self.max
 
-
-OBSERVATION_SPACE = gym.spaces.Dict(
+def observation_space(state_description,
+    social_feature_encoder_class,
+    social_feature_encoder_params,
+    social_capacity,
+    num_social_features
+    ):
+    low_dim_states_shape = sum(state_description["low_dim_states"].values())
+    if social_feature_encoder_class:
+        social_vehicle_shape = social_feature_encoder_class(
+            **social_feature_encoder_params
+        ).output_dim
+    else:
+        social_vehicle_shape = social_capacity * num_social_features
+    print('>>>>> SOCIAL SHAPE', social_vehicle_shape)
+    return gym.spaces.Dict(
     {
-        "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-        "relative_goal_position": gym.spaces.Box(
-            low=np.array([-1e10, -1e10]), high=np.array([1e10, 1e10])
-        ),
-        "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-        "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-        "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,)),
-        "social_vehicles": gym.spaces.Tuple(
-            [
-                gym.spaces.Dict(
-                    {
-                        "pose": gym.spaces.Dict(
-                            {
-                                "position": gym.spaces.Box(
-                                    low=-1e10, high=1e10, shape=(3,)
-                                )
-                            }
-                        ),
-                        "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-                        "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                        "vehicle_id": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-                        "lane_id": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                        "edge_id": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                        "lane_index": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                        "bounding_box": gym.spaces.Dict(
-                            {
-                                "length": gym.spaces.Box(
-                                    low=-1e10, high=1e10, shape=(1,)
-                                ),
-                                "width": gym.spaces.Box(
-                                    low=-1e10, high=1e10, shape=(1,)
-                                ),
-                                "height": gym.spaces.Box(
-                                    low=-1e10, high=1e10, shape=(1,)
-                                ),
-                            }
-                        ),
-                    }
-                )
-                for i in range(10)
-            ]
-        ),
-        "road_speed": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-        # # ----------
-        # # don't normalize the following:
-        "start": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
-        "goal": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,)),
-        "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-        "goal_path": gym.spaces.Tuple(
-            [
-                gym.spaces.Dict(
-                    {
-                        "pose": gym.spaces.Dict(
-                            {
-                                "position": gym.spaces.Box(
-                                    low=-1e10, high=1e10, shape=(3,)
-                                )
-                            }
-                        ),
-                        "heading": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-                        "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                        "lane_width": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                        "lane_id": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                    }
-                )
-                for i in range(100)
-            ]
-        ),
-        "ego_position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
-        "waypoint_paths": gym.spaces.Tuple(
-            [
-                gym.spaces.Tuple(
-                    [
-                        gym.spaces.Dict(
-                            {
-                                "pose": gym.spaces.Dict(
-                                    {
-                                        "position": gym.spaces.Box(
-                                            low=-1e10, high=1e10, shape=(3,)
-                                        )
-                                    }
-                                ),
-                                "heading": gym.spaces.Box(
-                                    low=-1e10, high=1e10, shape=(1,)
-                                ),
-                                "speed_limit": gym.spaces.Box(
-                                    low=0, high=1e10, shape=(1,)
-                                ),
-                                "lane_width": gym.spaces.Box(
-                                    low=0, high=1e10, shape=(1,)
-                                ),
-                                "lane_id": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-                            }
-                        )
-                        for i in range(100)
-                    ]
-                )
-                for j in range(5)
-            ]
-        )
-        # "events": gym.spaces.Box(low=0, high=100, shape=(15,)),
-    }
-)
+        # "images": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+        "low_dim_states": gym.spaces.Box(low=-1e10, high=1e10, shape=(low_dim_states_shape,)),
+        "social_vehicles": gym.spaces.Box(low=-1e10, high=1e10, shape=(social_capacity,num_social_features)),
+    })
 
 ACTION_SPACE = gym.spaces.Box(
     low=np.array([0.0, 0.0, -1.0]),
@@ -210,7 +124,7 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        episode.user_data["ego_speed"] = []
+        # episode.user_data["ego_speed"] = []
         print("episode started......")
 
     @staticmethod
@@ -221,9 +135,10 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
+        print('EPISODE STEP')
         single_agent_id = list(episode._agent_to_last_obs)[0]
         obs = episode.last_raw_obs_for(single_agent_id)
-        episode.user_data["ego_speed"].append(obs["speed"])
+        # episode.user_data["ego_speed"].append(obs["speed"])
         print(obs)
         # print(N)
 
@@ -333,7 +248,13 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     rllib_policies = {
         "default_policy": (
             None,
-            OBSERVATION_SPACE,
+            observation_space(
+                state_description=state_description,
+                social_feature_encoder_class=social_feature_encoder_class,
+                social_feature_encoder_params=social_feature_encoder_params,
+                social_capacity=social_capacity,
+                num_social_features=num_social_features
+            ),
             ACTION_SPACE,
             {
                 "model": {

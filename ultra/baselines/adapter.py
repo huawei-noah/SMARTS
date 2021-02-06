@@ -231,7 +231,7 @@ class BaselineAdapter:
             # prev_action=self.prev_action
         )
 
-        print("ADAPTER", state)
+        print("ADAPTER DONE")
         return state  # ego=ego, env_observation=env_observation)
 
     def reward_adapter(self, observation, reward):
