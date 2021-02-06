@@ -26,7 +26,7 @@ from pathlib import Path
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
 import time, string
-import psutil, pickle, dill
+import psutil, pickle, dill, torch
 import ray, torch, argparse
 import numpy as np
 from ray import tune
@@ -102,8 +102,8 @@ def observation_space(state_description,
     return gym.spaces.Dict(
     {
         # "images": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-        "low_dim_states": gym.spaces.Box(low=-1e10, high=1e10, shape=(low_dim_states_shape,)),
-        "social_vehicles": gym.spaces.Box(low=-1e10, high=1e10, shape=(social_capacity,num_social_features)),
+        "low_dim_states": gym.spaces.Box(low=-1e10, high=1e10, shape=(low_dim_states_shape,), dtype=torch.Tensor),
+        "social_vehicles": gym.spaces.Box(low=-1e10, high=1e10, shape=(social_capacity,num_social_features), dtype=torch.Tensor),
     })
 
 ACTION_SPACE = gym.spaces.Box(
@@ -139,7 +139,7 @@ class Callbacks(DefaultCallbacks):
         single_agent_id = list(episode._agent_to_last_obs)[0]
         obs = episode.last_raw_obs_for(single_agent_id)
         # episode.user_data["ego_speed"].append(obs["speed"])
-        print(obs)
+        # print(obs)
         # print(N)
 
     @staticmethod
@@ -151,14 +151,14 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-
-        mean_ego_speed = np.mean(episode.user_data["ego_speed"])
-        print(
-            f"ep. {episode.episode_id:<12} ended;"
-            f" length={episode.length:<6}"
-            f" mean_ego_speed={mean_ego_speed:.2f}"
-        )
-        episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
+        print('Episode End', episode.user_data)
+        # mean_ego_speed = np.mean(episode.user_data["ego_speed"])
+        # print(
+        #     f"ep. {episode.episode_id:<12} ended;"
+        #     f" length={episode.length:<6}"
+        #     f" mean_ego_speed={mean_ego_speed:.2f}"
+        # )
+        # episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
 
 
 def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):

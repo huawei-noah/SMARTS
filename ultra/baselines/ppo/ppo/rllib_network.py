@@ -39,9 +39,9 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         # self.model = TorchFCNet(
         #     obs_space, action_space, num_outputs, model_config, name
         # )
-        self.model = TorchFCNet(
-            obs_space, action_space, num_outputs, model_config, name
-        )
+        # self.model = TorchFCNet(
+        #     obs_space, action_space, num_outputs, model_config, name
+        # )
         self.torchmodel = PPONetwork(
             action_size=model_config["custom_model_config"]["action_size"],
             state_size=model_config["custom_model_config"]["state_size"],
@@ -59,7 +59,7 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         # self.state_preprocessor = StatePreprocessor(
         #     preprocess_state, to_2d_action, self.state_description
         # )
-        print("-------------------------")
+        # print("-------------------------")
         # self.social_feature_encoder = model_config['custom_model_config']['social_feature_encoder_class']
         # self.social_capacity = model_config['custom_model_config']['social_capacity']
         # self.social_vehicle_config = model_config['custom_model_config']['social_vehicle_config']
@@ -111,12 +111,18 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         #     return a, aux_losses
         # else:
         #     return a, {}
-        print("**** state", state)
         print("**** obs", input_dict["obs"].keys())
-        # action = self.torchmodel(state)
-        # print('ACTION', action)
-        # return action
-        return self.model.forward(input_dict, state, seq_lens)
+        dist, value = self.torchmodel(input_dict["obs"])
+
+        # need train/eval?
+        action = dist.sample()
+        log_prob = dist.log_prob(action)
+        action = torch.squeeze(action)
+        action = action.data.cpu().numpy()
+
+        print('ACTION', action)
+        return action
+        # return self.model.forward(input_dict, state, seq_lens)
 
     def value_function(self):
         return self.model.value_function()

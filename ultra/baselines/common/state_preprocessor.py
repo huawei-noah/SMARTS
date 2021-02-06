@@ -150,14 +150,16 @@ def preprocess_state(
     social_vehicles = social_vehicles.unsqueeze(0) if unsqueeze else social_vehicles
     social_vehicles = social_vehicles.to(device) if device else social_vehicles
 
+
+    #TODO Conver to tensor for the newtork is needed
     out = {
         # "images": images,
         "low_dim_states": low_dim_states.numpy(),
         "social_vehicles": social_vehicles.numpy(),
     }
-    print(out["low_dim_states"].shape, type(out["low_dim_states"]))
-    print(out["social_vehicles"].shape, type(out["social_vehicles"]))
-    print('SHAPES ^^^^^^^^^^^^')
+    # print(out["low_dim_states"].shape, type(out["low_dim_states"]))
+    # print(out["social_vehicles"].shape, type(out["social_vehicles"]))
+    # print('SHAPES ^^^^^^^^^^^^')
     return out
 
 
