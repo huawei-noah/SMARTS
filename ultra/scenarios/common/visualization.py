@@ -80,7 +80,7 @@ def profile_vehicles(vehicle_states, save_dir):
 
 
 def draw_intersection(
-    ego,
+    ego_position,
     goal_path,
     all_waypoints,
     step,
@@ -88,7 +88,7 @@ def draw_intersection(
     start,
     social_vehicle_states,
     finished_vehicles,
-    lookaheads,
+    lookaheads_positions,
     intersection_tag="t",
 ):
     fig_w = 812
@@ -117,7 +117,7 @@ def draw_intersection(
             color=(255, 255, 255),
             thickness=1,
         )
-    for point in lookaheads:
+    for point in lookaheads_positions:
         canvas = cv2.circle(
             canvas,
             (
@@ -140,7 +140,14 @@ def draw_intersection(
         pos_x = fig_offset_x + int(state.position[0] * fig_mul)
         pos_y = fig_offset_y - int(state.position[1] * fig_mul)
         canvas = cv2.circle(
-            canvas, (pos_x, pos_y,), radius=1, color=(10, 10, 30), thickness=2,
+            canvas,
+            (
+                pos_x,
+                pos_y,
+            ),
+            radius=1,
+            color=(10, 10, 30),
+            thickness=2,
         )
         # canvas = cv2.putText(
         #     canvas, str(v_id), (pos_x + 4, pos_y + 4), font, 0.3, behavior_color, 1,
@@ -150,7 +157,10 @@ def draw_intersection(
     # if ego:
     canvas = cv2.circle(
         canvas,
-        (fig_offset_x + int(ego[0] * fig_mul), fig_offset_y - int(ego[1] * fig_mul),),
+        (
+            fig_offset_x + int(ego_position[0] * fig_mul),
+            fig_offset_y - int(ego_position[1] * fig_mul),
+        ),
         radius=1,
         color=ego_color,
         thickness=2,
