@@ -157,7 +157,6 @@ if __name__ == "__main__":
         type=int,
         default=10000,
     )
-
     parser.add_argument(
         "--seed", help="Environment seed", default=2, type=int,
     )
@@ -166,13 +165,6 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
-    if not os.path.exists(args.log_dir):
-        os.makedirs(args.log_dir)
-
-    num_cpus = max(
-        1, psutil.cpu_count(logical=False) - 1
-    )  # remove `logical=False` to use all cpus
 
     with open("ultra/agent_pool.json", "r") as f:
         data = json.load(f)
@@ -184,6 +176,10 @@ if __name__ == "__main__":
 
     # Required string for smarts' class registry
     policy_class = str(policy_path) + ":" + str(policy_locator)
+
+    num_cpus = max(
+        1, psutil.cpu_count(logical=False) - 1
+    )  # remove `logical=False` to use all cpus
 
     ray.init()
     ray.wait(

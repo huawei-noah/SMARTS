@@ -203,10 +203,6 @@ if __name__ == "__main__":
         glob.glob(f"{args.models}/*"), key=lambda x: int(x.split("/")[-1])
     )
 
-    num_cpus = max(
-        1, psutil.cpu_count(logical=False) - 1
-    )  # remove `logical=False` to use all cpus
-    ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
     ray.init()
     try:
         agent_id = "AGENT_008"

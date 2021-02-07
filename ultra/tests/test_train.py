@@ -58,8 +58,6 @@ class TrainTest(unittest.TestCase):
         if os.path.exists("ultra/tests/logs"):
             shutil.rmtree("ultra/tests/logs")
 
-        os.system("pkill -9 ray")
-
         seed = 2
         policy_class = "ultra.baselines.sac:sac-v0"
 
