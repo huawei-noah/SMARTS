@@ -274,11 +274,17 @@ class LaneFollowingController:
             * (vehicle.speed) ** 2
         )
         normalized_speed = np.clip(vehicle.speed * 3.6 / 100, 0, 1)
-        heading_speed_gain = lerp(0.5, 14, normalized_speed)
+        heading_speed_gain = -lerp(0.5, 14, normalized_speed)
         yaw_rate_speed_gain = lerp(5.75, 11.75, normalized_speed)
         lateral_speed_gain = np.clip(lerp(-1, 14, normalized_speed), 1, 2)
+
+        if abs(curvature_radius) > 1e7:
+            heading_speed_gain = lerp(0.15, 4.2, normalized_speed)
+            yaw_rate_speed_gain = lerp(11.5, 23.5, normalized_speed)
+            lateral_speed_gain = np.clip(lerp(-0.6, 8.4, normalized_speed), 1, 2)
+
         steering_norm = np.clip(
-            -heading_speed_gain
+            heading_speed_gain
             * math.degrees(state.heading_error_gain)
             * (
                 abs_heading_error
