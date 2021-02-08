@@ -33,8 +33,6 @@ from smarts.core.waypoints import Waypoint
 
 
 def rotate2d_vector(vectors, angle):
-    if isinstance(angle, np.ndarray):
-        angle = angle[0]
     ae_cos = np.cos(angle)
     ae_sin = np.sin(angle)
     rot_matrix = np.array([[ae_cos, -ae_sin], [ae_sin, ae_cos]])
@@ -245,28 +243,7 @@ def ego_social_safety(
 
 
 def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
-    ego_heading = (
-        ego_heading if not isinstance(ego_heading, np.ndarray) else ego_heading[0]
-    )
-
-    # check wp objects
-    new_goal_path = []
-    for i in range(len(goal_path)):
-        if isinstance(goal_path[i], dict):
-            new_goal_path.append(
-                Waypoint(
-                    pos=goal_path[i]["pose"]["position"][:2],
-                    heading=goal_path[i]["heading"],
-                    lane_width=goal_path[i]["lane_width"],
-                    speed_limit=goal_path[i]["speed_limit"],
-                    lane_id=goal_path[i]["lane_id"],
-                    lane_index="",
-                )
-            )
-    goal_path = goal_path if not new_goal_path else new_goal_path
-
     closest_wp = min(goal_path, key=lambda wp: wp.dist_to(ego_position))
-
     min_dist = float("inf")
     min_dist_idx = -1
     for i, wp in enumerate(goal_path):

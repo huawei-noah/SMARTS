@@ -85,12 +85,14 @@ class String(gym.Space):
     def contains(self, x):
         return type(x) is "str" and len(x) > self.min and len(x) < self.max
 
-def observation_space(state_description,
+
+def observation_space(
+    state_description,
     social_feature_encoder_class,
     social_feature_encoder_params,
     social_capacity,
-    num_social_features
-    ):
+    num_social_features,
+):
     low_dim_states_shape = sum(state_description["low_dim_states"].values())
     if social_feature_encoder_class:
         social_vehicle_shape = social_feature_encoder_class(
@@ -98,13 +100,22 @@ def observation_space(state_description,
         ).output_dim
     else:
         social_vehicle_shape = social_capacity * num_social_features
-    print('>>>>> SOCIAL SHAPE', social_vehicle_shape)
+    print(">>>>> SOCIAL SHAPE", social_vehicle_shape)
     return gym.spaces.Dict(
-    {
-        # "images": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-        "low_dim_states": gym.spaces.Box(low=-1e10, high=1e10, shape=(low_dim_states_shape,), dtype=torch.Tensor),
-        "social_vehicles": gym.spaces.Box(low=-1e10, high=1e10, shape=(social_capacity,num_social_features), dtype=torch.Tensor),
-    })
+        {
+            # "images": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+            "low_dim_states": gym.spaces.Box(
+                low=-1e10, high=1e10, shape=(low_dim_states_shape,), dtype=torch.Tensor
+            ),
+            "social_vehicles": gym.spaces.Box(
+                low=-1e10,
+                high=1e10,
+                shape=(social_capacity, num_social_features),
+                dtype=torch.Tensor,
+            ),
+        }
+    )
+
 
 ACTION_SPACE = gym.spaces.Box(
     low=np.array([0.0, 0.0, -1.0]),
@@ -135,7 +146,7 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        print('EPISODE STEP')
+        print("EPISODE STEP")
         single_agent_id = list(episode._agent_to_last_obs)[0]
         obs = episode.last_raw_obs_for(single_agent_id)
         # episode.user_data["ego_speed"].append(obs["speed"])
@@ -151,7 +162,7 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        print('Episode End', episode.user_data)
+        print("Episode End", episode.user_data)
         # mean_ego_speed = np.mean(episode.user_data["ego_speed"])
         # print(
         #     f"ep. {episode.episode_id:<12} ended;"
@@ -253,7 +264,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
                 social_feature_encoder_class=social_feature_encoder_class,
                 social_feature_encoder_params=social_feature_encoder_params,
                 social_capacity=social_capacity,
-                num_social_features=num_social_features
+                num_social_features=num_social_features,
             ),
             ACTION_SPACE,
             {

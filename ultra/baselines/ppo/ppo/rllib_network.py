@@ -39,9 +39,9 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         # self.model = TorchFCNet(
         #     obs_space, action_space, num_outputs, model_config, name
         # )
-        # self.model = TorchFCNet(
-        #     obs_space, action_space, num_outputs, model_config, name
-        # )
+        self.model = TorchFCNet(
+            obs_space, action_space, num_outputs, model_config, name
+        )
         self.torchmodel = PPONetwork(
             action_size=model_config["custom_model_config"]["action_size"],
             state_size=model_config["custom_model_config"]["state_size"],
@@ -73,7 +73,6 @@ class TorchPPOModel(TorchModelV2, nn.Module):
     def forward(self, input_dict, state, seq_lens):
         # print('****',input_dict['obs'].keys())
         # print(">>>>", input_dict["obs"]["angle_error"].shape)
-
 
         # print("The unpacked input tensors:", input_dict["obs"])
 
@@ -120,9 +119,13 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         action = torch.squeeze(action)
         action = action.data.cpu().numpy()
 
-        print('ACTION', action)
-        return action
-        # return self.model.forward(input_dict, state, seq_lens)
+        action = np.asarray([to_3d_action(a) for a in action])
+        print("ACTION", action)
+        # return action ,[]
+        dummy = self.model.forward(input_dict, state, seq_lens)
+        print(dummy)
+        print(M)
+        # todo why action_Space is 6 d?
 
     def value_function(self):
         return self.model.value_function()

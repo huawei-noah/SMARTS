@@ -141,38 +141,7 @@ class BaselineAdapter:
             )
         return tuple(output)
 
-    def rllib_paths(self, paths):
-        # 5 paths, each path 200 points
-        output = []
-        for path in paths[:5]:
-            output.append(self.rllib_path(path))
-
-        while len(output) < 5:
-            output.append(self.rllib_path([]))
-
-        return tuple(output)
-
-    def rllib_helper(self, obj):
-        if not hasattr(obj, "__dict__"):
-            return np.array([obj])
-        result = {}
-        for key, val in obj.__dict__.items():
-            if key.startswith("_"):
-                continue
-            element = []
-            if isinstance(val, list):
-                if all(isinstance(x, (int, float)) for x in val):
-                    element = np.asarray(val)
-                else:
-                    for item in val:
-                        element.append(self.rllib_helper(item))
-            else:
-                element = self.rllib_helper(val)
-            result[key] = element
-        return dict(result)
-
     def observation_adapter(self, env_observation):
-
         ego_state = env_observation.ego_vehicle_state
         start = env_observation.ego_vehicle_state.mission.start
         goal = env_observation.ego_vehicle_state.mission.goal
@@ -197,28 +166,21 @@ class BaselineAdapter:
         )
 
         state = dict(
-            speed=np.array([ego_state.speed]),
-            relative_goal_position=np.asarray(relative_goal_position_rotated),
-            distance_from_center=np.array([ego_dist_center]),
-            steering=np.array([ego_state.steering]),
-            angle_error=np.array([closest_wp.relative_heading(ego_state.heading)]),
-            social_vehicles=env_observation.neighborhood_vehicle_states
-            if not self.is_rllib
-            else self.rllib_social_vehciles(
-                env_observation.neighborhood_vehicle_states[:10]
-            ),
-            road_speed=np.array([closest_wp.speed_limit]),
+            speed=ego_state.speed,
+            relative_goal_position=relative_goal_position_rotated,
+            distance_from_center=ego_dist_center,
+            steering=ego_state.steering,
+            angle_error=closest_wp.relative_heading(ego_state.heading),
+            social_vehicles=env_observation.neighborhood_vehicle_states,
+            road_speed=closest_wp.speed_limit,
             # # ----------
             # # dont normalize the following,
-            start=np.asarray(start.position),
-            goal=np.asarray(goal.position),
-            heading=np.array([ego_state.heading]),
-            goal_path=path if not self.is_rllib else self.rllib_path(path),
-            ego_position=np.asarray(ego_state.position),
-            waypoint_paths=env_observation.waypoint_paths
-            if not self.is_rllib
-            else self.rllib_paths(env_observation.waypoint_paths),
-            # events=env_observation.events,
+            start=start.position,
+            goal=goal.position,
+            heading=ego_state.heading,
+            goal_path=path,
+            waypoint_paths=env_observation.waypoint_paths,
+            events=env_observation.events,
         )
 
         state = self.state_preprocessor(

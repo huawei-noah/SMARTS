@@ -77,7 +77,6 @@ def get_social_vehicles(
     social_vehicle_config,
     waypoint_paths,
 ):
-    neighborhood_vehicles = correct_vehicles(neighborhood_vehicles)
     extractor_func = social_vehicle_config["social_vehicle_extractor_func"]
     encoder_key = social_vehicle_config["encoder_key"]
     if social_vehicle_config["encoder"]["use_leading_vehicles"]:
@@ -101,30 +100,6 @@ def get_social_vehicles(
     return social_vehicles
 
 
-def correct_vehicles(vehicles):
-    if isinstance(vehicles, tuple):
-        new_vehicles = []
-        for v in vehicles:
-            new_vehicles.append(
-                VehicleObservation(
-                    id=v["vehicle_id"][0],
-                    position=v["pose"]["position"][:2],
-                    bounding_box=BoundingBox(
-                        length=v["bounding_box"]["length"][0],
-                        width=v["bounding_box"]["width"][0],
-                        height=v["bounding_box"]["height"][0],
-                    ),
-                    heading=Heading(v["heading"][0]),
-                    speed=v["speed"][0],
-                    edge_id=v["edge_id"][0],
-                    lane_id=v["lane_id"][0],
-                    lane_index=v["lane_index"][0],
-                )
-            )
-        return new_vehicles
-    return vehicles
-
-
 def get_social_vehicles_states_sorted_by_distance(
     ego_vehicle_pos,
     ego_vehicle_heading,
@@ -132,7 +107,6 @@ def get_social_vehicles_states_sorted_by_distance(
     social_vehicle_config,
     extractor_func,
 ):
-    social_vehicles = correct_vehicles(neighborhood_vehicles)
     social_vehicles.sort(
         key=lambda vehicle: get_distance(vehicle, ego_vehicle_pos), reverse=False
     )
@@ -193,7 +167,6 @@ def get_social_vehicles_leading(
     # if vehicle is within the max_dist consider:
     #   1- find vehicles on ego lane , and only keep the closest front and rear vehicles
     #   2- find vehicles on other lanes
-    neighborhood_vehicles = correct_vehicles(neighborhood_vehicles)
     for vehicle in neighborhood_vehicles:
         dist = get_distance(vehicle, ego_vehicle_pos)
         if dist < max_dist_social_vehicle:
