@@ -29,7 +29,6 @@ from skimage.transform import resize
 import ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
 import math
-from smarts.core.waypoints import Waypoint
 
 
 def rotate2d_vector(vectors, angle):
@@ -268,7 +267,6 @@ def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
         ]
 
     waypoints_lookahead = rotate2d_vector(waypoints_lookahead, -ego_heading)
-    print(waypoints_lookahead.shape)
     return closest_wp, waypoints_lookahead
 
 

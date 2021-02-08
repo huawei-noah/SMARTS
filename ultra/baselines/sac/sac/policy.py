@@ -39,7 +39,6 @@ class SACPolicy(Agent):
     def __init__(
         self, policy_params=None, checkpoint_dir=None,
     ):
-        print(">>>>> initialized")
         # print("LOADING THE PARAMS", policy_params, checkpoint_dir)
         self.policy_params = policy_params
         self.gamma = float(policy_params["gamma"])

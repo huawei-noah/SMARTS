@@ -104,6 +104,7 @@ def get_social_vehicles_states_sorted_by_distance(
     social_vehicle_config,
     extractor_func,
 ):
+    social_vehicles = neighborhood_vehicles
     social_vehicles.sort(
         key=lambda vehicle: get_distance(vehicle, ego_vehicle_pos), reverse=False
     )
