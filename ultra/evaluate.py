@@ -161,7 +161,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--models", default="models/", help="Directory to saved models")
     parser.add_argument(
-        "--episodes", help="Number of training episodes", type=int, default=5
+        "--episodes", help="Number of training episodes", type=int, default=200
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
