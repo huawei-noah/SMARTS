@@ -274,22 +274,28 @@ class LaneFollowingController:
             * (vehicle.speed) ** 2
         )
         normalized_speed = np.clip(vehicle.speed * 3.6 / 100, 0, 1)
-        heading_speed_gain = lerp(0.5, 14, normalized_speed)
+        heading_speed_gain = -lerp(0.5, 14, normalized_speed)
         yaw_rate_speed_gain = lerp(5.75, 11.75, normalized_speed)
         lateral_speed_gain = np.clip(lerp(-1, 14, normalized_speed), 1, 2)
+
+        max_steering_nomralized = 1
+        if abs(curvature_radius) > 1e7 and lane_change != 0:
+            heading_speed_gain = -4.95
+            yaw_rate_speed_gain = 1
+            lateral_speed_gain = 0.22
+            max_steering_nomralized = 0.12
+
+        heading_error = min_angles_difference_signed(
+            (vehicle.heading % (2 * math.pi)), reference_heading
+        )
         steering_norm = np.clip(
-            -heading_speed_gain
-            * math.degrees(state.heading_error_gain)
-            * (
-                abs_heading_error
-                * np.sign(reference_heading - (vehicle.heading % (2 * math.pi)))
-            )
+            -heading_speed_gain * math.degrees(state.heading_error_gain) * heading_error
             + lateral_speed_gain * state.lateral_error_gain * (controller_lat_error)
             + yaw_rate_speed_gain * vehicle.chassis.yaw_rate[2]
             + 0.3 * state.lateral_integral_error
             - steering_controller_feed_forward,
-            -1,
-            1,
+            -max_steering_nomralized,
+            max_steering_nomralized,
         )
         # The steering low pass filter, 5.5 is the constant of the
         # first order linear low pass filter.
