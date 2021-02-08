@@ -187,8 +187,10 @@ if __name__ == "__main__":
     sorted_models = sorted(
         glob.glob(f"{args.models}/*"), key=lambda x: int(x.split("/")[-1])
     )
+    base_dir = os.path.dirname(__file__)
+    pool_path = os.path.join(base_dir, "agent_pool.json")
 
-    with open("ultra/agent_pool.json", "r") as f:
+    with open(pool_path, "r") as f:
         data = json.load(f)
         if args.policy in data["agents"].keys():
             policy_path = data["agents"][args.policy]["path"]
