@@ -48,11 +48,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
 
         config["scenarios"] = _scenarios
         self.ultra_scores = BaselineAdapter(
-            state_description=config["state_description"],
-            social_capacity=config["social_capacity"],
-            observation_num_lookahead=config["observation_num_lookahead"],
-            social_vehicle_config=config["social_vehicle_config"],
-            is_rllib=True,
+            social_vehicle_params=config["social_vehicle_params"], is_rllib=True,
         )
         super().__init__(config=config)
 

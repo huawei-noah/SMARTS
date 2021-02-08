@@ -32,7 +32,6 @@ import numpy as np
 from ray import tune
 from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
-from ultra.baselines.rllib_agent import RLlibAgent
 from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.ppo.ppo.policy import PPOPolicy
 from ultra.baselines.ppo.ppo.network import PPONetwork
@@ -56,73 +55,13 @@ from smarts.core.agent_interface import (
     Waypoints,
     NeighborhoodVehicles,
 )
-
+from ultra.baselines.ppo.ppo.rllib_network import TorchPPOModel
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
 from typing import Dict
 
 num_gpus = 1 if torch.cuda.is_available() else 0
-
-
-class String(gym.Space):
-    def __init__(
-        self, shape=None, min_length=1, max_length=180,
-    ):
-        self.shape = shape
-        self.min_length = min_length
-        self.max_length = max_length
-        self.letters = string.ascii_letters + " .,!-"
-
-    def sample(self):
-        length = random.randint(self.min_length, self.max_length)
-        string = ""
-        for i in range(length):
-            letter = random.choice(self.letters)
-            string += letter
-        return string
-
-    def contains(self, x):
-        return type(x) is "str" and len(x) > self.min and len(x) < self.max
-
-
-def observation_space(
-    state_description,
-    social_feature_encoder_class,
-    social_feature_encoder_params,
-    social_capacity,
-    num_social_features,
-):
-    low_dim_states_shape = sum(state_description["low_dim_states"].values())
-    if social_feature_encoder_class:
-        social_vehicle_shape = social_feature_encoder_class(
-            **social_feature_encoder_params
-        ).output_dim
-    else:
-        social_vehicle_shape = social_capacity * num_social_features
-    print(">>>>> SOCIAL SHAPE", social_vehicle_shape)
-    return gym.spaces.Dict(
-        {
-            # "images": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-            "low_dim_states": gym.spaces.Box(
-                low=-1e10, high=1e10, shape=(low_dim_states_shape,), dtype=torch.Tensor
-            ),
-            "social_vehicles": gym.spaces.Box(
-                low=-1e10,
-                high=1e10,
-                shape=(social_capacity, num_social_features),
-                dtype=torch.Tensor,
-            ),
-        }
-    )
-
-
-ACTION_SPACE = gym.spaces.Box(
-    low=np.array([0.0, 0.0, -1.0]),
-    high=np.array([1.0, 1.0, 1.0]),
-    dtype=np.float32,
-    shape=(3,),
-)
 
 
 class Callbacks(DefaultCallbacks):
@@ -184,55 +123,20 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     # -------------------------------------------------------
     AGENT_ID = "007"
 
-    from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-    from ultra.baselines.common.state_preprocessor import get_state_description
-
-    social_capacity = 10
-    num_social_features = 4
-
-    social_params = dict(
+    social_vehicle_params = dict(
         encoder_key="no_encoder",
         social_policy_hidden_units=128,
         social_polciy_init_std=0.5,
-        social_capacity=social_capacity,
-        num_social_features=num_social_features,
+        num_social_features=4,
         seed=2,
+        observation_num_lookahead=20,
+        social_capacity=10,
     )
-    social_vehicle_config = get_social_vehicle_configs(**social_params)
-    social_vehicle_encoder = social_vehicle_config["encoder"]
-    observation_num_lookahead = 20
-
-    state_description = get_state_description(
-        social_vehicle_config=social_params,
-        observation_waypoints_lookahead=observation_num_lookahead,
-        action_size=2,
-    )
-
-    state_size = sum(state_description["low_dim_states"].values())
-    print(">>>>", social_vehicle_encoder)
-    social_feature_encoder_class = social_vehicle_encoder[
-        "social_feature_encoder_class"
-    ]
-    social_feature_encoder_params = social_vehicle_encoder[
-        "social_feature_encoder_params"
-    ]
-    if social_feature_encoder_class:
-        state_size += social_feature_encoder_class(
-            **social_feature_encoder_params
-        ).output_dim
-    else:
-        state_size += social_capacity * num_social_features
-
-    from ultra.baselines.ppo.ppo.rllib_network import TorchPPOModel
 
     ModelCatalog.register_custom_model("ppo_model", TorchPPOModel)
 
     adapter = BaselineAdapter(
-        is_rllib=True,
-        state_description=state_description,
-        social_capacity=social_capacity,
-        observation_num_lookahead=observation_num_lookahead,
-        social_vehicle_config=social_vehicle_config,
+        is_rllib=True, social_vehicle_params=social_vehicle_params,
     )
     print("MADE ADAPTER **********")
 
@@ -259,29 +163,21 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     rllib_policies = {
         "default_policy": (
             None,
-            observation_space(
-                state_description=state_description,
-                social_feature_encoder_class=social_feature_encoder_class,
-                social_feature_encoder_params=social_feature_encoder_params,
-                social_capacity=social_capacity,
-                num_social_features=num_social_features,
-            ),
-            ACTION_SPACE,
+            adapter.observation_space,
+            adapter.action_space,
             {
                 "model": {
                     "custom_model": "ppo_model",
                     "custom_model_config": {
-                        "state_description": state_description,
-                        "social_vehicle_config": social_vehicle_config,
-                        "observation_num_lookahead": observation_num_lookahead,
-                        "social_capacity": social_capacity,
+                        "state_description": adapter.state_description,
+                        "social_vehicle_params": social_vehicle_params,
                         "action_size": 2,
-                        "state_size": state_size,
+                        "state_size": adapter.state_size,
                         "init_std": 0.5,
                         "hidden_units": 512,
                         "seed": 2,
-                        "social_feature_encoder_class": social_feature_encoder_class,
-                        "social_feature_encoder_params": social_feature_encoder_params,
+                        "social_feature_encoder_class": adapter.social_feature_encoder_class,
+                        "social_feature_encoder_params": adapter.social_feature_encoder_params,
                     },
                 }
             },
@@ -297,10 +193,8 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "seed": seed,
             "scenario_info": task,
             "headless": headless,
-            "state_description": state_description,
-            "social_capacity": social_capacity,
-            "observation_num_lookahead": observation_num_lookahead,
-            "social_vehicle_config": social_vehicle_config,
+            "state_description": adapter.state_description,
+            "social_vehicle_params": social_vehicle_params,
             "eval_mode": False,
             "ordered_scenarios": False,
             "agent_specs": {

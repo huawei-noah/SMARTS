@@ -21,10 +21,11 @@
 # THE SOFTWARE.
 import numpy as np
 from scipy.spatial import distance
-import random, math
+import random, math, gym
 from sys import path
 from collections import OrderedDict
 from ultra.baselines.common.state_preprocessor import *
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 
 path.append("./ultra")
 from ultra.utils.common import (
@@ -43,103 +44,87 @@ num_lookahead = 100
 #     pass
 
 
-class Dummy:
-    def __init__(self, id, p):  # , position):
-        # self.id = id
-        self.position = p
-
-    def sample(self):
-        return "0", [0, 0, 0]
-
-
 class BaselineAdapter:
     def __init__(
-        self,
-        state_description,
-        social_capacity,
-        observation_num_lookahead,
-        social_vehicle_config,
-        is_rllib=False,
+        self, social_vehicle_params, is_rllib=False,
     ):
         self.is_rllib = is_rllib
-        self.state_description = state_description
-        self.state_preprocessor = StatePreprocessor(
-            preprocess_state, to_2d_action, self.state_description
+        self.observation_num_lookahead = social_vehicle_params[
+            "observation_num_lookahead"
+        ]
+        self.num_social_features = social_vehicle_params["num_social_features"]
+        self.social_capacity = social_vehicle_params["social_capacity"]
+        self.social_vehicle_config = get_social_vehicle_configs(
+            encoder_key=social_vehicle_params["encoder_key"],
+            num_social_features=self.num_social_features,
+            social_capacity=self.social_capacity,
+            seed=social_vehicle_params["seed"],
+            social_policy_hidden_units=social_vehicle_params[
+                "social_policy_hidden_units"
+            ],
+            social_polciy_init_std=social_vehicle_params["social_polciy_init_std"],
         )
-        # self.social_feature_encoder = model_config['custom_model_config']['social_feature_encoder_class']
-        self.social_capacity = social_capacity
-        self.social_vehicle_config = social_vehicle_config
-        # self.prev_action = np.zeros(model_config['custom_model_config']['action_size'])
-        self.observation_num_lookahead = observation_num_lookahead
+
+        self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
+
+        self.state_description = get_state_description(
+            social_vehicle_config=social_vehicle_params,
+            observation_waypoints_lookahead=self.observation_num_lookahead,
+            action_size=2,
+        )
+
+        self.state_size = sum(self.state_description["low_dim_states"].values())
+        self.social_feature_encoder_class = self.social_vehicle_encoder[
+            "social_feature_encoder_class"
+        ]
+        self.social_feature_encoder_params = self.social_vehicle_encoder[
+            "social_feature_encoder_params"
+        ]
+        if self.social_feature_encoder_class:
+            self.state_size += self.social_feature_encoder_class(
+                **social_feature_encoder_params
+            ).output_dim
+        else:
+            self.state_size += self.social_capacity * self.num_social_features
+
         pass
 
-    # def observation_adapter_rllib(self, env_observation):
-    #     states = dict(
-    #         social_vehicles=np.array([dict(**Dummy('12113',[1,4,5]))]),
-    #
-    #     )
-    #     return states
-    def rllib_social_vehciles(self, social_vehicles):
-        output = []
-        for obj in social_vehicles:
-            output.append(
-                dict(
-                    vehicle_id=np.array([obj.id]),
-                    pose=dict(position=np.asarray(obj.position)),
-                    heading=np.array([obj.heading]),
-                    speed=np.array([obj.speed]),
-                    lane_id=np.array([obj.lane_id]),
-                    bounding_box=dict(
-                        length=np.array([obj.bounding_box.length]),
-                        width=np.array([obj.bounding_box.width]),
-                        height=np.array([obj.bounding_box.height]),
-                    ),
-                    lane_index=np.array([obj.lane_index]),
-                    edge_id=np.array([obj.edge_id]),
-                )
-            )
-        while len(output) < 10:
-            output.append(
-                dict(
-                    vehicle_id=np.array([0]),
-                    pose=dict(position=np.asarray([0, 0, 0])),
-                    heading=np.array([0]),
-                    speed=np.array([0]),
-                    lane_id=np.array([0]),
-                    bounding_box=dict(
-                        length=np.array([0]), width=np.array([0]), height=np.array([0])
-                    ),
-                    lane_index=np.array([0]),
-                    edge_id=np.array([0]),
-                )
-            )
-        return tuple(output)
+    @property
+    def observation_space(self):
+        low_dim_states_shape = sum(self.state_description["low_dim_states"].values())
+        if self.social_feature_encoder_class:
+            social_vehicle_shape = self.social_feature_encoder_class(
+                **self.social_feature_encoder_params
+            ).output_dim
+        else:
+            social_vehicle_shape = self.social_capacity * self.num_social_features
+        print(">>>>> SOCIAL SHAPE", social_vehicle_shape)
+        return gym.spaces.Dict(
+            {
+                # "images": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
+                "low_dim_states": gym.spaces.Box(
+                    low=-1e10,
+                    high=1e10,
+                    shape=(low_dim_states_shape,),
+                    dtype=torch.Tensor,
+                ),
+                "social_vehicles": gym.spaces.Box(
+                    low=-1e10,
+                    high=1e10,
+                    shape=(self.social_capacity, self.num_social_features),
+                    dtype=torch.Tensor,
+                ),
+            }
+        )
 
-    def rllib_path(self, path):
-        output = []
-        for point in path[:100]:
-            output.append(
-                dict(
-                    pose=dict(position=np.asarray(point.pos)),
-                    heading=np.array([point.heading]),
-                    speed_limit=np.array([point.speed_limit]),
-                    lane_width=np.array([point.lane_width]),
-                    lane_id=np.array([point.lane_id]),
-                    # lane_index=np.array([point.lane_id])
-                )
-            )
-        while len(output) < 100:
-            output.append(
-                dict(
-                    pose=dict(position=np.asarray([0, 0, 0])),
-                    heading=np.array([0]),
-                    speed_limit=np.array([0]),
-                    lane_width=np.array([0]),
-                    lane_id=np.array([0]),
-                    # lane_index=np.array([0])
-                )
-            )
-        return tuple(output)
+    @property
+    def action_space(self):
+        return gym.spaces.Box(
+            low=np.array([0.0, 0.0, -1.0]),
+            high=np.array([1.0, 1.0, 1.0]),
+            dtype=np.float32,
+            shape=(3,),
+        )
 
     def observation_adapter(self, env_observation):
         ego_state = env_observation.ego_vehicle_state
@@ -179,6 +164,7 @@ class BaselineAdapter:
             goal=goal.position,
             heading=ego_state.heading,
             goal_path=path,
+            ego_position=ego_state.position,
             waypoint_paths=env_observation.waypoint_paths,
             events=env_observation.events,
         )

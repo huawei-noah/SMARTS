@@ -23,10 +23,7 @@ import numpy as np
 import random
 from scipy.spatial.distance import euclidean
 from collections import defaultdict
-from smarts.core.waypoints import Waypoint
 from ultra.utils.common import rotate2d_vector
-from smarts.core.sensors import VehicleObservation
-from smarts.core.coordinates import BoundingBox, Heading
 
 HORIZONTAL = 0
 VERTICAL = 1
@@ -137,20 +134,6 @@ def get_social_vehicles_leading(
 
     # find ego lane information
     ego_wps = [path[0] for path in waypoint_paths]
-    new_ego_wps = []
-    for i in range(len(ego_wps)):
-        if isinstance(ego_wps[i], dict):
-            new_ego_wps.append(
-                Waypoint(
-                    pos=ego_wps[i]["pose"]["position"][:2],
-                    heading=ego_wps[i]["heading"],
-                    lane_width=ego_wps[i]["lane_width"],
-                    speed_limit=ego_wps[i]["speed_limit"],
-                    lane_id=ego_wps[i]["lane_id"],
-                    lane_index="",
-                )
-            )
-    ego_wps = ego_wps if not new_ego_wps else new_ego_wps
 
     ego_closest_waypoint, prev_ego_wp = None, None
     ego_closest_waypoint_min_dist = float("inf")
