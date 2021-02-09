@@ -66,7 +66,7 @@ def train(
 
     agent = spec.build_agent()
 
-    for episode in episodes(num_episodes, etag=policy_class, dir=log_dir):
+    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
@@ -89,6 +89,7 @@ def train(
                 agent_id=AGENT_ID,
                 policy_class=policy_class,
                 episode=episode,
+                log_dir=log_dir,
                 **eval_info,
                 **env.info,
             )
@@ -156,18 +157,14 @@ if __name__ == "__main__":
         type=int,
         default=10000,
     )
-
     parser.add_argument(
         "--seed", help="Environment seed", default=2, type=int,
     )
     parser.add_argument(
         "--log-dir", help="Log directory location", default="logs", type=str,
     )
-    args = parser.parse_args()
 
-    num_cpus = max(
-        1, psutil.cpu_count(logical=False) - 1
-    )  # remove `logical=False` to use all cpus
+    args = parser.parse_args()
 
     with open("ultra/agent_pool.json", "r") as f:
         data = json.load(f)

@@ -19,8 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
-import json
+import os, sys
+import json, re
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -48,6 +48,7 @@ def evaluation_check(
     scenario_info,
     timestep_sec,
     headless,
+    log_dir,
 ):
     agent_itr = episode.get_itr(agent_id)
 
@@ -68,6 +69,7 @@ def evaluation_check(
                     num_episodes=eval_episodes,
                     headless=headless,
                     timestep_sec=timestep_sec,
+                    log_dir=log_dir,
                 )
             ]
         )[0]
@@ -90,6 +92,7 @@ def evaluate(
     num_episodes,
     headless,
     timestep_sec,
+    log_dir,
 ):
 
     torch.set_num_threads(1)
@@ -113,7 +116,7 @@ def evaluate(
     summary_log = LogInfo()
     logs = []
 
-    for episode in episodes(num_episodes):
+    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[agent_id]
         dones, infos = {"__all__": False}, None
@@ -156,12 +159,6 @@ if __name__ == "__main__":
         type=str,
         default="easy",
     )
-    parser.add_argument(
-        "--policy",
-        help="Policies available : [ppo, sac, ddpg, dqn, bdqn]",
-        type=str,
-        default="sac",
-    )
     parser.add_argument("--models", default="models/", help="Directory to saved models")
     parser.add_argument(
         "--episodes", help="Number of training episodes", type=int, default=200
@@ -177,36 +174,41 @@ if __name__ == "__main__":
         help="Path to spec file that includes adapters and policy parameters",
         type=str,
     )
-
+    parser.add_argument(
+        "--log-dir", help="Log directory location", default="logs", type=str,
+    )
     args = parser.parse_args()
 
-    # --------------------------------------------------------
+    if not os.path.exists(args.log_dir):
+        os.makedirs(args.log_dir)
+
+    m = re.search(
+        "ultra(\.)*([a-zA-Z0-9_]*\.)+([a-zA-Z0-9_])+\:[a-zA-Z0-9_]+((\-)*[a-zA-Z0-9_]*)*",
+        args.models,
+    )
+
+    try:
+        policy_class = m.group(0)
+    except AttributeError as e:
+        # default policy class
+        policy_class = "ultra.baselines.sac:sac-v0"
+
     if not os.path.exists(args.models):
-        raise "Models not Found"
+        raise "Path to model is invalid"
+
+    if not os.listdir(args.models):
+        raise "No models to evaluate"
 
     sorted_models = sorted(
         glob.glob(f"{args.models}/*"), key=lambda x: int(x.split("/")[-1])
     )
 
-    with open("ultra/agent_pool.json", "r") as f:
-        data = json.load(f)
-        if args.policy in data["agents"].keys():
-            policy_path = data["agents"][args.policy]["path"]
-            policy_locator = data["agents"][args.policy]["locator"]
-        else:
-            raise ImportError("Invalid policy name. Please try again")
-
-    # Required string for smarts' class registry
-    policy_class = str(policy_path) + ":" + str(policy_locator)
-
-    num_cpus = max(
-        1, psutil.cpu_count(logical=False) - 1
-    )  # remove `logical=False` to use all cpus
-    ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
-    ray.init(**ray_kwargs)
+    ray.init()
     try:
         agent_id = "AGENT_008"
-        for episode in episodes(len(sorted_models), etag=args.policy):
+        for episode in episodes(
+            len(sorted_models), etag=policy_class, log_dir=args.log_dir
+        ):
             model = sorted_models[episode.index]
             print("model: ", model)
             episode_count = model.split("/")[-1]
@@ -224,6 +226,7 @@ if __name__ == "__main__":
                         num_episodes=int(args.episodes),
                         timestep_sec=float(args.timestep),
                         headless=args.headless,
+                        log_dir=args.log_dir,
                     )
                 ]
             )[0]
