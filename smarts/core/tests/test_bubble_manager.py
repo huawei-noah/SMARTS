@@ -43,7 +43,7 @@ def bubble(request):
     return t.Bubble(
         zone=t.PositionalZone(pos=(100, 0), size=(10, 10)),
         margin=2,
-        limit=getattr(request, "param", 10),
+        limit=getattr(request, "param", t.BubbleLimits(10, 11)),
         actor=t.SocialAgentActor(
             name="zoo-car", agent_locator="zoo.policies:keep-lane-agent-v0"
         ),
@@ -122,7 +122,7 @@ def test_bubble_manager_state_change(smarts, mock_provider):
         assert got_hijacked == hijacked, assert_msg
 
 
-@pytest.mark.parametrize("bubble", [1], indirect=True)
+@pytest.mark.parametrize("bubble", [t.BubbleLimits(1, 2)], indirect=True)
 def test_bubble_manager_limit(smarts, mock_provider):
     vehicle_ids = ["vehicle-1", "vehicle-2", "vehicle-3"]
     for x in range(200):
@@ -145,10 +145,18 @@ def test_bubble_manager_limit(smarts, mock_provider):
         mock_provider.override_next_provider_state(vehicles=vehicles)
         smarts.step({})
 
+    def get_vehicles_with_quality(func):
+        return {v_id for v_id in vehicle_ids if not func(v_id)}
+
+    hijacked = get_vehicles_with_quality(smarts.vehicle_index.vehicle_is_hijacked)
+    shadowed = get_vehicles_with_quality(smarts.vehicle_index.vehicle_is_shadowed)
+
     # 3 total vehicles, 1 hijacked and removed according to limit, 2 remaining
     assert (
-        len(vehicle_ids) == 2
+        len(hijacked) == 1
     ), "Only 1 vehicle should have been hijacked according to the limit"
+
+    assert len(shadowed) <= 2
 
 
 def test_vehicle_spawned_in_bubble_is_not_captured(smarts, mock_provider):
