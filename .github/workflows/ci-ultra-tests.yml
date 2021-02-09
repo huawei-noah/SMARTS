@@ -34,5 +34,5 @@ jobs:
       - name: Run ultra tests
         run: |
           . .venv/bin/activate
-          make build-all-scenarios
+          scl scenario build-all ultra/scenarios/pool
           pytest -v ./ultra/tests/ 

@@ -20,12 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import unittest
-from ultra.baselines.ppo.ppo.policy import PPOPolicy
 import gym, ray
 from ultra.utils.episode import episodes
 import numpy as np
-from ultra.baselines.agent_spec import BaselineAgentSpec
-from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import make
 
 AGENT_ID = "001"
