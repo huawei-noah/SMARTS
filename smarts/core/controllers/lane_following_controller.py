@@ -182,9 +182,9 @@ class LaneFollowingController:
         # calculating the front laterl force. we need to replace the coefficent
         # with better approximation of the front lateral forces using explicit
         # differention.
+        lateral_force_coefficient = 5.5
         if vehicle.speed < 8 or target_speed < 6:
             lateral_force_coefficient = 0
-        lateral_force_coefficient = 5.5
         # 0.2 is the coefficent of d-controller for speed tracking
         # 0.1 is the coefficent of I-controller for speed tracking
         raw_throttle += (
