@@ -1,10 +1,11 @@
 name: SMARTS CI Base Tests
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.3-pre
     strategy:
       matrix:
@@ -47,5 +48,6 @@ jobs:
             -n auto \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+            --ignore=./smarts/env/tests/test_benchmark.py \
             --ignore=./smarts/env/tests/test_learning.py \
-            --ignore=./smarts/env/tests/test_benchmark.py
+            -k 'not test_long_determinism'

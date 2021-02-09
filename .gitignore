@@ -108,6 +108,7 @@ traffic_histories.pkl
 
 # Manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml
+!smarts/sstudio/tests/*.rou.xml
 
 # but keep model assets
 !**/models/*.glb
@@ -124,3 +125,6 @@ xdummy.log
 
 # Optimization Engine build directory
 OpEn_build/
+
+# Ignore generated ULTRA tasks
+ultra/scenarios/task*/*/

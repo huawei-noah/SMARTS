@@ -35,7 +35,7 @@ from smarts.core.coordinates import Heading, Pose
 from smarts.core.provider import ProviderState, ProviderTLS, ProviderTrafficLight
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 from smarts.core.utils import networking
-from smarts.core.utils.logging import surpress_stdout
+from smarts.core.utils.logging import suppress_stdout
 from smarts.core.utils.sumo import SUMO_PATH, traci
 
 import traci.constants as tc
@@ -54,6 +54,20 @@ class SumoTrafficSimulation:
             WARNING:
                 Since our interface(TRACI) to SUMO is delayed by one simulation step,
                 setting a higher time resolution may lead to unexpected artifacts
+        num_external_sumo_clients:
+            wait for the specified number of other clients to connect to SUMO
+        sumo_port:
+            the port that sumo runs on
+        auto_start:
+            False to pause simulation when SMARTS run, and wait for user to click 
+            start on sumo-gui
+        endless_traffic:
+            Not remove vehicles by re-adding back vehicles that exit 
+        allow_reload:
+            True to reload existing SUMO
+        remove_agents_only_mode: 
+            Remove only agent vehicles used by SMARTS and not delete other sumo
+            vehicles when teardown
     """
 
     def __init__(
@@ -66,7 +80,9 @@ class SumoTrafficSimulation:
         endless_traffic=True,
         allow_reload=True,
         debug=True,
+        remove_agents_only_mode=False,
     ):
+        self._remove_agents_only_mode = remove_agents_only_mode
         self._log = logging.getLogger(self.__class__.__name__)
 
         self._debug = debug
@@ -143,7 +159,7 @@ class SumoTrafficSimulation:
             )
             time.sleep(0.05)  # give SUMO time to start
             try:
-                with surpress_stdout():
+                with suppress_stdout():
                     self._traci_conn = traci.connect(
                         sumo_port,
                         numRetries=100,
@@ -271,8 +287,16 @@ class SumoTrafficSimulation:
             self._traci_conn.close()
             self._traci_conn = None
 
-    def _remove_all_vehicles(self):
-        for vehicle_id in self._non_sumo_vehicle_ids.union(self._sumo_vehicle_ids):
+    def _remove_vehicles(self):
+        vehicles_to_remove = None
+        if self._remove_agents_only_mode:
+            vehicles_to_remove = self._non_sumo_vehicle_ids
+        else:
+            vehicles_to_remove = self._non_sumo_vehicle_ids.union(
+                self._sumo_vehicle_ids
+            )
+
+        for vehicle_id in vehicles_to_remove:
             self._traci_conn.vehicle.remove(vehicle_id)
 
     def teardown(self):
@@ -283,7 +307,7 @@ class SumoTrafficSimulation:
 
         assert self._is_setup
 
-        self._remove_all_vehicles()
+        self._remove_vehicles()
         if self._allow_reload:
             self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
