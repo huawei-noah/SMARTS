@@ -1,10 +1,7 @@
 name: SMARTS CI Base Tests
 
 
-on:
-  push:
-    branches:
-      - disabled
+on : [push]
 
 jobs:
   test:
