@@ -40,24 +40,27 @@ class EvaluateTest(unittest.TestCase):
         )
 
         path = "tests/sac_test_models"
+        if os.path.exists(path):
+            shutil.rmtree(path)
+
         if not os.path.exists(path):
             # Generate models before evaluation tests
             os.system(
-                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 8 --eval-rate 350 --eval-episodes 1 --log-dir tests/sac_test_models"
+                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 5 --eval-rate 275 --eval-episodes 1 --log-dir tests/sac_test_models"
             )
 
-    # def test_a_folders(self):
-    #     path = "tests/sac_test_models"
-    #     if not os.path.exists(path):
-    #         self.assertTrue(False)
+    def test_a_folders(self):
+        path = "tests/sac_test_models"
+        if not os.path.exists(path):
+            self.assertTrue(False)
 
-    #     path = glob.glob("tests/sac_test_models/*/models")[0]
-    #     if len(os.listdir(path)) == 0:
-    #         self.assertTrue(False)
+        path = glob.glob("tests/sac_test_models/*/models")[0]
+        if len(os.listdir(path)) == 0:
+            self.assertTrue(False)
 
-    #     path = "tests/task/eval_test"
-    #     if len(os.listdir(path)) <= 2:
-    #         self.assertTrue(False)
+        path = "tests/task/eval_test"
+        if len(os.listdir(path)) <= 2:
+            self.assertTrue(False)
 
     def test_evaluation_check(self):
         log_dir = "tests/output_eval_check_logs"
@@ -148,6 +151,12 @@ class EvaluateTest(unittest.TestCase):
         except Exception as err:
             print(err)
             self.assertTrue(False)
+
+        if not os.listdir(log_dir):
+            raise "Evaluation failed to generate new experiment folder"
+            self.assertTrue(False)
+        else:
+            shutil.rmtree(log_dir)
 
     def test_evaluate_agent(self):
         seed = 2

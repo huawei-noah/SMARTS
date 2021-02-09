@@ -25,6 +25,7 @@ jobs:
             -config /etc/X11/xorg.conf :1 &
       - name: Install dependencies
         run: |
+          cd ultra
           python3.7 -m venv .venv
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
@@ -34,6 +35,5 @@ jobs:
       - name: Run ultra tests
         run: |
           . .venv/bin/activate
-          cd ultra
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
