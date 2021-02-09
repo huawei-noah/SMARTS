@@ -33,6 +33,7 @@ jobs:
           pip install --upgrade --upgrade-strategy eager -e .
       - name: Run ultra tests
         run: |
+          cd ultra
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
