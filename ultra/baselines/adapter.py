@@ -39,10 +39,6 @@ seed = 0
 random.seed(seed)
 num_lookahead = 100
 
-# def action_adapter(agent.id):
-#     agent.action_space_type
-#     pass
-
 
 class BaselineAdapter:
     def __init__(
@@ -123,8 +119,14 @@ class BaselineAdapter:
             low=np.array([0.0, 0.0, -1.0]),
             high=np.array([1.0, 1.0, 1.0]),
             dtype=np.float32,
-            shape=(3,),
         )
+
+    def action_adapter(self, model_action):
+        # print why this doesn't go through?
+        print("Action>>>>>", model_action)
+        throttle, brake, steering = model_action
+        print(M)
+        return np.array([throttle, brake, steering * np.pi * 0.25])
 
     def observation_adapter(self, env_observation):
         ego_state = env_observation.ego_vehicle_state

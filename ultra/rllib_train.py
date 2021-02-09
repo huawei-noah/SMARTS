@@ -160,6 +160,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "train_batch_size": lambda: 2000,
         },
     )
+    # from ray.rllib.policy.policy import Policy as RPolicy
     rllib_policies = {
         "default_policy": (
             None,
@@ -169,23 +170,19 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
                 "model": {
                     "custom_model": "ppo_model",
                     "custom_model_config": {
-                        "state_description": adapter.state_description,
-                        "social_vehicle_params": social_vehicle_params,
+                        "adapter": adapter,
                         "action_size": 2,
-                        "state_size": adapter.state_size,
                         "init_std": 0.5,
                         "hidden_units": 512,
                         "seed": 2,
-                        "social_feature_encoder_class": adapter.social_feature_encoder_class,
-                        "social_feature_encoder_params": adapter.social_feature_encoder_params,
                     },
                 }
             },
         )
     }
     tune_config = {
-        "env": RLlibUltraEnv,
-        "log_level": "WARN",
+        # "env": RLlibUltraEnv,
+        "log_level": "DEBUG",
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
@@ -211,6 +208,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
                     agent_builder=None,
                     observation_adapter=adapter.observation_adapter,
                     reward_adapter=adapter.reward_adapter,
+                    action_adapter=adapter.action_adapter,
                 )
             },
         },
@@ -219,22 +217,24 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     result_dir = "ray_results"
     result_dir = Path(result_dir).expanduser().resolve().absolute()
 
-    analysis = tune.run(
-        "PPO",
-        name="exp_1",
-        stop={"time_total_s": 1200},
-        checkpoint_freq=1,
-        checkpoint_at_end=True,
-        local_dir=str(result_dir),
-        resume=False,
-        restore=None,
-        max_failures=3,
-        num_samples=1,
-        export_formats=["model", "checkpoint"],
-        config=tune_config,
-        scheduler=pbt,
-    )
-    print("DOne*****")
+    trainer = ppo.PPOTrainer(env=RLlibUltraEnv, config=tune_config)
+
+    # analysis = tune.run(
+    #     "PPO",
+    #     name="exp_1",
+    #     stop={"time_total_s": 1200},
+    #     checkpoint_freq=1,
+    #     checkpoint_at_end=True,
+    #     local_dir=str(result_dir),
+    #     resume=False,
+    #     restore=None,
+    #     max_failures=3,
+    #     num_samples=1,
+    #     export_formats=["model", "checkpoint"],
+    #     config=tune_config,
+    #     scheduler=pbt,
+    # )
+    # print("DOne*****")
 
 
 if __name__ == "__main__":

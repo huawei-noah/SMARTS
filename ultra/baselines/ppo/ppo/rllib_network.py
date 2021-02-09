@@ -35,25 +35,26 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         # why num_outputs==6 and it is not configured based on action_space??
         super().__init__(obs_space, action_space, num_outputs, model_config, name)
         nn.Module.__init__(self)
-        print("NAME   ", name)
+        print(">>>>> num_outputs", num_outputs)
+        print(model_config)
         # self.model = TorchFCNet(
         #     obs_space, action_space, num_outputs, model_config, name
         # )
-        self.model = TorchFCNet(
-            obs_space, action_space, num_outputs, model_config, name
-        )
+        # self.model = TorchFCNet(
+        #     obs_space, action_space, num_outputs, model_config, name
+        # )
         self.torchmodel = PPONetwork(
-            action_size=model_config["custom_model_config"]["action_size"],
-            state_size=model_config["custom_model_config"]["state_size"],
+            action_size=2,
+            state_size=model_config["custom_model_config"]["adapter"].state_size,
             hidden_units=model_config["custom_model_config"]["hidden_units"],
             init_std=model_config["custom_model_config"]["init_std"],
             seed=model_config["custom_model_config"]["seed"],
             social_feature_encoder_class=model_config["custom_model_config"][
-                "social_feature_encoder_class"
-            ],
+                "adapter"
+            ].social_feature_encoder_class,
             social_feature_encoder_params=model_config["custom_model_config"][
-                "social_feature_encoder_params"
-            ],
+                "adapter"
+            ].social_feature_encoder_params,
         )
 
     def forward(self, input_dict, state, seq_lens):
@@ -61,18 +62,11 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         print("**** obs", input_dict["obs"].keys())
         dist, value = self.torchmodel(input_dict["obs"])
 
-        # need train/eval?
-        action = dist.sample()
-        log_prob = dist.log_prob(action)
-        action = torch.squeeze(action)
-        action = action.data.cpu().numpy()
-
-        action = np.asarray([to_3d_action(a) for a in action])
-        print("ACTION", action)
+        print("ACTION", dist, value)
         # return action ,[]
-        dummy = self.model.forward(input_dict, state, seq_lens)
-        print(dummy)
-        print(M)
+        # dummy = self.model.forward(input_dict, state, seq_lens)
+        # print(dummy)
+        # print(M)
         # todo why action_Space is 6 d?
 
     def value_function(self):
