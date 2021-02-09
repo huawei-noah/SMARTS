@@ -45,6 +45,7 @@ from .sensors import (
     WaypointsSensor,
 )
 from .utils.math import rotate_around_point
+from smarts.sstudio.types import UTurn
 from functools import lru_cache
 
 
@@ -311,6 +312,10 @@ class Vehicle:
         # Agents can currently only control passenger vehicles
         vehicle_type = "passenger"
         chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+
+        if isinstance(mission_planner.mission.task, UTurn):
+            if mission_planner.mission.task.initial_speed:
+                initial_speed = mission_planner.mission.task.initial_speed
 
         start = mission_planner.mission.start
         start_pose = Pose.from_front_bumper(
