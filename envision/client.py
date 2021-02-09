@@ -171,7 +171,6 @@ class Client:
     ):
         connection_established = False
 
-        @profiler.profile_line
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
             # if not already serialized
             if not isinstance(state, str):
@@ -202,8 +201,7 @@ class Client:
                     break
 
                 optionally_serialize_and_write(state, ws)
-                
-        @profiler.profile_line
+
         def run_socket(endpoint, num_retries, wait_between_retries):
             nonlocal connection_established
             tries = 1
