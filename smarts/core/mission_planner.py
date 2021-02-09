@@ -299,7 +299,8 @@ class MissionPlanner:
     def uturn_waypoints(self, sim, pose: Pose, vehicle):
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
-
+        
+        ## the position of ego car is here: [x, y]
         ego_position = pose.position[:2]
         ego_lane = self._road_network.nearest_lane(ego_position)
         ego_wps = self._waypoints.waypoint_paths_on_lane_at(
@@ -349,6 +350,7 @@ class MissionPlanner:
             self._uturn_initial_distant = (
                 -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
             )
+            ## the position of kyber car [x, y] is here: neighborhood_vehicles[0].pose.position
 
             self._uturn_initial_velocity = neighborhood_vehicles[0].speed
             self._uturn_initial_height = 1 * (
