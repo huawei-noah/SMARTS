@@ -91,7 +91,7 @@ class EvaluateTest(unittest.TestCase):
     def test_evaluate_cli(self):
         try:
             os.system(
-                "python ultra/evaluate.py --task 00 --level easy --policy ppo --models ultra/tests/ppo_models/models --episodes 1"
+                "python ultra/evaluate.py --task 00 --level easy --policy ppo --models tests/ppo_models/models --episodes 1"
             )
             self.assertTrue(True)
         except Exception as err:
@@ -100,7 +100,7 @@ class EvaluateTest(unittest.TestCase):
 
     def test_evaluate_agent(self):
         seed = 2
-        model = glob.glob("ultra/tests/ppo_models/models/*")[0]
+        model = glob.glob("tests/ppo_models/models/*")[0]
 
         ray.init(ignore_reinit_error=True)
         try:

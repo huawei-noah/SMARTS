@@ -35,7 +35,7 @@ from ultra.scenarios.analysis.base_analysis import BaseAnalysis
 # class AnalysisTest(unittest.TestCase):
 #     def test_interface_analyze(self):
 #         try:
-#             save_dir = "ultra/tests/scenarios/maps/easy/"
+#             save_dir = "tests/scenarios/maps/easy/"
 #             if os.path.exists(save_dir):
 #                 shutil.rmtree(save_dir)
 #             build_scenarios(
@@ -43,27 +43,27 @@ from ultra.scenarios.analysis.base_analysis import BaseAnalysis
 #                 level_name="easy",
 #                 stopwatcher_behavior="aggressive",
 #                 stopwatcher_route="south-west",
-#                 root_path="ultra/tests/scenarios",
+#                 root_path="tests/scenarios",
 #                 save_dir=save_dir,
 #             )
-#             if not os.path.exists("ultra/tests/scenarios/output"):
-#                 os.makedirs("ultra/tests/scenarios/output")
+#             if not os.path.exists("tests/scenarios/output"):
+#                 os.makedirs("tests/scenarios/output")
 #             scenarios = glob.glob(f"{save_dir}/map*0*")
 #             os.system(
-#                 "python ultra/scenarios/interface.py analyze --scenarios ultra/tests/scenarios/maps/easy/map*0* --max-steps 2000 --end-by-stopwatcher --output ultra/tests/scenarios/output"
+#                 "python ultra/scenarios/interface.py analyze --scenarios tests/scenarios/maps/easy/map*0* --max-steps 2000 --end-by-stopwatcher --output tests/scenarios/output"
 #             )
-#             for dirpath, dirnames, files in os.walk("ultra/tests/scenarios/maps/easy/"):
+#             for dirpath, dirnames, files in os.walk("tests/scenarios/maps/easy/"):
 #                 if "traffic" in dirpath:
 #                     self.assertTrue("all.rou.xml" in files)
 
-#             self.assertTrue(os.path.exists("ultra/tests/scenarios/output/analysis.pkl"))
+#             self.assertTrue(os.path.exists("tests/scenarios/output/analysis.pkl"))
 #         except Exception as err:
 #             print(err)
 #             self.assertTrue(False)
 
 #     def test_analyze_scenario(self):
-#         save_dir = "ultra/tests/scenarios/maps/easy/"
-#         output_scenario = "ultra/tests/scenarios/output"
+#         save_dir = "tests/scenarios/maps/easy/"
+#         output_scenario = "tests/scenarios/output"
 #         if os.path.exists(save_dir):
 #             shutil.rmtree(save_dir)
 #         if os.path.exists(output_scenario):
@@ -74,7 +74,7 @@ from ultra.scenarios.analysis.base_analysis import BaseAnalysis
 #             level_name="easy",
 #             stopwatcher_behavior="aggressive",
 #             stopwatcher_route="south-west",
-#             root_path="ultra/tests/scenarios",
+#             root_path="tests/scenarios",
 #             save_dir=save_dir,
 #         )
 #         scenarios = glob.glob(f"{save_dir}/map*0*")
@@ -108,7 +108,7 @@ from ultra.scenarios.analysis.base_analysis import BaseAnalysis
 
 #     def test_save_histogram(self):
 #         try:
-#             figure_name = "ultra/tests/scenarios/output"
+#             figure_name = "tests/scenarios/output"
 #             if not os.path.exists(figure_name):
 #                 os.makedirs(figure_name)
 #             analyzer = BaseAnalysis()

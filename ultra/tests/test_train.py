@@ -36,14 +36,14 @@ class TrainTest(unittest.TestCase):
     def test_train_cli(self):
         try:
             os.system(
-                "python ultra/train.py --task 00 --level easy --episodes 1 --log-dir ultra/tests/logs"
+                "python ultra/train.py --task 00 --level easy --episodes 1 --log-dir tests/logs"
             )
         except Exception as err:
             print(err)
             self.assertTrue(False)
 
     def test_locate_log_directory(self):
-        log_dir = "ultra/tests/logs"
+        log_dir = "tests/logs"
         try:
             os.system(
                 f"python ultra/train.py --task 00 --level easy --policy ppo --episodes 1 --log-dir {log_dir}"
@@ -55,8 +55,8 @@ class TrainTest(unittest.TestCase):
             self.assertTrue(True)
 
     # def test_train_single_agent(self):
-    #     if os.path.exists("ultra/tests/logs"):
-    #         shutil.rmtree("ultra/tests/logs")
+    #     if os.path.exists("tests/logs"):
+    #         shutil.rmtree("tests/logs")
 
     #     os.system("pkill -9 ray")
 
@@ -75,7 +75,7 @@ class TrainTest(unittest.TestCase):
     #                     timestep_sec=0.1,
     #                     headless=True,
     #                     seed=2,
-    #                     log_dir="ultra/tests/logs",
+    #                     log_dir="tests/logs",
     #                 )
     #             ]
     #         )
@@ -114,7 +114,7 @@ class TrainTest(unittest.TestCase):
         self.assertIsInstance(agent, SACPolicy)
 
     def tearDown(self):
-        if os.path.exists("ultra/tests/logs"):
-            shutil.rmtree("ultra/tests/logs")
+        if os.path.exists("tests/logs"):
+            shutil.rmtree("tests/logs")
 
         os.system("pkill -9 ray")

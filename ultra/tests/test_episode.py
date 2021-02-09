@@ -112,7 +112,7 @@ class EpisodeTest(unittest.TestCase):
         def run_experiment():
             agent, env = prepare_test_env_agent()
             episode_count = 0
-            log_dir = "ultra/tests/logs"
+            log_dir = "tests/logs"
             for episode in episodes(2, etag="Train", dir=log_dir):
                 observations = env.reset()
                 total_step = 0
