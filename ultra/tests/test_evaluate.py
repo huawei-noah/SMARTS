@@ -36,38 +36,38 @@ class EvaluateTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         os.system(
-            "python ultra/scenarios/interface.py generate --task 00 --level eval_test --root-dir ultra/tests/scenarios --save-dir ultra/tests/task/eval_test/eval"
+            "python ultra/scenarios/interface.py generate --task 00 --level eval_test --root-dir tests/scenarios --save-dir tests/task/eval_test/eval"
         )
 
-        path = "ultra/tests/sac_test_models"
+        path = "tests/sac_test_models"
         if not os.path.exists(path):
             # Generate models before evaluation tests
             os.system(
-                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 8 --eval-rate 350 --eval-episodes 1 --log-dir ultra/tests/sac_test_models"
+                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 8 --eval-rate 350 --eval-episodes 1 --log-dir tests/sac_test_models"
             )
 
     # def test_a_folders(self):
-    #     path = "ultra/tests/sac_test_models"
+    #     path = "tests/sac_test_models"
     #     if not os.path.exists(path):
     #         self.assertTrue(False)
 
-    #     path = glob.glob("ultra/tests/sac_test_models/*/models")[0]
+    #     path = glob.glob("tests/sac_test_models/*/models")[0]
     #     if len(os.listdir(path)) == 0:
     #         self.assertTrue(False)
 
-    #     path = "ultra/tests/task/eval_test"
+    #     path = "tests/task/eval_test"
     #     if len(os.listdir(path)) <= 2:
     #         self.assertTrue(False)
 
     def test_evaluation_check(self):
-        log_dir = "ultra/tests/output_eval_check_logs"
+        log_dir = "tests/output_eval_check_logs"
         # @ray.remote(max_calls=1, num_gpus=0)
         def run_experiment():
             total_step = 0
             agent, env, spec = prepare_test_env_agent(headless=True)
             timestep_sec = env.timestep_sec
             policy_class = "ultra.baselines.sac:sac-v0"
-            log_dir = "ultra/tests/output_eval_check_logs"
+            log_dir = "tests/output_eval_check_logs"
 
             for episode in episodes(1, etag=policy_class, log_dir=log_dir):
                 observations = env.reset()
