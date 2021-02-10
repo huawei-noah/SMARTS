@@ -36,6 +36,13 @@ from helpers.scenario import temp_scenario
 
 
 @pytest.fixture
+def time_resolution(request):
+    tr = getattr(request, "param", 0.1)
+    assert tr >= 1e-10, "Should be a non-negative non-zero real number"
+    return tr
+
+
+@pytest.fixture
 def bubble(request):
     """
     |(93)  |(95)     (100)     (105)|  (107)|
@@ -65,9 +72,10 @@ def mock_provider():
 
 
 @pytest.fixture
-def smarts(scenarios, mock_provider):
+def smarts(scenarios, mock_provider, time_resolution):
     smarts_ = SMARTS(
-        agent_interfaces={}, traffic_sim=SumoTrafficSimulation(time_resolution=0.1),
+        agent_interfaces={},
+        traffic_sim=SumoTrafficSimulation(time_resolution=time_resolution,),
     )
     smarts_.add_provider(mock_provider)
     smarts_.reset(next(scenarios))
@@ -122,9 +130,11 @@ def test_bubble_manager_state_change(smarts, mock_provider):
         assert got_hijacked == hijacked, assert_msg
 
 
-@pytest.mark.parametrize("bubble", [t.BubbleLimits(1, 2)], indirect=True)
-def test_bubble_manager_limit(smarts, mock_provider):
+@pytest.mark.parametrize("bubble", [t.BubbleLimits(1, 1)], indirect=True)
+def test_bubble_manager_limit(smarts, mock_provider, time_resolution):
     vehicle_ids = ["vehicle-1", "vehicle-2", "vehicle-3"]
+    speed = 2.5
+    distance_per_step = speed * time_resolution
     for x in range(200):
         vehicle_ids = {
             v_id
@@ -136,27 +146,20 @@ def test_bubble_manager_limit(smarts, mock_provider):
             (
                 v_id,
                 Pose.from_center(
-                    (80 + y * 0.5 + x * 0.25, y * 4 - 4, 0), Heading(math.pi / 2)
+                    (80 + y * 0.5 + x * distance_per_step, y * 4 - 4, 0),
+                    Heading(-math.pi / 2),
                 ),
-                10,
+                speed,  # speed
             )
             for y, v_id in enumerate(vehicle_ids)
         ]
         mock_provider.override_next_provider_state(vehicles=vehicles)
         smarts.step({})
 
-    def get_vehicles_with_quality(func):
-        return {v_id for v_id in vehicle_ids if not func(v_id)}
-
-    hijacked = get_vehicles_with_quality(smarts.vehicle_index.vehicle_is_hijacked)
-    shadowed = get_vehicles_with_quality(smarts.vehicle_index.vehicle_is_shadowed)
-
     # 3 total vehicles, 1 hijacked and removed according to limit, 2 remaining
     assert (
-        len(hijacked) == 1
+        len(vehicle_ids) == 2
     ), "Only 1 vehicle should have been hijacked according to the limit"
-
-    assert len(shadowed) <= 2
 
 
 def test_vehicle_spawned_in_bubble_is_not_captured(smarts, mock_provider):
@@ -169,7 +172,7 @@ def test_vehicle_spawned_in_bubble_is_not_captured(smarts, mock_provider):
                 (
                     vehicle_id,
                     Pose.from_center((100 + x, 0, 0), Heading(-math.pi / 2)),
-                    10,
+                    10,  # speed
                 )
             ]
         )
@@ -187,7 +190,7 @@ def test_vehicle_spawned_outside_bubble_is_captured(smarts, mock_provider):
                 (
                     vehicle_id,
                     Pose.from_center((90 + x, 0, 0), Heading(-math.pi / 2)),
-                    10,
+                    10,  # speed
                 )
             ]
         )
