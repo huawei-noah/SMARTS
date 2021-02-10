@@ -32,7 +32,7 @@ class UltraPackageTest(unittest.TestCase):
 
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
-        
+
         save_dir = "tests/task/eval_test/eval"
 
         try:

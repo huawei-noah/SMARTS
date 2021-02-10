@@ -46,7 +46,7 @@ class EvaluateTest(unittest.TestCase):
         if not os.path.exists(path):
             # Generate models before evaluation tests
             os.system(
-                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 8 --eval-rate 200 --eval-episodes 1 --log-dir tests/sac_test_models"
+                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 10 --eval-rate 200 --eval-episodes 1 --log-dir tests/sac_test_models"
             )
 
     def test_a_folders(self):
