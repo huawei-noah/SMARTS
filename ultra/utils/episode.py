@@ -145,6 +145,9 @@ class Episode:
         self.last_eval_iteration = last_eval_iteration
         self.agents_itr = agents_itr
         self.agent_ids = agent_ids
+        self.agent_steps = {
+            agent_id: 1 for agent_id in self.agent_ids
+        }
 
     @property
     def sim2wall_ratio(self):
@@ -184,6 +187,9 @@ class Episode:
         self.info[self.active_tag] = {
             agent_id: LogInfo() for agent_id in self.agent_ids
         }
+        self.agent_steps = {
+            agent_id: 1 for agent_id in self.agent_ids
+        }
 
     def make_dir(self, dir_name):
         if not os.path.exists(dir_name):
@@ -209,11 +215,12 @@ class Episode:
         self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
         self.steps += 1
         self.agents_itr[agent_id] += 1
+        self.agent_steps[agent_id] += 1
 
     def record_episode(self):
         # Normalize some of the data; keep the rest as is.
         for agent_id in self.agent_ids:
-            steps_taken_by_agent = self.get_itr(agent_id) + 1
+            steps_taken_by_agent = self.agent_steps[agent_id]
             self.info[self.active_tag][agent_id].normalize(steps_taken_by_agent)
 
     def initialize_tb_writer(self):
