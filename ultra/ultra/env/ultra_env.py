@@ -174,15 +174,15 @@ class UltraEnv(HiWayEnv):
 
     def get_task(self, task_id, task_level):
         base_dir = os.path.dirname(__file__)
-        print(base_dir)
+        #print(base_dir)
         config_path = os.path.join(base_dir, "../../config.yaml")
-        print(config_path)
+        #print(config_path)
 
         with open(config_path, "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
-            print(scenarios)
+            #print(scenarios)
             task = scenarios[f"task{task_id}"][task_level]
-            print(task)
+            #print(task)
         return task
 
     @property
