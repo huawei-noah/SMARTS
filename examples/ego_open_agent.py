@@ -47,7 +47,6 @@ def main(scenarios, sim_name, headless, num_episodes, seed):
             agent_action = agent.act(agent_obs)
             observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
             episode.record_step(observations, rewards, dones, infos)
-            
 
         del agent
 

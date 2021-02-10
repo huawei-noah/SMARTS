@@ -299,7 +299,7 @@ class MissionPlanner:
     def uturn_waypoints(self, sim, pose: Pose, vehicle):
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
-        
+
         ## the position of ego car is here: [x, y]
         ego_position = pose.position[:2]
         ego_lane = self._road_network.nearest_lane(ego_position)
