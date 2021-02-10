@@ -24,8 +24,9 @@ jobs:
           cd ultra/
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install --upgrade pip
-          pip install -e .
+          pip install --upgrade --upgrade-strategy eager pip
+          pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade --upgrade-strategy eager -e .
           scl scenario build-all ultra/scenarios/pool
           pytest -v tests/test_ultra_package.py
 

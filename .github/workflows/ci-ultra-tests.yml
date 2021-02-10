@@ -37,7 +37,3 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
-      - name: Test ULTRA headers
-        run: |
-          cd ultra
-          ./header_test.sh
