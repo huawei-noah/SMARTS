@@ -350,7 +350,6 @@ class MissionPlanner:
             self._uturn_initial_distant = (
                 -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
             )
-            ## the position of kyber car [x, y] is here: neighborhood_vehicles[0].pose.position
 
             self._uturn_initial_velocity = neighborhood_vehicles[0].speed
             self._uturn_initial_height = 1 * (
@@ -425,6 +424,10 @@ class MissionPlanner:
                 speed_limit = neighborhood_vehicles[0].speed
 
         self._task_is_triggered = True
+        # uturn_activated_distance = math.sqrt((neighborhood_vehicles[0].pose.position[0]-ego_position[0])**2
+        #     +(neighborhood_vehicles[0].pose.position[1]-ego_position[1])**2
+        # )
+        # print(f"uturn activated at distance: {uturn_activated_distance}")
 
         target_lane_index = self._mission.task.target_lane_index
         target_lane_index = min(target_lane_index, len(oncoming_lanes) - 1)
