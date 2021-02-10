@@ -1,6 +1,6 @@
 name: ULTRA CI Base Tests
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   test:
@@ -37,3 +37,4 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
+
