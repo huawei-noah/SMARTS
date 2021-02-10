@@ -44,7 +44,7 @@ setup(
     zip_safe=True,
     python_requires=">=3.7",
     install_requires=[
-        "smarts[train]==0.4.6",  # Stable version
+        "smarts[train]==0.4.12",  # Stable version
         "setuptools>=41.0.0,!=50.0",
         "dill",
         "black==19.10b0",
