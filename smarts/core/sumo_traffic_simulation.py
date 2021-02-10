@@ -393,6 +393,8 @@ class SumoTrafficSimulation:
             self._create_vehicle(vehicle_id, dimensions)
             no_checks = 0b00000
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
+            # no_requirements = 0b000000000000
+            # self._traci_conn.vehicle.setLaneChangeMode(vehicle_id, no_requirements)
 
         # update the state of all current managed vehicles
         for vehicle_id in self._non_sumo_vehicle_ids:
@@ -430,6 +432,8 @@ class SumoTrafficSimulation:
         for vehicle_id in vehicles_that_have_become_external:
             no_checks = 0b00000
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
+            # no_requirements = 0b000000000000
+            # self._traci_conn.vehicle.setLaneChangeMode(vehicle_id, no_requirements)
             self._traci_conn.vehicle.setColor(
                 vehicle_id, SumoTrafficSimulation._social_agent_vehicle_color()
             )
@@ -445,6 +449,8 @@ class SumoTrafficSimulation:
             all_checks = 0b11111
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, all_checks)
             self._traci_conn.vehicle.setSpeed(vehicle_id, -1)
+            # default_requirements = 0b011001010101
+            # self._traci_conn.vehicle.setLaneChangeMode(vehicle_id, default_requirements)
 
         if self._endless_traffic:
             self._reroute_vehicles(traffic_vehicle_states)

@@ -21,7 +21,7 @@ class ChaseViaPointsAgent(Agent):
             len(obs.via_data.near_via_points) < 1
             or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
         ):
-            return (obs.waypoint_paths[0][0].speed_limit, 0)
+            return (obs.waypoint_paths[0][0].speed_limit -5, 0)
 
         nearest = obs.via_data.near_via_points[0]
         if nearest.lane_index == obs.ego_vehicle_state.lane_index:
@@ -49,7 +49,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         headless=headless,
         visdom=False,
         timestep_sec=0.1,
-        sumo_headless=True,
+        sumo_headless=False,
         seed=seed,
         # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.
         # envision_record_data_replay_path="./data_replay",
