@@ -27,11 +27,13 @@ from ultra.scenarios.generate_scenarios import build_scenarios
 
 class UltraPackageTest(unittest.TestCase):
     def test_simple_train_run(self):
-        save_dir = "tests/scenarios/maps/no-traffic/"
+        save_dir = "tests/task/eval_test/"
         log_dir = "tests/logs"
 
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
+        
+        save_dir = "tests/task/eval_test/eval"
 
         try:
             build_scenarios(
@@ -71,7 +73,9 @@ class UltraPackageTest(unittest.TestCase):
             ray.shutdown()
             assert False
 
-        if os.path.exists(save_dir):
+        save_dir = "tests/task/eval_test/"
+
+        if len(os.listdir(save_dir)) != 0:
             assert True
             shutil.rmtree(save_dir)
         else:
