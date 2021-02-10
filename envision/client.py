@@ -205,7 +205,7 @@ class Client:
                 else:
                     # when connection closed, retry again every 5 seconds
                     wait_between_retries = 5
-                    tries = 0
+                    self._log.info(f"Connection to Envision lost. Attempting to reconnect.")
 
                 tries += 1
                 time.sleep(wait_between_retries)
