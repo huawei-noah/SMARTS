@@ -83,7 +83,10 @@ class BaselineAdapter:
         else:
             self.state_size += self.social_capacity * self.num_social_features
 
-        pass
+        self.state_preprocessor = StatePreprocessor(
+            preprocess_state, to_2d_action, self.state_description
+        )
+
 
     @property
     def observation_space(self):
@@ -125,7 +128,7 @@ class BaselineAdapter:
         # print why this doesn't go through?
         print("Action>>>>>", model_action)
         throttle, brake, steering = model_action
-        print(M)
+        # print(M)
         return np.array([throttle, brake, steering * np.pi * 0.25])
 
     def observation_adapter(self, env_observation):

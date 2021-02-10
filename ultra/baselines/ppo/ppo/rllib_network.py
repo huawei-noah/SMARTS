@@ -19,55 +19,71 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import torch
+import torch, gym
 from torch import nn
 from torch.distributions.normal import Normal
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFCNet
 from ultra.baselines.common.state_preprocessor import *
 from ultra.baselines.ppo.ppo.network import PPONetwork
-
+from ray.rllib.utils.typing import ModelConfigDict
 
 class TorchPPOModel(TorchModelV2, nn.Module):
     """Example of interpreting repeated observations."""
 
-    def __init__(self, obs_space, action_space, num_outputs, model_config, name):
+    def __init__(self, obs_space: gym.spaces.Space,
+               action_space: gym.spaces.Space, num_outputs: int,
+               model_config: ModelConfigDict, name: str, **customized_model_kwargs):
         # why num_outputs==6 and it is not configured based on action_space??
-        super().__init__(obs_space, action_space, num_outputs, model_config, name)
+        # print(">>>>> num_outputs", num_outputs, name, customized_model_kwargs, model_config)
+        super(TorchPPOModel, self).__init__(obs_space=obs_space, action_space=action_space, num_outputs=num_outputs, model_config=model_config, name=name)
         nn.Module.__init__(self)
-        print(">>>>> num_outputs", num_outputs)
-        print(model_config)
-        # self.model = TorchFCNet(
-        #     obs_space, action_space, num_outputs, model_config, name
-        # )
-        # self.model = TorchFCNet(
-        #     obs_space, action_space, num_outputs, model_config, name
-        # )
-        self.torchmodel = PPONetwork(
-            action_size=2,
-            state_size=model_config["custom_model_config"]["adapter"].state_size,
-            hidden_units=model_config["custom_model_config"]["hidden_units"],
-            init_std=model_config["custom_model_config"]["init_std"],
-            seed=model_config["custom_model_config"]["seed"],
-            social_feature_encoder_class=model_config["custom_model_config"][
-                "adapter"
-            ].social_feature_encoder_class,
-            social_feature_encoder_params=model_config["custom_model_config"][
-                "adapter"
-            ].social_feature_encoder_params,
+
+        social_feature_encoder_class = customized_model_kwargs["adapter"].social_feature_encoder_class
+        social_feature_encoder_params = customized_model_kwargs["adapter"].social_feature_encoder_params
+        self.social_feature_encoder=social_feature_encoder_class(
+            **social_feature_encoder_params
+        )if social_feature_encoder_class else None
+
+
+        self.model = TorchFCNet(
+            obs_space, action_space, num_outputs, model_config, name
         )
+
+        # print(dir(self))
+        # print(Z)
+        # self.torchmodel = PPONetwork(
+        #     action_size=2,
+        #     state_size=customized_model_kwargs["adapter"].state_size,
+        #     hidden_units=customized_model_kwargs["hidden_units"],
+        #     init_std=customized_model_kwargs["init_std"],
+        #     seed=customized_model_kwargs["seed"],
+        #     social_feature_encoder_class=social_feature_encoder_class,
+        #     social_feature_encoder_params=social_feature_encoder_params,
+        # )
+
 
     def forward(self, input_dict, state, seq_lens):
 
-        print("**** obs", input_dict["obs"].keys())
-        dist, value = self.torchmodel(input_dict["obs"])
+        # print("**** obs", input_dict["obs"].keys())
+        low_dim_state = input_dict["obs"]["low_dim_states"]
+        social_vehicles_state = input_dict["obs"]["social_vehicles"]
 
-        print("ACTION", dist, value)
-        # return action ,[]
-        # dummy = self.model.forward(input_dict, state, seq_lens)
-        # print(dummy)
-        # print(M)
-        # todo why action_Space is 6 d?
+        # print("*** ", low_dim_state.shape)
+        # print("*** ", social_vehicles_state.shape)
+        social_feature = []
+        if self.social_feature_encoder is not None:
+            social_feature, social_encoder_aux_losses = self.social_feature_encoder(
+                social_vehicles_state, training
+            )
+            aux_losses.update(social_encoder_aux_losses)
+        else:
+            social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
+
+        input_dict["obs"]["social_vehicles"] = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
+
+        return self.model.forward(input_dict, state, seq_lens)
+        
 
     def value_function(self):
         return self.model.value_function()

@@ -75,7 +75,7 @@ class Callbacks(DefaultCallbacks):
         **kwargs,
     ):
         # episode.user_data["ego_speed"] = []
-        print("episode started......")
+        print(f"{episode.episode_id} started......")
 
     @staticmethod
     def on_episode_step(
@@ -85,7 +85,8 @@ class Callbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        print("EPISODE STEP")
+        print(f"total_reward:{episode.total_reward}, agent_rewards:{episode.agent_rewards},\
+         length:{episode.length}")
         single_agent_id = list(episode._agent_to_last_obs)[0]
         obs = episode.last_raw_obs_for(single_agent_id)
         # episode.user_data["ego_speed"].append(obs["speed"])
@@ -181,7 +182,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         )
     }
     tune_config = {
-        # "env": RLlibUltraEnv,
+        "env": RLlibUltraEnv,
         "log_level": "DEBUG",
         "callbacks": Callbacks,
         "framework": "torch",
@@ -217,23 +218,24 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     result_dir = "ray_results"
     result_dir = Path(result_dir).expanduser().resolve().absolute()
 
-    trainer = ppo.PPOTrainer(env=RLlibUltraEnv, config=tune_config)
+    # trainer = ppo.PPOTrainer(env=RLlibUltraEnv, config=tune_config)
+    # results = trainer.train()
 
-    # analysis = tune.run(
-    #     "PPO",
-    #     name="exp_1",
-    #     stop={"time_total_s": 1200},
-    #     checkpoint_freq=1,
-    #     checkpoint_at_end=True,
-    #     local_dir=str(result_dir),
-    #     resume=False,
-    #     restore=None,
-    #     max_failures=3,
-    #     num_samples=1,
-    #     export_formats=["model", "checkpoint"],
-    #     config=tune_config,
-    #     scheduler=pbt,
-    # )
+    analysis = tune.run(
+        "PPO",
+        name="exp_1",
+        stop={"time_total_s": 1200},
+        checkpoint_freq=1,
+        checkpoint_at_end=True,
+        local_dir=str(result_dir),
+        resume=False,
+        restore=None,
+        max_failures=3,
+        num_samples=1,
+        export_formats=["model", "checkpoint"],
+        config=tune_config,
+        scheduler=pbt,
+    )
     # print("DOne*****")
 
 
