@@ -3,7 +3,7 @@ name: ULTRA CI Package Tests
 on: [push, pull_request]
 
 jobs:
-    test-package:
+  test-package:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.3-pre
