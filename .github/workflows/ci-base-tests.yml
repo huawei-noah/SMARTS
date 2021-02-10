@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         tests:
-          # - ./envision
+          - ./envision
           - ./smarts/contrib
           - ./smarts/core
           - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
