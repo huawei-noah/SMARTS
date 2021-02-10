@@ -36,6 +36,7 @@ jobs:
         run: |
           cd ultra
           . .venv/bin/activate
+          export PYTHONPATH="/__w/SMARTS/SMARTS/ultra/"
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
           --ignore=./tests/test_ultra_package.py
