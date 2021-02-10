@@ -37,4 +37,5 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
+          --ignore=./tests/test_ultra_package.py
 
