@@ -13,7 +13,7 @@ gen_missions(
     scenario=scenario,
     missions=[
         Mission(
-            route=Route(begin=('edge-west-WE', 0, 0), end=('edge-west-EW', 0, 'max')),
+            route=Route(begin=('edge-west-WE', 0, 50), end=('edge-west-EW', 0, 100)),
             task=UTurn(),
         ),
     ],
