@@ -3,16 +3,12 @@ from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
-    EndlessMission,
     Flow,
-    JunctionEdgeIDResolver,
     Mission,
-    RandomRoute,
     Route,
     Scenario,
     Traffic,
     TrafficActor,
-    Via,
     CutIn,
 )
 
