@@ -179,9 +179,9 @@ class Bubble:
             hijackable = len(all_hijacked_vehicle_ids) < (
                 self._limit.hijack_limit or maxsize
             )
-            shadowable = len(all_shadowed_vehicle_ids) < (
-                self._limit.shadow_limit or maxsize
-            )
+            shadowable = len(all_shadowed_vehicle_ids) + len(
+                all_hijacked_vehicle_ids
+            ) < (self._limit.shadow_limit or maxsize)
 
         return hijackable, shadowable
 
@@ -261,7 +261,7 @@ class Cursor:
         in_bubble_zone, in_airlock_zone = bubble.in_bubble_or_airlock(pos)
         is_social = vehicle.id in index.social_vehicle_ids()
         is_hijacked, is_shadowed = index.vehicle_is_hijacked_or_shadowed(vehicle.id)
-        is_airlock_admissible, is_hijack_admissible = bubble.admissibility(
+        is_hijack_admissible, is_airlock_admissible = bubble.admissibility(
             vehicle.id, index, vehicle_ids_per_bubble, running_cursors
         )
         was_in_this_bubble = vehicle.id in vehicle_ids_per_bubble[bubble]
