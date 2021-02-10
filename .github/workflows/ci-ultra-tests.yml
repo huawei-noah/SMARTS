@@ -38,5 +38,6 @@ jobs:
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
       - name: Run Header test
+        run : |
           cd ultra
           ./header_test.sh
