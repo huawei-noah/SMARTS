@@ -1,6 +1,6 @@
 name: ULTRA CI Base Tests
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   test-base:
@@ -33,7 +33,6 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
-          --ignore=./tests/test_ultra_package.py 
       - name: Run Header test
         run : |
           cd ultra
