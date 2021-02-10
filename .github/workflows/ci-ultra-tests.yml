@@ -31,13 +31,9 @@ jobs:
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -e .
-          pip list
       - name: Run ultra tests
         run: |
           cd ultra
           . .venv/bin/activate
-          export PYTHONPATH="/__w/SMARTS/SMARTS/ultra/"
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
-          --ignore=./tests/test_ultra_package.py
-
