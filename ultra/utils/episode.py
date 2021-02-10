@@ -209,7 +209,7 @@ class Episode:
         if not os.path.exists(self.ep_log_dir):
             os.makedirs(self.ep_log_dir)
 
-    def record_step(self, agent_id, infos, rewards, loss_outputs=None, total_step=0):
+    def record_step(self, agent_id, infos, rewards, total_step=0, loss_outputs=None):
         if loss_outputs:
             self.log_loss(step=total_step, agent_id=agent_id, loss_outputs=loss_outputs)
         self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])

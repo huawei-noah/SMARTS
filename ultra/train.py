@@ -112,8 +112,8 @@ def train(
                 agent_id=AGENT_ID,
                 infos=infos,
                 rewards=rewards,
-                loss_outputs=loss_outputs,
                 total_step=total_step,
+                loss_outputs=loss_outputs,
             )
             total_step += 1
             state = next_state
