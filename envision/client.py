@@ -98,74 +98,76 @@ class Client:
         if endpoint is None:
             endpoint = "ws://localhost:8081"
 
-        # self._logging_thread = None
-        # self._logging_queue = Queue()
-        # if output_dir:
-        #     self._logging_thread = self._spawn_logging_thread(output_dir, client_id)
-        #     self._logging_thread.start()
+        self._logging_process = None
+        if output_dir:
+            output_dir = Path(f"{output_dir}/{int(time.time())}")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            path = (output_dir / client_id).with_suffix(".jsonl")
+            self._logging_queue = multiprocessing.Queue()
+            self._logging_process = multiprocessing.Process(
+                target=self._write_log_state,
+                args=(
+                    self._logging_queue, 
+                    path,
+                )
+            )
+            self._logging_process.daemon = True
+            self._logging_process.start()
 
         if not self._headless:
-            self._p_output, self._p_input = multiprocessing.Pipe()
+            self._state_queue = multiprocessing.Queue()
             self._process = multiprocessing.Process(
                 target=self._connect,
                 args=(
                     f"{endpoint}/simulations/{client_id}/broadcast",
-                    self._p_output,
+                    self._state_queue,
                     num_retries,
                     wait_between_retries,
-                    )
                 )
+            )
             self._process.daemon = True
             self._process.start()
     
-    # def _spawn_logging_thread(self, output_dir, client_id):
-    #     output_dir = Path(f"{output_dir}/{int(time.time())}")
-    #     output_dir.mkdir(parents=True, exist_ok=True)
-    #     path = (output_dir / client_id).with_suffix(".jsonl")
-    #     return threading.Thread(
-    #         target=self._write_log_state, args=(self._logging_queue, path), daemon=True
-    #     )
+    @staticmethod
+    def _write_log_state(queue, path):
+        with path.open("w", encoding="utf-8") as f:
+            while True:
+                state = queue.get()
+                if type(state) is Client.QueueDone:
+                    break
 
-    # @staticmethod
-    # def _write_log_state(queue, path):
-    #     with path.open("w", encoding="utf-8") as f:
-    #         while True:
-    #             state = queue.get()
-    #             if type(state) is Client.QueueDone:
-    #                 break
+                if not isinstance(state, str):
+                    state = unpack(state)
+                    state = json.dumps(state, cls=JSONEncoder)
 
-    #             if not isinstance(state, str):
-    #                 state = unpack(state)
-    #                 state = json.dumps(state, cls=JSONEncoder)
-
-    #             f.write(f"{state}\n")
+                f.write(f"{state}\n")
     
-    # @staticmethod
-    # def read_and_send(
-    #     path: str,
-    #     endpoint: str = "ws://localhost:8081",
-    #     timestep_sec: float = 0.1,
-    #     num_retries: int = 5,
-    #     wait_between_retries: float = 0.5,
-    # ):
-    #     client = Client(
-    #         endpoint=endpoint,
-    #         num_retries=num_retries,
-    #         wait_between_retries=wait_between_retries,
-    #     )
-    #     with open(path, "r") as f:
-    #         for line in f:
-    #             line = line.rstrip("\n")
-    #             time.sleep(timestep_sec)
-    #             client._send_raw(line)
+    @staticmethod
+    def read_and_send(
+        path: str,
+        endpoint: str = "ws://localhost:8081",
+        timestep_sec: float = 0.1,
+        num_retries: int = 5,
+        wait_between_retries: float = 0.5,
+    ):
+        client = Client(
+            endpoint=endpoint,
+            num_retries=num_retries,
+            wait_between_retries=wait_between_retries,
+        )
+        with open(path, "r") as f:
+            for line in f:
+                line = line.rstrip("\n")
+                time.sleep(timestep_sec)
+                client._send_raw(line)
 
-    #         client.teardown()
-    #         logging.info("Finished Envision data replay")
+            client.teardown()
+            logging.info("Finished Envision data replay")
     
     def _connect(
         self,
         endpoint,
-        p_output,
+        p_queue,
         num_retries: int = 50,
         wait_between_retries: float = 0.05,
     ):
@@ -195,7 +197,7 @@ class Client:
             connection_established = True
 
             while True:
-                state = p_output.recv()
+                state = p_queue.get()
                 if type(state) is Client.QueueDone:
                     ws.close()
                     break
@@ -226,28 +228,28 @@ class Client:
 
         run_socket(endpoint, num_retries, wait_between_retries)
 
+    @profiler.profile_line
     def send(self, state: types.State):
         if not self._headless and self._process.is_alive():
-            self._p_input.send(state)
-        # if self._logging_thread:
-        #     self._logging_queue.put(state)
+            self._state_queue.put(state)
+        if self._logging_process:
+            self._logging_queue.put(state)
 
-    # def _send_raw(self, state: str):
-    #     """Skip serialization if we already have serialized data. This is useful if
-    #     we are reading from file and forwarding through the websocket.
-    #     """
-    #     self._p_input.send(state)
+    def _send_raw(self, state: str):
+        """Skip serialization if we already have serialized data. This is useful if
+        we are reading from file and forwarding through the websocket.
+        """
+        self._state_queue.put(state)
 
     def teardown(self):
-        # self._logging_queue.put(Client.QueueDone())
-
         if not self._headless:
-            self._p_input.send(Client.QueueDone())
+            self._state_queue.put(Client.QueueDone())
             self._process.join(timeout=3)
             self._process = None
-            self._p_input.close()
-            self._p_output.close()
+            self._state_queue.close()
 
-        # if self._logging_thread:
-        #     self._logging_thread.join(timeout=3)
-        #     self._logging_thread = None
+        if self._logging_process:
+            self._logging_queue.put(Client.QueueDone())
+            self._logging_process.join(timeout=3)
+            self._logging_process = None
+            self._logging_queue.close()
