@@ -66,7 +66,7 @@ def train(
 
     agent = spec.build_agent()
 
-    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
+    for episode in episodes(num_episodes, agent_ids=[AGENT_ID], etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
@@ -97,25 +97,27 @@ def train(
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
             next_state = observations[AGENT_ID]
 
-            loss_output = agent.step(
-                state=state,
-                action=action,
-                reward=rewards[AGENT_ID],
-                next_state=next_state,
-                done=dones[AGENT_ID],
-            )
+            loss_outputs = {
+                AGENT_ID: agent.step(
+                    state=state,
+                    action=action,
+                    reward=rewards[AGENT_ID],
+                    next_state=next_state,
+                    done=dones[AGENT_ID],
+                )
+            }
             episode.record_step(
                 agent_id=AGENT_ID,
                 infos=infos,
                 rewards=rewards,
+                loss_outputs=loss_outputs,
                 total_step=total_step,
-                loss_output=loss_output,
             )
             total_step += 1
             state = next_state
 
         episode.record_episode()
-        episode.record_tensorboard(agent_id=AGENT_ID)
+        episode.record_tensorboard()
         if finished:
             break
 
