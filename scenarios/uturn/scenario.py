@@ -19,7 +19,7 @@ from smarts.sstudio.types import (
 ego_missions = [
     Mission(
         route=Route(begin=('edge-west-WE', 0, 30), end=('edge-west-EW', 0, 100)),
-        task=UTurn(initial_speed=10),
+        task=UTurn(initial_speed=20),
     ),
 ]
 
@@ -28,7 +28,7 @@ scenario = Scenario(
         "basic": Traffic(
             flows=[
                 Flow(
-                    route=Route(begin=('edge-west-EW', 0, 0), end=('edge-west-EW', 1, 'max')),
+                    route=Route(begin=('edge-west-EW', 0, 20), end=('edge-west-EW', 1, 'max')),
                     rate=400,
                     actors={TrafficActor(name="car"): 1.0},
                 )
