@@ -57,7 +57,6 @@ class LogInfo:
         }
 
     def add(self, infos, rewards):
-
         self.data["env_score"] += int(infos["logs"]["env_score"])
         self.data["speed"] += infos["logs"]["speed"]
         self.data["max_speed_violation"] += (
@@ -107,9 +106,10 @@ class Episode:
     def __init__(
         self,
         index,
+        agent_ids,
         agents_itr=defaultdict(lambda: 0),
         eval_count=0,
-        all_data=defaultdict(lambda: defaultdict(lambda: [])),
+        all_data=defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: []))),
         experiment_name=None,
         etag=None,
         tb_writer=None,
@@ -144,6 +144,7 @@ class Episode:
         self.tb_writer = tb_writer
         self.last_eval_iteration = last_eval_iteration
         self.agents_itr = agents_itr
+        self.agent_ids = agent_ids
 
     @property
     def sim2wall_ratio(self):
@@ -180,36 +181,40 @@ class Episode:
         self.timestep_sec = 0.1
         self.steps = 1
         self.active_tag = mode
-        self.info[self.active_tag] = LogInfo()
+        self.info[self.active_tag] = {
+            agent_id: LogInfo() for agent_id in self.agent_ids
+        }
 
     def make_dir(self, dir_name):
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
-    def log_loss(self, step, loss_output):
+    def log_loss(self, step, agent_id, loss_outputs):
         self.initialize_tb_writer()
-        for key, data in loss_output.items():
+        for key, data in loss_outputs[agent_id].items():
             if step % data["freq"]:
                 if data["type"] == "scalar":
-                    self.tb_writer.add_scalar(key, data["data"], step)
+                    self.tb_writer.add_scalar("{}/{}".format(agent_id, key), data["data"], step)
                 else:
-                    self.tb_writer.add_histogram(key, data["data"], step)
+                    self.tb_writer.add_histogram("{}/{}".format(agent_id, key), data["data"], step)
 
     def save_episode(self, episode_count):
         self.ep_log_dir = "{}/episode_{}".format(self.log_dir, episode_count)
         if not os.path.exists(self.ep_log_dir):
             os.makedirs(self.ep_log_dir)
 
-    def record_step(self, agent_id, infos, rewards, total_step=0, loss_output=None):
-        if loss_output:
-            self.log_loss(step=total_step, loss_output=loss_output)
-        self.info[self.active_tag].add(infos[agent_id], rewards[agent_id])
+    def record_step(self, agent_id, infos, rewards, loss_outputs=None, total_step=0):
+        if loss_outputs:
+            self.log_loss(step=total_step, agent_id=agent_id, loss_outputs=loss_outputs)
+        self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
         self.steps += 1
         self.agents_itr[agent_id] += 1
 
     def record_episode(self):
-        # normalize some of the data; keep the rest as is
-        self.info[self.active_tag].normalize(self.steps)
+        # Normalize some of the data; keep the rest as is.
+        for agent_id in self.agent_ids:
+            steps_taken_by_agent = self.get_itr(agent_id) + 1
+            self.info[self.active_tag][agent_id].normalize(steps_taken_by_agent)
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
@@ -219,25 +224,31 @@ class Episode:
             self.make_dir(self.log_dir)
             self.make_dir(self.model_dir)
 
-    def record_tensorboard(self, agent_id, save_codes=None):
-        # only create tensorboard once from training process
+    def record_tensorboard(self, save_codes=None):
+        # Only create tensorboard once from training process.
         self.initialize_tb_writer()
-        agent_itr = self.get_itr(agent_id)
-        data = {}
-        for key, value in self.info[self.active_tag].data.items():
-            if not isinstance(value, (list, tuple, np.ndarray)):
-                self.tb_writer.add_scalar(
-                    "{}/{}".format(self.active_tag, key), value, agent_itr
-                )
-                data[key] = value
+
+        for agent_id in self.agent_ids:
+            agent_itr = self.get_itr(agent_id)
+            data = {}
+
+            for key, value in self.info[self.active_tag][agent_id].data.items():
+                if not isinstance(value, (list, tuple, np.ndarray)):
+                    self.tb_writer.add_scalar(
+                        "{}/{}/{}".format(self.active_tag, agent_id, key),
+                        value,
+                        agent_itr,
+                    )
+                    data[key] = value
+            self.all_data[self.active_tag][agent_id][agent_itr] = data
+
         pkls_dir = f"{self.pkls}/{self.active_tag}"
         if not os.path.exists(pkls_dir):
             os.makedirs(pkls_dir)
-        self.all_data[self.active_tag][agent_itr] = data
         with open(f"{pkls_dir}/results.pkl", "wb") as handle:
             dill.dump(self.all_data[self.active_tag], handle)
 
-        if save_codes and not os.path.exists(self.code_dir):  # save once
+        if save_codes and not os.path.exists(self.code_dir):  # Save once.
             self.make_dir(self.code_dir)
             for code_path in save_codes:
                 try:
@@ -249,7 +260,7 @@ class Episode:
                     pass
 
 
-def episodes(n, etag=None, log_dir=None):
+def episodes(n, agent_ids, etag=None, log_dir=None):
     col_width = 18
     with tp.TableContext(
         [f"Episode", f"Sim/Wall", f"Total Steps", f"Steps/Sec", f"Score",],
@@ -260,11 +271,12 @@ def episodes(n, etag=None, log_dir=None):
         experiment_name = None
         last_eval_iteration = None
         eval_count = 0
-        all_data = defaultdict(lambda: defaultdict(lambda: []))
+        all_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [])))
         agents_itr = defaultdict(lambda: 0)
         for i in range(n):
             e = Episode(
                 index=i,
+                agent_ids=agent_ids,
                 experiment_name=experiment_name,
                 tb_writer=tb_writer,
                 etag=etag,
@@ -282,14 +294,19 @@ def episodes(n, etag=None, log_dir=None):
             eval_count = e.eval_count
             agents_itr = e.agents_itr
             if e.active_tag:
+                agent_rewards_strings = [
+                    "Agent {}: {:.4f}".format(
+                        agent_id, e.info[e.active_tag][agent_id].data["episode_reward"],
+                    )
+                    for agent_id in agent_ids
+                ]
                 row = (
                     f"{e.index}/{n}",
                     f"{e.sim2wall_ratio:.2f}",
                     f"{e.steps}",
                     f"{e.steps_per_second:.2f}",
-                    f"{e.info[e.active_tag].data['episode_reward']:.4f}",
+                    ", ".join(agent_rewards_strings),
                 )
                 table(row)
-
             else:
                 table(("", "", "", "", ""))
