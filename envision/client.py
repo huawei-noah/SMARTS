@@ -39,8 +39,6 @@ from typing import Union
 from envision import types
 from smarts.core.utils.file import unpack
 
-import cProfile
-from envision import profiler
 
 class JSONEncoder(json.JSONEncoder):
     """This custom encoder is to support serializing more complex data from SMARTS
@@ -105,11 +103,7 @@ class Client:
             path = (output_dir / client_id).with_suffix(".jsonl")
             self._logging_queue = multiprocessing.Queue()
             self._logging_process = multiprocessing.Process(
-                target=self._write_log_state,
-                args=(
-                    self._logging_queue, 
-                    path,
-                )
+                target=self._write_log_state, args=(self._logging_queue, path,)
             )
             self._logging_process.daemon = True
             self._logging_process.start()
@@ -123,11 +117,11 @@ class Client:
                     self._state_queue,
                     num_retries,
                     wait_between_retries,
-                )
+                ),
             )
             self._process.daemon = True
             self._process.start()
-    
+
     @staticmethod
     def _write_log_state(queue, path):
         with path.open("w", encoding="utf-8") as f:
@@ -141,7 +135,7 @@ class Client:
                     state = json.dumps(state, cls=JSONEncoder)
 
                 f.write(f"{state}\n")
-    
+
     @staticmethod
     def read_and_send(
         path: str,
@@ -163,11 +157,11 @@ class Client:
 
             client.teardown()
             logging.info("Finished Envision data replay")
-    
+
     def _connect(
         self,
         endpoint,
-        p_queue,
+        state_queue,
         num_retries: int = 50,
         wait_between_retries: float = 0.05,
     ):
@@ -197,7 +191,7 @@ class Client:
             connection_established = True
 
             while True:
-                state = p_queue.get()
+                state = state_queue.get()
                 if type(state) is Client.QueueDone:
                     ws.close()
                     break
@@ -228,7 +222,6 @@ class Client:
 
         run_socket(endpoint, num_retries, wait_between_retries)
 
-    @profiler.profile_line
     def send(self, state: types.State):
         if not self._headless and self._process.is_alive():
             self._state_queue.put(state)
