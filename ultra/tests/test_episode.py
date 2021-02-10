@@ -50,7 +50,7 @@ class EpisodeTest(unittest.TestCase):
                 "off_route": 0,
                 "reached_goal": 0,
             }
-            for episode in episodes(1, etag="Train"):
+            for episode in episodes(1, agent_ids=[AGENT_ID], etag="Train"):
                 observations = env.reset()
                 total_step = 0
                 episode.reset()
@@ -62,13 +62,15 @@ class EpisodeTest(unittest.TestCase):
                     observations, rewards, dones, infos = env.step({AGENT_ID: action})
                     next_state = observations[AGENT_ID]
                     # observations[AGENT_ID]["ego"].update(rewards[AGENT_ID]["log"])
-                    loss_output = agent.step(
-                        state=state,
-                        action=action,
-                        reward=rewards[AGENT_ID],
-                        next_state=next_state,
-                        done=dones[AGENT_ID],
-                    )
+                    loss_outputs = {
+                        AGENT_ID: agent.step(
+                            state=state,
+                            action=action,
+                            reward=rewards[AGENT_ID],
+                            next_state=next_state,
+                            done=dones[AGENT_ID],
+                        )
+                    }
 
                     for key in result.keys():
                         if key in observations[AGENT_ID]:
@@ -84,7 +86,7 @@ class EpisodeTest(unittest.TestCase):
                         infos=infos,
                         rewards=rewards,
                         total_step=total_step,
-                        loss_output=loss_output,
+                        loss_outputs=loss_outputs,
                     )
 
                     state = next_state
