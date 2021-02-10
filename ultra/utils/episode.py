@@ -145,9 +145,7 @@ class Episode:
         self.last_eval_iteration = last_eval_iteration
         self.agents_itr = agents_itr
         self.agent_ids = agent_ids
-        self.agent_steps = {
-            agent_id: 1 for agent_id in self.agent_ids
-        }
+        self.agent_steps = {agent_id: 1 for agent_id in self.agent_ids}
 
     @property
     def sim2wall_ratio(self):
@@ -187,9 +185,7 @@ class Episode:
         self.info[self.active_tag] = {
             agent_id: LogInfo() for agent_id in self.agent_ids
         }
-        self.agent_steps = {
-            agent_id: 1 for agent_id in self.agent_ids
-        }
+        self.agent_steps = {agent_id: 1 for agent_id in self.agent_ids}
 
     def make_dir(self, dir_name):
         if not os.path.exists(dir_name):
@@ -200,9 +196,13 @@ class Episode:
         for key, data in loss_outputs[agent_id].items():
             if step % data["freq"]:
                 if data["type"] == "scalar":
-                    self.tb_writer.add_scalar("{}/{}".format(agent_id, key), data["data"], step)
+                    self.tb_writer.add_scalar(
+                        "{}/{}".format(agent_id, key), data["data"], step
+                    )
                 else:
-                    self.tb_writer.add_histogram("{}/{}".format(agent_id, key), data["data"], step)
+                    self.tb_writer.add_histogram(
+                        "{}/{}".format(agent_id, key), data["data"], step
+                    )
 
     def save_episode(self, episode_count):
         self.ep_log_dir = "{}/episode_{}".format(self.log_dir, episode_count)
