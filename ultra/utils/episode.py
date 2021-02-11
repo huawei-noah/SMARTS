@@ -118,7 +118,7 @@ class Episode:
         last_eval_iteration=None,
         log_dir=None,
     ):
-        self.info = {}
+        self.info = defaultdict(lambda: defaultdict(lambda: LogInfo()))
         self.all_data = all_data
         self.index = index
         self.eval_count = eval_count
