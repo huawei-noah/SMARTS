@@ -188,9 +188,9 @@ class Episode:
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
-    def log_loss(self, step, agent_id, loss_outputs):
+    def log_loss(self, step, agent_id, loss_output):
         self.initialize_tb_writer()
-        for key, data in loss_outputs[agent_id].items():
+        for key, data in loss_output.items():
             if step % data["freq"]:
                 if data["type"] == "scalar":
                     self.tb_writer.add_scalar(
@@ -206,9 +206,9 @@ class Episode:
         if not os.path.exists(self.ep_log_dir):
             os.makedirs(self.ep_log_dir)
 
-    def record_step(self, agent_id, infos, rewards, total_step=0, loss_outputs=None):
-        if loss_outputs:
-            self.log_loss(step=total_step, agent_id=agent_id, loss_outputs=loss_outputs)
+    def record_step(self, agent_id, infos, rewards, total_step=0, loss_output=None):
+        if loss_output:
+            self.log_loss(step=total_step, agent_id=agent_id, loss_output=loss_output)
         self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
         self.info[self.active_tag][agent_id].step()
         self.steps += 1

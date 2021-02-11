@@ -62,15 +62,13 @@ class EpisodeTest(unittest.TestCase):
                     observations, rewards, dones, infos = env.step({AGENT_ID: action})
                     next_state = observations[AGENT_ID]
                     # observations[AGENT_ID]["ego"].update(rewards[AGENT_ID]["log"])
-                    loss_outputs = {
-                        AGENT_ID: agent.step(
-                            state=state,
-                            action=action,
-                            reward=rewards[AGENT_ID],
-                            next_state=next_state,
-                            done=dones[AGENT_ID],
-                        )
-                    }
+                    loss_output = agent.step(
+                        state=state,
+                        action=action,
+                        reward=rewards[AGENT_ID],
+                        next_state=next_state,
+                        done=dones[AGENT_ID],
+                    )
 
                     for key in result.keys():
                         if key in observations[AGENT_ID]:
@@ -86,7 +84,7 @@ class EpisodeTest(unittest.TestCase):
                         infos=infos,
                         rewards=rewards,
                         total_step=total_step,
-                        loss_outputs=loss_outputs,
+                        loss_output=loss_output,
                     )
 
                     state = next_state
