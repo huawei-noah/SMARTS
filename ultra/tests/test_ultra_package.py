@@ -67,7 +67,7 @@ class UltraPackageTest(unittest.TestCase):
                 ]
             )
             ray.shutdown()
-            self.assertFalse(True)
+            self.assertTrue(True)
         except ray.exceptions.WorkerCrashedError as err:
             print(err)
             ray.shutdown()
@@ -76,13 +76,13 @@ class UltraPackageTest(unittest.TestCase):
         save_dir = "tests/task/eval_test/"
 
         if len(os.listdir(save_dir)) != 0:
-            self.assertFalse(True)
+            self.assertTrue(True)
             shutil.rmtree(save_dir)
         else:
             self.assertTrue(False)
 
         if os.path.exists(log_dir):
-            self.assertFalse(True)
+            self.assertTrue(True)
             shutil.rmtree(log_dir)
         else:
             self.assertTrue(False)
