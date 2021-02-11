@@ -25,7 +25,6 @@ import logging
 import multiprocessing
 import numpy as np
 import re
-import threading
 import time
 import uuid
 import warnings
@@ -76,7 +75,6 @@ class Client:
     def __init__(
         self,
         endpoint: str = None,
-        num_retries: int = 5,
         wait_between_retries: float = 0.5,
         output_dir: str = None,
         sim_name: str = None,
@@ -115,7 +113,6 @@ class Client:
                 args=(
                     f"{endpoint}/simulations/{client_id}/broadcast",
                     self._state_queue,
-                    num_retries,
                     wait_between_retries,
                 ),
             )
@@ -141,14 +138,9 @@ class Client:
         path: str,
         endpoint: str = "ws://localhost:8081",
         timestep_sec: float = 0.1,
-        num_retries: int = 5,
         wait_between_retries: float = 0.5,
     ):
-        client = Client(
-            endpoint=endpoint,
-            num_retries=num_retries,
-            wait_between_retries=wait_between_retries,
-        )
+        client = Client(endpoint=endpoint, wait_between_retries=wait_between_retries,)
         with open(path, "r") as f:
             for line in f:
                 line = line.rstrip("\n")
@@ -159,11 +151,7 @@ class Client:
             logging.info("Finished Envision data replay")
 
     def _connect(
-        self,
-        endpoint,
-        state_queue,
-        num_retries: int = 50,
-        wait_between_retries: float = 0.05,
+        self, endpoint, state_queue, wait_between_retries: float = 0.05,
     ):
         connection_established = False
 
@@ -198,10 +186,10 @@ class Client:
 
                 optionally_serialize_and_write(state, ws)
 
-        def run_socket(endpoint, num_retries, wait_between_retries):
+        def run_socket(endpoint, wait_between_retries):
             nonlocal connection_established
             tries = 1
-            while tries <= num_retries and not connection_established:
+            while True:
                 ws = websocket.WebSocketApp(
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
@@ -213,14 +201,18 @@ class Client:
                     ws.run_forever()
 
                 if not connection_established:
+                    self._log.info(f"Attempt {tries} to connect to Envision.")
+                else:
+                    # When connection lost, retry again every 3 seconds
+                    wait_between_retries = 3
                     self._log.info(
-                        f"Attempting to connect to Envision tries={tries}/{num_retries}"
+                        f"Connection to Envision lost. Attempt {tries} to reconnect."
                     )
 
-                    tries += 1
-                    time.sleep(wait_between_retries)
+                tries += 1
+                time.sleep(wait_between_retries)
 
-        run_socket(endpoint, num_retries, wait_between_retries)
+        run_socket(endpoint, wait_between_retries)
 
     def send(self, state: types.State):
         if not self._headless and self._process.is_alive():

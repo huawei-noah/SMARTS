@@ -175,15 +175,25 @@ class LaneFollowingController:
         velocity_error_damping_term = (
             speed_error - state.speed_error
         ) / sim.timestep_sec
+        # 5.5 is the gain of feedforward term for throttle. This term is
+        # directly related to the steering angle, this is added to further
+        # enhance the speed tracking performance. TODO: currently, the bullet
+        # does not provide the lateral acceleration which is needed for
+        # calculating the front laterl force. we need to replace the coefficent
+        # with better approximation of the front lateral forces using explicit
+        # differention.
+        lateral_force_coefficient = 1.5
+        if vehicle.speed < 8 or target_speed < 6:
+            lateral_force_coefficient = 0
         # 0.2 is the coefficent of d-controller for speed tracking
         # 0.1 is the coefficent of I-controller for speed tracking
-        # 5.5 is the gain of feedforward term. This term is directly
-        # related to the steering angle, this is added to further enhance
-        # the speed tracking performance.
         raw_throttle += (
             -0.2 * velocity_error_damping_term
             - 0.1 * state.integral_speed_error
-            + abs(5.5 * math.sin(state.steering_state * vehicle.max_steering_wheel))
+            + abs(
+                lateral_force_coefficient
+                * math.sin(state.steering_state * vehicle.max_steering_wheel)
+            )
         )
         state.speed_error = speed_error
         # If the distance of the vehicle to the ahead point for which
