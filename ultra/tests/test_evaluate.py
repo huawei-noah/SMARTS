@@ -36,38 +36,41 @@ class EvaluateTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         os.system(
-            "python ultra/scenarios/interface.py generate --task 00 --level eval_test --root-dir ultra/tests/scenarios --save-dir ultra/tests/task/eval_test/eval"
+            "python ultra/scenarios/interface.py generate --task 00 --level eval_test --root-dir tests/scenarios --save-dir tests/task/eval_test/eval"
         )
 
-        path = "ultra/tests/sac_test_models"
+        path = "tests/sac_test_models"
+        if os.path.exists(path):
+            shutil.rmtree(path)
+
         if not os.path.exists(path):
             # Generate models before evaluation tests
             os.system(
-                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 8 --eval-rate 350 --eval-episodes 1 --log-dir ultra/tests/sac_test_models"
+                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 10 --eval-rate 200 --eval-episodes 1 --log-dir tests/sac_test_models"
             )
 
-    # def test_a_folders(self):
-    #     path = "ultra/tests/sac_test_models"
-    #     if not os.path.exists(path):
-    #         self.assertTrue(False)
+    def test_a_folders(self):
+        path = "tests/sac_test_models"
+        if not os.path.exists(path):
+            self.assertTrue(False)
 
-    #     path = glob.glob("ultra/tests/sac_test_models/*/models")[0]
-    #     if len(os.listdir(path)) == 0:
-    #         self.assertTrue(False)
+        path = glob.glob("tests/sac_test_models/*/models")[0]
+        if len(os.listdir(path)) == 0:
+            self.assertTrue(False)
 
-    #     path = "ultra/tests/task/eval_test"
-    #     if len(os.listdir(path)) <= 2:
-    #         self.assertTrue(False)
+        path = "tests/task/eval_test"
+        if len(os.listdir(path)) <= 2:
+            self.assertTrue(False)
 
     def test_evaluation_check(self):
-        log_dir = "ultra/tests/output_eval_check_logs"
+        log_dir = "tests/output_eval_check_logs"
         # @ray.remote(max_calls=1, num_gpus=0)
         def run_experiment():
             total_step = 0
             agent, env, spec = prepare_test_env_agent(headless=True)
             timestep_sec = env.timestep_sec
             policy_class = "ultra.baselines.sac:sac-v0"
-            log_dir = "ultra/tests/output_eval_check_logs"
+            log_dir = "tests/output_eval_check_logs"
 
             for episode in episodes(1, etag=policy_class, log_dir=log_dir):
                 observations = env.reset()
@@ -137,8 +140,8 @@ class EvaluateTest(unittest.TestCase):
             shutil.rmtree(log_dir)
 
     def test_evaluate_cli(self):
-        log_dir = "ultra/tests/output_eval_cli_logs/"
-        model_dir = glob.glob("ultra/tests/sac_test_models/*/models")[0]
+        log_dir = "tests/output_eval_cli_logs/"
+        model_dir = glob.glob("tests/sac_test_models/*/models")[0]
         ray.shutdown()
         try:
             os.system(
@@ -149,10 +152,16 @@ class EvaluateTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
+        if not os.listdir(log_dir):
+            raise "Evaluation failed to generate new experiment folder"
+            self.assertTrue(False)
+        else:
+            shutil.rmtree(log_dir)
+
     def test_evaluate_agent(self):
         seed = 2
-        model = glob.glob("ultra/tests/sac_test_models/*/models/")[0]
-        log_dir = "ultra/tests/output_eval_agent_logs"
+        model = glob.glob("tests/sac_test_models/*/models/")[0]
+        log_dir = "tests/output_eval_agent_logs"
         policy_class = "ultra.baselines.sac:sac-v0"
 
         if not os.path.exists(log_dir):
@@ -190,14 +199,14 @@ class EvaluateTest(unittest.TestCase):
 
         def extract(path):
             m = re.search(
-                "ultra(\.)*([a-zA-Z0-9_]*\.)+([a-zA-Z0-9_])+\:[a-zA-Z0-9_]+((\-)*[a-zA-Z0-9_]*)*",
+                "ultra(.)*([a-zA-Z0-9_]*.)+([a-zA-Z0-9_])+:[a-zA-Z0-9_]+((-)*[a-zA-Z0-9_]*)*",
                 path,
             )
 
             try:
                 policy_class = m.group(0)
             except AttributeError as e:
-                assert False
+                self.assertTrue(False)
 
         for path in paths:
             extract(path)

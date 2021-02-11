@@ -28,6 +28,7 @@ import numpy as np
 from scipy.spatial import distance
 import math
 from sys import path
+import os
 
 path.append("./ultra")
 from ultra.utils.common import (
@@ -172,9 +173,16 @@ class UltraEnv(HiWayEnv):
         return observations, rewards, agent_dones, infos
 
     def get_task(self, task_id, task_level):
-        with open("ultra/config.yaml", "r") as task_file:
+        base_dir = os.path.dirname(__file__)
+        # print(base_dir)
+        config_path = os.path.join(base_dir, "../../config.yaml")
+        # print(config_path)
+
+        with open(config_path, "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
+            # print(scenarios)
             task = scenarios[f"task{task_id}"][task_level]
+            # print(task)
         return task
 
     @property

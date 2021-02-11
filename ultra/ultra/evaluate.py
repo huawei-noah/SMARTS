@@ -52,6 +52,9 @@ def evaluation_check(
 ):
     agent_itr = episode.get_itr(agent_id)
 
+    print(
+        f"Agent iteration : {agent_itr}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
+    )
     if (agent_itr + 1) % eval_rate == 0 and episode.last_eval_iteration != agent_itr:
         checkpoint_dir = episode.checkpoint_dir(agent_itr)
         agent.save(checkpoint_dir)
@@ -183,7 +186,7 @@ if __name__ == "__main__":
         os.makedirs(args.log_dir)
 
     m = re.search(
-        "ultra(\.)*([a-zA-Z0-9_]*\.)+([a-zA-Z0-9_])+\:[a-zA-Z0-9_]+((\-)*[a-zA-Z0-9_]*)*",
+        "ultra(.)*([a-zA-Z0-9_]*.)+([a-zA-Z0-9_])+:[a-zA-Z0-9_]+((-)*[a-zA-Z0-9_]*)*",
         args.models,
     )
 
@@ -202,6 +205,8 @@ if __name__ == "__main__":
     sorted_models = sorted(
         glob.glob(f"{args.models}/*"), key=lambda x: int(x.split("/")[-1])
     )
+    base_dir = os.path.dirname(__file__)
+    pool_path = os.path.join(base_dir, "agent_pool.json")
 
     ray.init()
     try:
