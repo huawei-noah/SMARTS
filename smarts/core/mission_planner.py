@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import random
 import math
+import logging
 from typing import Optional
 
 import numpy as np
@@ -45,6 +46,7 @@ class MissionPlanner:
     def __init__(
         self, waypoints: Waypoints, road_network: SumoRoadNetwork, agent_behavior=None
     ):
+        self._log = logging.getLogger(self.__class__.__name__)
         self._waypoints = waypoints
         self._agent_behavior = agent_behavior or AgentBehavior(aggressiveness=5)
         self._mission = None
@@ -424,10 +426,6 @@ class MissionPlanner:
                 speed_limit = neighborhood_vehicles[0].speed
 
         self._task_is_triggered = True
-        # uturn_activated_distance = math.sqrt((neighborhood_vehicles[0].pose.position[0]-ego_position[0])**2
-        #     +(neighborhood_vehicles[0].pose.position[1]-ego_position[1])**2
-        # )
-        # print(f"uturn activated at distance: {uturn_activated_distance}")
 
         target_lane_index = self._mission.task.target_lane_index
         target_lane_index = min(target_lane_index, len(oncoming_lanes) - 1)
@@ -472,6 +470,9 @@ class MissionPlanner:
                 lane_index=lane_index,
             )
             trajectory.append(wp)
+
+        uturn_activated_distance = math.sqrt(horizontal_distant**2+vertical_distant**2)
+        self._log.info(f'U-turn activated at distance: {uturn_activated_distance}')
         return [trajectory]
 
     def paths_of_lane_at(self, lane, offset, lookahead=30):
