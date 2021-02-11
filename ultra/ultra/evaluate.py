@@ -186,7 +186,7 @@ if __name__ == "__main__":
         os.makedirs(args.log_dir)
 
     m = re.search(
-        "ultra(\.)*([a-zA-Z0-9_]*\.)+([a-zA-Z0-9_])+\:[a-zA-Z0-9_]+((\-)*[a-zA-Z0-9_]*)*",
+        "ultra(.)*([a-zA-Z0-9_]*.)+([a-zA-Z0-9_])+:[a-zA-Z0-9_]+((-)*[a-zA-Z0-9_]*)*",
         args.models,
     )
 

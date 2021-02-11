@@ -199,7 +199,7 @@ class EvaluateTest(unittest.TestCase):
 
         def extract(path):
             m = re.search(
-                "ultra(\.)*([a-zA-Z0-9_]*\.)+([a-zA-Z0-9_])+\:[a-zA-Z0-9_]+((\-)*[a-zA-Z0-9_]*)*",
+                "ultra(.)*([a-zA-Z0-9_]*.)+([a-zA-Z0-9_])+:[a-zA-Z0-9_]+((-)*[a-zA-Z0-9_]*)*",
                 path,
             )
 
