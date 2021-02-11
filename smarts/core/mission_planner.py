@@ -471,8 +471,10 @@ class MissionPlanner:
             )
             trajectory.append(wp)
 
-        uturn_activated_distance = math.sqrt(horizontal_distant**2+vertical_distant**2)
-        self._log.info(f'U-turn activated at distance: {uturn_activated_distance}')
+        uturn_activated_distance = math.sqrt(
+            horizontal_distant ** 2 + vertical_distant ** 2
+        )
+        self._log.info(f"U-turn activated at distance: {uturn_activated_distance}")
         return [trajectory]
 
     def paths_of_lane_at(self, lane, offset, lookahead=30):
