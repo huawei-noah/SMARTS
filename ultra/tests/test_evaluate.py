@@ -206,7 +206,7 @@ class EvaluateTest(unittest.TestCase):
             try:
                 policy_class = m.group(0)
             except AttributeError as e:
-                assert False
+                self.assertTrue(False)
 
         for path in paths:
             extract(path)
