@@ -72,7 +72,6 @@ class Client:
     def __init__(
         self,
         endpoint: str = None,
-        num_retries: int = 5,
         wait_between_retries: float = 0.5,
         output_dir: str = None,
         sim_name: str = None,
@@ -103,7 +102,6 @@ class Client:
             self._thread = self._connect(
                 endpoint=f"{endpoint}/simulations/{client_id}/broadcast",
                 queue=self._state_queue,
-                num_retries=num_retries,
                 wait_between_retries=wait_between_retries,
             )
             self._thread.start()
@@ -135,14 +133,9 @@ class Client:
         path: str,
         endpoint: str = "ws://localhost:8081",
         timestep_sec: float = 0.1,
-        num_retries: int = 5,
         wait_between_retries: float = 0.5,
     ):
-        client = Client(
-            endpoint=endpoint,
-            num_retries=num_retries,
-            wait_between_retries=wait_between_retries,
-        )
+        client = Client(endpoint=endpoint, wait_between_retries=wait_between_retries,)
         with open(path, "r") as f:
             for line in f:
                 line = line.rstrip("\n")
@@ -153,11 +146,7 @@ class Client:
             logging.info("Finished Envision data replay")
 
     def _connect(
-        self,
-        endpoint,
-        queue,
-        num_retries: int = 50,
-        wait_between_retries: float = 0.05,
+        self, endpoint, queue, wait_between_retries: float = 0.05,
     ):
         threadlocal = threading.local()
 
@@ -191,14 +180,15 @@ class Client:
 
                 optionally_serialize_and_write(state, ws)
 
-        def run_socket(endpoint, num_retries, wait_between_retries, threadlocal):
+        def run_socket(endpoint, wait_between_retries, threadlocal):
             connection_established = False
 
             tries = 1
-            while tries <= num_retries and not connection_established:
+            while True:
                 ws = websocket.WebSocketApp(
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
+                self._log.info("Connected to Envision")
 
                 with warnings.catch_warnings():
                     # XXX: websocket-client library seems to have leaks on connection
@@ -211,16 +201,20 @@ class Client:
                 )
 
                 if not connection_established:
+                    self._log.info(f"Attempting to connect to Envision tries={tries}")
+                else:
+                    # when connection closed, retry again every 5 seconds
+                    wait_between_retries = 5
                     self._log.info(
-                        f"Attempting to connect to Envision tries={tries}/{num_retries}"
+                        f"Connection to Envision lost. Attempting to reconnect."
                     )
 
-                    tries += 1
-                    time.sleep(wait_between_retries)
+                tries += 1
+                time.sleep(wait_between_retries)
 
         return threading.Thread(
             target=run_socket,
-            args=(endpoint, num_retries, wait_between_retries, threadlocal),
+            args=(endpoint, wait_between_retries, threadlocal),
             daemon=True,  # If False, the proc will not terminate until this thread stops
         )
 
