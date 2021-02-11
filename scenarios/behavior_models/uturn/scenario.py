@@ -14,7 +14,7 @@ from smarts.sstudio.types import (
 
 ego_missions = [
     Mission(
-        route=Route(begin=("edge-west-WE", 0, 30), end=("edge-west-EW", 0, 100)),
+        route=Route(begin=("edge-west-WE", 1, 30), end=("edge-west-EW", 0, 100)),
         task=UTurn(initial_speed=20),
     ),
 ]

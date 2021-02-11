@@ -75,12 +75,12 @@
     <type id="railway.tram" priority="17" numLanes="1" speed="13.89" allow="tram" oneway="1"/>
 
     <edge id="edge-west-EW" from="junction-intersection" to="junction-west" priority="-1" length="300.00">
-        <lane id="edge-west-EW_0" index="0" speed="13.00" length="300.00" shape="150.00,-55.20 20.00,-55.20"/>
-        <lane id="edge-west-EW_1" index="1" speed="13.00" length="300.00" shape="150.00,-58.40 20.00,-58.40"/>
+        <lane id="edge-west-EW_0" index="0" speed="13.00" length="300.00" shape="250.00,-55.20 20.00,-55.20"/>
+        <lane id="edge-west-EW_1" index="1" speed="13.00" length="300.00" shape="250.00,-58.40 20.00,-58.40"/>
     </edge>
-    <edge id="edge-west-WE" from="junction-west" to="junction-intersection" priority="-1" length="200.00">
-        <lane id="edge-west-WE_0" index="0" speed="13.00" length="200.00" shape="20.00,-64.80 150.00,-64.80"/>
-        <lane id="edge-west-WE_1" index="1" speed="13.00" length="200.00" shape="20.00,-61.60 150.00,-61.60"/>
+    <edge id="edge-west-WE" from="junction-west" to="junction-intersection" priority="-1" length="300.00">
+        <lane id="edge-west-WE_0" index="0" speed="13.00" length="300.00" shape="20.00,-64.80 250.00,-64.80"/>
+        <lane id="edge-west-WE_1" index="1" speed="13.00" length="300.00" shape="20.00,-61.60 250.00,-61.60"/>
     </edge>
 
     <junction id="junction-intersection" type="unregulated" x="150.00" y="-60.00" incLanes="edge-west-WE_0 edge-west-WE_1" intLanes="" shape="150.00,-60.00 150.00,-66.40 150.00,-60.00" radius="8.00"/>

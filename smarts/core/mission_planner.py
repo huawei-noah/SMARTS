@@ -62,6 +62,7 @@ class MissionPlanner:
         self._insufficient_initial_distant = False
         self._uturn_initial_position = 0
         self._uturn_is_initialized = False
+        self._first_uturn = True
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -471,10 +472,13 @@ class MissionPlanner:
             )
             trajectory.append(wp)
 
-        uturn_activated_distance = math.sqrt(
-            horizontal_distant ** 2 + vertical_distant ** 2
-        )
-        self._log.info(f"U-turn activated at distance: {uturn_activated_distance}")
+        if self._first_uturn:
+            uturn_activated_distance = math.sqrt(
+                horizontal_distant ** 2 + vertical_distant ** 2
+            )
+            self._log.info(f"U-turn activated at distance: {uturn_activated_distance}")
+            self._first_uturn = False
+
         return [trajectory]
 
     def paths_of_lane_at(self, lane, offset, lookahead=30):
