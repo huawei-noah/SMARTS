@@ -158,7 +158,7 @@ Please read [Contributing](CONTRIBUTING.md)
 
 ## Bug reports
 
-Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/Bug-Report-Format) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
+Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/How-To-Make-a-Bug-Report) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
 
 ### Building Docs Locally
 
