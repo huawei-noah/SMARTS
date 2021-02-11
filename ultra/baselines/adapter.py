@@ -87,7 +87,6 @@ class BaselineAdapter:
             preprocess_state, to_2d_action, self.state_description
         )
 
-
     @property
     def observation_space(self):
         low_dim_states_shape = sum(self.state_description["low_dim_states"].values())
@@ -184,7 +183,6 @@ class BaselineAdapter:
             # prev_action=self.prev_action
         )
 
-        print("ADAPTER DONE")
         return state  # ego=ego, env_observation=env_observation)
 
     def reward_adapter(self, observation, reward):
@@ -256,23 +254,26 @@ class BaselineAdapter:
         ego_speed_reward = -0.1 if speed_fraction >= 1 else 0.0
         ego_speed_reward += -0.01 if speed_fraction < 0.01 else 0.0
 
-        rewards = [
-            ego_goal_reward,
-            ego_collision_reward,
-            ego_off_road_reward,
-            ego_off_route_reward,
-            ego_wrong_way,
-            ego_speed_reward,
-            # ego_time_out,
-            ego_dist_center_reward,
-            ego_angle_error_reward,
-            ego_reached_goal,
-            ego_step_reward,
-            env_reward,
-            # ego_linear_jerk,
-            # ego_angular_jerk,
-            # ego_lat_speed,
-            # ego_safety_reward,
-            # social_safety_reward,
-        ]
-        return sum(rewards)
+        rewards = sum(
+            [
+                ego_goal_reward,
+                ego_collision_reward,
+                ego_off_road_reward,
+                ego_off_route_reward,
+                ego_wrong_way,
+                ego_speed_reward,
+                # ego_time_out,
+                ego_dist_center_reward,
+                ego_angle_error_reward,
+                ego_reached_goal,
+                ego_step_reward,
+                env_reward,
+                # ego_linear_jerk,
+                # ego_angular_jerk,
+                # ego_lat_speed,
+                # ego_safety_reward,
+                # social_safety_reward,
+            ]
+        )
+        print("REWARDS", rewards)
+        return rewards

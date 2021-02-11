@@ -39,6 +39,7 @@ from ultra.utils.common import (
 
 class RLlibUltraEnv(RLlibHiWayEnv):
     def __init__(self, config):
+        print(">>> ENV:", config["eval_mode"])
         self.scenario_info = config["scenario_info"]
         self.scenarios = self.get_task(self.scenario_info[0], self.scenario_info[1])
         if not config["eval_mode"]:
@@ -181,9 +182,14 @@ class RLlibUltraEnv(RLlibHiWayEnv):
         return observations, rewards, agent_dones, infos
 
     def get_task(self, task_id, task_level):
-        with open("ultra/config.yaml", "r") as task_file:
+        import os
+
+        cwd = os.getcwd()
+        # print('CWD', cwd)
+        with open("/Users/kimia_hszd/dev/SMARTS/ultra/config.yaml", "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
             task = scenarios[f"task{task_id}"][task_level]
+        print("SCENARIOS", len(scenarios), task)
         return task
 
     @property

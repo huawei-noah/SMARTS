@@ -26,25 +26,44 @@ from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFCNet
 from ultra.baselines.common.state_preprocessor import *
 from ultra.baselines.ppo.ppo.network import PPONetwork
-from ray.rllib.utils.typing import ModelConfigDict
+
+# from ray.rllib.utils.typing import ModelConfigDict
+
 
 class TorchPPOModel(TorchModelV2, nn.Module):
     """Example of interpreting repeated observations."""
 
-    def __init__(self, obs_space: gym.spaces.Space,
-               action_space: gym.spaces.Space, num_outputs: int,
-               model_config: ModelConfigDict, name: str, **customized_model_kwargs):
+    def __init__(
+        self,
+        obs_space: gym.spaces.Space,
+        action_space: gym.spaces.Space,
+        num_outputs: int,
+        model_config,
+        name: str,
+        **customized_model_kwargs
+    ):
         # why num_outputs==6 and it is not configured based on action_space??
         # print(">>>>> num_outputs", num_outputs, name, customized_model_kwargs, model_config)
-        super(TorchPPOModel, self).__init__(obs_space=obs_space, action_space=action_space, num_outputs=num_outputs, model_config=model_config, name=name)
+        super(TorchPPOModel, self).__init__(
+            obs_space=obs_space,
+            action_space=action_space,
+            num_outputs=num_outputs,
+            model_config=model_config,
+            name=name,
+        )
         nn.Module.__init__(self)
 
-        social_feature_encoder_class = customized_model_kwargs["adapter"].social_feature_encoder_class
-        social_feature_encoder_params = customized_model_kwargs["adapter"].social_feature_encoder_params
-        self.social_feature_encoder=social_feature_encoder_class(
-            **social_feature_encoder_params
-        )if social_feature_encoder_class else None
-
+        social_feature_encoder_class = customized_model_kwargs[
+            "adapter"
+        ].social_feature_encoder_class
+        social_feature_encoder_params = customized_model_kwargs[
+            "adapter"
+        ].social_feature_encoder_params
+        self.social_feature_encoder = (
+            social_feature_encoder_class(**social_feature_encoder_params)
+            if social_feature_encoder_class
+            else None
+        )
 
         self.model = TorchFCNet(
             obs_space, action_space, num_outputs, model_config, name
@@ -61,7 +80,6 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         #     social_feature_encoder_class=social_feature_encoder_class,
         #     social_feature_encoder_params=social_feature_encoder_params,
         # )
-
 
     def forward(self, input_dict, state, seq_lens):
 
@@ -80,10 +98,11 @@ class TorchPPOModel(TorchModelV2, nn.Module):
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
-        input_dict["obs"]["social_vehicles"] = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
+        input_dict["obs"]["social_vehicles"] = (
+            torch.cat(social_feature, 0) if len(social_feature) > 0 else []
+        )
 
         return self.model.forward(input_dict, state, seq_lens)
-        
 
     def value_function(self):
         return self.model.value_function()

@@ -74,7 +74,18 @@ class BaselineAgentSpec(AgentSpec):
                 )
                 spec = new_spec
         else:
-            adapter = BaselineAdapter(is_rllib=is_rllib)
+            social_vehicle_params = dict(
+                encoder_key="no_encoder",
+                social_policy_hidden_units=128,
+                social_polciy_init_std=0.5,
+                num_social_features=4,
+                seed=2,
+                observation_num_lookahead=20,
+                social_capacity=10,
+            )
+            adapter = BaselineAdapter(
+                is_rllib=is_rllib, social_vehicle_params=social_vehicle_params
+            )
             policy_dir = "/".join(inspect.getfile(policy_class).split("/")[:-1])
             policy_params = load_yaml(f"{policy_dir}/params.yaml")
             spec = AgentSpec(

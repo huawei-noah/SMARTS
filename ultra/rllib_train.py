@@ -39,7 +39,8 @@ from ultra.baselines.ppo.ppo.network import PPONetwork
 from ray.tune.schedulers import PopulationBasedTraining
 from ray.rllib.evaluation.episode import MultiAgentEpisode
 from ray.rllib.policy.policy import Policy
-from ray.rllib.utils.typing import PolicyID
+
+# from ray.rllib.utils.typing import PolicyID
 from ray.rllib.env.base_env import BaseEnv
 from ray.rllib.evaluation.rollout_worker import RolloutWorker
 from ray.rllib.agents.callbacks import DefaultCallbacks
@@ -67,26 +68,45 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 class Callbacks(DefaultCallbacks):
     @staticmethod
     def on_episode_start(
-        worker: RolloutWorker,
-        base_env: BaseEnv,
-        policies: Dict[PolicyID, Policy],
-        episode: MultiAgentEpisode,
-        env_index: int,
+        worker,
+        base_env,
+        policies,
+        episode,
+        # env_index,
         **kwargs,
     ):
         # episode.user_data["ego_speed"] = []
         print(f"{episode.episode_id} started......")
 
     @staticmethod
+    def on_train_result(info):
+        result = info["result"]
+        print("Train", result)
+        # print(info)
+        print("-----------")
+        # if result["episode_reward_mean"] > 200:
+        #     phase = 2
+        # elif result["episode_reward_mean"] > 100:
+        #     phase = 1
+        # else:
+        #     phase = 0
+        # trainer = info["trainer"]
+        # trainer.workers.foreach_worker(
+        #     lambda ev: ev.foreach_env(
+        #         lambda env: env.set_phase(phase)))
+
+    @staticmethod
     def on_episode_step(
-        worker: RolloutWorker,
-        base_env: BaseEnv,
-        episode: MultiAgentEpisode,
-        env_index: int,
+        worker,
+        base_env,
+        episode,
+        # env_index,
         **kwargs,
     ):
-        print(f"total_reward:{episode.total_reward}, agent_rewards:{episode.agent_rewards},\
-         length:{episode.length}")
+        print(
+            f"total_reward:{episode.total_reward}, agent_rewards:{episode.agent_rewards},\
+         length:{episode.length}"
+        )
         single_agent_id = list(episode._agent_to_last_obs)[0]
         obs = episode.last_raw_obs_for(single_agent_id)
         # episode.user_data["ego_speed"].append(obs["speed"])
@@ -95,11 +115,11 @@ class Callbacks(DefaultCallbacks):
 
     @staticmethod
     def on_episode_end(
-        worker: RolloutWorker,
-        base_env: BaseEnv,
-        policies: Dict[PolicyID, Policy],
-        episode: MultiAgentEpisode,
-        env_index: int,
+        worker,
+        base_env,
+        policies,
+        episode,
+        # env_index,
         **kwargs,
     ):
         print("Episode End", episode.user_data)
@@ -117,7 +137,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     total_step = 0
     finished = False
     num_cpus = max(1, psutil.cpu_count(logical=False) - 1)
-    print(">>>>>>", num_cpus)
+    # print(">>>>>>", num_cpus)
     ray.init()  # num_cpus=num_cpus)
     # --------------------------------------------------------
     # Initialize Agent and social_vehicle encoding method
@@ -129,7 +149,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         social_policy_hidden_units=128,
         social_polciy_init_std=0.5,
         num_social_features=4,
-        seed=2,
+        seed=seed,
         observation_num_lookahead=20,
         social_capacity=10,
     )
@@ -139,16 +159,10 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     adapter = BaselineAdapter(
         is_rllib=True, social_vehicle_params=social_vehicle_params,
     )
-    print("MADE ADAPTER **********")
 
     result_dir = "ray_results"
     result_dir = Path(result_dir).expanduser().resolve().absolute()
 
-    # print("Done")
-    # policy = trainer.get_policy()
-    # model = policy.model
-
-    # # episode = Episode()
     pbt = PopulationBasedTraining(
         time_attr="time_total_s",
         metric="episode_reward_mean",
@@ -161,7 +175,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "train_batch_size": lambda: 2000,
         },
     )
-    # from ray.rllib.policy.policy import Policy as RPolicy
+
     rllib_policies = {
         "default_policy": (
             None,
@@ -170,23 +184,53 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             {
                 "model": {
                     "custom_model": "ppo_model",
-                    "custom_model_config": {
-                        "adapter": adapter,
-                        "action_size": 2,
-                        "init_std": 0.5,
-                        "hidden_units": 512,
-                        "seed": 2,
-                    },
+                    "custom_model_config": {"adapter": adapter,},
                 }
             },
         )
     }
+    agent_specs = {
+        f"AGENT-007": AgentSpec(
+            interface=AgentInterface(
+                waypoints=Waypoints(lookahead=20),
+                neighborhood_vehicles=NeighborhoodVehicles(200),
+                action=ActionSpaceType.Continuous,
+                rgb=False,
+                max_episode_steps=5,
+                debug=True,
+            ),
+            agent_params={},
+            agent_builder=None,
+            observation_adapter=adapter.observation_adapter,
+            reward_adapter=adapter.reward_adapter,
+            action_adapter=adapter.action_adapter,
+        )
+    }
+
     tune_config = {
         "env": RLlibUltraEnv,
         "log_level": "DEBUG",
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
+        # "seed":2,
+        "timesteps_per_iteration": 1200,
+        "in_evaluation": True,
+        "evaluation_num_episodes": 200,
+        "evaluation_interval": 100,
+        "evaluation_config": {
+            "env_config": {
+                "seed": seed,
+                "scenario_info": task,
+                "headless": headless,
+                "state_description": adapter.state_description,
+                "social_vehicle_params": social_vehicle_params,
+                "eval_mode": True,
+                "ordered_scenarios": False,
+                "agent_specs": agent_specs,
+            },
+            "explore": False,
+        },
         "env_config": {
             "seed": seed,
             "scenario_info": task,
@@ -195,23 +239,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "social_vehicle_params": social_vehicle_params,
             "eval_mode": False,
             "ordered_scenarios": False,
-            "agent_specs": {
-                f"AGENT-007": AgentSpec(
-                    interface=AgentInterface(
-                        waypoints=Waypoints(lookahead=20),
-                        neighborhood_vehicles=NeighborhoodVehicles(200),
-                        action=ActionSpaceType.Continuous,
-                        rgb=False,
-                        max_episode_steps=5,
-                        debug=True,
-                    ),
-                    agent_params={},
-                    agent_builder=None,
-                    observation_adapter=adapter.observation_adapter,
-                    reward_adapter=adapter.reward_adapter,
-                    action_adapter=adapter.action_adapter,
-                )
-            },
+            "agent_specs": agent_specs,
         },
         "multiagent": {"policies": rllib_policies},
     }
@@ -224,7 +252,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     analysis = tune.run(
         "PPO",
         name="exp_1",
-        stop={"time_total_s": 1200},
+        stop={"time_total_s": 10},
         checkpoint_freq=1,
         checkpoint_at_end=True,
         local_dir=str(result_dir),
@@ -236,7 +264,6 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         config=tune_config,
         scheduler=pbt,
     )
-    # print("DOne*****")
 
 
 if __name__ == "__main__":
@@ -279,9 +306,7 @@ if __name__ == "__main__":
     )  # remove `logical=False` to use all cpus
 
     policy_class = "ultra.baselines.sac:sac-v0"
-    # ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
-    # ray.init()  # **ray_kwargs)
-    # try:
+
     train(
         task=(args.task, args.level),
         num_episodes=int(args.episodes),
@@ -294,6 +319,3 @@ if __name__ == "__main__":
         policy_class=policy_class,
         seed=args.seed,
     )
-    # finally:
-    #     time.sleep(1)
-    #     ray.shutdown()
