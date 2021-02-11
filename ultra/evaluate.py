@@ -116,9 +116,7 @@ def evaluate(
     summary_log = LogInfo()
     logs = []
 
-    for episode in episodes(
-        num_episodes, etag=policy_class, log_dir=log_dir
-    ):
+    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[agent_id]
         dones, infos = {"__all__": False}, None
@@ -209,9 +207,7 @@ if __name__ == "__main__":
     try:
         AGENT_ID = "AGENT_008"
         for episode in episodes(
-            len(sorted_models),
-            etag=policy_class,
-            log_dir=args.log_dir,
+            len(sorted_models), etag=policy_class, log_dir=args.log_dir,
         ):
             model = sorted_models[episode.index]
             print("model: ", model)
