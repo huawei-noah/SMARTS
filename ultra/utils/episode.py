@@ -53,7 +53,7 @@ class LogInfo:
             "off_route": 0,
             "reached_goal": 0,
             "timed_out": 0,
-            "episode_length": 0,
+            "episode_length": 1,
         }
 
     def add(self, infos, rewards):
@@ -90,10 +90,13 @@ class LogInfo:
         self.data["timed_out"] = int(events.reached_max_episode_steps)
         #
 
-    def normalize(self, steps):
+    def step(self):
+        self.data["episode_length"] += 1
+
+    def normalize(self):
+        steps = self.data["episode_length"]
         self.data["env_score"] /= steps
         self.data["dist_center"] /= steps
-        self.data["episode_length"] = steps
         self.data["speed"] /= steps
         self.data["ego_linear_jerk"] /= steps
         self.data["ego_angular_jerk"] /= steps
@@ -106,7 +109,6 @@ class Episode:
     def __init__(
         self,
         index,
-        agent_ids,
         agents_itr=defaultdict(lambda: 0),
         eval_count=0,
         all_data=defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: []))),
@@ -144,8 +146,6 @@ class Episode:
         self.tb_writer = tb_writer
         self.last_eval_iteration = last_eval_iteration
         self.agents_itr = agents_itr
-        self.agent_ids = agent_ids
-        self.agent_steps = {agent_id: 1 for agent_id in self.agent_ids}
 
     @property
     def sim2wall_ratio(self):
@@ -182,10 +182,7 @@ class Episode:
         self.timestep_sec = 0.1
         self.steps = 1
         self.active_tag = mode
-        self.info[self.active_tag] = {
-            agent_id: LogInfo() for agent_id in self.agent_ids
-        }
-        self.agent_steps = {agent_id: 1 for agent_id in self.agent_ids}
+        self.info[self.active_tag] = defaultdict(lambda: LogInfo())
 
     def make_dir(self, dir_name):
         if not os.path.exists(dir_name):
@@ -213,15 +210,13 @@ class Episode:
         if loss_outputs:
             self.log_loss(step=total_step, agent_id=agent_id, loss_outputs=loss_outputs)
         self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
+        self.info[self.active_tag][agent_id].step()
         self.steps += 1
         self.agents_itr[agent_id] += 1
-        self.agent_steps[agent_id] += 1
 
     def record_episode(self):
-        # Normalize some of the data; keep the rest as is.
-        for agent_id in self.agent_ids:
-            steps_taken_by_agent = self.agent_steps[agent_id]
-            self.info[self.active_tag][agent_id].normalize(steps_taken_by_agent)
+        for _, agent_info in self.info[self.active_tag].items():
+            agent_info.normalize()
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
@@ -235,11 +230,11 @@ class Episode:
         # Only create tensorboard once from training process.
         self.initialize_tb_writer()
 
-        for agent_id in self.agent_ids:
+        for agent_id, agent_info in self.info[self.active_tag].items():
             agent_itr = self.get_itr(agent_id)
             data = {}
 
-            for key, value in self.info[self.active_tag][agent_id].data.items():
+            for key, value in agent_info.data.items():
                 if not isinstance(value, (list, tuple, np.ndarray)):
                     self.tb_writer.add_scalar(
                         "{}/{}/{}".format(self.active_tag, agent_id, key),
@@ -267,7 +262,7 @@ class Episode:
                     pass
 
 
-def episodes(n, agent_ids, etag=None, log_dir=None):
+def episodes(n, etag=None, log_dir=None):
     col_width = 18
     with tp.TableContext(
         [f"Episode", f"Sim/Wall", f"Total Steps", f"Steps/Sec", f"Score",],
@@ -283,7 +278,6 @@ def episodes(n, agent_ids, etag=None, log_dir=None):
         for i in range(n):
             e = Episode(
                 index=i,
-                agent_ids=agent_ids,
                 experiment_name=experiment_name,
                 tb_writer=tb_writer,
                 etag=etag,
@@ -303,9 +297,9 @@ def episodes(n, agent_ids, etag=None, log_dir=None):
             if e.active_tag:
                 agent_rewards_strings = [
                     "Agent {}: {:.4f}".format(
-                        agent_id, e.info[e.active_tag][agent_id].data["episode_reward"],
+                        agent_id, agent_info.data["episode_reward"],
                     )
-                    for agent_id in agent_ids
+                    for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
                 row = (
                     f"{e.index}/{n}",
