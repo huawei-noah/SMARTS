@@ -66,9 +66,7 @@ def train(
 
     agent = spec.build_agent()
 
-    for episode in episodes(
-        num_episodes, agent_ids=[AGENT_ID], etag=policy_class, log_dir=log_dir
-    ):
+    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None

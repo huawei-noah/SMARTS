@@ -50,7 +50,7 @@ class EpisodeTest(unittest.TestCase):
                 "off_route": 0,
                 "reached_goal": 0,
             }
-            for episode in episodes(1, agent_ids=[AGENT_ID], etag="Train"):
+            for episode in episodes(1, etag="Train"):
                 observations = env.reset()
                 total_step = 0
                 episode.reset()

@@ -117,7 +117,7 @@ def evaluate(
     logs = []
 
     for episode in episodes(
-        num_episodes, agent_ids=[agent_id], etag=policy_class, log_dir=log_dir
+        num_episodes, etag=policy_class, log_dir=log_dir
     ):
         observations = env.reset()
         state = observations[agent_id]
@@ -210,7 +210,6 @@ if __name__ == "__main__":
         AGENT_ID = "AGENT_008"
         for episode in episodes(
             len(sorted_models),
-            agent_ids=[AGENT_ID],
             etag=policy_class,
             log_dir=args.log_dir,
         ):
