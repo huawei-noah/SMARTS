@@ -391,6 +391,8 @@ class SumoTrafficSimulation:
         for vehicle_id in external_vehicles_that_have_joined:
             dimensions = provider_vehicles[vehicle_id].dimensions
             self._create_vehicle(vehicle_id, dimensions)
+            no_checks = 0b00000
+            self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
 
         # update the state of all current managed vehicles
         for vehicle_id in self._non_sumo_vehicle_ids:
@@ -426,6 +428,8 @@ class SumoTrafficSimulation:
                 )
 
         for vehicle_id in vehicles_that_have_become_external:
+            no_checks = 0b00000
+            self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
             self._traci_conn.vehicle.setColor(
                 vehicle_id, SumoTrafficSimulation._social_agent_vehicle_color()
             )
@@ -437,6 +441,9 @@ class SumoTrafficSimulation:
             )
             self._non_sumo_vehicle_ids.remove(vehicle_id)
             # Let sumo take over speed again
+            # For setSpeedMode look at: https://sumo.dlr.de/docs/TraCI/Change_Vehicle_State.html#speed_mode_0xb3
+            all_checks = 0b11111
+            self._traci_conn.vehicle.setSpeedMode(vehicle_id, all_checks)
             self._traci_conn.vehicle.setSpeed(vehicle_id, -1)
 
         if self._endless_traffic:
