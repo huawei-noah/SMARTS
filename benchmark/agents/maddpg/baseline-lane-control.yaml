@@ -4,6 +4,7 @@ agent:
   state:
     wrapper:
       name: EarlyDone
+      num_stack: 3
     features:
       goal_relative_pos: True
       distance_to_center: True
@@ -36,11 +37,11 @@ run:
   stop:
     time_total_s: 14400
   config:
-    log_level: WARN
+    log_level: ERROR
     num_workers: 1
     num_gpus: 0
     horizon: 1000
     # learning
-    learning_starts: 8196
+    learning_starts: 1024
     # buffer_size: 1024
     train_batch_size: 1024

@@ -17,3 +17,39 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+from abc import abstractmethod, ABCMeta
+
+
+class MetricHandler(metaclass=ABCMeta):
+    def __init__(self):
+        self._logs_mapping = None
+
+    @property
+    def logs_mapping(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def log_step(self, **kwargs):
+        """ Called at each time step to log the step information """
+        pass
+
+    @abstractmethod
+    def show_plots(self, **kwargs):
+        """ Do visualization """
+        pass
+
+    @abstractmethod
+    def write_to_csv(self, csv_dir):
+        """ Write logs to csv files """
+        pass
+
+    @abstractmethod
+    def read_logs(self, csv_dir):
+        """ Read logs from local csv files"""
+        pass
+
+    @abstractmethod
+    def compute(self, **kwargs):
+        """ Analysis with given metrics """
+        pass

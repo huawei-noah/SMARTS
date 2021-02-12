@@ -3,8 +3,10 @@ name: mfac-baseline-lane-controller
 agent:
   state:
     wrapper:
-      name: Simple
+      name: FrameStack
+      num_stack: 3
     features:
+      goal_relative_pos: True
       distance_to_center: True
       speed: True
       steering: True
