@@ -14,6 +14,11 @@ This directory contains the scenarios, training environment, and agents used in 
 
 ## Running
 
+If you have not already, it is suggested you checkout the benchmark branch.
+```bash
+$ git checkout marl_benchmark
+```
+
 To run the training procedure,
 
 ```bash
