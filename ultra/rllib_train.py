@@ -75,12 +75,13 @@ class Callbacks(DefaultCallbacks):
         # env_index,
         **kwargs,
     ):
+        pass
         # episode.user_data["ego_speed"] = []
-        print(f"{episode.episode_id} started......")
+        # print(f"{episode.episode_id} started......")
 
-    @staticmethod
-    def on_train_result(info):
-        result = info["result"]
+    @staticmethod    # self.callbacks.on_train_result(trainer=self, result=result)
+    def on_train_result(trainer, result):
+
         print("Train", result)
         # print(info)
         print("-----------")
@@ -103,10 +104,7 @@ class Callbacks(DefaultCallbacks):
         # env_index,
         **kwargs,
     ):
-        print(
-            f"total_reward:{episode.total_reward}, agent_rewards:{episode.agent_rewards},\
-         length:{episode.length}"
-        )
+
         single_agent_id = list(episode._agent_to_last_obs)[0]
         obs = episode.last_raw_obs_for(single_agent_id)
         # episode.user_data["ego_speed"].append(obs["speed"])
@@ -122,7 +120,11 @@ class Callbacks(DefaultCallbacks):
         # env_index,
         **kwargs,
     ):
-        print("Episode End", episode.user_data)
+        pass
+        # print(
+        #     f"Epsiode total_reward:{episode.total_reward}, agent_rewards:{episode.agent_rewards},\
+        #  length:{episode.length}"
+        # )
         # mean_ego_speed = np.mean(episode.user_data["ego_speed"])
         # print(
         #     f"ep. {episode.episode_id:<12} ended;"
@@ -131,6 +133,9 @@ class Callbacks(DefaultCallbacks):
         # )
         # episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
 
+# def policy_mapping(obj):
+#     print(obj,'<<<<<<<<')
+#     return 'AGENT_007'
 
 def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
     torch.set_num_threads(1)
@@ -176,6 +181,9 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         },
     )
 
+    config = ppo.DEFAULT_CONFIG.copy()
+
+
     rllib_policies = {
         "default_policy": (
             None,
@@ -190,7 +198,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         )
     }
     agent_specs = {
-        f"AGENT-007": AgentSpec(
+        "AGENT-007": AgentSpec(
             interface=AgentInterface(
                 waypoints=Waypoints(lookahead=20),
                 neighborhood_vehicles=NeighborhoodVehicles(200),
@@ -207,14 +215,16 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         )
     }
 
+
     tune_config = {
         "env": RLlibUltraEnv,
-        "log_level": "DEBUG",
+        "log_level": "WARN",
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
-        # "seed":2,
-        "timesteps_per_iteration": 1200,
+
+        # checking if scenarios are switching correctly
+        # the interval config
         "in_evaluation": True,
         "evaluation_num_episodes": 200,
         "evaluation_interval": 100,
@@ -231,6 +241,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             },
             "explore": False,
         },
+        # "custom_eval_function": could be used for env_score?
         "env_config": {
             "seed": seed,
             "scenario_info": task,
@@ -241,28 +252,56 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "ordered_scenarios": False,
             "agent_specs": agent_specs,
         },
-        "multiagent": {"policies": rllib_policies},
+        "multiagent": {
+            "policies": rllib_policies,
+             # "policy_mapping_fn": policy_mapping
+             "replay_mode": "independent",
+            # Which metric to use as the "batch size" when building a
+            # MultiAgentBatch. The two supported values are:
+            # env_steps: Count each time the env is "stepped" (no matter how many
+            #   multi-agent actions are passed/how many multi-agent observations
+            #   have been returned in the previous step).
+            # agent_steps: Count each individual agent step as one step.
+            "count_steps_by": "env_steps",
+        },
+
+        #---------------
+        # single run configuration
+        # "lr": 0.0001,
+        # "gamma": 0.99,
+        # "train_batch_size": 128,
+        # "sgd_minibatch_size": 128,
     }
+    config.update(tune_config)
     result_dir = "ray_results"
     result_dir = Path(result_dir).expanduser().resolve().absolute()
 
     # trainer = ppo.PPOTrainer(env=RLlibUltraEnv, config=tune_config)
     # results = trainer.train()
 
+
+    # Evalutaion Configures
+    # Rewards mismatch
+    # tensorboard blank
+    # SAC...
+
+    # print(config)
+
     analysis = tune.run(
-        "PPO",
+        "PPO",  #"SAC"
         name="exp_1",
-        stop={"time_total_s": 10},
-        checkpoint_freq=1,
+        stop={"training_iteration": 10}, # {"timesteps_total": 1200},
+        checkpoint_freq=10,
         checkpoint_at_end=True,
         local_dir=str(result_dir),
         resume=False,
         restore=None,
-        max_failures=3,
+        max_failures=1,
         num_samples=1,
         export_formats=["model", "checkpoint"],
-        config=tune_config,
-        scheduler=pbt,
+        config=config,
+        # scheduler=pbt,
+        # "lr": tune.grid_search([1e-3,1e-4])
     )
 
 
