@@ -22,6 +22,7 @@
 import os, gym
 from ultra.utils.ray import default_ray_kwargs
 from pathlib import Path
+import timeit
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -61,11 +62,15 @@ from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
 from typing import Dict
+from ultra.utils.episode import LogInfo
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
 class Callbacks(DefaultCallbacks):
+    # def __init__(self):
+    #     self.start = timeit.default_timer()
+
     @staticmethod
     def on_episode_start(
         worker,
@@ -75,16 +80,19 @@ class Callbacks(DefaultCallbacks):
         # env_index,
         **kwargs,
     ):
-        pass
+        episode.user_data = LogInfo()
+
+        # print(f'Start {episode.episode_id}-------------------------------------------')
+        # self.start = timei/t.default_timer()
         # episode.user_data["ego_speed"] = []
         # print(f"{episode.episode_id} started......")
 
-    @staticmethod    # self.callbacks.on_train_result(trainer=self, result=result)
+    @staticmethod  # self.callbacks.on_train_result(trainer=self, result=result)
     def on_train_result(trainer, result):
 
         print("Train", result)
         # print(info)
-        print("-----------")
+        print("--------------------------------------------------------")
         # if result["episode_reward_mean"] > 200:
         #     phase = 2
         # elif result["episode_reward_mean"] > 100:
@@ -106,7 +114,12 @@ class Callbacks(DefaultCallbacks):
     ):
 
         single_agent_id = list(episode._agent_to_last_obs)[0]
-        obs = episode.last_raw_obs_for(single_agent_id)
+        info = episode.last_info_for(single_agent_id)
+        reward = episode.agent_rewards[single_agent_id]
+        if info:
+            episode.user_data.add(info, reward)
+            # print(episode.user_data)
+
         # episode.user_data["ego_speed"].append(obs["speed"])
         # print(obs)
         # print(N)
@@ -120,7 +133,15 @@ class Callbacks(DefaultCallbacks):
         # env_index,
         **kwargs,
     ):
-        pass
+        episode.user_data.normalize(episode.length)
+        for key, val in episode.user_data.data.items():
+            episode.custom_metrics[key] = val
+
+        print(
+            f"End {episode.episode_id},\nlength:{episode.length}, \n env_score:{episode.custom_metrics['env_score']},\n collision:{episode.custom_metrics['collision']}, \nreached_goal:{episode.custom_metrics['reached_goal']},\ntimeout:{episode.custom_metrics['timed_out']},\noff_road:{episode.custom_metrics['off_road']},\n dist_travelled:{episode.custom_metrics['dist_travelled']},\ngoal_dist:{episode.custom_metrics['goal_dist']}"
+        )
+        print("--------------------------------------------------------")
+
         # print(
         #     f"Epsiode total_reward:{episode.total_reward}, agent_rewards:{episode.agent_rewards},\
         #  length:{episode.length}"
@@ -133,9 +154,11 @@ class Callbacks(DefaultCallbacks):
         # )
         # episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
 
+
 # def policy_mapping(obj):
 #     print(obj,'<<<<<<<<')
 #     return 'AGENT_007'
+
 
 def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
     torch.set_num_threads(1)
@@ -183,7 +206,6 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
 
     config = ppo.DEFAULT_CONFIG.copy()
 
-
     rllib_policies = {
         "default_policy": (
             None,
@@ -204,7 +226,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
                 neighborhood_vehicles=NeighborhoodVehicles(200),
                 action=ActionSpaceType.Continuous,
                 rgb=False,
-                max_episode_steps=5,
+                max_episode_steps=1200,
                 debug=True,
             ),
             agent_params={},
@@ -215,14 +237,12 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         )
     }
 
-
     tune_config = {
         "env": RLlibUltraEnv,
         "log_level": "WARN",
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
-
         # checking if scenarios are switching correctly
         # the interval config
         "in_evaluation": True,
@@ -254,18 +274,17 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         },
         "multiagent": {
             "policies": rllib_policies,
-             # "policy_mapping_fn": policy_mapping
-             "replay_mode": "independent",
+            # "policy_mapping_fn": policy_mapping
+            # "replay_mode": "independent",
             # Which metric to use as the "batch size" when building a
             # MultiAgentBatch. The two supported values are:
             # env_steps: Count each time the env is "stepped" (no matter how many
             #   multi-agent actions are passed/how many multi-agent observations
             #   have been returned in the previous step).
             # agent_steps: Count each individual agent step as one step.
-            "count_steps_by": "env_steps",
+            # "count_steps_by": "env_steps",
         },
-
-        #---------------
+        # ---------------
         # single run configuration
         # "lr": 0.0001,
         # "gamma": 0.99,
@@ -279,7 +298,6 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     # trainer = ppo.PPOTrainer(env=RLlibUltraEnv, config=tune_config)
     # results = trainer.train()
 
-
     # Evalutaion Configures
     # Rewards mismatch
     # tensorboard blank
@@ -288,9 +306,9 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     # print(config)
 
     analysis = tune.run(
-        "PPO",  #"SAC"
+        "PPO",  # "SAC"
         name="exp_1",
-        stop={"training_iteration": 10}, # {"timesteps_total": 1200},
+        stop={"training_iteration": 10},  # {"timesteps_total": 1200},
         checkpoint_freq=10,
         checkpoint_at_end=True,
         local_dir=str(result_dir),

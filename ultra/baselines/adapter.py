@@ -96,7 +96,6 @@ class BaselineAdapter:
             ).output_dim
         else:
             social_vehicle_shape = self.social_capacity * self.num_social_features
-        print(">>>>> SOCIAL SHAPE", social_vehicle_shape)
         return gym.spaces.Dict(
             {
                 # "images": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
@@ -125,7 +124,6 @@ class BaselineAdapter:
 
     def action_adapter(self, model_action):
         # print why this doesn't go through?
-        print("Action>>>>>", model_action)
         throttle, brake, steering = model_action
         # print(M)
         return np.array([throttle, brake, steering * np.pi * 0.25])
@@ -275,5 +273,4 @@ class BaselineAdapter:
                 # social_safety_reward,
             ]
         )
-        print("REWARDS", rewards)
         return rewards

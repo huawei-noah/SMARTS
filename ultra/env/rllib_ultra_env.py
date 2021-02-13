@@ -182,14 +182,10 @@ class RLlibUltraEnv(RLlibHiWayEnv):
         return observations, rewards, agent_dones, infos
 
     def get_task(self, task_id, task_level):
-        import os
-
-        cwd = os.getcwd()
-        # print('CWD', cwd)
         with open("/Users/kimia_hszd/dev/SMARTS/ultra/config.yaml", "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
             task = scenarios[f"task{task_id}"][task_level]
-        print("SCENARIOS", len(scenarios), task)
+        # print("SCENARIOS", scenarios, task)
         return task
 
     @property
