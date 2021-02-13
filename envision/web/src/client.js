@@ -80,12 +80,12 @@ export default class Client {
       return await new Promise((resolve, reject) => {
         let socket = new WebSocket(url);
         socket.onopen = (event) => {
-          console.debug("Socket connected!");
+          // console.debug("Socket connected!");
           resolve(socket);
         };
 
         socket.onclose = (event) => {
-          console.debug("Socket closed");
+          // console.debug("Socket closed");
         };
 
         socket.onmessage = (event) => {

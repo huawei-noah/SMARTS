@@ -59,6 +59,11 @@ class State(NamedTuple):
     bubbles: Sequence[Sequence[Tuple[float, float]]]
     scene_colors: Dict[str, Tuple[float, float, float, float]]
     scores: Dict[str, float]
+    ego_agent_ids: list
+    position: Dict[str, Tuple[float, float]]
+    speed: Dict[str, float]
+    heading: Dict[str, float]
+    lane_ids: Dict[str, str]
 
 
 def format_actor_id(actor_id: str, vehicle_id: str, is_multi: bool):

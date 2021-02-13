@@ -875,6 +875,10 @@ class SMARTS(ShowBase):
             return
 
         traffic = {}
+        position = {}
+        speed = {}
+        heading = {}
+        lane_ids = {}
         for v in provider_state.vehicles:
             if v.vehicle_id in self._vehicle_index.agent_vehicle_ids():
                 # this is an agent controlled vehicle
@@ -923,6 +927,14 @@ class SMARTS(ShowBase):
                     driven_path=driven_path,
                     mission_route_geometry=mission_route_geometry,
                 )
+                speed[agent_id] = v.speed
+                position[agent_id] = v.pose.position[:2]
+                heading[agent_id] = v.pose.heading
+                if (
+                    len(vehicle_obs.waypoint_paths) > 0
+                    and len(vehicle_obs.waypoint_paths[0]) > 0
+                ):
+                    lane_ids[agent_id] = vehicle_obs.waypoint_paths[0][0].lane_id
             elif v.vehicle_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
@@ -944,6 +956,11 @@ class SMARTS(ShowBase):
             bubbles=bubble_geometry,
             scene_colors=SceneColors.EnvisionColors.value,
             scores=scores,
+            ego_agent_ids=list(self._agent_manager.ego_agent_ids),
+            position=position,
+            speed=speed,
+            heading=heading,
+            lane_ids=lane_ids,
         )
         self._envision.send(state)
 
