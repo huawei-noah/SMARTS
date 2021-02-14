@@ -22,7 +22,7 @@
 import os, gym
 from ultra.utils.ray import default_ray_kwargs
 from pathlib import Path
-import timeit
+import timeit, datetime
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -57,6 +57,8 @@ from smarts.core.agent_interface import (
     Waypoints,
     NeighborhoodVehicles,
 )
+import tempfile
+from ray.tune.logger import Logger, UnifiedLogger
 from ultra.baselines.ppo.ppo.rllib_network import TorchPPOModel
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
@@ -80,6 +82,7 @@ class Callbacks(DefaultCallbacks):
         # env_index,
         **kwargs,
     ):
+
         episode.user_data = LogInfo()
 
         # print(f'Start {episode.episode_id}-------------------------------------------')
@@ -87,22 +90,22 @@ class Callbacks(DefaultCallbacks):
         # episode.user_data["ego_speed"] = []
         # print(f"{episode.episode_id} started......")
 
-    @staticmethod  # self.callbacks.on_train_result(trainer=self, result=result)
-    def on_train_result(trainer, result):
-
-        print("Train", result)
-        # print(info)
-        print("--------------------------------------------------------")
-        # if result["episode_reward_mean"] > 200:
-        #     phase = 2
-        # elif result["episode_reward_mean"] > 100:
-        #     phase = 1
-        # else:
-        #     phase = 0
-        # trainer = info["trainer"]
-        # trainer.workers.foreach_worker(
-        #     lambda ev: ev.foreach_env(
-        #         lambda env: env.set_phase(phase)))
+    # @staticmethod  # self.callbacks.on_train_result(trainer=self, result=result)
+    # def on_train_result(trainer, result):
+    #
+    #     # print("Train", result)
+    #     # print(info)
+    #     print("--------------------------------------------------------")
+    #     # if result["episode_reward_mean"] > 200:
+    #     #     phase = 2
+    #     # elif result["episode_reward_mean"] > 100:
+    #     #     phase = 1
+    #     # else:
+    #     #     phase = 0
+    #     # trainer = info["trainer"]
+    #     # trainer.workers.foreach_worker(
+    #     #     lambda ev: ev.foreach_env(
+    #     #         lambda env: env.set_phase(phase)))
 
     @staticmethod
     def on_episode_step(
@@ -114,15 +117,13 @@ class Callbacks(DefaultCallbacks):
     ):
 
         single_agent_id = list(episode._agent_to_last_obs)[0]
+        policy_id = episode.policy_for(single_agent_id)
+        agent_reward_key = (single_agent_id, policy_id)
+
         info = episode.last_info_for(single_agent_id)
-        reward = episode.agent_rewards[single_agent_id]
+        reward = episode.agent_rewards[agent_reward_key]
         if info:
             episode.user_data.add(info, reward)
-            # print(episode.user_data)
-
-        # episode.user_data["ego_speed"].append(obs["speed"])
-        # print(obs)
-        # print(N)
 
     @staticmethod
     def on_episode_end(
@@ -135,10 +136,11 @@ class Callbacks(DefaultCallbacks):
     ):
         episode.user_data.normalize(episode.length)
         for key, val in episode.user_data.data.items():
-            episode.custom_metrics[key] = val
+            if not isinstance(val, (list, tuple, np.ndarray)):
+                episode.custom_metrics[key] = val
 
         print(
-            f"End {episode.episode_id},\nlength:{episode.length}, \n env_score:{episode.custom_metrics['env_score']},\n collision:{episode.custom_metrics['collision']}, \nreached_goal:{episode.custom_metrics['reached_goal']},\ntimeout:{episode.custom_metrics['timed_out']},\noff_road:{episode.custom_metrics['off_road']},\n dist_travelled:{episode.custom_metrics['dist_travelled']},\ngoal_dist:{episode.custom_metrics['goal_dist']}"
+            f"End {episode.episode_id},\nlength:{episode.length}, \nenv_score:{episode.custom_metrics['env_score']},\ncollision:{episode.custom_metrics['collision']}, \nreached_goal:{episode.custom_metrics['reached_goal']},\ntimeout:{episode.custom_metrics['timed_out']},\noff_road:{episode.custom_metrics['off_road']},\ndist_travelled:{episode.custom_metrics['dist_travelled']},\ngoal_dist:{episode.custom_metrics['goal_dist']}"
         )
         print("--------------------------------------------------------")
 
@@ -158,6 +160,21 @@ class Callbacks(DefaultCallbacks):
 # def policy_mapping(obj):
 #     print(obj,'<<<<<<<<')
 #     return 'AGENT_007'
+
+
+def custom_log_creator(custom_path, custom_str):
+
+    timestr = datetime.datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
+    logdir_prefix = "{}_{}".format(custom_str, timestr)
+
+    def logger_creator(config):
+
+        if not os.path.exists(custom_path):
+            os.makedirs(custom_path)
+        logdir = tempfile.mkdtemp(prefix=logdir_prefix, dir=custom_path)
+        return UnifiedLogger(config, logdir, loggers=None)
+
+    return logger_creator
 
 
 def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
@@ -226,7 +243,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
                 neighborhood_vehicles=NeighborhoodVehicles(200),
                 action=ActionSpaceType.Continuous,
                 rgb=False,
-                max_episode_steps=1200,
+                max_episode_steps=600,
                 debug=True,
             ),
             agent_params={},
@@ -285,6 +302,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             # "count_steps_by": "env_steps",
         },
         # ---------------
+        # "train_batch_size":1200, # remove after debugging
         # single run configuration
         # "lr": 0.0001,
         # "gamma": 0.99,
@@ -295,8 +313,16 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     result_dir = "ray_results"
     result_dir = Path(result_dir).expanduser().resolve().absolute()
 
-    # trainer = ppo.PPOTrainer(env=RLlibUltraEnv, config=tune_config)
-    # results = trainer.train()
+    trainer = ppo.PPOTrainer(
+        env=RLlibUltraEnv,
+        config=tune_config,
+        logger_creator=custom_log_creator(
+            os.path.expanduser("./ray_results/exp1"), "custom_dir"
+        ),
+    )
+    for i in range(1000):
+        results = trainer.train()
+        print("Train iteration:", i, "------")
 
     # Evalutaion Configures
     # Rewards mismatch
@@ -304,23 +330,25 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
     # SAC...
 
     # print(config)
+    # from ray.tune.logger import Logger
 
-    analysis = tune.run(
-        "PPO",  # "SAC"
-        name="exp_1",
-        stop={"training_iteration": 10},  # {"timesteps_total": 1200},
-        checkpoint_freq=10,
-        checkpoint_at_end=True,
-        local_dir=str(result_dir),
-        resume=False,
-        restore=None,
-        max_failures=1,
-        num_samples=1,
-        export_formats=["model", "checkpoint"],
-        config=config,
-        # scheduler=pbt,
-        # "lr": tune.grid_search([1e-3,1e-4])
-    )
+    # analysis = tune.run(
+    #     "PPO",  # "SAC"
+    #     name="exp_1",
+    #     stop={"training_iteration": 10},  # {"timesteps_total": 1200},
+    #     checkpoint_freq=10,
+    #     checkpoint_at_end=True,
+    #     local_dir=str(result_dir),
+    #     resume=False,
+    #     restore=None,
+    #     max_failures=1,
+    #     num_samples=1,
+    #     export_formats=["model", "checkpoint"],
+    #     config=config,
+    #     loggers=
+    #     # scheduler=pbt,
+    #     # "lr": tune.grid_search([1e-3,1e-4])
+    # )
 
 
 if __name__ == "__main__":
