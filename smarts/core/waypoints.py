@@ -19,27 +19,31 @@
 # THE SOFTWARE.
 import queue
 import random
-import math
-from typing import Sequence
-from dataclasses import dataclass
-from collections import namedtuple, defaultdict
-from scipy.interpolate import interp1d
-import numpy as np
-
 import warnings
+from collections import defaultdict, namedtuple
+from dataclasses import dataclass
+from typing import Sequence
+
+import numpy as np
+from scipy.interpolate import interp1d
+
+from smarts.core.utils.file import supress_pkg_resources
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
-    from sklearn.neighbors import KDTree
+    with supress_pkg_resources():
+        # We force sklearn to use a different importer since sklearn's use of pkg_resources is
+        # aggressive
+        from sklearn.neighbors import KDTree
 
 from .coordinates import Heading, Pose
 from .utils.math import (
-    squared_dist,
-    vec_to_radians,
     lerp,
-    vec_2d,
-    signed_dist_to_line,
     radians_to_vec,
+    signed_dist_to_line,
+    squared_dist,
+    vec_2d,
+    vec_to_radians,
 )
 
 

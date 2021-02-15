@@ -17,19 +17,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import time
-import sys
 import multiprocessing
 import subprocess
+import sys
 from pathlib import Path
 from threading import Thread
-import importlib.resources as pkg_resources
 
 import click
-import sh
-
-from envision.client import Client as Envision
-from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
 
 
 @click.group(name="scenario")
@@ -50,6 +44,10 @@ def build_scenario(clean, scenario):
 
 
 def _build_single_scenario(clean, scenario):
+    import importlib.resources as pkg_resources
+
+    from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
+
     click.echo(f"build-scenario {scenario}")
     if clean:
         _clean(scenario)
@@ -159,6 +157,8 @@ def _clean(scenario):
 @click.option("-t", "--timestep", default=0.01, help="Timestep in seconds")
 @click.option("--endpoint", default="ws://localhost:8081")
 def replay(directory, timestep, endpoint):
+    from envision.client import Client as Envision
+
     for path in directory:
         jsonl_paths = list(Path(path).glob("*.jsonl"))
         click.echo(
