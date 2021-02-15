@@ -14,6 +14,7 @@ def entrypoint(
         "terminal": 0.01,
         "impatience": 0.01,
         "speed": 0.01,
+        "rate": 1,
     },
     debug=False,
     aggressiveness=0,

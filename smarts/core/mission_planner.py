@@ -309,6 +309,7 @@ class MissionPlanner:
             default_speed = ego_wps[0][0].speed_limit
         else:
             default_speed = self._mission.task.initial_speed
+
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
             new_wp = replace(ego_wps[0][px], speed_limit=default_speed)
@@ -343,7 +344,7 @@ class MissionPlanner:
         # represents the portion of intitial distantce which is used for
         # triggering the u-turn task.
         aggressiveness = 0.8 * self._agent_behavior.aggressiveness / 10
-        distant_threshold = 30
+        distant_threshold = 8
 
         if not self._uturn_is_initialized:
             self._uturn_initial_distant = (
@@ -355,7 +356,7 @@ class MissionPlanner:
                 neighborhood_vehicles[0].pose.position[1] - vehicle.pose.position[1]
             )
 
-            if (2 * self._uturn_initial_height * 3.14 / 13.8) * neighborhood_vehicles[
+            if (1 * self._uturn_initial_height * 3.14 / 13.8) * neighborhood_vehicles[
                 0
             ].speed + distant_threshold > self._uturn_initial_distant:
                 self._insufficient_initial_distant = True
@@ -381,7 +382,7 @@ class MissionPlanner:
             > (1 - aggressiveness) * (self._uturn_initial_distant - 1)
             + aggressiveness
             * (
-                (2 * self._uturn_initial_height * 3.14 / 13.8)
+                (1 * self._uturn_initial_height * 3.14 / 13.8)
                 * neighborhood_vehicles[0].speed
                 + distant_threshold
             )
@@ -404,14 +405,18 @@ class MissionPlanner:
         heading_diff = np.dot(vehicle_heading_vec, initial_heading_vec)
 
         lane = self._road_network.nearest_lane(vehicle.pose.position[:2])
-        speed_limit = lane.getSpeed() / 2
+        speed_limit = lane.getSpeed() / 1.5
+
         vehicle_dist = np.linalg.norm(
             vehicle.pose.position[:2] - neighborhood_vehicles[0].pose.position[:2]
         )
         if vehicle_dist < 5.5:
             speed_limit = 1.5 * lane.getSpeed()
 
-        if heading_diff < -0.9 and pose.position[0] - self._uturn_initial_position < -2:
+        if (
+            heading_diff < -0.95
+            and pose.position[0] - self._uturn_initial_position < -2
+        ):
             # Once it faces the opposite direction and pass the initial
             # uturn point for 2 meters, stop generating u-turn waypoints
             if (
@@ -431,6 +436,7 @@ class MissionPlanner:
         offset = self._road_network.offset_into_lane(start_lane, pose.position[:2])
         oncoming_offset = max(0, target_lane.getLength() - offset)
         paths = self.paths_of_lane_at(target_lane, oncoming_offset, lookahead=30)
+
         target = paths[0][-1]
 
         heading = pose.heading
@@ -444,10 +450,11 @@ class MissionPlanner:
         offset = radians_to_vec(heading) * lane_width
         p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
         offset = radians_to_vec(target_heading) * 5
-        p3 = target.pos
-        p2 = np.array([p3[0] - offset[0], p3[1] - offset[1]])
 
-        p_x, p_y = bezier([p0, p1, p2, p3], 20)
+        p3 = target.pos
+        p2 = np.array([p3[0] - 5 * offset[0], p3[1] - 5 * offset[1]])
+
+        p_x, p_y = bezier([p0, p1, p2, p3], 10)
 
         trajectory = []
         for i in range(len(p_x)):

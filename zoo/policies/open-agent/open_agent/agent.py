@@ -15,15 +15,22 @@ from smarts.core.agent import Agent
 from smarts.core.coordinates import Heading
 from .version import VERSION, SOLVER_VERSION
 
+from smarts.core.controllers.trajectory_tracking_controller import (
+    TrajectoryTrackingControllerState,
+    TrajectoryTrackingController,
+)
+
 CONFIG_PATH = Path(__file__).parent / "config.json"
 
 
 def angle_error(a, b):
 
-    return cs.if_else(
-        a - b >= 0,
-        cs.fmin((a - b) ** 2.0, (a - (b + math.pi * 2.0)) ** 2.0),
-        cs.fmin((a - b) ** 2.0, (a - (b - math.pi * 2.0)) ** 2.0),
+    return cs.fabs(
+        cs.if_else(
+            a - b >= 0,
+            cs.fmin((a - b), (-a + b + math.pi * 2.0)),
+            cs.fmin(-a + b, (a - b + math.pi * 2.0)),
+        )
     )
 
 
@@ -37,7 +44,8 @@ class Gain:
     terminal: cs.SXElem
     impatience: cs.SXElem
     speed: cs.SXElem
-    DOF = 8
+    rate: cs.SXElem
+    DOF = 9
 
     def __iter__(self):
         return iter(
@@ -50,6 +58,7 @@ class Gain:
                 self.terminal,
                 self.impatience,
                 self.speed,
+                self.rate,
             ]
         )
 
@@ -57,14 +66,15 @@ class Gain:
         from matplotlib.widgets import Slider
 
         gains = [
-            ("theta", self.theta, 0, 5),
-            ("position", self.position, 0, 5),
-            ("obstacle", self.obstacle, 0, 5),
-            ("u_accel", self.u_accel, 0, 5),
-            ("u_yaw_rate", self.u_yaw_rate, 0, 5),
-            ("terminal", self.terminal, 0, 5),
-            ("impatience", self.impatience, 0, 5),
-            ("speed", self.speed, 0, 5),
+            ("theta", self.theta, 0, 5e5),
+            ("position", self.position, 0, 5e5),
+            ("obstacle", self.obstacle, 0, 5e5),
+            ("u_accel", self.u_accel, 0, 5e5),
+            ("u_yaw_rate", self.u_yaw_rate, 0, 5e5),
+            ("terminal", self.terminal, 0, 5e5),
+            ("impatience", self.impatience, 0, 5e5),
+            ("speed", self.speed, 0, 5e5),
+            ("rate", self.rate, 0, 5e5),
         ]
         self.debug_sliders = {}
         for i, (gain_name, gain_value, min_v, max_v) in enumerate(reversed(gains)):
@@ -91,6 +101,8 @@ class Gain:
                 self.impatience = slider.val
             elif gain_name == "speed":
                 self.speed = slider.val
+            elif gain_name == "rate":
+                self.rate = slider.val
 
     def persist(self, file_path):
         gains = {
@@ -102,6 +114,7 @@ class Gain:
             "terminal": self.terminal,
             "impatience": self.impatience,
             "speed": self.speed,
+            "rate": self.rate,
         }
 
         with open(file_path, "w") as fp:
@@ -129,6 +142,8 @@ class Gain:
                 impatience = val
             elif gain_name == "speed":
                 speed = val
+            elif gain_name == "rate":
+                rate = val
 
         return Gain(
             theta=theta,
@@ -139,6 +154,7 @@ class Gain:
             terminal=terminal,
             impatience=impatience,
             speed=speed,
+            rate=rate,
         )
 
 
@@ -159,7 +175,7 @@ class VehicleModel:
     y: cs.SXElem
     theta: cs.SXElem
     speed: cs.SXElem
-    LENGTH = 4.0
+    LENGTH = 3.0
     MAX_SPEED = 14.0  # m/s roughly 50km/h
     MAX_ACCEL = 4.0  # m/s/s
     DOF = 4
@@ -187,10 +203,9 @@ class XRef:
         pos_errx = (other.x - self.x) ** 2
         pos_erry = (other.y - self.y) ** 2
         heading_vector = [cs.cos(self.theta), cs.sin(self.theta)]
-        lateral_error = (self.x - other.x) * heading_vector[1] - (
-            self.y - other.y
-        ) * heading_vector[0]
-        pos_err_theta = lateral_error ** 2
+
+        lateral_error = (self.x - other.x) ** 2 + (self.y - other.y) ** 2
+        pos_err_theta = gain.position * lateral_error ** 1
         return (
             gain.position * pos_errx,
             gain.position * pos_erry,
@@ -206,7 +221,7 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
     # This calculates the weighted combination of lateral error and
     # heading error, TODO: Define new variable or integrates the coefficents
     # into the default values.
-    weighted_cost = 10 * distant_to_first[3] + 6.2 * cs.fabs(distant_to_first[2])
+    weighted_cost = 10 * distant_to_first[3] + 10 * cs.fabs(distant_to_first[2])
     for xref_t in x_ref_iter:
 
         distant_to_point = sum(xref_t.weighted_distance_to(point, gain)[:2])
@@ -219,7 +234,7 @@ def min_cost_by_distance(xrefs: Sequence[XRef], point: XRef, gain: Gain):
         weighted_cost = cs.if_else(
             distant_to_point <= min_xref_t_cost,
             10 * xref_t.weighted_distance_to(point, gain)[3]
-            + 6.2 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
+            + 10 * cs.fabs(xref_t.weighted_distance_to(point, gain)[2]),
             weighted_cost,
         )
 
@@ -250,9 +265,9 @@ class UTrajectory:
         for t in range(1, self.N):
             prev_u_t = self[t - 1]
             u_t = self[t]
-            cost += 0.01 * gain.u_accel * u_t.accel ** 2
+            cost += 0.1 * gain.u_accel * u_t.accel ** 2
             cost += 0.1 * gain.u_yaw_rate * u_t.yaw_rate ** 2
-            cost += 10 * gain.u_yaw_rate * (u_t.yaw_rate - prev_u_t.yaw_rate) ** 2
+            cost += 0.5 * gain.rate * (u_t.yaw_rate - prev_u_t.yaw_rate) ** 2
 
         return cost
 
@@ -306,7 +321,7 @@ def build_problem(N, SV_N, WP_N, ts):
         # For the current pose, compute the smallest cost to any xref
         cost += min_cost_by_distance(xref_traj, ego.as_xref, gain)
 
-        cost += 100000 * gain.speed * (ego.speed - target_speed.value) ** 2 / t
+        cost += gain.speed * (ego.speed - target_speed.value) ** 2 / t
 
         for sv in social_vehicles:
             # step the social vehicle assuming no change in velocity or heading
@@ -326,9 +341,10 @@ def build_problem(N, SV_N, WP_N, ts):
 
     # force acceleration when we become increasingly impatient
     cost += gain.impatience * ((u_traj[0].accel - 1.0) * impatience.value ** 2 * -(1.0))
+    # cost=0
 
     bounds = og.constraints.Rectangle(
-        xmin=[-1, -math.pi * 0.3] * N, xmax=[1, math.pi * 0.3] * N
+        xmin=[-1, -math.pi * 0.1] * N, xmax=[1, math.pi * 0.1] * N
     )
 
     return og.builder.Problem(u_traj.symbolic, z0, cost).with_constraints(bounds)
@@ -350,7 +366,11 @@ def compile_solver(output_dir, N=6, SV_N=4, WP_N=15, ts=0.1):
         .with_version(SOLVER_VERSION)
         .with_optimizer_name(solver_name)
     )
-    solver_config = og.config.SolverConfiguration()
+    solver_config = (
+        og.config.SolverConfiguration()
+        .with_tolerance(1e-15)
+        .with_max_inner_iterations(555)
+    )
     builder = og.builder.OpEnOptimizerBuilder(
         problem, meta, build_config, solver_config
     ).with_verbosity_level(3)
@@ -382,14 +402,15 @@ class OpEnAgent(Agent):
     def __init__(
         self,
         gains={
-            "theta": 3.0,
-            "position": 4.0,
+            "theta": 3.0 * 50,
+            "position": 1.0 * 100,
             "obstacle": 3.0,
-            "u_accel": 0.1,
-            "u_yaw_rate": 1.0,
+            "u_accel": 0.01,
+            "u_yaw_rate": 0.1,
             "terminal": 0.01,
             "impatience": 0.01,
-            "speed": 0.01,
+            "speed": 0.5 * 100,
+            "rate": 0 * 10,
         },
         debug=False,
     ):
@@ -452,6 +473,71 @@ class OpEnAgent(Agent):
         #     obs.waypoint_paths,
         #     key=lambda wps: abs(wps[0].signed_lateral_error(ego.position)),
         # )
+        num_trajectory_points = len(wps)
+        trajectory = [
+            [wps[i].pos[0] for i in range(num_trajectory_points)],
+            [wps[i].pos[1] for i in range(num_trajectory_points)],
+            [wps[i].heading for i in range(num_trajectory_points)],
+        ]
+        curvature = abs(
+            TrajectoryTrackingController.curvature_calculation(
+                trajectory, num_points=10
+            )
+        )
+
+        gains = {
+            "theta": 3.0 * 0.05,
+            "position": 1.0 * 100,
+            "obstacle": 0.0,
+            "u_accel": 0.01,
+            "u_yaw_rate": 0.1,
+            "terminal": 0.01,
+            "impatience": 0.0,
+            "speed": 0.5 * 100,
+            "rate": 1 * 10,
+        }
+        self.gain = Gain(**gains)
+
+        if curvature < 100:
+            gains = {
+                "theta": 16 * 0.05,
+                "position": 1 * 120,
+                "obstacle": 3.0,
+                "u_accel": 0.01,
+                "u_yaw_rate": 0.1,
+                "terminal": 0.0001,
+                "impatience": 0.01,
+                "speed": 0.5 * 100,
+                "rate": 0.1 * 1,
+            }
+            self.gain = Gain(**gains)
+
+        if curvature < 10:
+            gains = {
+                "theta": 1 * 5,
+                "position": 40 * 6,
+                "obstacle": 3.0,
+                "u_accel": 0.1 * 1,
+                "u_yaw_rate": 0.01,
+                "terminal": 0.01,
+                "impatience": 0.01,
+                "speed": 0.3 * 400,
+                "rate": 0.001,
+            }
+            self.gain = Gain(**gains)
+        if curvature > 200:
+            gains = {
+                "theta": 0.1 * 0.05,
+                "position": 1 * 10,
+                "obstacle": 3.0,
+                "u_accel": 0.01,
+                "u_yaw_rate": 0.1,
+                "terminal": 0.01,
+                "impatience": 0.01,
+                "speed": 0.5 * 250 * 2,
+                "rate": 10,
+            }
+            self.gain = Gain(**gains)
         wps = wps[: self.WP_N]
 
         # repeat the last waypoint to fill out self.WP_N waypoints

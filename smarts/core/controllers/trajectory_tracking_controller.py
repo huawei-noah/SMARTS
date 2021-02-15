@@ -388,8 +388,8 @@ class TrajectoryTrackingController:
         return (heading_error, lateral_error)
 
     @staticmethod
-    def curvature_calculation(trajectory, offset=0):
-        number_ahead_points = 5
+    def curvature_calculation(trajectory, offset=0, num_points=5):
+        number_ahead_points = num_points
         relative_heading_sum, relative_distant_sum = 0, 0
 
         if len(trajectory[2]) <= number_ahead_points + offset:
