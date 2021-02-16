@@ -71,7 +71,7 @@ def evaluation_check(
                     checkpoint_dir=checkpoint_dir,
                     scenario_info=scenario_info,
                     num_episodes=eval_episodes,
-                    max_steps=max_steps,
+                    max_episode_steps=max_episode_steps,
                     headless=headless,
                     timestep_sec=timestep_sec,
                     log_dir=log_dir,
