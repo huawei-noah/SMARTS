@@ -35,6 +35,10 @@ from ultra.evaluate import evaluation_check
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
+NUM_AGENTS = 4
+AGENT_IDS = [("00" + str(i)) for i in range(NUM_AGENTS)]
+AGENT_CLASSES = ["ultra.baselines.dqn:dqn-v0" for _ in range(NUM_AGENTS)]
+
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
@@ -52,70 +56,88 @@ def train(
     total_step = 0
     finished = False
 
-    AGENT_ID = "007"
+    agent_specs = {
+        agent_id: make(locator=agent_class)
+        for agent_id, agent_class in zip(AGENT_IDS, AGENT_CLASSES)
+    }
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
 
-    spec = make(locator=policy_class)
     env = gym.make(
         "ultra.env:ultra-v0",
-        agent_specs={AGENT_ID: spec},
+        agent_specs=agent_specs,
         scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
     )
 
-    agent = spec.build_agent()
-
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
+        # Reset the environment and retrieve the initial observations.
         observations = env.reset()
-        state = observations[AGENT_ID]
-        dones, infos = {"__all__": False}, None
+        dones = {"__all__": False}
+        infos = None
         episode.reset()
         experiment_dir = episode.experiment_dir
 
-        # save entire spec [ policy_params, reward_adapter, observation_adapter]
-        if not os.path.exists(f"{experiment_dir}/spec.pkl"):
-            if not os.path.exists(experiment_dir):
-                os.makedirs(experiment_dir)
-            with open(f"{experiment_dir}/spec.pkl", "wb") as spec_output:
-                dill.dump(spec, spec_output, pickle.HIGHEST_PROTOCOL)
+        # Save the entire spec (policy_params, reward_adapter, and observation_adapter).
+        for agent_id, agent_spec in agent_specs.items():
+            if not os.path.exists(f"{experiment_dir}/spec{agent_id}.pkl"):
+                if not os.path.exists(experiment_dir):
+                    os.makedirs(experiment_dir)
+                with open(f"{experiment_dir}/spec{agent_id}.pkl", "wb") as spec_output:
+                    dill.dump(agent_spec, spec_output, pickle.HIGHEST_PROTOCOL)
 
         while not dones["__all__"]:
-            if episode.get_itr(AGENT_ID) >= 1000000:
+            # Break if any of the agent's step counts is 1000000 or greater.
+            if any([episode.get_itr(agent_id) >= 1000000] for agent_id in agents):
                 finished = True
                 break
-            evaluation_check(
-                agent=agent,
-                agent_id=AGENT_ID,
-                policy_class=policy_class,
-                episode=episode,
-                log_dir=log_dir,
-                **eval_info,
-                **env.info,
-            )
-            action = agent.act(state, explore=True)
-            observations, rewards, dones, infos = env.step({AGENT_ID: action})
-            next_state = observations[AGENT_ID]
 
-            loss_output = agent.step(
-                state=state,
-                action=action,
-                reward=rewards[AGENT_ID],
-                next_state=next_state,
-                done=dones[AGENT_ID],
-            )
-            episode.record_step(
-                agent_id=AGENT_ID,
-                infos=infos,
-                rewards=rewards,
-                total_step=total_step,
-                loss_output=loss_output,
-            )
+            # Perform the evaluation check for each agent.
+            for agent_id, agent in agents.items():
+                evaluation_check(
+                    agent=agent,
+                    agent_id=agent_id,
+                    policy_class=policy_class,
+                    episode=episode,
+                    log_dir=log_dir,
+                    **eval_info,
+                    **env.info,
+                )
+
+            # Get and perform the available agents' actions.
+            actions = {
+                agent_id: agents[agent_id].act(observation, explore=True)
+                for agent_id, observation in observations.items()
+            }
+            next_observations, rewards, dones, infos = env.step(actions)
+
+            # Step and record the data of each available agent.
+            for agent_id in observations.keys() & next_observations.keys():
+                loss_output = agent.step(
+                    state=observations[agent_id],
+                    action=actions[agent_id],
+                    reward=rewards[agent_id],
+                    next_state=next_observations[agent_id],
+                    done=dones[agent_id],
+                )
+                # episode.record_step(
+                #     agent_id=agent_id,
+                #     infos=infos,
+                #     rewards=rewards,
+                #     total_step=total_step,
+                #     loss_output=loss_output,
+                # )
+
+            # Update variables for the next step.
             total_step += 1
-            state = next_state
+            observations = next_observations
 
-        episode.record_episode()
-        episode.record_tensorboard(agent_id=AGENT_ID)
+        # episode.record_episode()
+        # episode.record_tensorboard(agent_id=AGENT_ID)
         if finished:
             break
 
