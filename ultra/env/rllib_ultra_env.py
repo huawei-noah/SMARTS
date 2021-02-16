@@ -26,7 +26,7 @@ from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from ultra.baselines.adapter import BaselineAdapter
 import numpy as np
 from scipy.spatial import distance
-import math
+import math, os
 from sys import path
 
 path.append("./ultra")
@@ -42,6 +42,8 @@ class RLlibUltraEnv(RLlibHiWayEnv):
         print(">>> ENV:", config["eval_mode"])
         self.scenario_info = config["scenario_info"]
         self.scenarios = self.get_task(self.scenario_info[0], self.scenario_info[1])
+        self._timestep_sec = config["timestep_sec"]
+        self._seed = config['seed']
         if not config["eval_mode"]:
             _scenarios = glob.glob(f"{self.scenarios['train']}")
         else:
@@ -182,10 +184,9 @@ class RLlibUltraEnv(RLlibHiWayEnv):
         return observations, rewards, agent_dones, infos
 
     def get_task(self, task_id, task_level):
-        with open("/Users/kimia_hszd/dev/SMARTS/ultra/config.yaml", "r") as task_file:
+        with open(os.path.expanduser(f"ultra/config.yaml"), "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
             task = scenarios[f"task{task_id}"][task_level]
-        # print("SCENARIOS", scenarios, task)
         return task
 
     @property
@@ -195,3 +196,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             "timestep_sec": self._timestep_sec,
             "headless": self._headless,
         }
+
+    @property
+    def seed(self):
+        return self._seed

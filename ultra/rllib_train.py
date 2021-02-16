@@ -26,53 +26,38 @@ import timeit, datetime
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
-import time, string
-import psutil, pickle, dill, torch
+import time
+import psutil, dill, torch
 import ray, torch, argparse
 import numpy as np
 from ray import tune
 from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
-from smarts.core.controllers import ActionSpaceType
-from ultra.baselines.ppo.ppo.policy import PPOPolicy
-from ultra.baselines.ppo.ppo.network import PPONetwork
 
-from ray.tune.schedulers import PopulationBasedTraining
-from ray.rllib.evaluation.episode import MultiAgentEpisode
-from ray.rllib.policy.policy import Policy
 
-# from ray.rllib.utils.typing import PolicyID
-from ray.rllib.env.base_env import BaseEnv
-from ray.rllib.evaluation.rollout_worker import RolloutWorker
 from ray.rllib.agents.callbacks import DefaultCallbacks
 from ray.rllib.models import ModelCatalog
-from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
-import pprint
 import ray.rllib.agents.ppo as ppo
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import (
     AgentInterface,
-    AgentType,
     OGM,
     Waypoints,
     NeighborhoodVehicles,
 )
 import tempfile
 from ray.tune.logger import Logger, UnifiedLogger
-from ultra.baselines.ppo.ppo.rllib_network import TorchPPOModel
+from ultra.baselines.rllib_models.fc_network import CustomFCModel
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
-from typing import Dict
-from ultra.utils.episode import LogInfo
+from ultra.utils.log_info import LogInfo
+from ultra.utils.common import gen_experiment_name
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
 class Callbacks(DefaultCallbacks):
-    # def __init__(self):
-    #     self.start = timeit.default_timer()
-
     @staticmethod
     def on_episode_start(
         worker,
@@ -84,28 +69,6 @@ class Callbacks(DefaultCallbacks):
     ):
 
         episode.user_data = LogInfo()
-
-        # print(f'Start {episode.episode_id}-------------------------------------------')
-        # self.start = timei/t.default_timer()
-        # episode.user_data["ego_speed"] = []
-        # print(f"{episode.episode_id} started......")
-
-    # @staticmethod  # self.callbacks.on_train_result(trainer=self, result=result)
-    # def on_train_result(trainer, result):
-    #
-    #     # print("Train", result)
-    #     # print(info)
-    #     print("--------------------------------------------------------")
-    #     # if result["episode_reward_mean"] > 200:
-    #     #     phase = 2
-    #     # elif result["episode_reward_mean"] > 100:
-    #     #     phase = 1
-    #     # else:
-    #     #     phase = 0
-    #     # trainer = info["trainer"]
-    #     # trainer.workers.foreach_worker(
-    #     #     lambda ev: ev.foreach_env(
-    #     #         lambda env: env.set_phase(phase)))
 
     @staticmethod
     def on_episode_step(
@@ -144,46 +107,22 @@ class Callbacks(DefaultCallbacks):
         )
         print("--------------------------------------------------------")
 
-        # print(
-        #     f"Epsiode total_reward:{episode.total_reward}, agent_rewards:{episode.agent_rewards},\
-        #  length:{episode.length}"
-        # )
-        # mean_ego_speed = np.mean(episode.user_data["ego_speed"])
-        # print(
-        #     f"ep. {episode.episode_id:<12} ended;"
-        #     f" length={episode.length:<6}"
-        #     f" mean_ego_speed={mean_ego_speed:.2f}"
-        # )
-        # episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
 
-
-# def policy_mapping(obj):
-#     print(obj,'<<<<<<<<')
-#     return 'AGENT_007'
-
-
-def custom_log_creator(custom_path, custom_str):
-
-    timestr = datetime.datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
-    logdir_prefix = "{}_{}".format(custom_str, timestr)
-
+def log_creator():
+    result_dir = "ray_results"
+    result_dir = Path(result_dir).expanduser().resolve().absolute()
+    logdir_prefix = gen_experiment_name()
     def logger_creator(config):
-
-        if not os.path.exists(custom_path):
-            os.makedirs(custom_path)
-        logdir = tempfile.mkdtemp(prefix=logdir_prefix, dir=custom_path)
+        if not os.path.exists(result_dir):
+            os.makedirs(result_dir)
+        logdir = tempfile.mkdtemp(prefix=logdir_prefix, dir=result_dir)
         return UnifiedLogger(config, logdir, loggers=None)
 
     return logger_creator
 
 
-def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, seed):
-    torch.set_num_threads(1)
-    total_step = 0
-    finished = False
-    num_cpus = max(1, psutil.cpu_count(logical=False) - 1)
-    # print(">>>>>>", num_cpus)
-    ray.init()  # num_cpus=num_cpus)
+def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
+
     # --------------------------------------------------------
     # Initialize Agent and social_vehicle encoding method
     # -------------------------------------------------------
@@ -198,28 +137,12 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         observation_num_lookahead=20,
         social_capacity=10,
     )
-
-    ModelCatalog.register_custom_model("ppo_model", TorchPPOModel)
-
     adapter = BaselineAdapter(
         is_rllib=True, social_vehicle_params=social_vehicle_params,
     )
 
-    result_dir = "ray_results"
-    result_dir = Path(result_dir).expanduser().resolve().absolute()
 
-    pbt = PopulationBasedTraining(
-        time_attr="time_total_s",
-        metric="episode_reward_mean",
-        mode="max",
-        perturbation_interval=300,
-        resample_probability=0.25,
-        hyperparam_mutations={
-            "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
-            "rollout_fragment_length": lambda: 200,
-            "train_batch_size": lambda: 2000,
-        },
-    )
+    ModelCatalog.register_custom_model("fc_model", CustomFCModel)
 
     config = ppo.DEFAULT_CONFIG.copy()
 
@@ -230,7 +153,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             adapter.action_space,
             {
                 "model": {
-                    "custom_model": "ppo_model",
+                    "custom_model": "fc_model",
                     "custom_model_config": {"adapter": adapter,},
                 }
             },
@@ -260,6 +183,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
+        # "seed":seed,
         # checking if scenarios are switching correctly
         # the interval config
         "in_evaluation": True,
@@ -275,6 +199,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
                 "eval_mode": True,
                 "ordered_scenarios": False,
                 "agent_specs": agent_specs,
+                "timestep_sec":timestep_sec
             },
             "explore": False,
         },
@@ -288,6 +213,7 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
             "eval_mode": False,
             "ordered_scenarios": False,
             "agent_specs": agent_specs,
+            "timestep_sec":timestep_sec
         },
         "multiagent": {
             "policies": rllib_policies,
@@ -303,52 +229,16 @@ def train(task, num_episodes, policy_class, eval_info, timestep_sec, headless, s
         },
         # ---------------
         # "train_batch_size":1200, # remove after debugging
-        # single run configuration
-        # "lr": 0.0001,
-        # "gamma": 0.99,
-        # "train_batch_size": 128,
-        # "sgd_minibatch_size": 128,
     }
     config.update(tune_config)
-    result_dir = "ray_results"
-    result_dir = Path(result_dir).expanduser().resolve().absolute()
 
     trainer = ppo.PPOTrainer(
         env=RLlibUltraEnv,
         config=tune_config,
-        logger_creator=custom_log_creator(
-            os.path.expanduser("./ray_results/exp1"), "custom_dir"
-        ),
+        logger_creator=log_creator(),
     )
-    for i in range(1000):
+    for i in range(num_episodes):
         results = trainer.train()
-        print("Train iteration:", i, "------")
-
-    # Evalutaion Configures
-    # Rewards mismatch
-    # tensorboard blank
-    # SAC...
-
-    # print(config)
-    # from ray.tune.logger import Logger
-
-    # analysis = tune.run(
-    #     "PPO",  # "SAC"
-    #     name="exp_1",
-    #     stop={"training_iteration": 10},  # {"timesteps_total": 1200},
-    #     checkpoint_freq=10,
-    #     checkpoint_at_end=True,
-    #     local_dir=str(result_dir),
-    #     resume=False,
-    #     restore=None,
-    #     max_failures=1,
-    #     num_samples=1,
-    #     export_formats=["model", "checkpoint"],
-    #     config=config,
-    #     loggers=
-    #     # scheduler=pbt,
-    #     # "lr": tune.grid_search([1e-3,1e-4])
-    # )
 
 
 if __name__ == "__main__":
@@ -386,12 +276,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    num_cpus = max(
-        1, psutil.cpu_count(logical=False) - 1
-    )  # remove `logical=False` to use all cpus
 
-    policy_class = "ultra.baselines.sac:sac-v0"
-
+    ray.init()
     train(
         task=(args.task, args.level),
         num_episodes=int(args.episodes),
@@ -401,6 +287,39 @@ if __name__ == "__main__":
         },
         timestep_sec=float(args.timestep),
         headless=args.headless,
-        policy_class=policy_class,
         seed=args.seed,
     )
+
+
+# keeping for later
+# from ray.tune.schedulers import PopulationBasedTraining
+# pbt = PopulationBasedTraining(
+#     time_attr="time_total_s",
+#     metric="episode_reward_mean",
+#     mode="max",
+#     perturbation_interval=300,
+#     resample_probability=0.25,
+#     hyperparam_mutations={
+#         "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
+#         "rollout_fragment_length": lambda: 200,
+#         "train_batch_size": lambda: 2000,
+#     },
+# )
+
+# analysis = tune.run(
+#     "PPO",  # "SAC"
+#     name="exp_1",
+#     stop={"training_iteration": 10},  # {"timesteps_total": 1200},
+#     checkpoint_freq=10,
+#     checkpoint_at_end=True,
+#     local_dir=str(result_dir),
+#     resume=False,
+#     restore=None,
+#     max_failures=1,
+#     num_samples=1,
+#     export_formats=["model", "checkpoint"],
+#     config=config,
+#     loggers=
+#     # scheduler=pbt,
+#     # "lr": tune.grid_search([1e-3,1e-4])
+# )
