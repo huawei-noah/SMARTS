@@ -180,8 +180,8 @@ class UltraEnv(HiWayEnv):
             scenarios = yaml.safe_load(task_file)["tasks"]
             task = scenarios[f"task{task_id}"][task_level]
 
-        task['train'] = os.path.join(base_dir, task['train'])
-        task['test'] = os.path.join(base_dir, task['test'])
+        task["train"] = os.path.join(base_dir, task["train"])
+        task["test"] = os.path.join(base_dir, task["test"])
         return task
 
     @property
