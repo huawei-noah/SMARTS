@@ -171,7 +171,10 @@ if __name__ == "__main__":
         "--episodes", help="Number of training episodes", type=int, default=200
     )
     parser.add_argument(
-        "--max-episode-steps", help="Maximum number of steps per episode", type=int, default=10000
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1

@@ -55,7 +55,7 @@ def train(
 
     AGENT_ID = "007"
 
-    spec = make(locator=policy_class, max_episode_steps = 2)
+    spec = make(locator=policy_class, max_episode_steps=2)
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
@@ -145,7 +145,10 @@ if __name__ == "__main__":
         "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
-        "--max-episode-steps", help="Maximum number of steps per episode", type=int, default=10000
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
