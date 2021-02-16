@@ -32,7 +32,7 @@ tasks:
     hard:
       train: "ultra/scenarios/task1/train_hard*"
       test:  "ultra/scenarios/task1/test_hard*"
-  task1-4_agents:
+  task1-4agents:
     easy:
       train: "ultra/scenarios/task1-4agents/train_easy*"
       test: "ultra/scenarios/task1-4agents/test_easy*"
