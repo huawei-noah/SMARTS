@@ -55,6 +55,7 @@ function App({ client }) {
   const [egoView, setEgoView] = useState(false);
   const [currentElapsedTime, setCurrentElapsedTime] = useState(0);
   const [totalElapsedTime, setTotalElapsedTime] = useState(1);
+  const [playing, setPlaying] = useState(true);
   const simulationCanvasRef = useRef(null);
   const recorderRef = useRef(null);
   const { addToast } = useToasts();
@@ -171,6 +172,7 @@ function App({ client }) {
                         setTotalElapsedTime(total);
                       }}
                       style={{ flex: "1" }}
+                      playing={playing}
                     />
                   </div>
                   <PlaybackBar
@@ -181,6 +183,8 @@ function App({ client }) {
                       client.seek(matchedSimulationId, seconds);
                     }}
                     style={{ height: "80px" }}
+                    playing={playing}
+                    setPlaying={setPlaying}
                   />
                 </div>
               );

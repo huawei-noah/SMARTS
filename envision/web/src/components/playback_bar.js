@@ -19,21 +19,35 @@
 // THE SOFTWARE.
 import React, { useState } from "react";
 import { Slider } from "antd";
+import { PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
+
+const buttonStyle = {
+  fontSize:"24px"
+}
 
 export default function PlaybackBar({
   onSeek,
   currentTime = 0,
   totalTime = 1,
+  playing = true,
+  setPlaying,
 }) {
   const [_, setCurrentTime] = useState(currentTime);
+
   return (
     <div
       style={{
         padding: "10px 20px",
         background: "#1F1F1F",
+        display:"flex",
+        flexDirection: "row",
       }}
     >
+      <button onClick={()=> setPlaying(!playing)} style={{"backgroundColor": "Transparent", "border": "none","outline":"none"}}>
+        {playing ? <PauseCircleOutlined style={buttonStyle}/>: <PlayCircleOutlined style={buttonStyle}/>}
+      </button>
       <Slider
+        style={{flex:1}}
         value={currentTime}
         max={totalTime}
         step={0.0001}

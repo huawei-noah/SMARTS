@@ -57,6 +57,7 @@ export default function Simulation({
   canvasRef = null,
   onElapsedTimesChanged = (current, total) => {},
   style = {},
+  playing = true,
 }) {
   const [scene, setScene] = useState(null);
 
@@ -152,19 +153,23 @@ export default function Simulation({
   useEffect(() => {
     let stopPolling = false;
     (async () => {
-      for await (const [wstate, elapsed_times] of client.worldstate(
-        simulationId
-      )) {
+      const it = client.worldstate(simulationId);
+      let wstate_and_time = await it.next()
+      console.log(playing)
+      while (!wstate_and_time.done && playing) {
+        let wstate, elapsed_times;
+        [wstate, elapsed_times] = wstate_and_time.value
         if (!stopPolling) {
           setWorldState(wstate);
           onElapsedTimesChanged(...elapsed_times);
         }
+        wstate_and_time = await it.next()
       }
     })();
 
     // Called when simulation ID changes
     return () => (stopPolling = true);
-  }, [simulationId]);
+  }, [simulationId, playing]);
 
   // Load map
   useEffect(() => {
