@@ -155,7 +155,6 @@ export default function Simulation({
     (async () => {
       const it = client.worldstate(simulationId);
       let wstate_and_time = await it.next();
-      console.log(playing);
       while (!wstate_and_time.done && playing) {
         let wstate, elapsed_times;
         [wstate, elapsed_times] = wstate_and_time.value;
