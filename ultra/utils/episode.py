@@ -192,13 +192,18 @@ class Episode:
         self.initialize_tb_writer()
         for key, data in loss_output.items():
             if step % data["freq"]:
+                loss_name, loss_type = key.split("/")
                 if data["type"] == "scalar":
                     self.tb_writer.add_scalar(
-                        "{}/{}".format(agent_id, key), data["data"], step
+                        "{}/{}/{}".format(loss_name, agent_id, loss_type),
+                        data["data"],
+                        step,
                     )
                 else:
                     self.tb_writer.add_histogram(
-                        "{}/{}".format(agent_id, key), data["data"], step
+                        "{}/{}/{}".format(loss_name, agent_id, loss_type),
+                        data["data"],
+                        step,
                     )
 
     def save_episode(self, episode_count):
@@ -296,9 +301,7 @@ def episodes(n, etag=None, log_dir=None):
             agents_itr = e.agents_itr
             if e.active_tag:
                 agent_rewards_strings = [
-                    "Agent {}: {:.4f}".format(
-                        agent_id, agent_info.data["episode_reward"],
-                    )
+                    "{}: {:.4f}".format(agent_id, agent_info.data["episode_reward"],)
                     for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
                 row = (
