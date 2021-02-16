@@ -34,6 +34,7 @@ seed = 2
 
 class TrainTest(unittest.TestCase):
     def test_train_cli(self):
+        log_dir = "tests/logs"
         try:
             os.system(
                 "python ultra/train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --log-dir tests/logs"
@@ -41,15 +42,6 @@ class TrainTest(unittest.TestCase):
         except Exception as err:
             print(err)
             self.assertTrue(False)
-
-    def test_locate_log_directory(self):
-        log_dir = "tests/logs"
-        try:
-            os.system(
-                f"python ultra/train.py --task 00 --level easy --policy ppo --episodes --max-episode-steps 2 --log-dir {log_dir}"
-            )
-        except Exception as err:
-            print(err)
 
         if os.path.exists(log_dir):
             self.assertTrue(True)

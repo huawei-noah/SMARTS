@@ -161,12 +161,9 @@ class EvaluateTest(unittest.TestCase):
 
     def test_evaluate_agent(self):
         seed = 2
-        model = glob.glob("tests/sac_test_models/*/models/")[0]
-        log_dir = "tests/output_eval_agent_logs"
+        model = glob.glob("tests/sac_test_models/*/models/0")[0]
+        log_dir = "tests/output_eval_agent_logs/"
         policy_class = "ultra.baselines.sac:sac-v0"
-
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
 
         ray.shutdown()
         ray.init(ignore_reinit_error=True)
