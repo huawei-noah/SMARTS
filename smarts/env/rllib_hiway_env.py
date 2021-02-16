@@ -177,11 +177,12 @@ class RLlibHiWayEnv(MultiAgentEnv):
         }
 
         envision = None
-        if not self._headless:
+        if not self._headless or self._envision_record_data_replay_path:
             envision = Envision(
                 endpoint=self._envision_endpoint,
                 sim_name=self._sim_name,
                 output_dir=self._envision_record_data_replay_path,
+                headless=self._headless,
             )
 
         sim = SMARTS(

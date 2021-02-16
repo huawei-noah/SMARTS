@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
+import json
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -151,25 +152,30 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--level",
-        help="Tasks available : [easy, medium, hard]",
+        help="Levels available : [easy, medium, hard, no-traffic]",
         type=str,
         default="easy",
     )
     parser.add_argument(
-        "--policy", help="path to policy class", default="TD3", type=str,
+        "--policy",
+        help="Policies available : [ppo, sac, ddpg, dqn, bdqn]",
+        type=str,
+        default="sac",
     )
-    parser.add_argument("--models", default="models/", help="directory to saved models")
+    parser.add_argument("--models", default="models/", help="Directory to saved models")
     parser.add_argument(
-        "--episodes", help="number of training episodes", type=int, default=200
-    )
-    parser.add_argument(
-        "--timestep", help="environment timestep (sec)", type=float, default=0.1
-    )
-    parser.add_argument(
-        "--headless", help="run without envision", type=bool, default=False
+        "--episodes", help="Number of training episodes", type=int, default=200
     )
     parser.add_argument(
-        "--spec", help="spec file includes adapters and policy parameters", type=str
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
+    )
+    parser.add_argument(
+        "--headless", help="Run without envision", type=bool, default=False
+    )
+    parser.add_argument(
+        "--experiment-dir",
+        help="Path to spec file that includes adapters and policy parameters",
+        type=str,
     )
     args = parser.parse_args()
 
@@ -181,7 +187,16 @@ if __name__ == "__main__":
         glob.glob(f"{args.models}/*"), key=lambda x: int(x.split("/")[-1])
     )
 
-    policy_class = "ultra.baselines.sac:sac-v0"
+    with open("ultra/agent_pool.json", "r") as f:
+        data = json.load(f)
+        if args.policy in data["agents"].keys():
+            policy_path = data["agents"][args.policy]["path"]
+            policy_locator = data["agents"][args.policy]["locator"]
+        else:
+            raise ImportError("Invalid policy name. Please try again")
+
+    # Required string for smarts' class registry
+    policy_class = str(policy_path) + ":" + str(policy_locator)
     num_cpus = max(
         1, psutil.cpu_count(logical=False) - 1
     )  # remove `logical=False` to use all cpus
@@ -197,7 +212,7 @@ if __name__ == "__main__":
             episode.info[episode.active_tag] = ray.get(
                 [
                     evaluate.remote(
-                        experiment_dir=args.spec,
+                        experiment_dir=args.experiment_dir,
                         agent_id=agent_id,
                         policy_class=policy_class,
                         seed=episode.eval_count,

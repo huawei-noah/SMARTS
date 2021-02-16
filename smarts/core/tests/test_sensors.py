@@ -104,7 +104,7 @@ def uturn_scenarios():
                 route=t.Route(
                     begin=("edge-west-WE", 0, 30), end=("edge-west-EW", 0, "max")
                 ),
-                task=t.UTurn(),
+                task=t.UTurn(initial_speed=15),
             ),
         ]
         gen_scenario(

@@ -2,10 +2,10 @@ name: SMARTS CI Memory
 
 on:
   schedule:
-    - cron: '0 23 * * 2'
+    - cron: '0 23 * * 4'
       # Time is in UTC
-      # Runs at 11.00pm, UTC  , every Tuesday
-      # Runs at  6.00pm, UTC-5, every Tuesday
+      # Runs at 11.00pm, UTC  , every Thursday
+      # Runs at  6.00pm, UTC-5, every Thursday
   workflow_dispatch:
 
 env:

@@ -45,6 +45,7 @@ class Episode:
         etag=None,
         tb_writer=None,
         last_eval_iteration=None,
+        log_dir=None,
     ):
         self.info = {}
         self.all_data = all_data
@@ -57,7 +58,7 @@ class Episode:
                 self.experiment_name = f"{self.experiment_name}-{etag}"
         else:
             self.experiment_name = experiment_name
-        self.log_dir = "logs"
+        self.log_dir = log_dir
         self.experiment_dir = f"{self.log_dir}/{self.experiment_name}"
         self.model_dir = f"{self.log_dir}/{self.experiment_name}/models"
         self.code_dir = f"{self.log_dir}/{self.experiment_name}/codes"
@@ -162,7 +163,7 @@ class Episode:
         with open(f"{pkls_dir}/results.pkl", "wb") as handle:
             dill.dump(self.all_data[self.active_tag], handle)
 
-        if save_codes and not os.path.exists(self.code_dir):  # just save once
+        if save_codes and not os.path.exists(self.code_dir):  # save once
             self.make_dir(self.code_dir)
             for code_path in save_codes:
                 try:
@@ -174,7 +175,8 @@ class Episode:
                     pass
 
 
-def episodes(n, etag=None):
+def episodes(n, etag=None, dir=None):
+    log_dir = dir
     col_width = 18
     with tp.TableContext(
         [f"Episode", f"Sim/Wall", f"Total Steps", f"Steps/Sec", f"Score",],
@@ -197,6 +199,7 @@ def episodes(n, etag=None):
                 last_eval_iteration=last_eval_iteration,
                 all_data=all_data,
                 eval_count=eval_count,
+                log_dir=log_dir,
             )
             yield e
             tb_writer = e.tb_writer

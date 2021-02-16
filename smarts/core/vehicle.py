@@ -45,6 +45,7 @@ from .sensors import (
     WaypointsSensor,
 )
 from .utils.math import rotate_around_point
+from functools import lru_cache
 
 
 @dataclass(frozen=True)
@@ -148,6 +149,7 @@ class Vehicle:
         # TODO: Move this into the VehicleGeometry class
         self._np = self._build_model(pose, config, showbase)
         self._initialized = True
+        self._has_stepped = False
 
     def _assert_initialized(self):
         assert self._initialized, f"Vehicle({self.id}) is not initialized"
@@ -342,11 +344,10 @@ class Vehicle:
                 agent_interface.vehicle_type
             ]
 
-        vehicle = Vehicle(
-            id=vehicle_id,
-            pose=start_pose,
-            showbase=sim,
-            chassis=AckermannChassis(
+        chassis = None
+        # change this to dynamic_action_spaces later when pr merged
+        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+            chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
                 vehicle_filepath=vehicle_filepath,
@@ -354,7 +355,20 @@ class Vehicle:
                 friction_map=surface_patches,
                 controller_parameters=controller_parameters,
                 initial_speed=initial_speed,
-            ),
+            )
+        else:
+            chassis = BoxChassis(
+                pose=start_pose,
+                speed=initial_speed,
+                dimensions=chassis_dims,
+                bullet_client=sim.bc,
+            )
+
+        vehicle = Vehicle(
+            id=vehicle_id,
+            pose=start_pose,
+            showbase=sim,
+            chassis=chassis,
             color=vehicle_color,
         )
 
@@ -474,6 +488,7 @@ class Vehicle:
         )
 
     def step(self, current_simulation_time):
+        self._has_stepped = True
         self._chassis.step(current_simulation_time)
 
     def control(self, *args, **kwargs):
@@ -483,8 +498,17 @@ class Vehicle:
         pos, heading = self._chassis.pose.as_panda3d()
         self._np.setPosHpr(*pos, heading, 0, 0)
 
+    @lru_cache(maxsize=1)
+    def _warn_AckermannChassis_set_pose(self):
+        if self._has_stepped and isinstance(self._chassis, AckermannChassis):
+            logging.warning(
+                f"Agent `{self._id}` has called set pose after step."
+                "This may cause collision problems"
+            )
+
     # TODO: Merge this w/ speed setter as a set GCD call?
     def set_pose(self, pose: Pose):
+        self._warn_AckermannChassis_set_pose()
         self._chassis.set_pose(pose)
 
     def swap_chassis(self, chassis: Chassis):

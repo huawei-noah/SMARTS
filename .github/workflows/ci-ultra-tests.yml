@@ -1,0 +1,47 @@
+name: ULTRA CI Base Tests
+
+on:
+  push:
+    branches:
+      - disabled
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    container: huaweinoah/smarts:v0.4.3-pre
+    strategy:
+      matrix:
+        tests:
+          - ./ultra/tests/ --ignore=./ultra/tests/test_train.py
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup X11
+        run: |
+          /usr/bin/Xorg \
+            -noreset \
+            +extension GLX \
+            +extension RANDR \
+            +extension RENDER \
+            -logfile ./xdummy.log \
+            -config /etc/X11/xorg.conf :1 &
+      - name: Install dependencies
+        run: |
+          python3.7 -m venv .venv
+          . .venv/bin/activate
+          pip install dill
+          pip install ijson
+          pip install --upgrade --upgrade-strategy eager pip
+          pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade --upgrade-strategy eager -r requirements.txt
+          pip install --upgrade --upgrade-strategy eager -e .[train,test]
+      - name: Run smoke tests
+        run: |
+          . .venv/bin/activate
+          make build-all-scenarios
+          PYTHONHASHSEED=42 pytest -v \
+            --doctest-modules \
+            --forked \
+            --dist=no \
+            -n auto \
+            ${{matrix.tests}}
