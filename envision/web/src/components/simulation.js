@@ -154,16 +154,16 @@ export default function Simulation({
     let stopPolling = false;
     (async () => {
       const it = client.worldstate(simulationId);
-      let wstate_and_time = await it.next()
-      console.log(playing)
+      let wstate_and_time = await it.next();
+      console.log(playing);
       while (!wstate_and_time.done && playing) {
         let wstate, elapsed_times;
-        [wstate, elapsed_times] = wstate_and_time.value
+        [wstate, elapsed_times] = wstate_and_time.value;
         if (!stopPolling) {
           setWorldState(wstate);
           onElapsedTimesChanged(...elapsed_times);
         }
-        wstate_and_time = await it.next()
+        wstate_and_time = await it.next();
       }
     })();
 
