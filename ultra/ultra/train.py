@@ -55,7 +55,7 @@ def train(
 
     AGENT_ID = "007"
 
-    spec = make(locator=policy_class, max_episode_steps=2)
+    spec = make(locator=policy_class, max_episode_steps=max_episode_steps)
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
