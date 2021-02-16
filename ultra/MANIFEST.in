@@ -3,3 +3,4 @@ include ultra/agent_pool.json
 include config.yaml
 include ultra/scenarios/task1/config.yaml
 include ultra/scenarios/task2/config.yaml
+recursive-include ultra/scenarios/pool

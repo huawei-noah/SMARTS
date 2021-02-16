@@ -173,16 +173,15 @@ class UltraEnv(HiWayEnv):
         return observations, rewards, agent_dones, infos
 
     def get_task(self, task_id, task_level):
-        base_dir = os.path.dirname(__file__)
-        # print(base_dir)
-        config_path = os.path.join(base_dir, "../../config.yaml")
-        # print(config_path)
+        base_dir = os.path.join(os.path.dirname(__file__), "../")
+        config_path = os.path.join(base_dir, "config.yaml")
 
         with open(config_path, "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
-            # print(scenarios)
             task = scenarios[f"task{task_id}"][task_level]
-            # print(task)
+
+        task['train'] = os.path.join(base_dir, task['train'])
+        task['test'] = os.path.join(base_dir, task['test'])
         return task
 
     @property

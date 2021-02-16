@@ -36,7 +36,7 @@ class TrainTest(unittest.TestCase):
     def test_train_cli(self):
         try:
             os.system(
-                "python ultra/train.py --task 00 --level easy --episodes 1 --log-dir tests/logs"
+                "python ultra/train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --log-dir tests/logs"
             )
         except Exception as err:
             print(err)
@@ -46,7 +46,7 @@ class TrainTest(unittest.TestCase):
         log_dir = "tests/logs"
         try:
             os.system(
-                f"python ultra/train.py --task 00 --level easy --policy ppo --episodes 1 --log-dir {log_dir}"
+                f"python ultra/train.py --task 00 --level easy --policy ppo --episodes --max-episode-steps 2 --log-dir {log_dir}"
             )
         except Exception as err:
             print(err)
@@ -70,6 +70,7 @@ class TrainTest(unittest.TestCase):
                         scenario_info=("00", "easy"),
                         policy_class=policy_class,
                         num_episodes=1,
+                        max_episode_steps=2,
                         eval_info={"eval_rate": 1000, "eval_episodes": 2,},
                         timestep_sec=0.1,
                         headless=True,

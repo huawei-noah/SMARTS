@@ -53,7 +53,7 @@ class AnalysisTest(unittest.TestCase):
                 os.makedirs("tests/scenarios/analysis_output")
 
             os.system(
-                "python ultra/scenarios/interface.py analyze --scenarios tests/task/eval_test/ --max-steps 1000 --end-by-stopwatcher --output tests/scenarios/analysis_output"
+                "python ultra/scenarios/interface.py analyze --scenarios tests/task/eval_test/--end-by-stopwatcher --output tests/scenarios/analysis_output"
             )
             for dirpath, dirnames, files in os.walk("tests/tasks/eval_test/"):
                 if "traffic" in dirpath:
