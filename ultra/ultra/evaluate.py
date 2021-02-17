@@ -59,11 +59,11 @@ def evaluation_check(
         checkpoint_dir = episode.checkpoint_dir(agent_itr)
         agent.save(checkpoint_dir)
         episode.eval_mode()
-        episode.info[episode.active_tag] = ray.get(
+        episode.info[episode.active_tag][agent_id] = ray.get(
             [
                 evaluate.remote(
                     experiment_dir=episode.experiment_dir,
-                    agent_id="AGENT_008",
+                    agent_id=agent_id,
                     policy_class=policy_class,
                     seed=episode.eval_count,
                     itr_count=agent_itr,
@@ -78,7 +78,7 @@ def evaluation_check(
         )[0]
         episode.eval_count += 1
         episode.last_eval_iteration = agent_itr
-        episode.record_tensorboard(agent_id=agent_id)
+        episode.record_tensorboard()
         episode.train_mode()
 
 
@@ -136,9 +136,9 @@ def evaluate(
             episode.record_step(agent_id=agent_id, infos=infos, rewards=rewards)
 
         episode.record_episode()
-        logs.append(episode.info[episode.active_tag].data)
+        logs.append(episode.info[episode.active_tag][agent_id].data)
 
-        for key, value in episode.info[episode.active_tag].data.items():
+        for key, value in episode.info[episode.active_tag][agent_id].data.items():
             if not isinstance(value, (list, tuple, np.ndarray)):
                 summary_log.data[key] += value
 
@@ -210,19 +210,19 @@ if __name__ == "__main__":
 
     ray.init()
     try:
-        agent_id = "AGENT_008"
+        AGENT_ID = "AGENT_008"
         for episode in episodes(
-            len(sorted_models), etag=policy_class, log_dir=args.log_dir
+            len(sorted_models), etag=policy_class, log_dir=args.log_dir,
         ):
             model = sorted_models[episode.index]
             print("model: ", model)
             episode_count = model.split("/")[-1]
             episode.eval_mode()
-            episode.info[episode.active_tag] = ray.get(
+            episode.info[episode.active_tag][AGENT_ID] = ray.get(
                 [
                     evaluate.remote(
                         experiment_dir=args.experiment_dir,
-                        agent_id=agent_id,
+                        agent_id=AGENT_ID,
                         policy_class=policy_class,
                         seed=episode.eval_count,
                         itr_count=0,
@@ -235,7 +235,7 @@ if __name__ == "__main__":
                     )
                 ]
             )[0]
-            episode.record_tensorboard(agent_id=agent_id)
+            episode.record_tensorboard()
             episode.eval_count += 1
     finally:
         time.sleep(1)
