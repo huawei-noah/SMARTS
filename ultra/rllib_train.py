@@ -64,10 +64,8 @@ class Callbacks(DefaultCallbacks):
         base_env,
         policies,
         episode,
-        # env_index,
         **kwargs,
     ):
-
         episode.user_data = LogInfo()
 
     @staticmethod
@@ -75,7 +73,6 @@ class Callbacks(DefaultCallbacks):
         worker,
         base_env,
         episode,
-        # env_index,
         **kwargs,
     ):
 
@@ -94,7 +91,6 @@ class Callbacks(DefaultCallbacks):
         base_env,
         policies,
         episode,
-        # env_index,
         **kwargs,
     ):
         episode.user_data.normalize(episode.length)
@@ -141,7 +137,6 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
     adapter = BaselineAdapter(social_vehicle_params=social_vehicle_params,)
 
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
-
     config = ppo.DEFAULT_CONFIG.copy()
 
     rllib_policies = {
@@ -152,7 +147,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
             {
                 "model": {
                     "custom_model": "fc_model",
-                    "custom_model_config": {"adapter": adapter,},
+                    "custom_model_config": {"adapter": adapter},
                 }
             },
         )
@@ -192,8 +187,6 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
                 "seed": seed,
                 "scenario_info": task,
                 "headless": headless,
-                "state_description": adapter.state_description,
-                "social_vehicle_params": social_vehicle_params,
                 "eval_mode": True,
                 "ordered_scenarios": False,
                 "agent_specs": agent_specs,
@@ -206,8 +199,6 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
             "seed": seed,
             "scenario_info": task,
             "headless": headless,
-            "state_description": adapter.state_description,
-            "social_vehicle_params": social_vehicle_params,
             "eval_mode": False,
             "ordered_scenarios": False,
             "agent_specs": agent_specs,
