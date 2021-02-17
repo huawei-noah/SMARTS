@@ -9,6 +9,7 @@ from smarts.core.sensors import Observation
 
 from examples import default_argument_parser
 
+import profiler
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,7 +33,7 @@ class ChaseViaPointsAgent(Agent):
             1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
         )
 
-
+@profiler.profile_function
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
@@ -81,3 +82,8 @@ if __name__ == "__main__":
         num_episodes=args.episodes,
         seed=args.seed,
     )
+
+# docker build --network=host -t smarts:v0.4.13 .
+# docker run -it --gpus all --network=host --env DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v /home/kyber/workspaces/SMARTS/examples:/src/examples -d /dev/input:/dev/input smarts:v0.4.13
+# scl envision start -s ./scenarios -p 8081 &
+# python3.7 ./examples/single_agent.py ./scenarios/straight/
