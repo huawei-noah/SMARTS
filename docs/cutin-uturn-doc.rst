@@ -25,7 +25,7 @@ interface level. A typical use case would be as follows:
 
 Fig.1 illustrates how we select the main configuration parameters of the cut-in
 task, The blue rectangle on the top lane shows the position in which the cut-in
-task is triggered. As it is shown in Fig.1 the distant between this point and
+task is triggered. As it is shown in Fig.1 the distance between this point and
 the kyber vehicle is equal to :red:`20 − aggressiveness` where aggressiveness changes
 between 0 to 10.
 
@@ -198,4 +198,3 @@ This is the speed during the u-turn maneuver. Currently,
 it is set to the half of the initial speed of the vehicle. Note that increasing
 the u-turn speed may result in the overshoot during the transition if the
 values of d1 and d2 are not adjusted accordingly.
-    
