@@ -1,6 +1,6 @@
-ego_mission:
+ego_missions:
   # left turn from south to west
-  start: south-SN
+- start: south-SN
   end:   west-EW
 levels:
   lo-hi:
