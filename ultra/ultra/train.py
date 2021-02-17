@@ -138,20 +138,20 @@ def train(
                     next_state=next_observations[agent_id],
                     done=dones[agent_id],
                 )
-                # episode.record_step(
-                #     agent_id=agent_id,
-                #     infos=infos,
-                #     rewards=rewards,
-                #     total_step=total_step,
-                #     loss_output=loss_output,
-                # )
+                episode.record_step(
+                    agent_id=agent_id,
+                    infos=infos,
+                    rewards=rewards,
+                    total_step=total_step,
+                    loss_output=loss_output,
+                )
 
             # Update variables for the next step.
             total_step += 1
             observations = next_observations
 
-        # episode.record_episode()
-        # episode.record_tensorboard(agent_id=AGENT_ID)
+        episode.record_episode()
+        episode.record_tensorboard()
 
         if finished:
             break
