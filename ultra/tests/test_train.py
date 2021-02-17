@@ -68,7 +68,7 @@ class TrainTest(unittest.TestCase):
                 [
                     train.remote(
                         scenario_info=("00", "easy"),
-                        policy_class=policy_class,
+                        policy_classes=[policy_class],
                         num_episodes=1,
                         eval_info={"eval_rate": 1000, "eval_episodes": 2,},
                         timestep_sec=0.1,
