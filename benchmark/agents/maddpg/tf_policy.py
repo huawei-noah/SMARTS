@@ -363,7 +363,7 @@ class MADDPG2TFPolicy(MADDPGPostprocessing, TFPolicy):
         activation=None,
         scope=None,
     ):
-        """ Build critic network
+        """Build critic network
 
         Args:
             obs_n: list, the observation placeholder list contains at least one.

@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,39 +19,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+def pretty_dict(d, indent=0):
+    """Pretty the output format of a dictionary.
 
-from abc import abstractmethod, ABCMeta
+    Parameters
+    ----------
+    d
+        dict, the input dictionary instance.
+    indent
+        int, indent level, non-negative.
+    Returns
+    -------
+    res
+        str, the output string
+    """
 
-
-class MetricHandler(metaclass=ABCMeta):
-    def __init__(self):
-        self._logs_mapping = None
-
-    @property
-    def logs_mapping(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def log_step(self, **kwargs):
-        """ Called at each time step to log the step information """
-        pass
-
-    @abstractmethod
-    def show_plots(self, **kwargs):
-        """ Do visualization """
-        pass
-
-    @abstractmethod
-    def write_to_csv(self, csv_dir):
-        """ Write logs to csv files """
-        pass
-
-    @abstractmethod
-    def read_logs(self, csv_dir):
-        """ Read logs from local csv files"""
-        pass
-
-    @abstractmethod
-    def compute(self, **kwargs):
-        """ Analysis with given metrics """
-        pass
+    res = ""
+    for k, v in d.items():
+        res += "\t" * indent + str(k)
+        if isinstance(v, dict):
+            res += "\n" + pretty_dict(v, indent + 1)
+        else:
+            res += ": " + str(v) + "\n"
+    return res
