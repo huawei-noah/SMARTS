@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import random
 import math
+import logging
 from typing import Optional
 
 import numpy as np
@@ -45,6 +46,7 @@ class MissionPlanner:
     def __init__(
         self, waypoints: Waypoints, road_network: SumoRoadNetwork, agent_behavior=None
     ):
+        self._log = logging.getLogger(self.__class__.__name__)
         self._waypoints = waypoints
         self._agent_behavior = agent_behavior or AgentBehavior(aggressiveness=5)
         self._mission = None
@@ -60,6 +62,7 @@ class MissionPlanner:
         self._insufficient_initial_distant = False
         self._uturn_initial_position = 0
         self._uturn_is_initialized = False
+        self._first_uturn = True
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -300,6 +303,7 @@ class MissionPlanner:
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
 
+        ## the position of ego car is here: [x, y]
         ego_position = pose.position[:2]
         ego_lane = self._road_network.nearest_lane(ego_position)
         ego_wps = self._waypoints.waypoint_paths_on_lane_at(
@@ -467,6 +471,14 @@ class MissionPlanner:
                 lane_index=lane_index,
             )
             trajectory.append(wp)
+
+        if self._first_uturn:
+            uturn_activated_distance = math.sqrt(
+                horizontal_distant ** 2 + vertical_distant ** 2
+            )
+            self._log.info(f"U-turn activated at distance: {uturn_activated_distance}")
+            self._first_uturn = False
+
         return [trajectory]
 
     def paths_of_lane_at(self, lane, offset, lookahead=30):
