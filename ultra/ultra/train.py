@@ -92,7 +92,7 @@ def train(
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
-            if any([episode.get_itr(agent_id) >= 1000000] for agent_id in agents):
+            if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
                 finished = True
                 break
 
