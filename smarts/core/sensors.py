@@ -996,10 +996,7 @@ class WaypointsSensor(Sensor):
                 )
             elif isinstance(self._mission_planner.mission.task, CutIn):
                 waypoints_with_task = self._mission_planner.cut_in_waypoints(
-                    self._sim,
-                    self._vehicle.pose,
-                    self._vehicle,
-                    lazy_calculate_waypoints,
+                    self._sim, self._vehicle.pose, self._vehicle
                 )
 
         if waypoints_with_task:

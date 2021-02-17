@@ -55,16 +55,19 @@ function App({ client }) {
   const matchedSimulationId = routeMatch ? routeMatch.params.simulation : null;
 
   useEffect(() => {
-    (async () => {
+    const fetchRunningSim = async () => {
       let ids = await client.fetchSimulationIds();
       if (ids.length > 0) {
         if (!matchedSimulationId || !ids.includes(matchedSimulationId)) {
-          history.push(`/${ids[0]}`);
+          history.push(`/${ids[ids.length - 1]}`);
         }
       }
-
       setSimulationIds(ids);
-    })();
+    };
+
+    // checks if there is new simulation running every 3 seconds.
+    const interval = setInterval(fetchRunningSim, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   async function onStartRecording() {

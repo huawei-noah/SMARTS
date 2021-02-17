@@ -156,6 +156,10 @@ See the provided ready-to-go scripts under the [examples/](./examples) directory
 
 Please read [Contributing](CONTRIBUTING.md)
 
+## Bug reports
+
+Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/How-To-Make-a-Bug-Report) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
+
 ### Building Docs Locally
 
 Assuming you have run `pip install .[dev]`.
@@ -255,7 +259,7 @@ $ python examples/single_agent.py scenarios/loop
 docker login
 
 export VERSION=v0.4.3-pre
-docker build -t smarts:$VERSION .
+docker build --no-cache -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
 docker push huaweinoah/smarts:$VERSION
 ```
