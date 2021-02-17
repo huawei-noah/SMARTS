@@ -35,17 +35,13 @@ from ultra.evaluate import evaluation_check
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
-NUM_AGENTS = 4
-AGENT_IDS = [("00" + str(i)) for i in range(NUM_AGENTS)]
-AGENT_CLASSES = ["ultra.baselines.dqn:dqn-v0" for _ in range(NUM_AGENTS)]
-
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def train(
     scenario_info,
     num_episodes,
-    policy_class,
+    policy_classes,
     eval_info,
     timestep_sec,
     headless,
@@ -56,15 +52,33 @@ def train(
     total_step = 0
     finished = False
 
-    agent_specs = {
-        agent_id: make(locator=agent_class)
-        for agent_id, agent_class in zip(AGENT_IDS, AGENT_CLASSES)
+    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
+    etag = ":".join(
+        [policy_class.split(":")[-1] for policy_class in policy_classes]
+    )
+
+    # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...
+    agent_ids = [
+        "0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))
+    ]
+    # Assign the policy classes to their associated ID.
+    agent_classes = {
+        agent_id: policy_class
+        for agent_id, policy_class in zip(agent_ids, policy_classes)
     }
+    # Create the agent specifications matched with their associated ID.
+    agent_specs = {
+        agent_id: make(locator=policy_class)
+        for agent_id, policy_class in agent_classes.items()
+    }
+    # Create the agents matched with their associated ID.
     agents = {
         agent_id: agent_spec.build_agent()
         for agent_id, agent_spec in agent_specs.items()
     }
 
+    # Create the environment.
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs=agent_specs,
@@ -74,7 +88,7 @@ def train(
         seed=seed,
     )
 
-    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
+    for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
         dones = {"__all__": False}
@@ -101,7 +115,7 @@ def train(
                 evaluation_check(
                     agent=agent,
                     agent_id=agent_id,
-                    policy_class=policy_class,
+                    policy_class=agent_classes[agent_id],
                     episode=episode,
                     log_dir=log_dir,
                     **eval_info,
@@ -190,16 +204,17 @@ if __name__ == "__main__":
     pool_path = os.path.join(base_dir, "agent_pool.json")
     args = parser.parse_args()
 
+    # Obtain the policy class strings for each specified policy.
+    policy_classes = []
     with open(pool_path, "r") as f:
         data = json.load(f)
-        if args.policy in data["agents"].keys():
-            policy_path = data["agents"][args.policy]["path"]
-            policy_locator = data["agents"][args.policy]["locator"]
-        else:
-            raise ImportError("Invalid policy name. Please try again")
-
-    # Required string for smarts' class registry
-    policy_class = str(policy_path) + ":" + str(policy_locator)
+        for policy in args.policy.split(","):
+            if policy in data["agents"].keys():
+                policy_classes.append(
+                    data["agents"][policy]["path"] + ":" + data["agents"][policy]["locator"]
+                )
+            else:
+                raise ImportError("Invalid policy name. Please try again")
 
     ray.init()
     ray.wait(
@@ -213,7 +228,7 @@ if __name__ == "__main__":
                 },
                 timestep_sec=float(args.timestep),
                 headless=args.headless,
-                policy_class=policy_class,
+                policy_classes=policy_classes,
                 seed=args.seed,
                 log_dir=args.log_dir,
             )
