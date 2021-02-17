@@ -6,7 +6,7 @@ jobs:
   test-base:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.3-pre
+    container: adaickalavan/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -41,7 +41,7 @@ jobs:
   test-package-via-setup:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.3-pre
+    container: adaickalavan/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -71,7 +71,7 @@ jobs:
   test-package-via-wheel:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.3-pre
+    container: adaickalavan/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
