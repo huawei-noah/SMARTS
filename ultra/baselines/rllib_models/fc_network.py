@@ -26,6 +26,7 @@ from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFCNet
 from ultra.baselines.common.state_preprocessor import *
 
+
 class CustomFCModel(TorchModelV2, nn.Module):
     """Example of interpreting repeated observations."""
 
@@ -62,7 +63,6 @@ class CustomFCModel(TorchModelV2, nn.Module):
         self.model = TorchFCNet(
             obs_space, action_space, num_outputs, model_config, name
         )
-
 
     def forward(self, input_dict, state, seq_lens):
 

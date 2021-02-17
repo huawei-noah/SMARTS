@@ -43,16 +43,14 @@ class RLlibUltraEnv(RLlibHiWayEnv):
         self.scenario_info = config["scenario_info"]
         self.scenarios = self.get_task(self.scenario_info[0], self.scenario_info[1])
         self._timestep_sec = config["timestep_sec"]
-        self._seed = config['seed']
+        self._seed = config["seed"]
         if not config["eval_mode"]:
             _scenarios = glob.glob(f"{self.scenarios['train']}")
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
         config["scenarios"] = _scenarios
-        self.ultra_scores = BaselineAdapter(
-            social_vehicle_params=config["social_vehicle_params"], is_rllib=True,
-        )
+        self.ultra_scores = BaselineAdapter()
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:

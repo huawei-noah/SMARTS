@@ -41,10 +41,9 @@ num_lookahead = 100
 
 
 class BaselineAdapter:
-    def __init__(
-        self, social_vehicle_params, is_rllib=False,
-    ):
-        self.is_rllib = is_rllib
+    def __init__(self, social_vehicle_params=None):
+        if social_vehicle_params is None:
+            return
         self.observation_num_lookahead = social_vehicle_params[
             "observation_num_lookahead"
         ]

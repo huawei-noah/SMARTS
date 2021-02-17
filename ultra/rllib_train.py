@@ -103,7 +103,7 @@ class Callbacks(DefaultCallbacks):
                 episode.custom_metrics[key] = val
 
         print(
-            f"End {episode.episode_id},\nlength:{episode.length}, \nenv_score:{episode.custom_metrics['env_score']},\ncollision:{episode.custom_metrics['collision']}, \nreached_goal:{episode.custom_metrics['reached_goal']},\ntimeout:{episode.custom_metrics['timed_out']},\noff_road:{episode.custom_metrics['off_road']},\ndist_travelled:{episode.custom_metrics['dist_travelled']},\ngoal_dist:{episode.custom_metrics['goal_dist']}"
+            f"Episode {episode.episode_id} ended:\nlength:{episode.length},\nenv_score:{episode.custom_metrics['env_score']},\ncollision:{episode.custom_metrics['collision']}, \nreached_goal:{episode.custom_metrics['reached_goal']},\ntimeout:{episode.custom_metrics['timed_out']},\noff_road:{episode.custom_metrics['off_road']},\ndist_travelled:{episode.custom_metrics['dist_travelled']},\ngoal_dist:{episode.custom_metrics['goal_dist']}"
         )
         print("--------------------------------------------------------")
 
@@ -112,6 +112,7 @@ def log_creator():
     result_dir = "ray_results"
     result_dir = Path(result_dir).expanduser().resolve().absolute()
     logdir_prefix = gen_experiment_name()
+
     def logger_creator(config):
         if not os.path.exists(result_dir):
             os.makedirs(result_dir)
@@ -137,10 +138,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
         observation_num_lookahead=20,
         social_capacity=10,
     )
-    adapter = BaselineAdapter(
-        is_rllib=True, social_vehicle_params=social_vehicle_params,
-    )
-
+    adapter = BaselineAdapter(social_vehicle_params=social_vehicle_params,)
 
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
 
@@ -199,7 +197,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
                 "eval_mode": True,
                 "ordered_scenarios": False,
                 "agent_specs": agent_specs,
-                "timestep_sec":timestep_sec
+                "timestep_sec": timestep_sec,
             },
             "explore": False,
         },
@@ -213,7 +211,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
             "eval_mode": False,
             "ordered_scenarios": False,
             "agent_specs": agent_specs,
-            "timestep_sec":timestep_sec
+            "timestep_sec": timestep_sec,
         },
         "multiagent": {
             "policies": rllib_policies,
@@ -233,9 +231,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
     config.update(tune_config)
 
     trainer = ppo.PPOTrainer(
-        env=RLlibUltraEnv,
-        config=tune_config,
-        logger_creator=log_creator(),
+        env=RLlibUltraEnv, config=tune_config, logger_creator=log_creator(),
     )
     for i in range(num_episodes):
         results = trainer.train()
@@ -275,7 +271,6 @@ if __name__ == "__main__":
         "--seed", help="environment seed", default=2, type=int,
     )
     args = parser.parse_args()
-
 
     ray.init()
     train(
