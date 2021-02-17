@@ -2,7 +2,7 @@
 # ```bash
 # $ export VERSION=v0.4.13
 # $ cd /path/to/SMARTS
-# $ docker build --network=host -t huaweinoah/smarts:$VERSION-minimal -f minimal.Dockerfile .
+# $ docker build -t huaweinoah/smarts:$VERSION-minimal -f minimal.Dockerfile .
 # $ docker push huaweinoah/smarts:$VERSION-minimal
 # ```
 
@@ -29,7 +29,7 @@ RUN apt-get update --fix-missing && \
         wget \
         x11-apps \
         xserver-xorg-video-dummy && \
-    apt-get autoremove && \
+    apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
 # Update default python version
@@ -59,6 +59,3 @@ RUN echo "/usr/bin/Xorg " \
     "-logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch $DISPLAY &" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]
-
-# $ docker build --network=host -t adaickalavan/smarts:v0.4.13-minimal -f minimal.Dockerfile .
-# $ docker push adaickalavan/smarts:v0.4.13-minimal
