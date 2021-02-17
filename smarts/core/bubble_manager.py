@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from functools import lru_cache
+from sys import maxsize
 import logging
 from collections import defaultdict
 from copy import deepcopy
@@ -36,7 +37,7 @@ from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
 from smarts.core.vehicle import Vehicle, VehicleState
 from smarts.core.vehicle_index import VehicleIndex
-from smarts.sstudio.types import BoidAgentActor
+from smarts.sstudio.types import BoidAgentActor, BubbleLimits
 from smarts.sstudio.types import Bubble as SSBubble
 from smarts.sstudio.types import SocialAgentActor
 from smarts.zoo.registry import make as make_social_agent
@@ -63,17 +64,33 @@ class Bubble:
     def __init__(self, bubble: SSBubble, sumo_road_network: SumoRoadNetwork):
         geometry = bubble.zone.to_geometry(sumo_road_network)
 
-        self._bubble_heading = 0
-        self._bubble = bubble
-        self._limit = bubble.limit
-        self._cached_inner_geometry = geometry
-        self._exclusion_prefixes = bubble.exclusion_prefixes
+        bubble_limit = (
+            bubble.limit or BubbleLimits()
+            if bubble.limit is None or isinstance(bubble.limit, BubbleLimits)
+            else BubbleLimits(bubble.limit, bubble.limit + 1)
+        )
 
         if isinstance(bubble.actor, BoidAgentActor):
+
+            def safe_min(a, b):
+                return min(a or maxsize, b or maxsize)
+
             if bubble.limit is None:
-                self._limit = bubble.actor.capacity
+                bubble_limit = bubble.actor.capacity
             elif bubble.actor.capacity is not None:
-                self._limit = min(bubble.limit, bubble.actor.capacity)
+                hijack_limit = safe_min(
+                    bubble.limit.hijack_limit, bubble.actor.capacity
+                )
+                shadow_limit = safe_min(
+                    bubble.limit.shadow_limit, bubble.actor.capacity.shadow_limit
+                )
+                bubble_limit = BubbleLimits(hijack_limit, shadow_limit)
+
+        self._bubble_heading = 0
+        self._bubble = bubble
+        self._limit = bubble_limit
+        self._cached_inner_geometry = geometry
+        self._exclusion_prefixes = bubble.exclusion_prefixes
 
         self._cached_airlock_geometry = self._cached_inner_geometry.buffer(
             bubble.margin, cap_style=CAP_STYLE.square, join_style=JOIN_STYLE.mitre,
@@ -117,7 +134,7 @@ class Bubble:
     def airlock_geometry(self) -> Polygon:
         return self._cached_airlock_geometry
 
-    def is_admissible(
+    def admissibility(
         self,
         vehicle_id: str,
         index: VehicleIndex,
@@ -129,29 +146,43 @@ class Bubble:
         """
         for prefix in self.exclusion_prefixes:
             if vehicle_id.startswith(prefix):
-                return False
+                return False, False
 
+        hijackable, shadowable = True, True
         if self._limit is not None:
             # Already hijacked (according to VehicleIndex) + to be hijacked (running cursors)
-            current_hijacked_or_shadowed_vehicle_ids = {
+            current_hijacked_vehicle_ids = {
                 v_id
                 for v_id in vehicle_ids_in_bubbles[self]
-                if index.vehicle_is_hijacked(v_id) or index.vehicle_is_shadowed(v_id)
+                if index.vehicle_is_hijacked(v_id)
             }
-            per_bubble_veh_ids = BubbleManager.vehicle_ids_per_bubble(
+            current_shadowed_vehicle_ids = {
+                v_id
+                for v_id in vehicle_ids_in_bubbles[self]
+                if index.vehicle_is_shadowed(v_id)
+            }
+            vehicle_ids_by_bubble_state = BubbleManager._vehicle_ids_divided_by_bubble_state(
                 frozenset(running_cursors)
             )
-            running_hijacked_or_shadowed_vehicle_ids = per_bubble_veh_ids[self]
 
-            all_hijacked_or_shadowed_vehicle_ids = (
-                current_hijacked_or_shadowed_vehicle_ids
-                | running_hijacked_or_shadowed_vehicle_ids
+            all_hijacked_vehicle_ids = (
+                current_hijacked_vehicle_ids
+                | vehicle_ids_by_bubble_state[BubbleState.InAirlock][self]
             ) - {vehicle_id}
 
-            if len(all_hijacked_or_shadowed_vehicle_ids) >= self._limit:
-                return False
+            all_shadowed_vehicle_ids = (
+                current_shadowed_vehicle_ids
+                | vehicle_ids_by_bubble_state[BubbleState.InBubble][self]
+            ) - {vehicle_id}
 
-        return True
+            hijackable = len(all_hijacked_vehicle_ids) < (
+                self._limit.hijack_limit or maxsize
+            )
+            shadowable = len(all_shadowed_vehicle_ids) + len(
+                all_hijacked_vehicle_ids
+            ) < (self._limit.shadow_limit or maxsize)
+
+        return hijackable, shadowable
 
     def in_bubble_or_airlock(self, position):
         if not isinstance(position, Point):
@@ -226,10 +257,10 @@ class Cursor:
         vehicle_ids_per_bubble: Dict[Bubble, Set[str]],
         running_cursors: Set["Cursor"],
     ):
-        in_bubble, in_airlock = bubble.in_bubble_or_airlock(pos)
+        in_bubble_zone, in_airlock_zone = bubble.in_bubble_or_airlock(pos)
         is_social = vehicle.id in index.social_vehicle_ids()
         is_hijacked, is_shadowed = index.vehicle_is_hijacked_or_shadowed(vehicle.id)
-        is_admissible = bubble.is_admissible(
+        is_hijack_admissible, is_airlock_admissible = bubble.admissibility(
             vehicle.id, index, vehicle_ids_per_bubble, running_cursors
         )
         was_in_this_bubble = vehicle.id in vehicle_ids_per_bubble[bubble]
@@ -241,25 +272,25 @@ class Cursor:
         #       time-based airlocking. For robust code we'll want to handle these
         #       scenarios (e.g. hijacking if didn't airlock first)
         transition = None
-        if is_social and not is_shadowed and is_admissible and in_airlock:
+        if is_social and not is_shadowed and is_airlock_admissible and in_airlock_zone:
             transition = BubbleTransition.AirlockEntered
-        elif is_shadowed and is_admissible and in_bubble:
+        elif is_shadowed and is_hijack_admissible and in_bubble_zone:
             transition = BubbleTransition.Entered
-        elif is_hijacked and in_airlock:
+        elif is_hijacked and in_airlock_zone:
             # XXX: This may get called repeatedly because we don't actually change
             #      any state when this happens.
             transition = BubbleTransition.Exited
         elif (
             was_in_this_bubble
             and (is_shadowed or is_hijacked)
-            and not (in_airlock or in_bubble)
+            and not (in_airlock_zone or in_bubble_zone)
         ):
             transition = BubbleTransition.AirlockExited
 
         state = None
-        if is_admissible and in_bubble:
+        if is_hijack_admissible and in_bubble_zone:
             state = BubbleState.InBubble
-        elif is_admissible and in_airlock:
+        elif is_airlock_admissible and in_airlock_zone:
             state = BubbleState.InAirlock
 
         return cls(
@@ -295,17 +326,25 @@ class BubbleManager:
         return [bubble for bubble in self._bubbles if is_active(bubble)]
 
     @staticmethod
-    @lru_cache(maxsize=2)
-    def vehicle_ids_per_bubble(cursors: FrozenSet[Cursor]) -> Dict[Bubble, Set[str]]:
-        grouped = defaultdict(set)
+    def _vehicle_ids_divided_by_bubble_state(
+        cursors: FrozenSet[Cursor],
+    ) -> Dict[Bubble, Set[str]]:
+        vehicle_ids_grouped_by_cursor = defaultdict(lambda: defaultdict(set))
         for cursor in cursors:
-            if (
-                cursor.state == BubbleState.InBubble
-                or cursor.state == BubbleState.InAirlock
-            ):
-                grouped[cursor.bubble].add(cursor.vehicle_id)
+            vehicle_ids_grouped_by_cursor[cursor.state][cursor.bubble].add(
+                cursor.vehicle_id
+            )
+        return vehicle_ids_grouped_by_cursor
 
-        return grouped
+    @classmethod
+    @lru_cache(maxsize=2)
+    def vehicle_ids_per_bubble(
+        cls, cursors: FrozenSet[Cursor],
+    ) -> Dict[Bubble, Set[str]]:
+        vid = cls._vehicle_ids_divided_by_bubble_state(cursors)
+        return defaultdict(
+            set, {**vid[BubbleState.InBubble], **vid[BubbleState.InAirlock]}
+        )
 
     def step(self, sim):
         self._move_travelling_bubbles(sim)
