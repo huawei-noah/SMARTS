@@ -54,9 +54,7 @@ def train(
 
     # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join(
-        [policy_class.split(":")[-1] for policy_class in policy_classes]
-    )
+    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...
     agent_ids = [
@@ -212,7 +210,9 @@ if __name__ == "__main__":
         for policy in args.policy.split(","):
             if policy in data["agents"].keys():
                 policy_classes.append(
-                    data["agents"][policy]["path"] + ":" + data["agents"][policy]["locator"]
+                    data["agents"][policy]["path"]
+                    + ":"
+                    + data["agents"][policy]["locator"]
                 )
             else:
                 raise ImportError("Invalid policy name. Please try again")

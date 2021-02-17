@@ -140,14 +140,10 @@ def generate_left_turn_missions(
                     Route(
                         begin=(
                             "edge-south-side",  # Edge
-                            0,                  # Lane index
-                            100,                # Offset
+                            0,  # Lane index
+                            100,  # Offset
                         ),
-                        end=(
-                            "edge-dead-end",  # Edge
-                            0,                # Lane index
-                            5,                # Offset
-                        ),
+                        end=("edge-dead-end", 0, 5,),  # Edge  # Lane index  # Offset
                     )
                 ]
             else:
@@ -155,13 +151,13 @@ def generate_left_turn_missions(
                     Route(
                         begin=(
                             "edge-{}".format(mission["start"]),  # Edge
-                            route_lanes[mission["start"]] - 1,   # Lane index
-                            random.randint(50, 120),             # Offset
+                            route_lanes[mission["start"]] - 1,  # Lane index
+                            random.randint(50, 120),  # Offset
                         ),
                         end=(
                             "edge-{}".format(mission["end"]),  # Edge
-                            route_lanes[mission["end"]] - 1,   # Lane index
-                            random.randint(50, 150),           # Offset
+                            route_lanes[mission["end"]] - 1,  # Lane index
+                            random.randint(50, 150),  # Offset
                         ),
                     )
                     for mission in missions
