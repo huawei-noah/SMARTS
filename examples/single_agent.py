@@ -83,6 +83,7 @@ if __name__ == "__main__":
         seed=args.seed,
     )
 
+# cd /path/to/SMARTS
 # docker build --network=host -t smarts:v0.4.13 .
 # docker run -it --gpus all --network=host --env DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v /home/kyber/workspaces/SMARTS/examples:/src/examples -d /dev/input:/dev/input smarts:v0.4.13
 # scl envision start -s ./scenarios -p 8081 &
