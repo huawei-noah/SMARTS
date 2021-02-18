@@ -77,7 +77,7 @@ class BaselineAdapter:
         ]
         if self.social_feature_encoder_class:
             self.state_size += self.social_feature_encoder_class(
-                **social_feature_encoder_params
+                **self.social_feature_encoder_params
             ).output_dim
         else:
             self.state_size += self.social_capacity * self.num_social_features
@@ -121,11 +121,11 @@ class BaselineAdapter:
             dtype=np.float32,
         )
 
-    def action_adapter(self, model_action):
-        # print why this doesn't go through?
-        throttle, brake, steering = model_action
-        # print(M)
-        return np.array([throttle, brake, steering * np.pi * 0.25])
+    # def action_adapter(self, model_action):
+    #     # print why this doesn't go through?
+    #     throttle, brake, steering = model_action
+    #     # print(M)
+    #     return np.array([throttle, brake, steering * np.pi * 0.25])
 
     def observation_adapter(self, env_observation):
         ego_state = env_observation.ego_vehicle_state
@@ -180,6 +180,14 @@ class BaselineAdapter:
             # prev_action=self.prev_action
         )
 
+        if len(state["social_vehicles"]) < self.social_capacity:
+            remain = self.social_capacity - len(state["social_vehicles"])
+            empty_social_vehicles = np.zeros(shape=(remain, 4))
+            state["social_vehicles"] = np.concatenate(
+                (state["social_vehicles"], empty_social_vehicles)
+            )
+        # todo would this cause any issues for precog
+        state["social_vehicles"] = state["social_vehicles"][: self.social_capacity]
         return state  # ego=ego, env_observation=env_observation)
 
     def reward_adapter(self, observation, reward):
