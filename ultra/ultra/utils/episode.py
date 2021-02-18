@@ -307,7 +307,10 @@ def episodes(n, etag=None, log_dir=None):
             agents_itr = e.agents_itr
             if e.active_tag:
                 agent_rewards_strings = [
-                    "{}: {:.4f}".format(agent_id, agent_info.data["episode_reward"],)
+                    "{}: {:.4f}".format(
+                        agent_id,
+                        agent_info.data["episode_reward"],
+                    )
                     for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
                 row = (

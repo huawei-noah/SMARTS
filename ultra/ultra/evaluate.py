@@ -232,7 +232,9 @@ if __name__ == "__main__":
     try:
         AGENT_ID = "AGENT_008"
         for episode in episodes(
-            len(sorted_models), etag=policy_class, log_dir=args.log_dir,
+            len(sorted_models),
+            etag=policy_class,
+            log_dir=args.log_dir,
         ):
             model = sorted_models[episode.index]
             print("model: ", model)
