@@ -34,9 +34,9 @@ from shapely.ops import triangulate, snap
 from trimesh.exchange import gltf
 
 from .utils.math import rotate_around_point
-from .utils.sumo import sumolib
-from sumolib.net.edge import Edge
-from sumolib.net.lane import Lane
+from smarts.core.utils.sumo import sumolib # isort:skip
+from sumolib.net.edge import Edge # isort:skip
+from sumolib.net.lane import Lane # isort:skip
 
 
 def _convert_camera(camera):

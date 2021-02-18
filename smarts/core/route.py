@@ -21,8 +21,8 @@ from typing import List, Sequence, Tuple
 from numpy import unique
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
-from .utils.sumo import sumolib
-from sumolib.net.edge import Edge
+from smarts.core.utils.sumo import sumolib # isort:skip
+from sumolib.net.edge import Edge # isort:skip
 
 
 class Route:
