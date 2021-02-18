@@ -60,6 +60,7 @@ class MissionPlanner:
         self._insufficient_initial_distant = False
         self._uturn_initial_position = 0
         self._uturn_is_initialized = False
+        self._prev_kyber_x_position = 0
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -216,7 +217,7 @@ class MissionPlanner:
         aggressiveness = self._agent_behavior.aggressiveness or 0
 
         neighborhood_vehicles = sim.neighborhood_vehicles_around_vehicle(
-            vehicle=vehicle, radius=150
+            vehicle=vehicle, radius=850
         )
 
         position = pose.position[:2]
@@ -227,6 +228,12 @@ class MissionPlanner:
 
         target_vehicle = neighborhood_vehicles[0]
         target_position = target_vehicle.pose.position[:2]
+
+        target_velocity = (
+            -self._prev_kyber_x_position - target_position[0]
+        ) / sim.timestep_sec
+        self._prev_kyber_x_position = target_position[0]
+
         target_lane = self._road_network.nearest_lane(target_position)
 
         offset = self._road_network.offset_into_lane(lane, position)
@@ -237,7 +244,7 @@ class MissionPlanner:
         # cut-in offset should consider the aggressiveness and the speed
         # of the other vehicle.
 
-        cut_in_offset = np.clip(20 - aggressiveness, 10, 20)
+        cut_in_offset = np.clip(18.5 - aggressiveness, 10, 18.5)
 
         if (
             abs(offset - (cut_in_offset + target_offset)) > 1
@@ -249,12 +256,12 @@ class MissionPlanner:
             )
             speed_limit = np.clip(
                 np.clip(
-                    (target_vehicle.speed * 1.1)
-                    - 2 * (offset - (cut_in_offset + target_offset)),
-                    0.5 * target_vehicle.speed,
-                    2 * target_vehicle.speed,
+                    (target_velocity * 1.1)
+                    - 6 * (offset - (cut_in_offset + target_offset)),
+                    0.5 * target_velocity,
+                    2 * target_velocity,
                 ),
-                2.5,
+                0.5,
                 30,
             )
         else:
@@ -263,7 +270,7 @@ class MissionPlanner:
                 position, target_lane.getID(), 60
             )
 
-            cut_in_speed = target_vehicle.speed * 1.2
+            cut_in_speed = target_velocity * 2.3
 
             speed_limit = cut_in_speed
 
