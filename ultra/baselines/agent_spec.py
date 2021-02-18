@@ -44,7 +44,6 @@ class BaselineAgentSpec(AgentSpec):
         task=None,
         max_episode_steps=1200,
         experiment_dir=None,
-        is_rllib=False,
     ):
         pass
 
@@ -56,7 +55,6 @@ class BaselineAgentSpec(AgentSpec):
         task=None,
         max_episode_steps=1200,
         experiment_dir=None,
-        is_rllib=False,
     ):
         if experiment_dir:
             print(f"LOADING SPEC from {experiment_dir}/spec.pkl")
@@ -83,9 +81,7 @@ class BaselineAgentSpec(AgentSpec):
                 observation_num_lookahead=20,
                 social_capacity=10,
             )
-            adapter = BaselineAdapter(
-                is_rllib=is_rllib, social_vehicle_params=social_vehicle_params
-            )
+            adapter = BaselineAdapter(social_vehicle_params=social_vehicle_params)
             policy_dir = "/".join(inspect.getfile(policy_class).split("/")[:-1])
             policy_params = load_yaml(f"{policy_dir}/params.yaml")
             spec = AgentSpec(
