@@ -21,9 +21,9 @@
 # THE SOFTWARE.
 import copy
 
-from ray.rllib.env.group_agents_wrapper import _GroupAgentsWrapper
-from ray.rllib.env.constants import GROUP_REWARDS, GROUP_INFO
 from ray.rllib.agents.dqn import DQNTrainer
+from ray.rllib.env.constants import GROUP_INFO, GROUP_REWARDS
+from ray.rllib.env.group_agents_wrapper import _GroupAgentsWrapper
 
 
 class Group(_GroupAgentsWrapper):

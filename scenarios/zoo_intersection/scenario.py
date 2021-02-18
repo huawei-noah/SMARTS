@@ -1,25 +1,27 @@
 import os
 import random
 
-from smarts.sstudio import gen_traffic, gen_missions, gen_social_agent_missions
+from smarts.sstudio import gen_missions, gen_social_agent_missions, gen_traffic
 from smarts.sstudio.types import (
-    Traffic,
-    Flow,
-    Route,
-    RandomRoute,
-    TrafficActor,
-    SocialAgentActor,
     Distribution,
+    EndlessMission,
+    Flow,
     LaneChangingModel,
     Mission,
-    EndlessMission,
+    RandomRoute,
+    Route,
+    SocialAgentActor,
+    Traffic,
+    TrafficActor,
 )
 
 scenario = os.path.dirname(os.path.realpath(__file__))
 
 # Traffic Vehicles
 #
-car = TrafficActor(name="car",)
+car = TrafficActor(
+    name="car",
+)
 
 cooperative_car = TrafficActor(
     name="cooperative_car",
@@ -56,7 +58,10 @@ for name, routes in {
 
     for seed in [0, 5]:
         gen_traffic(
-            scenario, traffic, name=f"{name}-{seed}", seed=seed,
+            scenario,
+            traffic,
+            name=f"{name}-{seed}",
+            seed=seed,
         )
 
 

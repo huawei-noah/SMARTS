@@ -29,8 +29,8 @@ try:
 except ImportError:
     from collections import Sequence
 
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
-from smarts.core.agent import AgentSpec, Agent
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.utils.episodes import episodes
 

@@ -19,10 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, shutil, ray
+import os
+import shutil
 import unittest
-from ultra.train import train
+
+import ray
+
 from ultra.scenarios.generate_scenarios import build_scenarios
+from ultra.train import train
 
 
 class UltraPackageTest(unittest.TestCase):
@@ -58,7 +62,11 @@ class UltraPackageTest(unittest.TestCase):
                         scenario_info=("00", "eval_test"),
                         policy_class=policy_class,
                         num_episodes=1,
-                        eval_info={"eval_rate": 1000, "eval_episodes": 2,},
+                        max_episode_steps=2,
+                        eval_info={
+                            "eval_rate": 1000,
+                            "eval_episodes": 2,
+                        },
                         timestep_sec=0.1,
                         headless=True,
                         seed=2,

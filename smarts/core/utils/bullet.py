@@ -17,14 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from multiprocessing import Pipe, Process
 from typing import NamedTuple, Tuple
-from multiprocessing import Process, Pipe
 
 import numpy as np
 
+from smarts.core.coordinates import Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.core.coordinates import Pose
 
 
 class BulletClient:
@@ -45,7 +45,11 @@ class BulletClient:
     def __init__(self, bullet_connect_mode=pybullet.GUI):
         self._parent_conn, self._child_conn = Pipe()
         self.process = Process(
-            target=BulletClient.consume, args=(bullet_connect_mode, self._child_conn,),
+            target=BulletClient.consume,
+            args=(
+                bullet_connect_mode,
+                self._child_conn,
+            ),
         )
         self.process.start()
 

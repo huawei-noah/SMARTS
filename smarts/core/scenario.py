@@ -34,12 +34,8 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import (
-    CutIn,
-    EntryTactic,
-    UTurn,
-    Via as SSVia,
-)
+from smarts.sstudio.types import CutIn, EntryTactic, UTurn
+from smarts.sstudio.types import Via as SSVia
 
 from .coordinates import Heading
 from .data_model import SocialAgent
@@ -393,7 +389,9 @@ class Scenario:
 
     @staticmethod
     @lru_cache(maxsize=16)
-    def _discover_social_agents_info(scenario,) -> Sequence[Dict[str, SocialAgent]]:
+    def _discover_social_agents_info(
+        scenario,
+    ) -> Sequence[Dict[str, SocialAgent]]:
         """Loops through the social agent mission pickles, instantiating corresponding
         implementations for the given types. The output is a list of
         {agent_id: (mission, locator)}, where each dictionary corresponds to the
@@ -587,7 +585,8 @@ class Scenario:
                     via.hit_distance if via.hit_distance > 0 else lane.getWidth() / 2
                 )
                 via_position = sumo_road_network.world_coord_from_offset(
-                    lane, via.lane_offset,
+                    lane,
+                    via.lane_offset,
                 )
 
                 s_vias.append(
@@ -607,11 +606,15 @@ class Scenario:
         # missions.
         if isinstance(mission, sstudio_types.Mission):
             position, heading = to_position_and_heading(
-                *mission.route.begin, road_network,
+                *mission.route.begin,
+                road_network,
             )
             start = Start(position, heading)
 
-            position, _ = to_position_and_heading(*mission.route.end, road_network,)
+            position, _ = to_position_and_heading(
+                *mission.route.end,
+                road_network,
+            )
             goal = PositionalGoal(position, radius=2)
 
             return Mission(
@@ -624,7 +627,10 @@ class Scenario:
                 via=to_scenario_via(mission.via, road_network),
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
-            position, heading = to_position_and_heading(*mission.begin, road_network,)
+            position, heading = to_position_and_heading(
+                *mission.begin,
+                road_network,
+            )
             start = Start(position, heading)
 
             return Mission(
@@ -652,9 +658,13 @@ class Scenario:
             ).length
 
             start_position, start_heading = to_position_and_heading(
-                *mission.route.begin, road_network,
+                *mission.route.begin,
+                road_network,
             )
-            end_position, _ = to_position_and_heading(*mission.route.end, road_network,)
+            end_position, _ = to_position_and_heading(
+                *mission.route.end,
+                road_network,
+            )
 
             return LapMission(
                 start=Start(start_position, start_heading),

@@ -2,13 +2,13 @@ import os
 
 from smarts.sstudio import gen_traffic
 from smarts.sstudio.types import (
-    Traffic,
-    Flow,
-    Route,
-    TrafficActor,
     Distribution,
-    LaneChangingModel,
+    Flow,
     JunctionModel,
+    LaneChangingModel,
+    Route,
+    Traffic,
+    TrafficActor,
 )
 
 scenario = os.path.dirname(os.path.realpath(__file__))

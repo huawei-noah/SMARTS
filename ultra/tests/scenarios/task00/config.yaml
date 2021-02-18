@@ -32,7 +32,7 @@ levels:
   # Used in evaluation test
   eval_test:
     train:
-      total: 20
+      total: 5
       intersection_types:
         2lane_t:
           percent: 0.2
@@ -53,7 +53,7 @@ levels:
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
     test:
-      total: 10
+      total: 2
       intersection_types:
         2lane_c:
           percent: 0.5

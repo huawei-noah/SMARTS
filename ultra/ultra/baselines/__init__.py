@@ -19,14 +19,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.zoo.registry import register
-from .sac.sac.policy import SACPolicy
-from .ppo.ppo.policy import PPOPolicy
-from .dqn.dqn.policy import DQNPolicy
-from .ddpg.ddpg.policy import TD3Policy
-from .bdqn.bdqn.policy import BehavioralDQNPolicy
 from smarts.core.controllers import ActionSpaceType
+from smarts.zoo.registry import register
 from ultra.baselines.agent_spec import BaselineAgentSpec
+
+from .bdqn.bdqn.policy import BehavioralDQNPolicy
+from .ddpg.ddpg.policy import TD3Policy
+from .dqn.dqn.policy import DQNPolicy
+from .ppo.ppo.policy import PPOPolicy
+from .sac.sac.policy import SACPolicy
 
 register(
     locator="sac-v0",

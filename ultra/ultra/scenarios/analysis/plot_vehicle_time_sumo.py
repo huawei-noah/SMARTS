@@ -22,13 +22,15 @@
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import os, sys
-import time
-import _pickle
-import timeit
 import argparse
 import glob
+import os
+import sys
+import time
+import timeit
+
+import _pickle
+import matplotlib.pyplot as plt
 
 if "SUMO_HOME" in os.environ:
     tools = os.path.join(os.environ["SUMO_HOME"], "tools")
@@ -37,7 +39,6 @@ else:
     sys.exit("please declare environment variable 'SUMO_HOME'")
 import traci
 import traci.constants as tc
-
 
 v_types = ["default", "aggressive", "slow", "blocker", "crusher"]
 

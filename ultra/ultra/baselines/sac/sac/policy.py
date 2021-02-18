@@ -20,24 +20,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # some parts of this implementation is inspired by https://github.com/openai/spinningup
-import torch
-import numpy as np
-import torch.nn as nn
+import os
+import pathlib
 from sys import path
-from ultra.baselines.sac.sac.network import SACNetwork
+
+import numpy as np
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
-import pathlib, os, yaml
-from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
+import yaml
+
 from smarts.core.agent import Agent
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.yaml_loader import load_yaml
 from ultra.baselines.common.state_preprocessor import *
+from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.sac.sac.network import SACNetwork
+from ultra.utils.common import compute_sum_aux_losses, to_2d_action, to_3d_action
 
 
 class SACPolicy(Agent):
     def __init__(
-        self, policy_params=None, checkpoint_dir=None,
+        self,
+        policy_params=None,
+        checkpoint_dir=None,
     ):
         # print("LOADING THE PARAMS", policy_params, checkpoint_dir)
         self.policy_params = policy_params

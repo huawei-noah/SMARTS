@@ -17,14 +17,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
-import yaml
 import importlib.resources as pkg_resources
 import logging
+import os
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy
+import yaml
 from direct.showbase.ShowBase import ShowBase
+
+from smarts.sstudio.types import UTurn
 
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
@@ -45,8 +48,6 @@ from .sensors import (
     WaypointsSensor,
 )
 from .utils.math import rotate_around_point
-from smarts.sstudio.types import UTurn
-from functools import lru_cache
 
 
 @dataclass(frozen=True)
@@ -399,7 +400,11 @@ class Vehicle:
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
         vehicle.attach_trip_meter_sensor(
-            TripMeterSensor(vehicle=vehicle, sim=sim, mission_planner=mission_planner,)
+            TripMeterSensor(
+                vehicle=vehicle,
+                sim=sim,
+                mission_planner=mission_planner,
+            )
         )
 
         # The distance travelled sensor is not optional b/c it is used for visualization
@@ -417,7 +422,10 @@ class Vehicle:
 
         if agent_interface.accelerometer:
             vehicle.attach_accelerometer_sensor(
-                AccelerometerSensor(vehicle=vehicle, sim=sim,)
+                AccelerometerSensor(
+                    vehicle=vehicle,
+                    sim=sim,
+                )
             )
 
         if agent_interface.waypoints:

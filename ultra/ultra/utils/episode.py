@@ -270,7 +270,13 @@ class Episode:
 def episodes(n, etag=None, log_dir=None):
     col_width = 18
     with tp.TableContext(
-        [f"Episode", f"Sim/Wall", f"Total Steps", f"Steps/Sec", f"Score",],
+        [
+            f"Episode",
+            f"Sim/Wall",
+            f"Total Steps",
+            f"Steps/Sec",
+            f"Score",
+        ],
         width=col_width,
         style="round",
     ) as table:

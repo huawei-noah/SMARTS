@@ -1,5 +1,6 @@
 import os
 import pickle
+
 from smarts.sstudio import gen_social_agent_missions
 from smarts.sstudio import types as t
 
@@ -12,5 +13,7 @@ gen_social_agent_missions(
     scenario,
     social_agent_actor=social_agent,
     name=f"s-agent-{social_agent.name}",
-    missions=[t.Mission(t.Route(begin=("E35-3", 2, 50), end=("E3-3l", 2, "max"))),],
+    missions=[
+        t.Mission(t.Route(begin=("E35-3", 2, 50), end=("E3-3l", 2, "max"))),
+    ],
 )

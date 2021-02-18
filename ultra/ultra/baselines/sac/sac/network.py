@@ -19,11 +19,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import numpy as np
 import torch
+import torch.nn.functional as F
 from torch import nn
 from torch.distributions.normal import Normal
-import numpy as np
-import torch.nn.functional as F
 
 
 class SACNetwork(nn.Module):
@@ -195,8 +195,12 @@ class Actor(nn.Module):
             nn.Linear(hidden_units, hidden_units),
             nn.ReLU(),
         )
-        self.mu = nn.Sequential(nn.Linear(hidden_units, action_size),)
-        self.log_std = nn.Sequential(nn.Linear(hidden_units, action_size),)
+        self.mu = nn.Sequential(
+            nn.Linear(hidden_units, action_size),
+        )
+        self.log_std = nn.Sequential(
+            nn.Linear(hidden_units, action_size),
+        )
 
         self.LOG_STD_MAX = 2
         self.LOG_STD_MIN = -20

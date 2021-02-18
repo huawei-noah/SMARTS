@@ -18,15 +18,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import cloudpickle
-import grpc
 import logging
 import os
 import time
 
-from smarts.zoo import worker_pb2
-from smarts.zoo import worker_pb2_grpc
+import cloudpickle
+import grpc
+
 from smarts.zoo import worker as zoo_worker
+from smarts.zoo import worker_pb2, worker_pb2_grpc
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"worker_servicer.py - pid({os.getpid()})")

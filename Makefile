@@ -111,7 +111,9 @@ clean:
 
 .PHONY: format
 format:
-	# pip install black==19.10b0
+	# pip install isort==5.7.0
+	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./benchmark/ ./cli ./envision ./examples/ ./extras/ ./scenarios/ ./smarts ./ultra ./zoo
+	# pip install black==20.8b1
 	black .
 	# npm install prettier
 	# Make sure to install Node.js 14.x before running `prettier`

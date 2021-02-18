@@ -1,6 +1,5 @@
-from setuptools import setup
-
 from rl_agent import VERSION
+from setuptools import setup
 
 setup(
     name="rl-agent",

@@ -19,7 +19,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, sys, argparse
+import argparse
+import os
+import sys
 
 if "SUMO_HOME" in os.environ:
     tools = os.path.join(os.environ["SUMO_HOME"], "tools")
@@ -27,12 +29,14 @@ if "SUMO_HOME" in os.environ:
 else:
     sys.exit("please declare environment variable 'SUMO_HOME'")
 
+import time
+
+import matplotlib.pyplot as plt
+import numpy as np
 import traci
 import traci.constants as tc
-import numpy as np
-import matplotlib.pyplot as plt
+
 from ultra.scenarios.generate_scenarios import build_scenarios
-import time
 
 # sumo -c  --remote-port=8813
 # sumo -n map.net.xml -r traffic/all.rou.xml --remote-port=8813

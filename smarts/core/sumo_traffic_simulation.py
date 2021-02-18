@@ -19,27 +19,27 @@
 # THE SOFTWARE.
 import atexit
 import logging
-import numpy as np
 import os
 import random
 import subprocess
 import time
-
-from shapely.affinity import rotate as shapely_rotate
-from shapely.geometry import Polygon, box as shapely_box
 from typing import List, Sequence
+
+import numpy as np
+import traci.constants as tc
+from shapely.affinity import rotate as shapely_rotate
+from shapely.geometry import Polygon
+from shapely.geometry import box as shapely_box
+from traci.exceptions import FatalTraCIError, TraCIException
 
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.provider import ProviderState, ProviderTLS, ProviderTrafficLight
-from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_stdout
 from smarts.core.utils.sumo import SUMO_PATH, traci
-
-import traci.constants as tc
-from traci.exceptions import FatalTraCIError, TraCIException
+from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class SumoTrafficSimulation:
@@ -59,13 +59,13 @@ class SumoTrafficSimulation:
         sumo_port:
             the port that sumo runs on
         auto_start:
-            False to pause simulation when SMARTS run, and wait for user to click 
+            False to pause simulation when SMARTS run, and wait for user to click
             start on sumo-gui
         endless_traffic:
-            Not remove vehicles by re-adding back vehicles that exit 
+            Not remove vehicles by re-adding back vehicles that exit
         allow_reload:
             True to reload existing SUMO
-        remove_agents_only_mode: 
+        remove_agents_only_mode:
             Remove only agent vehicles used by SMARTS and not delete other sumo
             vehicles when teardown
     """
@@ -717,7 +717,9 @@ class SumoTrafficSimulation:
         return self._traci_conn.vehicle.getRoute(vehicle_id)
 
     def reserve_traffic_location_for_vehicle(
-        self, vehicle_id: str, reserved_location: Polygon,
+        self,
+        vehicle_id: str,
+        reserved_location: Polygon,
     ):
         """Reserve an area around a location where vehicles cannot spawn until a given vehicle
         is added.
@@ -738,7 +740,12 @@ class SumoTrafficSimulation:
         width = sumo_vehicle_state[vehicle_id][tc.VAR_WIDTH]
         heading = Heading.from_sumo(sumo_vehicle_state[vehicle_id][tc.VAR_ANGLE])
 
-        poly = shapely_box(p[0] - width * 0.5, p[1] - length, p[0] + width * 0.5, p[1],)
+        poly = shapely_box(
+            p[0] - width * 0.5,
+            p[1] - length,
+            p[0] + width * 0.5,
+            p[1],
+        )
         return shapely_rotate(poly, heading, use_radians=True)
 
     def _emit_vehicle_by_route(
@@ -767,7 +774,10 @@ class SumoTrafficSimulation:
 
         # XXX: Do not give this a route or it will crash on `moveTo` calls
         self._traci_conn.vehicle.add(
-            vehicle_id, "", departPos=offset_in_lane, departLane=wp.lane_index,
+            vehicle_id,
+            "",
+            departPos=offset_in_lane,
+            departLane=wp.lane_index,
         )
 
         self._traci_conn.vehicle.moveToXY(

@@ -21,18 +21,17 @@ import math
 from enum import Enum
 from functools import partial
 
-from numpy.linalg import matrix_power
 import numpy as np
-
+from numpy.linalg import matrix_power
 from scipy import signal
 
 from smarts.core.chassis import AckermannChassis
 from smarts.core.utils.math import (
     lerp,
+    low_pass_filter,
+    min_angles_difference_signed,
     radians_to_vec,
     signed_dist_to_line,
-    min_angles_difference_signed,
-    low_pass_filter,
 )
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
@@ -52,7 +51,11 @@ class ActuatorDynamicController:
         # under the assumption that the steering angles at
         # wheels can reach to their maximum values in one
         # second.
-        clipped_steering_change = np.clip(steering_change, -1, 1,)
+        clipped_steering_change = np.clip(
+            steering_change,
+            -1,
+            1,
+        )
 
         p = 0.001  # XXX: Theorized to improve stability, this has yet to be seen.
         steering = np.clip(

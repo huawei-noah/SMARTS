@@ -22,7 +22,7 @@
 import pytest
 
 import smarts.sstudio.types as t
-from smarts.core.agent import AgentSpec, Agent
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import LaneFollowingController
 from smarts.core.scenario import Scenario
@@ -68,7 +68,8 @@ def scenarios(request):
             route=t.Route(begin=("edge-west-WE", 0, 10), end=(request.param[1], 0, 40))
         )
         gen_scenario(
-            t.Scenario(ego_missions=[mission]), output_dir=scenario_root,
+            t.Scenario(ego_missions=[mission]),
+            output_dir=scenario_root,
         )
         yield Scenario.variations_for_all_scenario_roots(
             [str(scenario_root)], [AGENT_ID]

@@ -20,13 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import itertools
+
 import pytest
+from helpers.scenario import temp_scenario
 
 from smarts.core.scenario import Scenario
 from smarts.core.utils.id import SocialAgentId
-from smarts.sstudio import gen_social_agent_missions, gen_missions
+from smarts.sstudio import gen_missions, gen_social_agent_missions
 from smarts.sstudio.types import Mission, Route, SocialAgentActor
-from helpers.scenario import temp_scenario
 
 AGENT_ID = "Agent-007"
 
@@ -57,7 +58,10 @@ def scenario_root():
             )
             missions = [Mission(route=route)] * 2  # double up
             gen_social_agent_missions(
-                scenario_root, social_agent_actor=actors, name=name, missions=missions,
+                scenario_root,
+                social_agent_actor=actors,
+                name=name,
+                missions=missions,
             )
 
         gen_missions(

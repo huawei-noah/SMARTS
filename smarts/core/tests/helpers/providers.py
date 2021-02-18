@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from typing import Sequence, Set
+
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.provider import ProviderState
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
