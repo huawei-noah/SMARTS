@@ -71,17 +71,13 @@ class CustomFCModel(TorchModelV2, nn.Module):
 
         social_feature = []
         if self.social_feature_encoder is not None:
-            social_feature, social_encoder_aux_losses = self.social_feature_encoder(
-                social_vehicles_state, training
-            )
-            aux_losses.update(social_encoder_aux_losses)
+            social_feature, _ = self.social_feature_encoder(social_vehicles_state)
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
         input_dict["obs"]["social_vehicles"] = (
             torch.cat(social_feature, 0) if len(social_feature) > 0 else []
         )
-
         return self.model.forward(input_dict, state, seq_lens)
 
     def value_function(self):

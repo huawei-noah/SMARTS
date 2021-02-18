@@ -22,6 +22,7 @@
 import torch
 from torch import nn
 from torch.distributions.normal import Normal
+import numpy as np
 
 
 class ActorNetwork(nn.Module):
@@ -53,7 +54,13 @@ class ActorNetwork(nn.Module):
             aux_losses.update(social_encoder_aux_losses)
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
-        social_feature = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
+
+        social_feature = (
+            torch.flatten(torch.cat(social_feature, 0))
+            if len(social_feature) > 0
+            else []
+        )
+
         state = (
             torch.cat([low_dim_state, social_feature], -1)
             if len(social_feature) > 0
@@ -92,7 +99,12 @@ class CriticNetwork(nn.Module):
             aux_losses.update(social_encoder_aux_losses)
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
-        social_feature = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
+
+        social_feature = (
+            torch.flatten(torch.cat(social_feature, 0))
+            if len(social_feature) > 0
+            else []
+        )
 
         state = (
             torch.cat([low_dim_state, social_feature], -1)
@@ -149,6 +161,9 @@ class PPONetwork(nn.Module):
         self.log_std = nn.Parameter(torch.log(init_std * torch.ones(1, action_size)))
 
     def forward(self, x, training=False):
+        x["low_dim_states"] = torch.from_numpy(x["low_dim_states"])
+        x["social_vehicles"] = torch.from_numpy(x["social_vehicles"])
+
         value, critic_aux_loss = self.critic(x, training=training)
         mu, actor_aux_loss = self.actor(x, training=training)
         std = torch.ones_like(mu) * 0.5

@@ -38,6 +38,10 @@ from ultra.env.rllib_ultra_env import RLlibUltraEnv
 from ray.rllib.agents.callbacks import DefaultCallbacks
 from ray.rllib.models import ModelCatalog
 import ray.rllib.agents.ppo as ppo
+import ray.rllib.agents.sac as sac
+import ray.rllib.agents.ddpg as ddpg
+from ray.rllib.agents.sac.sac_torch_model import SACTorchModel
+from ray.rllib.agents.ddpg.ddpg_torch_model import DDPGTorchModel
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import (
     AgentInterface,
@@ -60,20 +64,13 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 class Callbacks(DefaultCallbacks):
     @staticmethod
     def on_episode_start(
-        worker,
-        base_env,
-        policies,
-        episode,
-        **kwargs,
+        worker, base_env, policies, episode, **kwargs,
     ):
         episode.user_data = LogInfo()
 
     @staticmethod
     def on_episode_step(
-        worker,
-        base_env,
-        episode,
-        **kwargs,
+        worker, base_env, episode, **kwargs,
     ):
 
         single_agent_id = list(episode._agent_to_last_obs)[0]
@@ -87,11 +84,7 @@ class Callbacks(DefaultCallbacks):
 
     @staticmethod
     def on_episode_end(
-        worker,
-        base_env,
-        policies,
-        episode,
-        **kwargs,
+        worker, base_env, policies, episode, **kwargs,
     ):
         episode.user_data.normalize(episode.length)
         for key, val in episode.user_data.data.items():
@@ -126,7 +119,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
     AGENT_ID = "007"
 
     social_vehicle_params = dict(
-        encoder_key="no_encoder",
+        encoder_key="precog_encoder",
         social_policy_hidden_units=128,
         social_polciy_init_std=0.5,
         num_social_features=4,
@@ -137,7 +130,8 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
     adapter = BaselineAdapter(social_vehicle_params=social_vehicle_params,)
 
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
-    config = ppo.DEFAULT_CONFIG.copy()
+    # ModelCatalog.register_custom_model("fc_model", DDPGTorchModel)
+    config = ddpg.DEFAULT_CONFIG.copy()
 
     rllib_policies = {
         "default_policy": (
@@ -166,13 +160,13 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
             agent_builder=None,
             observation_adapter=adapter.observation_adapter,
             reward_adapter=adapter.reward_adapter,
-            action_adapter=adapter.action_adapter,
+            # action_adapter=adapter.action_adapter,
         )
     }
 
     tune_config = {
         "env": RLlibUltraEnv,
-        "log_level": "WARN",
+        "log_level": "DEBUG",
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
@@ -221,7 +215,6 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
         # "train_batch_size":1200, # remove after debugging
     }
     config.update(tune_config)
-
     trainer = ppo.PPOTrainer(
         env=RLlibUltraEnv, config=tune_config, logger_creator=log_creator(),
     )

@@ -93,9 +93,9 @@ class PPOPolicy(Agent):
             policy_params["observation_num_lookahead"],
             self.action_size,
         )
-        self.state_preprocessor = StatePreprocessor(
-            preprocess_state, to_2d_action, self.state_description
-        )
+        # self.state_preprocessor = StatePreprocessor(
+        #     preprocess_state, to_2d_action, self.state_description
+        # )
         self.social_feature_encoder_class = self.social_vehicle_encoder[
             "social_feature_encoder_class"
         ]
@@ -139,16 +139,16 @@ class PPOPolicy(Agent):
         return size
 
     def act(self, state, explore=True):
-        state = self.state_preprocessor(
-            state=state,
-            normalize=True,
-            unsqueeze=True,
-            device=self.device,
-            social_capacity=self.social_capacity,
-            observation_num_lookahead=self.observation_num_lookahead,
-            social_vehicle_config=self.social_vehicle_config,
-            prev_action=self.prev_action,
-        )
+        # state = self.state_preprocessor(
+        #     state=state,
+        #     normalize=True,
+        #     unsqueeze=True,
+        #     device=self.device,
+        #     social_capacity=self.social_capacity,
+        #     observation_num_lookahead=self.observation_num_lookahead,
+        #     social_vehicle_config=self.social_vehicle_config,
+        #     prev_action=self.prev_action,
+        # )
         with torch.no_grad():
             dist, value = self.ppo_net(state)
         if explore:  # training mode
@@ -173,15 +173,15 @@ class PPOPolicy(Agent):
             done = False
         action = to_2d_action(action)
 
-        state = self.state_preprocessor(
-            state=state,
-            normalize=True,
-            device=self.device,
-            social_capacity=self.social_capacity,
-            observation_num_lookahead=self.observation_num_lookahead,
-            social_vehicle_config=self.social_vehicle_config,
-            # prev_action=self.prev_action,
-        )
+        # state = self.state_preprocessor(
+        #     state=state,
+        #     normalize=True,
+        #     device=self.device,
+        #     social_capacity=self.social_capacity,
+        #     observation_num_lookahead=self.observation_num_lookahead,
+        #     social_vehicle_config=self.social_vehicle_config,
+        #     # prev_action=self.prev_action,
+        # )
         # state['action'] = self.prev_actio
         # pass social_vehicle_rep through the network
         self.log_probs.append(self.current_log_prob.to(self.device))
