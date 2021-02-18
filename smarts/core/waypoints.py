@@ -36,8 +36,8 @@ with warnings.catch_warnings():
         # aggressive
         from sklearn.neighbors import KDTree
 
-from .coordinates import Heading, Pose
-from .utils.math import (
+from smarts.core.coordinates import Heading, Pose
+from smarts.core.utils.math import (
     lerp,
     radians_to_vec,
     signed_dist_to_line,

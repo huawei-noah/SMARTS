@@ -103,7 +103,7 @@ def supress_pkg_resources():
 
     import pkg_resources
 
-    from .invalid import raise_import_error
+    from smarts.core.utils.invalid import raise_import_error
 
     pkg_res = sys.modules["pkg_resources"]
     sys.modules["pkg_resources"] = property(raise_import_error)
