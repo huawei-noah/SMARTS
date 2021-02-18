@@ -19,16 +19,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import unittest, glob, ray, subprocess
-from ultra.scenarios.generate_scenarios import *
+import glob
+import subprocess
+import unittest
+
+import ray
+
+from ultra.scenarios.analysis.base_analysis import BaseAnalysis
 from ultra.scenarios.analysis.scenario_analysis import ScenarioAnalysis
 from ultra.scenarios.analysis.sumo_experiment import (
     edge_lane_data_function,
-    vehicle_data_function,
     sumo_rerouting_routine,
+    vehicle_data_function,
 )
-
-from ultra.scenarios.analysis.base_analysis import BaseAnalysis
+from ultra.scenarios.generate_scenarios import *
 
 
 class AnalysisTest(unittest.TestCase):

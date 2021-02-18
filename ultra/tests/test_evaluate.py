@@ -19,13 +19,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import ray, glob, gym, os, sys, re
-import unittest, shutil
-import dill, pickle
-from ultra.evaluate import evaluate, evaluation_check
+import glob
+import os
+import pickle
+import re
+import shutil
+import sys
+import unittest
+
+import dill
+import gym
+import ray
+
+from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.sac.sac.policy import SACPolicy
-from smarts.core.controllers import ActionSpaceType
+from ultra.evaluate import evaluate, evaluation_check
 from ultra.utils.episode import episodes
 
 seed = 2

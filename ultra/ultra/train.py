@@ -19,19 +19,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, sys
 import json
 import os
+import sys
+
 from ultra.utils.ray import default_ray_kwargs
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
+import argparse
+import pickle
 import time
-import psutil, pickle, dill
-import gym, ray, torch, argparse
+
+import dill
+import gym
+import psutil
+import ray
+import torch
+
 from smarts.zoo.registry import make
-from ultra.utils.episode import episodes
 from ultra.evaluate import evaluation_check
+from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -166,10 +174,16 @@ if __name__ == "__main__":
         default=10000,
     )
     parser.add_argument(
-        "--seed", help="Environment seed", default=2, type=int,
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
     )
     parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
     )
 
     base_dir = os.path.dirname(__file__)

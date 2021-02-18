@@ -18,11 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from .genscenario import (
-    gen_traffic,
-    gen_missions,
-    gen_social_agent_missions,
-    gen_group_laps,
     gen_bubbles,
     gen_friction_map,
+    gen_group_laps,
+    gen_missions,
     gen_scenario,
+    gen_social_agent_missions,
+    gen_traffic,
 )

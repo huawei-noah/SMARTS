@@ -19,14 +19,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+from helpers.scenario import temp_scenario
 
 from smarts.core.scenario import Scenario
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.sstudio import gen_social_agent_missions
 from smarts.sstudio.types import Mission, Route, SocialAgentActor
-from helpers.scenario import temp_scenario
 
 AGENT_ID = "Agent-007"
 
@@ -91,7 +92,10 @@ def create_scenario():
             )
             missions = [Mission(route=route)] * 2
             gen_social_agent_missions(
-                scenario_root, social_agent_actor=actors, name=name, missions=missions,
+                scenario_root,
+                social_agent_actor=actors,
+                name=name,
+                missions=missions,
             )
 
         yield scenario_root

@@ -19,25 +19,30 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os
+import pathlib
+
+import numpy as np
 import torch
 from torch import nn
-import numpy as np
-from ultra.baselines.bdqn.bdqn.network import *
+
 from smarts.core.agent import Agent
-from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
-import pathlib, os
-from ultra.baselines.dqn.dqn.policy import DQNPolicy
-from ultra.baselines.bdqn.bdqn.network import DQNWithSocialEncoder
 from ultra.baselines.bdqn.bdqn.explore import EpsilonExplore
+from ultra.baselines.bdqn.bdqn.network import *
+from ultra.baselines.bdqn.bdqn.network import DQNWithSocialEncoder
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.yaml_loader import load_yaml
 from ultra.baselines.common.state_preprocessor import *
+from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.dqn.dqn.policy import DQNPolicy
+from ultra.utils.common import merge_discrete_action_spaces, to_2d_action, to_3d_action
 
 
 class BehavioralDQNPolicy(DQNPolicy):
     def __init__(
-        self, policy_params=None, checkpoint_dir=None,
+        self,
+        policy_params=None,
+        checkpoint_dir=None,
     ):
         self.policy_params = policy_params
         network_class = DQNWithSocialEncoder
@@ -126,10 +131,12 @@ class BehavioralDQNPolicy(DQNPolicy):
             "social_feature_encoder_params": self.social_feature_encoder_params,
         }
         self.online_q_network = network_class(
-            num_actions=self.num_actions, **(network_params if network_params else {}),
+            num_actions=self.num_actions,
+            **(network_params if network_params else {}),
         ).to(self.device)
         self.target_q_network = network_class(
-            num_actions=self.num_actions, **(network_params if network_params else {}),
+            num_actions=self.num_actions,
+            **(network_params if network_params else {}),
         ).to(self.device)
         self.update_target_network()
 

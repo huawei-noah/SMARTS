@@ -20,7 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+
 import pytest
+from helpers.scenario import temp_scenario
+
 import smarts.sstudio.types as t
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
@@ -28,9 +31,6 @@ from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.providers import MockProvider
 from smarts.sstudio import gen_scenario
-
-from helpers.scenario import temp_scenario
-
 
 # TODO: Add test for travelling bubbles
 
@@ -61,7 +61,8 @@ def bubble(request):
 def scenarios(bubble):
     with temp_scenario(name="straight", map="maps/straight.net.xml") as scenario_root:
         gen_scenario(
-            t.Scenario(traffic={}, bubbles=[bubble]), output_dir=scenario_root,
+            t.Scenario(traffic={}, bubbles=[bubble]),
+            output_dir=scenario_root,
         )
         yield Scenario.variations_for_all_scenario_roots([str(scenario_root)], [])
 
@@ -75,7 +76,9 @@ def mock_provider():
 def smarts(scenarios, mock_provider, time_resolution):
     smarts_ = SMARTS(
         agent_interfaces={},
-        traffic_sim=SumoTrafficSimulation(time_resolution=time_resolution,),
+        traffic_sim=SumoTrafficSimulation(
+            time_resolution=time_resolution,
+        ),
     )
     smarts_.add_provider(mock_provider)
     smarts_.reset(next(scenarios))

@@ -14,11 +14,15 @@ https://interaction-dataset.com/details-and-format
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("interaction-dataset-converter")
     parser.add_argument(
-        "input", help="Tracks file in csv format", type=str,
+        "input",
+        help="Tracks file in csv format",
+        type=str,
     )
 
     parser.add_argument(
-        "output", help="History file in JSON format", type=str,
+        "output",
+        help="History file in JSON format",
+        type=str,
     )
 
     args = parser.parse_args()

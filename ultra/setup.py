@@ -20,11 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from setuptools import setup, find_packages
-from glob import glob
-from pathlib import Path
 from collections import defaultdict
+from glob import glob
 from os import path
+from pathlib import Path
+
+from setuptools import find_packages, setup
 
 this_dir = path.abspath(path.dirname(__file__))
 with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:

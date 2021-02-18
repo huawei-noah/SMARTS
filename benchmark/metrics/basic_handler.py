@@ -21,19 +21,18 @@
 General metrics
 """
 
-import numpy as np
 import csv
-import time
 import os
-
+import time
 from collections import defaultdict
+
+import numpy as np
 from scipy.spatial import distance
 
-
-from benchmark.metrics.basic_metrics import BehaviorMetric
-from benchmark.metrics import MetricHandler
-from benchmark.utils import plot, episode_log, format
 from benchmark.common import CalObs
+from benchmark.metrics import MetricHandler
+from benchmark.metrics.basic_metrics import BehaviorMetric
+from benchmark.utils import episode_log, format, plot
 
 
 def agent_info_adapter(env_obs, shaped_reward: float, raw_info: dict):
@@ -142,7 +141,9 @@ class BasicMetricHandler(MetricHandler):
                 f_path = os.path.join(csv_dir, f_name)
                 agent_id = f_path.split(".")[0]
                 print(f"Got file `{f_name}` for agent-{agent_id}")
-                with open(f_path,) as f:
+                with open(
+                    f_path,
+                ) as f:
                     reader = csv.reader(f, delimiter=",")
                     _ = next(reader)
                     agent_record[agent_id]["Speed"] = next(reader)[1:]

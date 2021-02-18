@@ -3,13 +3,13 @@ from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
+    CutIn,
     Flow,
     Mission,
     Route,
     Scenario,
     Traffic,
     TrafficActor,
-    CutIn,
 )
 
 ego_missions = [
@@ -37,5 +37,6 @@ scenario = Scenario(
 )
 
 gen_scenario(
-    scenario=scenario, output_dir=Path(__file__).parent,
+    scenario=scenario,
+    output_dir=Path(__file__).parent,
 )

@@ -2,12 +2,7 @@ import os
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import (
-    Mission,
-    Route,
-    SocialAgentActor,
-    Scenario,
-)
+from smarts.sstudio.types import Mission, Route, Scenario, SocialAgentActor
 
 actors = [
     SocialAgentActor(

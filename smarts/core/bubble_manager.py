@@ -17,17 +17,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from functools import lru_cache
-from sys import maxsize
 import logging
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
+from functools import lru_cache
+from sys import maxsize
 from typing import Dict, FrozenSet, Sequence, Set, Tuple
 
 from shapely.affinity import rotate, translate
-from shapely.geometry import Point, Polygon, CAP_STYLE, JOIN_STYLE
+from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
 
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import Mission, MissionPlanner, Start
@@ -37,9 +37,9 @@ from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
 from smarts.core.vehicle import Vehicle, VehicleState
 from smarts.core.vehicle_index import VehicleIndex
-from smarts.sstudio.types import BoidAgentActor, BubbleLimits
+from smarts.sstudio.types import BoidAgentActor
 from smarts.sstudio.types import Bubble as SSBubble
-from smarts.sstudio.types import SocialAgentActor
+from smarts.sstudio.types import BubbleLimits, SocialAgentActor
 from smarts.zoo.registry import make as make_social_agent
 
 
@@ -93,7 +93,9 @@ class Bubble:
         self._exclusion_prefixes = bubble.exclusion_prefixes
 
         self._cached_airlock_geometry = self._cached_inner_geometry.buffer(
-            bubble.margin, cap_style=CAP_STYLE.square, join_style=JOIN_STYLE.mitre,
+            bubble.margin,
+            cap_style=CAP_STYLE.square,
+            join_style=JOIN_STYLE.mitre,
         )
 
     @property
@@ -161,8 +163,10 @@ class Bubble:
                 for v_id in vehicle_ids_in_bubbles[self]
                 if index.vehicle_is_shadowed(v_id)
             }
-            vehicle_ids_by_bubble_state = BubbleManager._vehicle_ids_divided_by_bubble_state(
-                frozenset(running_cursors)
+            vehicle_ids_by_bubble_state = (
+                BubbleManager._vehicle_ids_divided_by_bubble_state(
+                    frozenset(running_cursors)
+                )
             )
 
             all_hijacked_vehicle_ids = (
@@ -339,7 +343,8 @@ class BubbleManager:
     @classmethod
     @lru_cache(maxsize=2)
     def vehicle_ids_per_bubble(
-        cls, cursors: FrozenSet[Cursor],
+        cls,
+        cursors: FrozenSet[Cursor],
     ) -> Dict[Bubble, Set[str]]:
         vid = cls._vehicle_ids_divided_by_bubble_state(cursors)
         return defaultdict(

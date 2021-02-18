@@ -19,14 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import unittest, ray, os, sys
-import gym
 import json
+import os
 import shutil
+import sys
+import unittest
+
+import gym
+import ray
+
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
-from ultra.train import train
 from ultra.baselines.sac.sac.policy import SACPolicy
+from ultra.train import train
 
 AGENT_ID = "001"
 seed = 2
@@ -63,7 +68,10 @@ class TrainTest(unittest.TestCase):
                         policy_class=policy_class,
                         num_episodes=1,
                         max_episode_steps=2,
-                        eval_info={"eval_rate": 1000, "eval_episodes": 2,},
+                        eval_info={
+                            "eval_rate": 1000,
+                            "eval_episodes": 2,
+                        },
                         timestep_sec=0.1,
                         headless=True,
                         seed=2,

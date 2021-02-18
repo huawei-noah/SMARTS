@@ -22,10 +22,10 @@
 import collections
 
 from ray import logger
-from ray.rllib.env.base_env import _DUMMY_AGENT_ID
-from ray.rllib.rollout import default_policy_agent_mapping, DefaultMapping
-from ray.rllib.evaluation.worker_set import WorkerSet
 from ray.rllib.env import MultiAgentEnv
+from ray.rllib.env.base_env import _DUMMY_AGENT_ID
+from ray.rllib.evaluation.worker_set import WorkerSet
+from ray.rllib.rollout import DefaultMapping, default_policy_agent_mapping
 from ray.rllib.utils.spaces.space_utils import flatten_to_single_ndarray
 
 

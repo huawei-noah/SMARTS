@@ -96,7 +96,8 @@ def _build_single_scenario(clean, scenario):
 
 
 @scenario_cli.command(
-    name="build-all", help="Generate all scenarios under the given directories",
+    name="build-all",
+    help="Generate all scenarios under the given directories",
 )
 @click.option(
     "--clean",

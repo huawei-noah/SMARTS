@@ -19,21 +19,28 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, sys
-import json, re
+import json
+import os
+import re
+import sys
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
+import argparse
 import glob
-import yaml
 import time
-import numpy as np
-import gym, ray, torch, argparse
-import psutil
 from pydoc import locate
+
+import gym
+import numpy as np
+import psutil
+import ray
+import torch
+import yaml
+
+from smarts.zoo.registry import make
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
-from smarts.zoo.registry import make
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -188,7 +195,10 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
     )
     args = parser.parse_args()
 

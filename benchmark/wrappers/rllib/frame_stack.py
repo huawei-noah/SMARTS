@@ -22,18 +22,16 @@
 from collections import deque
 from typing import Sequence
 
-import numpy as np
 import gym
-
+import numpy as np
+from ray import logger
+from ray.rllib.models import Preprocessor
+from ray.rllib.models.preprocessors import get_preprocessor
+from ray.rllib.utils.annotations import override
 from scipy.spatial import distance
 
-from benchmark.common import cal_obs, ActionAdapter
+from benchmark.common import ActionAdapter, cal_obs
 from benchmark.wrappers.rllib.wrapper import Wrapper
-
-from ray.rllib.models.preprocessors import get_preprocessor
-from ray.rllib.models import Preprocessor
-from ray.rllib.utils.annotations import override
-from ray import logger
 
 
 def _get_preprocessor(space: gym.spaces.Space):

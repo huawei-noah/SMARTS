@@ -17,25 +17,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import random
-import math
 import logging
+import math
+import random
+from dataclasses import replace
 from typing import Optional
 
 import numpy as np
 
 from .agent_interface import AgentBehavior
-from .sumo_road_network import SumoRoadNetwork
-from .scenario import EndlessGoal, LapMission, Mission, Start
-from .waypoints import Waypoint, Waypoints
-from .route import ShortestRoute, EmptyRoute
 from .coordinates import Heading, Pose
-from .route import ShortestRoute, EmptyRoute
+from .route import EmptyRoute, ShortestRoute
 from .scenario import EndlessGoal, LapMission, Mission, Start
 from .sumo_road_network import SumoRoadNetwork
-from .utils.math import vec_to_radians, radians_to_vec, evaluate_bezier as bezier
+from .utils.math import evaluate_bezier as bezier
+from .utils.math import radians_to_vec, vec_to_radians
 from .waypoints import Waypoint, Waypoints
-from dataclasses import replace
 
 
 class PlanningError(Exception):
@@ -446,7 +443,12 @@ class MissionPlanner:
 
         p0 = pose.position[:2]
         offset = radians_to_vec(heading) * lane_width
-        p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
+        p1 = np.array(
+            [
+                pose.position[0] + offset[0],
+                pose.position[1] + offset[1],
+            ]
+        )
         offset = radians_to_vec(target_heading) * 5
         p3 = target.pos
         p2 = np.array([p3[0] - offset[0], p3[1] - offset[1]])
@@ -485,6 +487,8 @@ class MissionPlanner:
         wp_start = self._road_network.world_coord_from_offset(lane, offset)
 
         paths = self._waypoints.waypoint_paths_on_lane_at(
-            point=wp_start, lane_id=lane.getID(), lookahead=lookahead,
+            point=wp_start,
+            lane_id=lane.getID(),
+            lookahead=lookahead,
         )
         return paths

@@ -19,23 +19,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import glob
+import math
+import os
 from itertools import cycle
-import glob, yaml
+from sys import path
+
+import numpy as np
+import yaml
+from scipy.spatial import distance
+
 from smarts.core.scenario import Scenario
 from smarts.env.hiway_env import HiWayEnv
 from ultra.baselines.adapter import BaselineAdapter
-import numpy as np
-from scipy.spatial import distance
-import math
-from sys import path
-import os
 
 path.append("./ultra")
-from ultra.utils.common import (
-    get_closest_waypoint,
-    get_path_to_goal,
-    ego_social_safety,
-)
+from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
 
 
 class UltraEnv(HiWayEnv):

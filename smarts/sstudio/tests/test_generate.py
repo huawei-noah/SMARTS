@@ -20,27 +20,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
-import pytest
 import tempfile
-from xml.etree.ElementTree import ElementTree
 from typing import Sequence
+from xml.etree.ElementTree import ElementTree
 
-from smarts.sstudio import gen_traffic, gen_missions
+import pytest
+
+from smarts.sstudio import gen_missions, gen_traffic
 from smarts.sstudio.types import (
-    Traffic,
-    Flow,
-    Route,
-    TrafficActor,
     Distribution,
-    LaneChangingModel,
+    Flow,
     JunctionModel,
+    LaneChangingModel,
     Mission,
+    Route,
+    Traffic,
+    TrafficActor,
 )
 
 
 @pytest.fixture
 def traffic() -> Traffic:
-    car1 = TrafficActor(name="car", speed=Distribution(sigma=0.2, mean=1.0),)
+    car1 = TrafficActor(
+        name="car",
+        speed=Distribution(sigma=0.2, mean=1.0),
+    )
     car2 = TrafficActor(
         name="car",
         speed=Distribution(sigma=0.2, mean=0.8),
@@ -55,7 +59,10 @@ def traffic() -> Traffic:
                     begin=(f"edge-{r[0]}", 0, 30), end=(f"edge-{r[1]}", 0, -30)
                 ),
                 rate=1.0,
-                actors={car1: 0.5, car2: 0.5,},
+                actors={
+                    car1: 0.5,
+                    car2: 0.5,
+                },
             )
             for r in [("west-WE", "east-WE"), ("east-EW", "west-EW")]
         ]

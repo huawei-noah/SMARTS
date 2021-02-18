@@ -20,22 +20,24 @@
 import importlib.resources as pkg_resources
 import logging
 import os
+import warnings
 from collections import defaultdict
 from typing import List, Sequence
 
 import gltf
 import numpy
 from direct.showbase.ShowBase import ShowBase
-from envision import types as envision_types
-from envision.client import Client as EnvisionClient
 from panda3d.core import ClockObject, NodePath, Shader, loadPrcFileData
 
-import warnings
+from envision import types as envision_types
+from envision.client import Client as EnvisionClient
 
 with warnings.catch_warnings():
     # XXX: Benign warning, seems no other way to "properly" fix
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
     from sklearn.metrics.pairwise import euclidean_distances
+
+from smarts.core.chassis import AckermannChassis, BoxChassis
 
 from . import glsl, models
 from .agent_manager import AgentManager
@@ -50,7 +52,6 @@ from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
-from smarts.core.chassis import AckermannChassis, BoxChassis
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.pybullet import bullet_client as bc
@@ -812,8 +813,8 @@ class SMARTS(ShowBase):
                 for vehicle in agent_vehicles:
                     vehicle_action = action[vehicle.id] if is_boid_agent else action
 
-                    controller_state = self._vehicle_index.controller_state_for_vehicle_id(
-                        vehicle.id
+                    controller_state = (
+                        self._vehicle_index.controller_state_for_vehicle_id(vehicle.id)
                     )
                     sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
                         vehicle.id
@@ -889,9 +890,11 @@ class SMARTS(ShowBase):
 
                 if self._agent_manager.is_ego(agent_id):
                     actor_type = envision_types.TrafficActorType.Agent
-                    mission_route_geometry = self._vehicle_index.sensor_state_for_vehicle_id(
-                        v.vehicle_id
-                    ).mission_planner.route.geometry
+                    mission_route_geometry = (
+                        self._vehicle_index.sensor_state_for_vehicle_id(
+                            v.vehicle_id
+                        ).mission_planner.route.geometry
+                    )
                 else:
                     actor_type = envision_types.TrafficActorType.SocialAgent
                     mission_route_geometry = None
@@ -919,7 +922,9 @@ class SMARTS(ShowBase):
                     heading=v.pose.heading,
                     speed=v.speed,
                     actor_id=envision_types.format_actor_id(
-                        agent_id, v.vehicle_id, is_multi=is_boid_agent,
+                        agent_id,
+                        v.vehicle_id,
+                        is_multi=is_boid_agent,
                     ),
                     events=vehicle_obs.events,
                     waypoint_paths=(vehicle_obs.waypoint_paths or []) + road_waypoints,

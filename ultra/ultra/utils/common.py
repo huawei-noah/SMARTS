@@ -19,16 +19,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import torch
-import numpy as np
+import math
+import os
 import random
 import shutil
-import os, cv2, dill
+
+import cv2
+import dill
+import numpy as np
+import torch
 from matplotlib import pyplot as plt
-from skimage.transform import resize
-import ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
-import math
+from skimage.transform import resize
+
+import ultra.utils.geometry as geometry
 
 
 def rotate2d_vector(vectors, angle):

@@ -18,11 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from typing import List, Sequence, Tuple
+
 from numpy import unique
+
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
-from smarts.core.utils.sumo import sumolib # isort:skip
-from sumolib.net.edge import Edge # isort:skip
+from smarts.core.utils.sumo import sumolib  # isort:skip
+from sumolib.net.edge import Edge  # isort:skip
 
 
 class Route:
