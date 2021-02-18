@@ -1,17 +1,15 @@
 import logging
 import tempfile
 
-import ray
-import torch
 import gym
 import numpy as np
-
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.utils.episodes import episodes
-from smarts.core.agent import AgentSpec, Agent
+import ray
+import torch
 
 from examples import default_argument_parser
-
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.utils.episodes import episodes
 
 logging.basicConfig(level=logging.INFO)
 
@@ -61,7 +59,8 @@ def observation_adapter(env_obs):
     angle_error = closest_wp.relative_heading(ego.heading)
 
     return np.array(
-        [dist_from_center, angle_error, ego.speed, ego.steering], dtype=np.float32,
+        [dist_from_center, angle_error, ego.speed, ego.steering],
+        dtype=np.float32,
     )
 
 
@@ -153,7 +152,12 @@ def evaluate(agent_spec, evaluation_scenarios, headless, seed):
 
 
 def main(
-    training_scenarios, evaluation_scenarios, sim_name, headless, num_episodes, seed,
+    training_scenarios,
+    evaluation_scenarios,
+    sim_name,
+    headless,
+    num_episodes,
+    seed,
 ):
     ray.init()
     ray.wait(

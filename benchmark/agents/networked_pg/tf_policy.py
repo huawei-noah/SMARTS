@@ -17,11 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from ray.rllib.agents.pg.pg_tf_policy import pg_tf_loss
 from ray.rllib.agents.pg.pg import DEFAULT_CONFIG as PG_DEFAULT_CONFIG
-
-from ray.rllib.policy.tf_policy_template import build_tf_policy
+from ray.rllib.agents.pg.pg_tf_policy import pg_tf_loss
 from ray.rllib.agents.trainer_template import build_trainer
+from ray.rllib.policy.tf_policy_template import build_tf_policy
 
 from benchmark.networks.communicate import NetworkedMixin, postprocess_trajectory
 
@@ -50,5 +49,6 @@ NetworkedPG = build_tf_policy(
 
 
 NetworkedPGTrainer = build_trainer(
-    name="NetworkedPGTrainer", default_policy=NetworkedPG,
+    name="NetworkedPGTrainer",
+    default_policy=NetworkedPG,
 )

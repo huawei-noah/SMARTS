@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Any, Dict
 
 from smarts.core.agent import AgentSpec
 from smarts.sstudio.types import Mission

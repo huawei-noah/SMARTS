@@ -71,7 +71,10 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
     model_path = Path(__file__).parent / "model"
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=5000),
-        policy=RLlibTFSavedModelAgent(model_path.absolute(), OBSERVATION_SPACE,),
+        policy=RLlibTFSavedModelAgent(
+            model_path.absolute(),
+            OBSERVATION_SPACE,
+        ),
         observation_adapter=observation_adapter,
         reward_adapter=reward_adapter,
         action_adapter=action_adapter,

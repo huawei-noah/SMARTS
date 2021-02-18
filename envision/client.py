@@ -23,17 +23,17 @@
 import json
 import logging
 import multiprocessing
-import numpy as np
 import re
 import time
 import uuid
 import warnings
-import websocket
-
 from datetime import datetime
 from pathlib import Path
 from queue import Queue
 from typing import Union
+
+import numpy as np
+import websocket
 
 from envision import types
 from smarts.core.utils.file import unpack
@@ -101,7 +101,11 @@ class Client:
             path = (output_dir / client_id).with_suffix(".jsonl")
             self._logging_queue = multiprocessing.Queue()
             self._logging_process = multiprocessing.Process(
-                target=self._write_log_state, args=(self._logging_queue, path,)
+                target=self._write_log_state,
+                args=(
+                    self._logging_queue,
+                    path,
+                ),
             )
             self._logging_process.daemon = True
             self._logging_process.start()
@@ -140,7 +144,10 @@ class Client:
         timestep_sec: float = 0.1,
         wait_between_retries: float = 0.5,
     ):
-        client = Client(endpoint=endpoint, wait_between_retries=wait_between_retries,)
+        client = Client(
+            endpoint=endpoint,
+            wait_between_retries=wait_between_retries,
+        )
         with open(path, "r") as f:
             for line in f:
                 line = line.rstrip("\n")
@@ -151,7 +158,10 @@ class Client:
             logging.info("Finished Envision data replay")
 
     def _connect(
-        self, endpoint, state_queue, wait_between_retries: float = 0.05,
+        self,
+        endpoint,
+        state_queue,
+        wait_between_retries: float = 0.05,
     ):
         connection_established = False
 

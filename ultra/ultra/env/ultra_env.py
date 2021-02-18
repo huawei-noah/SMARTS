@@ -19,23 +19,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import glob
+import math
+import os
 from itertools import cycle
-import glob, yaml
+from sys import path
+
+import numpy as np
+import yaml
+from scipy.spatial import distance
+
 from smarts.core.scenario import Scenario
 from smarts.env.hiway_env import HiWayEnv
 from ultra.baselines.adapter import BaselineAdapter
-import numpy as np
-from scipy.spatial import distance
-import math
-from sys import path
-import os
 
 path.append("./ultra")
-from ultra.utils.common import (
-    get_closest_waypoint,
-    get_path_to_goal,
-    ego_social_safety,
-)
+from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
 
 
 class UltraEnv(HiWayEnv):
@@ -173,16 +172,15 @@ class UltraEnv(HiWayEnv):
         return observations, rewards, agent_dones, infos
 
     def get_task(self, task_id, task_level):
-        base_dir = os.path.dirname(__file__)
-        # print(base_dir)
-        config_path = os.path.join(base_dir, "../../config.yaml")
-        # print(config_path)
+        base_dir = os.path.join(os.path.dirname(__file__), "../")
+        config_path = os.path.join(base_dir, "config.yaml")
 
         with open(config_path, "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
-            # print(scenarios)
             task = scenarios[f"task{task_id}"][task_level]
-            # print(task)
+
+        task["train"] = os.path.join(base_dir, task["train"])
+        task["test"] = os.path.join(base_dir, task["test"])
         return task
 
     @property

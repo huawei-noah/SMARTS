@@ -9,7 +9,7 @@ jobs:
   test-formatting:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.3-pre
+    container: huaweinoah/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -17,7 +17,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           pip install --upgrade pip
-          pip install black==19.10b0
+          pip install black==20.8b1
           apt-get update && apt-get install -y curl
           curl -sL https://deb.nodesource.com/setup_14.x | bash -
           apt-get install -y nodejs
@@ -27,7 +27,7 @@ jobs:
   test-requirements:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.3-pre
+    container: huaweinoah/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2

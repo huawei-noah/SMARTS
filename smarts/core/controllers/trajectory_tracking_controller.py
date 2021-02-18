@@ -21,18 +21,17 @@ import math
 from enum import Enum
 from functools import partial
 
-from numpy.linalg import matrix_power
 import numpy as np
-
+from numpy.linalg import matrix_power
 from scipy import signal
 
 from smarts.core.chassis import AckermannChassis
 from smarts.core.utils.math import (
     lerp,
+    low_pass_filter,
+    min_angles_difference_signed,
     radians_to_vec,
     signed_dist_to_line,
-    min_angles_difference_signed,
-    low_pass_filter,
 )
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
@@ -160,13 +159,18 @@ class TrajectoryTrackingController:
         )
 
         vehicle.control(
-            throttle=throttle_norm, brake=brake_norm, steering=steering_norm,
+            throttle=throttle_norm,
+            brake=brake_norm,
+            steering=steering_norm,
         )
 
     # Final values are the gains at 80 km/hr (22.2 m/s).
     @staticmethod
     def perform_trajectory_tracking_PD(
-        trajectory, vehicle, state, dt_sec,
+        trajectory,
+        vehicle,
+        state,
+        dt_sec,
     ):
         # Controller parameters for trajectory tracking.
         params = vehicle.chassis.controller_parameters
@@ -276,7 +280,9 @@ class TrajectoryTrackingController:
         state.integral_velocity_error += (vehicle.speed - desired_speed) * dt_sec
 
         vehicle.control(
-            throttle=throttle_norm, brake=brake_norm, steering=state.steering_state,
+            throttle=throttle_norm,
+            brake=brake_norm,
+            steering=state.steering_state,
         )
 
     @staticmethod

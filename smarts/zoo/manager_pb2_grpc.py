@@ -6,8 +6,7 @@ import smarts.zoo.manager_pb2 as manager__pb2
 
 
 class ManagerStub(object):
-    """Interface exported by the manager.
-    """
+    """Interface exported by the manager."""
 
     def __init__(self, channel):
         """Constructor.
@@ -28,8 +27,7 @@ class ManagerStub(object):
 
 
 class ManagerServicer(object):
-    """Interface exported by the manager.
-    """
+    """Interface exported by the manager."""
 
     def spawn_worker(self, request, context):
         """Spawn worker processes.
@@ -40,8 +38,7 @@ class ManagerServicer(object):
         raise NotImplementedError("Method not implemented!")
 
     def stop_worker(self, request, context):
-        """Stop worker process.
-        """
+        """Stop worker process."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
@@ -68,8 +65,7 @@ def add_ManagerServicer_to_server(servicer, server):
 
 # This class is part of an EXPERIMENTAL API.
 class Manager(object):
-    """Interface exported by the manager.
-    """
+    """Interface exported by the manager."""
 
     @staticmethod
     def spawn_worker(

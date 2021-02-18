@@ -21,19 +21,18 @@
 # THE SOFTWARE.
 
 import multiprocessing
-import pytest
 import tempfile
-import websocket
-
 from pathlib import Path
 
+import pytest
+import websocket
+
 from envision.client import Client as Envision
-from smarts.core.agent import AgentSpec, Agent
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-
 
 AGENT_ID = "Agent-007"
 NUM_EPISODES = 3

@@ -17,24 +17,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import random
+import logging
 import math
+import random
+from dataclasses import replace
 from typing import Optional
 
 import numpy as np
 
 from .agent_interface import AgentBehavior
-from .sumo_road_network import SumoRoadNetwork
-from .scenario import EndlessGoal, LapMission, Mission, Start
-from .waypoints import Waypoint, Waypoints
-from .route import ShortestRoute, EmptyRoute
 from .coordinates import Heading, Pose
-from .route import ShortestRoute, EmptyRoute
+from .route import EmptyRoute, ShortestRoute
 from .scenario import EndlessGoal, LapMission, Mission, Start
 from .sumo_road_network import SumoRoadNetwork
-from .utils.math import vec_to_radians, radians_to_vec, evaluate_bezier as bezier
+from .utils.math import evaluate_bezier as bezier
+from .utils.math import radians_to_vec, vec_to_radians
 from .waypoints import Waypoint, Waypoints
-from dataclasses import replace
 
 
 class PlanningError(Exception):
@@ -45,6 +43,7 @@ class MissionPlanner:
     def __init__(
         self, waypoints: Waypoints, road_network: SumoRoadNetwork, agent_behavior=None
     ):
+        self._log = logging.getLogger(self.__class__.__name__)
         self._waypoints = waypoints
         self._agent_behavior = agent_behavior or AgentBehavior(aggressiveness=5)
         self._mission = None
@@ -61,6 +60,7 @@ class MissionPlanner:
         self._uturn_initial_position = 0
         self._uturn_is_initialized = False
         self._prev_kyber_x_position = 0
+        self._first_uturn = True
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -307,6 +307,7 @@ class MissionPlanner:
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
 
+        ## the position of ego car is here: [x, y]
         ego_position = pose.position[:2]
         ego_lane = self._road_network.nearest_lane(ego_position)
         ego_wps = self._waypoints.waypoint_paths_on_lane_at(
@@ -455,7 +456,12 @@ class MissionPlanner:
 
         p0 = pose.position[:2]
         offset = radians_to_vec(heading) * lane_width
-        p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
+        p1 = np.array(
+            [
+                pose.position[0] + offset[0],
+                pose.position[1] + offset[1],
+            ]
+        )
         offset = radians_to_vec(target_heading) * 5
 
         p3 = target.pos
@@ -481,12 +487,22 @@ class MissionPlanner:
                 lane_index=lane_index,
             )
             trajectory.append(wp)
+
+        if self._first_uturn:
+            uturn_activated_distance = math.sqrt(
+                horizontal_distant ** 2 + vertical_distant ** 2
+            )
+            self._log.info(f"U-turn activated at distance: {uturn_activated_distance}")
+            self._first_uturn = False
+
         return [trajectory]
 
     def paths_of_lane_at(self, lane, offset, lookahead=30):
         wp_start = self._road_network.world_coord_from_offset(lane, offset)
 
         paths = self._waypoints.waypoint_paths_on_lane_at(
-            point=wp_start, lane_id=lane.getID(), lookahead=lookahead,
+            point=wp_start,
+            lane_id=lane.getID(),
+            lookahead=lookahead,
         )
         return paths

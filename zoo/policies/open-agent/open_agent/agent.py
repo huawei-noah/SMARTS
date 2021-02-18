@@ -1,11 +1,10 @@
-from typing import Sequence
-
+import json
 import logging
 import math
-import json
 import shutil
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Sequence
 
 import casadi.casadi as cs
 import numpy as np
@@ -13,7 +12,8 @@ import opengen as og
 
 from smarts.core.agent import Agent
 from smarts.core.coordinates import Heading
-from .version import VERSION, SOLVER_VERSION
+
+from .version import SOLVER_VERSION, VERSION
 
 from smarts.core.controllers.trajectory_tracking_controller import (
     TrajectoryTrackingControllerState,
@@ -329,7 +329,8 @@ def build_problem(N, SV_N, WP_N, ts):
 
             min_dist = VehicleModel.LENGTH
             cost += gain.obstacle * cs.fmax(
-                -1, min_dist ** 2 - ((ego.x - sv.x) ** 2 + 9 * (ego.y - sv.y) ** 2),
+                -1,
+                min_dist ** 2 - ((ego.x - sv.x) ** 2 + 9 * (ego.y - sv.y) ** 2),
             )
 
     # To stabilize the trajectory, we attach a higher weight to the final x_ref

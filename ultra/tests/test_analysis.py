@@ -19,27 +19,31 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import unittest, glob, ray, subprocess
-from ultra.scenarios.generate_scenarios import *
+import glob
+import subprocess
+import unittest
+
+import ray
+
+from ultra.scenarios.analysis.base_analysis import BaseAnalysis
 from ultra.scenarios.analysis.scenario_analysis import ScenarioAnalysis
 from ultra.scenarios.analysis.sumo_experiment import (
     edge_lane_data_function,
-    vehicle_data_function,
     sumo_rerouting_routine,
+    vehicle_data_function,
 )
-
-from ultra.scenarios.analysis.base_analysis import BaseAnalysis
+from ultra.scenarios.generate_scenarios import *
 
 
 class AnalysisTest(unittest.TestCase):
     def test_interface_analyze(self):
         try:
-            save_dir = "tests/task/eval_test/eval"
-            output_scenario = "tests/scenarios/analysis_output"
+            save_dir = "tests/analysis_test/scenarios/"
+            output = "tests/analysis_test/output/"
             if os.path.exists(save_dir):
                 shutil.rmtree(save_dir)
-            if os.path.exists(output_scenario):
-                shutil.rmtree(output_scenario)
+            if os.path.exists(output):
+                shutil.rmtree(save_dir)
             build_scenarios(
                 task="task00",
                 level_name="easy",
@@ -49,31 +53,36 @@ class AnalysisTest(unittest.TestCase):
                 save_dir=save_dir,
             )
 
-            if not os.path.exists("tests/scenarios/analysis_output"):
-                os.makedirs("tests/scenarios/analysis_output")
+            if not os.path.exists(output):
+                os.makedirs(output)
 
             os.system(
-                "python ultra/scenarios/interface.py analyze --scenarios tests/task/eval_test/ --max-steps 1000 --end-by-stopwatcher --output tests/scenarios/analysis_output"
+                f"python ultra/scenarios/interface.py analyze --scenarios {save_dir} --max-steps 600 --end-by-stopwatcher --output {output}"
             )
-            for dirpath, dirnames, files in os.walk("tests/tasks/eval_test/"):
+            for dirpath, dirnames, files in os.walk(save_dir):
                 if "traffic" in dirpath:
                     self.assertTrue("all.rou.xml" in files)
 
-            self.assertTrue(
-                os.path.exists("tests/scenarios/analysis_output/analysis.pkl")
-            )
-            self.assertTrue(os.path.exists("tests/scenarios/analysis_output/"))
+            self.assertTrue(os.path.exists("tests/analysis_test/output/analysis.pkl"))
         except Exception as err:
             print(err)
             self.assertTrue(False)
 
+        if os.path.exists(save_dir):
+            self.assertTrue(True)
+            shutil.rmtree(save_dir)
+
+        if os.path.exists(output):
+            self.assertTrue(True)
+            shutil.rmtree(output)
+
     def test_analyze_scenario(self):
-        save_dir = "tests/scenarios/maps/easy/"
-        output_scenario = "tests/scenarios/output"
+        save_dir = "tests/analysis_test/scenarios/"
+        output = "tests/analysis_test/output/"
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
-        if os.path.exists(output_scenario):
-            shutil.rmtree(output_scenario)
+        if os.path.exists(output):
+            shutil.rmtree(output)
 
         build_scenarios(
             task="task00",
@@ -83,7 +92,7 @@ class AnalysisTest(unittest.TestCase):
             root_path="tests/scenarios",
             save_dir=save_dir,
         )
-        scenarios = glob.glob(f"{save_dir}/map*0*")
+        scenarios = glob.glob(f"{save_dir}")
         try:
             ray.init(ignore_reinit_error=True)
             analyzer = ScenarioAnalysis.remote()
@@ -93,7 +102,7 @@ class AnalysisTest(unittest.TestCase):
                         end_by_stopwatcher=True,
                         scenarios=scenarios,
                         ego=None,
-                        max_episode_steps=3000,
+                        max_episode_steps=800,
                         policy=None,
                         video_rate=100,
                         timestep_sec=0.1,
@@ -104,13 +113,27 @@ class AnalysisTest(unittest.TestCase):
                     )
                 ]
             )
-            if not os.path.exists(output_scenario):
-                os.makedirs(output_scenario)
-            ray.wait([analyzer.save_data.remote(save_dir=output_scenario)])
-            self.assertTrue(os.path.exists(f"{output_scenario}/analysis.pkl"))
+            if not os.path.exists(output):
+                os.makedirs(output)
+            ray.wait([analyzer.save_data.remote(save_dir=output)])
+            self.assertTrue(os.path.exists(f"{output}analysis.pkl"))
+
+            for dirpath, dirnames, files in os.walk(save_dir):
+                if "traffic" in dirpath:
+                    self.assertTrue("all.rou.xml" in files)
+
+            self.assertTrue(os.path.exists("tests/analysis_test/output/analysis.pkl"))
         except ray.exceptions.WorkerCrashedError as err:
             print(err)
             self.assertTrue(False)
+
+        if os.path.exists(save_dir):
+            self.assertTrue(True)
+            shutil.rmtree(save_dir)
+
+        if os.path.exists(output):
+            self.assertTrue(True)
+            shutil.rmtree(output)
 
     def test_save_histogram(self):
         try:
@@ -127,3 +150,8 @@ class AnalysisTest(unittest.TestCase):
         except Exception as err:
             print(err)
             self.assertTrue(False)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists("tests/analysis_test"):
+            shutil.rmtree("tests/analysis_test")

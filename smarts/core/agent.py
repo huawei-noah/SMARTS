@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-from typing import Optional, Any, Callable
-from dataclasses import dataclass, replace
 import warnings
+from dataclasses import dataclass, replace
+from typing import Any, Callable, Optional
 
 import cloudpickle
 

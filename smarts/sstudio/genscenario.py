@@ -38,7 +38,10 @@ logger = logging.getLogger(__file__)
 
 
 def gen_scenario(
-    scenario: types.Scenario, output_dir: Path, seed: int = 42, ovewrite: bool = False,
+    scenario: types.Scenario,
+    output_dir: Path,
+    seed: int = 42,
+    ovewrite: bool = False,
 ):
     """This is now the preferred way to generate a scenario. Instead of calling the
     gen_* methods directly, we provide this higher-level abstraction that takes care
@@ -79,7 +82,10 @@ def gen_scenario(
 
         if missions:
             gen_missions(
-                scenario=output_dir, missions=missions, seed=seed, overwrite=ovewrite,
+                scenario=output_dir,
+                missions=missions,
+                seed=seed,
+                overwrite=ovewrite,
             )
 
     if scenario.social_agent_missions:
@@ -189,7 +195,10 @@ def gen_social_agent_missions(
 
 
 def gen_missions(
-    scenario: str, missions: Sequence, seed: int = 42, overwrite: bool = False,
+    scenario: str,
+    missions: Sequence,
+    seed: int = 42,
+    overwrite: bool = False,
 ):
     """Generates a route file to represent missions (a route per mission). Will create
     the output_dir if it doesn't exist already. The ouput file will be named `missions`.
@@ -259,7 +268,11 @@ def gen_group_laps(
         missions.append(
             types.LapMission(
                 types.Route(
-                    begin=(start_edge_id, s_lane, start_offset - grid_offset * i,),
+                    begin=(
+                        start_edge_id,
+                        s_lane,
+                        start_offset - grid_offset * i,
+                    ),
                     end=(end_edge_id, (end_lane + i) % used_lanes, end_offset),
                 ),
                 num_laps=num_laps,
