@@ -89,7 +89,7 @@ export default function ControlPanel({ showControls, toggleControlModes }) {
 
   const onCheck = (checkedKeys, info) => {
     setCheckedKeys(checkedKeys);
-    toggleControlModes({ [info.node.key]: [info.checked] });
+    toggleControlModes({ [info.node.key]: info.checked });
   };
 
   const onSelect = (selectedKeys, info) => {
