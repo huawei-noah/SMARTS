@@ -46,7 +46,7 @@ class EvaluateTest(unittest.TestCase):
         if not os.path.exists(path):
             # Generate models before evaluation tests
             os.system(
-                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 10 --eval-rate 200 --eval-episodes 1 --log-dir tests/sac_test_models"
+                "python ultra/train.py --task 00 --level eval_test --policy sac --headless True --episodes 1 --eval-rate 1 --eval-episodes 1 --max-episode-steps 2 --log-dir tests/sac_test_models"
             )
 
     def test_a_folders(self):
@@ -92,6 +92,7 @@ class EvaluateTest(unittest.TestCase):
                         episode=episode,
                         eval_rate=10,
                         eval_episodes=1,
+                        max_episode_steps=2,
                         policy_class=policy_class,
                         scenario_info=("00", "eval_test"),
                         timestep_sec=0.1,
@@ -145,7 +146,7 @@ class EvaluateTest(unittest.TestCase):
         ray.shutdown()
         try:
             os.system(
-                f"python ultra/evaluate.py --task 00 --level eval_test --models {model_dir} --episodes 1 --log-dir {log_dir} --headless True"
+                f"python ultra/evaluate.py --task 00 --level eval_test --models {model_dir} --episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless True"
             )
             self.assertTrue(True)
         except Exception as err:
@@ -160,12 +161,9 @@ class EvaluateTest(unittest.TestCase):
 
     def test_evaluate_agent(self):
         seed = 2
-        model = glob.glob("tests/sac_test_models/*/models/")[0]
-        log_dir = "tests/output_eval_agent_logs"
+        model = glob.glob("tests/sac_test_models/*/models/0")[0]
+        log_dir = "tests/output_eval_agent_logs/"
         policy_class = "ultra.baselines.sac:sac-v0"
-
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
 
         ray.shutdown()
         ray.init(ignore_reinit_error=True)
@@ -179,6 +177,7 @@ class EvaluateTest(unittest.TestCase):
                 checkpoint_dir=model,
                 scenario_info=("00", "eval_test"),
                 num_episodes=1,
+                max_episode_steps=2,
                 timestep_sec=0.1,
                 headless=True,
                 log_dir=log_dir,
@@ -218,11 +217,10 @@ class EvaluateTest(unittest.TestCase):
 
 def prepare_test_env_agent(headless=True):
     timestep_sec = 0.1
-    policy_class = "ultra.baselines.sac:sac-v0"
     spec = BaselineAgentSpec(
         action_type=ActionSpaceType.Continuous,
         policy_class=SACPolicy,
-        max_episode_steps=100,
+        max_episode_steps=2,
     )
     env = gym.make(
         "ultra.env:ultra-v0",

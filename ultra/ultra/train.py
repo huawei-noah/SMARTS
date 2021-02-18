@@ -41,6 +41,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 def train(
     scenario_info,
     num_episodes,
+    max_episode_steps,
     policy_class,
     eval_info,
     timestep_sec,
@@ -54,7 +55,7 @@ def train(
 
     AGENT_ID = "007"
 
-    spec = make(locator=policy_class)
+    spec = make(locator=policy_class, max_episode_steps=max_episode_steps)
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
@@ -90,6 +91,7 @@ def train(
                 policy_class=policy_class,
                 episode=episode,
                 log_dir=log_dir,
+                max_episode_steps=max_episode_steps,
                 **eval_info,
                 **env.info,
             )
@@ -143,6 +145,12 @@ if __name__ == "__main__":
         "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
+    )
+    parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
@@ -185,6 +193,7 @@ if __name__ == "__main__":
             train.remote(
                 scenario_info=(args.task, args.level),
                 num_episodes=int(args.episodes),
+                max_episode_steps=int(args.max_episode_steps),
                 eval_info={
                     "eval_rate": float(args.eval_rate),
                     "eval_episodes": int(args.eval_episodes),
