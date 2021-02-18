@@ -39,7 +39,7 @@ from ultra.utils.common import (
 
 class RLlibUltraEnv(RLlibHiWayEnv):
     def __init__(self, config):
-        print(">>> ENV:", config["eval_mode"])
+        print(">>> ENV: ", config["eval_mode"])
         self.scenario_info = config["scenario_info"]
         self.scenarios = self.get_task(self.scenario_info[0], self.scenario_info[1])
         self._timestep_sec = config["timestep_sec"]
