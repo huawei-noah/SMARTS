@@ -9,7 +9,8 @@
 FROM ubuntu:bionic
 
 # Install libraries
-RUN apt-get update --fix-missing && \
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt-get update --fix-missing && \
     apt-get install -y \
         software-properties-common && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
