@@ -11,14 +11,13 @@ import numpy as np
 import opengen as og
 
 from smarts.core.agent import Agent
+from smarts.core.controllers.trajectory_tracking_controller import (
+    TrajectoryTrackingController,
+    TrajectoryTrackingControllerState,
+)
 from smarts.core.coordinates import Heading
 
 from .version import SOLVER_VERSION, VERSION
-
-from smarts.core.controllers.trajectory_tracking_controller import (
-    TrajectoryTrackingControllerState,
-    TrajectoryTrackingController,
-)
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
 
@@ -531,7 +530,7 @@ class OpEnAgent(Agent):
                 "theta": 0.1 * 0.05,
                 "position": 1 * 10,
                 "obstacle": 3.0,
-                "u_accel": 0.01,
+                "u_accel": 0.1,
                 "u_yaw_rate": 0.1,
                 "terminal": 0.01,
                 "impatience": 0.01,

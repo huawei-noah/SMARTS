@@ -59,7 +59,8 @@ class MissionPlanner:
         self._insufficient_initial_distant = False
         self._uturn_initial_position = 0
         self._uturn_is_initialized = False
-        self._prev_kyber_x_position = 0
+        self._prev_kyber_x_position = None
+        self._prev_kyber_y_position = None
         self._first_uturn = True
 
     def random_endless_mission(
@@ -229,10 +230,24 @@ class MissionPlanner:
         target_vehicle = neighborhood_vehicles[0]
         target_position = target_vehicle.pose.position[:2]
 
-        target_velocity = (
-            -self._prev_kyber_x_position - target_position[0]
-        ) / sim.timestep_sec
+        if (self._prev_kyber_x_position is None) and (
+            self._prev_kyber_y_position is None
+        ):
+            self._prev_kyber_x_position = target_position[0]
+            self._prev_kyber_y_position = target_position[1]
+
+        velocity_vector = np.array(
+            [
+                (-self._prev_kyber_x_position + target_position[0]) / sim.timestep_sec,
+                (-self._prev_kyber_y_position + target_position[1]) / sim.timestep_sec,
+            ]
+        )
+        target_velocity = np.dot(
+            velocity_vector, radians_to_vec(target_vehicle.pose.heading)
+        )
+
         self._prev_kyber_x_position = target_position[0]
+        self._prev_kyber_y_position = target_position[1]
 
         target_lane = self._road_network.nearest_lane(target_position)
 
@@ -352,7 +367,7 @@ class MissionPlanner:
         # represents the portion of intitial distantce which is used for
         # triggering the u-turn task.
         aggressiveness = 0.8 * self._agent_behavior.aggressiveness / 10
-        distant_threshold = 8
+        distance_threshold = 8
 
         if not self._uturn_is_initialized:
             self._uturn_initial_distant = (
@@ -366,7 +381,7 @@ class MissionPlanner:
 
             if (1 * self._uturn_initial_height * 3.14 / 13.8) * neighborhood_vehicles[
                 0
-            ].speed + distant_threshold > self._uturn_initial_distant:
+            ].speed + distance_threshold > self._uturn_initial_distant:
                 self._insufficient_initial_distant = True
             self._uturn_is_initialized = True
 
@@ -392,7 +407,7 @@ class MissionPlanner:
             * (
                 (1 * self._uturn_initial_height * 3.14 / 13.8)
                 * neighborhood_vehicles[0].speed
-                + distant_threshold
+                + distance_threshold
             )
         ):
             return ego_wps_des_speed
