@@ -176,7 +176,9 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
         # "train_batch_size" : 200, # Number of timesteps collected for each SGD round.
         "in_evaluation": True,
         "evaluation_num_episodes": eval_info["eval_episodes"],
-        "evaluation_interval": eval_info["eval_rate"], # Evaluation occurs after # of eval-intervals (episodes)
+        "evaluation_interval": eval_info[
+            "eval_rate"
+        ],  # Evaluation occurs after # of eval-intervals (episodes)
         "evaluation_config": {
             "env_config": {
                 "seed": seed,
