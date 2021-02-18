@@ -24,13 +24,12 @@ from ultra.baselines.common.social_vehicles_encoders.pointnet_encoder import PNE
 from ultra.baselines.common.social_vehicles_encoders.pointnet_encoder_batched import (
     PNEncoderBatched,
 )
+from ultra.baselines.common.social_vehicles_encoders.precog_encoder import (
+    PrecogFeatureExtractor,
+)
 from ultra.baselines.common.state_preprocessor import (
     StatePreprocessor,
     preprocess_state,
-)
-from ultra.baselines.common.social_vehicle_extraction import *
-from ultra.baselines.common.social_vehicles_encoders.precog_encoder import (
-    PrecogFeatureExtractor,
 )
 
 social_vehicle_extractors = {

@@ -1,8 +1,8 @@
 import argparse
 
-from zoo.evaluation.metrics.kinematics.kinematics_evaluation import KinematicsEvaluation
-from zoo.evaluation.metrics.diversity.diversity_evaluation import DiversityEvaluation
 from zoo.evaluation.metrics.collision.collision_data_parse import CollisionEvaluation
+from zoo.evaluation.metrics.diversity.diversity_evaluation import DiversityEvaluation
+from zoo.evaluation.metrics.kinematics.kinematics_evaluation import KinematicsEvaluation
 from zoo.evaluation.metrics.offroad.offroad_data_parse import OffroadEvaluation
 
 
@@ -33,7 +33,8 @@ def run_all_evaluation(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="evaluation", description="Start run evaluation.",
+        prog="evaluation",
+        description="Start run evaluation.",
     )
     parser.add_argument(
         "scenario_logs_path",

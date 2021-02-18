@@ -22,26 +22,24 @@
 """
 Centralized A2C policy
 """
-import numpy as np
-
 from collections import OrderedDict
-from gym import spaces
 
-from ray.rllib.models.preprocessors import Preprocessor
-from ray.rllib.agents.trainer_template import build_trainer
-from ray.rllib.agents.trainer import with_common_config
+import numpy as np
+from gym import spaces
 from ray.rllib.agents.a3c.a3c_tf_policy import A3CLoss
-from ray.rllib.policy.sample_batch import SampleBatch
-from ray.rllib.policy.tf_policy_template import build_tf_policy
-from ray.rllib.policy.tf_policy import TFPolicy
-from ray.rllib.utils import try_import_tf
-from ray.rllib.utils.tf_ops import make_tf_callable, explained_variance
+from ray.rllib.agents.trainer import with_common_config
+from ray.rllib.agents.trainer_template import build_trainer
 from ray.rllib.evaluation.postprocessing import Postprocessing, compute_advantages
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.modelv2 import ModelV2
+from ray.rllib.models.preprocessors import Preprocessor
+from ray.rllib.policy.sample_batch import SampleBatch
+from ray.rllib.policy.tf_policy import TFPolicy
+from ray.rllib.policy.tf_policy_template import build_tf_policy
+from ray.rllib.utils import try_import_tf
+from ray.rllib.utils.tf_ops import explained_variance, make_tf_callable
 
 from benchmark.networks import CentralizedActorCriticModel
-
 
 tf1, tf, tfv = try_import_tf()
 

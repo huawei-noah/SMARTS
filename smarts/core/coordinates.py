@@ -17,20 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import math
 import enum
+import math
+from dataclasses import dataclass
+from typing import Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
-
-from typing import Sequence, Optional, SupportsFloat, Type, Union
-from dataclasses import dataclass
-
 from typing_extensions import SupportsIndex
 
 from smarts.core.utils.math import (
     fast_quaternion_from_angle,
-    yaw_from_quaternion,
     radians_to_vec,
+    yaw_from_quaternion,
 )
 
 
@@ -168,7 +166,11 @@ class Pose:
         position = np.array([*base_position, 0][:3])
         orientation = fast_quaternion_from_angle(heading)
 
-        return cls(position=position, orientation=orientation, heading_=heading,)
+        return cls(
+            position=position,
+            orientation=orientation,
+            heading_=heading,
+        )
 
     @classmethod
     def from_explicit_offset(

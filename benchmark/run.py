@@ -19,15 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
-import ray
 import os
-
 from pathlib import Path
+
+import ray
 from ray import tune
 
 from benchmark import gen_config
 from benchmark.common import SimpleCallbacks
-
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 RUN_NAME = Path(__file__).stem
@@ -68,7 +67,8 @@ def main(
 
     # TODO(ming): change scenario name (not path)
     experiment_name = EXPERIMENT_NAME.format(
-        scenario=scenario.split("/")[-1], n_agent=4,
+        scenario=scenario.split("/")[-1],
+        n_agent=4,
     )
 
     log_dir = Path(log_dir).expanduser().absolute() / RUN_NAME
@@ -95,7 +95,9 @@ def main(
 def parse_args():
     parser = argparse.ArgumentParser("Benchmark learning")
     parser.add_argument(
-        "scenario", type=str, help="Scenario name",
+        "scenario",
+        type=str,
+        help="Scenario name",
     )
     parser.add_argument(
         "--paradigm",

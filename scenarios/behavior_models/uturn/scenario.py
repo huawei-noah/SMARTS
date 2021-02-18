@@ -37,5 +37,6 @@ scenario = Scenario(
 )
 
 gen_scenario(
-    scenario=scenario, output_dir=Path(__file__).parent,
+    scenario=scenario,
+    output_dir=Path(__file__).parent,
 )

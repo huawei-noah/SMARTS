@@ -19,16 +19,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import math
+import random
+from sys import path
+
 import numpy as np
 from scipy.spatial import distance
-import random, math
-from sys import path
 
 path.append("./ultra")
 from ultra.utils.common import (
+    ego_social_safety,
     get_closest_waypoint,
     get_path_to_goal,
-    ego_social_safety,
     rotate2d_vector,
 )
 

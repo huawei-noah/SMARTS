@@ -9,6 +9,7 @@ import logging
 import math
 
 import gym
+
 from smarts.core.utils.episodes import episodes
 
 open_agent = importlib.import_module("zoo.policies.open-agent.open_agent")

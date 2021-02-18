@@ -18,24 +18,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-import gym
-import cv2
-import numpy as np
-
-from typing import Dict, Sequence
 from collections import defaultdict
+from typing import Dict, Sequence
 
-from ray.rllib.agents.callbacks import DefaultCallbacks
-from ray.rllib.evaluation import MultiAgentEpisode, RolloutWorker
-from ray.rllib.env import BaseEnv
-from ray.rllib.policy import Policy
+import cv2
+import gym
+import numpy as np
 from ray import logger
+from ray.rllib.agents.callbacks import DefaultCallbacks
+from ray.rllib.env import BaseEnv
+from ray.rllib.evaluation import MultiAgentEpisode, RolloutWorker
+from ray.rllib.policy import Policy
 
-from smarts.core.sensors import Observation
-from smarts.core.utils.math import vec_2d
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.scenario import PositionalGoal
-
+from smarts.core.sensors import Observation
+from smarts.core.utils.math import vec_2d
 
 SPACE_LIB = dict(
     # normalized distance to lane center
@@ -43,7 +41,9 @@ SPACE_LIB = dict(
         low=-float("inf"), high=float("inf"), shape=(1,)
     ),
     heading_errors=lambda look: gym.spaces.Box(
-        low=-float("inf"), high=float("inf"), shape=(look[0],),
+        low=-float("inf"),
+        high=float("inf"),
+        shape=(look[0],),
     ),
     speed=lambda _: gym.spaces.Box(low=-float("inf"), high=float("inf"), shape=(1,)),
     steering=lambda _: gym.spaces.Box(low=-float("inf"), high=float("inf"), shape=(1,)),
@@ -51,7 +51,9 @@ SPACE_LIB = dict(
         low=-float("inf"), high=float("inf"), shape=(2,)
     ),
     neighbor=lambda neighbor_num: gym.spaces.Box(
-        low=-float("inf"), high=float("inf"), shape=(neighbor_num * 5,),
+        low=-float("inf"),
+        high=float("inf"),
+        shape=(neighbor_num * 5,),
     ),
     img_gray=lambda shape: gym.spaces.Box(
         low=-float("inf"), high=float("inf"), shape=shape

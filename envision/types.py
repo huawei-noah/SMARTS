@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from enum import Enum
-from typing import NamedTuple, Dict, Sequence, Tuple
+from typing import Dict, NamedTuple, Sequence, Tuple
 
 from smarts.core.events import Events
 

@@ -265,7 +265,12 @@ if __name__ == "__main__":
             )
 
             run(
-                showbase, client, vehicle, plane_body_id, sliders, n_steps=int(1e6),
+                showbase,
+                client,
+                vehicle,
+                plane_body_id,
+                sliders,
+                n_steps=int(1e6),
             )
     except Exception as e:
         print(e)

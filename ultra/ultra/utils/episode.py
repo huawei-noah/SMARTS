@@ -19,17 +19,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import datetime
+import math
 import os
-from collections import defaultdict
-import cv2, time, math, datetime, ray, shutil, dill
-import numpy as np
-from matplotlib import pyplot as plt
-from tensorboardX import SummaryWriter
-from smarts.core.utils.episodes import EpisodeLog
-from dataclasses import dataclass, field
+import shutil
+import time
 from collections import defaultdict
 from contextlib import contextmanager
+from dataclasses import dataclass, field
+
+import cv2
+import dill
+import numpy as np
+import ray
 import tableprint as tp
+from matplotlib import pyplot as plt
+from tensorboardX import SummaryWriter
+
+from smarts.core.utils.episodes import EpisodeLog
 
 
 class LogInfo:
@@ -252,7 +259,13 @@ class Episode:
 def episodes(n, etag=None, log_dir=None):
     col_width = 18
     with tp.TableContext(
-        [f"Episode", f"Sim/Wall", f"Total Steps", f"Steps/Sec", f"Score",],
+        [
+            f"Episode",
+            f"Sim/Wall",
+            f"Total Steps",
+            f"Steps/Sec",
+            f"Score",
+        ],
         width=col_width,
         style="round",
     ) as table:

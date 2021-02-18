@@ -19,20 +19,19 @@
 # THE SOFTWARE.
 
 import atexit
-import grpc
 import logging
 import random
 import time
-
 from concurrent import futures
 from multiprocessing import Process
 from typing import List, Tuple
 
+import grpc
+
 from smarts.core.remote_agent import RemoteAgent, RemoteAgentException
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import manager as zoo_manager
-from smarts.zoo import manager_pb2
-from smarts.zoo import manager_pb2_grpc
+from smarts.zoo import manager_pb2, manager_pb2_grpc
 
 
 class RemoteAgentBuffer:

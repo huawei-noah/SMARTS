@@ -19,13 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from pathlib import Path
+
 import gym
 
-from pathlib import Path
-from smarts.core.scenario import Scenario
-from smarts.core.agent import AgentSpec
-
 from benchmark.agents import load_config
+from smarts.core.agent import AgentSpec
+from smarts.core.scenario import Scenario
 
 
 def gen_config(**kwargs):

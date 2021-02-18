@@ -103,7 +103,12 @@ class TireForces:
                     np.array([0, 0, chassis.yaw_rate[2]]), relative_corner_vector[i]
                 )
                 slip_angles[i] = steering_angles_corners[i] - (
-                    (math.atan2(corner_speed[1], corner_speed[0],))
+                    (
+                        math.atan2(
+                            corner_speed[1],
+                            corner_speed[0],
+                        )
+                    )
                 )
 
         return slip_angles

@@ -20,13 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
-import ray
 import os
 
-from benchmark import gen_config
-from benchmark.utils.rollout import rollout
-from benchmark.metrics import basic_handler
+import ray
 
+from benchmark import gen_config
+from benchmark.metrics import basic_handler
+from benchmark.utils.rollout import rollout
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -34,7 +34,9 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 def parse_args():
     parser = argparse.ArgumentParser("Run evaluation")
     parser.add_argument(
-        "scenario", type=str, help="Scenario name",
+        "scenario",
+        type=str,
+        help="Scenario name",
     )
     parser.add_argument("--num_steps", type=int, default=1000)
     parser.add_argument("--num_runs", type=int, default=10)

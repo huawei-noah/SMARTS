@@ -17,14 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import collections.abc as collections_abc
 import logging
 import random
-import collections.abc as collections_abc
 from dataclasses import dataclass, field
 from sys import maxsize
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-from shapely.geometry import GeometryCollection, MultiPolygon, Polygon, Point
+from shapely.geometry import GeometryCollection, MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
@@ -254,7 +254,9 @@ class Route:
     @property
     def id(self) -> str:
         return "route-{}-{}-{}-".format(
-            "_".join(map(str, self.begin)), "_".join(map(str, self.end)), hash(self),
+            "_".join(map(str, self.begin)),
+            "_".join(map(str, self.end)),
+            hash(self),
         )
 
     @property
@@ -582,7 +584,9 @@ class MapZone(Zone):
                 continue
 
             lane_shape = road_network.split_lane_shape_at_offset(
-                lane_shape, lane, max_cut,
+                lane_shape,
+                lane,
+                max_cut,
             )
             lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
             if lane_shape is None:

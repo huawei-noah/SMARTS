@@ -17,26 +17,25 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import yaml
-import gym
 import importlib
 import re
-
 from pathlib import Path
 
+import gym
+import yaml
+
+from benchmark import common
+from benchmark.metrics import basic_handler as metrics
+from benchmark.utils import format
+from benchmark.wrappers import rllib as rllib_wrappers
 from smarts.core.agent_interface import (
     OGM,
     RGB,
-    Waypoints,
-    NeighborhoodVehicles,
     AgentInterface,
+    NeighborhoodVehicles,
+    Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
-
-from benchmark.wrappers import rllib as rllib_wrappers
-from benchmark.metrics import basic_handler as metrics
-from benchmark import common
-from benchmark.utils import format
 
 
 def _get_trainer(path, name):

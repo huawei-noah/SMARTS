@@ -36,7 +36,6 @@ The protocal is as follows:
 """
 
 import argparse
-import grpc
 import importlib
 import logging
 import os
@@ -44,8 +43,9 @@ import signal
 import sys
 from concurrent import futures
 
-from smarts.zoo import worker_pb2_grpc
-from smarts.zoo import worker_servicer
+import grpc
+
+from smarts.zoo import worker_pb2_grpc, worker_servicer
 
 # Front-load some expensive imports as to not block the simulation
 modules = [

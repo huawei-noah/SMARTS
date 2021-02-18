@@ -20,12 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-import numpy as np
-
-from typing import Dict, Any, List, Tuple
-from collections import defaultdict, OrderedDict
-
+from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
+from typing import Any, Dict, List, Tuple
+
+import numpy as np
 
 from benchmark.metrics import MetricHandler
 from benchmark.utils.episode_log import BasicEpisodeLog

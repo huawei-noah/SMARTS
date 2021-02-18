@@ -29,7 +29,10 @@ def entrypoint(
             max_episode_steps=max_episode_steps,
             agent_behavior=AgentBehavior(aggressiveness=aggressiveness),
         ),
-        agent_params={"gains": gains, "debug": debug,},
+        agent_params={
+            "gains": gains,
+            "debug": debug,
+        },
         agent_builder=OpEnAgent,
     )
 

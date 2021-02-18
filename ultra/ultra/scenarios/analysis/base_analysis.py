@@ -19,26 +19,33 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import numpy as np
-import gym, random, re, timeit, copy
-import glob, os, argparse, json, ray, torch
-from matplotlib import pyplot as plt
-import dill
+import argparse
+import copy
+import glob
+import json
+import os
+import random
+import re
+import timeit
 from ast import literal_eval
 from collections import defaultdict
-from smarts.core.agent import AgentSpec, Agent
+
+import dill
+import gym
+import numpy as np
+import ray
+import torch
+from matplotlib import pyplot as plt
+
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType, NeighborhoodVehicles
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.agent_interface import (
-    AgentInterface,
-    AgentType,
-    NeighborhoodVehicles,
-)
+from ultra.scenarios.common.social_vehicle_definitions import get_social_vehicle_color
 from ultra.scenarios.common.visualization import (
-    draw_intersection,
     convert_to_gif,
+    draw_intersection,
     profile_vehicles,
 )
-from ultra.scenarios.common.social_vehicle_definitions import get_social_vehicle_color
 
 
 class DefaultPolicy(Agent):
@@ -349,7 +356,9 @@ class BaseAnalysis:
                         stopwatcher_state,
                         stopwatcher_exit,
                     ) = self.process_social_vehicles(
-                        agent_obs.neighborhood_vehicle_states, timestep_sec, step,
+                        agent_obs.neighborhood_vehicle_states,
+                        timestep_sec,
+                        step,
                     )
                     if stopwatcher_state:
                         has_stopwatcher = True

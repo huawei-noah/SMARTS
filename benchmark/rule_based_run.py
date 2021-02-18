@@ -21,12 +21,11 @@
 # THE SOFTWARE.
 import argparse
 import os
-
 from pathlib import Path
 
-from smarts.core.scenario import Scenario
-from smarts.core.agent import AgentSpec, Agent
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.scenario import Scenario
 from smarts.env.hiway_env import HiWayEnv
 
 
@@ -38,7 +37,9 @@ class RuleBasedAgent(Agent):
 def parse_args():
     parser = argparse.ArgumentParser("Rule based runner")
     parser.add_argument(
-        "scenario", type=str, help="Scenario name",
+        "scenario",
+        type=str,
+        help="Scenario name",
     )
 
     return parser.parse_args()

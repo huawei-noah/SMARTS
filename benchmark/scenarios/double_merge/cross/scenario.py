@@ -20,8 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from pathlib import Path
-from smarts.sstudio import gen_scenario
+
 import smarts.sstudio.types as t
+from smarts.sstudio import gen_scenario
 
 missions = [
     t.Mission(t.Route(begin=("gneE17", 0, 10), end=("gneE5", 0, 100))),
@@ -47,7 +48,10 @@ traffic = {
     "1": t.Traffic(
         flows=[
             t.Flow(
-                route=t.Route(begin=(f"gneE22", 0, 60), end=(f"gneE22", 0, 100),),
+                route=t.Route(
+                    begin=(f"gneE22", 0, 60),
+                    end=(f"gneE22", 0, 100),
+                ),
                 rate=1,
                 actors={impatient_car: 0.5, patient_car: 0.5},
             )
