@@ -113,7 +113,6 @@ def preprocess_state(
         [torch.from_numpy(e).float() for e in low_dim_states], dim=-1
     )
 
-
     # -------------------------------------
     # apply social vehicle encoder
     # only process if state is not encoded already
@@ -137,7 +136,6 @@ def preprocess_state(
     if social_vehicle_dimension:
         social_vehicles = torch.from_numpy(np.asarray(state["social_vehicles"])).float()
         social_vehicles = social_vehicles.reshape((-1, social_vehicle_dimension))
-
 
     # TODO Conver to tensor for the newtork is needed
     out = {

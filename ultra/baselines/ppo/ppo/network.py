@@ -41,7 +41,7 @@ class ActorNetwork(nn.Module):
             nn.Tanh(),
         )
 
-    def forward(self, state, training=False,unsqueeze=False):
+    def forward(self, state, training=False, unsqueeze=False):
         low_dim_state = state["low_dim_states"]
         social_vehicles_state = state["social_vehicles"]
 
@@ -56,11 +56,8 @@ class ActorNetwork(nn.Module):
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
         if len(social_feature) > 0:
-            social_feature=torch.cat(social_feature, 0)
-            # if unsqueeze:
-            #     social_feature=social_feature.unsqueeze(0)
-            print('**')
-            print(social_feature.shape, low_dim_state.shape)
+            social_feature = torch.cat(social_feature, 0)
+
             state = torch.cat([low_dim_state, social_feature], -1)
         else:
             social_feature = []
@@ -100,13 +97,9 @@ class CriticNetwork(nn.Module):
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
-
         if len(social_feature) > 0:
-            social_feature=torch.cat(social_feature, 0)
-            # if unsqueeze:
-            #     social_feature=social_feature.unsqueeze(0)
-            print('*')
-            print(social_feature.shape, low_dim_state.shape)
+            social_feature = torch.cat(social_feature, 0)
+
             state = torch.cat([low_dim_state, social_feature], -1)
         else:
             social_feature = []
