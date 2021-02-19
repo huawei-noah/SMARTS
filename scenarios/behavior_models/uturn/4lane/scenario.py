@@ -4,13 +4,14 @@ from pathlib import Path
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
-
 traffic = t.Traffic(
     flows=[
         t.Flow(
-            route=t.Route(begin=("edge-west-EW", 0, 10), end=("edge-west-EW", 0, "max")),
+            route=t.Route(
+                begin=("edge-west-EW", 0, 10), end=("edge-west-EW", 0, "max")
+            ),
             rate=1,
-            actors={t.TrafficActor(name="car", max_speed=30/3.6): 1.0},
+            actors={t.TrafficActor(name="car", max_speed=30 / 3.6): 1.0},
             begin=2,
         )
     ]
