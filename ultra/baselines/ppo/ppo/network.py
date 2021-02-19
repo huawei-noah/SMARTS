@@ -56,9 +56,9 @@ class ActorNetwork(nn.Module):
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
         if len(social_feature) > 0:
-            social_feature=torch.flatten(torch.cat(social_feature, 0))
-            if unsqueeze:
-                social_feature=social_feature.unsqueeze(0)
+            social_feature=torch.cat(social_feature, 0)
+            # if unsqueeze:
+            #     social_feature=social_feature.unsqueeze(0)
             print('**')
             print(social_feature.shape, low_dim_state.shape)
             state = torch.cat([low_dim_state, social_feature], -1)
@@ -100,11 +100,11 @@ class CriticNetwork(nn.Module):
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
-        
+
         if len(social_feature) > 0:
-            social_feature=torch.flatten(torch.cat(social_feature, 0))
-            if unsqueeze:
-                social_feature=social_feature.unsqueeze(0)
+            social_feature=torch.cat(social_feature, 0)
+            # if unsqueeze:
+            #     social_feature=social_feature.unsqueeze(0)
             print('*')
             print(social_feature.shape, low_dim_state.shape)
             state = torch.cat([low_dim_state, social_feature], -1)
