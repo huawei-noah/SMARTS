@@ -125,7 +125,7 @@ def train(
             state = next_state
 
         episode.record_episode()
-        episode.record_tensorboard(agent_id=AGENT_ID)
+        episode.record_tensorboard()
         if finished:
             break
 
