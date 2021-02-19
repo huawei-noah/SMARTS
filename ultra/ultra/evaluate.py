@@ -53,7 +53,7 @@ def evaluation_check(
     agent_itr = episode.get_itr(agent_id)
 
     print(
-        f"Agent iteration : {agent_itr}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
+        f"{agent_id} -- Agent iteration : {agent_itr}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
     )
     if (agent_itr + 1) % eval_rate == 0 and episode.last_eval_iteration != agent_itr:
         checkpoint_dir = episode.checkpoint_dir(agent_itr)
@@ -178,7 +178,10 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
     )
     args = parser.parse_args()
 
@@ -212,7 +215,9 @@ if __name__ == "__main__":
     try:
         AGENT_ID = "AGENT_008"
         for episode in episodes(
-            len(sorted_models), etag=policy_class, log_dir=args.log_dir,
+            len(sorted_models),
+            etag=policy_class,
+            log_dir=args.log_dir,
         ):
             model = sorted_models[episode.index]
             print("model: ", model)

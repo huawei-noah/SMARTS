@@ -47,6 +47,7 @@ def train(
     headless,
     seed,
     log_dir,
+    policy_ids=None,
 ):
     torch.set_num_threads(1)
     total_step = 0
@@ -57,9 +58,19 @@ def train(
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...
-    agent_ids = [
-        "0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))
-    ]
+    agent_ids = (
+        ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
+        if not policy_ids
+        else policy_ids
+    )
+    # Ensure there is an ID for each policy, and a policy for each ID.
+    assert len(agent_ids) == len(policy_classes), (
+        "The number of agent IDs provided ({}) must be equal to "
+        "the number of policy classes provided ({}).".format(
+            len(agent_ids), len(policy_classes)
+        )
+    )
+
     # Assign the policy classes to their associated ID.
     agent_classes = {
         agent_id: policy_class
@@ -193,10 +204,22 @@ if __name__ == "__main__":
         default=10000,
     )
     parser.add_argument(
-        "--seed", help="Environment seed", default=2, type=int,
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
     )
     parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
+    )
+    parser.add_argument(
+        "--policy-ids",
+        help="Name of each specified policy",
+        default=None,
+        type=str,
     )
 
     base_dir = os.path.dirname(__file__)
@@ -217,6 +240,9 @@ if __name__ == "__main__":
             else:
                 raise ImportError("Invalid policy name. Please try again")
 
+    # Obtain the policy class IDs from the arguments.
+    policy_ids = args.policy_ids.split(",") if args.policy_ids else None
+
     ray.init()
     ray.wait(
         [
@@ -232,6 +258,7 @@ if __name__ == "__main__":
                 policy_classes=policy_classes,
                 seed=args.seed,
                 log_dir=args.log_dir,
+                policy_ids=policy_ids,
             )
         ]
     )
