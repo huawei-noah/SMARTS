@@ -24,10 +24,10 @@ import math
 import numpy as np
 import pytest
 
+from smarts.core.coordinates import Heading, Pose
 from smarts.core.motion_planner_provider import MotionPlannerProvider
 from smarts.core.provider import ProviderState
-from smarts.core.coordinates import Heading, Pose
-from smarts.core.scenario import Scenario, Mission, Start, EndlessGoal
+from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 

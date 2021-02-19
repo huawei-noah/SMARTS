@@ -20,23 +20,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-import gym
-import pytest
 
-from smarts.core.controllers import ActionSpaceType
+import gym
+import numpy as np
+import pytest
+from panda3d.core import OrthographicLens, Point2, Point3
+
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import (
-    AgentInterface,
-    NeighborhoodVehicles,
-    DrivableAreaGridMap,
     OGM,
     RGB,
+    AgentInterface,
+    DrivableAreaGridMap,
+    NeighborhoodVehicles,
     RoadWaypoints,
 )
-from smarts.core.agent import AgentSpec, Agent
 from smarts.core.colors import SceneColors
-
-from panda3d.core import OrthographicLens, Point2, Point3
-import numpy as np
+from smarts.core.controllers import ActionSpaceType
 
 logging.basicConfig(level=logging.INFO)
 
@@ -171,13 +171,21 @@ def test_observations(env, agent_spec):
     # Check for ego vehicle
     ego_vehicle_position = observations[AGENT_ID].ego_vehicle_state.position
     sample_vehicle_pos(
-        lens, rgb, ogm, drivable_area, ego_vehicle_position,
+        lens,
+        rgb,
+        ogm,
+        drivable_area,
+        ego_vehicle_position,
     )
 
     # Check for neighbor vehicles
     for neighbor_vehicle in observations[AGENT_ID].neighborhood_vehicle_states:
         sample_vehicle_pos(
-            lens, rgb, ogm, drivable_area, neighbor_vehicle.position,
+            lens,
+            rgb,
+            ogm,
+            drivable_area,
+            neighbor_vehicle.position,
         )
 
     # Check for roads

@@ -17,30 +17,30 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import time
-import sys
-import random
-import asyncio
-import threading
-import json
-import bisect
-import signal
-import logging
 import argparse
+import asyncio
+import bisect
+import importlib.resources as pkg_resources
+import json
+import logging
+import random
+import signal
+import sys
+import threading
+import time
 from pathlib import Path
 from typing import Dict, Sequence
-import importlib.resources as pkg_resources
 
-import tornado.web
 import tornado.gen
 import tornado.ioloop
 import tornado.iostream
+import tornado.web
 import tornado.websocket
 from tornado.websocket import WebSocketClosedError
 
 import smarts.core.models
-from smarts.core.utils.file import path2hash
 from envision.web import dist as web_dist
+from smarts.core.utils.file import path2hash
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -445,7 +445,10 @@ def main():
         nargs="+",
     )
     parser.add_argument(
-        "--port", help="Port Envision will run on.", default=8081, type=int,
+        "--port",
+        help="Port Envision will run on.",
+        default=8081,
+        type=int,
     )
     parser.add_argument(
         "--max_capacity",

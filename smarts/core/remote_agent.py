@@ -17,18 +17,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import cloudpickle
-import grpc
 import logging
 import time
-
 from concurrent import futures
 
+import cloudpickle
+import grpc
+
 from smarts.core.agent import AgentSpec
-from smarts.zoo import manager_pb2
-from smarts.zoo import manager_pb2_grpc
-from smarts.zoo import worker_pb2
-from smarts.zoo import worker_pb2_grpc
+from smarts.zoo import manager_pb2, manager_pb2_grpc, worker_pb2, worker_pb2_grpc
 
 
 class RemoteAgentException(Exception):

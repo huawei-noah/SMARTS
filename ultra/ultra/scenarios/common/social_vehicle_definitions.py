@@ -19,13 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.sstudio.types import (
-    TrafficActor,
-    Distribution,
-    LaneChangingModel,
-    JunctionModel,
-)
 import re
+
+from smarts.sstudio.types import (
+    Distribution,
+    JunctionModel,
+    LaneChangingModel,
+    TrafficActor,
+)
 
 social_vehicle_colors = {
     "default": (255, 255, 255),

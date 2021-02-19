@@ -17,18 +17,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import random
-import psutil
 import itertools
+import random
 
 import numpy as np
+import psutil
 from panda3d.core import Quat
 
-from .utils import pybullet
-from .utils.pybullet import bullet_client as bc
-
 from .lidar_sensor_params import SensorParams
+from .utils import pybullet
 from .utils.math import batches
+from .utils.pybullet import bullet_client as bc
 
 
 class Lidar:

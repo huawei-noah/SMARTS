@@ -111,7 +111,10 @@ class RandomRouteGenerator:
 
 class TrafficGenerator:
     def __init__(
-        self, scenario_dir: str, log_dir: str = None, overwrite: bool = False,
+        self,
+        scenario_dir: str,
+        log_dir: str = None,
+        overwrite: bool = False,
     ):
         """
         scenario: The path to the scenario directory

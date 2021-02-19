@@ -19,14 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import unittest, ray, os, sys
-import gym
 import json
+import os
 import shutil
+import sys
+import unittest
+
+import gym
+import ray
+
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
-from ultra.train import train
 from ultra.baselines.sac.sac.policy import SACPolicy
+from ultra.train import train
 
 AGENT_ID = "001"
 seed = 2
@@ -34,22 +39,14 @@ seed = 2
 
 class TrainTest(unittest.TestCase):
     def test_train_cli(self):
+        log_dir = "tests/logs"
         try:
             os.system(
-                "python ultra/train.py --task 00 --level easy --episodes 1 --log-dir tests/logs"
+                "python ultra/train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --log-dir tests/logs"
             )
         except Exception as err:
             print(err)
             self.assertTrue(False)
-
-    def test_locate_log_directory(self):
-        log_dir = "tests/logs"
-        try:
-            os.system(
-                f"python ultra/train.py --task 00 --level easy --policy ppo --episodes 1 --log-dir {log_dir}"
-            )
-        except Exception as err:
-            print(err)
 
         if os.path.exists(log_dir):
             self.assertTrue(True)
@@ -70,7 +67,11 @@ class TrainTest(unittest.TestCase):
                         scenario_info=("00", "easy"),
                         policy_classes=[policy_class],
                         num_episodes=1,
-                        eval_info={"eval_rate": 1000, "eval_episodes": 2,},
+                        max_episode_steps=2,
+                        eval_info={
+                            "eval_rate": 1000,
+                            "eval_episodes": 2,
+                        },
                         timestep_sec=0.1,
                         headless=True,
                         seed=2,

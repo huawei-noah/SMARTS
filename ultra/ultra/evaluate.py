@@ -19,21 +19,28 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, sys
-import json, re
+import json
+import os
+import re
+import sys
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
+import argparse
 import glob
-import yaml
 import time
-import numpy as np
-import gym, ray, torch, argparse
-import psutil
 from pydoc import locate
+
+import gym
+import numpy as np
+import psutil
+import ray
+import torch
+import yaml
+
+from smarts.zoo.registry import make
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
-from smarts.zoo.registry import make
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -45,6 +52,7 @@ def evaluation_check(
     policy_class,
     eval_rate,
     eval_episodes,
+    max_episode_steps,
     scenario_info,
     timestep_sec,
     headless,
@@ -70,6 +78,7 @@ def evaluation_check(
                     checkpoint_dir=checkpoint_dir,
                     scenario_info=scenario_info,
                     num_episodes=eval_episodes,
+                    max_episode_steps=max_episode_steps,
                     headless=headless,
                     timestep_sec=timestep_sec,
                     log_dir=log_dir,
@@ -93,6 +102,7 @@ def evaluate(
     checkpoint_dir,
     scenario_info,
     num_episodes,
+    max_episode_steps,
     headless,
     timestep_sec,
     log_dir,
@@ -103,6 +113,7 @@ def evaluate(
         locator=policy_class,
         checkpoint_dir=checkpoint_dir,
         experiment_dir=experiment_dir,
+        max_episode_steps=max_episode_steps,
     )
 
     env = gym.make(
@@ -165,6 +176,12 @@ if __name__ == "__main__":
     parser.add_argument("--models", default="models/", help="Directory to saved models")
     parser.add_argument(
         "--episodes", help="Number of training episodes", type=int, default=200
+    )
+    parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
@@ -234,6 +251,7 @@ if __name__ == "__main__":
                         checkpoint_dir=model,
                         scenario_info=(args.task, args.level),
                         num_episodes=int(args.episodes),
+                        max_episode_steps=int(args.max_episode_steps),
                         timestep_sec=float(args.timestep),
                         headless=args.headless,
                         log_dir=args.log_dir,

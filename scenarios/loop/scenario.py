@@ -1,8 +1,8 @@
 import random
 from pathlib import Path
 
-from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
+from smarts.sstudio import types as t
 
 traffic = t.Traffic(
     flows=[
@@ -27,7 +27,8 @@ open_agent_actor = t.SocialAgentActor(
 )
 
 laner_actor = t.SocialAgentActor(
-    name="keep-lane-agent", agent_locator="zoo.policies:keep-lane-agent-v0",
+    name="keep-lane-agent",
+    agent_locator="zoo.policies:keep-lane-agent-v0",
 )
 
 gen_scenario(

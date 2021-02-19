@@ -270,7 +270,13 @@ class Episode:
 def episodes(n, etag=None, log_dir=None):
     col_width = 18
     with tp.TableContext(
-        [f"Episode", f"Sim/Wall", f"Total Steps", f"Steps/Sec", f"Score",],
+        [
+            f"Episode",
+            f"Sim/Wall",
+            f"Total Steps",
+            f"Steps/Sec",
+            f"Score",
+        ],
         width=col_width,
         style="round",
     ) as table:
@@ -301,7 +307,10 @@ def episodes(n, etag=None, log_dir=None):
             agents_itr = e.agents_itr
             if e.active_tag:
                 agent_rewards_strings = [
-                    "{}: {:.4f}".format(agent_id, agent_info.data["episode_reward"],)
+                    "{}: {:.4f}".format(
+                        agent_id,
+                        agent_info.data["episode_reward"],
+                    )
                     for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
                 row = (

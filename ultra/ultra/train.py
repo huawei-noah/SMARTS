@@ -19,19 +19,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, sys
 import json
 import os
+import sys
+
 from ultra.utils.ray import default_ray_kwargs
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
+import argparse
+import pickle
 import time
-import psutil, pickle, dill
-import gym, ray, torch, argparse
+
+import dill
+import gym
+import psutil
+import ray
+import torch
+
 from smarts.zoo.registry import make
-from ultra.utils.episode import episodes
 from ultra.evaluate import evaluation_check
+from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -42,6 +50,7 @@ def train(
     scenario_info,
     num_episodes,
     policy_classes,
+    max_episode_steps,
     eval_info,
     timestep_sec,
     headless,
@@ -53,11 +62,8 @@ def train(
     total_step = 0
     finished = False
 
-    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
-
-    # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...
+    # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
+    # or use the provided policy_ids if available.
     agent_ids = (
         ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
         if not policy_ids
@@ -78,7 +84,7 @@ def train(
     }
     # Create the agent specifications matched with their associated ID.
     agent_specs = {
-        agent_id: make(locator=policy_class)
+        agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
         for agent_id, policy_class in agent_classes.items()
     }
     # Create the agents matched with their associated ID.
@@ -96,6 +102,11 @@ def train(
         timestep_sec=timestep_sec,
         seed=seed,
     )
+
+    # Define an 'etag' for this experiment's data directory based off policy_classes.
+    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
+    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
@@ -127,6 +138,7 @@ def train(
                     policy_class=agent_classes[agent_id],
                     episode=episode,
                     log_dir=log_dir,
+                    max_episode_steps=max_episode_steps,
                     **eval_info,
                     **env.info,
                 )
@@ -189,6 +201,12 @@ if __name__ == "__main__":
         "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
+    )
+    parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
@@ -249,6 +267,7 @@ if __name__ == "__main__":
             train.remote(
                 scenario_info=(args.task, args.level),
                 num_episodes=int(args.episodes),
+                max_episode_steps=int(args.max_episode_steps),
                 eval_info={
                     "eval_rate": float(args.eval_rate),
                     "eval_episodes": int(args.eval_episodes),

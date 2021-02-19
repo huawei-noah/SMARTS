@@ -19,13 +19,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import cv2, os, re
+import os
+import re
+from collections import defaultdict
+
+import cv2
+import imageio
 import numpy as np
 from matplotlib import pyplot as plt
-import imageio
-from collections import defaultdict
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
+
 from .social_vehicle_definitions import get_social_vehicle_color
 
 # import geometry as geometry
@@ -140,7 +144,14 @@ def draw_intersection(
         pos_x = fig_offset_x + int(state.position[0] * fig_mul)
         pos_y = fig_offset_y - int(state.position[1] * fig_mul)
         canvas = cv2.circle(
-            canvas, (pos_x, pos_y,), radius=1, color=(10, 10, 30), thickness=2,
+            canvas,
+            (
+                pos_x,
+                pos_y,
+            ),
+            radius=1,
+            color=(10, 10, 30),
+            thickness=2,
         )
         # canvas = cv2.putText(
         #     canvas, str(v_id), (pos_x + 4, pos_y + 4), font, 0.3, behavior_color, 1,
