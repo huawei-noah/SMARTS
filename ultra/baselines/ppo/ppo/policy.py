@@ -172,6 +172,9 @@ class PPOPolicy(Agent):
         # pass social_vehicle_rep through the network
         state['low_dim_states'] = np.float32(np.append(state['low_dim_states'],self.prev_action))
 
+        print(type(state['low_dim_states']), state['low_dim_states'].shape)
+        print(type(state['social_vehicles']), state['social_vehicles'].shape)
+        print(M)
         self.log_probs.append(self.current_log_prob.to(self.device))
         self.values.append(self.current_value.to(self.device))
         self.states.append(state)
