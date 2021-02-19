@@ -48,6 +48,6 @@ setup(
         "smarts[train]==0.4.6",  # Stable version
         "setuptools>=41.0.0,!=50.0",
         "dill",
-        "black==20.80b1",
+        "black==20.8b1",
     ],
 )
