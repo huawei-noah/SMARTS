@@ -48,18 +48,12 @@ class StatePreprocessor:
         social_vehicle_config,
         # prev_action,
         draw=False,
-        normalize=False,
-        unsqueeze=False,
-        device=None,
     ):
         return self.preprocess_state_func(
             state,
             self.state_description,
             observation_num_lookahead=observation_num_lookahead,
             social_capacity=social_capacity,
-            normalize=normalize,
-            unsqueeze=unsqueeze,
-            device=device,
             convert_action_func=self.convert_action_func,
             social_vehicle_config=social_vehicle_config,
             # prev_action=prev_action,
@@ -75,9 +69,6 @@ def preprocess_state(
     social_capacity,
     social_vehicle_config,
     # prev_action,
-    normalize=False,
-    unsqueeze=False,
-    device=None,
     draw=False,
 ):
     state = state.copy()
@@ -121,8 +112,6 @@ def preprocess_state(
     low_dim_states = torch.cat(
         [torch.from_numpy(e).float() for e in low_dim_states], dim=-1
     )
-    low_dim_states = low_dim_states.unsqueeze(0) if unsqueeze else low_dim_states
-    low_dim_states = low_dim_states.to(device) if device else low_dim_states
 
     # -------------------------------------
     # apply social vehicle encoder
@@ -147,8 +136,6 @@ def preprocess_state(
     if social_vehicle_dimension:
         social_vehicles = torch.from_numpy(np.asarray(state["social_vehicles"])).float()
         social_vehicles = social_vehicles.reshape((-1, social_vehicle_dimension))
-    social_vehicles = social_vehicles.unsqueeze(0) if unsqueeze else social_vehicles
-    social_vehicles = social_vehicles.to(device) if device else social_vehicles
 
     # TODO Conver to tensor for the newtork is needed
     out = {

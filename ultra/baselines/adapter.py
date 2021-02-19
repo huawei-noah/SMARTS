@@ -172,8 +172,6 @@ class BaselineAdapter:
 
         state = self.state_preprocessor(
             state=state,
-            normalize=True,
-            device="cpu",
             social_capacity=self.social_capacity,
             observation_num_lookahead=self.observation_num_lookahead,
             social_vehicle_config=self.social_vehicle_config,

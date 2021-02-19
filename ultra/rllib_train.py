@@ -119,7 +119,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
     AGENT_ID = "007"
 
     social_vehicle_params = dict(
-        encoder_key="precog_encoder",
+        encoder_key="pointnet_encoder",
         social_policy_hidden_units=128,
         social_polciy_init_std=0.5,
         num_social_features=4,
@@ -166,7 +166,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
 
     tune_config = {
         "env": RLlibUltraEnv,
-        "log_level": "DEBUG",
+        "log_level": "WARN",
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,

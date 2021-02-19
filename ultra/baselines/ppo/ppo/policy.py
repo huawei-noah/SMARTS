@@ -136,21 +136,24 @@ class PPOPolicy(Agent):
             ).output_dim
         else:
             size += self.social_capacity * self.num_social_features
+
+        # adding the previous action
+        size += self.action_size
         return size
 
     def act(self, state, explore=True):
-        # state = self.state_preprocessor(
-        #     state=state,
-        #     normalize=True,
-        #     unsqueeze=True,
-        #     device=self.device,
-        #     social_capacity=self.social_capacity,
-        #     observation_num_lookahead=self.observation_num_lookahead,
-        #     social_vehicle_config=self.social_vehicle_config,
-        #     prev_action=self.prev_action,
-        # )
+        state["low_dim_states"] = np.float32(
+            np.append(state["low_dim_states"], self.prev_action)
+        )
+        state["social_vehicles"] = (
+            torch.from_numpy(state["social_vehicles"]).unsqueeze(0).to(self.device)
+        )
+        state["low_dim_states"] = (
+            torch.from_numpy(state["low_dim_states"]).unsqueeze(0).to(self.device)
+        )
+
         with torch.no_grad():
-            dist, value = self.ppo_net(state)
+            dist, value = self.ppo_net(x=state, unsqueeze=True)
         if explore:  # training mode
             action = dist.sample()
             log_prob = dist.log_prob(action)
@@ -166,24 +169,16 @@ class PPOPolicy(Agent):
         self.step_count += 1
         return to_3d_action(action)
 
-    def step(self, state, action, reward, next_state, done):
+    def step(self, state, action, reward, next_state, done, infos):
         # dont treat timeout as done equal to True
-        max_steps_reached = state["events"].reached_max_episode_steps
+        max_steps_reached = infos["logs"]["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
         action = to_2d_action(action)
 
-        # state = self.state_preprocessor(
-        #     state=state,
-        #     normalize=True,
-        #     device=self.device,
-        #     social_capacity=self.social_capacity,
-        #     observation_num_lookahead=self.observation_num_lookahead,
-        #     social_vehicle_config=self.social_vehicle_config,
-        #     # prev_action=self.prev_action,
-        # )
-        # state['action'] = self.prev_actio
         # pass social_vehicle_rep through the network
+        # state['low_dim_states'] = torch.from_numpy(np.float32(np.append(state['low_dim_states'],self.prev_action))).unsqueeze(0)
+
         self.log_probs.append(self.current_log_prob.to(self.device))
         self.values.append(self.current_value.to(self.device))
         self.states.append(state)
@@ -224,25 +219,27 @@ class PPOPolicy(Agent):
         # TODO: temporary function here. this is copied from replay_buffer.py
         #  better way is to make PPO use the replay_buffer interface
         #  but may not be important for now. just make it work
-        image_keys = states[0]["images"].keys()
-        images = {}
-        for k in image_keys:
-            _images = (
-                torch.cat([e[k].unsqueeze(0) for e in states], dim=0).float().to(device)
-            )
-            _images = normalize_im(_images)
-            images[k] = _images
+        # image_keys = states[0]["images"].keys()
+        # images = {}
+        # for k in image_keys:
+        #     _images = (
+        #         torch.cat([e[k].unsqueeze(0) for e in states], dim=0).float().to(device)
+        #     )
+        #     _images = normalize_im(_images)
+        #     images[k] = _images
         low_dim_states = (
-            torch.cat([e["low_dim_states"].unsqueeze(0) for e in states], dim=0)
-            .float()
-            .to(device)
+            torch.cat([e["low_dim_states"] for e in states], dim=0).float().to(device)
         )
-        social_vehicles = [e["social_vehicles"].float().to(device) for e in states]
+        social_vehicles = [
+            e["social_vehicles"] for e in states
+        ]  # , dim=0).float().to(device)
+
         out = {
-            "images": images,
+            # "images": images,
             "low_dim_states": low_dim_states,
             "social_vehicles": social_vehicles,
         }
+
         return out
 
     def get_minibatch(
@@ -259,12 +256,14 @@ class PPOPolicy(Agent):
         # split the dataset into number of minibatchs and discard the rest
         # (ex. if you have mini_batch=32 and batch_size = 100 then the utilized portion is only 96=3*32)
         splits = np.split(ids[:whole_mini_batchs], no_mini_batchs)
+
         # using a generator to return different mini-batch each time.
         for i in range(len(splits)):
             states_mini_batch = [states[e] for e in splits[i]]
             states_mini_batch = self.make_state_from_dict(
                 states_mini_batch, device=self.device
             )
+
             yield (
                 states_mini_batch,
                 actions[splits[i], :].to(self.device),
@@ -294,6 +293,7 @@ class PPOPolicy(Agent):
             ) in self.get_minibatch(
                 mini_batch_size, states, actions, log_probs, returns, advantages
             ):
+                # print('><><>',state['low_dim_states'].shape, state['social_vehicles'].shape)
                 (dist, value), aux_losses = self.ppo_net(state, training=True)
                 entropy = dist.entropy().mean()  # L_S
                 new_pi_log_probs = dist.log_prob(action)
@@ -378,6 +378,7 @@ class PPOPolicy(Agent):
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-5)
 
         # PPO update for # of epochs and over # of minibatchs
+
         output = self.update(
             self.epoch_count,
             self.mini_batch_size,

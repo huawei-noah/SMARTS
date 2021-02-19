@@ -1,5 +1,5 @@
 action_size: 2
-batch_size: 2048  # size of batch
+batch_size: 500  # size of batch
 lr: 3e-5
 mini_batch_size: 64  # 64
 epoch_count: 20
