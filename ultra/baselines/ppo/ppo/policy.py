@@ -143,9 +143,11 @@ class PPOPolicy(Agent):
 
     def act(self, state, explore=True):
         state['low_dim_states'] = np.float32(np.append(state['low_dim_states'],self.prev_action))
+        state['social_vehicles'] = torch.from_numpy(state['social_vehicles']).unsqueeze(0).to(self.device)
+        state['low_dim_states'] = torch.from_numpy(state['low_dim_states']).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
-            dist, value = self.ppo_net(state)
+            dist, value = self.ppo_net(x=state, unsqueeze=True)
         if explore:  # training mode
             action = dist.sample()
             log_prob = dist.log_prob(action)
@@ -170,11 +172,8 @@ class PPOPolicy(Agent):
 
 
         # pass social_vehicle_rep through the network
-        state['low_dim_states'] = np.float32(np.append(state['low_dim_states'],self.prev_action))
+        # state['low_dim_states'] = torch.from_numpy(np.float32(np.append(state['low_dim_states'],self.prev_action))).unsqueeze(0)
 
-        print(type(state['low_dim_states']), state['low_dim_states'].shape)
-        print(type(state['social_vehicles']), state['social_vehicles'].shape)
-        print(M)
         self.log_probs.append(self.current_log_prob.to(self.device))
         self.values.append(self.current_value.to(self.device))
         self.states.append(state)
@@ -224,17 +223,19 @@ class PPOPolicy(Agent):
         #     _images = normalize_im(_images)
         #     images[k] = _images
         low_dim_states = (
-            torch.cat([torch.from_numpy(e["low_dim_states"]).unsqueeze(0) for e in states], dim=0)
+            torch.cat([e["low_dim_states"].unsqueeze(0) for e in states], dim=0)
             .float()
             .to(device)
         )
-        social_vehicles = [e["social_vehicles"].float().to(device) for e in states]
+        social_vehicles = [e["social_vehicles"] for e in states] #, dim=0).float().to(device)
+
+        print('VVVV',len(social_vehicles), low_dim_states.shape)
         out = {
             # "images": images,
             "low_dim_states": low_dim_states,
             "social_vehicles": social_vehicles,
         }
-        print(type(low_dim_states[0]), type(social_vehicles[0]))
+
         return out
 
     def get_minibatch(
@@ -244,8 +245,6 @@ class PPOPolicy(Agent):
         This returns a minibatch of bunch of tensors
         """
         batch_size = len(states)
-        print(batch_size)
-        print(log_probs.shape, actions.shape, returns.shape,advantage.shape)
         ids = np.random.permutation(batch_size)
         whole_mini_batchs = batch_size // mini_batch_size * mini_batch_size
         no_mini_batchs = batch_size // mini_batch_size
@@ -253,13 +252,14 @@ class PPOPolicy(Agent):
         # split the dataset into number of minibatchs and discard the rest
         # (ex. if you have mini_batch=32 and batch_size = 100 then the utilized portion is only 96=3*32)
         splits = np.split(ids[:whole_mini_batchs], no_mini_batchs)
-        print(splits)
+
         # using a generator to return different mini-batch each time.
         for i in range(len(splits)):
             states_mini_batch = [states[e] for e in splits[i]]
             states_mini_batch = self.make_state_from_dict(
                 states_mini_batch, device=self.device
             )
+            # print('????',states_mini_batch['social_vehicles'].shape, states_mini_batch['low_dim_states'].shape)
             yield (
                 states_mini_batch,
                 actions[splits[i], :].to(self.device),
@@ -289,6 +289,7 @@ class PPOPolicy(Agent):
             ) in self.get_minibatch(
                 mini_batch_size, states, actions, log_probs, returns, advantages
             ):
+                # print('><><>',state['low_dim_states'].shape, state['social_vehicles'].shape)
                 (dist, value), aux_losses = self.ppo_net(state, training=True)
                 entropy = dist.entropy().mean()  # L_S
                 new_pi_log_probs = dist.log_prob(action)
@@ -373,6 +374,7 @@ class PPOPolicy(Agent):
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-5)
 
         # PPO update for # of epochs and over # of minibatchs
+        print('>>>>', self.states[0]['low_dim_states'].shape, self.states[0]['social_vehicles'].shape)
         output = self.update(
             self.epoch_count,
             self.mini_batch_size,
