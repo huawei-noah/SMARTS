@@ -25,7 +25,7 @@ import numpy as np
 from ultra.baselines.dqn.dqn.network import *
 from smarts.core.agent import Agent
 from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
-import pathlib, os
+import pathlib, os, copy
 from ultra.baselines.dqn.dqn.network import DQNWithSocialEncoder
 from ultra.baselines.dqn.dqn.explore import EpsilonExplore
 from ultra.baselines.common.replay_buffer import ReplayBuffer

@@ -25,7 +25,7 @@ import numpy as np
 from ultra.baselines.bdqn.bdqn.network import *
 from smarts.core.agent import Agent
 from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
-import pathlib, os
+import pathlib, os, copy
 from ultra.baselines.dqn.dqn.policy import DQNPolicy
 from ultra.baselines.bdqn.bdqn.network import DQNWithSocialEncoder
 from ultra.baselines.bdqn.bdqn.explore import EpsilonExplore
@@ -66,7 +66,7 @@ class BehavioralDQNPolicy(DQNPolicy):
         self.sticky_actions = int(policy_params["sticky_actions"])
         prev_action_size = 1
         self.prev_action = np.zeros(prev_action_size)
-
+        self.action_size = prev_action_size
         index_to_actions = [
             e.tolist() if not isinstance(e, list) else e for e in action_size
         ]
@@ -143,12 +143,8 @@ class BehavioralDQNPolicy(DQNPolicy):
 
         self.action_space_type = "lane"
         self.to_real_action = lambda action: self.lane_actions[action[0]]
-        self.state_preprocessor = StatePreprocessor(
-            preprocess_state, self.lane_action_to_index, self.state_description
-        )
         self.replay = ReplayBuffer(
             buffer_size=int(policy_params["replay_buffer"]["buffer_size"]),
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
-            state_preprocessor=self.state_preprocessor,
             device_name=self.device_name,
         )
