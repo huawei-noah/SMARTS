@@ -46,7 +46,6 @@ class ActorNetwork(nn.Module):
         self.social_feature_encoder = social_feature_encoder
         self.seed = torch.manual_seed(seed)
 
-        print('>>>>>', state_space)
         self.l1 = nn.Linear(state_space, 64)
         self.l2 = nn.Linear(64, 64)
         self.l3 = nn.Linear(64, action_space)
@@ -71,15 +70,12 @@ class ActorNetwork(nn.Module):
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
-
         if len(social_feature) > 0:
             social_feature = torch.cat(social_feature, 0)
-            print(social_feature.shape, low_dim_state.shape)
             state = torch.cat([low_dim_state, social_feature], -1)
         else:
             social_feature = []
             state = low_dim_state
-        print(state.shape)
         # print('*** ACTOR STATE SIZE', state.shape)
         a = F.relu(self.l1(state))
         a = F.relu(self.l2(a))

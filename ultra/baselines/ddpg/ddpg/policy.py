@@ -23,7 +23,7 @@
 #  1- https://github.com/udacity/deep-reinforcement-learning
 #  2- https://github.com/sfujim/TD3/blob/master/TD3.py
 #
-import pathlib, os
+import pathlib, os, copy
 import torch
 import torch.nn.functional as F
 import random
@@ -224,10 +224,12 @@ class TD3Policy(Agent):
         )
 
     def act(self, state, explore=True):
-
+        state = copy.deepcopy(state)
         state["low_dim_states"] = np.float32(
             np.append(state["low_dim_states"], self.prev_action)
         )
+        # to  keep consistensy convert to numpy first
+
         state["social_vehicles"] = (
             torch.from_numpy(state["social_vehicles"]).unsqueeze(0).to(self.device)
         )
@@ -253,9 +255,9 @@ class TD3Policy(Agent):
 
         return to_3d_action(action)
 
-    def step(self, state, action, reward, next_state, done):
+    def step(self, state, action, reward, next_state, done, info):
         # dont treat timeout as done equal to True
-        max_steps_reached = state["events"].reached_max_episode_steps
+        max_steps_reached = info["logs"]["events"].reached_max_episode_steps
         reset_noise = False
         if max_steps_reached:
             done = False
@@ -295,7 +297,6 @@ class TD3Policy(Agent):
         states, actions, rewards, next_states, dones, others = self.memory.sample(
             device=self.device
         )
-        # print("????")
         actions = actions.squeeze(dim=1)
         next_actions = self.actor_target(next_states)
         noise = torch.randn_like(next_actions).mul(self.policy_noise)
@@ -352,7 +353,6 @@ class TD3Policy(Agent):
                     "freq": 10,
                 },
             }
-            print('learned<<<<<')
         self.soft_update(self.critic_1_target, self.critic_1, self.critic_tau)
         self.soft_update(self.critic_2_target, self.critic_2, self.critic_tau)
         self.current_iteration += 1
