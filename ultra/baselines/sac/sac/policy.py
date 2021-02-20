@@ -26,7 +26,7 @@ import torch.nn as nn
 from sys import path
 from ultra.baselines.sac.sac.network import SACNetwork
 import torch.nn.functional as F
-import pathlib, os, yaml
+import pathlib, os, yaml, copy
 from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
 from smarts.core.agent import Agent
 from ultra.baselines.common.replay_buffer import ReplayBuffer
@@ -82,9 +82,6 @@ class SACPolicy(Agent):
             policy_params["observation_num_lookahead"],
             self.action_size,
         )
-        self.state_preprocessor = StatePreprocessor(
-            preprocess_state, to_2d_action, self.state_description
-        )
         self.social_feature_encoder_class = self.social_vehicle_encoder[
             "social_feature_encoder_class"
         ]
@@ -102,7 +99,6 @@ class SACPolicy(Agent):
         self.memory = ReplayBuffer(
             buffer_size=int(policy_params["replay_buffer"]["buffer_size"]),
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
-            state_preprocessor=self.state_preprocessor,
             device_name=self.device_name,
         )
         self.current_iteration = 0
@@ -121,6 +117,8 @@ class SACPolicy(Agent):
             ).output_dim
         else:
             size += self.social_capacity * self.num_social_features
+        # adding the previous action
+        size += self.action_size
         return size
 
     def init_networks(self):
@@ -147,15 +145,15 @@ class SACPolicy(Agent):
         )
 
     def act(self, state, explore=True):
-        state = self.state_preprocessor(
-            state=state,
-            normalize=True,
-            unsqueeze=True,
-            device=self.device_name,
-            social_capacity=self.social_capacity,
-            observation_num_lookahead=self.observation_num_lookahead,
-            social_vehicle_config=self.social_vehicle_config,
-            prev_action=self.prev_action,
+        state = copy.deepcopy(state)
+        state["low_dim_states"] = np.float32(
+            np.append(state["low_dim_states"], self.prev_action)
+        )
+        state["social_vehicles"] = (
+            torch.from_numpy(state["social_vehicles"]).unsqueeze(0).to(self.device)
+        )
+        state["low_dim_states"] = (
+            torch.from_numpy(state["low_dim_states"]).unsqueeze(0).to(self.device)
         )
 
         action, _, mean = self.sac_net.sample(state)
@@ -168,9 +166,9 @@ class SACPolicy(Agent):
             action = mean.detach().cpu().numpy()
         return to_3d_action(action)
 
-    def step(self, state, action, reward, next_state, done):
+    def step(self, state, action, reward, next_state, done, info):
         # dont treat timeout as done equal to True
-        max_steps_reached = state["events"].reached_max_episode_steps
+        max_steps_reached = info["logs"]["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
         action = to_2d_action(action)
