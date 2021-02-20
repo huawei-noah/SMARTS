@@ -228,8 +228,6 @@ class TD3Policy(Agent):
         state["low_dim_states"] = np.float32(
             np.append(state["low_dim_states"], self.prev_action)
         )
-        # to  keep consistensy convert to numpy first
-
         state["social_vehicles"] = (
             torch.from_numpy(state["social_vehicles"]).unsqueeze(0).to(self.device)
         )

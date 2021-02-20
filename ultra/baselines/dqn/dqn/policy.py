@@ -75,6 +75,7 @@ class DQNPolicy(Agent):
         self.sticky_actions = int(policy_params["sticky_actions"])
         prev_action_size = int(policy_params["prev_action_size"])
         self.prev_action = np.zeros(prev_action_size)
+        self.action_size = prev_action_size
 
         if self.merge_action_spaces == 1:
             index2action, action2index = merge_discrete_action_spaces(*action_size)
@@ -165,13 +166,10 @@ class DQNPolicy(Agent):
 
         self.action_space_type = "continuous"
         self.to_real_action = to_3d_action
-        self.state_preprocessor = StatePreprocessor(
-            preprocess_state, to_2d_action, self.state_description
-        )
+
         self.replay = ReplayBuffer(
             buffer_size=int(policy_params["replay_buffer"]["buffer_size"]),
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
-            state_preprocessor=self.state_preprocessor,
             device_name=self.device_name,
         )
 
@@ -196,6 +194,8 @@ class DQNPolicy(Agent):
             ).output_dim
         else:
             size += self.social_capacity * self.num_social_features
+        # adding the previous action
+        size += self.action_size
         return size
 
     def reset(self):
@@ -222,15 +222,15 @@ class DQNPolicy(Agent):
     def _act(self, state, explore=True):
         epsilon = self.epsilon_obj.get_epsilon()
         if not explore or np.random.rand() > epsilon:
-            state = self.state_preprocessor(
-                state,
-                normalize=True,
-                unsqueeze=True,
-                device=self.device,
-                social_capacity=self.social_capacity,
-                observation_num_lookahead=self.observation_num_lookahead,
-                social_vehicle_config=self.social_vehicle_config,
-                prev_action=self.prev_action,
+            state = copy.deepcopy(state)
+            state["low_dim_states"] = np.float32(
+                np.append(state["low_dim_states"], self.prev_action)
+            )
+            state["social_vehicles"] = (
+                torch.from_numpy(state["social_vehicles"]).unsqueeze(0).to(self.device)
+            )
+            state["low_dim_states"] = (
+                torch.from_numpy(state["low_dim_states"]).unsqueeze(0).to(self.device)
             )
             self.online_q_network.eval()
             with torch.no_grad():
@@ -281,9 +281,9 @@ class DQNPolicy(Agent):
         )
         print("Model loaded")
 
-    def step(self, state, action, reward, next_state, done, others=None):
+    def step(self, state, action, reward, next_state, done, info, others=None):
         # dont treat timeout as done equal to True
-        max_steps_reached = state["events"].reached_max_episode_steps
+        max_steps_reached = info["logs"]["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
         if self.action_space_type == "continuous":
