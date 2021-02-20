@@ -232,7 +232,7 @@ class PPOPolicy(Agent):
         )
         social_vehicles = [
             e["social_vehicles"] for e in states
-        ]  # , dim=0).float().to(device)
+        ] 
 
         out = {
             # "images": images,

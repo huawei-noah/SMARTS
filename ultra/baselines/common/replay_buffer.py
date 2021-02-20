@@ -53,10 +53,9 @@ class RandomRLSampler(Sampler):
 class ReplayBufferDataset(Dataset):
     cpu = torch.device("cpu")
 
-    def __init__(self, buffer_size, state_preprocessor, device):
+    def __init__(self, buffer_size, device):
         self.buffer_size = buffer_size
         self.memory = deque(maxlen=self.buffer_size)
-        self.state_preprocessor = state_preprocessor
         self.device = device
 
     def add(
@@ -74,25 +73,26 @@ class ReplayBufferDataset(Dataset):
     ):
         if others is None:
             others = {}
-        state = self.state_preprocessor(
-            state,
-            normalize=False,
-            unsqueeze=False,
-            device=self.device,
-            social_capacity=social_capacity,
-            observation_num_lookahead=observation_num_lookahead,
-            social_vehicle_config=social_vehicle_config,
-            prev_action=prev_action,
+
+        state["low_dim_states"] = np.float32(
+            np.append(state["low_dim_states"], prev_action)
         )
-        next_state = self.state_preprocessor(
-            next_state,
-            normalize=False,
-            unsqueeze=False,
-            device=self.device,
-            social_capacity=social_capacity,
-            observation_num_lookahead=observation_num_lookahead,
-            social_vehicle_config=social_vehicle_config,
-            prev_action=action,
+        state["social_vehicles"] = (
+            torch.from_numpy(state["social_vehicles"]).unsqueeze(0).to(self.device)
+        )
+        state["low_dim_states"] = (
+            torch.from_numpy(state["low_dim_states"]).unsqueeze(0).to(self.device)
+        )
+
+
+        next_state["low_dim_states"] = np.float32(
+            np.append(next_state["low_dim_states"], action)
+        )
+        next_state["social_vehicles"] = (
+            torch.from_numpy(next_state["social_vehicles"]).unsqueeze(0).to(self.device)
+        )
+        next_state["low_dim_states"] = (
+            torch.from_numpy(next_state["low_dim_states"]).unsqueeze(0).to(self.device)
         )
 
         action = np.asarray([action]) if not isinstance(action, Iterable) else action
@@ -117,13 +117,12 @@ class ReplayBuffer:
         self,
         buffer_size,
         batch_size,
-        state_preprocessor,
         device_name,
         pin_memory=False,
         num_workers=0,
     ):
         self.replay_buffer_dataset = ReplayBufferDataset(
-            buffer_size, state_preprocessor, device=None
+            buffer_size, device=None
         )
         self.sampler = RandomRLSampler(self.replay_buffer_dataset, batch_size)
         self.data_loader = DataLoader(
