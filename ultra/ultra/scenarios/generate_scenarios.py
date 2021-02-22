@@ -175,7 +175,7 @@ def generate_left_turn_missions(
                         end=(
                             "edge-{}".format(mission["end"]),  # Edge
                             route_lanes[mission["end"]] - 1,  # Lane index
-                            random.randint(50, 150),  # Offset
+                            random.randint(50, 120),  # Offset
                         ),
                     )
                     for mission in missions
