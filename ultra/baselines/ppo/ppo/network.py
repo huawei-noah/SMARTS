@@ -99,7 +99,6 @@ class CriticNetwork(nn.Module):
 
         if len(social_feature) > 0:
             social_feature = torch.cat(social_feature, 0)
-
             state = torch.cat([low_dim_state, social_feature], -1)
         else:
             social_feature = []

@@ -70,12 +70,12 @@ class ActorNetwork(nn.Module):
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
-        social_feature = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
-        state = (
-            torch.cat([low_dim_state, social_feature], -1)
-            if len(social_feature) > 0
-            else low_dim_state
-        )
+        if len(social_feature) > 0:
+            social_feature = torch.cat(social_feature, 0)
+            state = torch.cat([low_dim_state, social_feature], -1)
+        else:
+            social_feature = []
+            state = low_dim_state
         # print('*** ACTOR STATE SIZE', state.shape)
         a = F.relu(self.l1(state))
         a = F.relu(self.l2(a))
@@ -116,12 +116,13 @@ class CriticNetwork(nn.Module):
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
-        social_feature = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
-        state = (
-            torch.cat([low_dim_state, social_feature], -1)
-            if len(social_feature) > 0
-            else low_dim_state
-        )
+        if len(social_feature) > 0:
+            social_feature = torch.cat(social_feature, 0)
+            state = torch.cat([low_dim_state, social_feature], -1)
+        else:
+            social_feature = []
+            state = low_dim_state
+
         # print('*** CRITIC STATE SIZE', state.shape)
         q = F.relu(self.l1(state))
         q = F.relu(self.l2(torch.cat([q, action], 1)))
