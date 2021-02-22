@@ -8,6 +8,25 @@ ego_missions:  # There must be the same number of missions as agents.
 - start: east-EW   # Turn left going from East to South.
   end:   south-NS
 levels:
+  no-traffic: # low-density is just a dummy distribution for no-traffic
+    train:
+      total: 10
+      intersection_types:
+        2lane_c:
+           percent: 0.5
+           specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
+        3lane_c:
+           percent: 0.5
+           specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
+    test:
+      total: 2
+      intersection_types:
+        2lane_c:
+           percent: 0.5
+           specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
+        3lane_c:
+           percent: 0.5
+           specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
   easy:
     train:
       total: 10

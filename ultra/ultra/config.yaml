@@ -33,6 +33,9 @@ tasks:
       train: "scenarios/task1/train_hard*"
       test:  "scenarios/task1/test_hard*"
   task1-4agents:
+    no-traffic:
+      train: "scenarios/task1-4agents/train_no-traffic*"
+      test:  "scenarios/task1-4agents/test_no-traffic*"
     easy:
       train: "scenarios/task1-4agents/train_easy*"
       test: "scenarios/task1-4agents/test_easy*"
