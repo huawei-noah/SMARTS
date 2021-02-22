@@ -21,12 +21,8 @@
 # THE SOFTWARE.
 import json
 import os
-<<<<<<< HEAD:ultra/evaluate.py
-import json
-=======
 import re
 import sys
->>>>>>> develop:ultra/ultra/evaluate.py
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -179,16 +175,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("--models", default="models/", help="Directory to saved models")
     parser.add_argument(
-<<<<<<< HEAD:ultra/evaluate.py
-        "--policy",
-        help="Policies available : [ppo, sac, ddpg, dqn, bdqn]",
-        type=str,
-        default="sac",
-    )
-    parser.add_argument("--models", default="models/", help="Directory to saved models")
-    parser.add_argument(
-        "--episodes", help="Number of training episodes", type=int, default=200
-=======
         "--episodes", help="Number of training episodes", type=int, default=200
     )
     parser.add_argument(
@@ -196,7 +182,6 @@ if __name__ == "__main__":
         help="Maximum number of steps per episode",
         type=int,
         default=10000,
->>>>>>> develop:ultra/ultra/evaluate.py
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
@@ -208,15 +193,12 @@ if __name__ == "__main__":
         "--experiment-dir",
         help="Path to spec file that includes adapters and policy parameters",
         type=str,
-<<<<<<< HEAD:ultra/evaluate.py
-=======
     )
     parser.add_argument(
         "--log-dir",
         help="Log directory location",
         default="logs",
         type=str,
->>>>>>> develop:ultra/ultra/evaluate.py
     )
     args = parser.parse_args()
 
@@ -246,25 +228,7 @@ if __name__ == "__main__":
     base_dir = os.path.dirname(__file__)
     pool_path = os.path.join(base_dir, "agent_pool.json")
 
-<<<<<<< HEAD:ultra/evaluate.py
-    with open("ultra/agent_pool.json", "r") as f:
-        data = json.load(f)
-        if args.policy in data["agents"].keys():
-            policy_path = data["agents"][args.policy]["path"]
-            policy_locator = data["agents"][args.policy]["locator"]
-        else:
-            raise ImportError("Invalid policy name. Please try again")
-
-    # Required string for smarts' class registry
-    policy_class = str(policy_path) + ":" + str(policy_locator)
-    num_cpus = max(
-        1, psutil.cpu_count(logical=False) - 1
-    )  # remove `logical=False` to use all cpus
-    ray_kwargs = default_ray_kwargs(num_cpus=num_cpus, num_gpus=num_gpus)
-    ray.init(**ray_kwargs)
-=======
     ray.init()
->>>>>>> develop:ultra/ultra/evaluate.py
     try:
         AGENT_ID = "AGENT_008"
         for episode in episodes(
@@ -280,11 +244,7 @@ if __name__ == "__main__":
                 [
                     evaluate.remote(
                         experiment_dir=args.experiment_dir,
-<<<<<<< HEAD:ultra/evaluate.py
-                        agent_id=agent_id,
-=======
                         agent_id=AGENT_ID,
->>>>>>> develop:ultra/ultra/evaluate.py
                         policy_class=policy_class,
                         seed=episode.eval_count,
                         itr_count=0,

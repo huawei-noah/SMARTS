@@ -19,10 +19,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-<<<<<<< HEAD:ultra/train.py
-import os, sys
-=======
->>>>>>> develop:ultra/ultra/train.py
 import json
 import os
 import sys
@@ -53,10 +49,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 def train(
     scenario_info,
     num_episodes,
-<<<<<<< HEAD:ultra/train.py
-=======
     max_episode_steps,
->>>>>>> develop:ultra/ultra/train.py
     policy_class,
     eval_info,
     timestep_sec,
@@ -82,11 +75,7 @@ def train(
 
     agent = spec.build_agent()
 
-<<<<<<< HEAD:ultra/train.py
-    for episode in episodes(num_episodes, etag=policy_class, dir=log_dir):
-=======
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
->>>>>>> develop:ultra/ultra/train.py
         observations = env.reset()
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
@@ -165,14 +154,6 @@ if __name__ == "__main__":
         "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
-<<<<<<< HEAD:ultra/train.py
-        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
-    )
-    parser.add_argument(
-        "--headless", help="Run without envision", type=bool, default=False
-    )
-    parser.add_argument(
-=======
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
@@ -185,7 +166,6 @@ if __name__ == "__main__":
         "--headless", help="Run without envision", type=bool, default=False
     )
     parser.add_argument(
->>>>>>> develop:ultra/ultra/train.py
         "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
     )
     parser.add_argument(
@@ -195,17 +175,10 @@ if __name__ == "__main__":
         default=10000,
     )
     parser.add_argument(
-<<<<<<< HEAD:ultra/train.py
-        "--seed", help="Environment seed", default=2, type=int,
-    )
-    parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
-=======
         "--seed",
         help="Environment seed",
         default=2,
         type=int,
->>>>>>> develop:ultra/ultra/train.py
     )
     parser.add_argument(
         "--log-dir",
@@ -229,20 +202,6 @@ if __name__ == "__main__":
     # Required string for smarts' class registry
     policy_class = str(policy_path) + ":" + str(policy_locator)
 
-<<<<<<< HEAD:ultra/train.py
-    with open("ultra/agent_pool.json", "r") as f:
-        data = json.load(f)
-        if args.policy in data["agents"].keys():
-            policy_path = data["agents"][args.policy]["path"]
-            policy_locator = data["agents"][args.policy]["locator"]
-        else:
-            raise ImportError("Invalid policy name. Please try again")
-
-    # Required string for smarts' class registry
-    policy_class = str(policy_path) + ":" + str(policy_locator)
-
-=======
->>>>>>> develop:ultra/ultra/train.py
     ray.init()
     ray.wait(
         [

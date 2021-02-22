@@ -22,14 +22,9 @@ import logging
 import os
 import time
 
-<<<<<<< HEAD
-from smarts.zoo import worker_pb2
-from smarts.zoo import worker_pb2_grpc
-=======
 import cloudpickle
 import grpc
 
->>>>>>> develop
 from smarts.zoo import worker as zoo_worker
 from smarts.zoo import worker_pb2, worker_pb2_grpc
 

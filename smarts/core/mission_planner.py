@@ -286,11 +286,7 @@ class MissionPlanner:
                 position, target_lane.getID(), 60
             )
 
-<<<<<<< HEAD
-            cut_in_speed = target_vehicle.speed * 1.2
-=======
             cut_in_speed = target_velocity * 2.3
->>>>>>> develop
 
             speed_limit = cut_in_speed
 
@@ -327,10 +323,7 @@ class MissionPlanner:
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
 
-<<<<<<< HEAD
-=======
         ## the position of ego car is here: [x, y]
->>>>>>> develop
         ego_position = pose.position[:2]
         ego_lane = self._road_network.nearest_lane(ego_position)
         ego_wps = self._waypoints.waypoint_paths_on_lane_at(
@@ -340,10 +333,6 @@ class MissionPlanner:
             default_speed = ego_wps[0][0].speed_limit
         else:
             default_speed = self._mission.task.initial_speed
-<<<<<<< HEAD
-=======
-
->>>>>>> develop
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
             new_wp = replace(ego_wps[0][px], speed_limit=default_speed)
@@ -482,14 +471,6 @@ class MissionPlanner:
 
         p0 = pose.position[:2]
         offset = radians_to_vec(heading) * lane_width
-<<<<<<< HEAD
-        p1 = np.array([pose.position[0] + offset[0], pose.position[1] + offset[1],])
-        offset = radians_to_vec(target_heading) * 5
-        p3 = target.pos
-        p2 = np.array([p3[0] - offset[0], p3[1] - offset[1]])
-
-        p_x, p_y = bezier([p0, p1, p2, p3], 20)
-=======
         p1 = np.array(
             [
                 pose.position[0] + offset[0],
@@ -502,7 +483,6 @@ class MissionPlanner:
         p2 = np.array([p3[0] - 5 * offset[0], p3[1] - 5 * offset[1]])
 
         p_x, p_y = bezier([p0, p1, p2, p3], 10)
->>>>>>> develop
 
         trajectory = []
         for i in range(len(p_x)):

@@ -37,8 +37,9 @@ from ray.rllib.models import ModelCatalog
 import ray.rllib.agents.ppo as ppo
 import ray.rllib.agents.sac as sac
 import ray.rllib.agents.ddpg as ddpg
-from ray.rllib.agents.sac.sac_torch_model import SACTorchModel
-from ray.rllib.agents.ddpg.ddpg_torch_model import DDPGTorchModel
+
+# from ray.rllib.agents.sac.sac_torch_model import SACTorchModel
+# from ray.rllib.agents.ddpg.ddpg_torch_model import DDPGTorchModel
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import (
     AgentInterface,
@@ -78,7 +79,9 @@ def train(
         observation_num_lookahead=20,
         social_capacity=10,
     )
-    adapter = BaselineAdapter(social_vehicle_params=social_vehicle_params,)
+    adapter = BaselineAdapter(
+        social_vehicle_params=social_vehicle_params,
+    )
 
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
     # ModelCatalog.register_custom_model("fc_model", DDPGTorchModel)
@@ -168,7 +171,9 @@ def train(
 
     config.update(tune_config)
     trainer = ppo.PPOTrainer(
-        env=RLlibUltraEnv, config=tune_config, logger_creator=log_creator(log_dir),
+        env=RLlibUltraEnv,
+        config=tune_config,
+        logger_creator=log_creator(log_dir),
     )
 
     # Iteration value in trainer.py (self._iterations) is the technically the number of episodes
@@ -209,7 +214,10 @@ if __name__ == "__main__":
         default=100,
     )
     parser.add_argument(
-        "--seed", help="environment seed", default=2, type=int,
+        "--seed",
+        help="environment seed",
+        default=2,
+        type=int,
     )
     parser.add_argument(
         "--max-samples",
@@ -218,7 +226,10 @@ if __name__ == "__main__":
         type=int,
     )
     parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
     )
 
     args = parser.parse_args()

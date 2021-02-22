@@ -59,15 +59,6 @@ class SumoTrafficSimulation:
         sumo_port:
             the port that sumo runs on
         auto_start:
-<<<<<<< HEAD
-            False to pause simulation when SMARTS run, and wait for user to click 
-            start on sumo-gui
-        endless_traffic:
-            Not remove vehicles by re-adding back vehicles that exit 
-        allow_reload:
-            True to reload existing SUMO
-        remove_agents_only_mode: 
-=======
             False to pause simulation when SMARTS run, and wait for user to click
             start on sumo-gui
         endless_traffic:
@@ -75,7 +66,6 @@ class SumoTrafficSimulation:
         allow_reload:
             True to reload existing SUMO
         remove_agents_only_mode:
->>>>>>> develop
             Remove only agent vehicles used by SMARTS and not delete other sumo
             vehicles when teardown
     """
@@ -207,7 +197,6 @@ class SumoTrafficSimulation:
                 you were trying to initialize many SUMO instances at
                 once and we were not able to assign unique port
                 numbers to all SUMO processes.
-
                 Check {self._log_file} for hints"""
             )
             raise e
@@ -733,7 +722,6 @@ class SumoTrafficSimulation:
     ):
         """Reserve an area around a location where vehicles cannot spawn until a given vehicle
         is added.
-
         Args:
             vehicle_id: The vehicle to wait for.
             reserved_location: The space the vehicle takes up.

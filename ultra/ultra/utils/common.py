@@ -33,7 +33,6 @@ from scipy.spatial.distance import euclidean
 from skimage.transform import resize
 
 import ultra.utils.geometry as geometry
-<<<<<<< HEAD:ultra/utils/common.py
 from scipy.spatial.distance import euclidean
 import math, datetime
 
@@ -41,8 +40,6 @@ import math, datetime
 def gen_experiment_name():
     dt = datetime.datetime.today()
     return f"experiment-{dt.year}.{dt.month}.{dt.day}-{dt.hour}:{dt.minute}:{dt.second}"
-=======
->>>>>>> develop:ultra/ultra/utils/common.py
 
 
 def rotate2d_vector(vectors, angle):

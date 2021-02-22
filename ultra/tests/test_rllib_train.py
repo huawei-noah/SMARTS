@@ -8,7 +8,7 @@ seed = 2
 
 class RLlibTrainTest(unittest.TestCase):
     def test_rllib_train_cli(self):
-        log_dir = "ultra/tests/rllib_results"
+        log_dir = "tests/rllib_results"
         try:
             os.system(
                 f"python ultra/rllib_train.py --task 00 --level easy --episodes 1 --max-samples 200 --headless True --log-dir {log_dir}"
@@ -23,13 +23,16 @@ class RLlibTrainTest(unittest.TestCase):
             self.assertTrue(False)
 
     def test_rllib_train_method(self):
-        log_dir = "ultra/tests/rllib_results"
+        log_dir = "tests/rllib_results"
         try:
             ray.init()
             train(
                 task=("00", "easy"),
                 num_episodes=1,
-                eval_info={"eval_rate": 2, "eval_episodes": 1,},
+                eval_info={
+                    "eval_rate": 2,
+                    "eval_episodes": 1,
+                },
                 timestep_sec=0.1,
                 headless=True,
                 seed=2,

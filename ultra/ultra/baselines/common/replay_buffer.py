@@ -115,7 +115,12 @@ class ReplayBufferDataset(Dataset):
 
 class ReplayBuffer:
     def __init__(
-        self, buffer_size, batch_size, device_name, pin_memory=False, num_workers=0,
+        self,
+        buffer_size,
+        batch_size,
+        device_name,
+        pin_memory=False,
+        num_workers=0,
     ):
         self.replay_buffer_dataset = ReplayBufferDataset(buffer_size, device=None)
         self.sampler = RandomRLSampler(self.replay_buffer_dataset, batch_size)

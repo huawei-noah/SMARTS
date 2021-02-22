@@ -37,7 +37,9 @@ from ultra.baselines.common.state_preprocessor import *
 
 class SACPolicy(Agent):
     def __init__(
-        self, policy_params=None, checkpoint_dir=None,
+        self,
+        policy_params=None,
+        checkpoint_dir=None,
     ):
         # print("LOADING THE PARAMS", policy_params, checkpoint_dir)
         self.policy_params = policy_params

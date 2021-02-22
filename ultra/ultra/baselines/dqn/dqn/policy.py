@@ -38,7 +38,9 @@ class DQNPolicy(Agent):
     lane_actions = ["keep_lane", "slow_down", "change_lane_left", "change_lane_right"]
 
     def __init__(
-        self, policy_params=None, checkpoint_dir=None,
+        self,
+        policy_params=None,
+        checkpoint_dir=None,
     ):
         self.policy_params = policy_params
         network_class = DQNWithSocialEncoder
@@ -149,10 +151,12 @@ class DQNPolicy(Agent):
             "social_feature_encoder_params": self.social_feature_encoder_params,
         }
         self.online_q_network = network_class(
-            num_actions=self.num_actions, **(network_params if network_params else {}),
+            num_actions=self.num_actions,
+            **(network_params if network_params else {}),
         ).to(self.device)
         self.target_q_network = network_class(
-            num_actions=self.num_actions, **(network_params if network_params else {}),
+            num_actions=self.num_actions,
+            **(network_params if network_params else {}),
         ).to(self.device)
         self.update_target_network()
 

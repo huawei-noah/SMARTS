@@ -32,7 +32,8 @@ jobs:
           cd ultra
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
-          pytest -v ./tests/
+          pytest -v ./tests/ \
+          --ignore=./tests/test_rllib_train.py 
       - name: Run Header test
         run : |
           cd ultra
