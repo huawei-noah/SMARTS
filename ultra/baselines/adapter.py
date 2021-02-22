@@ -20,11 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import numpy as np
+import torch
 from scipy.spatial import distance
 import random, math, gym
 from sys import path
 from collections import OrderedDict
-from ultra.baselines.common.state_preprocessor import *
+from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 
 path.append("./ultra")
@@ -62,19 +63,20 @@ class BaselineAdapter:
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
 
-        self.state_description = get_state_description(
-            social_vehicle_config=social_vehicle_params,
+        self.state_preprocessor = BaselineStatePreprocessor(
+            social_vehicle_config=self.social_vehicle_config,
             observation_waypoints_lookahead=self.observation_num_lookahead,
-            action_size=2,
+            action_size=2
         )
 
-        self.state_size = sum(self.state_description["low_dim_states"].values())
         self.social_feature_encoder_class = self.social_vehicle_encoder[
             "social_feature_encoder_class"
         ]
         self.social_feature_encoder_params = self.social_vehicle_encoder[
             "social_feature_encoder_params"
         ]
+    
+        self.state_size = self.state_preprocessor.num_low_dim_states
         if self.social_feature_encoder_class:
             self.state_size += self.social_feature_encoder_class(
                 **self.social_feature_encoder_params
@@ -82,13 +84,9 @@ class BaselineAdapter:
         else:
             self.state_size += self.social_capacity * self.num_social_features
 
-        self.state_preprocessor = StatePreprocessor(
-            preprocess_state, to_2d_action, self.state_description
-        )
-
     @property
     def observation_space(self):
-        low_dim_states_shape = sum(self.state_description["low_dim_states"].values())
+        low_dim_states_shape = self.state_preprocessor.num_low_dim_states
         if self.social_feature_encoder_class:
             social_vehicle_shape = self.social_feature_encoder_class(
                 **self.social_feature_encoder_params
@@ -128,52 +126,10 @@ class BaselineAdapter:
     #     return np.array([throttle, brake, steering * np.pi * 0.25])
 
     def observation_adapter(self, env_observation):
-        ego_state = env_observation.ego_vehicle_state
-        start = env_observation.ego_vehicle_state.mission.start
-        goal = env_observation.ego_vehicle_state.mission.goal
-        path = get_path_to_goal(
-            goal=goal, paths=env_observation.waypoint_paths, start=start
-        )
-        closest_wp, _ = get_closest_waypoint(
-            num_lookahead=num_lookahead,
-            goal_path=path,
-            ego_position=ego_state.position,
-            ego_heading=ego_state.heading,
-        )
-        signed_dist_from_center = closest_wp.signed_lateral_error(ego_state.position)
-        lane_width = closest_wp.lane_width * 0.5
-        ego_dist_center = signed_dist_from_center / lane_width
-
-        relative_goal_position = np.asarray(goal.position[0:2]) - np.asarray(
-            ego_state.position[0:2]
-        )
-        relative_goal_position_rotated = rotate2d_vector(
-            relative_goal_position, -ego_state.heading
-        )
-
-        state = dict(
-            speed=ego_state.speed,
-            relative_goal_position=relative_goal_position_rotated,
-            distance_from_center=ego_dist_center,
-            steering=ego_state.steering,
-            angle_error=closest_wp.relative_heading(ego_state.heading),
-            social_vehicles=env_observation.neighborhood_vehicle_states,
-            road_speed=closest_wp.speed_limit,
-            # # ----------
-            # # dont normalize the following,
-            start=start.position,
-            goal=goal.position,
-            heading=ego_state.heading,
-            goal_path=path,
-            ego_position=ego_state.position,
-            waypoint_paths=env_observation.waypoint_paths,
-            events=env_observation.events,
-        )
-
         state = self.state_preprocessor(
-            state=state,
-            social_capacity=self.social_capacity,
+            state=env_observation,
             observation_num_lookahead=self.observation_num_lookahead,
+            social_capacity=self.social_capacity,
             social_vehicle_config=self.social_vehicle_config,
             # prev_action=self.prev_action
         )

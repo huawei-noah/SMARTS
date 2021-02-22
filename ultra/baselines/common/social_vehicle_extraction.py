@@ -67,36 +67,6 @@ def extract_social_vehicle_state_pointnet(
     ]
 
 
-def get_social_vehicles(
-    ego_vehicle_pos,
-    ego_vehicle_heading,
-    neighborhood_vehicles,
-    social_vehicle_config,
-    waypoint_paths,
-):
-    extractor_func = social_vehicle_config["social_vehicle_extractor_func"]
-    encoder_key = social_vehicle_config["encoder_key"]
-    if social_vehicle_config["encoder"]["use_leading_vehicles"]:
-        social_vehicles = get_social_vehicles_leading(
-            ego_vehicle_pos=ego_vehicle_pos,
-            ego_vehicle_heading=ego_vehicle_heading,
-            neighborhood_vehicles=neighborhood_vehicles,
-            waypoint_paths=waypoint_paths,
-            extractor_func=extractor_func,
-            **social_vehicle_config["encoder"]["use_leading_vehicles"]
-        )
-    else:
-        social_vehicles = get_social_vehicles_states_sorted_by_distance(
-            ego_vehicle_pos=ego_vehicle_pos,
-            ego_vehicle_heading=ego_vehicle_heading,
-            neighborhood_vehicles=neighborhood_vehicles,
-            social_vehicle_config=social_vehicle_config,
-            extractor_func=extractor_func,
-        )
-    social_vehicles = np.asarray(social_vehicles).astype(np.float32)
-    return social_vehicles
-
-
 def get_social_vehicles_states_sorted_by_distance(
     ego_vehicle_pos,
     ego_vehicle_heading,
