@@ -36,7 +36,6 @@ from ultra.baselines.adapter import BaselineAdapter
 path.append("./ultra")
 from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
 
-
 class UltraEnv(HiWayEnv):
     def __init__(
         self,
@@ -141,10 +140,12 @@ class UltraEnv(HiWayEnv):
         return info
 
     def step(self, agent_actions):
+        print(agent_actions)
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
         }
+        print(agent_actions)
 
         observations, rewards, agent_dones, extras = self._smarts.step(agent_actions)
 
