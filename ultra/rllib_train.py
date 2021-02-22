@@ -60,7 +60,7 @@ from ultra.utils.common import gen_experiment_name
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
-# TODO : refactor rllib_train.py
+# TODO : refactor rllib_train.py / move callbacks somewhere else??
 
 
 class Callbacks(DefaultCallbacks):
