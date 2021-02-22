@@ -36,6 +36,10 @@ tasks:
     easy:
       train: "scenarios/task1-4agents/train_easy*"
       test: "scenarios/task1-4agents/test_easy*"
+  task1-4agents-impatient:
+    easy:
+      train: "scenarios/task1-4agents-impatient/train_easy*"
+      test: "scenarios/task1-4agents-impatient/test_easy*"
   task1-4agents-same:
     easy:
       train: "scenarios/task1-4agents-same/train_easy*"
