@@ -28,7 +28,6 @@ open_agent_actor = t.SocialAgentActor(
     policy_kwargs={
         "save_directory": "./replay",
         "id": "agent_oa",
-        "file_mode": "wb",
         "wrapped_agent_locator": "open_agent:open_agent-v0",
     },
 )
@@ -39,7 +38,6 @@ laner_actor = t.SocialAgentActor(
     policy_kwargs={
         "save_directory": "./replay",
         "id": "agent_kla",
-        "file_mode": "wb",
         "wrapped_agent_locator": "zoo.policies:keep-lane-agent-v0",
     },
 )

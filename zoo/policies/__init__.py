@@ -31,8 +31,8 @@ social_index = 0
 def replay_entrypoint(
     save_directory,
     id,
-    file_mode,
     wrapped_agent_locator,
+    read=False,
 ):
     from .replay_agent import ReplayAgent
 
@@ -43,8 +43,8 @@ def replay_entrypoint(
         agent_params={
             "save_directory": save_directory,
             "id": f"{id}_{social_index}",
-            "file_mode": file_mode,
             "internal_spec": internal_spec,
+            "read": read,
         },
         agent_builder=ReplayAgent,
     )

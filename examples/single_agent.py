@@ -44,7 +44,6 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         "zoo.policies:replay-agent-v0",
         save_directory="./replay",
         id="agent_007",
-        file_mode="wb",
         wrapped_agent_locator="zoo.policies:keep-lane-agent-v0",
     )
 
