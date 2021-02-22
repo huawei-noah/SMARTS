@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
+from pathlib import Path
 from collections import defaultdict
 import cv2, time, math, datetime, ray, shutil, dill
 import numpy as np
@@ -32,6 +33,10 @@ from contextlib import contextmanager
 import tableprint as tp
 from ultra.utils.log_info import LogInfo
 from ultra.utils.common import gen_experiment_name
+
+import tempfile
+from ray.rllib.agents.callbacks import DefaultCallbacks
+from ray.tune.logger import Logger, UnifiedLogger
 
 
 class Episode:
@@ -220,3 +225,53 @@ def episodes(n, etag=None, dir=None):
 
             else:
                 table(("", "", "", "", ""))
+
+
+class Callbacks(DefaultCallbacks):
+    @staticmethod
+    def on_episode_start(
+        worker, base_env, policies, episode, **kwargs,
+    ):
+        episode.user_data = LogInfo()
+
+    @staticmethod
+    def on_episode_step(
+        worker, base_env, episode, **kwargs,
+    ):
+
+        single_agent_id = list(episode._agent_to_last_obs)[0]
+        policy_id = episode.policy_for(single_agent_id)
+        agent_reward_key = (single_agent_id, policy_id)
+
+        info = episode.last_info_for(single_agent_id)
+        reward = episode.agent_rewards[agent_reward_key]
+        if info:
+            episode.user_data.add(info, reward)
+
+    @staticmethod
+    def on_episode_end(
+        worker, base_env, policies, episode, **kwargs,
+    ):
+        episode.user_data.normalize(episode.length)
+        for key, val in episode.user_data.data.items():
+            if not isinstance(val, (list, tuple, np.ndarray)):
+                episode.custom_metrics[key] = val
+
+        print(
+            f"Episode {episode.episode_id} ended:\nlength:{episode.length},\nenv_score:{episode.custom_metrics['env_score']},\ncollision:{episode.custom_metrics['collision']}, \nreached_goal:{episode.custom_metrics['reached_goal']},\ntimeout:{episode.custom_metrics['timed_out']},\noff_road:{episode.custom_metrics['off_road']},\ndist_travelled:{episode.custom_metrics['dist_travelled']},\ngoal_dist:{episode.custom_metrics['goal_dist']}"
+        )
+        print("--------------------------------------------------------")
+
+
+def log_creator(log_dir):
+    result_dir = log_dir
+    result_dir = Path(result_dir).expanduser().resolve().absolute()
+    logdir_prefix = gen_experiment_name()
+
+    def logger_creator(config):
+        if not os.path.exists(result_dir):
+            os.makedirs(result_dir)
+        logdir = tempfile.mkdtemp(prefix=logdir_prefix, dir=result_dir)
+        return UnifiedLogger(config, logdir, loggers=None)
+
+    return logger_creator

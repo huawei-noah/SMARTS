@@ -21,7 +21,6 @@
 # THE SOFTWARE.
 import os, gym
 from ultra.utils.ray import default_ray_kwargs
-from pathlib import Path
 import timeit, datetime
 
 # Set environment to better support Ray
@@ -34,8 +33,6 @@ from ray import tune
 from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
 
-
-from ray.rllib.agents.callbacks import DefaultCallbacks
 from ray.rllib.models import ModelCatalog
 import ray.rllib.agents.ppo as ppo
 import ray.rllib.agents.sac as sac
@@ -49,71 +46,23 @@ from smarts.core.agent_interface import (
     Waypoints,
     NeighborhoodVehicles,
 )
-import tempfile
-from ray.tune.logger import Logger, UnifiedLogger
+
 from ultra.baselines.rllib_models.fc_network import CustomFCModel
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
-from ultra.utils.log_info import LogInfo
-from ultra.utils.common import gen_experiment_name
+
+from ultra.utils.episode import Callbacks
+from ultra.utils.episode import log_creator
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 # TODO : refactor rllib_train.py / move callbacks somewhere else??
 
 
-class Callbacks(DefaultCallbacks):
-    @staticmethod
-    def on_episode_start(
-        worker, base_env, policies, episode, **kwargs,
-    ):
-        episode.user_data = LogInfo()
-
-    @staticmethod
-    def on_episode_step(
-        worker, base_env, episode, **kwargs,
-    ):
-
-        single_agent_id = list(episode._agent_to_last_obs)[0]
-        policy_id = episode.policy_for(single_agent_id)
-        agent_reward_key = (single_agent_id, policy_id)
-
-        info = episode.last_info_for(single_agent_id)
-        reward = episode.agent_rewards[agent_reward_key]
-        if info:
-            episode.user_data.add(info, reward)
-
-    @staticmethod
-    def on_episode_end(
-        worker, base_env, policies, episode, **kwargs,
-    ):
-        episode.user_data.normalize(episode.length)
-        for key, val in episode.user_data.data.items():
-            if not isinstance(val, (list, tuple, np.ndarray)):
-                episode.custom_metrics[key] = val
-
-        print(
-            f"Episode {episode.episode_id} ended:\nlength:{episode.length},\nenv_score:{episode.custom_metrics['env_score']},\ncollision:{episode.custom_metrics['collision']}, \nreached_goal:{episode.custom_metrics['reached_goal']},\ntimeout:{episode.custom_metrics['timed_out']},\noff_road:{episode.custom_metrics['off_road']},\ndist_travelled:{episode.custom_metrics['dist_travelled']},\ngoal_dist:{episode.custom_metrics['goal_dist']}"
-        )
-        print("--------------------------------------------------------")
-
-
-def log_creator():
-    result_dir = "ray_results"
-    result_dir = Path(result_dir).expanduser().resolve().absolute()
-    logdir_prefix = gen_experiment_name()
-
-    def logger_creator(config):
-        if not os.path.exists(result_dir):
-            os.makedirs(result_dir)
-        logdir = tempfile.mkdtemp(prefix=logdir_prefix, dir=result_dir)
-        return UnifiedLogger(config, logdir, loggers=None)
-
-    return logger_creator
-
-
-def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
+def train(
+    task, num_episodes, eval_info, timestep_sec, headless, seed, max_samples, log_dir
+):
 
     # --------------------------------------------------------
     # Initialize Agent and social_vehicle encoding method
@@ -175,7 +124,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
         # "seed":seed,
         # checking if scenarios are switching correctly
         # the interval config
-        # "train_batch_size" : 200, # Number of timesteps collected for each SGD round.
+        "train_batch_size": max_samples,  # Debugging value
         "in_evaluation": True,
         "evaluation_num_episodes": eval_info["eval_episodes"],
         "evaluation_interval": eval_info[
@@ -215,18 +164,19 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
             # agent_steps: Count each individual agent step as one step.
             # "count_steps_by": "env_steps",
         },
-        # ---------------
-        # "train_batch_size":1200, # remove after debugging
     }
+
     config.update(tune_config)
     trainer = ppo.PPOTrainer(
-        env=RLlibUltraEnv, config=tune_config, logger_creator=log_creator(),
+        env=RLlibUltraEnv, config=tune_config, logger_creator=log_creator(log_dir),
     )
 
     # Iteration value in trainer.py (self._iterations) is the technically the number of episodes
     for i in range(num_episodes):
         results = trainer.train()
-        trainer.log_result(results)  # Evaluation will now display on Tensorboard
+        trainer.log_result(
+            results
+        )  # Evaluation metrics will now be displayed on Tensorboard
 
 
 if __name__ == "__main__":
@@ -250,18 +200,27 @@ if __name__ == "__main__":
         "--headless", help="run without envision", type=bool, default=False
     )
     parser.add_argument(
-        "--eval-episodes", help="number of evaluation episodes", type=int, default=200
+        "--eval-episodes", help="number of evaluation episodes", type=int, default=100
     )
     parser.add_argument(
         "--eval-rate",
-        help="evaluation rate based on number of observations",
+        help="run evaluation every 'n' number of iterations",
         type=int,
-        default=10000,
+        default=100,
     )
-
     parser.add_argument(
         "--seed", help="environment seed", default=2, type=int,
     )
+    parser.add_argument(
+        "--max-samples",
+        help="maximum samples for each training iteration",
+        default=4000,
+        type=int,
+    )
+    parser.add_argument(
+        "--log-dir", help="Log directory location", default="logs", type=str,
+    )
+
     args = parser.parse_args()
 
     ray.init()
@@ -269,12 +228,14 @@ if __name__ == "__main__":
         task=(args.task, args.level),
         num_episodes=int(args.episodes),
         eval_info={
-            "eval_rate": float(args.eval_rate),
+            "eval_rate": int(args.eval_rate),
             "eval_episodes": int(args.eval_episodes),
         },
         timestep_sec=float(args.timestep),
         headless=args.headless,
         seed=args.seed,
+        max_samples=args.max_samples,
+        log_dir=args.log_dir,
     )
 
 
