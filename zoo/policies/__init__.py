@@ -1,7 +1,9 @@
+from typing import Any, Dict
+
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
-from smarts.zoo.registry import register
+from smarts.zoo.registry import make, register
 
 from .keep_lane_agent import KeepLaneAgent
 from .non_interactive_agent import NonInteractiveAgent
@@ -22,3 +24,32 @@ register(
         agent_builder=KeepLaneAgent,
     ),
 )
+
+social_index = 0
+
+
+def replay_entrypoint(
+    save_directory,
+    id,
+    file_mode,
+    wrapped_agent_locator,
+):
+    from .replay_agent import ReplayAgent
+
+    internal_spec = make(wrapped_agent_locator)
+    global social_index
+    spec = AgentSpec(
+        interface=internal_spec.interface,
+        agent_params={
+            "save_directory": save_directory,
+            "id": f"{id}_{social_index}",
+            "file_mode": file_mode,
+            "internal_spec": internal_spec,
+        },
+        agent_builder=ReplayAgent,
+    )
+    social_index += 1
+    return spec
+
+
+register(locator="replay-agent-v0", entry_point=replay_entrypoint)

@@ -7,6 +7,7 @@ from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
+from smarts.zoo.registry import make as zoo_make
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,6 +38,14 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
             AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
         ),
         agent_builder=ChaseViaPointsAgent,
+    )
+
+    agent_spec = zoo_make(
+        "zoo.policies:replay-agent-v0", 
+        save_directory="./replay",
+        id="agent_007",
+        file_mode='wb',
+        wrapped_agent_locator="zoo.policies:keep-lane-agent-v0",
     )
 
     env = gym.make(
