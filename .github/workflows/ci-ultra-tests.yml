@@ -33,10 +33,6 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
-      - name: Run Header test
-        run : |
-          cd ultra
-          ./header_test.sh
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
