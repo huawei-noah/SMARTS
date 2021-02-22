@@ -224,6 +224,7 @@ def train(task, num_episodes, eval_info, timestep_sec, headless, seed):
     # Iteration value in trainer.py (self._iterations) is the technically the number of episodes
     for i in range(num_episodes):
         results = trainer.train()
+        trainer.log_result(results)  # Evaluation will now display on Tensorboard
 
 
 if __name__ == "__main__":
