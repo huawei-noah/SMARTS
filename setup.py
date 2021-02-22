@@ -78,8 +78,9 @@ setup(
             "torchvision==0.5.0",
         ],
         "dev": [
-            "black==19.10b0",
+            "black==20.8b1",
             "grpcio-tools==1.30.0",
+            "isort==5.7.0",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",

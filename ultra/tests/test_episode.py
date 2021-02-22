@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import unittest
+<<<<<<< HEAD
 from ultra.baselines.ppo.ppo.policy import PPOPolicy
 import gym, ray
 from ultra.utils.episode import episodes
@@ -27,6 +28,15 @@ import numpy as np
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import make
+=======
+
+import gym
+import numpy as np
+import ray
+
+from smarts.zoo.registry import make
+from ultra.utils.episode import episodes
+>>>>>>> develop
 
 AGENT_ID = "001"
 timestep_sec = 0.1
@@ -112,7 +122,11 @@ class EpisodeTest(unittest.TestCase):
         def run_experiment():
             agent, env = prepare_test_env_agent()
             episode_count = 0
+<<<<<<< HEAD
             log_dir = "ultra/tests/logs"
+=======
+            log_dir = "tests/logs"
+>>>>>>> develop
             for episode in episodes(2, etag="Train", dir=log_dir):
                 observations = env.reset()
                 total_step = 0

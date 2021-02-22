@@ -6,8 +6,7 @@ import math
 import gym
 import numpy as np
 
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.agent_interface import OGM, NeighborhoodVehicles
+from smarts.core.agent_interface import OGM, AgentInterface, NeighborhoodVehicles
 from smarts.core.controllers import ActionSpaceType
 
 # init signal values

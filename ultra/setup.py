@@ -20,25 +20,33 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from setuptools import setup, find_packages
-from glob import glob
-from pathlib import Path
 from collections import defaultdict
+from glob import glob
+from os import path
+from pathlib import Path
 
-""" Modified setup.py to include options for changing SMARTS version or set default
-to the latest stable version of SMARTS """
+from setuptools import find_packages, setup
+
+this_dir = path.abspath(path.dirname(__file__))
+with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
+    long_description = f.read()
+
+
+""" Modified setup.py to include option for changing SMARTS version or, by default,
+the latest stable version SMARTS will used """
 setup(
-    name="ultra",
-    description="Unprotected Left Turn using Reinforcement-learning Agents",
-    version="0.1",
-    packages=find_packages(),
+    name="ultra-rl",
+    description="Unprotected Left Turn for Robust Agents",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    version="0.1.1",
+    packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     zip_safe=True,
     python_requires=">=3.7",
     install_requires=[
         "smarts[train]==0.4.6",  # Stable version
         "setuptools>=41.0.0,!=50.0",
-        "ijson",
         "dill",
         "black==19.10b0",
     ],

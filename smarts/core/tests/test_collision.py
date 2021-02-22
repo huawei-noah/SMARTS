@@ -19,29 +19,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import math
 import importlib.resources as pkg_resources
+import math
 import time
 from pathlib import Path
 
 import pytest
-
 from helpers.scenario import temp_scenario
+
 from smarts.core import models
-from smarts.core.agent_interface import (
-    AgentInterface,
-    ActionSpaceType,
-)
+from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.vehicle import VEHICLE_CONFIGS
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.sstudio import types as t
+from smarts.core.vehicle import VEHICLE_CONFIGS
 from smarts.sstudio import gen_scenario
+from smarts.sstudio import types as t
 
 
 @pytest.fixture
@@ -238,11 +235,22 @@ def scenarios():
     with temp_scenario(name="straight", map="maps/straight.net.xml") as scenario_root:
         ego_missions = [
             # missions of laner and buddha
-            t.Mission(t.Route(begin=("west", 0, 30), end=("east", 0, "max"),)),
-            t.Mission(t.Route(begin=("west", 0, 40), end=("east", 0, "max"),)),
+            t.Mission(
+                t.Route(
+                    begin=("west", 0, 30),
+                    end=("east", 0, "max"),
+                )
+            ),
+            t.Mission(
+                t.Route(
+                    begin=("west", 0, 40),
+                    end=("east", 0, "max"),
+                )
+            ),
         ]
         gen_scenario(
-            t.Scenario(ego_missions=ego_missions), output_dir=scenario_root,
+            t.Scenario(ego_missions=ego_missions),
+            output_dir=scenario_root,
         )
 
         yield Scenario.variations_for_all_scenario_roots(
@@ -252,11 +260,19 @@ def scenarios():
 
 @pytest.fixture
 def smarts():
-    laner = AgentInterface(max_episode_steps=1000, action=ActionSpaceType.Lane,)
-    buddha = AgentInterface(max_episode_steps=1000, action=ActionSpaceType.Lane,)
+    laner = AgentInterface(
+        max_episode_steps=1000,
+        action=ActionSpaceType.Lane,
+    )
+    buddha = AgentInterface(
+        max_episode_steps=1000,
+        action=ActionSpaceType.Lane,
+    )
     agents = {AGENT_1: laner, AGENT_2: buddha}
     smarts = SMARTS(
-        agents, traffic_sim=SumoTrafficSimulation(headless=True), envision=None,
+        agents,
+        traffic_sim=SumoTrafficSimulation(headless=True),
+        envision=None,
     )
 
     yield smarts

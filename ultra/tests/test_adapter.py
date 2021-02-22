@@ -19,13 +19,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import unittest, ray
-import numpy as np
+import unittest
+
 import gym
-from ultra.baselines.agent_spec import BaselineAgentSpec
-from ultra.baselines.adapter import BaselineAdapter
+import numpy as np
+import ray
+
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import make
+from ultra.baselines.adapter import BaselineAdapter
+from ultra.baselines.agent_spec import BaselineAgentSpec
 
 AGENT_ID = "001"
 seed = 2

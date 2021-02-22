@@ -14,6 +14,7 @@ def entrypoint(
         "terminal": 0.01,
         "impatience": 0.01,
         "speed": 0.01,
+        "rate": 1,
     },
     debug=False,
     aggressiveness=0,
@@ -29,7 +30,10 @@ def entrypoint(
             max_episode_steps=max_episode_steps,
             agent_behavior=AgentBehavior(aggressiveness=aggressiveness),
         ),
-        agent_params={"gains": gains, "debug": debug,},
+        agent_params={
+            "gains": gains,
+            "debug": debug,
+        },
         agent_builder=OpEnAgent,
     )
 

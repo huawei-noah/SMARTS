@@ -20,22 +20,24 @@
 import importlib.resources as pkg_resources
 import logging
 import os
+import warnings
 from collections import defaultdict
 from typing import List, Sequence
 
 import gltf
 import numpy
 from direct.showbase.ShowBase import ShowBase
-from envision import types as envision_types
-from envision.client import Client as EnvisionClient
 from panda3d.core import ClockObject, NodePath, Shader, loadPrcFileData
 
-import warnings
+from envision import types as envision_types
+from envision.client import Client as EnvisionClient
 
 with warnings.catch_warnings():
     # XXX: Benign warning, seems no other way to "properly" fix
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
     from sklearn.metrics.pairwise import euclidean_distances
+
+from smarts.core.chassis import AckermannChassis, BoxChassis
 
 from . import glsl, models
 from .agent_manager import AgentManager
@@ -812,8 +814,8 @@ class SMARTS(ShowBase):
                 for vehicle in agent_vehicles:
                     vehicle_action = action[vehicle.id] if is_boid_agent else action
 
-                    controller_state = self._vehicle_index.controller_state_for_vehicle_id(
-                        vehicle.id
+                    controller_state = (
+                        self._vehicle_index.controller_state_for_vehicle_id(vehicle.id)
                     )
                     sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
                         vehicle.id
@@ -875,6 +877,10 @@ class SMARTS(ShowBase):
             return
 
         traffic = {}
+        position = {}
+        speed = {}
+        heading = {}
+        lane_ids = {}
         for v in provider_state.vehicles:
             if v.vehicle_id in self._vehicle_index.agent_vehicle_ids():
                 # this is an agent controlled vehicle
@@ -885,9 +891,11 @@ class SMARTS(ShowBase):
 
                 if self._agent_manager.is_ego(agent_id):
                     actor_type = envision_types.TrafficActorType.Agent
-                    mission_route_geometry = self._vehicle_index.sensor_state_for_vehicle_id(
-                        v.vehicle_id
-                    ).mission_planner.route.geometry
+                    mission_route_geometry = (
+                        self._vehicle_index.sensor_state_for_vehicle_id(
+                            v.vehicle_id
+                        ).mission_planner.route.geometry
+                    )
                 else:
                     actor_type = envision_types.TrafficActorType.SocialAgent
                     mission_route_geometry = None
@@ -915,7 +923,9 @@ class SMARTS(ShowBase):
                     heading=v.pose.heading,
                     speed=v.speed,
                     actor_id=envision_types.format_actor_id(
-                        agent_id, v.vehicle_id, is_multi=is_boid_agent,
+                        agent_id,
+                        v.vehicle_id,
+                        is_multi=is_boid_agent,
                     ),
                     events=vehicle_obs.events,
                     waypoint_paths=(vehicle_obs.waypoint_paths or []) + road_waypoints,
@@ -923,6 +933,14 @@ class SMARTS(ShowBase):
                     driven_path=driven_path,
                     mission_route_geometry=mission_route_geometry,
                 )
+                speed[agent_id] = v.speed
+                position[agent_id] = v.pose.position[:2]
+                heading[agent_id] = v.pose.heading
+                if (
+                    len(vehicle_obs.waypoint_paths) > 0
+                    and len(vehicle_obs.waypoint_paths[0]) > 0
+                ):
+                    lane_ids[agent_id] = vehicle_obs.waypoint_paths[0][0].lane_id
             elif v.vehicle_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
@@ -944,6 +962,11 @@ class SMARTS(ShowBase):
             bubbles=bubble_geometry,
             scene_colors=SceneColors.EnvisionColors.value,
             scores=scores,
+            ego_agent_ids=list(self._agent_manager.ego_agent_ids),
+            position=position,
+            speed=speed,
+            heading=heading,
+            lane_ids=lane_ids,
         )
         self._envision.send(state)
 

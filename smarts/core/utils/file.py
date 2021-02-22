@@ -21,6 +21,7 @@ import dataclasses
 import hashlib
 import os
 import shutil
+from contextlib import contextmanager
 
 
 # https://stackoverflow.com/a/2166841
@@ -94,3 +95,17 @@ def smarts_log_dir() -> str:
 
 def make_dir_in_smarts_log_dir(dir):
     return os.path.join(smarts_log_dir(), dir)
+
+
+@contextmanager
+def supress_pkg_resources():
+    import sys
+
+    import pkg_resources
+
+    from smarts.core.utils.invalid import raise_import_error
+
+    pkg_res = sys.modules["pkg_resources"]
+    sys.modules["pkg_resources"] = property(raise_import_error)
+    yield
+    sys.modules["pkg_resources"] = pkg_res

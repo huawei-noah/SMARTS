@@ -6,7 +6,6 @@ from smarts.zoo.registry import register
 from .keep_lane_agent import KeepLaneAgent
 from .non_interactive_agent import NonInteractiveAgent
 
-
 register(
     locator="non-interactive-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(

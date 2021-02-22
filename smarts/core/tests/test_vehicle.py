@@ -25,11 +25,11 @@ import numpy as np
 import pytest
 from direct.showbase.ShowBase import ShowBase
 
+from smarts.core.chassis import BoxChassis
+from smarts.core.coordinates import BoundingBox, Heading, Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.core.coordinates import BoundingBox, Heading, Pose
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
-from smarts.core.chassis import BoxChassis
 
 
 @pytest.fixture
@@ -88,7 +88,8 @@ def provider_vehicle(position, heading, speed):
 
 def test_update_from_traffic_sim(social_vehicle, provider_vehicle):
     social_vehicle.control(
-        pose=provider_vehicle.pose, speed=provider_vehicle.speed,
+        pose=provider_vehicle.pose,
+        speed=provider_vehicle.speed,
     )
 
     sv_position, sv_heading = social_vehicle.pose.as_sumo(
@@ -99,7 +100,11 @@ def test_update_from_traffic_sim(social_vehicle, provider_vehicle):
     )
     assert np.isclose(sv_position, provider_position, rtol=1e-02).all()
 
-    assert math.isclose(sv_heading, provider_heading, rel_tol=1e-05,)
+    assert math.isclose(
+        sv_heading,
+        provider_heading,
+        rel_tol=1e-05,
+    )
     assert social_vehicle.speed == provider_vehicle.speed
 
 

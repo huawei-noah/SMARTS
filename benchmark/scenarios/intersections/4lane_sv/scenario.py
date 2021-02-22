@@ -21,9 +21,8 @@
 # THE SOFTWARE.
 from pathlib import Path
 
-from smarts.sstudio import gen_scenario
 import smarts.sstudio.types as t
-
+from smarts.sstudio import gen_scenario
 
 missions = [
     t.Mission(t.Route(begin=("edge-south-SN", 1, 40), end=("edge-west-EW", 0, 60))),
@@ -93,6 +92,9 @@ traffic = {
 }
 
 gen_scenario(
-    t.Scenario(ego_missions=missions, traffic=traffic,),
+    t.Scenario(
+        ego_missions=missions,
+        traffic=traffic,
+    ),
     output_dir=Path(__file__).parent,
 )

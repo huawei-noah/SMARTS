@@ -19,6 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+import multiprocessing
 import tempfile
 from pathlib import Path
 
@@ -26,12 +28,11 @@ import pytest
 import websocket
 
 from envision.client import Client as Envision
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.agent import AgentSpec, Agent
-
 
 AGENT_ID = "Agent-007"
 NUM_EPISODES = 3
@@ -67,7 +68,7 @@ def scenarios_iterator():
 
 def fake_websocket_app_class():
     # Using a closure instead of a class field to give isolation between tests.
-    sent = []
+    sent = multiprocessing.Queue()
 
     class FakeWebSocketApp:
         """Mocks out the websockets.WebSocketApp to intercept send(...) calls and just
@@ -80,7 +81,7 @@ def fake_websocket_app_class():
             self._on_open = on_open
 
         def send(self, data):
-            sent.append(data)
+            sent.put(data)
             return len(data)
 
         def run_forever(self):
@@ -117,7 +118,7 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
     # Mock WebSocketApp so we can inspect the websocket frames being sent
     FakeWebSocketApp, original_sent_data = fake_websocket_app_class()
     monkeypatch.setattr(websocket, "WebSocketApp", FakeWebSocketApp)
-    assert len(original_sent_data) == 0
+    assert original_sent_data.qsize() == 0
 
     envision = Envision(output_dir=data_replay_path)
     smarts = SMARTS(
@@ -135,15 +136,19 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
 
     jsonl_paths = list(data_replay_run_paths[0].glob("*.jsonl"))
     assert len(jsonl_paths) == 1
-    assert len(original_sent_data) > 0
+    assert original_sent_data.qsize() > 0
 
     # 2. Inspect replay data
 
     # Mock WebSocketApp so we can inspect the websocket frames being sent
     FakeWebSocketApp, new_sent_data = fake_websocket_app_class()
     monkeypatch.setattr(websocket, "WebSocketApp", FakeWebSocketApp)
-    assert len(new_sent_data) == 0
+    assert new_sent_data.qsize() == 0
 
     # Now read data replay
     Envision.read_and_send(jsonl_paths[0], timestep_sec=TIMESTEP_SEC)
-    assert original_sent_data == new_sent_data
+
+    # Verify the new data matches the original data
+    assert original_sent_data.qsize() == new_sent_data.qsize()
+    for _ in range(new_sent_data.qsize()):
+        assert original_sent_data.get() == new_sent_data.get()

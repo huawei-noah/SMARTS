@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
-import grpc
 import logging
 import os
 import pathlib
@@ -27,8 +26,9 @@ import subprocess
 import sys
 from concurrent import futures
 
-from smarts.zoo import manager_pb2_grpc
-from smarts.zoo import manager_servicer
+import grpc
+
+from smarts.zoo import manager_pb2_grpc, manager_servicer
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"manager.py - pid({os.getpid()})")

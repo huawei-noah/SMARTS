@@ -269,8 +269,14 @@ class Sensors:
         near_via_points = []
         hit_via_points = []
         if vehicle.subscribed_to_via_sensor:
-            (near_via_points, hit_via_points,) = vehicle.via_sensor()
-        via_data = Vias(near_via_points=near_via_points, hit_via_points=hit_via_points,)
+            (
+                near_via_points,
+                hit_via_points,
+            ) = vehicle.via_sensor()
+        via_data = Vias(
+            near_via_points=near_via_points,
+            hit_via_points=hit_via_points,
+        )
 
         vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
         distance_travelled = vehicle.trip_meter_sensor(sim)
@@ -477,7 +483,8 @@ class Sensors:
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, lane_id):
         closest_waypoint = sim.scenario.waypoints.closest_waypoint_on_lane(
-            vehicle.pose, lane_id,
+            vehicle.pose,
+            lane_id,
         )
 
         # Check if the vehicle heading is oriented away from the lane heading.
@@ -588,7 +595,12 @@ class CameraSensor(Sensor):
         self._showbase = showbase
 
     def _build_offscreen_camera(
-        self, name: str, mask: int, width: int, height: int, resolution: float,
+        self,
+        name: str,
+        mask: int,
+        width: int,
+        height: int,
+        resolution: float,
     ):
         # setup buffer
         win_props = WindowProperties.size(width, height)
@@ -986,7 +998,9 @@ class WaypointsSensor(Sensor):
         @lru_cache(1)
         def lazy_calculate_waypoints():
             return self._mission_planner.waypoint_paths_at(
-                sim=self._sim, pose=self._vehicle.pose, lookahead=self._lookahead,
+                sim=self._sim,
+                pose=self._vehicle.pose,
+                lookahead=self._lookahead,
             )
 
         if self._mission_planner.mission.task is not None:
@@ -1030,7 +1044,9 @@ class RoadWaypointsSensor(Sensor):
 
     def route_waypoints(self):
         return self._mission_planner.waypoint_paths_at(
-            sim=self._sim, pose=self._vehicle.pose, lookahead=50,
+            sim=self._sim,
+            pose=self._vehicle.pose,
+            lookahead=50,
         )
 
     def paths_for_lane(self, lane, overflow_offset=None):
@@ -1056,7 +1072,9 @@ class RoadWaypointsSensor(Sensor):
 
             wps_to_lookahead = self._horizon * 2
             paths = self._sim.waypoints.waypoint_paths_on_lane_at(
-                point=wp_start, lane_id=lane.getID(), lookahead=wps_to_lookahead,
+                point=wp_start,
+                lane_id=lane.getID(),
+                lookahead=wps_to_lookahead,
             )
             return paths
 
