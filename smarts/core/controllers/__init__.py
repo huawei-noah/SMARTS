@@ -22,17 +22,17 @@ from functools import partial
 
 import numpy as np
 
-from smarts.core.controllers.trajectory_tracking_controller import (
-    TrajectoryTrackingControllerState,
-    TrajectoryTrackingController,
+from smarts.core.controllers.actuator_dynamic_controller import (
+    ActuatorDynamicController,
+    ActuatorDynamicControllerState,
 )
 from smarts.core.controllers.lane_following_controller import (
-    LaneFollowingControllerState,
     LaneFollowingController,
+    LaneFollowingControllerState,
 )
-from smarts.core.controllers.actuator_dynamic_controller import (
-    ActuatorDynamicControllerState,
-    ActuatorDynamicController,
+from smarts.core.controllers.trajectory_tracking_controller import (
+    TrajectoryTrackingController,
+    TrajectoryTrackingControllerState,
 )
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
@@ -77,7 +77,10 @@ class Controllers:
             )
         elif action_space == ActionSpaceType.Trajectory:
             TrajectoryTrackingController.perform_trajectory_tracking_PD(
-                action, vehicle, controller_state, dt_sec=sim.timestep_sec,
+                action,
+                vehicle,
+                controller_state,
+                dt_sec=sim.timestep_sec,
             )
         elif action_space == ActionSpaceType.MPC:
             TrajectoryTrackingController.perform_trajectory_tracking_MPC(

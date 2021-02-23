@@ -19,8 +19,8 @@
 # THE SOFTWARE.
 import json
 import logging
-import threading
 import multiprocessing
+import threading
 from collections import defaultdict
 
 import numpy as np

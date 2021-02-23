@@ -19,66 +19,72 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import unittest, ray, os, sys
-import gym
 import json
+import os
 import shutil
+import sys
+import unittest
+
+import gym
+import ray
+
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
-from ultra.train import train
 from ultra.baselines.sac.sac.policy import SACPolicy
+from ultra.train import train
 
 AGENT_ID = "001"
 seed = 2
 
 
 class TrainTest(unittest.TestCase):
-    # @unittest.skip
-    # def test_train_cli(self):
-    #     try:
-    #         os.system(
-    #             "python ultra/train.py --task 00 --level easy --episodes 1 --log-dir ultra/tests/logs"
-    #         )
-    #     except Exception as err:
-    #         print(err)
-    #         self.assertTrue(False)
+    def test_train_cli(self):
+        log_dir = "tests/logs"
+        try:
+            os.system(
+                "python ultra/train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --log-dir tests/logs"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
 
-    # def test_locate_log_directory(self):
-    #     log_dir = "ultra/tests/logs"
-    #     try:
-    #         os.system(
-    #             f"python ultra/train.py --task 00 --level easy --policy ppo --episodes 1 --log-dir {log_dir}"
-    #         )
-    #     except Exception as err:
-    #         print(err)
+        if os.path.exists(log_dir):
+            self.assertTrue(True)
 
-    #     if os.path.exists(log_dir):
-    #         self.assertTrue(True)
+    def test_train_single_agent(self):
+        if os.path.exists("tests/logs"):
+            shutil.rmtree("tests/logs")
 
-    # def test_train_single_agent(self):
-    #     seed = 2
-    #     policy_class = "ultra.baselines.sac:sac-v0"
+        seed = 2
+        policy_class = "ultra.baselines.sac:sac-v0"
 
-    #     ray.init(ignore_reinit_error=True)
-    #     try:
-    #         ray.get(
-    #             train.remote(
-    #                 task=("00", "easy"),
-    #                 policy_class=policy_class,
-    #                 num_episodes=1,
-    #                 eval_info={"eval_rate": 1000, "eval_episodes": 2,},
-    #                 timestep_sec=0.1,
-    #                 headless=True,
-    #                 seed=2,
-    #                 log_dir="ultra/tests/logs",
-    #             )
-    #         )
-    #         self.assertTrue(True)
-    #         ray.shutdown()
-    #     except ray.exceptions.WorkerCrashedError as err:
-    #         print(err)
-    #         self.assertTrue(False)
-    #         ray.shutdown()
+        ray.shutdown()
+        try:
+            ray.init(ignore_reinit_error=True)
+            ray.wait(
+                [
+                    train.remote(
+                        scenario_info=("00", "easy"),
+                        policy_class=policy_class,
+                        num_episodes=1,
+                        max_episode_steps=2,
+                        eval_info={
+                            "eval_rate": 1000,
+                            "eval_episodes": 2,
+                        },
+                        timestep_sec=0.1,
+                        headless=True,
+                        seed=2,
+                        log_dir="ultra/tests/logs",
+                    )
+                ]
+            )
+            ray.shutdown()
+            self.assertTrue(True)
+        except ray.exceptions.WorkerCrashedError as err:
+            print(err)
+            self.assertTrue(False)
+            ray.shutdown()
 
     def test_check_agents_from_pool(self):
         seed = 2
@@ -108,7 +114,5 @@ class TrainTest(unittest.TestCase):
         self.assertIsInstance(agent, SACPolicy)
 
     def tearDown(self):
-        if os.path.exists("ultra/tests/logs"):
-            shutil.rmtree("ultra/tests/logs")
-
-        os.system("pkill -9 ray")
+        if os.path.exists("tests/logs"):
+            shutil.rmtree("tests/logs")

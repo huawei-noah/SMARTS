@@ -27,8 +27,8 @@ import numpy as np
 import tableprint as tp
 
 from smarts.core import gen_id
-from smarts.core.utils.string import truncate
 from smarts.core.utils.cache import cache, clear_cache
+from smarts.core.utils.string import truncate
 
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
@@ -332,7 +332,8 @@ class VehicleIndex:
         self._2id_to_id[agent_id] = original_agent_id
 
         self._sensor_states[vehicle_id] = SensorState(
-            agent_interface.max_episode_steps, mission_planner=mission_planner,
+            agent_interface.max_episode_steps,
+            mission_planner=mission_planner,
         )
 
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
@@ -460,7 +461,8 @@ class VehicleIndex:
             sim, vehicle, agent_interface, mission_planner
         )
         self._sensor_states[vehicle_id] = SensorState(
-            agent_interface.max_episode_steps, mission_planner=mission_planner,
+            agent_interface.max_episode_steps,
+            mission_planner=mission_planner,
         )
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
             agent_interface.action_space, vehicle.pose, sim
@@ -560,7 +562,8 @@ class VehicleIndex:
         )
 
         sensor_state = SensorState(
-            agent_interface.max_episode_steps, mission_planner=mission_planner,
+            agent_interface.max_episode_steps,
+            mission_planner=mission_planner,
         )
 
         controller_state = ControllerState.from_action_space(

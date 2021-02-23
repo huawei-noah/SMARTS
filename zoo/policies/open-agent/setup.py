@@ -1,13 +1,14 @@
-from setuptools import setup
 from pathlib import Path
 
 from open_agent.version import VERSION
+from setuptools import setup
 
 try:
-    from open_agent.agent import compile_solver
-    import subprocess
-    import shutil
     import glob
+    import shutil
+    import subprocess
+
+    from open_agent.agent import compile_solver
 
     compile_solver("./build")
 

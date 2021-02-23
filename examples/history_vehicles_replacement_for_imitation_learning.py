@@ -1,14 +1,12 @@
 import logging
 
-from smarts.core.smarts import SMARTS
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.scenario import Scenario
 from envision.client import Client as Envision
-
 from examples import default_argument_parser
-
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.scenario import Scenario
+from smarts.core.smarts import SMARTS
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 logging.basicConfig(level=logging.INFO)
 
@@ -62,5 +60,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(
-        scenarios=args.scenarios, headless=args.headless, seed=args.seed,
+        scenarios=args.scenarios,
+        headless=args.headless,
+        seed=args.seed,
     )

@@ -5,12 +5,11 @@ import pickle
 from pathlib import Path
 
 import gym
+import tensorflow as tf
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy as LoadPolicy
 from ray.rllib.models import ModelCatalog
 
 from smarts.core.agent import Agent
-
-import tensorflow as tf
 
 
 class RLAgent(Agent):

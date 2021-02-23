@@ -21,10 +21,10 @@ from typing import Set
 
 import numpy as np
 
-from .provider import ProviderState
-from .controllers import ActionSpaceType
-from .coordinates import Pose, Heading
 from .bezier_motion_planner import BezierMotionPlanner
+from .controllers import ActionSpaceType
+from .coordinates import Heading, Pose
+from .provider import ProviderState
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -90,7 +90,8 @@ class MotionPlannerProvider:
                     vehicle_id=v_id,
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center(
-                        [*poses[idx][:2], 0], Heading(poses[idx][2]),
+                        [*poses[idx][:2], 0],
+                        Heading(poses[idx][2]),
                     ),
                     dimensions=VEHICLE_CONFIGS[vehicle_type].dimensions,
                     speed=speeds[idx],

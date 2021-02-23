@@ -1,17 +1,18 @@
 import importlib.resources as pkg_resources
 
+import rl_agent
+
 from smarts.core.agent import AgentSpec
+from smarts.zoo.registry import register
+
+from .agent import RLAgent
 from .lane_space import (
     ACTION_SPACE,
     OBSERVATION_SPACE,
-    get_action_adapter,
     agent_interface,
+    get_action_adapter,
     get_observation_adapter,
 )
-from .agent import RLAgent
-from smarts.zoo.registry import register
-import rl_agent
-
 
 VERSION = "0.1.1"
 
@@ -38,7 +39,8 @@ def entrypoint(
                 intersection_crash_ttc_threshold=intersection_crash_ttc_threshold,
             ),
             action_adapter=get_action_adapter(
-                target_speed=target_speed, lane_change_speed=lane_change_speed,
+                target_speed=target_speed,
+                lane_change_speed=lane_change_speed,
             ),
             agent_builder=lambda: RLAgent(
                 load_path=str((checkpoint_path / "checkpoint").absolute()),

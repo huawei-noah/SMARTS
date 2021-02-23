@@ -23,11 +23,11 @@ from typing import Sequence
 import gym
 
 import smarts
+from envision.client import Client as Envision
+from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.scenario import Scenario
 from smarts.core.utils.visdom_client import VisdomClient
-from envision.client import Client as Envision
 
 
 class HiWayEnv(gym.Env):
@@ -93,7 +93,9 @@ class HiWayEnv(gym.Env):
         self._dones_registered = 0
 
         self._scenarios_iterator = Scenario.scenario_variations(
-            scenarios, list(agent_specs.keys()), shuffle_scenarios,
+            scenarios,
+            list(agent_specs.keys()),
+            shuffle_scenarios,
         )
 
         agent_interfaces = {
