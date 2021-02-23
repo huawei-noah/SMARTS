@@ -22,7 +22,10 @@ class BaselineStatePreprocessor(StatePreprocessor):
     }
 
     def __init__(
-        self, social_vehicle_config, observation_waypoints_lookahead, action_size,
+        self,
+        social_vehicle_config,
+        observation_waypoints_lookahead,
+        action_size,
     ):
         self._state_description = {
             "images": {},
@@ -89,7 +92,8 @@ class BaselineStatePreprocessor(StatePreprocessor):
             for key in self._state_description["low_dim_states"]
         ]
         low_dim_states = [
-            value if isinstance(value, collections.abc.Iterable)
+            value
+            if isinstance(value, collections.abc.Iterable)
             else np.asarray([value]).astype(np.float32)
             for value in normalized
         ]
@@ -119,7 +123,9 @@ class BaselineStatePreprocessor(StatePreprocessor):
         social_vehicles = torch.empty(0, 0)
 
         if social_vehicle_dimension:
-            social_vehicles = torch.from_numpy(np.asarray(state["social_vehicles"])).float()
+            social_vehicles = torch.from_numpy(
+                np.asarray(state["social_vehicles"])
+            ).float()
             social_vehicles = social_vehicles.reshape((-1, social_vehicle_dimension))
 
         # TODO Conver to tensor for the newtork is needed
@@ -146,7 +152,9 @@ class BaselineStatePreprocessor(StatePreprocessor):
 
         # Identify the path the ego is following.
         ego_goal_path = self.extract_ego_goal_path(
-            ego_goal=ego_goal, ego_waypoints=ego_waypoints, ego_start=ego_start,
+            ego_goal=ego_goal,
+            ego_waypoints=ego_waypoints,
+            ego_start=ego_start,
         )
 
         # Get the closest waypoint to the ego.

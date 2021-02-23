@@ -66,7 +66,7 @@ class BaselineAdapter:
         self.state_preprocessor = BaselineStatePreprocessor(
             social_vehicle_config=self.social_vehicle_config,
             observation_waypoints_lookahead=self.observation_num_lookahead,
-            action_size=2
+            action_size=2,
         )
 
         self.social_feature_encoder_class = self.social_vehicle_encoder[
@@ -75,7 +75,7 @@ class BaselineAdapter:
         self.social_feature_encoder_params = self.social_vehicle_encoder[
             "social_feature_encoder_params"
         ]
-    
+
         self.state_size = self.state_preprocessor.num_low_dim_states
         if self.social_feature_encoder_class:
             self.state_size += self.social_feature_encoder_class(
