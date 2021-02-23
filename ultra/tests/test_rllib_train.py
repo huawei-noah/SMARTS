@@ -28,6 +28,11 @@ seed = 2
 
 
 class RLlibTrainTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(self):
+        if os.path.exists("tests/rllib_results"):
+            shutil.rmtree("tests/rllib_results")
+
     def test_rllib_train_cli(self):
         log_dir = "tests/rllib_results"
         try:
