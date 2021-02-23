@@ -34,6 +34,7 @@ class RLlibTrainTest(unittest.TestCase):
             shutil.rmtree("tests/rllib_results")
 
     def test_rllib_train_cli(self):
+        ray.shutdown()
         log_dir = "tests/rllib_results"
         try:
             os.system(
@@ -51,6 +52,7 @@ class RLlibTrainTest(unittest.TestCase):
     def test_rllib_train_method(self):
         log_dir = "tests/rllib_results"
         try:
+            ray.shutdown()
             ray.init()
             train(
                 task=("00", "easy"),
