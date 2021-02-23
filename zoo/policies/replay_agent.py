@@ -41,6 +41,9 @@ class ReplayAgent(Agent):
             base_action = self._base_agent.act(obs)
             try:
                 action = pickle.load(self._file)
+                assert action == base_action
+            except AssertionError as e:
+                raise e
             except Exception:
                 action = base_action
 

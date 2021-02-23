@@ -32,7 +32,7 @@ def replay_entrypoint(
     save_directory,
     id,
     wrapped_agent_locator,
-    read=False,
+    read=True,
 ):
     from .replay_agent import ReplayAgent
 
