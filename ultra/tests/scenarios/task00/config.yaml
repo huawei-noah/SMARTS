@@ -28,9 +28,6 @@ levels:
       intersection_types:
         2lane_t:
            percent: 1
-<<<<<<< HEAD
-           specs: [[70kmh,no-traffic,1]]
-=======
            specs: [[70kmh,no-traffic,1]]
   # Used in evaluation test
   eval_test:
@@ -70,4 +67,3 @@ levels:
                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
->>>>>>> develop

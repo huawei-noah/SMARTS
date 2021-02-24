@@ -22,7 +22,7 @@
 import math
 
 
-class LogInfo:
+class RLlibLogInfo:
     def __init__(self):
         self.data = {
             "env_score": 0,
