@@ -27,6 +27,9 @@ jobs:
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -e .
+          pip uninstall smarts
+          pip install smarts==0.4.11
+          pip install ray==1.0.1.post1
       - name: Run ultra tests
         run: |
           cd ultra
@@ -34,10 +37,6 @@ jobs:
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/ \
           --ignore=./tests/test_adapter.py 
-      - name: Run Header test
-        run : |
-          cd ultra
-          ./header_test.sh
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
