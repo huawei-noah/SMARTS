@@ -29,7 +29,7 @@ seed = 2
 
 class RLlibTrainTest(unittest.TestCase):
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         if os.path.exists("tests/rllib_results"):
             shutil.rmtree("tests/rllib_results")
 
