@@ -27,8 +27,6 @@ jobs:
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -e .
-          pip uninstall smarts
-          pip install smarts==0.4.11
           pip install ray==1.0.1.post1
       - name: Run ultra tests
         run: |
