@@ -19,6 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import math
+import numpy as np
+import gym
+import cv2
+from scipy.spatial import distance
+from benchmark.common import ActionAdapter
+
 from smarts.core.agent_interface import (
     AgentInterface,
     AgentType,
@@ -26,6 +33,7 @@ from smarts.core.agent_interface import (
     Waypoints,
     NeighborhoodVehicles,
 )
+
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
@@ -37,11 +45,6 @@ from ultra.utils.common import (
     get_path_to_goal,
     rotate2d_vector,
 )
-
-import numpy as np
-from scipy.spatial import distance
-import math
-from benchmark.common import ActionAdapter
 
 num_lookahead = 100
 
@@ -65,6 +68,7 @@ class UltraGym(UltraEnv):
         adapter = GymAdapter()
         if action_type == "discrete":
             action_type = ActionSpaceType.Lane
+            self.action_space = gym.spaces.Discrete(4)
         elif action_type == "continuous":
             action_type = ActionSpaceType.Continuous
 
@@ -136,7 +140,21 @@ class GymAdapter:
             waypoint_paths=env_observation.waypoint_paths,
             events=env_observation.events,
         )
-        return env_observation.top_down_rgb.data
+        def rgb2gray(rgb):
+            r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+            gray = 0.2125 * r + 0.7154 * g + 0.0721 * b
+
+            return gray
+
+        rgb_ndarray = env_observation.top_down_rgb.data
+        gray_scale = rgb2gray(rgb_ndarray)
+        gray_scale = (
+            cv2.resize(
+                rgb2gray(rgb_ndarray), rgb_ndarray.shape[0:2], interpolation=cv2.INTER_CUBIC
+            )
+            / 255.0
+        )
+        return gray_scale
 
     def reward_adapter(self, observation, reward):
         env_reward = reward
