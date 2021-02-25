@@ -27,8 +27,8 @@ jobs:
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -e .
-          pip install ray==1.0.1.post1
-      - name: Run ultra tests
+          pip uninstall -y pytest-notebook
+      - name: Run ULTRA tests
         run: |
           cd ultra
           . .venv/bin/activate
@@ -59,6 +59,7 @@ jobs:
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager -e .
+          pip uninstall -y pytest-notebook
       - name: Run test
         run: |
           cd ultra
@@ -89,6 +90,7 @@ jobs:
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
+          pip uninstall -y pytest-notebook
           python setup.py bdist_wheel
           cd dist
           pip install $(ls . | grep ultra)
