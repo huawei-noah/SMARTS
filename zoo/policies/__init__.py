@@ -32,11 +32,12 @@ def replay_entrypoint(
     save_directory,
     id,
     wrapped_agent_locator,
-    read=True,
+    wrapped_agent_params={},
+    read=False,
 ):
     from .replay_agent import ReplayAgent
 
-    internal_spec = make(wrapped_agent_locator)
+    internal_spec = make(wrapped_agent_locator, **wrapped_agent_params)
     global social_index
     spec = AgentSpec(
         interface=internal_spec.interface,
@@ -44,6 +45,7 @@ def replay_entrypoint(
             "save_directory": save_directory,
             "id": f"{id}_{social_index}",
             "internal_spec": internal_spec,
+            "wrapped_agent_params": wrapped_agent_params,
             "read": read,
         },
         agent_builder=ReplayAgent,
