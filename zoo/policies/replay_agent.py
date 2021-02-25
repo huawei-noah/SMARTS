@@ -9,6 +9,7 @@ from smarts.core.agent import Agent, AgentSpec
 
 agent_index = 0
 
+
 class ReplayAgent(Agent):
     """A helper agent that wraps another agent to allow replay of the agent actions"""
 
