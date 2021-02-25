@@ -60,10 +60,11 @@ class BaselineAgentSpec(AgentSpec):
         task=None,
         max_episode_steps=1200,
         experiment_dir=None,
+        agent_id="",
     ):
         if experiment_dir:
-            print(f"LOADING SPEC from {experiment_dir}/spec.pkl")
-            with open(f"{experiment_dir}/spec.pkl", "rb") as input:
+            print(f"LOADING SPEC from {experiment_dir}/spec{agent_id}.pkl")
+            with open(f"{experiment_dir}/spec{agent_id}.pkl", "rb") as input:
                 spec = dill.load(input)
                 new_spec = AgentSpec(
                     interface=spec.interface,

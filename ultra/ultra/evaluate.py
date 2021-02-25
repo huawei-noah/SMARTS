@@ -114,6 +114,7 @@ def evaluate(
         checkpoint_dir=checkpoint_dir,
         experiment_dir=experiment_dir,
         max_episode_steps=max_episode_steps,
+        agent_id=agent_id,
     )
 
     env = gym.make(

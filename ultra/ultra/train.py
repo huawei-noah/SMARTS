@@ -130,8 +130,9 @@ def train(
                 finished = True
                 break
 
-            # Perform the evaluation check for each agent.
-            for agent_id, agent in agents.items():
+            # Perform the evaluation check if this is a single agent experiment.
+            if len(agents) == 1:
+                agent_id, agent = list(agents.items())[0]
                 evaluation_check(
                     agent=agent,
                     agent_id=agent_id,
