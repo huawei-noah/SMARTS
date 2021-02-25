@@ -27,14 +27,15 @@ jobs:
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -e .
-          pip uninstall -y pytest-notebook
       - name: Run ULTRA tests
         run: |
           cd ultra
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/ \
-          --ignore=./tests/test_adapter.py 
+          --ignore=./tests/test_adapter.py \
+          --ignore=./tests/test_evaluate.py \
+          --ignore=./tests/test_rllib_train.py
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
@@ -59,7 +60,6 @@ jobs:
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager -e .
-          pip uninstall -y pytest-notebook
       - name: Run test
         run: |
           cd ultra
@@ -90,7 +90,6 @@ jobs:
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
-          pip uninstall -y pytest-notebook
           python setup.py bdist_wheel
           cd dist
           pip install $(ls . | grep ultra)
