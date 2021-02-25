@@ -34,7 +34,7 @@ from ultra.utils.common import (
 )
 from ultra.baselines.common.yaml_loader import load_yaml
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.state_preprocessor import *
+from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class PPOPolicy(Agent):
@@ -90,7 +90,7 @@ class PPOPolicy(Agent):
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.state_description = get_state_description(
+        self.state_description = BaselineStatePreprocessor.get_state_description(
             policy_params["social_vehicles"],
             policy_params["observation_num_lookahead"],
             self.action_size,

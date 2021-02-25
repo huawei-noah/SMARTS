@@ -51,6 +51,10 @@ class StatePreprocessor:
         raise NotImplementedError("State preprocessing method is not defined.")
 
     @staticmethod
+    def get_state_description(*args, **kwargs):
+        raise NotImplementedError("State description is not defined.")
+
+    @staticmethod
     def get_social_vehicles_representation(
         social_vehicles,
         social_vehicle_config,

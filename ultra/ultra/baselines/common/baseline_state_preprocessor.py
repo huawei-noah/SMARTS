@@ -48,7 +48,15 @@ class BaselineStatePreprocessor(StatePreprocessor):
         observation_waypoints_lookahead,
         action_size,
     ):
-        self._state_description = {
+        self._state_description = self.get_state_description(
+            social_vehicle_config, observation_waypoints_lookahead, action_size
+        )
+
+    @staticmethod
+    def get_state_description(
+        social_vehicle_config, observation_waypoints_lookahead, action_size
+    ):
+        return {
             "images": {},
             "low_dim_states": {
                 "speed": 1,
