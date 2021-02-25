@@ -27,5 +27,6 @@ register(
 )
 
 register(
-    id="ultragym-v0", entry_point="ultra.env.ultra_gym:UltraGym",
+    id="ultragym-v0",
+    entry_point="ultra.env.ultra_gym:UltraGym",
 )

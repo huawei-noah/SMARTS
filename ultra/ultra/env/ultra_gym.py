@@ -48,17 +48,19 @@ from ultra.utils.common import (
 
 num_lookahead = 100
 
+
 class UltraGym(UltraEnv):
-    def __init__(self,
-                 max_episode_steps,
-                 action_type,
-                 scenario_info,
-                 headless,
-                 timestep_sec,
-                 seed,
-                 eval_mode=False,
-                 ordered_scenarios=False,
-                 ):
+    def __init__(
+        self,
+        max_episode_steps,
+        action_type,
+        scenario_info,
+        headless,
+        timestep_sec,
+        seed,
+        eval_mode=False,
+        ordered_scenarios=False,
+    ):
 
         self.timestep_sec = timestep_sec
         self.headless = headless
@@ -83,7 +85,7 @@ class UltraGym(UltraEnv):
             ),
             observation_adapter=adapter.observation_adapter,
             reward_adapter=adapter.reward_adapter,
-            action_adapter=ActionAdapter.from_type(action_type)
+            action_adapter=ActionAdapter.from_type(action_type),
         )
 
         super().__init__(
@@ -93,6 +95,7 @@ class UltraGym(UltraEnv):
             timestep_sec=timestep_sec,
             seed=seed,
         )
+
 
 class GymAdapter:
     def __init__(self):
@@ -140,8 +143,9 @@ class GymAdapter:
             waypoint_paths=env_observation.waypoint_paths,
             events=env_observation.events,
         )
+
         def rgb2gray(rgb):
-            r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+            r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
             gray = 0.2125 * r + 0.7154 * g + 0.0721 * b
 
             return gray
@@ -150,7 +154,9 @@ class GymAdapter:
         gray_scale = rgb2gray(rgb_ndarray)
         gray_scale = (
             cv2.resize(
-                rgb2gray(rgb_ndarray), rgb_ndarray.shape[0:2], interpolation=cv2.INTER_CUBIC
+                rgb2gray(rgb_ndarray),
+                rgb_ndarray.shape[0:2],
+                interpolation=cv2.INTER_CUBIC,
             )
             / 255.0
         )
