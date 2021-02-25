@@ -25,7 +25,24 @@ register(
     ),
 )
 
+
+def klws_entrypoint(speed):
+    from .keep_left_with_speed_agent import KeepLeftWithSpeedAgent
+
+    return AgentSpec(
+        interface=AgentInterface.from_type(
+            AgentType.LanerWithSpeed, max_episode_steps=20000
+        ),
+        agent_params={"speed": speed * 0.01},
+        agent_builder=KeepLeftWithSpeedAgent,
+    )
+
+
+register(locator="keep-left-with-speed-agent-v0", entry_point=klws_entrypoint)
+
 social_index = 0
+replay_save_dir = "./replay"
+replay_read = False
 
 
 def replay_entrypoint(
@@ -39,14 +56,16 @@ def replay_entrypoint(
 
     internal_spec = make(wrapped_agent_locator, **wrapped_agent_params)
     global social_index
+    global replay_save_dir
+    global replay_read
     spec = AgentSpec(
         interface=internal_spec.interface,
         agent_params={
-            "save_directory": save_directory,
+            "save_directory": replay_save_dir,
             "id": f"{id}_{social_index}",
             "internal_spec": internal_spec,
             "wrapped_agent_params": wrapped_agent_params,
-            "read": read,
+            "read": replay_read,
         },
         agent_builder=ReplayAgent,
     )
