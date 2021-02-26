@@ -57,7 +57,6 @@ class BaselineStatePreprocessor(StatePreprocessor):
         social_vehicle_config, observation_waypoints_lookahead, action_size
     ):
         return {
-            "images": {},
             "low_dim_states": {
                 "speed": 1,
                 "distance_from_center": 1,
@@ -86,21 +85,6 @@ class BaselineStatePreprocessor(StatePreprocessor):
     ):
         state = self._adapt_observation_for_baseline(state)
 
-        # images = {}
-        # for k in state_description["images"]:
-        #     image = torch.from_numpy(state[k])
-        #     image = image.unsqueeze(0) if unsqueeze else image
-        #     image = image.to(device) if device else image
-        #     image = normalize_im(image) if normalize else image
-        #     images[k] = image
-
-        # if "action" in state:
-        #     state["action"] = convert_action_func(state["action"])
-
-        # -------------------------------------
-        # filter lookaheads from goal_path
-        # print('>>>>>>', state['steering'], len(state['steering']))
-
         # Obtain the next waypoints.
         _, lookahead_waypoints = self.extract_closest_waypoint(
             ego_goal_path=state["goal_path"],
@@ -110,12 +94,7 @@ class BaselineStatePreprocessor(StatePreprocessor):
         )
         state["waypoints_lookahead"] = np.hstack(lookahead_waypoints)
 
-        # -------------------------------------
-        # keep prev_action
-        # state["action"] = prev_action
-
-        # -------------------------------------
-        # normalize states and concat
+        # Normalize states and concatenate.
         normalized = [
             self._normalize(key, state[key])
             for key in self._state_description["low_dim_states"]
@@ -130,10 +109,6 @@ class BaselineStatePreprocessor(StatePreprocessor):
             [torch.from_numpy(e).float() for e in low_dim_states], dim=-1
         )
 
-        # -------------------------------------
-        # apply social vehicle encoder
-        # only process if state is not encoded already
-
         # Apply the social vehicle encoder (if applicable).
         state["social_vehicles"] = (
             self.get_social_vehicles_representation(
@@ -147,25 +122,19 @@ class BaselineStatePreprocessor(StatePreprocessor):
             else []
         )
 
-        # check if any social capacity is 0
+        # Check if any social capacity is 0.
         social_vehicle_dimension = self._state_description["social_vehicles"]
         social_vehicles = torch.empty(0, 0)
-
         if social_vehicle_dimension:
             social_vehicles = torch.from_numpy(
                 np.asarray(state["social_vehicles"])
             ).float()
             social_vehicles = social_vehicles.reshape((-1, social_vehicle_dimension))
 
-        # TODO Conver to tensor for the newtork is needed
         out = {
-            # "images": images,
             "low_dim_states": low_dim_states.numpy(),
             "social_vehicles": social_vehicles.numpy(),
         }
-        # print(out["low_dim_states"].shape, type(out["low_dim_states"]))
-        # print(out["social_vehicles"].shape, type(out["social_vehicles"]))
-        # print('SHAPES ^^^^^^^^^^^^')
         return out
 
     def _adapt_observation_for_baseline(self, state):

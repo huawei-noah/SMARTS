@@ -95,7 +95,6 @@ class BaselineAdapter:
             social_vehicle_shape = self.social_capacity * self.num_social_features
         return gym.spaces.Dict(
             {
-                # "images": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
                 "low_dim_states": gym.spaces.Box(
                     low=-1e10,
                     high=1e10,
