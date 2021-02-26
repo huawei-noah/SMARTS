@@ -34,6 +34,7 @@ class TrafficHistoryProvider:
         self.start_time_offset = 0
 
     def set_start_time(self, start_time: float):
+        assert start_time >= 0, "start_time should be positive"
         self.start_time_offset = start_time
 
     def setup(self, scenario) -> ProviderState:
@@ -73,12 +74,13 @@ class TrafficHistoryProvider:
         if (
             not self._current_traffic_history
             or timestamp is None
-            or str(round(timestamp + self.start_time_offset, 1))
-            not in self._current_traffic_history
         ):
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
         time_with_offset = round(timestamp + self.start_time_offset, 1)
+        if time_with_offset not in self._current_traffic_history:
+            return ProviderState(vehicles=[], traffic_light_systems=[])
+
         vehicle_type = "passenger"
         states = ProviderState(
             vehicles=[

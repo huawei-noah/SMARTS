@@ -1,4 +1,5 @@
 import logging
+from dataclasses import replace
 
 from smarts.core.smarts import SMARTS
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -44,11 +45,7 @@ def main(scenarios, headless, seed):
 
             smarts.switch_ego_agent({agent_id: agent_spec.interface})
             smarts.history_set_start_elapsed_time(mission.start_time)
-            modified_mission = Mission(
-                goal=agent_missions[agent_id].goal,
-                start_time=0.0,
-                start=agent_missions[agent_id].start,
-            )
+            modified_mission = replace(mission, start_time=0.0)
             scenario.set_ego_missions({agent_id: modified_mission})
             observations = smarts.reset(scenario)
 
