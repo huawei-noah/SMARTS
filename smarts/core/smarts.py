@@ -651,6 +651,11 @@ class SMARTS(ShowBase):
         # TODO: It's inconsistent that pybullet is not here
         return self._providers
 
+    def get_provider_by_type(self, requested_type):
+        for provider in self._providers:
+            if isinstance(provider, requested_type):
+                return provider
+
     def _setup_providers(self, scenario) -> ProviderState:
         provider_state = ProviderState()
         for provider in self.providers:
