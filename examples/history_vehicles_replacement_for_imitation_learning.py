@@ -8,6 +8,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Mission, Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.traffic_history_provider import TrafficHistoryProvider
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,7 +39,11 @@ def main(scenarios, headless, seed):
             agent = agent_spec.build_agent()
 
             smarts.switch_ego_agent({agent_id: agent_spec.interface})
-            smarts.history_set_start_elapsed_time(mission.start_time)
+            # required: find traffic_history_provider and set time offset
+            for provider in smarts.providers:
+                if provider is TrafficHistoryProvider:
+                    provider.set_start_time(mission.start_time)
+
             modified_mission = replace(mission, start_time=0.0)
             scenario.set_ego_missions({agent_id: modified_mission})
             observations = smarts.reset(scenario)

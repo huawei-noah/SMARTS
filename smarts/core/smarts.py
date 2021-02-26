@@ -479,10 +479,6 @@ class SMARTS(ShowBase):
     def observe_from(self, vehicle_ids):
         return self._agent_manager.observe_from(self, vehicle_ids)
 
-    def history_set_start_elapsed_time(self, start_time: float):
-        """Set the time off set for traffic_history provider"""
-        self._traffic_history_provider.set_start_time(start_time)
-
     @property
     def road_stiffness(self):
         return self._bullet_client.getDynamicsInfo(self._ground_bullet_id, -1)[9]

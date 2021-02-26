@@ -74,7 +74,7 @@ class TrafficHistoryProvider:
         if not self._current_traffic_history or timestamp is None:
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
-        time_with_offset = round(timestamp + self.start_time_offset, 1)
+        time_with_offset = str(round(timestamp + self.start_time_offset, 1))
         if time_with_offset not in self._current_traffic_history:
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
@@ -111,7 +111,7 @@ class TrafficHistoryProvider:
                     source="HISTORY",
                 )
                 for v_id, vehicle_state in self._current_traffic_history[
-                    str(time_with_offset)
+                    time_with_offset
                 ].items()
                 if v_id not in self.replaced_vehicle_ids
             ],
