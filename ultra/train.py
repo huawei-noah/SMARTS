@@ -19,34 +19,54 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, sys
 import json
 import os
-from ultra.utils.ray import default_ray_kwargs
+import sys
 
+from ultra.utils.ray import default_ray_kwargs
+# from multiprocessing import Manager, Process
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
+import argparse
+import pickle
 import time
-import psutil, pickle, dill
-import gym, ray, torch, argparse
+from ray.experimental.queue import Queue
+import dill
+import gym
+import psutil
+import ray
+import torch
+
 from smarts.zoo.registry import make
+from ultra.evaluate import Evaluation
 from ultra.utils.episode import episodes
-from ultra.evaluate import evaluation_check
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
+procs = []
+from io import BytesIO
+
+evaluation = None
+ray.init()
+
+eval_queue=Queue()
+result_queue=Queue()
+
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-@ray.remote(num_gpus=num_gpus / 2)
+@ray.remote(num_gpus=num_gpus / 2, num_cpus=2)
 def train(
     scenario_info,
     num_episodes,
+    max_episode_steps,
     policy_class,
     eval_info,
     timestep_sec,
     headless,
     seed,
     log_dir,
+    eval_queue,
+    result_queue
 ):
     torch.set_num_threads(1)
     total_step = 0
@@ -54,9 +74,9 @@ def train(
 
     AGENT_ID = "007"
 
-    spec = make(locator=policy_class)
+    spec = make(locator=policy_class, max_episode_steps=max_episode_steps)
     env = gym.make(
-        "ultra.env:ultra-v0",
+        "ultra.ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
         scenario_info=scenario_info,
         headless=headless,
@@ -65,8 +85,9 @@ def train(
     )
 
     agent = spec.build_agent()
-
-    for episode in episodes(num_episodes, etag=policy_class, dir=log_dir):
+    evaluation_jobs = []
+    it = 0
+    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
@@ -80,18 +101,35 @@ def train(
             with open(f"{experiment_dir}/spec.pkl", "wb") as spec_output:
                 dill.dump(spec, spec_output, pickle.HIGHEST_PROTOCOL)
 
+        stream = BytesIO()
+        it+=1
+        # evaluation.set_episode.remote(episode)
         while not dones["__all__"]:
-            if episode.get_itr(AGENT_ID) >= 1000000:  # 1M observation break
+            if episode.get_itr(AGENT_ID) >= 1000000:
                 finished = True
                 break
-            evaluation_check(
-                agent=agent,
-                agent_id=AGENT_ID,
-                policy_class=policy_class,
-                episode=episode,
-                **eval_info,
-                **env.info,
-            )
+            eval_queue.put({
+                'agent_itr':episode.get_itr(AGENT_ID),
+                'save_info':agent.save_info,
+                'agent_id':AGENT_ID,
+                'policy_class':policy_class,
+                'experiment_dir':experiment_dir,
+                'log_dir':log_dir,
+                'checkpoint_dir':episode.checkpoint_dir(episode.get_itr(AGENT_ID))
+            })
+            # evaluation.check.remote(
+            #     save_info=agent.save_info,
+            #     agent_itr = episode.get_itr(AGENT_ID),
+            #     agent_id=AGENT_ID,
+            #     policy_class=policy_class,
+            #     log_dir=log_dir,
+            #     experiment_dir = episode.experiment_dir,
+            #     max_episode_steps=max_episode_steps,
+            #     checkpoint_dir = episode.checkpoint_dir(episode.get_itr(AGENT_ID)),
+            #     **eval_info,
+            #     **env.info)
+
+            print('train:', os.getpid() )
             action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
             next_state = observations[AGENT_ID]
@@ -102,6 +140,7 @@ def train(
                 reward=rewards[AGENT_ID],
                 next_state=next_state,
                 done=dones[AGENT_ID],
+                info=infos[AGENT_ID],
             )
             episode.record_step(
                 agent_id=AGENT_ID,
@@ -114,7 +153,13 @@ def train(
             state = next_state
 
         episode.record_episode()
-        episode.record_tensorboard(agent_id=AGENT_ID)
+        episode.record_tensorboard()
+        # print('evaluation_jobs',len(evaluation_jobs))
+        # if evaluation_jobs:
+        #     ray.get(evaluation_jobs)
+        #     print('>>>>>', queue)
+        print('train done')
+        print(result_queue.get())
         if finished:
             break
 
@@ -142,6 +187,12 @@ if __name__ == "__main__":
         "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
+    )
+    parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
@@ -156,20 +207,24 @@ if __name__ == "__main__":
         type=int,
         default=10000,
     )
+    parser.add_argument(
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
+    )
+    parser.add_argument(
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
+    )
 
-    parser.add_argument(
-        "--seed", help="Environment seed", default=2, type=int,
-    )
-    parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
-    )
+    base_dir = os.path.dirname(__file__)
+    pool_path = os.path.join(base_dir, "agent_pool.json")
     args = parser.parse_args()
 
-    num_cpus = max(
-        1, psutil.cpu_count(logical=False) - 1
-    )  # remove `logical=False` to use all cpus
-
-    with open("ultra/agent_pool.json", "r") as f:
+    with open(pool_path, "r") as f:
         data = json.load(f)
         if args.policy in data["agents"].keys():
             policy_path = data["agents"][args.policy]["path"]
@@ -180,21 +235,32 @@ if __name__ == "__main__":
     # Required string for smarts' class registry
     policy_class = str(policy_path) + ":" + str(policy_locator)
 
-    ray.init()
-    ray.wait(
-        [
-            train.remote(
-                scenario_info=(args.task, args.level),
-                num_episodes=int(args.episodes),
-                eval_info={
-                    "eval_rate": float(args.eval_rate),
-                    "eval_episodes": int(args.eval_episodes),
-                },
-                timestep_sec=float(args.timestep),
-                headless=args.headless,
-                policy_class=policy_class,
-                seed=args.seed,
-                log_dir=args.log_dir,
-            )
-        ]
+    eval_worker =Evaluation.remote(
+        eval_queue=eval_queue,
+        result_queue=result_queue,
+        scenario_info=(args.task, args.level),
+        max_episode_steps=int(args.max_episode_steps),
+        eval_rate= float(args.eval_rate),
+        num_episodes= int(args.eval_episodes),
+        timestep_sec=float(args.timestep),
+        headless=args.headless,
+        policy_class=policy_class,
     )
+    train_worker = train.remote(
+        scenario_info=(args.task, args.level),
+        num_episodes=int(args.episodes),
+        max_episode_steps=int(args.max_episode_steps),
+        eval_info={
+            "eval_rate": float(args.eval_rate),
+            "eval_episodes": int(args.eval_episodes),
+        },
+        timestep_sec=float(args.timestep),
+        headless=args.headless,
+        policy_class=policy_class,
+        seed=args.seed,
+        log_dir=args.log_dir,
+        eval_queue=eval_queue,
+        result_queue=result_queue
+    )
+
+    ray.get([ train_worker.remote(), evaluation.check.remote()])
