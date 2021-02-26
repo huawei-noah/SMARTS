@@ -40,7 +40,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.1.1",
-    packages=find_packages(exclude=["ultra", "tests"]),
+    packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     zip_safe=True,
     python_requires=">=3.7",
