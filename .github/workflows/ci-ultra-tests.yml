@@ -28,18 +28,13 @@ jobs:
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -e .
           rm -rf .venv/lib/python3.7/site-packages/ultra 
-      - name: Run ultra tests
+      - name: Run ULTRA tests
         run: |
           cd ultra
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/ \
-          --ignore=./tests/test_adapter.py 
-      - name: Run Header test
-        run : |
-          cd ultra
-          ./header_test.sh
-
+          --ignore=./tests/test_adapter.py \
   test-package-via-setup:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
