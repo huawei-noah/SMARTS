@@ -153,7 +153,7 @@ def train(
 
             # Step and record the data of each available agent.
             for agent_id in observations.keys() & next_observations.keys():
-                loss_output = agent.step(
+                loss_output = agents[agent_id].step(
                     state=observations[agent_id],
                     action=actions[agent_id],
                     reward=rewards[agent_id],
