@@ -40,7 +40,9 @@ def main(scenarios, headless, seed):
 
             smarts.switch_ego_agent({agent_id: agent_spec.interface})
             # required: get traffic_history_provider and set time offset
-            traffic_history_provider = smarts.get_provider_by_type(TrafficHistoryProvider)
+            traffic_history_provider = smarts.get_provider_by_type(
+                TrafficHistoryProvider
+            )
             assert traffic_history_provider
             traffic_history_provider.set_start_time(mission.start_time)
 
