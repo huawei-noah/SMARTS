@@ -330,9 +330,6 @@ class SumoTrafficSimulation:
         """
         Args:
             dt: time (in seconds) to simulate during this simulation step
-            managed_vehicles: dict of {vehicle_id: (x, y, heading)}
-                !! The vehicle state should represent the state of the
-                !! vehicles at the start of the current simulation step
         Returns:
             ProviderState representing the state of the SUMO simulation
         """

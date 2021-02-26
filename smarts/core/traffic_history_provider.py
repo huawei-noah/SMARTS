@@ -31,6 +31,10 @@ class TrafficHistoryProvider:
         self._is_setup = False
         self._current_traffic_history = None
         self.replaced_vehicle_ids = set()
+        self.start_time_offset = 0
+
+    def set_start_time(self, start_time: float):
+        self.start_time_offset = start_time
 
     def setup(self, scenario) -> ProviderState:
         self._is_setup = True
@@ -69,10 +73,12 @@ class TrafficHistoryProvider:
         if (
             not self._current_traffic_history
             or timestamp is None
-            or str(timestamp) not in self._current_traffic_history
+            or str(round(timestamp + self.start_time_offset, 1))
+            not in self._current_traffic_history
         ):
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
+        time_with_offset = round(timestamp + self.start_time_offset, 1)
         vehicle_type = "passenger"
         states = ProviderState(
             vehicles=[
@@ -106,7 +112,7 @@ class TrafficHistoryProvider:
                     source="HISTORY",
                 )
                 for v_id, vehicle_state in self._current_traffic_history[
-                    str(timestamp)
+                    str(time_with_offset)
                 ].items()
                 if v_id not in self.replaced_vehicle_ids
             ],
