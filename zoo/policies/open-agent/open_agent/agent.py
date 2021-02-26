@@ -614,11 +614,32 @@ class OpEnAgent(Agent):
                 ys.append(ego_model.y)
                 speeds.append(ego_model.speed)
 
+            num_trajectory_points = min([10, len(obs.waypoint_paths[lane_index])])
+
+            # Desired speed is in m/s
+            desired_speed = obs.waypoint_paths[lane_index][0].speed_limit
+
+            trajectory = [
+                [
+                    obs.waypoint_paths[lane_index][i].pos[0]
+                    for i in range(num_trajectory_points)
+                ],
+                [
+                    obs.waypoint_paths[lane_index][i].pos[1]
+                    for i in range(num_trajectory_points)
+                ],
+                [
+                    obs.waypoint_paths[lane_index][i].heading
+                    for i in range(num_trajectory_points)
+                ],
+                [desired_speed for i in range(num_trajectory_points)],
+            ]
+
             traj = [xs, ys, headings, speeds]
             if self.debug:
                 self._draw_debug_panel(xs, ys, wps, flat_svs, ego, u_star)
 
-            return traj
+            return trajectory
         else:
             # Failed to find a solution.
             # re-init the planner and stay still, hopefully once we've re-initialized, we can recover

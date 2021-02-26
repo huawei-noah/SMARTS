@@ -167,6 +167,7 @@ class TrajectoryTrackingController:
     # Final values are the gains at 80 km/hr (22.2 m/s).
     @staticmethod
     def perform_trajectory_tracking_PD(
+        sim,
         trajectory,
         vehicle,
         state,
@@ -278,6 +279,10 @@ class TrajectoryTrackingController:
         state.heading_error = heading_error
         state.lateral_error = lateral_error
         state.integral_velocity_error += (vehicle.speed - desired_speed) * dt_sec
+
+        if sim.elapsed_sim_time < 1:
+            throttle_norm = 1
+            brake_norm = 0
 
         vehicle.control(
             throttle=throttle_norm,

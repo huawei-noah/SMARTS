@@ -77,6 +77,7 @@ class Controllers:
             )
         elif action_space == ActionSpaceType.Trajectory:
             TrajectoryTrackingController.perform_trajectory_tracking_PD(
+                sim,
                 action,
                 vehicle,
                 controller_state,
