@@ -136,7 +136,7 @@ class BaselineAdapter:
 
         if len(state["social_vehicles"]) < self.social_capacity:
             remain = self.social_capacity - len(state["social_vehicles"])
-            empty_social_vehicles = np.zeros(shape=(remain, 4))
+            empty_social_vehicles = np.zeros(shape=(remain, 4), dtype=np.float32)
             state["social_vehicles"] = np.concatenate(
                 (state["social_vehicles"], empty_social_vehicles)
             )

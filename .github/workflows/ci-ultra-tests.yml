@@ -27,6 +27,7 @@ jobs:
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -e .
+          rm -rf .venv/lib/python3.7/site-packages/ultra 
       - name: Run ultra tests
         run: |
           cd ultra
