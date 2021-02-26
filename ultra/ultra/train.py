@@ -23,7 +23,7 @@ import json
 import os
 import sys
 
-from ultra.utils.ray import default_ray_kwargs
+import ray
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -33,19 +33,16 @@ import time
 
 import dill
 import gym
-import psutil
-import ray
 import torch
 
 from smarts.zoo.registry import make
-from ultra.evaluate import evaluation_check
+from ultra.evaluate import evaluation_check, collect_eval
 from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-@ray.remote(num_gpus=num_gpus / 2)
 def train(
     scenario_info,
     num_episodes,
@@ -74,7 +71,7 @@ def train(
     )
 
     agent = spec.build_agent()
-
+    evaluations = dict()
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
@@ -93,6 +90,7 @@ def train(
             if episode.get_itr(AGENT_ID) >= 1000000:
                 finished = True
                 break
+
             evaluation_check(
                 agent=agent,
                 agent_id=AGENT_ID,
@@ -100,9 +98,11 @@ def train(
                 episode=episode,
                 log_dir=log_dir,
                 max_episode_steps=max_episode_steps,
+                evaluations=evaluations,
                 **eval_info,
                 **env.info,
             )
+            collect_eval(evaluations)
             action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
             next_state = observations[AGENT_ID]
@@ -127,6 +127,9 @@ def train(
         episode.record_episode()
         episode.record_tensorboard()
         if finished:
+            # wait on the remaining evaluations
+            while collect_eval(evaluations):
+                time.sleep(0.1)
             break
 
     env.close()
@@ -200,23 +203,18 @@ if __name__ == "__main__":
 
     # Required string for smarts' class registry
     policy_class = str(policy_path) + ":" + str(policy_locator)
-
     ray.init()
-    ray.wait(
-        [
-            train.remote(
-                scenario_info=(args.task, args.level),
-                num_episodes=int(args.episodes),
-                max_episode_steps=int(args.max_episode_steps),
-                eval_info={
-                    "eval_rate": float(args.eval_rate),
-                    "eval_episodes": int(args.eval_episodes),
-                },
-                timestep_sec=float(args.timestep),
-                headless=args.headless,
-                policy_class=policy_class,
-                seed=args.seed,
-                log_dir=args.log_dir,
-            )
-        ]
+    train(
+        scenario_info=(args.task, args.level),
+        num_episodes=int(args.episodes),
+        max_episode_steps=int(args.max_episode_steps),
+        eval_info={
+            "eval_rate": float(args.eval_rate),
+            "eval_episodes": int(args.eval_episodes),
+        },
+        timestep_sec=float(args.timestep),
+        headless=args.headless,
+        policy_class=policy_class,
+        seed=args.seed,
+        log_dir=args.log_dir,
     )

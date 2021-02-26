@@ -57,7 +57,9 @@ def evaluation_check(
     timestep_sec,
     headless,
     log_dir,
+    evaluations,
 ):
+
     agent_itr = episode.get_itr(agent_id)
 
     print(
@@ -66,29 +68,35 @@ def evaluation_check(
     if (agent_itr + 1) % eval_rate == 0 and episode.last_eval_iteration != agent_itr:
         checkpoint_dir = episode.checkpoint_dir(agent_itr)
         agent.save(checkpoint_dir)
-        episode.eval_mode()
-        episode.info[episode.active_tag][agent_id] = ray.get(
-            [
-                evaluate.remote(
-                    experiment_dir=episode.experiment_dir,
-                    agent_id=agent_id,
-                    policy_class=policy_class,
-                    seed=episode.eval_count,
-                    itr_count=agent_itr,
-                    checkpoint_dir=checkpoint_dir,
-                    scenario_info=scenario_info,
-                    num_episodes=eval_episodes,
-                    max_episode_steps=max_episode_steps,
-                    headless=headless,
-                    timestep_sec=timestep_sec,
-                    log_dir=log_dir,
-                )
-            ]
-        )[0]
-        episode.eval_count += 1
-        episode.last_eval_iteration = agent_itr
-        episode.record_tensorboard()
-        episode.train_mode()
+        eval_handle = evaluate.remote(
+            experiment_dir=episode.experiment_dir,
+            agent_id=agent_id,
+            policy_class=policy_class,
+            seed=episode.eval_count,
+            itr_count=agent_itr,
+            checkpoint_dir=checkpoint_dir,
+            scenario_info=scenario_info,
+            num_episodes=eval_episodes,
+            max_episode_steps=max_episode_steps,
+            headless=headless,
+            timestep_sec=timestep_sec,
+            log_dir=log_dir,
+        )
+        evaluations[eval_handle] = (episode.active_tag, agent_id, agent_itr, episode)
+
+
+def collect_eval(evaluations: dict):
+    ready, not_ready = ray.wait([k for k in evaluations.keys()], timeout=0)
+
+    for r in ready:
+        active_tag, e_agent_id, e_itr, e = evaluations.pop(r)
+        e.eval_mode()
+        e.info[active_tag][e_agent_id] = ray.get(r)
+        e.last_eval_iteration = e_itr
+        e.eval_count += 1
+        e.record_tensorboard()
+        e.train_mode()
+    return len(evaluations) < 1
 
 
 # Number of GPUs should be splited between remote functions.
