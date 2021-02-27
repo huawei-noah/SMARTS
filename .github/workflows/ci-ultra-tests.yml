@@ -28,11 +28,7 @@ jobs:
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -e .
           rm -rf .venv/lib/python3.7/site-packages/ultra 
-<<<<<<< HEAD
       - name: Run ULTRA tests
-=======
-      - name: Run ultra tests
->>>>>>> 809fdee64c70b7ab6c62c695df9b1e8e5860c536
         run: |
           cd ultra
           . .venv/bin/activate
