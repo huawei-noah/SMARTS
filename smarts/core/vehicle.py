@@ -48,6 +48,7 @@ from .sensors import (
     WaypointsSensor,
 )
 from .utils.math import rotate_around_point
+from functools import lru_cache
 
 
 @dataclass(frozen=True)

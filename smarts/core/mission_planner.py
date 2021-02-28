@@ -33,6 +33,7 @@ from .sumo_road_network import SumoRoadNetwork
 from .utils.math import evaluate_bezier as bezier
 from .utils.math import radians_to_vec, vec_to_radians
 from .waypoints import Waypoint, Waypoints
+from dataclasses import replace
 
 
 class PlanningError(Exception):
