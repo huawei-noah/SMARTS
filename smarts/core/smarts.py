@@ -52,7 +52,6 @@ from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
-from smarts.core.chassis import AckermannChassis, BoxChassis
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.pybullet import bullet_client as bc
