@@ -64,7 +64,7 @@ def observation_adapter(env_obs):
     )
 
 
-@ray.remote
+@ray.remote(max_calls=1)
 def train(
     training_scenarios, evaluation_scenarios, sim_name, headless, num_episodes, seed
 ):
@@ -112,20 +112,17 @@ def train(
                     agent_params=dict(agent_params, model_path=model_path)
                 )
 
+                evaluation_future = evaluate.remote(
+                    eval_agent_spec, evaluation_scenarios, headless, seed
+                )
                 # Remove the call to ray.wait if you want evaluation to run
                 # in parallel with training
-                ray.wait(
-                    [
-                        evaluate.remote(
-                            eval_agent_spec, evaluation_scenarios, headless, seed
-                        )
-                    ]
-                )
+                ray.wait([evaluation_future])
 
     env.close()
 
 
-@ray.remote
+@ray.remote(max_calls=0)
 def evaluate(agent_spec, evaluation_scenarios, headless, seed):
     env = gym.make(
         "smarts.env:hiway-v0",

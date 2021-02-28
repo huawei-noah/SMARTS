@@ -82,25 +82,26 @@ def evaluation_check(
             timestep_sec=timestep_sec,
             log_dir=log_dir,
         )
-        evaluations[eval_handle] = (episode.active_tag, agent_id, agent_itr, episode)
+        evaluations[eval_handle] = (episode.active_tag, agent_id, episode)
+        episode.last_eval_iteration = agent_itr
+        episode.eval_count += 1
 
 
 def collect_eval(evaluations: dict):
     ready, not_ready = ray.wait([k for k in evaluations.keys()], timeout=0)
 
     for r in ready:
-        active_tag, e_agent_id, e_itr, e = evaluations.pop(r)
+        active_tag, e_agent_id, e = evaluations.pop(r)
         e.eval_mode()
         e.info[active_tag][e_agent_id] = ray.get(r)
-        e.last_eval_iteration = e_itr
-        e.eval_count += 1
+
         e.record_tensorboard()
         e.train_mode()
     return len(evaluations) < 1
 
 
-# Number of GPUs should be splited between remote functions.
-@ray.remote(num_gpus=num_gpus / 2)
+# Number of GPUs should be split between remote functions.
+@ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 def evaluate(
     experiment_dir,
     seed,
