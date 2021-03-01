@@ -31,7 +31,6 @@ from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
 
-import ijson
 import numpy as np
 
 from smarts.sstudio import types as sstudio_types
