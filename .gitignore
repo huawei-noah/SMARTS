@@ -74,6 +74,7 @@ celerybeat-schedule
 # Environments
 .venv
 venv
+.bugtest
 
 # Spyder project settings
 .spyderproject

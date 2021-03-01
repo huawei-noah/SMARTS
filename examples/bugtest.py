@@ -16,11 +16,11 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-def main(scenarios, sim_name, headless, num_episodes, seed, speed, save_dir):
+def main(scenarios, sim_name, headless, seed, speed, save_dir, write):
     from zoo import policies
 
     policies.replay_save_dir = save_dir
-    policies.replay_read = True
+    policies.replay_read = not write
     agent_spec = zoo_make(
         "zoo.policies:replay-agent-v0",
         save_directory=save_dir,
@@ -43,10 +43,9 @@ def main(scenarios, sim_name, headless, num_episodes, seed, speed, save_dir):
         # envision_record_data_replay_path="./data_replay",
     )
 
-    episode = next(episodes(n=num_episodes))
+    episode = next(episodes(n=1))
     agent = agent_spec.build_agent()
     observations = env.reset()
-    episode.record_scenario(env.scenario_log)
 
     dones = {"__all__": False}
     i = 0
@@ -59,6 +58,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, speed, save_dir):
             episode.record_step(observations, rewards, dones, infos)
     finally:
         try:
+            episode.record_scenario(env.scenario_log)
             env.close()
         finally:
             sys.exit(i // 10)
@@ -78,14 +78,19 @@ if __name__ == "__main__":
         type=str,
         default=None,
     )
+    parser.add_argument(
+        "--write", help="Replay the agent else write the agent actions out to directory.", action="store_true"
+    )
+
+
     args = parser.parse_args()
 
     main(
         scenarios=args.scenarios,
         sim_name=args.sim_name,
         headless=args.headless,
-        num_episodes=1,
         seed=args.seed,
         speed=args.speed,
         save_dir=args.save_dir,
+        write=args.write,
     )
