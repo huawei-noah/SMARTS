@@ -24,7 +24,6 @@ import numpy as np
 import gym
 import cv2
 from scipy.spatial import distance
-from benchmark.common import ActionAdapter
 
 from smarts.core.agent_interface import (
     AgentInterface,
@@ -48,16 +47,51 @@ from ultra.utils.common import (
 
 num_lookahead = 100
 
+class ActionAdapter:
+    @staticmethod
+    def from_type(space_type):
+        if space_type == ActionSpaceType.Continuous:
+            return ActionAdapter.continuous_action_adapter
+        elif space_type == ActionSpaceType.Lane:
+            return ActionAdapter.discrete_action_adapter
+        else:
+            raise NotImplementedError
+
+    @staticmethod
+    def continuous_action_adapter(policy_action):
+        assert len(policy_action) == 3
+        return np.asarray(policy_action)
+
+    @staticmethod
+    def discrete_action_adapter(policy_action):
+        if isinstance(policy_action, (list, tuple, np.ndarray)):
+            action = np.argmax(policy_action)
+        else:
+            action = policy_action
+
+        if action == 0:
+            return "keep_lane"
+        elif action == 1:
+            return "slow_down"
+        elif action == 2:
+            return "change_lane_left"
+        elif action == 3:
+            return "change_lane_right"
+        else:
+            raise ValueError('A very specific bad thing happened.')
+
 
 class UltraGym(UltraEnv):
     def __init__(
         self,
-        max_episode_steps,
-        action_type,
-        scenario_info,
-        headless,
-        timestep_sec,
-        seed,
+        max_episode_steps=200,
+        action_type="discrete",
+        obs_type="image",
+        scenario_info=("1", "easy"),
+        agent_id = "007",
+        headless=True,
+        timestep_sec=0.1,
+        seed=1,
         eval_mode=False,
         ordered_scenarios=False,
     ):
@@ -66,13 +100,21 @@ class UltraGym(UltraEnv):
         self.headless = headless
         self.scenario_info = scenario_info
         self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
+        self.agent_id = agent_id
+
 
         adapter = GymAdapter()
+
         if action_type == "discrete":
             action_type = ActionSpaceType.Lane
             self.action_space = gym.spaces.Discrete(4)
         elif action_type == "continuous":
             action_type = ActionSpaceType.Continuous
+
+        if obs_type == "image":
+            self.observation_space = gym.spaces.Box(low=0, high=1, shape=(256, 256, 1), dtype=np.float32)
+        elif obs_type == "low_dim":
+            pass
 
         spec = AgentSpec(
             interface=AgentInterface(
@@ -80,6 +122,7 @@ class UltraGym(UltraEnv):
                 neighborhood_vehicles=NeighborhoodVehicles(200),
                 action=action_type,
                 rgb=True,
+                #ogm=True,
                 max_episode_steps=max_episode_steps,
                 debug=True,
             ),
@@ -96,6 +139,13 @@ class UltraGym(UltraEnv):
             seed=seed,
         )
 
+    def step(self, agent_action):
+        results = super().step({'007': agent_action})
+        return [result['007'] for result in results]
+
+    def reset(self):
+        obs = super().reset()
+        return obs['007']
 
 class GymAdapter:
     def __init__(self):
@@ -147,7 +197,6 @@ class GymAdapter:
         def rgb2gray(rgb):
             r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
             gray = 0.2125 * r + 0.7154 * g + 0.0721 * b
-
             return gray
 
         rgb_ndarray = env_observation.top_down_rgb.data
@@ -160,7 +209,7 @@ class GymAdapter:
             )
             / 255.0
         )
-        return gray_scale
+        return np.reshape(np.float32(gray_scale), (256, 256, 1))
 
     def reward_adapter(self, observation, reward):
         env_reward = reward
