@@ -110,15 +110,9 @@ class TrafficHistoryProvider:
                     speed=vehicle_state["speed"],
                     source="HISTORY",
                 )
-<<<<<<< HEAD
-                for v_id, vehicle_state in self._current_traffic_history[
-                    time_with_offset
-                ].items()
-=======
                 for v_id, vehicle_state in self._traffic_history_service.fetch_history_at_timestep(
-                    str(timestamp)
+                    time_with_offset
                 ).items()
->>>>>>> Added traffic history service to fetch json files
                 if v_id not in self.replaced_vehicle_ids
             ],
             traffic_light_systems=[],
