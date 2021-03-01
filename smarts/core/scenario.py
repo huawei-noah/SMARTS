@@ -797,7 +797,7 @@ class Scenario:
         return self._traffic_history_service
 
     @traffic_history_service.setter
-    def traffic_history_service(self, traffic_history_service):
+    def traffic_history_service(self, traffic_history_service: Traffic_history_service):
         self._traffic_history_service = traffic_history_service
 
     @property
