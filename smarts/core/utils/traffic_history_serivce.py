@@ -79,12 +79,13 @@ class Traffic_history_service:
     def _fetch_history(
         self, send_data, request_queue, history_file_path, total_timestep_size
     ):
+        """ prepare 1 batch ahead, when received request, immediately return the previously
+            prepared batch and prepares the next batch.
+        """
         return_batch = {}
         while True:
             historyRange = request_queue.get()
             assert isinstance(historyRange, RequestHistoryRange)
-            print(historyRange)
-            print(f"return batch: {return_batch.keys()}")
             send_data.send(return_batch)
             return_batch = {}
             with open(history_file_path, "rb") as f:
@@ -114,11 +115,10 @@ class Traffic_history_service:
         elif timestep in self.traffic_history:
             return self.traffic_history[timestep]
 
-        # ask child process to prepare the data:
+        # ask child process to prepare the next batch:
         self._prepare_next_batch()
         self._prev_batch_history = self._current_traffic_history
         # receives the previous batch child process prepared
-        # range: self._range_start -> self._range_start._batch_size
         self._current_traffic_history = self._receive_data_conn.recv()
         if timestep in self._current_traffic_history:
             return self._current_traffic_history[timestep]
