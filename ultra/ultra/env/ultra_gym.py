@@ -47,6 +47,7 @@ from ultra.utils.common import (
 
 num_lookahead = 100
 
+
 class ActionAdapter:
     @staticmethod
     def from_type(space_type):
@@ -78,7 +79,7 @@ class ActionAdapter:
         elif action == 3:
             return "change_lane_right"
         else:
-            raise ValueError('A very specific bad thing happened.')
+            raise ValueError("A very specific bad thing happened.")
 
 
 class UltraGym(UltraEnv):
@@ -88,7 +89,7 @@ class UltraGym(UltraEnv):
         action_type="discrete",
         obs_type="image",
         scenario_info=("1", "easy"),
-        agent_id = "007",
+        agent_id="007",
         headless=True,
         timestep_sec=0.1,
         seed=1,
@@ -102,7 +103,6 @@ class UltraGym(UltraEnv):
         self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
         self.agent_id = agent_id
 
-
         adapter = GymAdapter()
 
         if action_type == "discrete":
@@ -112,7 +112,9 @@ class UltraGym(UltraEnv):
             action_type = ActionSpaceType.Continuous
 
         if obs_type == "image":
-            self.observation_space = gym.spaces.Box(low=0, high=1, shape=(256, 256, 1), dtype=np.float32)
+            self.observation_space = gym.spaces.Box(
+                low=0, high=1, shape=(256, 256, 1), dtype=np.float32
+            )
         elif obs_type == "low_dim":
             pass
 
@@ -122,7 +124,7 @@ class UltraGym(UltraEnv):
                 neighborhood_vehicles=NeighborhoodVehicles(200),
                 action=action_type,
                 rgb=True,
-                #ogm=True,
+                # ogm=True,
                 max_episode_steps=max_episode_steps,
                 debug=True,
             ),
@@ -140,12 +142,13 @@ class UltraGym(UltraEnv):
         )
 
     def step(self, agent_action):
-        results = super().step({'007': agent_action})
-        return [result['007'] for result in results]
+        results = super().step({"007": agent_action})
+        return [result["007"] for result in results]
 
     def reset(self):
         obs = super().reset()
-        return obs['007']
+        return obs["007"]
+
 
 class GymAdapter:
     def __init__(self):
