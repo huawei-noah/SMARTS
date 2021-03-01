@@ -75,7 +75,9 @@ class TrafficHistoryProvider:
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
         time_with_offset = str(round(timestamp + self.start_time_offset, 1))
-        if not self._traffic_history_service.fetch_history_at_timestep(time_with_offset):
+        if not self._traffic_history_service.fetch_history_at_timestep(
+            time_with_offset
+        ):
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
         vehicle_type = "passenger"

@@ -17,33 +17,32 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from multiprocessing import Process, Queue, Pipe
+from dataclasses import dataclass
+from multiprocessing import Pipe, Process, Queue
+
 import ijson
 
 import smarts.core.scenario as scenario
 
+@dataclass
+class RequestHistoryRange:
+    start_index: int
+    end_index: int
+
 class Traffic_history_service:
-    """ responsible for dynamically fetching traffic history json to reduce
-    memory use of traffic history data 
+    """responsible for dynamically fetching traffic history json to reduce
+    memory use of traffic history data
     """
-    
+
     def __init__(self, history_file_path):
         self._history_file_path = history_file_path
         self._all_timesteps = set()
         self._current_traffic_history = {}
+        self._prev_batch_history = {}
         # return if traffic history is not used
         if history_file_path is None:
             return
-
-        self._range_start = 0
-        self._range_end = 300
-        # initialize
-        with open(self._history_file_path, 'rb') as f:
-            for index, time_and_data_tuple in enumerate(ijson.kvitems(f, '', use_float=True)):
-                self._all_timesteps.add(time_and_data_tuple[0])
-                if self._range_start <= index and index <= self._range_end:
-                    self._current_traffic_history[time_and_data_tuple[0]] = time_and_data_tuple[1]
-
+        
         send_data_conn, receive_data_conn = Pipe()
         self._receive_data_conn = receive_data_conn
         self._request_queue = Queue()
@@ -53,23 +52,44 @@ class Traffic_history_service:
                 send_data_conn,
                 self._request_queue,
                 self._history_file_path,
-                len(self._all_timesteps)
+                len(self._all_timesteps),
             ),
         )
         self._fetch_history_proc.daemon = True
         self._fetch_history_proc.start()
 
+        self._range_start = 0
+        self._batch_size = 300
+        # initialize
+        with open(self._history_file_path, "rb") as f:
+            for index, (t, vehicles_state) in enumerate(
+                ijson.kvitems(f, "", use_float=True)
+            ):
+                self._all_timesteps.add(t)
+                if (
+                    self._range_start <= index
+                    and index <= self._range_start + self._batch_size
+                ):
+                    self._current_traffic_history[t] = vehicles_state
+        self._range_start += self._batch_size
+        # prepares the next batch
+        self._prepare_next_batch()
+        self._receive_data_conn.recv()
 
-    def _fetch_history(self, send_data, request_queue, history_file_path, total_timestep_size):
+    def _fetch_history(
+        self, send_data, request_queue, history_file_path, total_timestep_size
+    ):
         return_batch = {}
         while True:
-            request_timestamp = request_queue.get()
+            historyRange = request_queue.get()
+            assert isinstance(historyRange, RequestHistoryRange)
+            print(historyRange)
+            print(f"return batch: {return_batch.keys()}")
             send_data.send(return_batch)
             return_batch = {}
-            # print(f"received request: {request_timestamp}")
-            with open(history_file_path, 'rb') as f:
-                for t, vehicles_state in ijson.kvitems(f, '', use_float=True):
-                    if t:
+            with open(history_file_path, "rb") as f:
+                for index, (t, vehicles_state) in enumerate(ijson.kvitems(f, "", use_float=True)):
+                    if historyRange.start_index <= index and index <= historyRange.end_index:
                         return_batch[t] = vehicles_state
         send_data.close()
 
@@ -78,30 +98,37 @@ class Traffic_history_service:
         return self._all_timesteps
 
     @property
-    def current_traffic_history(self):
-        return self._current_traffic_history
+    def traffic_history(self):
+        return {**self._current_traffic_history, **self._prev_batch_history}
+
+    def _prepare_next_batch(self):
+        self._request_queue.put(RequestHistoryRange(
+            start_index=self._range_start,
+            end_index=self._range_start + self._batch_size,
+        ))
+        self._range_start += self._batch_size
 
     def fetch_history_at_timestep(self, timestep):
-        print(timestep)
         if timestep not in self._all_timesteps:
             return {}
-        elif timestep in self._current_traffic_history:
+        elif timestep in self.traffic_history:
+            return self.traffic_history[timestep]
+
+        # ask child process to prepare the data:
+        self._prepare_next_batch()
+        self._prev_batch_history = self._current_traffic_history
+        # receives the previous batch child process prepared
+        # range: self._range_start -> self._range_start._batch_size
+        self._current_traffic_history = self._receive_data_conn.recv()
+        if timestep in self._current_traffic_history:
             return self._current_traffic_history[timestep]
-
-        # load from child process
-        # initially Have child process load the first batch and, and prepare the next batch, 
-        # Then when next request, send back the prepared batch, and get the next batch
-
-
-        # ask fetch_history worker to prepare the data:
-        self._request_queue.put(timestep)
-        timestep_data = self._receive_data_conn.recv()
-        return timestep_data
+        # no history exists at requested timestamp
+        return {}
 
     def fetch_agent_missions(self):
         vehicle_missions = {}
-        with open(self._history_file_path, 'rb') as f:
-            for t, vehicles_state in ijson.kvitems(f, '', use_float=True):
+        with open(self._history_file_path, "rb") as f:
+            for t, vehicles_state in ijson.kvitems(f, "", use_float=True):
                 for vehicle_id in vehicles_state:
                     if vehicle_id in vehicle_missions:
                         continue
@@ -115,8 +142,3 @@ class Traffic_history_service:
                     )
 
         return vehicle_missions
-        
-        
-
-
-        

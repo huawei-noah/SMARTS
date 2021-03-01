@@ -30,8 +30,8 @@ from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
-import ijson
 
+import ijson
 import numpy as np
 
 from smarts.sstudio import types as sstudio_types
@@ -43,9 +43,9 @@ from .data_model import SocialAgent
 from .route import ShortestRoute
 from .sumo_road_network import SumoRoadNetwork
 from .utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
-from .utils.traffic_history_serivce import Traffic_history_service
 from .utils.id import SocialAgentId
 from .utils.math import vec_to_radians
+from .utils.traffic_history_serivce import Traffic_history_service
 from .waypoints import Waypoints
 
 
