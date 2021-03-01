@@ -75,7 +75,7 @@ class BaselineAgentSpec(AgentSpec):
             social_vehicle_params = dict(
                 encoder_key="no_encoder",
                 social_policy_hidden_units=128,
-                social_polciy_init_std=0.5,
+                social_policy_init_std=0.5,
                 num_social_features=4,
                 seed=2,
                 observation_num_lookahead=20,
