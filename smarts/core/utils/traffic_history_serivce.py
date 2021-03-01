@@ -76,7 +76,7 @@ class Traffic_history_service:
         self._range_start += self._batch_size
         # prepares the next batch
         self._prepare_next_batch()
-        self._receive_data_conn.recv()        
+        self._receive_data_conn.recv()
 
     def _fetch_history(
         self, send_data, request_queue, history_file_path, total_timestep_size
