@@ -30,6 +30,7 @@ from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
+import ijson
 
 import numpy as np
 
@@ -42,6 +43,7 @@ from .data_model import SocialAgent
 from .route import ShortestRoute
 from .sumo_road_network import SumoRoadNetwork
 from .utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
+from .utils.traffic_history_serivce import Traffic_history_service
 from .utils.id import SocialAgentId
 from .utils.math import vec_to_radians
 from .waypoints import Waypoints
@@ -194,7 +196,7 @@ class Scenario:
         self._net_file_hash = file_md5_hash(self.net_filepath)
         self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
-        self._traffic_history = traffic_history or {}
+        self._traffic_history = Traffic_history_service(traffic_history)
 
     def __repr__(self):
         return f"""Scenario(
@@ -512,23 +514,8 @@ class Scenario:
     def set_ego_missions(self, ego_mission):
         self._missions.update(ego_mission)
 
-    def discover_missions_of_traffic_histories(self):
-        vehicle_missions = {}
-        # sort by timestamp
-        sorted_history = sorted(self.traffic_history.items(), key=lambda d: float(d[0]))
-        for t, vehicle_states in sorted_history:
-            for vehicle_id in vehicle_states:
-                if vehicle_id not in vehicle_missions:
-                    vehicle_missions[vehicle_id] = Mission(
-                        start=Start(
-                            vehicle_states[vehicle_id]["position"][:2],
-                            Heading(vehicle_states[vehicle_id]["heading"]),
-                        ),
-                        goal=EndlessGoal(),
-                        start_time=float(t),
-                    )
-
-        return vehicle_missions
+    def discover_missions_of_traffic_histories(self, vehicle_missions={}):
+        return self._traffic_history.fetch_agent_missions()
 
     @staticmethod
     def discover_traffic_histories(scenario_root):
@@ -540,8 +527,7 @@ class Scenario:
         with open(path, "rb") as f:
             files = pickle.load(f)
             for file_name in files:
-                with open(os.path.join(scenario_root, file_name), "r") as history_file:
-                    traffic_histories.append(json.loads(history_file.read()))
+                traffic_histories.append(os.path.join(scenario_root, file_name))
 
         return traffic_histories
 

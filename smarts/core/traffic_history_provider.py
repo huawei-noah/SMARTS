@@ -29,7 +29,7 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 class TrafficHistoryProvider:
     def __init__(self):
         self._is_setup = False
-        self._current_traffic_history = None
+        self._traffic_history_service = None
         self.replaced_vehicle_ids = set()
         self.start_time_offset = 0
 
@@ -39,7 +39,7 @@ class TrafficHistoryProvider:
 
     def setup(self, scenario) -> ProviderState:
         self._is_setup = True
-        self._current_traffic_history = scenario.traffic_history
+        self._traffic_history_service = scenario.traffic_history
         return ProviderState()
 
     def set_replaced_ids(self, vehicle_ids: list):
@@ -51,7 +51,7 @@ class TrafficHistoryProvider:
     def teardown(self):
         self._is_setup = False
         self._frame = None
-        self._current_traffic_history = None
+        self._traffic_history_service = None
         self.replaced_vehicle_ids = set()
 
     @property
@@ -66,16 +66,24 @@ class TrafficHistoryProvider:
         timestamp = min(
             (
                 float(ts)
-                for ts in self._current_traffic_history
+                for ts in self._traffic_history_service.all_timesteps
                 if float(ts) >= elapsed_sim_time
             ),
             default=None,
         )
+<<<<<<< HEAD
         if not self._current_traffic_history or timestamp is None:
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
         time_with_offset = str(round(timestamp + self.start_time_offset, 1))
         if time_with_offset not in self._current_traffic_history:
+=======
+        if (
+            not self._traffic_history_service
+            or timestamp is None
+            or str(timestamp) not in self._traffic_history_service.all_timesteps
+        ):
+>>>>>>> Added traffic history service to fetch json files
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
         vehicle_type = "passenger"
@@ -110,9 +118,15 @@ class TrafficHistoryProvider:
                     speed=vehicle_state["speed"],
                     source="HISTORY",
                 )
+<<<<<<< HEAD
                 for v_id, vehicle_state in self._current_traffic_history[
                     time_with_offset
                 ].items()
+=======
+                for v_id, vehicle_state in self._traffic_history_service.fetch_history_at_timestep(
+                    str(timestamp)
+                ).items()
+>>>>>>> Added traffic history service to fetch json files
                 if v_id not in self.replaced_vehicle_ids
             ],
             traffic_light_systems=[],
