@@ -196,7 +196,7 @@ class Scenario:
         self._net_file_hash = file_md5_hash(self.net_filepath)
         self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
-        self._traffic_history = Traffic_history_service(traffic_history)
+        self._traffic_history_service = Traffic_history_service(traffic_history)
 
     def __repr__(self):
         return f"""Scenario(
@@ -515,7 +515,7 @@ class Scenario:
         self._missions.update(ego_mission)
 
     def discover_missions_of_traffic_histories(self, vehicle_missions={}):
-        return self._traffic_history.fetch_agent_missions()
+        return self._traffic_history_service.fetch_agent_missions()
 
     @staticmethod
     def discover_traffic_histories(scenario_root):
@@ -793,12 +793,12 @@ class Scenario:
         os.makedirs(self._log_dir, exist_ok=True)
 
     @property
-    def traffic_history(self):
-        return self._traffic_history
+    def traffic_history_service(self):
+        return self._traffic_history_service
 
-    @traffic_history.setter
-    def traffic_history(self, traffic_history):
-        self._traffic_history = traffic_history
+    @traffic_history_service.setter
+    def traffic_history_service(self, traffic_history_service):
+        self._traffic_history_service = traffic_history_service
 
     @property
     def scenario_hash(self):

@@ -39,7 +39,7 @@ class TrafficHistoryProvider:
 
     def setup(self, scenario) -> ProviderState:
         self._is_setup = True
-        self._traffic_history_service = scenario.traffic_history
+        self._traffic_history_service = scenario._traffic_history_service
         return ProviderState()
 
     def set_replaced_ids(self, vehicle_ids: list):
