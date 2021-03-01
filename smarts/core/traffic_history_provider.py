@@ -71,19 +71,11 @@ class TrafficHistoryProvider:
             ),
             default=None,
         )
-<<<<<<< HEAD
         if not self._current_traffic_history or timestamp is None:
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
         time_with_offset = str(round(timestamp + self.start_time_offset, 1))
         if time_with_offset not in self._current_traffic_history:
-=======
-        if (
-            not self._traffic_history_service
-            or timestamp is None
-            or str(timestamp) not in self._traffic_history_service.all_timesteps
-        ):
->>>>>>> Added traffic history service to fetch json files
             return ProviderState(vehicles=[], traffic_light_systems=[])
 
         vehicle_type = "passenger"
