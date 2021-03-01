@@ -24,10 +24,12 @@ import ijson
 
 import smarts.core.scenario as scenario
 
+
 @dataclass
 class RequestHistoryRange:
     start_index: int
     end_index: int
+
 
 class Traffic_history_service:
     """responsible for dynamically fetching traffic history json to reduce
@@ -42,7 +44,7 @@ class Traffic_history_service:
         # return if traffic history is not used
         if history_file_path is None:
             return
-        
+
         send_data_conn, receive_data_conn = Pipe()
         self._receive_data_conn = receive_data_conn
         self._request_queue = Queue()
@@ -74,13 +76,13 @@ class Traffic_history_service:
         self._range_start += self._batch_size
         # prepares the next batch
         self._prepare_next_batch()
-        self._receive_data_conn.recv()
+        self._receive_data_conn.recv()        
 
     def _fetch_history(
         self, send_data, request_queue, history_file_path, total_timestep_size
     ):
-        """ prepare 1 batch ahead, when received request, immediately return the previously
-            prepared batch and prepares the next batch.
+        """prepare 1 batch ahead, when received request, immediately return the previously
+        prepared batch and prepares the next batch.
         """
         return_batch = {}
         while True:
@@ -89,8 +91,13 @@ class Traffic_history_service:
             send_data.send(return_batch)
             return_batch = {}
             with open(history_file_path, "rb") as f:
-                for index, (t, vehicles_state) in enumerate(ijson.kvitems(f, "", use_float=True)):
-                    if historyRange.start_index <= index and index <= historyRange.end_index:
+                for index, (t, vehicles_state) in enumerate(
+                    ijson.kvitems(f, "", use_float=True)
+                ):
+                    if (
+                        historyRange.start_index <= index
+                        and index <= historyRange.end_index
+                    ):
                         return_batch[t] = vehicles_state
         send_data.close()
 
@@ -103,10 +110,12 @@ class Traffic_history_service:
         return {**self._current_traffic_history, **self._prev_batch_history}
 
     def _prepare_next_batch(self):
-        self._request_queue.put(RequestHistoryRange(
-            start_index=self._range_start,
-            end_index=self._range_start + self._batch_size,
-        ))
+        self._request_queue.put(
+            RequestHistoryRange(
+                start_index=self._range_start,
+                end_index=self._range_start + self._batch_size,
+            )
+        )
         self._range_start += self._batch_size
 
     def fetch_history_at_timestep(self, timestep):
