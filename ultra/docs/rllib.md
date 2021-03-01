@@ -33,7 +33,7 @@ of the steps is shown below
   - `--seed`: The environment seed (default is 2).
   - `--policy`: The policy (agent) to train (default is ppo). Only PPO is supported for now.
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
-  - `--max-samples` : The number of samples per iteration
+  - `--max-samples` : The number of samples per iteration (default is 4000)
 
   An example to show the how to run rllib training
   ```sh
