@@ -20,21 +20,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-
 from itertools import cycle
 
-import pytest
 import numpy as np
+import pytest
 
-from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.scenario import Scenario, Mission, Start, EndlessGoal
-from smarts.core.coordinates import Heading
 from smarts.core.agent_interface import (
-    AgentInterface,
     ActionSpaceType,
+    AgentInterface,
     NeighborhoodVehicles,
 )
+from smarts.core.coordinates import Heading
+from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
+from smarts.core.smarts import SMARTS
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 
 @pytest.fixture
@@ -59,7 +58,9 @@ def smarts():
     )
     agents = {"Agent-007": buddha}
     smarts = SMARTS(
-        agents, traffic_sim=SumoTrafficSimulation(headless=True), envision=None,
+        agents,
+        traffic_sim=SumoTrafficSimulation(headless=True),
+        envision=None,
     )
 
     yield smarts

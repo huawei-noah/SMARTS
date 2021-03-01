@@ -9,9 +9,14 @@ scenario = str(Path(__file__).parent)
 traffic = t.Traffic(
     flows=[
         t.Flow(
-            route=t.Route(begin=("west", lane_idx, 10), end=("east", lane_idx, -10),),
+            route=t.Route(
+                begin=("west", lane_idx, 10),
+                end=("east", lane_idx, -10),
+            ),
             rate=50,
-            actors={t.TrafficActor("car"): 1,},
+            actors={
+                t.TrafficActor("car"): 1,
+            },
         )
         for lane_idx in range(3)
     ]
@@ -21,5 +26,8 @@ traffic = t.Traffic(
 gen_traffic(scenario, traffic, name="basic")
 
 gen_missions(
-    scenario, [t.Mission(t.Route(begin=("west", 0, 0), end=("east", 0, "max"))),],
+    scenario,
+    [
+        t.Mission(t.Route(begin=("west", 0, 0), end=("east", 0, "max"))),
+    ],
 )

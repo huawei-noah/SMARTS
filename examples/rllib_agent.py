@@ -2,13 +2,12 @@ from pathlib import Path
 
 import gym
 import numpy as np
-
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.rllib.utils import try_import_tf
 
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
 from smarts.env.custom_observations import lane_ttc_observation_adapter
 
 tf = try_import_tf()

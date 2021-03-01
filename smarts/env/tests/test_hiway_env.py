@@ -19,13 +19,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import gym
 import pytest
 
-import gym
-
-from smarts.core.utils.episodes import episodes
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
+from smarts.core.utils.episodes import episodes
 
 AGENT_ID = "Agent-007"
 

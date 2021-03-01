@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from enum import Enum
-from typing import NamedTuple, Dict, Sequence, Tuple
+from typing import Dict, NamedTuple, Sequence, Tuple
 
 from smarts.core.events import Events
 
@@ -59,6 +59,11 @@ class State(NamedTuple):
     bubbles: Sequence[Sequence[Tuple[float, float]]]
     scene_colors: Dict[str, Tuple[float, float, float, float]]
     scores: Dict[str, float]
+    ego_agent_ids: list
+    position: Dict[str, Tuple[float, float]]
+    speed: Dict[str, float]
+    heading: Dict[str, float]
+    lane_ids: Dict[str, str]
 
 
 def format_actor_id(actor_id: str, vehicle_id: str, is_multi: bool):

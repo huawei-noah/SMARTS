@@ -65,7 +65,11 @@ class DiversityEvaluation:
         for actor_name, agent_list in self.agent_groups.items():
             result_dict = self.diversity_data_analyze(agent_list)
             scenario_name_list = list(result_dict.keys())
-            df = pd.DataFrame({"scenario": scenario_name_list,})
+            df = pd.DataFrame(
+                {
+                    "scenario": scenario_name_list,
+                }
+            )
             df.set_index(["scenario"], inplace=True)
             for agent in agent_list:
                 for scenario_name, result_data in result_dict.items():

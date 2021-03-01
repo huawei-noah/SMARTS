@@ -20,10 +20,9 @@
 # ====================
 # Heavily derived from https://github.com/openai/gym/blob/v0.10.5/gym/envs/registration.py
 # See gym license in THIRD_PARTY_OPEN_SOURCE_SOFTWARE_NOTICE
+import importlib
 import re
 from urllib.parse import urlparse
-import importlib
-
 
 # Taken from OpenAI gym's name constraints
 NAME_CONSTRAINT_REGEX = re.compile(r"^(?:[\w:-]+\/)?([\w:.-]+)-v(\d+)$")

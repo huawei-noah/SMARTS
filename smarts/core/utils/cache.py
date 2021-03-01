@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import functools
-from typing import Any
-from types import FunctionType
 from threading import RLock
+from types import FunctionType
+from typing import Any
 
 _CACHE_KEY_PREFIX = "_cache_decorator"
 

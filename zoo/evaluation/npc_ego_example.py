@@ -1,5 +1,5 @@
-import logging
 import argparse
+import logging
 from importlib import import_module
 
 import gym

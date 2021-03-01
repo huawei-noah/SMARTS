@@ -3,8 +3,10 @@ name: a2c-baseline-lane-controller
 agent:
   state:
     wrapper:
-      name: Simple
+      name: FrameStack
+      num_stack: 3
     features:
+      goal_relative_pos: True
       distance_to_center: True
       speed: True
       steering: True
@@ -27,7 +29,7 @@ policy:
     name: A2CTrainer
 
 run:
-  checkpoint_freq: 40
+  checkpoint_freq: 4
   checkpoint_at_end: True
   max_failures: 1000
   resume: False
@@ -35,8 +37,8 @@ run:
   stop:
     time_total_s: 14400
   config:
-    log_level: WARN
-    num_workers: 1
+    log_level: ERROR
+    num_workers: 60
     num_gpus: 0
     horizon: 1000
     # learning
@@ -50,3 +52,6 @@ run:
     min_iter_time_s: 5
     sample_async: True
     lambda: 1.0
+
+checkpoint:
+  ./log/results/run/4lane-4/A2C_FrameStack_0_2021-01-25_17-03-39ssr7i8t5/checkpoint_4/checkpoint-4

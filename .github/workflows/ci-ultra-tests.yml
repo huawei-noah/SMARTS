@@ -1,18 +1,12 @@
 name: ULTRA CI Base Tests
 
-on:
-  push:
-    branches:
-      - disabled
+on: [push, pull_request]
 
 jobs:
-  test:
+  test-base:
     runs-on: ubuntu-18.04
-    container: huaweinoah/smarts:v0.4.3-pre
-    strategy:
-      matrix:
-        tests:
-          - ./ultra/tests/ --ignore=./ultra/tests/test_train.py
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -27,21 +21,112 @@ jobs:
             -config /etc/X11/xorg.conf :1 &
       - name: Install dependencies
         run: |
+          cd ultra
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install dill
-          pip install ijson
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
-          pip install --upgrade --upgrade-strategy eager -r requirements.txt
-          pip install --upgrade --upgrade-strategy eager -e .[train,test]
-      - name: Run smoke tests
+          pip install --upgrade --upgrade-strategy eager -e .
+      - name: Run ultra tests
         run: |
+          cd ultra
           . .venv/bin/activate
-          make build-all-scenarios
-          PYTHONHASHSEED=42 pytest -v \
-            --doctest-modules \
-            --forked \
-            --dist=no \
-            -n auto \
-            ${{matrix.tests}}
+          scl scenario build-all ultra/scenarios/pool
+          pytest -v ./tests/
+      - name: Run Header test
+        run : |
+          cd ultra
+          ./header_test.sh
+
+  test-package-via-setup:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.4.13-minimal
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup X11
+        run: |
+          /usr/bin/Xorg \
+            -noreset \
+            +extension GLX \
+            +extension RANDR \
+            +extension RENDER \
+            -logfile ./xdummy.log \
+            -config /etc/X11/xorg.conf :1 &
+      - name: Install ultra-rl via setup.py
+        run: |
+          cd ultra
+          python3.7 -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade --upgrade-strategy eager pip
+          pip install --upgrade --upgrade-strategy eager -e .
+      - name: Run test
+        run: |
+          cd ultra
+          . .venv/bin/activate
+          scl scenario build-all ultra/scenarios/pool
+          pytest -v ./tests/test_ultra_package.py
+
+  test-package-via-wheel:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.4.13-minimal
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup X11
+        run: |
+          /usr/bin/Xorg \
+            -noreset \
+            +extension GLX \
+            +extension RANDR \
+            +extension RENDER \
+            -logfile ./xdummy.log \
+            -config /etc/X11/xorg.conf :1 &
+      - name: Install ultra-rl via whl file
+        run: |
+          cd ultra
+          python3.7 -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade --upgrade-strategy eager pip
+          pip install --upgrade --upgrade-strategy eager wheel
+          python setup.py bdist_wheel
+          cd dist
+          pip install $(ls . | grep ultra)
+          cd ..
+      - name: Run test
+        run: |
+          cd ultra
+          . .venv/bin/activate
+          scl scenario build-all ultra/scenarios/pool
+          pytest -v ./tests/test_ultra_package.py
+
+  # test-package-via-pypi:
+  #   runs-on: ubuntu-18.04
+  #   if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+  #   container: huaweinoah/smarts:v0.4.13-minimal
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #     - name: Setup X11
+  #       run: |
+  #         /usr/bin/Xorg \
+  #           -noreset \
+  #           +extension GLX \
+  #           +extension RANDR \
+  #           +extension RENDER \
+  #           -logfile ./xdummy.log \
+  #           -config /etc/X11/xorg.conf :1 &
+  #     - name: Install ultra-rl via setup.py
+  #       run: |
+  #         cd ultra
+  #         python3.7 -m venv .venv
+  #         . .venv/bin/activate
+  #         pip install ultra-rl
+  #     - name: Run test
+  #       run: |
+  #         cd ultra
+  #         . .venv/bin/activate
+  #         scl scenario build-all ultra/scenarios/pool
+  #         pytest -v ./tests/test_ultra_package.py

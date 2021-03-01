@@ -22,15 +22,15 @@
 import math
 from itertools import cycle
 
-import pytest
 import numpy as np
+import pytest
 
 from smarts.core import seed
+from smarts.core.agent_interface import ActionSpaceType, AgentInterface
+from smarts.core.coordinates import Heading
+from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.scenario import Scenario, Mission, Start, EndlessGoal
-from smarts.core.coordinates import Heading
-from smarts.core.agent_interface import AgentInterface, ActionSpaceType
 
 
 @pytest.fixture
@@ -49,7 +49,9 @@ def scenarios():
 @pytest.fixture
 def smarts():
     buddha = AgentInterface(
-        max_episode_steps=1000, neighborhood_vehicles=True, action=ActionSpaceType.Lane,
+        max_episode_steps=1000,
+        neighborhood_vehicles=True,
+        action=ActionSpaceType.Lane,
     )
     smarts = SMARTS(
         agent_interfaces={"Agent-007": buddha},

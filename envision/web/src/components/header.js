@@ -29,11 +29,11 @@ export default function Header_({
   matchedSimulationId,
   onStartRecording,
   onStopRecording,
-  onToggleShowScores,
+  onToggleShowControls,
   onToggleEgoView,
   onSelectSimulation,
 }) {
-  const [showScores, setShowScores] = useState(true);
+  const [showControl, setShowControl] = useState(true);
   const [egoView, setEgoView] = useState(false);
   const [recording, setRecording] = useState(false);
 
@@ -48,10 +48,10 @@ export default function Header_({
     setRecording(recording_);
   }
 
-  function toggleShowScores() {
-    let showScores_ = !showScores;
-    onToggleShowScores(showScores_);
-    setShowScores(showScores_);
+  function toggleShowControls() {
+    let showControl_ = !showControl;
+    onToggleShowControls(showControl_);
+    setShowControl(showControl_);
   }
 
   function toggleEgoView() {
@@ -116,8 +116,8 @@ export default function Header_({
       </Space>
 
       <Space style={{ float: "right" }}>
-        <Checkbox defaultChecked onClick={toggleShowScores}>
-          Show Scores
+        <Checkbox defaultChecked onClick={toggleShowControls}>
+          Show Controls
         </Checkbox>
         <Checkbox onClick={toggleEgoView}>Egocentric View</Checkbox>
       </Space>

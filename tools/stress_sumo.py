@@ -8,7 +8,10 @@ from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 def spawn_sumo(worker_idx, batch_id):
     sumo_sim = SumoTrafficSimulation(headless=True)
 
-    scenarios_iterator = Scenario.scenario_variations(["scenarios/loop"], ["Agent007"],)
+    scenarios_iterator = Scenario.scenario_variations(
+        ["scenarios/loop"],
+        ["Agent007"],
+    )
     sumo_sim.setup(Scenario.next(scenarios_iterator, f"{batch_id}-{worker_idx}"))
     sumo_sim.teardown()
 

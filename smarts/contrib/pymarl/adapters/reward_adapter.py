@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import numpy as np
+
 from .observation_adapter import default_obs_adapter
 
 
@@ -48,7 +49,11 @@ def default_reward_adapter(env_obs, env_reward):
     # penalize close proximity to other cars
     crash_penalty = -5 if bool(obs["ego_will_crash"]) else 0
 
-    total_reward = np.sum([1.0 * env_reward,])
+    total_reward = np.sum(
+        [
+            1.0 * env_reward,
+        ]
+    )
     total_penalty = np.sum([0.1 * center_penalty, 1 * steering_penalty, crash_penalty])
 
     if flip_penalty != 0:

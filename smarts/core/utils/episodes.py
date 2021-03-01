@@ -20,9 +20,9 @@
 import os
 import sys
 import time
-from dataclasses import dataclass, field
 from collections import defaultdict
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 
 import tableprint as tp
 

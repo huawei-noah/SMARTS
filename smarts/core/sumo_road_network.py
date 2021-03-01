@@ -30,13 +30,14 @@ import trimesh.scene
 from shapely import ops
 from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
-from shapely.ops import triangulate, snap
+from shapely.ops import snap, triangulate
 from trimesh.exchange import gltf
 
 from .utils.math import rotate_around_point
-from .utils.sumo import sumolib
-from sumolib.net.edge import Edge
-from sumolib.net.lane import Lane
+
+from smarts.core.utils.sumo import sumolib  # isort:skip
+from sumolib.net.edge import Edge  # isort:skip
+from sumolib.net.lane import Lane  # isort:skip
 
 
 def _convert_camera(camera):
@@ -389,8 +390,10 @@ class SumoRoadNetwork:
                     lane_shape[i], lane_shape[i + 1]
                 )
         else:
-            offset_into_lane = sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
-                point, lane_shape, perpendicular=False
+            offset_into_lane = (
+                sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
+                    point, lane_shape, perpendicular=False
+                )
             )
 
         return offset_into_lane

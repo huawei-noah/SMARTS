@@ -21,7 +21,7 @@ from itertools import cycle
 from typing import Set
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Pose, Heading
+from .coordinates import BoundingBox, Heading, Pose
 from .provider import ProviderState
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
@@ -80,7 +80,10 @@ class TrafficHistoryProvider:
                     vehicle_id=v_id,
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center(
-                        [*vehicle_state["position"][:2], 0,],
+                        [
+                            *vehicle_state["position"][:2],
+                            0,
+                        ],
                         Heading(vehicle_state["heading"]),
                     ),
                     dimensions=BoundingBox(

@@ -34,6 +34,8 @@ Scalable Multi-Agent RL Training School (**SMARTS**) is an autonomous driving pl
 
    api/modules.rst
 
+   cutin-uturn-doc.rst
+
 
 Indices and Tables
 ==================
