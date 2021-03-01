@@ -75,6 +75,8 @@ def train(
 
     agent = spec.build_agent()
 
+    scenario_success = 0
+
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
@@ -125,11 +127,17 @@ def train(
             total_step += 1
             state = next_state
 
+        if (infos['007']['logs']['events'].reached_goal):
+            scenario_success += 1
+        else:
+            continue
+
         episode.record_episode()
         episode.record_tensorboard()
         if finished:
             break
 
+    print(f">>>>>>>>>>>>>>>> Scenario success : {scenario_success} <<<<<<<<<<<<<<<<<<")
     env.close()
 
 
