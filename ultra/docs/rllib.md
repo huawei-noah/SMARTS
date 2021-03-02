@@ -2,12 +2,11 @@
 
 ## Summary
 
-We have integrated Ray's Reinforcement Learning framework inside ULTRA to cater users whom are familiar with RLlib. We have blended ULTRA's environment and agent specifications 
-inside RLlib's configuration to allow their policies to interact in our environment. We currently support RLlib's PPO policy and the plan is to add provision for SAC, DDPG and DQN.
+We have integrated Ray's Reinforcement Learning framework inside ULTRA to cater to users who are familiar with RLlib. We have blended ULTRA's environment and agent specifications inside RLlib's configuration to allow their policies to interact with the ULTRA environment. We currently support RLlib's PPO policy, but plan to support SAC, DDPG and DQN.
 
 ## Setup
 
-To use the RLlib functionality inside ULTRA, you must have the ultra-rl>=0.2. If you have not followed the setup guide for ULTRA, here is a [link](docs/setup.md) to it 
+To use RLlib with ULTRA, you must have the ultra-rl>=0.2. If you have not followed the setup guide for ULTRA, here is a [link](docs/setup.md) to it 
 
 ## Training agents
 
@@ -33,7 +32,7 @@ of the steps is shown below
   - `--seed`: The environment seed (default is 2).
   - `--policy`: The policy (agent) to train (default is ppo). Only PPO is supported for now.
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
-  - `--max-samples` : The number of samples per iteration (default is 4000)
+  - `--training-batch-samples` : The number of trainig samples per iteration (default is 4000).
 
   An example to show the how to run rllib training
   ```sh
@@ -45,6 +44,6 @@ of the steps is shown below
 
   To view the Tensorboard results of this experiment, run the command below:
   ```sh
-  $ tensorboard --logdir <abolute_path_to_ULTRA>/logs/<timestamped_experiment_name>
+  $ tensorboard --logdir <absolute_path_to_ULTRA>/logs/<timestamped_experiment_name>
   ```
   > View the result in your browser with the provided link.

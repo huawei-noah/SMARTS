@@ -58,7 +58,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--seed`: The environment seed (default is 2).
   - `--policy`: The policy (agent) to train (default is sac).
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
-  - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000)
+  - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
 
   Run the following command to train our DQN agent with a quick training session (if you started Envision in the previous section, refresh your browser to observe the training):
   ```sh
@@ -85,7 +85,7 @@ After training your agent, your models should be saved under `logs/<timestamped_
   - `--headless`: Whether to run evaluation without Envision (default is False).
   - `--experiment-dir`: The path to the spec file that includes adapters and policy parameters.
   - `--policy`: The policy (agent) to evaluate (default is sac).
-  - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000)
+  - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
 
   For example, let's re-run our DQN's evaluation with the following command:
   ```sh
