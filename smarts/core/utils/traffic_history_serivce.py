@@ -77,9 +77,11 @@ class Traffic_history_service:
         self._prepare_next_batch()
         self._receive_data_conn.recv()
 
-    def _fetch_history(
-        self, send_data_conn, request_queue, history_file_path
-    ):
+    @property
+    def is_in_use(self):
+        return self._history_file_path is not None
+
+    def _fetch_history(self, send_data_conn, request_queue, history_file_path):
         """prepare 1 batch ahead, when received request, immediately return the previously
         prepared batch and prepares the next batch.
         """

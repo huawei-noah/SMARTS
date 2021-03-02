@@ -69,6 +69,7 @@ traffic_history_2 = {
     }
 }
 
+
 def create_file(tmp_path, sub, filepath, content):
     d = tmp_path / sub
     d.mkdir()
@@ -80,8 +81,8 @@ def create_file(tmp_path, sub, filepath, content):
 @pytest.fixture
 def create_history_files(tmp_path):
     return [
-        create_file(tmp_path, "sub","traffic_history_1.json", traffic_history_1), 
-        create_file(tmp_path, "sub2", "traffic_history_2.json", traffic_history_2)
+        create_file(tmp_path, "sub", "traffic_history_1.json", traffic_history_1),
+        create_file(tmp_path, "sub2", "traffic_history_2.json", traffic_history_2),
     ]
 
 
@@ -117,12 +118,8 @@ def create_scenario():
         yield scenario_root
 
 
-def test_mutiple_traffic_data(
-    create_scenario, create_history_files
-):
-    Scenario.discover_traffic_histories = MagicMock(
-        return_value=create_history_files
-    )
+def test_mutiple_traffic_data(create_scenario, create_history_files):
+    Scenario.discover_traffic_histories = MagicMock(return_value=create_history_files)
     iterator = Scenario.variations_for_all_scenario_roots(
         [str(create_scenario)], [AGENT_ID], shuffle_scenarios=False
     )
@@ -133,7 +130,9 @@ def test_mutiple_traffic_data(
     traffic_history_provider = TrafficHistoryProvider()
 
     use_first_history = True
-    for scenario, traffic_history in zip(scenarios, [traffic_history_1, traffic_history_2]):
+    for scenario, traffic_history in zip(
+        scenarios, [traffic_history_1, traffic_history_2]
+    ):
         for key in scenario.traffic_history_service.traffic_history:
             assert (
                 scenario.traffic_history_service.traffic_history[key]
