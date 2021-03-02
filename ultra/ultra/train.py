@@ -107,19 +107,21 @@ def train(
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
             next_state = observations[AGENT_ID]
 
-            loss_output = agent.step(
-                state=state,
-                action=action,
-                reward=rewards[AGENT_ID],
-                next_state=next_state,
-                done=dones[AGENT_ID],
-            )
+            loss_outputs = {
+                AGENT_ID: agent.step(
+                    state=state,
+                    action=action,
+                    reward=rewards[AGENT_ID],
+                    next_state=next_state,
+                    done=dones[AGENT_ID],
+                )
+            }
             episode.record_step(
-                agent_id=AGENT_ID,
+                agent_ids_to_record=[AGENT_ID],
                 infos=infos,
                 rewards=rewards,
                 total_step=total_step,
-                loss_output=loss_output,
+                loss_outputs=loss_outputs,
             )
             total_step += 1
             state = next_state

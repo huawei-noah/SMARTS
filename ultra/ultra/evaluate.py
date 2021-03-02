@@ -144,7 +144,9 @@ def evaluate(
 
             state = next_state
 
-            episode.record_step(agent_id=agent_id, infos=infos, rewards=rewards)
+            episode.record_step(
+                agent_ids_to_record=[agent_id], infos=infos, rewards=rewards
+            )
 
         episode.record_episode()
         logs.append(episode.info[episode.active_tag][agent_id].data)

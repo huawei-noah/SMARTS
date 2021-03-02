@@ -211,13 +211,23 @@ class Episode:
         if not os.path.exists(self.ep_log_dir):
             os.makedirs(self.ep_log_dir)
 
-    def record_step(self, agent_id, infos, rewards, total_step=0, loss_output=None):
-        if loss_output:
-            self.log_loss(step=total_step, agent_id=agent_id, loss_output=loss_output)
-        self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
-        self.info[self.active_tag][agent_id].step()
+    def record_step(
+        self, agent_ids_to_record, infos, rewards, total_step=0, loss_outputs=None
+    ):
+        # Record the data for each agent ID.
+        for agent_id in agent_ids_to_record:
+            if loss_outputs:
+                self.log_loss(
+                    step=total_step,
+                    agent_id=agent_id,
+                    loss_output=loss_outputs[agent_id],
+                )
+            self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
+            self.info[self.active_tag][agent_id].step()
+            self.agents_itr[agent_id] += 1
+
+        # Increment this episode's step count.
         self.steps += 1
-        self.agents_itr[agent_id] += 1
 
     def record_episode(self):
         for _, agent_info in self.info[self.active_tag].items():
