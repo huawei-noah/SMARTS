@@ -107,6 +107,10 @@ class Traffic_history_service:
         return self._all_timesteps
 
     @property
+    def history_file_path(self):
+        return self._history_file_path
+
+    @property
     def traffic_history(self):
         return {**self._current_traffic_history, **self._prev_batch_history}
 
@@ -135,9 +139,10 @@ class Traffic_history_service:
         # no history exists at requested timestamp
         return {}
 
-    def fetch_agent_missions(self):
+    @staticmethod
+    def fetch_agent_missions(history_file_path):
         vehicle_missions = {}
-        with open(self._history_file_path, "rb") as f:
+        with open(history_file_path, "rb") as f:
             for t, vehicles_state in ijson.kvitems(f, "", use_float=True):
                 for vehicle_id in vehicles_state:
                     if vehicle_id in vehicle_missions:
