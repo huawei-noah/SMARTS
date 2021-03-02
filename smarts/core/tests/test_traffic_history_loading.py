@@ -66,10 +66,12 @@ def create_scenario():
     with temp_scenario(name="cycles", map="maps/6lane.net.xml") as scenario_root:
         yield scenario_root
 
+
 def check_history(range_start, range_end, data):
     for timestamp in data:
         assert range_start <= float(timestamp) and float(timestamp) <= range_end
         assert data[timestamp] == traffic_history[timestamp]
+
 
 def test_mutiple_traffic_data(create_scenario, history_file):
     Scenario.discover_traffic_histories = MagicMock(return_value=[history_file])
@@ -84,14 +86,19 @@ def test_mutiple_traffic_data(create_scenario, history_file):
     check_history(0, 29.9, traffic_history_service.traffic_history)
     # child process prepared 30.0 -> 59.9
     # assert next batch range is correct for next request
-    assert scenario.traffic_history_service._range_start == 2*traffic_history_service._batch_size
-    
+    assert (
+        scenario.traffic_history_service._range_start
+        == 2 * traffic_history_service._batch_size
+    )
+
     # when reached 30.0
     traffic_history_service.fetch_history_at_timestep("30.0")
     assert len(traffic_history_service.traffic_history) == 600
     assert len(traffic_history_service._current_traffic_history) == 300
     assert len(traffic_history_service._prev_batch_history) == 300
-    assert traffic_history_service._range_start == 3*traffic_history_service._batch_size
+    assert (
+        traffic_history_service._range_start == 3 * traffic_history_service._batch_size
+    )
     check_history(0, 59.9, traffic_history_service.traffic_history)
 
     # when reached 60.0
@@ -99,7 +106,9 @@ def test_mutiple_traffic_data(create_scenario, history_file):
     assert len(traffic_history_service.traffic_history) == 600
     assert len(traffic_history_service._current_traffic_history) == 300
     assert len(traffic_history_service._prev_batch_history) == 300
-    assert traffic_history_service._range_start == 4*traffic_history_service._batch_size
+    assert (
+        traffic_history_service._range_start == 4 * traffic_history_service._batch_size
+    )
     check_history(30.0, 89.9, traffic_history_service.traffic_history)
 
     # when reached 90.0, there is only 100 records left in json file
@@ -107,7 +116,7 @@ def test_mutiple_traffic_data(create_scenario, history_file):
     assert len(traffic_history_service.traffic_history) == 400
     assert len(traffic_history_service._current_traffic_history) == 100
     assert len(traffic_history_service._prev_batch_history) == 300
-    assert traffic_history_service._range_start == 5*traffic_history_service._batch_size
+    assert (
+        traffic_history_service._range_start == 5 * traffic_history_service._batch_size
+    )
     check_history(60.0, 99.9, traffic_history_service.traffic_history)
-
-        
