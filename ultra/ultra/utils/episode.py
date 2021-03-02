@@ -166,8 +166,8 @@ class Episode:
     def get_itr(self, agent_id):
         return self.agents_itr[agent_id]
 
-    def checkpoint_dir(self, iteration):
-        path = f"{self.model_dir}/{iteration}"
+    def checkpoint_dir(self, agent_id, iteration):
+        path = f"{self.model_dir}/{agent_id}/{iteration}"
         self.make_dir(path)
         return path
 

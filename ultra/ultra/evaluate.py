@@ -64,10 +64,10 @@ def evaluation_check(
         f"{agent_id} -- Agent iteration : {agent_itr}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
     )
     if (agent_itr + 1) % eval_rate == 0 and episode.last_eval_iteration != agent_itr:
-        checkpoint_dir = episode.checkpoint_dir(agent_itr)
+        checkpoint_dir = episode.checkpoint_dir(agent_id, agent_itr)
         agent.save(checkpoint_dir)
         episode.eval_mode()
-        episode.info[episode.active_tag][agent_id] = ray.get(
+        episode.info[episode.active_tag] = ray.get(
             [
                 evaluate.remote(
                     experiment_dir=episode.experiment_dir,
@@ -91,15 +91,87 @@ def evaluation_check(
         episode.train_mode()
 
 
-# Number of GPUs should be splited between remote functions.
+# # Number of GPUs should be splited between remote functions.
+# @ray.remote(num_gpus=num_gpus / 2)
+# def evaluate(
+#     experiment_dir,
+#     seed,
+#     agent_id,
+#     policy_class,
+#     itr_count,
+#     checkpoint_dir,
+#     scenario_info,
+#     num_episodes,
+#     max_episode_steps,
+#     headless,
+#     timestep_sec,
+#     log_dir,
+# ):
+
+#     torch.set_num_threads(1)
+#     spec = make(
+#         locator=policy_class,
+#         checkpoint_dir=checkpoint_dir,
+#         experiment_dir=experiment_dir,
+#         max_episode_steps=max_episode_steps,
+#         agent_id=agent_id,
+#     )
+
+#     env = gym.make(
+#         "ultra.env:ultra-v0",
+#         agent_specs={agent_id: spec},
+#         scenario_info=scenario_info,
+#         headless=headless,
+#         timestep_sec=timestep_sec,
+#         seed=seed,
+#         eval_mode=True,
+#     )
+
+#     agent = spec.build_agent()
+#     summary_log = LogInfo()
+#     logs = []
+
+#     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
+#         observations = env.reset()
+#         state = observations[agent_id]
+#         dones, infos = {"__all__": False}, None
+
+#         episode.reset(mode="Evaluation")
+#         while not dones["__all__"]:
+#             action = agent.act(state, explore=False)
+#             observations, rewards, dones, infos = env.step({agent_id: action})
+
+#             next_state = observations[agent_id]
+
+#             state = next_state
+
+#             episode.record_step(agent_id=agent_id, infos=infos, rewards=rewards)
+
+#         episode.record_episode()
+#         logs.append(episode.info[episode.active_tag][agent_id].data)
+
+#         for key, value in episode.info[episode.active_tag][agent_id].data.items():
+#             if not isinstance(value, (list, tuple, np.ndarray)):
+#                 summary_log.data[key] += value
+
+#     for key, val in summary_log.data.items():
+#         if not isinstance(val, (list, tuple, np.ndarray)):
+#             summary_log.data[key] /= num_episodes
+
+#     env.close()
+
+#     return summary_log
+
+
+# Number of GPUs should be split between remote functions.
 @ray.remote(num_gpus=num_gpus / 2)
 def evaluate(
     experiment_dir,
     seed,
-    agent_id,
-    policy_class,
+    agent_ids,
+    policy_classes,
     itr_count,
-    checkpoint_dir,
+    checkpoint_dirs,
     scenario_info,
     num_episodes,
     max_episode_steps,
@@ -107,19 +179,30 @@ def evaluate(
     timestep_sec,
     log_dir,
 ):
-
     torch.set_num_threads(1)
-    spec = make(
-        locator=policy_class,
-        checkpoint_dir=checkpoint_dir,
-        experiment_dir=experiment_dir,
-        max_episode_steps=max_episode_steps,
-        agent_id=agent_id,
-    )
 
+    # spec = make(
+    #     locator=policy_class,
+    #     checkpoint_dir=checkpoint_dir,
+    #     experiment_dir=experiment_dir,
+    #     max_episode_steps=max_episode_steps,
+    #     agent_id=agent_id,
+    # )
+    agent_specs = {
+        agent_id: make(
+            locator=policy_classes[agent_id],
+            checkpoint_dir=checkpoint_dirs[agent_id],
+            experiment_dir=experiment_dir,
+            max_episode_steps=max_episode_steps,
+            agent_id=agent_id,
+        )
+        for agent_id in agent_ids
+    }
+
+    # Create the environment with the specified agents.
     env = gym.make(
         "ultra.env:ultra-v0",
-        agent_specs={agent_id: spec},
+        agent_specs=agent_specs,
         scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
@@ -127,36 +210,54 @@ def evaluate(
         eval_mode=True,
     )
 
-    agent = spec.build_agent()
-    summary_log = LogInfo()
-    logs = []
+    # Build each agent from its specification.
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
+
+    # summary_log = LogInfo()
+    summary_log = {
+        agent_id: LogInfo() for agent_id in agent_ids
+    }
+    # logs = []
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
-        state = observations[agent_id]
         dones, infos = {"__all__": False}, None
 
         episode.reset(mode="Evaluation")
         while not dones["__all__"]:
-            action = agent.act(state, explore=False)
-            observations, rewards, dones, infos = env.step({agent_id: action})
+            actions = {
+                agent_id: agents[agent_id].act(observation, explore=False)
+                for agent_id, observation in observations.items()
+            }
+            next_observations, rewards, dones, infos = env.step(actions)
 
-            next_state = observations[agent_id]
+            for agent_id in observations.keys() & next_observations.keys():
+                episode.record_step(agent_id=agent_id, infos=infos, rewards=rewards)
 
-            state = next_state
-
-            episode.record_step(agent_id=agent_id, infos=infos, rewards=rewards)
+            observations = next_observations
 
         episode.record_episode()
-        logs.append(episode.info[episode.active_tag][agent_id].data)
+        # logs.append(episode.info[episode.active_tag][agent_id].data)
 
-        for key, value in episode.info[episode.active_tag][agent_id].data.items():
+        for agent_id, agent_data in episode.info[episode.active_tag].items():
+            for key, value in agent_data.data.items():
+                if not isinstance(value, (list, tuple, np.ndarray)):
+                    summary_log[agent_id].data[key] += value
+        # for key, value in episode.info[episode.active_tag][agent_id].data.items():
+        #     if not isinstance(value, (list, tuple, np.ndarray)):
+        #         summary_log.data[key] += value
+
+    # Normalize by the number of evaluation episodes.
+    for agent_id, agent_data in summary_log.items():
+        for key, value in agent_data.data.items():
             if not isinstance(value, (list, tuple, np.ndarray)):
-                summary_log.data[key] += value
-
-    for key, val in summary_log.data.items():
-        if not isinstance(val, (list, tuple, np.ndarray)):
-            summary_log.data[key] /= num_episodes
+                summary_log.data[key] /= num_episodes
+    # for key, val in summary_log.data.items():
+    #     if not isinstance(val, (list, tuple, np.ndarray)):
+    #         summary_log.data[key] /= num_episodes
 
     env.close()
 
@@ -223,8 +324,9 @@ if __name__ == "__main__":
     if not os.listdir(args.models):
         raise "No models to evaluate"
 
+    AGENT_ID = "AGENT_008"
     sorted_models = sorted(
-        glob.glob(f"{args.models}/*"), key=lambda x: int(x.split("/")[-1])
+        glob.glob(f"{args.models}/{AGENT_ID}/*"), key=lambda x: int(x.split("/")[-1])
     )
     base_dir = os.path.dirname(__file__)
     pool_path = os.path.join(base_dir, "agent_pool.json")
