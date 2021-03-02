@@ -1,0 +1,8 @@
+social_vehicles:
+    encoder_key: pointnet_encoder
+    social_policy_hidden_units: 128
+    social_policy_init_std: 0.5
+    num_social_features: 4
+    seed: 2
+    observation_num_lookahead: 20
+    social_capacity: 10

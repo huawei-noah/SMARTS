@@ -56,7 +56,7 @@ class BaselineAdapter:
             social_policy_hidden_units=social_vehicle_params[
                 "social_policy_hidden_units"
             ],
-            social_polciy_init_std=social_vehicle_params["social_polciy_init_std"],
+            social_policy_init_std=social_vehicle_params["social_policy_init_std"],
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]

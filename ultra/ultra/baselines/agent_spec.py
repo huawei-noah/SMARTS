@@ -79,8 +79,8 @@ class BaselineAgentSpec(AgentSpec):
                 social_policy_hidden_units=policy_params["social_vehicles"][
                     "social_policy_hidden_units"
                 ],
-                social_polciy_init_std=policy_params["social_vehicles"][
-                    "social_polciy_init_std"
+                social_policy_init_std=policy_params["social_vehicles"][
+                    "social_policy_init_std"
                 ],
                 num_social_features=policy_params["social_vehicles"][
                     "num_social_features"
