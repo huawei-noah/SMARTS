@@ -178,7 +178,7 @@ class Scenario:
         social_agents: Dict[str, SocialAgent] = None,
         log_dir: str = None,
         surface_patches: list = None,
-        traffic_history: dict = None,
+        traffic_history: str = None,
     ):
 
         self._logger = logging.getLogger(self.__class__.__name__)

@@ -54,7 +54,6 @@ class Traffic_history_service:
                 send_data_conn,
                 self._request_queue,
                 self._history_file_path,
-                len(self._all_timesteps),
             ),
         )
         self._fetch_history_proc.daemon = True
@@ -70,7 +69,7 @@ class Traffic_history_service:
                 self._all_timesteps.add(t)
                 if (
                     self._range_start <= index
-                    and index <= self._range_start + self._batch_size
+                    and index < self._range_start + self._batch_size
                 ):
                     self._current_traffic_history[t] = vehicles_state
         self._range_start += self._batch_size
@@ -79,7 +78,7 @@ class Traffic_history_service:
         self._receive_data_conn.recv()
 
     def _fetch_history(
-        self, send_data, request_queue, history_file_path, total_timestep_size
+        self, send_data_conn, request_queue, history_file_path
     ):
         """prepare 1 batch ahead, when received request, immediately return the previously
         prepared batch and prepares the next batch.
@@ -88,7 +87,7 @@ class Traffic_history_service:
         while True:
             historyRange = request_queue.get()
             assert isinstance(historyRange, RequestHistoryRange)
-            send_data.send(return_batch)
+            send_data_conn.send(return_batch)
             return_batch = {}
             with open(history_file_path, "rb") as f:
                 for index, (t, vehicles_state) in enumerate(
@@ -96,10 +95,10 @@ class Traffic_history_service:
                 ):
                     if (
                         historyRange.start_index <= index
-                        and index <= historyRange.end_index
+                        and index < historyRange.end_index
                     ):
                         return_batch[t] = vehicles_state
-        send_data.close()
+        send_data_conn.close()
 
     @property
     def all_timesteps(self):
