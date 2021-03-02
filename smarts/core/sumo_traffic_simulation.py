@@ -55,19 +55,19 @@ class SumoTrafficSimulation:
                 Since our interface(TRACI) to SUMO is delayed by one simulation step,
                 setting a higher time resolution may lead to unexpected artifacts
         num_external_sumo_clients:
-            wait for the specified number of other clients to connect to SUMO
+            Block and wait on the specified number of other clients to connect to SUMO.
         sumo_port:
-            the port that sumo runs on
+            The port that sumo will attempt to run on.
         auto_start:
-            False to pause simulation when SMARTS run, and wait for user to click
-            start on sumo-gui
+            False to pause simulation when SMARTS runs, and wait for user to click
+            start on sumo-gui.
         endless_traffic:
-            Not remove vehicles by re-adding back vehicles that exit
+            Reintroduce vehicles that exit the SUMO simulation.
         allow_reload:
-            True to reload existing SUMO
+            Reset SUMO instead of restarting SUMO when the current map is the same as the previous.
         remove_agents_only_mode:
-            Remove only agent vehicles used by SMARTS and not delete other sumo
-            vehicles when teardown
+            Remove only agent vehicles used by SMARTS and not delete other SUMO
+            vehicles when the traffic simulation calls teardown
     """
 
     def __init__(
@@ -330,9 +330,6 @@ class SumoTrafficSimulation:
         """
         Args:
             dt: time (in seconds) to simulate during this simulation step
-            managed_vehicles: dict of {vehicle_id: (x, y, heading)}
-                !! The vehicle state should represent the state of the
-                !! vehicles at the start of the current simulation step
         Returns:
             ProviderState representing the state of the SUMO simulation
         """

@@ -151,22 +151,26 @@ def train(
             }
             next_observations, rewards, dones, infos = env.step(actions)
 
-            # Step and record the data of each available agent.
-            for agent_id in observations.keys() & next_observations.keys():
-                loss_output = agents[agent_id].step(
+            # Step each available agent.
+            loss_outputs = {
+                agent_id: agents[agent_id].step(
                     state=observations[agent_id],
                     action=actions[agent_id],
                     reward=rewards[agent_id],
                     next_state=next_observations[agent_id],
                     done=dones[agent_id],
                 )
-                episode.record_step(
-                    agent_id=agent_id,
-                    infos=infos,
-                    rewards=rewards,
-                    total_step=total_step,
-                    loss_output=loss_output,
-                )
+                for agent_id in observations.keys() & next_observations.keys()
+            }
+
+            # Record the data from this episode.
+            episode.record_step(
+                agent_ids_to_record=loss_outputs.keys(),
+                infos=infos,
+                rewards=rewards,
+                total_step=total_step,
+                loss_outputs=loss_outputs,
+            )
 
             # Update variables for the next step.
             total_step += 1
