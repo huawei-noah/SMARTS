@@ -22,6 +22,7 @@
 import json
 import os
 import sys
+import numpy as np
 
 from ultra.utils.ray import default_ray_kwargs
 
@@ -39,7 +40,7 @@ import torch
 
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
-from ultra.utils.episode import episodes
+from ultra.utils.episode import episodes, LogInfo
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -76,6 +77,7 @@ def train(
     agent = spec.build_agent()
 
     scenario_success = 0
+    summary_log = LogInfo()
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
@@ -127,17 +129,29 @@ def train(
             total_step += 1
             state = next_state
 
-        if (infos['007']['logs']['events'].reached_goal):
-            scenario_success += 1
-        else:
-            continue
+        # if (infos['007']['logs']['events'].reached_goal):
+        #     scenario_success += 1
+        # else:
+        #     continue
 
+        # print(episode.info[episode.active_tag][AGENT_ID].data.items())
+        # sys.exit()
         episode.record_episode()
+
+        # for key, value in episode.info[episode.active_tag][AGENT_ID].data.items():
+        #     if not isinstance(value, (list, tuple, np.ndarray)):
+        #         summary_log.data[key] += value
         episode.record_tensorboard()
+
         if finished:
             break
 
-    print(f">>>>>>>>>>>>>>>> Scenario success : {scenario_success} <<<<<<<<<<<<<<<<<<")
+    # for key, val in summary_log.data.items():
+    #     if not isinstance(val, (list, tuple, np.ndarray)):
+    #         summary_log.data[key] /= num_episodes
+    #         print(f"{key}: {summary_log.data[key]}")
+
+    # print(f">>>>>>>>>>>>>>>> Scenario success : {scenario_success} <<<<<<<<<<<<<<<<<<")
     env.close()
 
 
