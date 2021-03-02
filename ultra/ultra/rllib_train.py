@@ -26,7 +26,7 @@ import timeit, datetime
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
 import time
-import psutil, dill, torch
+import psutil, dill, torch, inspect
 import ray, torch, argparse
 import numpy as np
 from ray import tune
@@ -68,19 +68,14 @@ def train(
     # --------------------------------------------------------
     # Initialize Agent and social_vehicle encoding method
     # -------------------------------------------------------
-    AGENT_ID = "007"
+    # AGENT_ID = "007"
 
-    social_vehicle_params = dict(
-        encoder_key="pointnet_encoder",
-        social_policy_hidden_units=128,
-        social_polciy_init_std=0.5,
-        num_social_features=4,
-        seed=seed,
-        observation_num_lookahead=20,
-        social_capacity=10,
+    # social_vehicle_params_dir = "/".join(inspect.getfile("ultra.baselines.rllib_models").split("/")[:-1])
+    social_vehicle_params = load_yaml(
+        "ultra/baselines/rllib_models/social_vehicle_params.yaml"
     )
     adapter = BaselineAdapter(
-        social_vehicle_params=social_vehicle_params,
+        social_vehicle_params=social_vehicle_params["social_vehicles"],
     )
 
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)

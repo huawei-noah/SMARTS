@@ -24,6 +24,7 @@ import glob, yaml
 from smarts.core.scenario import Scenario
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from ultra.baselines.adapter import BaselineAdapter
+from ultra.baselines.common.yaml_loader import load_yaml
 import numpy as np
 from scipy.spatial import distance
 import math, os
@@ -50,7 +51,12 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
         config["scenarios"] = _scenarios
-        self.ultra_scores = BaselineAdapter()
+        social_vehicle_params = load_yaml(
+            f"ultra/baselines/rllib_models/social_vehicle_params.yaml"
+        )
+        self.ultra_scores = BaselineAdapter(
+            social_vehicle_params=social_vehicle_params["social_vehicles"]
+        )
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:
