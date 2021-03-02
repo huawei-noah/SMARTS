@@ -69,23 +69,20 @@ traffic_history_2 = {
     }
 }
 
-
-@pytest.fixture
-def create_history_file_1(tmp_path):
-    d = tmp_path / "sub"
+def create_file(tmp_path, sub, filepath, content):
+    d = tmp_path / sub
     d.mkdir()
-    p = d / "traffic_history_1.json"
-    p.write_text(json.dumps(traffic_history_1))
+    p = d / filepath
+    p.write_text(json.dumps(content))
     return p
 
 
 @pytest.fixture
-def create_history_file_2(tmp_path):
-    d = tmp_path / "sub2"
-    d.mkdir()
-    p = d / "traffic_history_2.json"
-    p.write_text(json.dumps(traffic_history_2))
-    return p
+def create_history_files(tmp_path):
+    return [
+        create_file(tmp_path, "sub","traffic_history_1.json", traffic_history_1), 
+        create_file(tmp_path, "sub2", "traffic_history_2.json", traffic_history_2)
+    ]
 
 
 @pytest.fixture
@@ -121,10 +118,10 @@ def create_scenario():
 
 
 def test_mutiple_traffic_data(
-    create_scenario, create_history_file_1, create_history_file_2
+    create_scenario, create_history_files
 ):
     Scenario.discover_traffic_histories = MagicMock(
-        return_value=[create_history_file_1, create_history_file_2]
+        return_value=create_history_files
     )
     iterator = Scenario.variations_for_all_scenario_roots(
         [str(create_scenario)], [AGENT_ID], shuffle_scenarios=False
@@ -136,19 +133,12 @@ def test_mutiple_traffic_data(
     traffic_history_provider = TrafficHistoryProvider()
 
     use_first_history = True
-    for scenario in scenarios:
-        if use_first_history:
-            for key in scenario.traffic_history_service.traffic_history:
-                assert (
-                    scenario.traffic_history_service.traffic_history[key]
-                    == traffic_history_1[key]
-                )
-        else:
-            for key in scenario.traffic_history_service.traffic_history:
-                assert (
-                    scenario.traffic_history_service.traffic_history[key]
-                    == traffic_history_2[key]
-                )
+    for scenario, traffic_history in zip(scenarios, [traffic_history_1, traffic_history_2]):
+        for key in scenario.traffic_history_service.traffic_history:
+            assert (
+                scenario.traffic_history_service.traffic_history[key]
+                == traffic_history[key]
+            )
 
         traffic_history_provider.setup(scenario)
         assert (
