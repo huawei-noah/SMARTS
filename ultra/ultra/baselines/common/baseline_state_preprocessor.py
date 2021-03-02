@@ -30,7 +30,6 @@ from ultra.utils.common import rotate2d_vector
 class BaselineStatePreprocessor(StatePreprocessor):
     """The State Preprocessor used by the baseline agents."""
 
-    _NUM_LOOKAHEAD = 100
     _NORMALIZATION_VALUES = {
         "speed": 30.0,
         "distance_from_center": 1.0,
@@ -160,7 +159,6 @@ class BaselineStatePreprocessor(StatePreprocessor):
             ego_goal_path=ego_goal_path,
             ego_position=ego_position,
             ego_heading=ego_heading,
-            num_lookahead=self._NUM_LOOKAHEAD,
         )
 
         # Calculate the ego's distance from the center of the lane.
