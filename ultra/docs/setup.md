@@ -10,16 +10,16 @@ The following steps can be ignored if you already have the SMARTS environment.
 $ cd <path_to_SMARTS>/SMARTS
 
 # 2 - Create a virtual environment.
-$ python3.7 -m venv .ultra
+$ python3.7 -m venv .venv
 
 # 3 - Activate virtual environment to install all dependencies.
-$ source .ultra/bin/activate
+$ source .venv/bin/activate
 
 # 4 - Install black for formatting (if you wish to contribute).
 $ pip install black
 
 # 5 - Install dependencies.
-$ pip install -e .[train]
+$ pip install -e .
 ```
 Whether you already had the SMARTS environment or not, install dill in your activated environment.
 ```sh
