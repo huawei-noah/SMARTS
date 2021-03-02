@@ -129,7 +129,6 @@ def test_mutiple_traffic_data(create_scenario, create_history_files):
 
     traffic_history_provider = TrafficHistoryProvider()
 
-    use_first_history = True
     for scenario, traffic_history in zip(
         scenarios, [traffic_history_1, traffic_history_2]
     ):
@@ -144,5 +143,3 @@ def test_mutiple_traffic_data(create_scenario, create_history_files):
             traffic_history_provider._traffic_history_service
             == scenario.traffic_history_service
         )
-
-        use_first_history = not use_first_history
