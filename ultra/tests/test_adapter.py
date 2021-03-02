@@ -33,9 +33,6 @@ from ultra.baselines.agent_spec import BaselineAgentSpec
 AGENT_ID = "001"
 seed = 2
 
-adapter = BaselineAdapter()
-
-
 class AdapterTest(unittest.TestCase):
     def test_observation_features(self):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
