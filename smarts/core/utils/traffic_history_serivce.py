@@ -28,7 +28,7 @@ import smarts.core.scenario as scenario
 @dataclass
 class RequestHistoryRange:
     start_index: int
-    end_index: int
+    batch_count: int
 
 
 class Traffic_history_service:
@@ -95,7 +95,7 @@ class Traffic_history_service:
                 ):
                     if (
                         historyRange.start_index <= index
-                        and index < historyRange.end_index
+                        and index < historyRange.start_index + historyRange.batch_count
                     ):
                         return_batch[t] = vehicles_state
         send_data_conn.close()
@@ -112,7 +112,7 @@ class Traffic_history_service:
         self._request_queue.put(
             RequestHistoryRange(
                 start_index=self._range_start,
-                end_index=self._range_start + self._batch_size,
+                batch_count=self._batch_size,
             )
         )
         self._range_start += self._batch_size
