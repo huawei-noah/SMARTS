@@ -123,7 +123,7 @@ class Traffic_history_service:
         )
         self._range_start += self._batch_size
 
-    def fetch_history_at_timestep(self, timestep):
+    def fetch_history_at_timestep(self, timestep: str):
         if timestep not in self._all_timesteps:
             return {}
         elif timestep in self.traffic_history:
