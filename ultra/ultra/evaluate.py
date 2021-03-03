@@ -19,10 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import json
 import os
-import re
-import sys
+import pickle
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -33,10 +31,8 @@ from pydoc import locate
 
 import gym
 import numpy as np
-import psutil
 import ray
 import torch
-import yaml
 
 from smarts.zoo.registry import make
 from ultra.utils.episode import LogInfo, episodes
@@ -46,10 +42,10 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 
 
 def evaluation_check(
-    agent,
+    agents,
     episode,
-    agent_id,
-    policy_class,
+    agent_ids,
+    policy_classes,
     eval_rate,
     eval_episodes,
     max_episode_steps,
@@ -58,24 +54,37 @@ def evaluation_check(
     headless,
     log_dir,
 ):
-    agent_itr = episode.get_itr(agent_id)
+    agent_iterations = {agent_id: episode.get_itr(agent_id) for agent_id in agent_ids}
+    lowest_agent_iteration = min(agent_iterations.values())
 
-    print(
-        f"{agent_id} -- Agent iteration : {agent_itr}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
-    )
-    if (agent_itr + 1) % eval_rate == 0 and episode.last_eval_iteration != agent_itr:
-        checkpoint_dir = episode.checkpoint_dir(agent_id, agent_itr)
-        agent.save(checkpoint_dir)
+    # Only perform evaluation if the agent who has observed the least observations
+    # (iterations) has observed enough observations to perform the evaluation.
+    if ((lowest_agent_iteration + 1) % eval_rate == 0) and (
+        episode.last_eval_iteration != lowest_agent_iteration
+    ):
+        # Get the checkpoint directories for each agent.
+        checkpoint_dirs = {
+            agent_id: episode.checkpoint_dir(agent_id, agent_iteration)
+            for agent_id, agent_iteration in agent_iterations.items()
+        }
+
+        # Save each agent.
+        for agent_id, checkpoint_dir in checkpoint_dirs.items():
+            agents[agent_id].save(checkpoint_dir)
+
+        # Put the episode in evaluation mode, run the evaluation to obtain the
+        # evaluation results, increment the number of evaluations performed,
+        # set the episode's last_eval_iteration, record data to tensorboard,
+        # and put the episode back in training mode.
         episode.eval_mode()
         episode.info[episode.active_tag] = ray.get(
             [
                 evaluate.remote(
-                    experiment_dir=episode.experiment_dir,
-                    agent_id=agent_id,
-                    policy_class=policy_class,
                     seed=episode.eval_count,
-                    itr_count=agent_itr,
-                    checkpoint_dir=checkpoint_dir,
+                    experiment_dir=episode.experiment_dir,
+                    agent_ids=agent_ids,
+                    policy_classes=policy_classes,
+                    checkpoint_dirs=checkpoint_dirs,
                     scenario_info=scenario_info,
                     num_episodes=eval_episodes,
                     max_episode_steps=max_episode_steps,
@@ -86,81 +95,9 @@ def evaluation_check(
             ]
         )[0]
         episode.eval_count += 1
-        episode.last_eval_iteration = agent_itr
+        episode.last_eval_iteration = lowest_agent_iteration
         episode.record_tensorboard()
         episode.train_mode()
-
-
-# # Number of GPUs should be splited between remote functions.
-# @ray.remote(num_gpus=num_gpus / 2)
-# def evaluate(
-#     experiment_dir,
-#     seed,
-#     agent_id,
-#     policy_class,
-#     itr_count,
-#     checkpoint_dir,
-#     scenario_info,
-#     num_episodes,
-#     max_episode_steps,
-#     headless,
-#     timestep_sec,
-#     log_dir,
-# ):
-
-#     torch.set_num_threads(1)
-#     spec = make(
-#         locator=policy_class,
-#         checkpoint_dir=checkpoint_dir,
-#         experiment_dir=experiment_dir,
-#         max_episode_steps=max_episode_steps,
-#         agent_id=agent_id,
-#     )
-
-#     env = gym.make(
-#         "ultra.env:ultra-v0",
-#         agent_specs={agent_id: spec},
-#         scenario_info=scenario_info,
-#         headless=headless,
-#         timestep_sec=timestep_sec,
-#         seed=seed,
-#         eval_mode=True,
-#     )
-
-#     agent = spec.build_agent()
-#     summary_log = LogInfo()
-#     logs = []
-
-#     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-#         observations = env.reset()
-#         state = observations[agent_id]
-#         dones, infos = {"__all__": False}, None
-
-#         episode.reset(mode="Evaluation")
-#         while not dones["__all__"]:
-#             action = agent.act(state, explore=False)
-#             observations, rewards, dones, infos = env.step({agent_id: action})
-
-#             next_state = observations[agent_id]
-
-#             state = next_state
-
-#             episode.record_step(agent_id=agent_id, infos=infos, rewards=rewards)
-
-#         episode.record_episode()
-#         logs.append(episode.info[episode.active_tag][agent_id].data)
-
-#         for key, value in episode.info[episode.active_tag][agent_id].data.items():
-#             if not isinstance(value, (list, tuple, np.ndarray)):
-#                 summary_log.data[key] += value
-
-#     for key, val in summary_log.data.items():
-#         if not isinstance(val, (list, tuple, np.ndarray)):
-#             summary_log.data[key] /= num_episodes
-
-#     env.close()
-
-#     return summary_log
 
 
 # Number of GPUs should be split between remote functions.
@@ -170,7 +107,6 @@ def evaluate(
     seed,
     agent_ids,
     policy_classes,
-    itr_count,
     checkpoint_dirs,
     scenario_info,
     num_episodes,
@@ -181,13 +117,7 @@ def evaluate(
 ):
     torch.set_num_threads(1)
 
-    # spec = make(
-    #     locator=policy_class,
-    #     checkpoint_dir=checkpoint_dir,
-    #     experiment_dir=experiment_dir,
-    #     max_episode_steps=max_episode_steps,
-    #     agent_id=agent_id,
-    # )
+    # Create the agent specifications matched with their associated ID.
     agent_specs = {
         agent_id: make(
             locator=policy_classes[agent_id],
@@ -216,52 +146,46 @@ def evaluate(
         for agent_id, agent_spec in agent_specs.items()
     }
 
-    # summary_log = LogInfo()
-    summary_log = {
-        agent_id: LogInfo() for agent_id in agent_ids
-    }
-    # logs = []
+    # A dictionary to hold the evaluation data for each agent.
+    summary_log = {agent_id: LogInfo() for agent_id in agent_ids}
 
-    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
+    # Define an 'etag' for this experiment's data directory based off policy_classes.
+    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
+    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+
+    for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
+        # Reset the environment and retrieve the initial observations.
         observations = env.reset()
-        dones, infos = {"__all__": False}, None
-
+        dones = {"__all__": False}
+        infos = None
         episode.reset(mode="Evaluation")
+
         while not dones["__all__"]:
+            # Get and perform the available agents' actions.
             actions = {
                 agent_id: agents[agent_id].act(observation, explore=False)
                 for agent_id, observation in observations.items()
             }
-            next_observations, rewards, dones, infos = env.step(actions)
+            observations, rewards, dones, infos = env.step(actions)
 
-            for agent_id in observations.keys() & next_observations.keys():
-                episode.record_step(agent_id=agent_id, infos=infos, rewards=rewards)
-
-            observations = next_observations
-
+            # Record the data from this episode.
             episode.record_step(
-                agent_ids_to_record=[agent_id], infos=infos, rewards=rewards
+                agent_ids_to_record=infos.keys(), infos=infos, rewards=rewards
             )
 
         episode.record_episode()
-        # logs.append(episode.info[episode.active_tag][agent_id].data)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
                 if not isinstance(value, (list, tuple, np.ndarray)):
                     summary_log[agent_id].data[key] += value
-        # for key, value in episode.info[episode.active_tag][agent_id].data.items():
-        #     if not isinstance(value, (list, tuple, np.ndarray)):
-        #         summary_log.data[key] += value
 
     # Normalize by the number of evaluation episodes.
     for agent_id, agent_data in summary_log.items():
         for key, value in agent_data.data.items():
             if not isinstance(value, (list, tuple, np.ndarray)):
-                summary_log.data[key] /= num_episodes
-    # for key, val in summary_log.data.items():
-    #     if not isinstance(val, (list, tuple, np.ndarray)):
-    #         summary_log.data[key] /= num_episodes
+                summary_log[agent_id].data[key] /= num_episodes
 
     env.close()
 
@@ -269,7 +193,7 @@ def evaluate(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("intersection-single-agent-evaluation")
+    parser = argparse.ArgumentParser("intersection-evaluation")
     parser.add_argument(
         "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
@@ -311,51 +235,70 @@ if __name__ == "__main__":
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
 
-    m = re.search(
-        "ultra(.)*([a-zA-Z0-9_]*.)+([a-zA-Z0-9_])+:[a-zA-Z0-9_]+((-)*[a-zA-Z0-9_]*)*",
-        args.models,
-    )
-
-    try:
-        policy_class = m.group(0)
-    except AttributeError as e:
-        # default policy class
-        policy_class = "ultra.baselines.sac:sac-v0"
-
     if not os.path.exists(args.models):
         raise "Path to model is invalid"
 
     if not os.listdir(args.models):
         raise "No models to evaluate"
 
-    AGENT_ID = "AGENT_008"
-    sorted_models = sorted(
-        glob.glob(f"{args.models}/{AGENT_ID}/*"), key=lambda x: int(x.split("/")[-1])
-    )
-    base_dir = os.path.dirname(__file__)
-    pool_path = os.path.join(base_dir, "agent_pool.json")
+    # Load relevant agent metadata.
+    with open(os.path.join(args.models, "../agent_metadata.pkl"), "rb") as agent_metadata_file:
+        agent_metadata = pickle.load(agent_metadata_file)
+
+    # Extract the agent IDs and policy classes.
+    agent_ids = agent_metadata["agent_ids"]
+    policy_classes = agent_metadata["agent_classes"]
+
+    # From a base model directory such as logs/<experiment_name>/models/, assign each agent ID with its
+    # checkpoint directories in sorted order based on the checkpoint iteration. The agent IDs are
+    # obtained from the direct child folders of the model directory given. As an example result:
+    # {
+    #     '000': ['logs/<experiment_name>/models/000/1042', 'logs/<experiment_name>/models/000/2062'],
+    #     '001': ['logs/<experiment_name>/models/001/999', 'logs/<experiment_name>/models/001/1999'],
+    #     '003': ['logs/<experiment_name>/models/003/1009', 'logs/<experiment_name>/models/003/2120'],
+    #     '002': ['logs/<experiment_name>/models/002/1053', 'logs/<experiment_name>/models/002/2041'],
+    # }
+    agent_checkpoint_directories = {
+        agent_id: sorted(
+            glob.glob(os.path.join(args.models, agent_id, "*")), key=lambda x: int(x.split("/")[-1])
+        )
+        for agent_id in agent_ids
+    }
+
+    # Assert each agent ID has the same number of checkpoints saved.
+    directories_iterator = iter(agent_checkpoint_directories.values())
+    number_of_checkpoints = len(next(directories_iterator))
+    assert all(
+        len(checkpoint_directory) == number_of_checkpoints
+        for checkpoint_directory in directories_iterator
+    ), "Not all agents have the same number of checkpoints saved"
+
+    # Define an 'etag' for this experiment's data directory based off policy_classes.
+    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
+    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
     ray.init()
     try:
-        AGENT_ID = "AGENT_008"
         for episode in episodes(
-            len(sorted_models),
-            etag=policy_class,
+            number_of_checkpoints,
+            etag=etag,
             log_dir=args.log_dir,
         ):
-            model = sorted_models[episode.index]
-            print("model: ", model)
-            episode_count = model.split("/")[-1]
+            # Obtain a checkpoint directory for each agent.
+            current_checkpoint_directories = {
+                agent_id: agent_directories[episode.index]
+                for agent_id, agent_directories in agent_checkpoint_directories.items()
+            }
             episode.eval_mode()
-            episode.info[episode.active_tag][AGENT_ID] = ray.get(
+            episode.info[episode.active_tag] = ray.get(
                 [
                     evaluate.remote(
                         experiment_dir=args.experiment_dir,
-                        agent_id=AGENT_ID,
-                        policy_class=policy_class,
+                        agent_ids=agent_ids,
+                        policy_classes=policy_classes,
                         seed=episode.eval_count,
-                        itr_count=0,
-                        checkpoint_dir=model,
+                        checkpoint_dirs=current_checkpoint_directories,
                         scenario_info=(args.task, args.level),
                         num_episodes=int(args.episodes),
                         max_episode_steps=int(args.max_episode_steps),

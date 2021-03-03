@@ -96,13 +96,13 @@ class EvaluateTest(unittest.TestCase):
 
                 while not dones["__all__"]:
                     evaluation_check(
-                        agent=agent,
-                        agent_id=AGENT_ID,
+                        agents={AGENT_ID: agent},
+                        agent_ids=[AGENT_ID],
                         episode=episode,
                         eval_rate=10,
                         eval_episodes=1,
                         max_episode_steps=2,
-                        policy_class=policy_class,
+                        policy_classes={AGENT_ID: policy_class},
                         scenario_info=("00", "eval_test"),
                         timestep_sec=0.1,
                         headless=True,
@@ -172,7 +172,7 @@ class EvaluateTest(unittest.TestCase):
 
     def test_evaluate_agent(self):
         seed = 2
-        model = glob.glob("tests/sac_test_models/*/models/0")[0]
+        model = glob.glob("tests/sac_test_models/*/models/000")[0]
         log_dir = "tests/output_eval_agent_logs/"
         policy_class = "ultra.baselines.sac:sac-v0"
 
@@ -181,11 +181,10 @@ class EvaluateTest(unittest.TestCase):
         try:
             evaluate.remote(
                 experiment_dir=None,
-                agent_id="AGENT_001",
-                policy_class=policy_class,
+                agent_ids=["000"],
+                policy_classes=[policy_class],
                 seed=seed,
-                itr_count=0,
-                checkpoint_dir=model,
+                checkpoint_dirs=[model],
                 scenario_info=("00", "eval_test"),
                 num_episodes=1,
                 max_episode_steps=2,

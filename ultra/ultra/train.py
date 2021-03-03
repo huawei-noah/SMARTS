@@ -123,6 +123,11 @@ def train(
                     os.makedirs(experiment_dir)
                 with open(f"{experiment_dir}/spec{agent_id}.pkl", "wb") as spec_output:
                     dill.dump(agent_spec, spec_output, pickle.HIGHEST_PROTOCOL)
+        # Save relevant agent metadata.
+        if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
+            agent_metadata = {"agent_ids": agent_ids, "agent_classes": agent_classes}
+            with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as agent_metadata_file:
+                dill.dump(agent_metadata, agent_metadata_file, pickle.HIGHEST_PROTOCOL)
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
@@ -130,28 +135,28 @@ def train(
                 finished = True
                 break
 
-            # Perform the evaluation check if this is a single agent experiment.
-            if len(agents) == 1:
-                agent_id, agent = list(agents.items())[0]
-                evaluation_check(
-                    agent=agent,
-                    agent_id=agent_id,
-                    policy_class=agent_classes[agent_id],
-                    episode=episode,
-                    log_dir=log_dir,
-                    max_episode_steps=max_episode_steps,
-                    **eval_info,
-                    **env.info,
-                )
+            # Perform the evaluation check.
+            evaluation_check(
+                agents=agents,
+                agent_ids=agent_ids,
+                policy_classes=agent_classes,
+                episode=episode,
+                log_dir=log_dir,
+                max_episode_steps=max_episode_steps,
+                **eval_info,
+                **env.info,
+            )
 
-            # Get and perform the available agents' actions.
+            # Request and perform actions on each agent that received an observation.
             actions = {
                 agent_id: agents[agent_id].act(observation, explore=True)
                 for agent_id, observation in observations.items()
             }
             next_observations, rewards, dones, infos = env.step(actions)
 
-            # Step each available agent.
+            # Active agents are those that receive observations in this step and the next
+            # step. Step each active agent (obtaining their network loss if applicable).
+            active_agent_ids = observations.keys() & next_observations.keys()
             loss_outputs = {
                 agent_id: agents[agent_id].step(
                     state=observations[agent_id],
@@ -160,12 +165,12 @@ def train(
                     next_state=next_observations[agent_id],
                     done=dones[agent_id],
                 )
-                for agent_id in observations.keys() & next_observations.keys()
+                for agent_id in active_agent_ids
             }
 
             # Record the data from this episode.
             episode.record_step(
-                agent_ids_to_record=loss_outputs.keys(),
+                agent_ids_to_record=active_agent_ids,
                 infos=infos,
                 rewards=rewards,
                 total_step=total_step,
@@ -176,6 +181,7 @@ def train(
             total_step += 1
             observations = next_observations
 
+        # Normalize the data and record this episode on tensorboard.
         episode.record_episode()
         episode.record_tensorboard()
 
@@ -186,7 +192,7 @@ def train(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("intersection-single-agent")
+    parser = argparse.ArgumentParser("intersection-training")
     parser.add_argument(
         "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
