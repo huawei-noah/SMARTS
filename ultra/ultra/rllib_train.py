@@ -38,7 +38,7 @@ import ray.rllib.agents.ppo as ppo
 import ray.rllib.agents.sac as sac
 import ray.rllib.agents.ddpg as ddpg
 import ray.rllib.agents.dqn as dqn
-
+import ray.rllib.agents.ddpg.td3 as td3
 # from ray.rllib.agents.sac.sac_torch_model import SACTorchModel
 # from ray.rllib.agents.ddpg.ddpg_torch_model import DDPGTorchModel
 from smarts.core.controllers import ActionSpaceType
@@ -49,8 +49,7 @@ from smarts.core.agent_interface import (
     NeighborhoodVehicles,
 )
 
-from ultra.baselines.rllib_models.fc_network import CustomFCModel
-from ultra.baselines.rllib_models.ddpg_fc_network import DDPGCustomFCModel
+from ultra.baselines.rllib.agent import RllibAgent
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
@@ -70,9 +69,7 @@ def train(
     # -------------------------------------------------------
     # AGENT_ID = "007"
 
-    # social_vehicle_params_dir = "/".join(inspect.getfile("ultra.baselines.rllib_models").split("/")[:-1])
-    algorithm = "dqn"
-    policy_params = load_yaml(f"ultra/baselines/{algorithm}/{algorithm}/params.yaml")
+
     social_vehicle_params = policy_params["social_vehicles"]
     social_vehicle_params["observation_num_lookahead"] = policy_params[
         "observation_num_lookahead"
@@ -82,15 +79,7 @@ def train(
     )
 
 
-    ModelCatalog.register_custom_model("fc_model", CustomFCModel)
-
-    if algorithm=='ppo':
-        config = ppo.DEFAULT_CONFIG.copy()
-    elif algorithm=='ddpg':
-        config = ddpg.DEFAULT_CONFIG.copy()
-    elif algorithm=='dqn':
-        config = dqn.DEFAULT_CONFIG.copy()
-
+    rllib_agent = RllibAgent('ppo')
 
     rllib_policies = {
         "default_policy": (
@@ -110,7 +99,7 @@ def train(
             interface=AgentInterface(
                 waypoints=Waypoints(lookahead=20),
                 neighborhood_vehicles=NeighborhoodVehicles(200),
-                action=ActionSpaceType.Continuous,
+                action=action_type,
                 rgb=False,
                 max_episode_steps=600,
                 debug=True,
@@ -179,22 +168,14 @@ def train(
     # print('>>>',config['normalize_actions'], type(RLlibUltraEnv))
     # config["normalize_actions"]= False
 
-    if algorithm=='ppo':
-        trainer = ppo.PPOTrainer(
-            env=RLlibUltraEnv,
-            config=tune_config,
-            logger_creator=log_creator(log_dir),
-        )
-    elif algorithm=='ddpg':
-        trainer = ddpg.DDPGTrainer(
-            env=RLlibUltraEnv,
-            config=tune_config,
-            logger_creator=log_creator(log_dir),
-        )
 
     # Iteration value in trainer.py (self._iterations) is the technically the number of episodes
     for i in range(num_episodes):
-        results = trainer.train()
+        results = rllib_agent.train(
+            env=RLlibUltraEnv,
+            config=tune_config,
+            logger_creator=log_creator(log_dir)
+        )
         trainer.log_result(
             results
         )  # Evaluation metrics will now be displayed on Tensorboard
