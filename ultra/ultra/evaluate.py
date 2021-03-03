@@ -239,7 +239,6 @@ if __name__ == "__main__":
         ):
             model = sorted_models[episode.index]
             print("model: ", model)
-            episode_count = model.split("/")[-1]
             episode.eval_mode()
             episode.info[episode.active_tag][AGENT_ID] = ray.get(
                 [

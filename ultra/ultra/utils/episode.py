@@ -57,7 +57,7 @@ class LogInfo:
         }
 
     def add(self, infos, rewards):
-        self.data["env_score"] += int(infos["logs"]["env_score"])
+        self.data["env_score"] += infos["logs"]["env_score"]
         self.data["speed"] += infos["logs"]["speed"]
         self.data["max_speed_violation"] += (
             1 if infos["logs"]["speed"] > infos["logs"]["closest_wp"].speed_limit else 0
@@ -95,14 +95,13 @@ class LogInfo:
 
     def normalize(self):
         steps = self.data["episode_length"]
-        self.data["env_score"] /= steps
         self.data["dist_center"] /= steps
         self.data["speed"] /= steps
         self.data["ego_linear_jerk"] /= steps
         self.data["ego_angular_jerk"] /= steps
-        self.data["ego_num_violations"] /= steps
-        self.data["social_num_violations"] /= steps
-        self.data["max_speed_violation"] /= steps
+        #self.data["ego_num_violations"] /= steps
+        #self.data["social_num_violations"] /= steps
+        #self.data["max_speed_violation"] /= steps
 
 
 class Episode:
