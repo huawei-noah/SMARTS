@@ -1,8 +1,8 @@
 import random
 from pathlib import Path
 
-from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
+from smarts.sstudio import types as t
 
 NUM_TRAFFIC_FLOWS = 350
 
@@ -15,7 +15,13 @@ traffic = t.Traffic(
                 t.TrafficActor(
                     name="car",
                     vehicle_type=random.choices(
-                        ["passenger", "bus", "coach", "truck", "trailer",],
+                        [
+                            "passenger",
+                            "bus",
+                            "coach",
+                            "truck",
+                            "trailer",
+                        ],
                         weights=[5, 1, 1, 1, 1],
                         k=1,
                     )[0],
@@ -31,7 +37,8 @@ open_agent_actor = t.SocialAgentActor(
 )
 
 laner_actor = t.SocialAgentActor(
-    name="keep-lane-agent", agent_locator="zoo.policies:keep-lane-agent-v0",
+    name="keep-lane-agent",
+    agent_locator="zoo.policies:keep-lane-agent-v0",
 )
 
 travelling_bubbles = [
@@ -45,7 +52,11 @@ travelling_bubbles = [
 ]
 
 static_bubbles = [
-    t.Bubble(zone=t.MapZone((id_, 0, 10), 200, 1), margin=5, actor=laner_actor,)
+    t.Bubble(
+        zone=t.MapZone((id_, 0, 10), 200, 1),
+        margin=5,
+        actor=laner_actor,
+    )
     for id_ in ["21675239", "126742590#1", "-77720372", "-263506114#6", "-33002812#1"]
 ] + [
     t.Bubble(

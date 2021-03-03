@@ -21,26 +21,20 @@ import numpy as np
 from gym.spaces import Box, Discrete
 
 import smarts
+from envision.client import Client as Envision
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from envision.client import Client as Envision
 
 from .adapters.action_adapter import (
     DEFAULT_ACTION_SPACE,
     N_ACTIONS,
     default_action_adapter,
 )
-from .adapters.observation_adapter import (
-    DEFAULT_OBSERVATION_SPACE,
-    default_obs_adapter,
-)
+from .adapters.observation_adapter import DEFAULT_OBSERVATION_SPACE, default_obs_adapter
 from .adapters.reward_adapter import default_reward_adapter
-from .adapters.state_adapter import (
-    DEFAULT_STATE_SPACE,
-    default_state_adapter,
-)
+from .adapters.state_adapter import DEFAULT_STATE_SPACE, default_state_adapter
 
 
 class PyMARLHiWayEnv:

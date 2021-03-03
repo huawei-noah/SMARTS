@@ -4,7 +4,6 @@ import gym
 
 from smarts.core.utils.episodes import episodes
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("hiway-egoless-example")
     parser.add_argument("replay_data", help="Replay data path", type=str)

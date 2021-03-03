@@ -24,9 +24,9 @@ Reference: https://github.com/ray-project/ray/blob/master/rllib/contrib/maddpg/m
 
 import logging
 
-from ray.rllib.agents.trainer import COMMON_CONFIG, with_common_config
 from ray.rllib.agents.dqn.dqn import GenericOffPolicyTrainer
-from ray.rllib.policy.sample_batch import SampleBatch, MultiAgentBatch
+from ray.rllib.agents.trainer import COMMON_CONFIG, with_common_config
+from ray.rllib.policy.sample_batch import MultiAgentBatch, SampleBatch
 from ray.rllib.utils import merge_dicts
 
 from benchmark.agents.maddpg.tf_policy import MADDPG2TFPolicy

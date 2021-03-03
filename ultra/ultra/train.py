@@ -19,19 +19,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, sys
 import json
 import os
+import sys
+
 from ultra.utils.ray import default_ray_kwargs
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
+import argparse
+import pickle
 import time
-import psutil, pickle, dill
-import gym, ray, torch, argparse
+
+import dill
+import gym
+import psutil
+import ray
+import torch
+
 from smarts.zoo.registry import make
-from ultra.utils.episode import episodes
 from ultra.evaluate import evaluation_check
+from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -41,6 +49,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 def train(
     scenario_info,
     num_episodes,
+    max_episode_steps,
     policy_class,
     eval_info,
     timestep_sec,
@@ -54,7 +63,7 @@ def train(
 
     AGENT_ID = "007"
 
-    spec = make(locator=policy_class)
+    spec = make(locator=policy_class, max_episode_steps=max_episode_steps)
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
@@ -90,6 +99,7 @@ def train(
                 policy_class=policy_class,
                 episode=episode,
                 log_dir=log_dir,
+                max_episode_steps=max_episode_steps,
                 **eval_info,
                 **env.info,
             )
@@ -115,7 +125,7 @@ def train(
             state = next_state
 
         episode.record_episode()
-        episode.record_tensorboard(agent_id=AGENT_ID)
+        episode.record_tensorboard()
         if finished:
             break
 
@@ -143,6 +153,12 @@ if __name__ == "__main__":
         "--episodes", help="Number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
+    )
+    parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
@@ -158,10 +174,16 @@ if __name__ == "__main__":
         default=10000,
     )
     parser.add_argument(
-        "--seed", help="Environment seed", default=2, type=int,
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
     )
     parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
     )
 
     base_dir = os.path.dirname(__file__)
@@ -185,6 +207,7 @@ if __name__ == "__main__":
             train.remote(
                 scenario_info=(args.task, args.level),
                 num_episodes=int(args.episodes),
+                max_episode_steps=int(args.max_episode_steps),
                 eval_info={
                     "eval_rate": float(args.eval_rate),
                     "eval_episodes": int(args.eval_episodes),

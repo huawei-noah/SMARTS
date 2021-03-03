@@ -1,10 +1,9 @@
 import gym
 
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
-from smarts.core.utils.episodes import episodes
-
 from examples import default_argument_parser
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.utils.episodes import episodes
 
 N_AGENTS = 4
 AGENT_IDS = ["Agent %i" % i for i in range(N_AGENTS)]

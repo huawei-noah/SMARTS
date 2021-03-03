@@ -255,7 +255,8 @@ def evaluation_data_visualize(scenario_path, result_path, agent_list, agent_grou
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="visualization", description="Start run visualization.",
+        prog="visualization",
+        description="Start run visualization.",
     )
     parser.add_argument(
         "log_path", help="The path to the run all evaluation origin data", type=str

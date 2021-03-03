@@ -19,32 +19,38 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, argparse, json, shutil
-from multiprocessing import Process, Manager
-import itertools, random, copy
+import argparse
+import copy
+import itertools
+import json
+import math
+import os
+import random
+import shutil
+import time
+from collections import Counter, defaultdict
 from dataclasses import replace
-from smarts.sstudio.types import Route
-import yaml, json, copy, math
-import numpy as np
-from collections import defaultdict, Counter
-import random, os, json, time
+from multiprocessing import Manager, Process
 from shutil import copyfile
+
 import numpy as np
-from smarts.sstudio import gen_traffic, gen_missions
+import yaml
+
+from smarts.sstudio import gen_missions, gen_traffic
 from smarts.sstudio.types import (
-    Traffic,
-    Flow,
-    Route,
     Distribution,
-    Mission,
+    Flow,
     MapZone,
+    Mission,
+    Route,
+    Traffic,
     TrapEntryTactic,
 )
+from ultra.scenarios.common.begin_time_init_funcs import *
 from ultra.scenarios.common.distributions import get_pattern
 from ultra.scenarios.common.social_vehicle_definitions import (
     get_social_vehicle_behavior,
 )
-from ultra.scenarios.common.begin_time_init_funcs import *
 
 LANE_LENGTH = 137.85
 
@@ -89,8 +95,16 @@ def generate_stopwatcher(
         begin=begin_time,
         end=begin_time + 3600,  # 1 hour
         route=Route(
-            begin=(f"edge-{stopwatcher_route[0]}", start_lane_id, "base",),
-            end=(f"edge-{stopwatcher_route[1]}", end_lane_id, "max",),
+            begin=(
+                f"edge-{stopwatcher_route[0]}",
+                start_lane_id,
+                "base",
+            ),
+            end=(
+                f"edge-{stopwatcher_route[1]}",
+                end_lane_id,
+                "max",
+            ),
         ),
         rate=1,
         actors={behavior: 1.0},

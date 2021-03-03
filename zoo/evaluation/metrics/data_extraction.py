@@ -60,15 +60,21 @@ def extract_data(json_file, step_num, timestep):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("policy-evaluation")
     parser.add_argument(
-        "path", help="Directory path containing data files (.jsonl)", type=str,
+        "path",
+        help="Directory path containing data files (.jsonl)",
+        type=str,
     )
 
     parser.add_argument(
-        "result_path", help="Directory path containing data files", type=str,
+        "result_path",
+        help="Directory path containing data files",
+        type=str,
     )
 
     parser.add_argument(
-        "agent_name", help="Agent name", type=str,
+        "agent_name",
+        help="Agent name",
+        type=str,
     )
 
     parser.add_argument("--step-num", help="Number of steps", type=str, default=600)

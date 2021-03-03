@@ -25,11 +25,11 @@ from itertools import cycle
 
 import pytest
 
-from smarts.core.agent_interface import AgentInterface, ActionSpaceType
-from smarts.core.scenario import Scenario, Mission, Start, EndlessGoal
+from smarts.core.agent_interface import ActionSpaceType, AgentInterface
+from smarts.core.coordinates import Heading
+from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.coordinates import Heading
 from smarts.core.utils.sumo import traci
 
 SUMO_PORT = 8082
@@ -58,7 +58,9 @@ def traffic_sim():
 @pytest.fixture
 def smarts(traffic_sim):
     buddha = AgentInterface(
-        max_episode_steps=1000, neighborhood_vehicles=True, action=ActionSpaceType.Lane,
+        max_episode_steps=1000,
+        neighborhood_vehicles=True,
+        action=ActionSpaceType.Lane,
     )
     agents = {"Agent-007": buddha}
     smarts = SMARTS(agents, traffic_sim=traffic_sim)

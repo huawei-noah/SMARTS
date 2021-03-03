@@ -142,9 +142,17 @@ if __name__ == "__main__":
             id="vehicle",
             pose=pose,
             showbase=showbase,
-            chassis=AckermannChassis(pose=pose, bullet_client=client,),
+            chassis=AckermannChassis(
+                pose=pose,
+                bullet_client=client,
+            ),
         )
 
         run(
-            showbase, client, vehicle, plane_body_id, sliders, n_steps=int(1e6),
+            showbase,
+            client,
+            vehicle,
+            plane_body_id,
+            sliders,
+            n_steps=int(1e6),
         )

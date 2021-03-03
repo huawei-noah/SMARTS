@@ -19,20 +19,25 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import inspect
+import os
+
+import dill
 import numpy as np
-import torch, yaml, os, inspect, dill
-from smarts.core.controllers import ActionSpaceType
+import torch
+import yaml
+
+from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import (
+    OGM,
     AgentInterface,
     AgentType,
-    OGM,
-    Waypoints,
     NeighborhoodVehicles,
+    Waypoints,
 )
-
-from ultra.baselines.common.yaml_loader import load_yaml
-from smarts.core.agent import AgentSpec
+from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.adapter import BaselineAdapter
+from ultra.baselines.common.yaml_loader import load_yaml
 
 
 class BaselineAgentSpec(AgentSpec):

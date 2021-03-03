@@ -23,13 +23,13 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 import pytest
-from shapely.geometry import Point
-
-import smarts.sstudio.types as t
+from helpers.bubbles import bubble_geometry
 
 # TODO: Rename temp_scenario(...)
 from helpers.scenario import temp_scenario
-from helpers.bubbles import bubble_geometry
+from shapely.geometry import Point
+
+import smarts.sstudio.types as t
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -44,7 +44,8 @@ def num_vehicles():
 @pytest.fixture
 def bubbles():
     actor = t.SocialAgentActor(
-        name="keep-lane-agent", agent_locator="zoo.policies:keep-lane-agent-v0",
+        name="keep-lane-agent",
+        agent_locator="zoo.policies:keep-lane-agent-v0",
     )
 
     return [
@@ -54,7 +55,9 @@ def bubbles():
             actor=actor,
         ),
         t.Bubble(
-            zone=t.PositionalZone(pos=(60, -60), size=(30, 30)), margin=10, actor=actor,
+            zone=t.PositionalZone(pos=(60, -60), size=(30, 30)),
+            margin=10,
+            actor=actor,
         ),
     ]
 

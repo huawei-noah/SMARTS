@@ -41,8 +41,9 @@ import DrivenPaths from "./driven_paths.js";
 import MissionRoutes from "./mission_routes.js";
 import Waypoints from "./waypoints.js";
 import TrafficDividers from "./traffic_dividers.js";
+import { attrs, agentModes } from "./control_panel";
 
-import AgentScores from "./agent_scores";
+import InfoDisplay from "./InfoDisplay";
 import earcut from "earcut";
 
 // Required by Babylon.js
@@ -51,11 +52,12 @@ window.earcut = earcut;
 export default function Simulation({
   simulationId,
   client,
-  showScores,
   egoView,
+  controlModes,
   canvasRef = null,
   onElapsedTimesChanged = (current, total) => {},
   style = {},
+  playing = true,
 }) {
   const [scene, setScene] = useState(null);
 
@@ -74,6 +76,11 @@ export default function Simulation({
     bubbles: [],
     scene_colors: {},
     scores: [],
+    ego_agent_ids: [],
+    position: [],
+    speed: [],
+    heading: [],
+    lane_ids: [],
   });
 
   const mapMeshesRef = useRef([]);
@@ -146,19 +153,22 @@ export default function Simulation({
   useEffect(() => {
     let stopPolling = false;
     (async () => {
-      for await (const [wstate, elapsed_times] of client.worldstate(
-        simulationId
-      )) {
+      const it = client.worldstate(simulationId);
+      let wstate_and_time = await it.next();
+      while (!wstate_and_time.done && playing) {
+        let wstate, elapsed_times;
+        [wstate, elapsed_times] = wstate_and_time.value;
         if (!stopPolling) {
           setWorldState(wstate);
           onElapsedTimesChanged(...elapsed_times);
         }
+        wstate_and_time = await it.next();
       }
     })();
 
     // Called when simulation ID changes
     return () => (stopPolling = true);
-  }, [simulationId]);
+  }, [simulationId, playing]);
 
   // Load map
   useEffect(() => {
@@ -257,18 +267,65 @@ export default function Simulation({
         laneDividerPos={laneDividerPos}
         edgeDividerPos={edgeDividerPos}
       />
-      {showScores ? (
-        <AgentScores
-          style={{
-            zIndex: "1",
-            position: "absolute",
-            top: "0",
-            left: "0",
-            maxWidth: "100%",
-          }}
-          scores={worldState.scores}
-        />
-      ) : null}
+      <div
+        style={{
+          zIndex: "1",
+          position: "absolute",
+          top: "0",
+          left: "0",
+          maxWidth: "100%",
+        }}
+      >
+        {controlModes[attrs.score] ? (
+          <InfoDisplay
+            data={worldState.scores}
+            attrName="Score"
+            data_formattter={(score) => parseFloat(score).toFixed(2)}
+            ego_agent_ids={worldState.ego_agent_ids}
+            ego_only={!controlModes[agentModes.socialObs]}
+          />
+        ) : null}
+        {controlModes[attrs.speed] ? (
+          <InfoDisplay
+            data={worldState.speed}
+            attrName="Speed"
+            data_formattter={(speed) => parseFloat(speed).toFixed(2)}
+            ego_agent_ids={worldState.ego_agent_ids}
+            ego_only={!controlModes[agentModes.socialObs]}
+          />
+        ) : null}
+        {controlModes[attrs.position] ? (
+          <InfoDisplay
+            data={worldState.position}
+            attrName="Position"
+            data_formattter={(position) =>
+              `x: ${parseFloat(position[0]).toFixed(2)} y: ${parseFloat(
+                position[1]
+              ).toFixed(2)}`
+            }
+            ego_agent_ids={worldState.ego_agent_ids}
+            ego_only={!controlModes[agentModes.socialObs]}
+          />
+        ) : null}
+        {controlModes[attrs.heading] ? (
+          <InfoDisplay
+            data={worldState.heading}
+            attrName="Heading"
+            data_formattter={(heading) => parseFloat(heading).toFixed(2)}
+            ego_agent_ids={worldState.ego_agent_ids}
+            ego_only={!controlModes[agentModes.socialObs]}
+          />
+        ) : null}
+        {controlModes[attrs.laneID] ? (
+          <InfoDisplay
+            data={worldState.lane_ids}
+            attrName="Lane ID"
+            data_formattter={(lane_id) => lane_id}
+            ego_agent_ids={worldState.ego_agent_ids}
+            ego_only={!controlModes[agentModes.socialObs]}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

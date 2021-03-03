@@ -20,10 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+
 import numpy as np
 import pytest
 
-from smarts.core.coordinates import Pose, Heading
+from smarts.core.coordinates import Heading, Pose
 
 
 @pytest.fixture
@@ -48,7 +49,9 @@ def test_conversion_sumo(original_pose):
             ]
         )
         p_from_bumper = Pose.from_front_bumper(
-            front_bumper_pos, Heading.from_sumo(angle), length,
+            front_bumper_pos,
+            Heading.from_sumo(angle),
+            length,
         )
 
         assert np.isclose(
@@ -57,18 +60,36 @@ def test_conversion_sumo(original_pose):
 
         _pose_position, _pose_heading = p_from_bumper.as_sumo(length, Heading(0))
 
-        assert math.isclose(angle, _pose_heading, rel_tol=1e-06,)
+        assert math.isclose(
+            angle,
+            _pose_heading,
+            rel_tol=1e-06,
+        )
         assert np.isclose(
-            np.append(front_bumper_pos, 0), _pose_position, rtol=1e-06,
+            np.append(front_bumper_pos, 0),
+            _pose_position,
+            rtol=1e-06,
         ).all()
 
 
 def test_conversion_panda(original_pose):
     pose_info = [
-        ([0, 1, 0], 0,),
-        ([0, 1, 0], 180,),
-        ([0, 1, 0], 180,),
-        ([0, 1], 90,),
+        (
+            [0, 1, 0],
+            0,
+        ),
+        (
+            [0, 1, 0],
+            180,
+        ),
+        (
+            [0, 1, 0],
+            180,
+        ),
+        (
+            [0, 1],
+            90,
+        ),
     ]
 
     for position, heading in pose_info:
@@ -87,9 +108,17 @@ def test_conversion_panda(original_pose):
 
 def test_conversion_bullet(original_pose):
     pose_info = [
-        ([2, 0, 0], 0, [-2, 0, 0],),
+        (
+            [2, 0, 0],
+            0,
+            [-2, 0, 0],
+        ),
         ([-1, 0, 0], math.pi, [-1, 0, 0]),
-        ([0, -1.5, 0], math.pi * 0.5, [-1.5, 0, 0],),
+        (
+            [0, -1.5, 0],
+            math.pi * 0.5,
+            [-1.5, 0, 0],
+        ),
     ]
 
     for offset_to_center, heading, position_offset in pose_info:

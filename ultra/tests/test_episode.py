@@ -20,10 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import unittest
-import gym, ray
-from ultra.utils.episode import episodes
+
+import gym
 import numpy as np
+import ray
+
 from smarts.zoo.registry import make
+from ultra.utils.episode import episodes
 
 AGENT_ID = "001"
 timestep_sec = 0.1

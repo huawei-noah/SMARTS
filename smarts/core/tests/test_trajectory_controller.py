@@ -19,28 +19,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import math
 import importlib.resources as pkg_resources
+import math
 import os
-import yaml
-from unittest import mock
-import numpy as np
-import pytest
-
 import random
 from pathlib import Path
+from unittest import mock
 
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
+import numpy as np
+import pytest
+import yaml
+
+from smarts.core import models
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
     TrajectoryTrackingControllerState,
 )
 from smarts.core.coordinates import Heading, Pose
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import Vehicle
-from smarts.core import models
-
 
 time_step = 0.1
 
@@ -67,7 +66,8 @@ def bullet_client(timestep_sec=time_step):
     client.resetSimulation()
     client.setGravity(0, 0, -9.8)
     client.setPhysicsEngineParameter(
-        fixedTimeStep=timestep_sec, numSubSteps=int(timestep_sec / (1 / 240)),
+        fixedTimeStep=timestep_sec,
+        numSubSteps=int(timestep_sec / (1 / 240)),
     )
     path = Path(__file__).parent / "../models/plane.urdf"
     path = str(path.absolute())
@@ -149,7 +149,10 @@ def step_with_vehicle_commands(
         desired_trajectory = build_trajectory(radius, omega, step_num)
 
         TrajectoryTrackingController.perform_trajectory_tracking_PD(
-            desired_trajectory, vehicle, controller_state, dt_sec=timestep_sec,
+            desired_trajectory,
+            vehicle,
+            controller_state,
+            dt_sec=timestep_sec,
         )
 
         bullet_client.stepSimulation()

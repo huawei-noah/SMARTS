@@ -21,21 +21,21 @@ import math
 from enum import Enum
 from functools import partial
 
-from numpy.linalg import matrix_power
 import numpy as np
-
+from numpy.linalg import matrix_power
 from scipy import signal
-from smarts.core.controllers.trajectory_tracking_controller import (
-    TrajectoryTrackingControllerState,
-    TrajectoryTrackingController,
-)
+
 from smarts.core.chassis import AckermannChassis
+from smarts.core.controllers.trajectory_tracking_controller import (
+    TrajectoryTrackingController,
+    TrajectoryTrackingControllerState,
+)
 from smarts.core.utils.math import (
     lerp,
+    low_pass_filter,
+    min_angles_difference_signed,
     radians_to_vec,
     signed_dist_to_line,
-    min_angles_difference_signed,
-    low_pass_filter,
 )
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
@@ -212,7 +212,12 @@ class LaneFollowingController:
         # Linearization of the lateral dynamics are:
         # [lateral error, heading error, yaw_rate, side_slip angle]
         desired_poles = np.array(
-            [cls.lateral_error, cls.heading_error, cls.yaw_rate, cls.side_slip_angle,]
+            [
+                cls.lateral_error,
+                cls.heading_error,
+                cls.yaw_rate,
+                cls.side_slip_angle,
+            ]
         )
 
         LaneFollowingController.calculate_lateral_gains(
@@ -376,7 +381,12 @@ class LaneFollowingController:
                         / (target_speed * vehicle_inertia_z),
                         0,
                     ],
-                    [0, 0, -1, -2 * road_stiffness / (vehicle_mass * target_speed),],
+                    [
+                        0,
+                        0,
+                        -1,
+                        -2 * road_stiffness / (vehicle_mass * target_speed),
+                    ],
                 ]
             )
             input_matrix = np.array(

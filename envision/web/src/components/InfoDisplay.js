@@ -19,22 +19,29 @@
 // THE SOFTWARE.
 import React from "react";
 
-export default function AgentScores({ scores, style }) {
+export default function InfoDisplay({
+  data,
+  ego_agent_ids,
+  attrName,
+  ego_only = false,
+  data_formattter,
+}) {
   return (
-    <table style={{ margin: "15px", tableLayout: "auto", ...style }}>
+    <table style={{ margin: "15px", tableLayout: "auto" }}>
       <thead>
-        <tr key="scores-head">
-          <th style={{ paddingRight: "15px" }}>Score</th>
+        <tr key="data-head">
+          <th style={{ paddingRight: "15px" }}>{attrName}</th>
           <th>Agent</th>
         </tr>
       </thead>
       <tbody>
-        {Object.entries(scores).map(([id, score]) => {
+        {Object.entries(data).map(([id, score]) => {
+          if (ego_only && !ego_agent_ids.includes(id)) {
+            return null;
+          }
           return (
-            <tr key={`scores-body-${id}`}>
-              <td style={{ paddingRight: "15px" }}>
-                {parseFloat(score).toFixed(2)}
-              </td>
+            <tr key={`data-body-${id}`}>
+              <td style={{ paddingRight: "15px" }}>{data_formattter(score)}</td>
               <td
                 style={{
                   maxWidth: "400px",

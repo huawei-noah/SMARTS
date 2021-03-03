@@ -20,26 +20,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # some parts of this implementation is inspired by https://github.com/Khrylx/PyTorch-RL
-import torch, os, yaml
-import numpy as np
-from ultra.baselines.ppo.ppo.network import PPONetwork
-from smarts.core.agent import Agent
-import pathlib
 import os
+import pathlib
+
+import numpy as np
+import torch
+import yaml
+
+from smarts.core.agent import Agent
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.baselines.common.state_preprocessor import *
+from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.ppo.ppo.network import PPONetwork
 from ultra.utils.common import (
     compute_sum_aux_losses,
     normalize_im,
-    to_3d_action,
     to_2d_action,
+    to_3d_action,
 )
-from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.state_preprocessor import *
 
 
 class PPOPolicy(Agent):
     def __init__(
-        self, policy_params=None, checkpoint_dir=None,
+        self,
+        policy_params=None,
+        checkpoint_dir=None,
     ):
         self.policy_params = policy_params
         self.batch_size = int(policy_params["batch_size"])
@@ -189,7 +194,11 @@ class PPOPolicy(Agent):
         self.states.append(state)
         self.rewards.append(torch.FloatTensor([reward]).to(self.device))
         self.actions.append(
-            torch.FloatTensor(action.reshape(self.action_size,)).to(self.device)
+            torch.FloatTensor(
+                action.reshape(
+                    self.action_size,
+                )
+            ).to(self.device)
         )
         self.terminals.append(1.0 - float(done * 1))
 

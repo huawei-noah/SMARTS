@@ -19,21 +19,28 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, sys
-import json, re
+import json
+import os
+import re
+import sys
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
+import argparse
 import glob
-import yaml
 import time
-import numpy as np
-import gym, ray, torch, argparse
-import psutil
 from pydoc import locate
+
+import gym
+import numpy as np
+import psutil
+import ray
+import torch
+import yaml
+
+from smarts.zoo.registry import make
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
-from smarts.zoo.registry import make
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -45,6 +52,7 @@ def evaluation_check(
     policy_class,
     eval_rate,
     eval_episodes,
+    max_episode_steps,
     scenario_info,
     timestep_sec,
     headless,
@@ -59,17 +67,18 @@ def evaluation_check(
         checkpoint_dir = episode.checkpoint_dir(agent_itr)
         agent.save(checkpoint_dir)
         episode.eval_mode()
-        episode.info[episode.active_tag] = ray.get(
+        episode.info[episode.active_tag][agent_id] = ray.get(
             [
                 evaluate.remote(
                     experiment_dir=episode.experiment_dir,
-                    agent_id="AGENT_008",
+                    agent_id=agent_id,
                     policy_class=policy_class,
                     seed=episode.eval_count,
                     itr_count=agent_itr,
                     checkpoint_dir=checkpoint_dir,
                     scenario_info=scenario_info,
                     num_episodes=eval_episodes,
+                    max_episode_steps=max_episode_steps,
                     headless=headless,
                     timestep_sec=timestep_sec,
                     log_dir=log_dir,
@@ -78,7 +87,7 @@ def evaluation_check(
         )[0]
         episode.eval_count += 1
         episode.last_eval_iteration = agent_itr
-        episode.record_tensorboard(agent_id=agent_id)
+        episode.record_tensorboard()
         episode.train_mode()
 
 
@@ -93,6 +102,7 @@ def evaluate(
     checkpoint_dir,
     scenario_info,
     num_episodes,
+    max_episode_steps,
     headless,
     timestep_sec,
     log_dir,
@@ -103,6 +113,7 @@ def evaluate(
         locator=policy_class,
         checkpoint_dir=checkpoint_dir,
         experiment_dir=experiment_dir,
+        max_episode_steps=max_episode_steps,
     )
 
     env = gym.make(
@@ -136,9 +147,9 @@ def evaluate(
             episode.record_step(agent_id=agent_id, infos=infos, rewards=rewards)
 
         episode.record_episode()
-        logs.append(episode.info[episode.active_tag].data)
+        logs.append(episode.info[episode.active_tag][agent_id].data)
 
-        for key, value in episode.info[episode.active_tag].data.items():
+        for key, value in episode.info[episode.active_tag][agent_id].data.items():
             if not isinstance(value, (list, tuple, np.ndarray)):
                 summary_log.data[key] += value
 
@@ -167,6 +178,12 @@ if __name__ == "__main__":
         "--episodes", help="Number of training episodes", type=int, default=200
     )
     parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
+    )
+    parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
@@ -178,7 +195,10 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "--log-dir", help="Log directory location", default="logs", type=str,
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
     )
     args = parser.parse_args()
 
@@ -210,32 +230,35 @@ if __name__ == "__main__":
 
     ray.init()
     try:
-        agent_id = "AGENT_008"
+        AGENT_ID = "AGENT_008"
         for episode in episodes(
-            len(sorted_models), etag=policy_class, log_dir=args.log_dir
+            len(sorted_models),
+            etag=policy_class,
+            log_dir=args.log_dir,
         ):
             model = sorted_models[episode.index]
             print("model: ", model)
             episode_count = model.split("/")[-1]
             episode.eval_mode()
-            episode.info[episode.active_tag] = ray.get(
+            episode.info[episode.active_tag][AGENT_ID] = ray.get(
                 [
                     evaluate.remote(
                         experiment_dir=args.experiment_dir,
-                        agent_id=agent_id,
+                        agent_id=AGENT_ID,
                         policy_class=policy_class,
                         seed=episode.eval_count,
                         itr_count=0,
                         checkpoint_dir=model,
                         scenario_info=(args.task, args.level),
                         num_episodes=int(args.episodes),
+                        max_episode_steps=int(args.max_episode_steps),
                         timestep_sec=float(args.timestep),
                         headless=args.headless,
                         log_dir=args.log_dir,
                     )
                 ]
             )[0]
-            episode.record_tensorboard(agent_id=agent_id)
+            episode.record_tensorboard()
             episode.eval_count += 1
     finally:
         time.sleep(1)

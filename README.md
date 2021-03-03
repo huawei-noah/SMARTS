@@ -259,7 +259,7 @@ $ python examples/single_agent.py scenarios/loop
 docker login
 
 export VERSION=v0.4.3-pre
-docker build -t smarts:$VERSION .
+docker build --no-cache -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
 docker push huaweinoah/smarts:$VERSION
 ```

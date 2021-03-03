@@ -17,13 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import collections.abc as collections_abc
 import logging
 import random
-import collections.abc as collections_abc
 from dataclasses import dataclass, field
+from sys import maxsize
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-from shapely.geometry import GeometryCollection, MultiPolygon, Polygon, Point
+from shapely.geometry import GeometryCollection, MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
 
 from smarts.core import gen_id
@@ -212,7 +213,7 @@ class BoidAgentActor(SocialAgentActor):
 
     # The max number of vehicles that this agent will control at a time. This value is
     # honored when using a bubble for boid dynamic assignment.
-    capacity: int = None
+    capacity: "BubbleLimits" = None
     """The capacity of the boid agent to take over vehicles."""
 
 
@@ -253,7 +254,9 @@ class Route:
     @property
     def id(self) -> str:
         return "route-{}-{}-{}-".format(
-            "_".join(map(str, self.begin)), "_".join(map(str, self.end)), hash(self),
+            "_".join(map(str, self.begin)),
+            "_".join(map(str, self.end)),
+            hash(self),
         )
 
     @property
@@ -581,7 +584,9 @@ class MapZone(Zone):
                 continue
 
             lane_shape = road_network.split_lane_shape_at_offset(
-                lane_shape, lane, max_cut,
+                lane_shape,
+                lane,
+                max_cut,
             )
             lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
             if lane_shape is None:
@@ -611,6 +616,20 @@ class PositionalZone(Zone):
 
 
 @dataclass(frozen=True)
+class BubbleLimits:
+    hijack_limit: int = maxsize
+    """The maximum number of vehicles the bubble can hijack"""
+    shadow_limit: int = maxsize
+    """The maximum number of vehicles the bubble can shadow"""
+
+    def __post_init__(self):
+        if self.shadow_limit is None:
+            raise ValueError("Shadow limit must be a non-negative real number")
+        if self.hijack_limit is None or self.shadow_limit < self.hijack_limit:
+            raise ValueError("Shadow limit must be >= hijack limit")
+
+
+@dataclass(frozen=True)
 class Bubble:
     """A descriptor that defines a capture bubble for social agents."""
 
@@ -623,7 +642,7 @@ class Bubble:
     # If limit != None it will only allow that specified number of vehicles to be
     # hijacked. N.B. when actor = BoidAgentActor the lesser of the actor capacity
     # and bubble limit will be used.
-    limit: int = None
+    limit: BubbleLimits = None
     """The maximum number of actors that could be captured."""
     exclusion_prefixes: Tuple[str, ...] = field(default_factory=tuple)
     """Used to exclude social actors from capture."""

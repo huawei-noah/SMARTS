@@ -24,8 +24,8 @@ import math
 import numpy as np
 import pytest
 
-from smarts.core.coordinates import Heading, Pose
 from smarts.core.chassis import AckermannChassis
+from smarts.core.coordinates import Heading, Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
 

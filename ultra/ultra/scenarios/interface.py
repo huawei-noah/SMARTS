@@ -19,23 +19,28 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import argparse, sys, os, glob, dill, ray, json, timeit
+import argparse
+import glob
+import json
+import os
+import sys
+import timeit
 from collections import defaultdict
-from smarts.core.agent import AgentSpec, Agent
+
+import dill
+import ray
+
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.agent_interface import (
-    AgentInterface,
-    NeighborhoodVehicles,
-)
-from ultra.scenarios.generate_scenarios import build_scenarios
+from ultra.scenarios.analysis.behavior_analysis import BehaviorAnalysis
+from ultra.scenarios.analysis.scenario_analysis import ScenarioAnalysis
 from ultra.scenarios.analysis.sumo_experiment import (
     edge_lane_data_function,
-    vehicle_data_function,
     sumo_rerouting_routine,
+    vehicle_data_function,
 )
-from ultra.scenarios.analysis.scenario_analysis import ScenarioAnalysis
-from ultra.scenarios.analysis.behavior_analysis import BehaviorAnalysis
-
+from ultra.scenarios.generate_scenarios import build_scenarios
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("scenarios")
