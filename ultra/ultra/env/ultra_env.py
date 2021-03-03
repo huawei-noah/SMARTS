@@ -50,6 +50,7 @@ class UltraEnv(HiWayEnv):
     ):
         self.timestep_sec = timestep_sec
         self.headless = headless
+        self.agent_specs = agent_specs
         self.scenario_info = scenario_info
         self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
         if not eval_mode:
@@ -57,6 +58,7 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
+        #print(_scenarios)
         social_vehicle_params = dict(
             encoder_key="no_encoder",
             social_policy_hidden_units=128,
@@ -79,6 +81,7 @@ class UltraEnv(HiWayEnv):
         if ordered_scenarios:
             scenario_roots = []
             for root in _scenarios:
+                print(root)
                 if Scenario.is_valid_scenario(root):
                     # The case that this is a scenario root
                     scenario_roots.append(root)
@@ -149,7 +152,7 @@ class UltraEnv(HiWayEnv):
         )
         return info
 
-    def step(self, agent_actions):
+    def step(self, agent_actions):         
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
@@ -180,6 +183,29 @@ class UltraEnv(HiWayEnv):
 
         return observations, rewards, agent_dones, infos
 
+    def reset(self, switch=False, task=None, level=None):
+        if switch:
+            self.scenarios = self.get_task(task, level)
+            _scenarios = glob.glob(f"{self.scenarios['train']}")
+            self.scenarios_iterator = Scenario.scenario_variations(
+                _scenarios,
+                list(self.agent_specs.keys()),
+                True, # shuffle_scenarios 
+            )
+
+        scenario = next(self.scenarios_iterator)
+        print(scenario)
+
+        self._dones_registered = 0
+        env_observations = self._smarts.reset(scenario)
+
+        observations = {
+            agent_id: self._agent_specs[agent_id].observation_adapter(obs)
+            for agent_id, obs in env_observations.items()
+        }
+
+        return observations
+
     def get_task(self, task_id, task_level):
         base_dir = os.path.join(os.path.dirname(__file__), "../")
         config_path = os.path.join(base_dir, "config.yaml")
@@ -190,6 +216,7 @@ class UltraEnv(HiWayEnv):
 
         task["train"] = os.path.join(base_dir, task["train"])
         task["test"] = os.path.join(base_dir, task["test"])
+        #print(task)
         return task
 
     @property

@@ -129,10 +129,10 @@ def train(
             total_step += 1
             state = next_state
 
-        # if (infos['007']['logs']['events'].reached_goal):
-        #     scenario_success += 1
-        # else:
-        #     continue
+        if (infos['007']['logs']['events'].reached_goal):
+            scenario_success += 1
+        else:
+            continue
 
         # print(episode.info[episode.active_tag][AGENT_ID].data.items())
         # sys.exit()
