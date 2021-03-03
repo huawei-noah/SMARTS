@@ -527,8 +527,9 @@ class Scenario:
         traffic_histories = []
         with open(path, "rb") as f:
             files = pickle.load(f)
-            for file_name in files:
-                traffic_histories.append(os.path.join(scenario_root, file_name))
+            traffic_histories = list(
+                map(lambda f: os.path.join(scenario_root, f), files)
+            )
 
         return traffic_histories
 
