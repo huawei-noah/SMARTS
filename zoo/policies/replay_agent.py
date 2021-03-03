@@ -14,6 +14,10 @@ class ReplayAgent(Agent):
     """A helper agent that wraps another agent to allow replay of the agent actions"""
 
     def __init__(self, save_directory, id, read: bool, internal_spec: AgentSpec):
+        import smarts.core
+        if smarts.core.current_seed() == None:
+            smarts.core.seed(42)
+        
         self.save_directory = save_directory
         self._base_agent = internal_spec.build_agent()
         self._file = None
