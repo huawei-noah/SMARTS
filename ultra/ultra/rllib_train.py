@@ -37,6 +37,7 @@ from ray.rllib.models import ModelCatalog
 import ray.rllib.agents.ppo as ppo
 import ray.rllib.agents.sac as sac
 import ray.rllib.agents.ddpg as ddpg
+import ray.rllib.agents.dqn as dqn
 
 # from ray.rllib.agents.sac.sac_torch_model import SACTorchModel
 # from ray.rllib.agents.ddpg.ddpg_torch_model import DDPGTorchModel
@@ -49,6 +50,7 @@ from smarts.core.agent_interface import (
 )
 
 from ultra.baselines.rllib_models.fc_network import CustomFCModel
+from ultra.baselines.rllib_models.ddpg_fc_network import DDPGCustomFCModel
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
@@ -57,8 +59,6 @@ from ultra.utils.episode import Callbacks
 from ultra.utils.episode import log_creator
 
 num_gpus = 1 if torch.cuda.is_available() else 0
-
-# TODO : refactor rllib_train.py / move callbacks somewhere else??
 
 
 def train(
@@ -71,7 +71,8 @@ def train(
     # AGENT_ID = "007"
 
     # social_vehicle_params_dir = "/".join(inspect.getfile("ultra.baselines.rllib_models").split("/")[:-1])
-    policy_params = load_yaml(f"ultra/baselines/ppo/ppo/params.yaml")
+    algorithm = "dqn"
+    policy_params = load_yaml(f"ultra/baselines/{algorithm}/{algorithm}/params.yaml")
     social_vehicle_params = policy_params["social_vehicles"]
     social_vehicle_params["observation_num_lookahead"] = policy_params[
         "observation_num_lookahead"
@@ -80,9 +81,16 @@ def train(
         social_vehicle_params=social_vehicle_params,
     )
 
+
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
-    # ModelCatalog.register_custom_model("fc_model", DDPGTorchModel)
-    config = ddpg.DEFAULT_CONFIG.copy()
+
+    if algorithm=='ppo':
+        config = ppo.DEFAULT_CONFIG.copy()
+    elif algorithm=='ddpg':
+        config = ddpg.DEFAULT_CONFIG.copy()
+    elif algorithm=='dqn':
+        config = dqn.DEFAULT_CONFIG.copy()
+
 
     rllib_policies = {
         "default_policy": (
@@ -117,7 +125,7 @@ def train(
 
     tune_config = {
         "env": RLlibUltraEnv,
-        "log_level": "WARN",
+        "log_level": "DEBUG",
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
@@ -167,11 +175,22 @@ def train(
     }
 
     config.update(tune_config)
-    trainer = ppo.PPOTrainer(
-        env=RLlibUltraEnv,
-        config=tune_config,
-        logger_creator=log_creator(log_dir),
-    )
+    # config["normalize_actions"]= False
+    # print('>>>',config['normalize_actions'], type(RLlibUltraEnv))
+    # config["normalize_actions"]= False
+
+    if algorithm=='ppo':
+        trainer = ppo.PPOTrainer(
+            env=RLlibUltraEnv,
+            config=tune_config,
+            logger_creator=log_creator(log_dir),
+        )
+    elif algorithm=='ddpg':
+        trainer = ddpg.DDPGTrainer(
+            env=RLlibUltraEnv,
+            config=tune_config,
+            logger_creator=log_creator(log_dir),
+        )
 
     # Iteration value in trainer.py (self._iterations) is the technically the number of episodes
     for i in range(num_episodes):

@@ -27,7 +27,7 @@ from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFCNet
 from ultra.baselines.common.state_preprocessor import *
 
 
-class CustomFCModel(TorchModelV2, nn.Module):
+class DDPGCustomFCModel(TorchModelV2, nn.Module):
     """Example of interpreting repeated observations."""
 
     def __init__(
@@ -37,9 +37,10 @@ class CustomFCModel(TorchModelV2, nn.Module):
         num_outputs: int,
         model_config,
         name: str,
-        **customized_model_kwargs
+        # adapter: None
+        # **customized_model_kwargs
     ):
-        super(CustomFCModel, self).__init__(
+        super(DDPGCustomFCModel, self).__init__(
             obs_space=obs_space,
             action_space=action_space,
             num_outputs=num_outputs,
@@ -48,17 +49,13 @@ class CustomFCModel(TorchModelV2, nn.Module):
         )
         nn.Module.__init__(self)
 
-        if 'adapter' in  model_config['custom_model_config']:
-            adapter = model_config['custom_model_config'][
-                "adapter"
-            ]
-        else:
-            adapter = customized_model_kwargs[
-                "adapter"
-            ]
 
-        social_feature_encoder_class = adapter.social_feature_encoder_class
-        social_feature_encoder_params = adapter.social_feature_encoder_params
+        social_feature_encoder_class = model_config['custom_model_config'][
+            "adapter"
+        ].social_feature_encoder_class
+        social_feature_encoder_params = model_config['custom_model_config'][
+            "adapter"
+        ].social_feature_encoder_params
         self.social_feature_encoder = (
             social_feature_encoder_class(**social_feature_encoder_params)
             if social_feature_encoder_class
