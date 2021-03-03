@@ -96,20 +96,6 @@ class EvaluateTest(unittest.TestCase):
                         dill.dump(spec, spec_output, pickle.HIGHEST_PROTOCOL)
 
                 while not dones["__all__"]:
-                    evaluation_check(
-                        agent=agent,
-                        agent_id=AGENT_ID,
-                        episode=episode,
-                        eval_rate=10,
-                        eval_episodes=1,
-                        max_episode_steps=2,
-                        episode_count=episode_count,
-                        policy_class=policy_class,
-                        scenario_info=("00", "eval_test"),
-                        timestep_sec=0.1,
-                        headless=True,
-                        log_dir=log_dir,
-                    )
                     action = agent.act(state, explore=True)
                     observations, rewards, dones, infos = env.step({AGENT_ID: action})
                     next_state = observations[AGENT_ID]
@@ -132,6 +118,20 @@ class EvaluateTest(unittest.TestCase):
                     )
                     total_step += 1
                     state = next_state
+                evaluation_check(
+                    agent=agent,
+                    agent_id=AGENT_ID,
+                    episode=episode,
+                    eval_rate=10,
+                    eval_episodes=1,
+                    max_episode_steps=2,
+                    episode_count=episode_count,
+                    policy_class=policy_class,
+                    scenario_info=("00", "eval_test"),
+                    timestep_sec=0.1,
+                    headless=True,
+                    log_dir=log_dir,
+                )
                 episode_count += 1
 
             env.close()
