@@ -99,9 +99,9 @@ class LogInfo:
         self.data["speed"] /= steps
         self.data["ego_linear_jerk"] /= steps
         self.data["ego_angular_jerk"] /= steps
-        #self.data["ego_num_violations"] /= steps
-        #self.data["social_num_violations"] /= steps
-        #self.data["max_speed_violation"] /= steps
+        # self.data["ego_num_violations"] /= steps
+        # self.data["social_num_violations"] /= steps
+        # self.data["max_speed_violation"] /= steps
 
 
 class Episode:
