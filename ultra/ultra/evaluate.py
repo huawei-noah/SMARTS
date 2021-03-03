@@ -53,6 +53,7 @@ def evaluation_check(
     eval_rate,
     eval_episodes,
     max_episode_steps,
+    episode_count,
     scenario_info,
     timestep_sec,
     headless,
@@ -61,10 +62,12 @@ def evaluation_check(
     agent_itr = episode.get_itr(agent_id)
 
     print(
-        f"Agent iteration : {agent_itr}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
+        f"Agent iteration : {agent_itr}, Episode count : {episode_count}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
     )
-    if (agent_itr + 1) % eval_rate == 0 and episode.last_eval_iteration != agent_itr:
-        checkpoint_dir = episode.checkpoint_dir(agent_itr)
+    if (
+        episode_count + 1
+    ) % eval_rate == 0 and episode.last_eval_iteration != episode_count:
+        checkpoint_dir = episode.checkpoint_dir(episode_count)
         agent.save(checkpoint_dir)
         episode.eval_mode()
         episode.info[episode.active_tag][agent_id] = ray.get(
@@ -74,7 +77,6 @@ def evaluation_check(
                     agent_id=agent_id,
                     policy_class=policy_class,
                     seed=episode.eval_count,
-                    itr_count=agent_itr,
                     checkpoint_dir=checkpoint_dir,
                     scenario_info=scenario_info,
                     num_episodes=eval_episodes,
@@ -86,7 +88,7 @@ def evaluation_check(
             ]
         )[0]
         episode.eval_count += 1
-        episode.last_eval_iteration = agent_itr
+        episode.last_eval_iteration = episode_count
         episode.record_tensorboard()
         episode.train_mode()
 
@@ -98,7 +100,6 @@ def evaluate(
     seed,
     agent_id,
     policy_class,
-    itr_count,
     checkpoint_dir,
     scenario_info,
     num_episodes,
@@ -247,7 +248,6 @@ if __name__ == "__main__":
                         agent_id=AGENT_ID,
                         policy_class=policy_class,
                         seed=episode.eval_count,
-                        itr_count=0,
                         checkpoint_dir=model,
                         scenario_info=(args.task, args.level),
                         num_episodes=int(args.episodes),

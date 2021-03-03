@@ -75,6 +75,7 @@ def train(
 
     agent = spec.build_agent()
 
+    episode_count = 0
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
@@ -100,6 +101,7 @@ def train(
                 episode=episode,
                 log_dir=log_dir,
                 max_episode_steps=max_episode_steps,
+                episode_count=episode_count,
                 **eval_info,
                 **env.info,
             )
@@ -123,9 +125,9 @@ def train(
             )
             total_step += 1
             state = next_state
-
         episode.record_episode()
         episode.record_tensorboard()
+        episode_count += 1
         if finished:
             break
 
@@ -169,9 +171,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--eval-rate",
-        help="Evaluation rate based on number of observations",
+        help="Evaluation rate based on number of episodes",
         type=int,
-        default=10000,
+        default=100,
     )
     parser.add_argument(
         "--seed",
