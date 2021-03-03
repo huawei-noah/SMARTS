@@ -242,7 +242,9 @@ if __name__ == "__main__":
         raise "No models to evaluate"
 
     # Load relevant agent metadata.
-    with open(os.path.join(args.models, "../agent_metadata.pkl"), "rb") as agent_metadata_file:
+    with open(
+        os.path.join(args.models, "../agent_metadata.pkl"), "rb"
+    ) as agent_metadata_file:
         agent_metadata = pickle.load(agent_metadata_file)
 
     # Extract the agent IDs and policy classes.
@@ -260,7 +262,8 @@ if __name__ == "__main__":
     # }
     agent_checkpoint_directories = {
         agent_id: sorted(
-            glob.glob(os.path.join(args.models, agent_id, "*")), key=lambda x: int(x.split("/")[-1])
+            glob.glob(os.path.join(args.models, agent_id, "*")),
+            key=lambda x: int(x.split("/")[-1]),
         )
         for agent_id in agent_ids
     }

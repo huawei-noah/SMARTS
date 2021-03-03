@@ -256,7 +256,9 @@ def generate_left_turn_missions(
             )
             for ego_route in ego_routes
         ]
-    random.shuffle(mission_objects)  # Shuffle the missions so agents don't do the same route all the time.
+    random.shuffle(
+        mission_objects
+    )  # Shuffle the missions so agents don't do the same route all the time.
     gen_missions(scenario, mission_objects)
 
     traffic = Traffic(flows=all_flows)

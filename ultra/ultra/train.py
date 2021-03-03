@@ -126,7 +126,9 @@ def train(
         # Save relevant agent metadata.
         if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
             agent_metadata = {"agent_ids": agent_ids, "agent_classes": agent_classes}
-            with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as agent_metadata_file:
+            with open(
+                f"{experiment_dir}/agent_metadata.pkl", "wb"
+            ) as agent_metadata_file:
                 dill.dump(agent_metadata, agent_metadata_file, pickle.HIGHEST_PROTOCOL)
 
         while not dones["__all__"]:
