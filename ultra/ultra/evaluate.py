@@ -60,9 +60,9 @@ def evaluation_check(
 ):
     agent_itr = episode.get_itr(agent_id)
 
-    print(
-        f"Agent iteration : {agent_itr}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
-    )
+    # print(
+    #     f"Agent iteration : {agent_itr}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
+    # )
     if (agent_itr + 1) % eval_rate == 0 and episode.last_eval_iteration != agent_itr:
         checkpoint_dir = episode.checkpoint_dir(agent_itr)
         agent.save(checkpoint_dir)

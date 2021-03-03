@@ -370,7 +370,6 @@ class Callbacks(DefaultCallbacks):
         episode,
         **kwargs,
     ):
-        print(type(episode.user_data))
         episode.user_data.normalize(episode.length)
         for key, val in episode.user_data.data.items():
             if not isinstance(val, (list, tuple, np.ndarray)):

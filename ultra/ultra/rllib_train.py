@@ -71,11 +71,13 @@ def train(
     # AGENT_ID = "007"
 
     # social_vehicle_params_dir = "/".join(inspect.getfile("ultra.baselines.rllib_models").split("/")[:-1])
-    social_vehicle_params = load_yaml(
-        "ultra/baselines/rllib_models/social_vehicle_params.yaml"
-    )
+    policy_params = load_yaml(f"ultra/baselines/ppo/ppo/params.yaml")
+    social_vehicle_params = policy_params["social_vehicles"]
+    social_vehicle_params["observation_num_lookahead"] = policy_params[
+        "observation_num_lookahead"
+    ]
     adapter = BaselineAdapter(
-        social_vehicle_params=social_vehicle_params["social_vehicles"],
+        social_vehicle_params=social_vehicle_params,
     )
 
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)

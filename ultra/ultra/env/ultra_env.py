@@ -26,12 +26,13 @@ from itertools import cycle
 from sys import path
 
 import numpy as np
-import yaml
+import yaml, inspect
 from scipy.spatial import distance
 
 from smarts.core.scenario import Scenario
 from smarts.env.hiway_env import HiWayEnv
 from ultra.baselines.adapter import BaselineAdapter
+from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")
 from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
@@ -57,15 +58,11 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
-        social_vehicle_params = dict(
-            encoder_key="no_encoder",
-            social_policy_hidden_units=128,
-            social_policy_init_std=0.5,
-            num_social_features=4,
-            seed=2,
-            observation_num_lookahead=20,
-            social_capacity=10,
-        )
+        policy_params = load_yaml(f"ultra/baselines/ppo/ppo/params.yaml")
+        social_vehicle_params = policy_params["social_vehicles"]
+        social_vehicle_params["observation_num_lookahead"] = policy_params[
+            "observation_num_lookahead"
+        ]
         self.ultra_scores = BaselineAdapter(social_vehicle_params=social_vehicle_params)
         super().__init__(
             scenarios=_scenarios,
