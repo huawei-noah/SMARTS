@@ -58,7 +58,7 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
-        #print(_scenarios)
+        # print(_scenarios)
         social_vehicle_params = dict(
             encoder_key="no_encoder",
             social_policy_hidden_units=128,
@@ -152,7 +152,7 @@ class UltraEnv(HiWayEnv):
         )
         return info
 
-    def step(self, agent_actions):         
+    def step(self, agent_actions):
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
@@ -190,7 +190,7 @@ class UltraEnv(HiWayEnv):
             self.scenarios_iterator = Scenario.scenario_variations(
                 _scenarios,
                 list(self.agent_specs.keys()),
-                True, # shuffle_scenarios 
+                True,  # shuffle_scenarios
             )
 
         scenario = next(self.scenarios_iterator)
@@ -216,7 +216,7 @@ class UltraEnv(HiWayEnv):
 
         task["train"] = os.path.join(base_dir, task["train"])
         task["test"] = os.path.join(base_dir, task["test"])
-        #print(task)
+        # print(task)
         return task
 
     @property

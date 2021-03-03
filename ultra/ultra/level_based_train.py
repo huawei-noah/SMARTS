@@ -68,19 +68,31 @@ def train(
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=scenario_info,
+        scenario_info=(scenario_info[0], scenario_info[1][0]),
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
     )
-
     agent = spec.build_agent()
 
     scenario_success = 0
     summary_log = LogInfo()
 
+    levels = tuple(scenario_info[1])
+    level_iter = iter(levels)
+    level_counter = iter(levels)
+
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-        observations = env.reset()
+        if (episode.index % 5) == 0:
+            print()
+            print(
+                f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ENTERING STAGE {next(level_counter)} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+            )
+            print()
+            observations = env.reset(True, scenario_info[0], next(level_iter))
+        else:
+            observations = env.reset()
+
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
         episode.reset()
@@ -145,14 +157,13 @@ def train(
 
         if finished:
             break
-
+    env.close()
     # for key, val in summary_log.data.items():
     #     if not isinstance(val, (list, tuple, np.ndarray)):
     #         summary_log.data[key] /= num_episodes
     #         print(f"{key}: {summary_log.data[key]}")
 
     # print(f">>>>>>>>>>>>>>>> Scenario success : {scenario_success} <<<<<<<<<<<<<<<<<<")
-    env.close()
 
 
 if __name__ == "__main__":
@@ -223,12 +234,13 @@ if __name__ == "__main__":
 
     # Required string for smarts' class registry
     policy_class = str(policy_path) + ":" + str(policy_locator)
+    level = args.level.split(",")
 
     ray.init()
     ray.wait(
         [
             train.remote(
-                scenario_info=(args.task, args.level),
+                scenario_info=(args.task, level),
                 num_episodes=int(args.episodes),
                 max_episode_steps=int(args.max_episode_steps),
                 eval_info={
