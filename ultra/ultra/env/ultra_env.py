@@ -58,7 +58,7 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
-        self.ultra_scores = BaselineAdapter(agent_type='ppo')
+        self.ultra_scores = BaselineAdapter(agent_type="score")
         super().__init__(
             scenarios=_scenarios,
             agent_specs=agent_specs,

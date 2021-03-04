@@ -34,13 +34,7 @@ from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
 
 from ray.rllib.models import ModelCatalog
-import ray.rllib.agents.ppo as ppo
-import ray.rllib.agents.sac as sac
-import ray.rllib.agents.ddpg as ddpg
-import ray.rllib.agents.dqn as dqn
-import ray.rllib.agents.ddpg.td3 as td3
-# from ray.rllib.agents.sac.sac_torch_model import SACTorchModel
-# from ray.rllib.agents.ddpg.ddpg_torch_model import DDPGTorchModel
+
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import (
     AgentInterface,
@@ -49,6 +43,7 @@ from smarts.core.agent_interface import (
     NeighborhoodVehicles,
 )
 
+from ultra.baselines.rllib.models.fc_network import CustomFCModel
 from ultra.baselines.rllib.agent import RllibAgent
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
@@ -67,13 +62,10 @@ def train(
     # --------------------------------------------------------
     # Initialize Agent and social_vehicle encoding method
     # -------------------------------------------------------
-    # AGENT_ID = "007"
-
-
-    agent_type = 'ppo'
+    agent_type = "ppo"
     adapter = BaselineAdapter(agent_type)
-    rllib_agent = RllibAgent(agent_type)
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
+    config = RllibAgent.rllib_default_config(agent_type)
 
     rllib_policies = {
         "default_policy": (
@@ -93,7 +85,7 @@ def train(
             interface=AgentInterface(
                 waypoints=Waypoints(lookahead=20),
                 neighborhood_vehicles=NeighborhoodVehicles(200),
-                action=action_type,
+                action=ActionSpaceType.Continuous,
                 rgb=False,
                 max_episode_steps=600,
                 debug=True,
@@ -108,7 +100,7 @@ def train(
 
     tune_config = {
         "env": RLlibUltraEnv,
-        "log_level": "DEBUG",
+        "log_level": "WARN",
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
@@ -139,24 +131,20 @@ def train(
             "agent_specs": agent_specs,
             "timestep_sec": timestep_sec,
         },
-        "multiagent": {
-            "policies": rllib_policies,
-        },
+        "multiagent": {"policies": rllib_policies},
     }
 
     config.update(tune_config)
-    # config["normalize_actions"]= False
-    # print('>>>',config['normalize_actions'], type(RLlibUltraEnv))
-    # config["normalize_actions"]= False
-
+    agent = RllibAgent(
+        agent_type=agent_type,
+        env=RLlibUltraEnv,
+        config=tune_config,
+        logger_creator=log_creator(log_dir),
+    )
 
     # Iteration value in trainer.py (self._iterations) is the technically the number of episodes
     for i in range(num_episodes):
-        results = rllib_agent.train(
-            env=RLlibUltraEnv,
-            config=tune_config,
-            logger_creator=log_creator(log_dir)
-        )
+        results = agent.train()
         trainer.log_result(
             results
         )  # Evaluation metrics will now be displayed on Tensorboard

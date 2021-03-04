@@ -43,17 +43,17 @@ num_lookahead = 100
 
 class BaselineAdapter:
     def __init__(self, agent_type):
-        assert agent_type in ['td3', 'ddqn', 'ppo', 'bdqn', 'sac']
+        assert agent_type in ["td3", "ddpg", "dqn", "ppo", "bdqn", "sac", "score"]
 
-        if agent_type == 'td3':
-            policy_params = load_yaml(f"ultra/baselines/ddpg/ddpg/params.yaml")
+        if agent_type == "td3":
+            self.policy_params = load_yaml(f"ultra/baselines/ddpg/ddpg/params.yaml")
         else:
-            policy_params = load_yaml(f"ultra/baselines/{agent_type}/{agent_type}/params.yaml")
+            self.policy_params = load_yaml(
+                f"ultra/baselines/{agent_type}/{agent_type}/params.yaml"
+            )
 
-
-        print('->>>>', policy_params)
-        social_vehicle_params = policy_params["social_vehicles"]
-        social_vehicle_params["observation_num_lookahead"] = policy_params[
+        social_vehicle_params = self.policy_params["social_vehicles"]
+        social_vehicle_params["observation_num_lookahead"] = self.policy_params[
             "observation_num_lookahead"
         ]
         self.observation_num_lookahead = social_vehicle_params[

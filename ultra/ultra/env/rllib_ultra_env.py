@@ -51,13 +51,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
         config["scenarios"] = _scenarios
-
-        policy_params = load_yaml(f"ultra/baselines/ppo/ppo/params.yaml")
-        social_vehicle_params = policy_params["social_vehicles"]
-        social_vehicle_params["observation_num_lookahead"] = policy_params[
-            "observation_num_lookahead"
-        ]
-        self.ultra_scores = BaselineAdapter(agent_type='ppo')
+        self.ultra_scores = BaselineAdapter(agent_type="score")
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:

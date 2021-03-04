@@ -191,7 +191,6 @@ class SACPolicy(Agent):
             states, actions, rewards, next_states, dones, others = self.memory.sample(
                 device=self.device_name
             )
-
             if self.steps % self.critic_update_rate == 0:
                 critic_loss = self.update_critic(
                     states, actions, rewards, next_states, dones
