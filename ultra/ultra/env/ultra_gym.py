@@ -96,7 +96,6 @@ class UltraGym(UltraEnv):
         eval_mode=False,
         ordered_scenarios=False,
     ):
-
         self.timestep_sec = timestep_sec
         self.headless = headless
         self.scenario_info = scenario_info
@@ -110,13 +109,14 @@ class UltraGym(UltraEnv):
             self.action_space = gym.spaces.Discrete(4)
         elif action_type == "continuous":
             action_type = ActionSpaceType.Continuous
+            self.action_space = gym.spaces.Box(low = -1, high = 1, shape = (3,))
 
         if obs_type == "image":
             self.observation_space = gym.spaces.Box(
                 low=0, high=1, shape=(256, 256, 1), dtype=np.float32
             )
         elif obs_type == "low_dim":
-            pass
+            pass #TODO
 
         spec = AgentSpec(
             interface=AgentInterface(
@@ -124,7 +124,6 @@ class UltraGym(UltraEnv):
                 neighborhood_vehicles=NeighborhoodVehicles(200),
                 action=action_type,
                 rgb=True,
-                # ogm=True,
                 max_episode_steps=max_episode_steps,
                 debug=True,
             ),
@@ -134,7 +133,7 @@ class UltraGym(UltraEnv):
         )
 
         super().__init__(
-            agent_specs={"007": spec},
+            agent_specs={self.agent_id: spec},
             scenario_info=scenario_info,
             headless=headless,
             timestep_sec=timestep_sec,
@@ -142,12 +141,12 @@ class UltraGym(UltraEnv):
         )
 
     def step(self, agent_action):
-        results = super().step({"007": agent_action})
-        return [result["007"] for result in results]
+        results = super().step({self.agent_id: agent_action})
+        return [result[self.agent_id] for result in results]
 
     def reset(self):
         obs = super().reset()
-        return obs["007"]
+        return obs[self.agent_id]
 
 
 class GymAdapter:
