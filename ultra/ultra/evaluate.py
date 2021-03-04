@@ -142,7 +142,7 @@ def evaluate(
 
         episode.reset(mode="Evaluation")
         while not dones["__all__"]:
-            action = agent.act(state, explore=False)
+            action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({agent_id: action})
 
             next_state = observations[agent_id]
