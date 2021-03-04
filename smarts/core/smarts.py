@@ -60,6 +60,8 @@ from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
 from .waypoints import Waypoints
 
+import examples.profiler as profiler
+
 # disable vsync otherwise we are limited to refresh-rate of screen
 loadPrcFileData("", "sync-video false")
 loadPrcFileData("", "model-path %s" % os.getcwd())
@@ -802,6 +804,7 @@ class SMARTS(ShowBase):
         for vehicle_id in vehicle_ids:
             self._vehicle_collisions.pop(vehicle_id, None)
 
+    @profiler.profile_line
     def _perform_agent_actions(self, agent_actions):
         for agent_id, action in agent_actions.items():
             agent_vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
@@ -815,9 +818,8 @@ class SMARTS(ShowBase):
                 )
                 is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
 
-                for vehicle in agent_vehicles:
+                def par_controller_action(vehicle):
                     vehicle_action = action[vehicle.id] if is_boid_agent else action
-
                     controller_state = (
                         self._vehicle_index.controller_state_for_vehicle_id(vehicle.id)
                     )
@@ -835,6 +837,28 @@ class SMARTS(ShowBase):
                         agent_interface.action_space,
                         agent_interface.vehicle_type,
                     )
+
+                list(map(par_controller_action, agent_vehicles))
+                # for vehicle in agent_vehicles:
+                #     vehicle_action = action[vehicle.id] if is_boid_agent else action
+
+                #     controller_state = (
+                #         self._vehicle_index.controller_state_for_vehicle_id(vehicle.id)
+                #     )
+                #     sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
+                #         vehicle.id
+                #     )
+                #     # TODO: Support performing batched actions
+                #     Controllers.perform_action(
+                #         self,
+                #         agent_id,
+                #         vehicle,
+                #         vehicle_action,
+                #         controller_state,
+                #         sensor_state,
+                #         agent_interface.action_space,
+                #         agent_interface.vehicle_type,
+                #     )
 
     def _sync_panda3d(self):
         for vehicle in self._vehicle_index.vehicles:

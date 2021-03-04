@@ -37,6 +37,7 @@ from smarts.core.controllers.trajectory_tracking_controller import (
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
+import examples.profiler as profiler
 
 class ActionSpaceType(Enum):
     Continuous = 0
@@ -51,6 +52,7 @@ class ActionSpaceType(Enum):
 
 class Controllers:
     @staticmethod
+    # @profiler.profile_line
     def perform_action(
         sim,
         agent_id,
