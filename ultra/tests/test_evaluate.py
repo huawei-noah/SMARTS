@@ -115,9 +115,7 @@ class EvaluateTest(unittest.TestCase):
         ray.init()
         try:
             run_experiment(
-                scenario_info=("00", "eval_test"),
-                num_agents=1,
-                log_dir=log_dir
+                scenario_info=("00", "eval_test"), num_agents=1, log_dir=log_dir
             )
             self.assertTrue(True)
         except Exception as err:
@@ -139,7 +137,7 @@ class EvaluateTest(unittest.TestCase):
             run_experiment(
                 scenario_info=("00-multiagent", "eval_test"),
                 num_agents=3,
-                log_dir=log_dir
+                log_dir=log_dir,
             )
             self.assertTrue(True)
         except Exception as err:
@@ -203,7 +201,9 @@ class EvaluateTest(unittest.TestCase):
         models_directory = glob.glob("tests/sac_test_models/*/models/")[0]
         log_dir = "tests/output_eval_agent_logs/"
 
-        with open(os.path.join(models_directory, "../agent_metadata.pkl"), "rb") as metadata_file:
+        with open(
+            os.path.join(models_directory, "../agent_metadata.pkl"), "rb"
+        ) as metadata_file:
             agent_metadata = pickle.load(metadata_file)
 
         agent_ids = agent_metadata["agent_ids"]
@@ -242,7 +242,9 @@ class EvaluateTest(unittest.TestCase):
         models_directory = glob.glob("tests/multiagent_test_models/*/models/")[0]
         log_dir = "tests/output_eval_agent_logs/"
 
-        with open(os.path.join(models_directory, "../agent_metadata.pkl"), "rb") as metadata_file:
+        with open(
+            os.path.join(models_directory, "../agent_metadata.pkl"), "rb"
+        ) as metadata_file:
             agent_metadata = pickle.load(metadata_file)
 
         agent_ids = agent_metadata["agent_ids"]
@@ -303,11 +305,10 @@ class EvaluateTest(unittest.TestCase):
     # def tearDownClass(cls):
     #     os.system("ray stop")
 
+
 def run_experiment(scenario_info, num_agents, log_dir, headless=True):
     agent_ids = ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(num_agents)]
-    agent_classes = {
-        agent_id: "ultra.baselines.sac:sac-v0" for agent_id in agent_ids
-    }
+    agent_classes = {agent_id: "ultra.baselines.sac:sac-v0" for agent_id in agent_ids}
     agent_specs = {
         agent_id: BaselineAgentSpec(
             action_type=ActionSpaceType.Continuous,
