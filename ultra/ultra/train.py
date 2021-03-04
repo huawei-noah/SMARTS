@@ -76,6 +76,7 @@ def train(
     agent = spec.build_agent()
 
     episode_count = 0
+    old_episode = None
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
@@ -114,6 +115,14 @@ def train(
             )
             total_step += 1
             state = next_state
+
+        episode.record_episode(old_episode, eval_info["eval_rate"])
+        old_episode = episode
+
+        if (episode_count + 1) % eval_info["eval_rate"] == 0:
+            episode.record_tensorboard()
+            old_episode = None
+
         evaluation_check(
             agent=agent,
             agent_id=AGENT_ID,
@@ -125,8 +134,6 @@ def train(
             **eval_info,
             **env.info,
         )
-        episode.record_episode()
-        episode.record_tensorboard()
         episode_count += 1
         if finished:
             break
@@ -211,7 +218,7 @@ if __name__ == "__main__":
                 num_episodes=int(args.episodes),
                 max_episode_steps=int(args.max_episode_steps),
                 eval_info={
-                    "eval_rate": float(args.eval_rate),
+                    "eval_rate": int(args.eval_rate),
                     "eval_episodes": int(args.eval_episodes),
                 },
                 timestep_sec=float(args.timestep),

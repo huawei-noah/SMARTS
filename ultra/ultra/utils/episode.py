@@ -35,8 +35,8 @@ from tensorboardX import SummaryWriter
 class LogInfo:
     def __init__(self):
         self.data = {
-            "env_score": 0,
-            "episode_reward": 0,
+            "env_score": 0.0,
+            "episode_reward": 0.0,
             "dist_center": 0,
             "goal_dist": 0,
             "speed": 0,
@@ -218,9 +218,17 @@ class Episode:
         self.steps += 1
         self.agents_itr[agent_id] += 1
 
-    def record_episode(self):
+    def record_episode(self, old_episode=None, eval_rate=None):
         for _, agent_info in self.info[self.active_tag].items():
             agent_info.normalize()
+
+        if (old_episode is not None) and (eval_rate is not None):
+            for agent_id, agent_info in self.info[self.active_tag].items():
+                for key in agent_info.data:
+                    agent_info.data[key] = (
+                        agent_info.data[key] * eval_rate
+                        + old_episode.info[self.active_tag][agent_id].data[key]
+                    ) / eval_rate
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
@@ -313,7 +321,7 @@ def episodes(n, etag=None, log_dir=None):
                     for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
                 row = (
-                    f"{e.index}/{n}",
+                    f"{e.index + 1}/{n}",
                     f"{e.sim2wall_ratio:.2f}",
                     f"{e.steps}",
                     f"{e.steps_per_second:.2f}",
