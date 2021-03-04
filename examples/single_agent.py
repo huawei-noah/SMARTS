@@ -40,13 +40,6 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         agent_builder=ChaseViaPointsAgent,
     )
 
-    agent_spec = zoo_make(
-        "zoo.policies:replay-agent-v0",
-        save_directory="./replay",
-        id="agent_007",
-        wrapped_agent_locator="zoo.policies:keep-lane-agent-v0",
-    )
-
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,

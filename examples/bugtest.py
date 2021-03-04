@@ -79,9 +79,10 @@ if __name__ == "__main__":
         default=None,
     )
     parser.add_argument(
-        "--write", help="Replay the agent else write the agent actions out to directory.", action="store_true"
+        "--write",
+        help="Replay the agent else write the agent actions out to directory.",
+        action="store_true",
     )
-
 
     args = parser.parse_args()
 
