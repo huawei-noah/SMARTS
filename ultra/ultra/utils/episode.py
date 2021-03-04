@@ -71,7 +71,7 @@ class LogInfo:
         self.data["ego_linear_jerk"] += infos["logs"]["linear_jerk"]
         self.data["ego_angular_jerk"] += infos["logs"]["angular_jerk"]
         self.data["episode_reward"] += rewards
-        self.data["final_pos"] = infos["logs"]["position"]
+        self.data["final_pos"] = infos["logs"]["position"][:2]
         self.data["start_pos"] = infos["logs"]["start"].position
         self.data["dist_travelled"] = math.sqrt(
             (self.data["final_pos"][1] - self.data["start_pos"][1]) ** 2
@@ -175,6 +175,15 @@ class Episode:
 
     def eval_mode(self):
         self.active_tag = "Evaluation"
+
+    def gap_mode(self):
+        self.active_tag = "Gap"
+
+    def calculate_gap(self):
+        gap_info = self.info["Gap"]
+        for agent_id, agent_info in self.info["Train"].items():
+            for key in agent_info.data:
+                gap_info[agent_id].data[key] = self.info["Train"][agent_id].data[key] - self.info["Evaluation"][agent_id].data[key]
 
     def reset(self, mode="Train"):
         self.start_time = time.time()

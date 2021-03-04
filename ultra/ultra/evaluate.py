@@ -90,6 +90,9 @@ def evaluation_check(
         episode.eval_count += 1
         episode.last_eval_iteration = episode_count
         episode.record_tensorboard()
+        episode.gap_mode()
+        episode.calculate_gap()
+        episode.record_tensorboard()
         episode.train_mode()
 
 
@@ -107,6 +110,7 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
+    explore = False,
 ):
 
     torch.set_num_threads(1)
