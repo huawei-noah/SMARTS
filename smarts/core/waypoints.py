@@ -27,11 +27,11 @@ from typing import Sequence
 import numpy as np
 from scipy.interpolate import interp1d
 
-from smarts.core.utils.file import supress_pkg_resources
+from smarts.core.utils.file import suppress_pkg_resources
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
-    with supress_pkg_resources():
+    with suppress_pkg_resources():
         # We force sklearn to use a different importer since sklearn's use of pkg_resources is
         # aggressive
         from sklearn.neighbors import KDTree
