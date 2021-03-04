@@ -110,7 +110,7 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
-    explore = False,
+    explore=False,
 ):
 
     torch.set_num_threads(1)
