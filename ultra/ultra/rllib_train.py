@@ -56,7 +56,14 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 
 
 def train(
-    task, num_episodes, eval_info, timestep_sec, headless, seed, max_samples, log_dir
+    task,
+    num_episodes,
+    eval_info,
+    timestep_sec,
+    headless,
+    seed,
+    training_batch_size,
+    log_dir,
 ):
 
     # --------------------------------------------------------
@@ -104,7 +111,7 @@ def train(
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
-        "train_batch_size": max_samples,  # Debugging value
+        "train_batch_size": training_batch_size,  # Debugging value
         "in_evaluation": True,
         "evaluation_num_episodes": eval_info["eval_episodes"],
         "evaluation_interval": eval_info[
@@ -145,7 +152,7 @@ def train(
     # Iteration value in trainer.py (self._iterations) is the technically the number of episodes
     for i in range(num_episodes):
         results = agent.train()
-        trainer.log_result(
+        agent.log_evaluation_metrics(
             results
         )  # Evaluation metrics will now be displayed on Tensorboard
 
@@ -186,7 +193,7 @@ if __name__ == "__main__":
         type=int,
     )
     parser.add_argument(
-        "--max-samples",
+        "--training-batch-size",
         help="maximum samples for each training iteration",
         default=4000,
         type=int,
@@ -211,7 +218,7 @@ if __name__ == "__main__":
         timestep_sec=float(args.timestep),
         headless=args.headless,
         seed=args.seed,
-        max_samples=args.max_samples,
+        training_batch_size=args.training_batch_size,
         log_dir=args.log_dir,
     )
 

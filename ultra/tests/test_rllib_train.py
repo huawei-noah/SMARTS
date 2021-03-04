@@ -38,7 +38,7 @@ class RLlibTrainTest(unittest.TestCase):
         log_dir = "tests/rllib_results"
         try:
             os.system(
-                f"python ultra/rllib_train.py --task 00 --level easy --episodes 1 --max-samples 200 --headless True --log-dir {log_dir}"
+                f"python ultra/rllib_train.py --task 00 --level easy --episodes 1 --training-batch-size 200 --headless True --log-dir {log_dir}"
             )
         except Exception as err:
             print(err)
@@ -64,7 +64,7 @@ class RLlibTrainTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 seed=2,
-                max_samples=200,
+                training_batch_size=200,
                 log_dir=log_dir,
             )
         except Exception as err:
