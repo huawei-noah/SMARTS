@@ -40,6 +40,7 @@ class BaselineAgentSpec(AgentSpec):
         self,
         policy_class,
         action_type,
+        agent_type,
         checkpoint_dir=None,
         task=None,
         max_episode_steps=1200,
@@ -51,6 +52,7 @@ class BaselineAgentSpec(AgentSpec):
         self,
         policy_class,
         action_type,
+        agent_type,
         checkpoint_dir=None,
         task=None,
         max_episode_steps=1200,
@@ -74,22 +76,22 @@ class BaselineAgentSpec(AgentSpec):
         else:
             policy_dir = "/".join(inspect.getfile(policy_class).split("/")[:-1])
             policy_params = load_yaml(f"{policy_dir}/params.yaml")
-            social_vehicle_params = dict(
-                encoder_key=policy_params["social_vehicles"]["encoder_key"],
-                social_policy_hidden_units=policy_params["social_vehicles"][
-                    "social_policy_hidden_units"
-                ],
-                social_policy_init_std=policy_params["social_vehicles"][
-                    "social_policy_init_std"
-                ],
-                num_social_features=policy_params["social_vehicles"][
-                    "num_social_features"
-                ],
-                seed=policy_params["social_vehicles"]["seed"],
-                observation_num_lookahead=policy_params["observation_num_lookahead"],
-                social_capacity=policy_params["social_vehicles"]["social_capacity"],
-            )
-            adapter = BaselineAdapter(social_vehicle_params=social_vehicle_params)
+            # social_vehicle_params = dict(
+            #     encoder_key=policy_params["social_vehicles"]["encoder_key"],
+            #     social_policy_hidden_units=policy_params["social_vehicles"][
+            #         "social_policy_hidden_units"
+            #     ],
+            #     social_policy_init_std=policy_params["social_vehicles"][
+            #         "social_policy_init_std"
+            #     ],
+            #     num_social_features=policy_params["social_vehicles"][
+            #         "num_social_features"
+            #     ],
+            #     seed=policy_params["social_vehicles"]["seed"],
+            #     observation_num_lookahead=policy_params["observation_num_lookahead"],
+            #     social_capacity=policy_params["social_vehicles"]["social_capacity"],
+            # )
+            adapter = BaselineAdapter(agent_type=agent_type)
             spec = AgentSpec(
                 interface=AgentInterface(
                     waypoints=Waypoints(lookahead=20),

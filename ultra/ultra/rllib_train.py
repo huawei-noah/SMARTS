@@ -70,16 +70,10 @@ def train(
     # AGENT_ID = "007"
 
 
-    social_vehicle_params = policy_params["social_vehicles"]
-    social_vehicle_params["observation_num_lookahead"] = policy_params[
-        "observation_num_lookahead"
-    ]
-    adapter = BaselineAdapter(
-        social_vehicle_params=social_vehicle_params,
-    )
-
-
-    rllib_agent = RllibAgent('ppo')
+    agent_type = 'ppo'
+    adapter = BaselineAdapter(agent_type)
+    rllib_agent = RllibAgent(agent_type)
+    ModelCatalog.register_custom_model("fc_model", CustomFCModel)
 
     rllib_policies = {
         "default_policy": (
@@ -118,9 +112,6 @@ def train(
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
-        # "seed":seed,
-        # checking if scenarios are switching correctly
-        # the interval config
         "train_batch_size": max_samples,  # Debugging value
         "in_evaluation": True,
         "evaluation_num_episodes": eval_info["eval_episodes"],
@@ -139,7 +130,6 @@ def train(
             },
             "explore": False,
         },
-        # "custom_eval_function": could be used for env_score?
         "env_config": {
             "seed": seed,
             "scenario_info": task,
@@ -151,15 +141,6 @@ def train(
         },
         "multiagent": {
             "policies": rllib_policies,
-            # "policy_mapping_fn": policy_mapping
-            # "replay_mode": "independent",
-            # Which metric to use as the "batch size" when building a
-            # MultiAgentBatch. The two supported values are:
-            # env_steps: Count each time the env is "stepped" (no matter how many
-            #   multi-agent actions are passed/how many multi-agent observations
-            #   have been returned in the previous step).
-            # agent_steps: Count each individual agent step as one step.
-            # "count_steps_by": "env_steps",
         },
     }
 

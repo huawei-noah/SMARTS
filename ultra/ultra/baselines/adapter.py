@@ -26,6 +26,7 @@ from sys import path
 from collections import OrderedDict
 from ultra.baselines.common.state_preprocessor import *
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")
 from ultra.utils.common import (
@@ -41,8 +42,20 @@ num_lookahead = 100
 
 
 class BaselineAdapter:
-    def __init__(self, social_vehicle_params):
-        assert social_vehicle_params
+    def __init__(self, agent_type):
+        assert agent_type in ['td3', 'ddqn', 'ppo', 'bdqn', 'sac']
+
+        if agent_type == 'td3':
+            policy_params = load_yaml(f"ultra/baselines/ddpg/ddpg/params.yaml")
+        else:
+            policy_params = load_yaml(f"ultra/baselines/{agent_type}/{agent_type}/params.yaml")
+
+
+        print('->>>>', policy_params)
+        social_vehicle_params = policy_params["social_vehicles"]
+        social_vehicle_params["observation_num_lookahead"] = policy_params[
+            "observation_num_lookahead"
+        ]
         self.observation_num_lookahead = social_vehicle_params[
             "observation_num_lookahead"
         ]

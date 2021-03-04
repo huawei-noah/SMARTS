@@ -58,12 +58,7 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
-        policy_params = load_yaml(f"ultra/baselines/ppo/ppo/params.yaml")
-        social_vehicle_params = policy_params["social_vehicles"]
-        social_vehicle_params["observation_num_lookahead"] = policy_params[
-            "observation_num_lookahead"
-        ]
-        self.ultra_scores = BaselineAdapter(social_vehicle_params=social_vehicle_params)
+        self.ultra_scores = BaselineAdapter(agent_type='ppo')
         super().__init__(
             scenarios=_scenarios,
             agent_specs=agent_specs,

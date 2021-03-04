@@ -1,5 +1,5 @@
 action_size: 2
-batch_size: 2048  # size of batch
+batch_size: 500  # size of batch
 lr: 3e-5
 mini_batch_size: 64  # 64
 epoch_count: 20
@@ -14,7 +14,7 @@ seed: 2
 logging_freq: 2
 observation_num_lookahead: 20
 social_vehicles:
-    encoder_key: no_encoder
+    encoder_key: precog_encoder
     social_policy_hidden_units: 128
     social_policy_init_std: 0.5
     social_capacity: 10

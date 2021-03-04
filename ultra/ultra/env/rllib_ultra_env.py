@@ -57,7 +57,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
         social_vehicle_params["observation_num_lookahead"] = policy_params[
             "observation_num_lookahead"
         ]
-        self.ultra_scores = BaselineAdapter(social_vehicle_params=social_vehicle_params)
+        self.ultra_scores = BaselineAdapter(agent_type='ppo')
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:
