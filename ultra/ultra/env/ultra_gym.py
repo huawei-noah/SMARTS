@@ -79,7 +79,7 @@ class ActionAdapter:
         elif action == 3:
             return "change_lane_right"
         else:
-            raise ValueError("A very specific bad thing happened.")
+            raise ValueError("Not a valid discrete action.")
 
 
 class UltraGym(UltraEnv):
@@ -109,14 +109,14 @@ class UltraGym(UltraEnv):
             self.action_space = gym.spaces.Discrete(4)
         elif action_type == "continuous":
             action_type = ActionSpaceType.Continuous
-            self.action_space = gym.spaces.Box(low = -1, high = 1, shape = (3,))
+            self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,))
 
         if obs_type == "image":
             self.observation_space = gym.spaces.Box(
                 low=0, high=1, shape=(256, 256, 1), dtype=np.float32
             )
         elif obs_type == "low_dim":
-            pass #TODO
+            pass  # TODO
 
         spec = AgentSpec(
             interface=AgentInterface(
@@ -141,6 +141,8 @@ class UltraGym(UltraEnv):
         )
 
     def step(self, agent_action):
+        if agent_action not in self.action_space:
+            raise ValueError("Not a valid action.")
         results = super().step({self.agent_id: agent_action})
         return [result[self.agent_id] for result in results]
 
