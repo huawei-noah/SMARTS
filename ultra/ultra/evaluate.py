@@ -57,6 +57,7 @@ def evaluation_check(
     timestep_sec,
     headless,
     log_dir,
+    level,
 ):
     agent_itr = episode.get_itr(agent_id)
 
@@ -82,6 +83,7 @@ def evaluation_check(
                     headless=headless,
                     timestep_sec=timestep_sec,
                     log_dir=log_dir,
+                    level=level,
                 )
             ]
         )[0]
@@ -106,6 +108,7 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
+    level,
 ):
 
     torch.set_num_threads(1)
@@ -131,7 +134,7 @@ def evaluate(
     logs = []
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-        observations = env.reset()
+        observations = env.reset(True, "3", level)
         state = observations[agent_id]
         dones, infos = {"__all__": False}, None
 

@@ -194,7 +194,7 @@ class UltraEnv(HiWayEnv):
             )
 
         scenario = next(self.scenarios_iterator)
-        print(scenario)
+        # print(scenario)
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)

@@ -23,6 +23,7 @@ import json
 import os
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 
 from ultra.utils.ray import default_ray_kwargs
 
@@ -31,6 +32,7 @@ os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
 import pickle
 import time
+from itertools import cycle
 
 import dill
 import gym
@@ -79,17 +81,19 @@ def train(
     summary_log = LogInfo()
 
     levels = tuple(scenario_info[1])
-    level_iter = iter(levels)
-    level_counter = iter(levels)
+    level_iter = cycle(levels)
+
+    env_score_list = []
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-        if (episode.index % 5) == 0:
+        if (episode.index % 3000) == 0:
+            level = next(level_iter)
             print()
             print(
-                f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ENTERING STAGE {next(level_counter)} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+                f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ENTERING STAGE {level} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
             )
             print()
-            observations = env.reset(True, scenario_info[0], next(level_iter))
+            observations = env.reset(True, scenario_info[0], level)
         else:
             observations = env.reset()
 
@@ -118,6 +122,7 @@ def train(
                 max_episode_steps=max_episode_steps,
                 **eval_info,
                 **env.info,
+                level=level,
             )
             action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
@@ -141,10 +146,10 @@ def train(
             total_step += 1
             state = next_state
 
-        if infos["007"]["logs"]["events"].reached_goal:
-            scenario_success += 1
-        else:
-            continue
+        # if infos["007"]["logs"]["events"].reached_goal:
+        #     scenario_success += 1
+        # else:
+        #     continue
 
         # print(episode.info[episode.active_tag][AGENT_ID].data.items())
         # sys.exit()
@@ -154,10 +159,32 @@ def train(
         #     if not isinstance(value, (list, tuple, np.ndarray)):
         #         summary_log.data[key] += value
         episode.record_tensorboard()
+        #print(episode.info[episode.active_tag][AGENT_ID].data)
+        env_score_list.append(episode.info[episode.active_tag][AGENT_ID].data["reached_goal"])
 
         if finished:
             break
+
     env.close()
+
+    x_list = [i for i in range(num_episodes)]
+
+    print("x axis length:",len(x_list))
+    print("y axis length:",len(env_score_list))
+    plt.scatter(x_list, env_score_list)
+    plt.plot(x_list, env_score_list)
+
+    # x coordinates for the lines
+    xcoords = [2999,5999]
+    # colors for the lines
+    colors = ['r','r']
+
+    for xc,c in zip(xcoords,colors):
+        plt.axvline(x=xc, label='line at x = {}'.format(xc), c=c)
+
+    plt.legend()
+    
+    plt.savefig('foo.png')
     # for key, val in summary_log.data.items():
     #     if not isinstance(val, (list, tuple, np.ndarray)):
     #         summary_log.data[key] /= num_episodes
