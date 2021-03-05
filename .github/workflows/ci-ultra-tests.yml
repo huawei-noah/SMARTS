@@ -26,7 +26,7 @@ jobs:
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
-          pip install --upgrade --upgrade-strategy eager -e .
+          pip install --upgrade -e .
       - name: Run ultra tests
         run: |
           cd ultra
@@ -56,7 +56,7 @@ jobs:
           python3.7 -m venv .venv
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
-          pip install --upgrade --upgrade-strategy eager -e .
+          pip install --upgrade -e .
       - name: Run test
         run: |
           cd ultra
