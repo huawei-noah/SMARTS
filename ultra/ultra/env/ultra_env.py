@@ -58,7 +58,8 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
-        self.ultra_scores = BaselineAdapter(agent_type="score")
+        self.ultra_scores = BaselineAdapter.reward_adapter
+
         super().__init__(
             scenarios=_scenarios,
             agent_specs=agent_specs,
@@ -137,7 +138,7 @@ class UltraEnv(HiWayEnv):
             goal_dist=goal_dist,
             linear_jerk=np.linalg.norm(ego_state.linear_jerk),
             angular_jerk=np.linalg.norm(ego_state.angular_jerk),
-            env_score=self.ultra_scores.reward_adapter(observation, highwayenv_score),
+            env_score=self.ultra_scores(observation, highwayenv_score),
         )
         return info
 

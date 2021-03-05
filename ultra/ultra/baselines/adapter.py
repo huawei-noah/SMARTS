@@ -200,7 +200,8 @@ class BaselineAdapter:
         state["social_vehicles"] = state["social_vehicles"][: self.social_capacity]
         return state  # ego=ego, env_observation=env_observation)
 
-    def reward_adapter(self, observation, reward):
+    @staticmethod
+    def reward_adapter(observation, reward):
         env_reward = reward
         ego_events = observation.events
         ego_observation = observation.ego_vehicle_state
