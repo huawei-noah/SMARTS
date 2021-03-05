@@ -46,6 +46,7 @@ from smarts.core.utils.math import (
     vec_to_radians,
 )
 
+import examples.profiler as profiler
 
 @dataclass(frozen=True)
 class Waypoint:
@@ -209,6 +210,7 @@ class Waypoints:
 
         return linked_waypoint.wp
 
+    @profiler.profile_line
     def waypoint_paths_on_lane_at(
         self, point, lane_id, lookahead, filter_edge_ids: Sequence[str] = None
     ):
@@ -223,6 +225,7 @@ class Waypoints:
 
         return unlinked_waypoint_paths
 
+    @profiler.profile_line
     def waypoint_paths_at(self, pose, lookahead, filter_from_count=3, within_radius=5):
         closest_linked_wp = self.closest_waypoint(
             pose, filter_from_count=filter_from_count, within_radius=within_radius
@@ -325,6 +328,7 @@ class Waypoints:
 
         return [[linked_wps[idx] for idx in idxs] for idxs in closest_indices]
 
+    @profiler.profile_line
     def _waypoints_starting_at_waypoint(
         self,
         waypoint: LinkedWaypoint,
@@ -356,6 +360,7 @@ class Waypoints:
 
         return [self._equally_spaced_path(path, point) for path in waypoint_paths]
 
+    @profiler.profile_line
     def _equally_spaced_path(self, path, point):
         continuous_variables = [
             "ref_wp_positions_x",

@@ -34,6 +34,7 @@ from .utils.math import evaluate_bezier as bezier
 from .utils.math import radians_to_vec, vec_to_radians
 from .waypoints import Waypoint, Waypoints
 
+import examples.profiler as profiler
 
 class PlanningError(Exception):
     pass
