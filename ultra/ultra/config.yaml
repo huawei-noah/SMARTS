@@ -6,6 +6,13 @@ tasks:
     eval_test:
       train: "../tests/task/eval_test/eval*"
       test:  "../tests/task/eval_test/eval*"
+  task00-multiagent: # unittest
+    easy:
+      train: "../tests/task/train_multiagent_mock*"
+      test:  "../tests/task/test_multiagent_mock*"
+    eval_test:
+      train: "../tests/task/eval_test_multiagent/eval*"
+      test:  "../tests/task/eval_test_multiagent/eval*"
   task0:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
@@ -32,17 +39,6 @@ tasks:
     hard:
       train: "scenarios/task1/train_hard*"
       test:  "scenarios/task1/test_hard*"
-  task1-4agents:
-    no-traffic:
-      train: "scenarios/task1-4agents/train_no-traffic*"
-      test:  "scenarios/task1-4agents/test_no-traffic*"
-    easy:
-      train: "scenarios/task1-4agents/train_easy*"
-      test: "scenarios/task1-4agents/test_easy*"
-  task1-4agents-same:
-    easy:
-      train: "scenarios/task1-4agents-same/train_easy*"
-      test: "scenarios/task1-4agents-same/test_easy*"
   task2:
     lo-hi:
       train: "scenarios/task2/train_lo-hi*"

@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import json
 from unittest.mock import MagicMock
 
 import pytest
@@ -69,6 +70,22 @@ traffic_history_2 = {
 }
 
 
+def create_file(tmp_path, sub, filepath, content):
+    d = tmp_path / sub
+    d.mkdir()
+    p = d / filepath
+    p.write_text(json.dumps(content))
+    return p
+
+
+@pytest.fixture
+def create_history_files(tmp_path):
+    return [
+        create_file(tmp_path, "sub", "traffic_history_1.json", traffic_history_1),
+        create_file(tmp_path, "sub2", "traffic_history_2.json", traffic_history_2),
+    ]
+
+
 @pytest.fixture
 def create_scenario():
     with temp_scenario(name="cycles", map="maps/6lane.net.xml") as scenario_root:
@@ -101,10 +118,8 @@ def create_scenario():
         yield scenario_root
 
 
-def test_mutiple_traffic_data(create_scenario):
-    Scenario.discover_traffic_histories = MagicMock(
-        return_value=[traffic_history_1, traffic_history_2]
-    )
+def test_mutiple_traffic_data(create_scenario, create_history_files):
+    Scenario.discover_traffic_histories = MagicMock(return_value=create_history_files)
     iterator = Scenario.variations_for_all_scenario_roots(
         [str(create_scenario)], [AGENT_ID], shuffle_scenarios=False
     )
@@ -114,17 +129,17 @@ def test_mutiple_traffic_data(create_scenario):
 
     traffic_history_provider = TrafficHistoryProvider()
 
-    use_first_history = True
-    for scenario in scenarios:
-        if use_first_history:
-            assert scenario.traffic_history is traffic_history_1
-        else:
-            assert scenario.traffic_history is traffic_history_2
+    for scenario, traffic_history in zip(
+        scenarios, [traffic_history_1, traffic_history_2]
+    ):
+        for key in scenario.traffic_history_service.traffic_history:
+            assert (
+                scenario.traffic_history_service.traffic_history[key]
+                == traffic_history[key]
+            )
 
         traffic_history_provider.setup(scenario)
         assert (
-            traffic_history_provider._current_traffic_history
-            == scenario.traffic_history
+            traffic_history_provider._traffic_history_service
+            == scenario.traffic_history_service
         )
-
-        use_first_history = not use_first_history

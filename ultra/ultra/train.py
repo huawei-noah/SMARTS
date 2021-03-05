@@ -116,20 +116,20 @@ def train(
         episode.reset()
         experiment_dir = episode.experiment_dir
 
-        # Save the entire spec (policy_params, reward_adapter, and observation_adapter).
-        for agent_id, agent_spec in agent_specs.items():
-            if not os.path.exists(f"{experiment_dir}/spec{agent_id}.pkl"):
-                if not os.path.exists(experiment_dir):
-                    os.makedirs(experiment_dir)
-                with open(f"{experiment_dir}/spec{agent_id}.pkl", "wb") as spec_output:
-                    dill.dump(agent_spec, spec_output, pickle.HIGHEST_PROTOCOL)
         # Save relevant agent metadata.
         if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
-            agent_metadata = {"agent_ids": agent_ids, "agent_classes": agent_classes}
-            with open(
-                f"{experiment_dir}/agent_metadata.pkl", "wb"
-            ) as agent_metadata_file:
-                dill.dump(agent_metadata, agent_metadata_file, pickle.HIGHEST_PROTOCOL)
+            if not os.path.exists(experiment_dir):
+                os.makedirs(experiment_dir)
+            with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
+                dill.dump(
+                    {
+                        "agent_ids": agent_ids,
+                        "agent_classes": agent_classes,
+                        "agent_specs": agent_specs,
+                    },
+                    metadata_file,
+                    pickle.HIGHEST_PROTOCOL,
+                )
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.

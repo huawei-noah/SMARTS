@@ -244,8 +244,8 @@ if __name__ == "__main__":
     # Load relevant agent metadata.
     with open(
         os.path.join(args.models, "../agent_metadata.pkl"), "rb"
-    ) as agent_metadata_file:
-        agent_metadata = pickle.load(agent_metadata_file)
+    ) as metadata_file:
+        agent_metadata = pickle.load(metadata_file)
 
     # Extract the agent IDs and policy classes.
     agent_ids = agent_metadata["agent_ids"]
@@ -277,9 +277,12 @@ if __name__ == "__main__":
     ), "Not all agents have the same number of checkpoints saved"
 
     # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+    # E.g. From a {"000": "ultra.baselines.dqn:dqn-v0", "001": "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes dict, transform it to an etag of "dqn-v0:ppo-v0-evaluation".
+    etag = (
+        ":".join([policy_classes[agent_id].split(":")[-1] for agent_id in agent_ids])
+        + "-evaluation"
+    )
 
     ray.init()
     try:
