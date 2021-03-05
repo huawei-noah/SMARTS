@@ -58,6 +58,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 def train(
     task,
     num_episodes,
+    policy,
     eval_info,
     timestep_sec,
     headless,
@@ -66,10 +67,7 @@ def train(
     log_dir,
 ):
 
-    # --------------------------------------------------------
-    # Initialize Agent and social_vehicle encoding method
-    # -------------------------------------------------------
-    agent_type = "ppo"
+    agent_type = policy
     adapter = BaselineAdapter(agent_type)
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
     config = RllibAgent.rllib_default_config(agent_type)
@@ -169,6 +167,9 @@ if __name__ == "__main__":
         default="easy",
     )
     parser.add_argument(
+        "--policy", help="Policies avaliable : [ppo, ddpg]", type=str, default="ppo"
+    )
+    parser.add_argument(
         "--episodes", help="number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
@@ -211,6 +212,7 @@ if __name__ == "__main__":
     train(
         task=(args.task, args.level),
         num_episodes=int(args.episodes),
+        policy=args.policy,
         eval_info={
             "eval_rate": int(args.eval_rate),
             "eval_episodes": int(args.eval_episodes),

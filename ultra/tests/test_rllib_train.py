@@ -57,6 +57,7 @@ class RLlibTrainTest(unittest.TestCase):
             train(
                 task=("00", "easy"),
                 num_episodes=1,
+                policy="ppo",
                 eval_info={
                     "eval_rate": 2,
                     "eval_episodes": 1,
