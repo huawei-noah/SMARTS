@@ -72,13 +72,13 @@ class TrafficHistoryProvider:
             default=None,
         )
         if not self._traffic_history_service or timestamp is None:
-            return ProviderState(vehicles=[], traffic_light_systems=[])
+            return ProviderState(vehicles=[])
 
         time_with_offset = str(round(timestamp + self.start_time_offset, 1))
         if not self._traffic_history_service.fetch_history_at_timestep(
             time_with_offset
         ):
-            return ProviderState(vehicles=[], traffic_light_systems=[])
+            return ProviderState(vehicles=[])
 
         vehicle_type = "passenger"
         states = ProviderState(
@@ -117,7 +117,6 @@ class TrafficHistoryProvider:
                 ).items()
                 if v_id not in self.replaced_vehicle_ids
             ],
-            traffic_light_systems=[],
         )
         return states
 
