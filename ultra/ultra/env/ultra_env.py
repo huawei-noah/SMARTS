@@ -53,7 +53,8 @@ class UltraEnv(HiWayEnv):
         self.agent_specs = agent_specs
         self.scenario_info = scenario_info
         self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
-        if not eval_mode:
+        self.eval_mode = eval_mode
+        if not self.eval_mode:
             _scenarios = glob.glob(f"{self.scenarios['train']}")
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
@@ -186,7 +187,13 @@ class UltraEnv(HiWayEnv):
     def reset(self, switch=False, task=None, level=None):
         if switch:
             self.scenarios = self.get_task(task, level)
-            _scenarios = glob.glob(f"{self.scenarios['train']}")
+            if not self.eval_mode:
+                #print("HELLOOOOOOOOOOOOOOOOOOOOOOOOO")
+                _scenarios = glob.glob(f"{self.scenarios['train']}")
+            else:
+                #print("BYEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+                print(self.scenarios)
+                _scenarios = glob.glob(f"{self.scenarios['test']}")
             self.scenarios_iterator = Scenario.scenario_variations(
                 _scenarios,
                 list(self.agent_specs.keys()),
@@ -194,7 +201,7 @@ class UltraEnv(HiWayEnv):
             )
 
         scenario = next(self.scenarios_iterator)
-        # print(scenario)
+        print(scenario)
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)

@@ -83,10 +83,12 @@ def train(
     levels = tuple(scenario_info[1])
     level_iter = cycle(levels)
 
-    env_score_list = []
+    #print(len(tuple(scenario_info[1])), tuple(scenario_info[1]))
+
+    env_score_list = [] 
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-        if (episode.index % 3000) == 0:
+        if (episode.index % (num_episodes / len(levels))) == 0:
             level = next(level_iter)
             print()
             print(

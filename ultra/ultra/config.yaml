@@ -42,11 +42,11 @@ tasks:
   task3:
     one:
       train: "scenarios/task3/train_one*"
-      test: "scenarios/task3/train_one*"
+      test: "scenarios/task3/test_one*"
     two:
       train: "scenarios/task3/train_two*"
-      test: "scenarios/task3/train_two*"
+      test: "scenarios/task3/test_two*"
     three:
       train: "scenarios/task3/train_three*"
-      test: "scenarios/task3/train_three*"
+      test: "scenarios/task3/test_three*"
 
