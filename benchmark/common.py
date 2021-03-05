@@ -300,7 +300,6 @@ class CalObs:
         ego = env_obs.ego_vehicle_state
         waypoint_paths = env_obs.waypoint_paths
         wps = [path[0] for path in waypoint_paths]
-        closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
 
         wps_with_lane_dist = []
         for path_idx, path in enumerate(waypoint_paths):
@@ -319,7 +318,7 @@ class CalObs:
             # if wp.lane_id == v.lane_id
         ]
 
-        ego_lane_index = closest_wp.lane_index
+        ego_lane_index = ego_closest_wp.lane_index
         lane_dist_by_path = [1] * len(waypoint_paths)
         ego_lane_dist = [0] * observe_lane_num
         speed_of_closest = 0.0
