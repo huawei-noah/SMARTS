@@ -43,7 +43,7 @@ num_lookahead = 100
 
 class BaselineAdapter:
     def __init__(self, agent_type):
-        assert agent_type in ["td3", "ddpg", "dqn", "ppo", "bdqn", "sac", "score"]
+        assert agent_type in ["td3", "ddpg", "dqn", "ppo", "bdqn", "sac"]
 
         if agent_type == "td3":
             self.policy_params = load_yaml(f"ultra/baselines/ddpg/ddpg/params.yaml")
