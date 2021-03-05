@@ -269,7 +269,7 @@ class GymAdapter:
         ego_off_road_reward = -1.0 if ego_events.off_road else 0.0
         ego_off_route_reward = -1.0 if ego_events.off_route else 0.0
         ego_wrong_way = -0.02 if ego_events.wrong_way else 0.0
-        ego_goal_reward = 0.0
+        ego_goal_reward = 10.0
         ego_time_out = 0.0
         ego_dist_center_reward = -0.002 * min(1, abs(ego_dist_center))
         ego_angle_error_reward = -0.005 * max(0, np.cos(angle_error))
