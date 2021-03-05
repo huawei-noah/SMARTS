@@ -56,6 +56,9 @@ def main(scenarios, sim_name, headless, seed, speed, save_dir, write):
             observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
             i += 1
             episode.record_step(observations, rewards, dones, infos)
+    except KeyboardInterrupt:
+        # discard result
+        i = 2550
     finally:
         try:
             episode.record_scenario(env.scenario_log)
