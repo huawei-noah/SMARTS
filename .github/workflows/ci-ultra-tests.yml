@@ -91,10 +91,10 @@ jobs:
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade --upgrade-strategy eager -e .
-          pip install --upgrade numpy
           python setup.py bdist_wheel
           cd dist
           pip install $(ls . | grep ultra)
+          pip install --upgrade numpy
           cd ..
       - name: Run test
         run: |
