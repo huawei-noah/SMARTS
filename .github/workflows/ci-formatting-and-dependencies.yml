@@ -1,9 +1,6 @@
 name: SMARTS CI Format & Dependencies
 
-on:
-  push:
-    branches:
-      - disabled
+on: [push, pull_request]
 
 env:
   venv_dir: .venv
