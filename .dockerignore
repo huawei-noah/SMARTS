@@ -53,6 +53,7 @@
 **/traffic_histories.pkl
 **/*.trips.xml
 **/.venv
+**/.bugtest
 **/.vscode
 **/wheels/
 **/xdummy.log
@@ -63,3 +64,6 @@
 
 # Keep model assets
 !**/models/*.glb
+
+# Keep bugtest
+!**/loop/**
