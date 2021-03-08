@@ -123,17 +123,18 @@ def train(
             episode.record_tensorboard()
             old_episode = None
 
-        evaluation_check(
-            agent=agent,
-            agent_id=AGENT_ID,
-            policy_class=policy_class,
-            episode=episode,
-            log_dir=log_dir,
-            max_episode_steps=max_episode_steps,
-            episode_count=episode_count,
-            **eval_info,
-            **env.info,
-        )
+        if eval_info["eval_episodes"]:
+            evaluation_check(
+                agent=agent,
+                agent_id=AGENT_ID,
+                policy_class=policy_class,
+                episode=episode,
+                log_dir=log_dir,
+                max_episode_steps=max_episode_steps,
+                episode_count=episode_count,
+                **eval_info,
+                **env.info,
+            )
         episode_count += 1
         if finished:
             break

@@ -145,17 +145,17 @@ class BaselineAdapter:
         ego_off_road_reward = -1.0 if ego_events.off_road else 0.0
         ego_off_route_reward = -1.0 if ego_events.off_route else 0.0
         ego_wrong_way = -0.02 if ego_events.wrong_way else 0.0
-        ego_goal_reward = 0.0
+        ego_goal_reward = 200.0
         ego_time_out = 0.0
         ego_dist_center_reward = -0.002 * min(1, abs(ego_dist_center))
         ego_angle_error_reward = -0.005 * max(0, np.cos(angle_error))
-        ego_reached_goal = 1.0 if ego_events.reached_goal else 0.0
+        ego_reached_goal = ego_goal_reward if ego_events.reached_goal else 0.0
         ego_safety_reward = -0.02 if ego_num_violations > 0 else 0
         social_safety_reward = -0.02 if social_num_violations > 0 else 0
         ego_lat_speed = 0.0  # -0.1 * abs(long_lat_speed[1])
         ego_linear_jerk = -0.0001 * linear_jerk
         ego_angular_jerk = -0.0001 * angular_jerk * math.cos(angle_error)
-        env_reward /= 100
+        # env_reward /= 100
         # DG: Different speed reward
         ego_speed_reward = -0.1 if speed_fraction >= 1 else 0.0
         ego_speed_reward += -0.01 if speed_fraction < 0.01 else 0.0
@@ -179,4 +179,5 @@ class BaselineAdapter:
             # ego_safety_reward,
             # social_safety_reward,
         ]
-        return sum(rewards)
+        #return sum(rewards)
+        return env_reward + ego_reached_goal
