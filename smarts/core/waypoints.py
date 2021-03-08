@@ -25,7 +25,6 @@ from dataclasses import dataclass
 from typing import Sequence
 
 import numpy as np
-from scipy.interpolate import interp1d
 
 from smarts.core.utils.file import suppress_pkg_resources
 
@@ -434,9 +433,11 @@ class Waypoints:
 
         evenly_spaced_coordinates = {}
         for variable in continuous_variables:
-            evenly_spaced_coordinates[variable] = interp1d(
-                cumulative_path_dist, ref_waypoints_coordinates[variable]
-            )(evenly_spaced_cumulative_path_dist)
+            evenly_spaced_coordinates[variable] = np.interp(
+                evenly_spaced_cumulative_path_dist,
+                cumulative_path_dist,
+                ref_waypoints_coordinates[variable],
+            )
 
         for variable in discrete_variables:
             ref_coordinates = ref_waypoints_coordinates[variable]
