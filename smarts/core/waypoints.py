@@ -45,7 +45,7 @@ from smarts.core.utils.math import (
     vec_to_radians,
 )
 
-import examples.profiler as profiler
+# import examples.profiler as profiler
 
 @dataclass(frozen=True)
 class Waypoint:
@@ -378,7 +378,7 @@ class Waypoints:
 
         return [self._equally_spaced_path(path, point) for path in waypoint_paths]
 
-    @profiler.profile_line
+    # @profiler.profile_line
     def _equally_spaced_path(self, path, point):
         continuous_variables = [
             "ref_wp_positions_x",
