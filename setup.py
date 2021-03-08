@@ -60,6 +60,8 @@ setup(
         "grpcio==1.30.0",
         "PyYAML",
         "twisted",
+        # The following are used for imitation learning
+        "ijson",
     ],
     extras_require={
         "test": [
