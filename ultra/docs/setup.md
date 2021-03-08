@@ -15,7 +15,10 @@ $ python3.7 -m venv .venv
 # 3 - Activate virtual environment to install all dependencies.
 $ source .venv/bin/activate
 
-# 4 - Install dependencies.
+# 4 - Install black for formatting (if you wish to contribute).
+$ pip install black
+
+# 5 - Install dependencies.
 $ pip install -e .
 ```
 Whether you already had the SMARTS environment or not, install dill in your activated environment.

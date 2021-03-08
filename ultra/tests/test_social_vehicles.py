@@ -20,6 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import unittest
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5fd75a995f8463d3fdf46597706afc90f1ebc2e6
 from ultra.scenarios.common.social_vehicle_definitions import *
 
 
