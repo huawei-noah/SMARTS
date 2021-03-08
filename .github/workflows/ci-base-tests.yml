@@ -33,10 +33,10 @@ jobs:
         run: |
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install pip
-          pip install wheel
-          pip install -r requirements.txt
-          pip install -e .[train,test]
+          pip install --upgrade pip
+          pip install --upgrade wheel
+          pip install --upgrade -r requirements.txt
+          pip install --upgrade -e .[train,test]
       - name: Run smoke tests
         run: |
           . .venv/bin/activate
