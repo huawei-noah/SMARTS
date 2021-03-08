@@ -44,8 +44,8 @@ from tensorboardX import SummaryWriter
 class LogInfo:
     def __init__(self):
         self.data = {
-            "env_score": 0,
-            "episode_reward": 0,
+            "env_score": 0.0,
+            "episode_reward": 0.0,
             "dist_center": 0,
             "goal_dist": 0,
             "speed": 0,
@@ -66,7 +66,7 @@ class LogInfo:
         }
 
     def add(self, infos, rewards):
-        self.data["env_score"] += int(infos["logs"]["env_score"])
+        self.data["env_score"] += infos["logs"]["env_score"]
         self.data["speed"] += infos["logs"]["speed"]
         self.data["max_speed_violation"] += (
             1 if infos["logs"]["speed"] > infos["logs"]["closest_wp"].speed_limit else 0
@@ -80,7 +80,7 @@ class LogInfo:
         self.data["ego_linear_jerk"] += infos["logs"]["linear_jerk"]
         self.data["ego_angular_jerk"] += infos["logs"]["angular_jerk"]
         self.data["episode_reward"] += rewards
-        self.data["final_pos"] = infos["logs"]["position"]
+        self.data["final_pos"] = infos["logs"]["position"][:2]
         self.data["start_pos"] = infos["logs"]["start"].position
         self.data["dist_travelled"] = math.sqrt(
             (self.data["final_pos"][1] - self.data["start_pos"][1]) ** 2
@@ -104,14 +104,13 @@ class LogInfo:
 
     def normalize(self):
         steps = self.data["episode_length"]
-        self.data["env_score"] /= steps
         self.data["dist_center"] /= steps
         self.data["speed"] /= steps
         self.data["ego_linear_jerk"] /= steps
         self.data["ego_angular_jerk"] /= steps
-        self.data["ego_num_violations"] /= steps
-        self.data["social_num_violations"] /= steps
-        self.data["max_speed_violation"] /= steps
+        # self.data["ego_num_violations"] /= steps
+        # self.data["social_num_violations"] /= steps
+        # self.data["max_speed_violation"] /= steps
 
 
 class Episode:
@@ -186,6 +185,18 @@ class Episode:
     def eval_mode(self):
         self.active_tag = "Evaluation"
 
+    def gap_mode(self):
+        self.active_tag = "Gap"
+
+    def calculate_gap(self):
+        gap_info = self.info["Gap"]
+        for agent_id, agent_info in self.info["Train"].items():
+            for key in agent_info.data:
+                gap_info[agent_id].data[key] = (
+                    self.info["Train"][agent_id].data[key]
+                    - self.info["Evaluation"][agent_id].data[key]
+                )
+
     def reset(self, mode="Train"):
         self.start_time = time.time()
         self.timestep_sec = 0.1
@@ -228,9 +239,17 @@ class Episode:
         self.steps += 1
         self.agents_itr[agent_id] += 1
 
-    def record_episode(self):
+    def record_episode(self, old_episode=None, eval_rate=None):
         for _, agent_info in self.info[self.active_tag].items():
             agent_info.normalize()
+
+        if (old_episode is not None) and (eval_rate is not None):
+            for agent_id, agent_info in self.info[self.active_tag].items():
+                for key in agent_info.data:
+                    agent_info.data[key] = (
+                        agent_info.data[key] * eval_rate
+                        + old_episode.info[self.active_tag][agent_id].data[key]
+                    ) / eval_rate
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
@@ -323,7 +342,7 @@ def episodes(n, etag=None, log_dir=None):
                     for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
                 row = (
-                    f"{e.index}/{n}",
+                    f"{e.index + 1}/{n}",
                     f"{e.sim2wall_ratio:.2f}",
                     f"{e.steps}",
                     f"{e.steps_per_second:.2f}",

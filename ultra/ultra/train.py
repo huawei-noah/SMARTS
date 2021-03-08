@@ -76,9 +76,8 @@ def train(
 
     agent = spec.build_agent()
 
-    scenario_success = 0
-    summary_log = LogInfo()
-
+    episode_count = 0
+    old_episode = None
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
@@ -97,16 +96,6 @@ def train(
             if episode.get_itr(AGENT_ID) >= 1000000:
                 finished = True
                 break
-            evaluation_check(
-                agent=agent,
-                agent_id=AGENT_ID,
-                policy_class=policy_class,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                **eval_info,
-                **env.info,
-            )
             action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
             next_state = observations[AGENT_ID]
@@ -129,20 +118,25 @@ def train(
             total_step += 1
             state = next_state
 
-        if infos["007"]["logs"]["events"].reached_goal:
-            scenario_success += 1
-        else:
-            continue
+        episode.record_episode(old_episode, eval_info["eval_rate"])
+        old_episode = episode
 
-        # print(episode.info[episode.active_tag][AGENT_ID].data.items())
-        # sys.exit()
-        episode.record_episode()
+        if (episode_count + 1) % eval_info["eval_rate"] == 0:
+            episode.record_tensorboard()
+            old_episode = None
 
-        # for key, value in episode.info[episode.active_tag][AGENT_ID].data.items():
-        #     if not isinstance(value, (list, tuple, np.ndarray)):
-        #         summary_log.data[key] += value
-        episode.record_tensorboard()
-
+        evaluation_check(
+            agent=agent,
+            agent_id=AGENT_ID,
+            policy_class=policy_class,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            episode_count=episode_count,
+            **eval_info,
+            **env.info,
+        )
+        episode_count += 1
         if finished:
             break
 
@@ -192,9 +186,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--eval-rate",
-        help="Evaluation rate based on number of observations",
+        help="Evaluation rate based on number of episodes",
         type=int,
-        default=10000,
+        default=100,
     )
     parser.add_argument(
         "--seed",
@@ -232,7 +226,7 @@ if __name__ == "__main__":
                 num_episodes=int(args.episodes),
                 max_episode_steps=int(args.max_episode_steps),
                 eval_info={
-                    "eval_rate": float(args.eval_rate),
+                    "eval_rate": int(args.eval_rate),
                     "eval_episodes": int(args.eval_episodes),
                 },
                 timestep_sec=float(args.timestep),

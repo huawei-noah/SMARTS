@@ -32,7 +32,6 @@ os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
 import pickle
 import time
-from itertools import cycle
 
 import dill
 import gym
@@ -43,6 +42,7 @@ import torch
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
 from ultra.utils.episode import episodes, LogInfo
+from ultra.utils.level import level
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -59,7 +59,7 @@ def train(
     headless,
     seed,
     log_dir,
-):
+):  
     torch.set_num_threads(1)
     total_step = 0
     finished = False
@@ -70,32 +70,25 @@ def train(
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=(scenario_info[0], scenario_info[1][0]),
+        scenario_info=(scenario_info[0], (scenario_info[1].split(","))[0]),
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
     )
+
     agent = spec.build_agent()
 
-    scenario_success = 0
-    summary_log = LogInfo()
+    episode_count = 0
+    old_episode = None
 
-    levels = tuple(scenario_info[1])
-    level_iter = cycle(levels)
-
-    #print(len(tuple(scenario_info[1])), tuple(scenario_info[1]))
-
-    env_score_list = [] 
+    level_controller = level(scenario_info[0], scenario_info[1].split(","))
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-        if (episode.index % (num_episodes / len(levels))) == 0:
-            level = next(level_iter)
-            print()
-            print(
-                f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ENTERING STAGE {level} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-            )
-            print()
-            observations = env.reset(True, scenario_info[0], level)
+        if (episode.index % (num_episodes / level_controller.get_num_of_levels())) == 0:
+            level_controller.next()
+            print(level_controller.get_level())
+            observations = env.reset(True, level_controller.get_task(), level_controller.get_level())
+            print(level_controller.__str__())
         else:
             observations = env.reset()
 
@@ -115,17 +108,6 @@ def train(
             if episode.get_itr(AGENT_ID) >= 1000000:
                 finished = True
                 break
-            evaluation_check(
-                agent=agent,
-                agent_id=AGENT_ID,
-                policy_class=policy_class,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                **eval_info,
-                **env.info,
-                level=level,
-            )
             action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
             next_state = observations[AGENT_ID]
@@ -148,51 +130,36 @@ def train(
             total_step += 1
             state = next_state
 
-        # if infos["007"]["logs"]["events"].reached_goal:
-        #     scenario_success += 1
-        # else:
-        #     continue
+        episode.record_episode(old_episode, eval_info["eval_rate"])
+        old_episode = episode
 
-        # print(episode.info[episode.active_tag][AGENT_ID].data.items())
-        # sys.exit()
-        episode.record_episode()
+        if (episode_count + 1) % eval_info["eval_rate"] == 0:
+            episode.record_tensorboard()
+            old_episode = None
 
-        # for key, value in episode.info[episode.active_tag][AGENT_ID].data.items():
-        #     if not isinstance(value, (list, tuple, np.ndarray)):
-        #         summary_log.data[key] += value
-        episode.record_tensorboard()
-        #print(episode.info[episode.active_tag][AGENT_ID].data)
-        env_score_list.append(episode.info[episode.active_tag][AGENT_ID].data["reached_goal"])
-
+        evaluation_check(
+            agent=agent,
+            agent_id=AGENT_ID,
+            policy_class=policy_class,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            episode_count=episode_count,
+            level_controller=level_controller,
+            **eval_info,
+            **env.info,
+        )
+        episode_count += 1
         if finished:
             break
 
-    env.close()
-
-    x_list = [i for i in range(num_episodes)]
-
-    print("x axis length:",len(x_list))
-    print("y axis length:",len(env_score_list))
-    plt.scatter(x_list, env_score_list)
-    plt.plot(x_list, env_score_list)
-
-    # x coordinates for the lines
-    xcoords = [2999,5999]
-    # colors for the lines
-    colors = ['r','r']
-
-    for xc,c in zip(xcoords,colors):
-        plt.axvline(x=xc, label='line at x = {}'.format(xc), c=c)
-
-    plt.legend()
-    
-    plt.savefig('foo.png')
     # for key, val in summary_log.data.items():
     #     if not isinstance(val, (list, tuple, np.ndarray)):
     #         summary_log.data[key] /= num_episodes
     #         print(f"{key}: {summary_log.data[key]}")
 
     # print(f">>>>>>>>>>>>>>>> Scenario success : {scenario_success} <<<<<<<<<<<<<<<<<<")
+    env.close()
 
 
 if __name__ == "__main__":
@@ -232,9 +199,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--eval-rate",
-        help="Evaluation rate based on number of observations",
+        help="Evaluation rate based on number of episodes",
         type=int,
-        default=10000,
+        default=100,
     )
     parser.add_argument(
         "--seed",
@@ -263,17 +230,16 @@ if __name__ == "__main__":
 
     # Required string for smarts' class registry
     policy_class = str(policy_path) + ":" + str(policy_locator)
-    level = args.level.split(",")
 
     ray.init()
     ray.wait(
         [
             train.remote(
-                scenario_info=(args.task, level),
+                scenario_info=(args.task, args.level),
                 num_episodes=int(args.episodes),
                 max_episode_steps=int(args.max_episode_steps),
                 eval_info={
-                    "eval_rate": float(args.eval_rate),
+                    "eval_rate": int(args.eval_rate),
                     "eval_episodes": int(args.eval_episodes),
                 },
                 timestep_sec=float(args.timestep),

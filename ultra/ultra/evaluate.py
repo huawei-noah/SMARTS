@@ -53,19 +53,22 @@ def evaluation_check(
     eval_rate,
     eval_episodes,
     max_episode_steps,
+    episode_count,
     scenario_info,
     timestep_sec,
     headless,
     log_dir,
-    level,
+    level_controller,
 ):
     agent_itr = episode.get_itr(agent_id)
 
-    # print(
-    #     f"Agent iteration : {agent_itr}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
-    # )
-    if (agent_itr + 1) % eval_rate == 0 and episode.last_eval_iteration != agent_itr:
-        checkpoint_dir = episode.checkpoint_dir(agent_itr)
+    print(
+        f"Agent iteration : {agent_itr}, Episode count : {episode_count}, Eval rate : {eval_rate}, last_eval_iter : {episode.last_eval_iteration}"
+    )
+    if (
+        episode_count + 1
+    ) % eval_rate == 0 and episode.last_eval_iteration != episode_count:
+        checkpoint_dir = episode.checkpoint_dir(episode_count)
         agent.save(checkpoint_dir)
         episode.eval_mode()
         episode.info[episode.active_tag][agent_id] = ray.get(
@@ -75,7 +78,6 @@ def evaluation_check(
                     agent_id=agent_id,
                     policy_class=policy_class,
                     seed=episode.eval_count,
-                    itr_count=agent_itr,
                     checkpoint_dir=checkpoint_dir,
                     scenario_info=scenario_info,
                     num_episodes=eval_episodes,
@@ -83,12 +85,15 @@ def evaluation_check(
                     headless=headless,
                     timestep_sec=timestep_sec,
                     log_dir=log_dir,
-                    level=level,
+                    level_controller=level_controller,
                 )
             ]
         )[0]
         episode.eval_count += 1
-        episode.last_eval_iteration = agent_itr
+        episode.last_eval_iteration = episode_count
+        episode.record_tensorboard()
+        episode.gap_mode()
+        episode.calculate_gap()
         episode.record_tensorboard()
         episode.train_mode()
 
@@ -100,7 +105,6 @@ def evaluate(
     seed,
     agent_id,
     policy_class,
-    itr_count,
     checkpoint_dir,
     scenario_info,
     num_episodes,
@@ -108,7 +112,8 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
-    level,
+    level_controller,
+    explore=False,
 ):
 
     torch.set_num_threads(1)
@@ -134,13 +139,13 @@ def evaluate(
     logs = []
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-        observations = env.reset(True, "3", level)
+        observations = env.reset(True, level_controller.get_task(), level_controller.get_level())
         state = observations[agent_id]
         dones, infos = {"__all__": False}, None
 
         episode.reset(mode="Evaluation")
         while not dones["__all__"]:
-            action = agent.act(state, explore=False)
+            action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({agent_id: action})
 
             next_state = observations[agent_id]
@@ -241,7 +246,6 @@ if __name__ == "__main__":
         ):
             model = sorted_models[episode.index]
             print("model: ", model)
-            episode_count = model.split("/")[-1]
             episode.eval_mode()
             episode.info[episode.active_tag][AGENT_ID] = ray.get(
                 [
@@ -250,7 +254,6 @@ if __name__ == "__main__":
                         agent_id=AGENT_ID,
                         policy_class=policy_class,
                         seed=episode.eval_count,
-                        itr_count=0,
                         checkpoint_dir=model,
                         scenario_info=(args.task, args.level),
                         num_episodes=int(args.episodes),

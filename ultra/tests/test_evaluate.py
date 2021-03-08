@@ -81,6 +81,7 @@ class EvaluateTest(unittest.TestCase):
             policy_class = "ultra.baselines.sac:sac-v0"
             log_dir = "tests/output_eval_check_logs"
 
+            episode_count = 0
             for episode in episodes(1, etag=policy_class, log_dir=log_dir):
                 observations = env.reset()
                 state = observations[AGENT_ID]
@@ -95,19 +96,6 @@ class EvaluateTest(unittest.TestCase):
                         dill.dump(spec, spec_output, pickle.HIGHEST_PROTOCOL)
 
                 while not dones["__all__"]:
-                    evaluation_check(
-                        agent=agent,
-                        agent_id=AGENT_ID,
-                        episode=episode,
-                        eval_rate=10,
-                        eval_episodes=1,
-                        max_episode_steps=2,
-                        policy_class=policy_class,
-                        scenario_info=("00", "eval_test"),
-                        timestep_sec=0.1,
-                        headless=True,
-                        log_dir=log_dir,
-                    )
                     action = agent.act(state, explore=True)
                     observations, rewards, dones, infos = env.step({AGENT_ID: action})
                     next_state = observations[AGENT_ID]
@@ -131,6 +119,21 @@ class EvaluateTest(unittest.TestCase):
                     )
                     total_step += 1
                     state = next_state
+                evaluation_check(
+                    agent=agent,
+                    agent_id=AGENT_ID,
+                    episode=episode,
+                    eval_rate=10,
+                    eval_episodes=1,
+                    max_episode_steps=2,
+                    episode_count=episode_count,
+                    policy_class=policy_class,
+                    scenario_info=("00", "eval_test"),
+                    timestep_sec=0.1,
+                    headless=True,
+                    log_dir=log_dir,
+                )
+                episode_count += 1
 
             env.close()
 
@@ -183,7 +186,6 @@ class EvaluateTest(unittest.TestCase):
                 agent_id="AGENT_001",
                 policy_class=policy_class,
                 seed=seed,
-                itr_count=0,
                 checkpoint_dir=model,
                 scenario_info=("00", "eval_test"),
                 num_episodes=1,
