@@ -213,6 +213,9 @@ class Client:
                 if not connection_established:
                     self._log.info(f"Attempt {tries} to connect to Envision.")
                 else:
+                    # No information left to send, connection is likely done
+                    if state_queue.empty():
+                        break
                     # When connection lost, retry again every 3 seconds
                     wait_between_retries = 3
                     self._log.info(

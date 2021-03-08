@@ -35,7 +35,7 @@ from traci.exceptions import FatalTraCIError, TraCIException
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import ProviderState, ProviderTLS, ProviderTrafficLight
+from smarts.core.provider import ProviderState
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_stdout
 from smarts.core.utils.sumo import SUMO_PATH, traci
@@ -262,11 +262,6 @@ class SumoTrafficSimulation:
         self._traci_conn.simulation.subscribe(
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
         )
-
-        for tls_id in self._traci_conn.trafficlight.getIDList():
-            self._traci_conn.trafficlight.subscribe(
-                tls_id, [tc.TL_RED_YELLOW_GREEN_STATE, tc.TL_CONTROLLED_LINKS]
-            )
 
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
@@ -511,7 +506,6 @@ class SumoTrafficSimulation:
     def _compute_provider_state(self) -> ProviderState:
         return ProviderState(
             vehicles=self._compute_traffic_vehicles(),
-            traffic_light_systems=self._compute_traffic_lights(),
         )
 
     def _compute_traffic_vehicles(self) -> List[VehicleState]:
@@ -669,41 +663,6 @@ class SumoTrafficSimulation:
             # is in at the moment, which is the last edge in current route_edges.
             new_route_edges = route_edges[-1:] + route_edges
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
-
-    def _compute_traffic_lights(self) -> List[ProviderTLS]:
-        """TraCI will automatically generate TLS programs if none was specified
-        according to the net/program. To support this we opt to use TraCI instead
-        of the sumolib interface for TLS support.
-        """
-
-        sub_results = self._traci_conn.trafficlight.getSubscriptionResults(None)
-
-        tlss = []
-        if not sub_results:
-            return tlss
-
-        for tls_id in sub_results:
-            light_states = sub_results[tls_id][tc.TL_RED_YELLOW_GREEN_STATE]
-            links = sub_results[tls_id][tc.TL_CONTROLLED_LINKS]
-
-            traffic_lights = []
-            for link, state in zip(links, light_states):
-                if not link:
-                    continue
-                lane_start, lane_end, lane_via = [
-                    self._scenario.road_network.lane_by_id(lane) for lane in link[0]
-                ]
-                traffic_lights.append(
-                    ProviderTrafficLight(
-                        lane_in=lane_start,
-                        lane_via=lane_via,
-                        lane_out=lane_end,
-                        state=state,
-                    )
-                )
-            tlss.append(ProviderTLS(tls_id, traffic_lights))
-
-        return tlss
 
     def _unique_id(self):
         route_id = "hiway_id_%s" % self._num_dynamic_ids_used
