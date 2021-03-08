@@ -99,7 +99,6 @@ class MotionPlannerProvider:
                 )
                 for idx, v_id in enumerate(self._vehicle_id_to_index.keys())
             ],
-            traffic_light_systems=[],
         )
 
     def _normalize_target_pose(self, vehicle_index, target_poses, dt):
