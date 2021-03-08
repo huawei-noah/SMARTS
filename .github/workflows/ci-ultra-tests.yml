@@ -33,8 +33,7 @@ jobs:
           cd ultra
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
-          pytest -v ./tests/ \
-          --ignore=./tests/test_adapter.py \
+          pytest -v ./tests/
   test-package-via-setup:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
