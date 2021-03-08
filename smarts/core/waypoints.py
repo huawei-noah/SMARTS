@@ -47,6 +47,8 @@ from smarts.core.utils.math import (
 )
 
 import examples.profiler as profiler
+import multiprocessing
+from functools import partial 
 
 @dataclass(frozen=True)
 class Waypoint:
@@ -152,6 +154,8 @@ class Waypoints:
             for edge_id, l_wps in self._waypoints_by_edge_id.items()
         }
 
+        self._pool = multiprocessing.Pool()
+
     def _build_kd_tree(self, linked_wps):
         return KDTree(np.array([l_wp.wp.pos for l_wp in linked_wps]), leaf_size=50)
 
@@ -210,7 +214,7 @@ class Waypoints:
 
         return linked_waypoint.wp
 
-    @profiler.profile_line
+    # @profiler.profile_line
     def waypoint_paths_on_lane_at(
         self, point, lane_id, lookahead, filter_edge_ids: Sequence[str] = None
     ):
@@ -225,7 +229,7 @@ class Waypoints:
 
         return unlinked_waypoint_paths
 
-    @profiler.profile_line
+    # @profiler.profile_line
     def waypoint_paths_at(self, pose, lookahead, filter_from_count=3, within_radius=5):
         closest_linked_wp = self.closest_waypoint(
             pose, filter_from_count=filter_from_count, within_radius=within_radius
@@ -328,7 +332,7 @@ class Waypoints:
 
         return [[linked_wps[idx] for idx in idxs] for idxs in closest_indices]
 
-    @profiler.profile_line
+    # @profiler.profile_line
     def _waypoints_starting_at_waypoint(
         self,
         waypoint: LinkedWaypoint,
@@ -372,11 +376,60 @@ class Waypoints:
 
         discrete_variables = ["ref_wp_lane_id", "ref_wp_lane_index"]
 
+        variables = continuous_variables + discrete_variables
+
         ref_waypoints_coordinates = {
             parameter: [] for parameter in (continuous_variables + discrete_variables)
         }
+
+        # map_responses = self.pool.map(
+        #     self.map_func,
+        #     inputs,
+        #     chunksize=chunksize,
+        # )
+
+        waypoints = {idx: waypoint for idx, waypoint in enumerate(path)}
+
+        def filter_waypoints(idx, waypoint):
+            if (waypoint.is_shape_wp == False) and (0 < idx < len(path) - 1):
+                return False
+            return True
+        
+        filter_output = filter(lambda elem: filter_waypoints(elem[0],elem[1]), waypoints.items())
+
+        def map_waypoints():
+            ref_waypoints_coordinates["ref_wp_positions_x"].append(waypoint.wp.pos[0])
+            ref_waypoints_coordinates["ref_wp_positions_y"].append(waypoint.wp.pos[1])
+            ref_waypoints_coordinates["ref_wp_headings"].append(
+                waypoint.wp.heading.as_bullet
+            )
+            ref_waypoints_coordinates["ref_wp_lane_id"].append(waypoint.wp.lane_id)
+            ref_waypoints_coordinates["ref_wp_lane_index"].append(
+                waypoint.wp.lane_index
+            )
+            ref_waypoints_coordinates["ref_wp_lane_width"].append(
+                waypoint.wp.lane_width
+            )
+            ref_waypoints_coordinates["ref_wp_speed_limit"].append(
+                waypoint.wp.speed_limit
+            )       
+               
+               
+        waypoints.filter().map().reduce()
+               
+        # map(   ,filter_output)
+        # print("$$$$$$$$$$$$$", type(rew))
+        # print(rew)
+        # exit()
+  
+        # # A partial function that calls f with 
+        # # a as 3, b as 1 and c as 4. 
+        # g = partial(f, 3, 1, 4)
+        # # Calling g() 
+        # print(g(5)) 
+
         for idx, waypoint in enumerate(path):
-            if not waypoint.is_shape_wp and 0 < idx < len(path) - 1:
+            if (waypoint.is_shape_wp == False) and 0 < idx < len(path) - 1:
                 continue
             ref_waypoints_coordinates["ref_wp_positions_x"].append(waypoint.wp.pos[0])
             ref_waypoints_coordinates["ref_wp_positions_y"].append(waypoint.wp.pos[1])
@@ -395,7 +448,7 @@ class Waypoints:
             )
 
         ref_waypoints_coordinates["ref_wp_headings"] = np.unwrap(
-            ref_waypoints_coordinates["ref_wp_headings"]
+            ref_waypoints_coordinates["ref_wp_headings"]  # ---------- BIG DELAY
         )
         first_wp_heading = ref_waypoints_coordinates["ref_wp_headings"][0]
         wp_position = np.array([*path[0].wp.pos, 0])
@@ -416,15 +469,16 @@ class Waypoints:
         ref_waypoints_coordinates["ref_wp_positions_y"][0] = (
             wp_position[1] + projected_distant_wp_vehicle * heading_vector[1]
         )
+
         # To ensure that the distance between waypoints are equal, we used
         # interpolation approach inspired by:
         # https://stackoverflow.com/a/51515357
         cumulative_path_dist = np.cumsum(
             np.sqrt(
-                np.ediff1d(ref_waypoints_coordinates["ref_wp_positions_x"], to_begin=0)
+                np.ediff1d(ref_waypoints_coordinates["ref_wp_positions_x"], to_begin=0) # ---------- BIG DELAY
                 ** 2
                 + np.ediff1d(
-                    ref_waypoints_coordinates["ref_wp_positions_y"], to_begin=0
+                    ref_waypoints_coordinates["ref_wp_positions_y"], to_begin=0 # ---------- BIG DELAY
                 )
                 ** 2
             )
@@ -433,14 +487,14 @@ class Waypoints:
         if len(cumulative_path_dist) <= 1:
             return [path[0].wp]
 
-        evenly_spaced_cumulative_path_dist = np.linspace(
+        evenly_spaced_cumulative_path_dist = np.linspace(    # ---------- BIG DELAY
             0, cumulative_path_dist[-1], len(path)
         )
 
         evenly_spaced_coordinates = {}
         for variable in continuous_variables:
             evenly_spaced_coordinates[variable] = interp1d(
-                cumulative_path_dist, ref_waypoints_coordinates[variable]
+                cumulative_path_dist, ref_waypoints_coordinates[variable]  # ---------- BIG DELAY
             )(evenly_spaced_cumulative_path_dist)
 
         for variable in discrete_variables:
