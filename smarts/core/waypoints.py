@@ -47,6 +47,7 @@ from smarts.core.utils.math import (
 
 # import examples.profiler as profiler
 
+
 @dataclass(frozen=True)
 class Waypoint:
     pos: np.ndarray  # Point positioned on center of lane
@@ -127,11 +128,22 @@ CachedWaypoint = namedtuple(
     [
         "point",  # array([float,float,float])
         "lane_id",  # string, e.g., 'east_0'
-        "lookahead", # int
-        "filter_edge_ids", # bool
+        "lookahead",  # int
+        "filter_edge_ids",  # bool
     ],
-    defaults=[np.empty([3,], dtype=float), "", 0, False],
+    defaults=[
+        np.empty(
+            [
+                3,
+            ],
+            dtype=float,
+        ),
+        "",
+        0,
+        False,
+    ],
 )
+
 
 class Waypoints:
     def __init__(self, road_network, spacing, debug=True):
@@ -225,10 +237,12 @@ class Waypoints:
         self, point, lane_id, lookahead, filter_edge_ids: Sequence[str] = None
     ):
         cwp = CachedWaypoint(point, lane_id, lookahead, filter_edge_ids)
-        if (self._cached_waypoints_key.point == cwp.point).all() and \
-            (self._cached_waypoints_key.lane_id == cwp.lane_id) and \
-            (self._cached_waypoints_key.lookahead == cwp.lookahead) and \
-            (self._cached_waypoints_key.filter_edge_ids == cwp.filter_edge_ids):
+        if (
+            np.array_equal(self._cached_waypoints_key.point == cwp.point)
+            and (self._cached_waypoints_key.lane_id == cwp.lane_id)
+            and (self._cached_waypoints_key.lookahead == cwp.lookahead)
+            and (self._cached_waypoints_key.filter_edge_ids == cwp.filter_edge_ids)
+        ):
             assert self._cached_waypoints
             return self._cached_waypoints
 
@@ -241,7 +255,9 @@ class Waypoints:
             closest_linked_wp, lookahead, point, filter_edge_ids
         )
         self._cached_waypoints = unlinked_waypoint_paths
-        self._cached_waypoints_key = CachedWaypoint(point, lane_id, lookahead, filter_edge_ids)
+        self._cached_waypoints_key = CachedWaypoint(
+            point, lane_id, lookahead, filter_edge_ids
+        )
 
         return unlinked_waypoint_paths
 

@@ -32,6 +32,7 @@ class ChaseViaPointsAgent(Agent):
             1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
         )
 
+
 # @profiler.profile_function
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
