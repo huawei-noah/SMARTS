@@ -3,7 +3,7 @@ update_rate: 5
 policy_delay: 2
 noise_clip: 0.5
 policy_noise: 0.2
-warmup: 10
+warmup: 1000
 actor_lr: 1e-4
 critic_lr: 1e-3
 critic_wd: 0.0
@@ -23,7 +23,7 @@ replay_buffer:
 social_vehicles:
     encoder_key: no_encoder
     social_policy_hidden_units: 128
-    social_polciy_init_std: 0.5
+    social_policy_init_std: 0.5
     social_capacity: 10
     num_social_features: 4
     seed: 2

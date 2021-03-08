@@ -43,7 +43,8 @@ def get_social_vehicle_configs(
     social_capacity,
     seed,
     social_policy_hidden_units=0,
-    social_polciy_init_std=0,
+    social_policy_init_std=0,
+    **other
 ):
     config = {
         "num_social_features": int(num_social_features),

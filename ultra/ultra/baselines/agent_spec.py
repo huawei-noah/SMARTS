@@ -40,6 +40,7 @@ class BaselineAgentSpec(AgentSpec):
         self,
         policy_class,
         action_type,
+        agent_type,
         checkpoint_dir=None,
         task=None,
         max_episode_steps=1200,
@@ -51,6 +52,7 @@ class BaselineAgentSpec(AgentSpec):
         self,
         policy_class,
         action_type,
+        agent_type,
         checkpoint_dir=None,
         task=None,
         max_episode_steps=1200,
@@ -58,6 +60,7 @@ class BaselineAgentSpec(AgentSpec):
     ):
         if experiment_dir:
             print(f"LOADING SPEC from {experiment_dir}/spec.pkl")
+
             with open(f"{experiment_dir}/spec.pkl", "rb") as input:
                 spec = dill.load(input)
                 new_spec = AgentSpec(
@@ -72,18 +75,7 @@ class BaselineAgentSpec(AgentSpec):
                 )
                 spec = new_spec
         else:
-            social_vehicle_params = dict(
-                encoder_key="no_encoder",
-                social_policy_hidden_units=128,
-                social_polciy_init_std=0.5,
-                num_social_features=4,
-                seed=2,
-                observation_num_lookahead=20,
-                social_capacity=10,
-            )
-            adapter = BaselineAdapter(social_vehicle_params=social_vehicle_params)
-            policy_dir = "/".join(inspect.getfile(policy_class).split("/")[:-1])
-            policy_params = load_yaml(f"{policy_dir}/params.yaml")
+            adapter = BaselineAdapter(agent_type=agent_type)
             spec = AgentSpec(
                 interface=AgentInterface(
                     waypoints=Waypoints(lookahead=20),
@@ -94,7 +86,7 @@ class BaselineAgentSpec(AgentSpec):
                     debug=True,
                 ),
                 agent_params=dict(
-                    policy_params=policy_params, checkpoint_dir=checkpoint_dir
+                    policy_params=adapter.policy_params, checkpoint_dir=checkpoint_dir
                 ),
                 agent_builder=policy_class,
                 observation_adapter=adapter.observation_adapter,

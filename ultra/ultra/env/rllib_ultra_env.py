@@ -24,6 +24,7 @@ import glob, yaml
 from smarts.core.scenario import Scenario
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from ultra.baselines.adapter import BaselineAdapter
+from ultra.baselines.common.yaml_loader import load_yaml
 import numpy as np
 from scipy.spatial import distance
 import math, os
@@ -50,7 +51,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
         config["scenarios"] = _scenarios
-        self.ultra_scores = BaselineAdapter()
+        self.ultra_scores = BaselineAdapter.reward_adapter
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:
@@ -122,7 +123,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             goal_dist=goal_dist,
             linear_jerk=np.linalg.norm(ego_state.linear_jerk),
             angular_jerk=np.linalg.norm(ego_state.angular_jerk),
-            env_score=self.ultra_scores.reward_adapter(observation, highwayenv_score),
+            env_score=self.ultra_scores(observation, highwayenv_score),
         )
         return info
 

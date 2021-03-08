@@ -98,7 +98,7 @@ def make_dir_in_smarts_log_dir(dir):
 
 
 @contextmanager
-def supress_pkg_resources():
+def suppress_pkg_resources():
     import sys
 
     import pkg_resources

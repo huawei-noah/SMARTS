@@ -79,8 +79,8 @@ class PPOPolicy(Agent):
         self.observation_num_lookahead = int(
             policy_params.get("observation_num_lookahead", 0)
         )
-        self.social_polciy_init_std = int(
-            policy_params["social_vehicles"].get("social_polciy_init_std", 0)
+        self.social_policy_init_std = int(
+            policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
         self.num_social_features = int(
             policy_params["social_vehicles"].get("num_social_features", 0)
@@ -118,7 +118,7 @@ class PPOPolicy(Agent):
             self.action_size,
             self.state_size,
             hidden_units=self.hidden_units,
-            init_std=self.social_polciy_init_std,
+            init_std=self.social_policy_init_std,
             seed=self.seed,
             social_feature_encoder_class=self.social_feature_encoder_class,
             social_feature_encoder_params=self.social_feature_encoder_params,
@@ -155,7 +155,7 @@ class PPOPolicy(Agent):
         )
 
         with torch.no_grad():
-            dist, value = self.ppo_net(x=state, unsqueeze=True)
+            dist, value = self.ppo_net(x=state)
         if explore:  # training mode
             action = dist.sample()
             log_prob = dist.log_prob(action)
@@ -285,7 +285,6 @@ class PPOPolicy(Agent):
             ) in self.get_minibatch(
                 mini_batch_size, states, actions, log_probs, returns, advantages
             ):
-                # print('><><>',state['low_dim_states'].shape, state['social_vehicles'].shape)
                 (dist, value), aux_losses = self.ppo_net(state, training=True)
                 entropy = dist.entropy().mean()  # L_S
                 new_pi_log_probs = dist.log_prob(action)

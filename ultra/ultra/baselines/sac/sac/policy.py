@@ -68,8 +68,8 @@ class SACPolicy(Agent):
         self.observation_num_lookahead = int(
             policy_params.get("observation_num_lookahead", 0)
         )
-        self.social_polciy_init_std = int(
-            policy_params["social_vehicles"].get("social_polciy_init_std", 0)
+        self.social_policy_init_std = int(
+            policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
         self.num_social_features = int(
             policy_params["social_vehicles"].get("num_social_features", 0)
@@ -191,7 +191,6 @@ class SACPolicy(Agent):
             states, actions, rewards, next_states, dones, others = self.memory.sample(
                 device=self.device_name
             )
-
             if self.steps % self.critic_update_rate == 0:
                 critic_loss = self.update_critic(
                     states, actions, rewards, next_states, dones

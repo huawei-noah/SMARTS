@@ -27,6 +27,7 @@ from sys import path
 from collections import OrderedDict
 from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")
 from ultra.utils.common import (
@@ -42,9 +43,20 @@ num_lookahead = 100
 
 
 class BaselineAdapter:
-    def __init__(self, social_vehicle_params=None):
-        if social_vehicle_params is None:
-            return
+    def __init__(self, agent_type):
+        assert agent_type in ["td3", "ddpg", "dqn", "ppo", "bdqn", "sac"]
+
+        if agent_type == "td3":
+            self.policy_params = load_yaml(f"ultra/baselines/ddpg/ddpg/params.yaml")
+        else:
+            self.policy_params = load_yaml(
+                f"ultra/baselines/{agent_type}/{agent_type}/params.yaml"
+            )
+
+        social_vehicle_params = self.policy_params["social_vehicles"]
+        social_vehicle_params["observation_num_lookahead"] = self.policy_params[
+            "observation_num_lookahead"
+        ]
         self.observation_num_lookahead = social_vehicle_params[
             "observation_num_lookahead"
         ]
@@ -58,7 +70,7 @@ class BaselineAdapter:
             social_policy_hidden_units=social_vehicle_params[
                 "social_policy_hidden_units"
             ],
-            social_polciy_init_std=social_vehicle_params["social_polciy_init_std"],
+            social_policy_init_std=social_vehicle_params["social_policy_init_std"],
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
@@ -143,7 +155,8 @@ class BaselineAdapter:
         state["social_vehicles"] = state["social_vehicles"][: self.social_capacity]
         return state  # ego=ego, env_observation=env_observation)
 
-    def reward_adapter(self, observation, reward):
+    @staticmethod
+    def reward_adapter(observation, reward):
         env_reward = reward
         ego_events = observation.events
         ego_observation = observation.ego_vehicle_state

@@ -52,7 +52,6 @@ from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
-from smarts.core.chassis import AckermannChassis, BoxChassis
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.pybullet import bullet_client as bc
@@ -651,6 +650,11 @@ class SMARTS(ShowBase):
         # TODO: Add check to ensure that action spaces are disjoint between providers
         # TODO: It's inconsistent that pybullet is not here
         return self._providers
+
+    def get_provider_by_type(self, requested_type):
+        for provider in self._providers:
+            if isinstance(provider, requested_type):
+                return provider
 
     def _setup_providers(self, scenario) -> ProviderState:
         provider_state = ProviderState()
