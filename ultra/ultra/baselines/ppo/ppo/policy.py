@@ -155,7 +155,7 @@ class PPOPolicy(Agent):
         )
 
         with torch.no_grad():
-            dist, value = self.ppo_net(x=state, unsqueeze=True)
+            dist, value = self.ppo_net(x=state)
         if explore:  # training mode
             action = dist.sample()
             log_prob = dist.log_prob(action)
@@ -297,7 +297,6 @@ class PPOPolicy(Agent):
             ) in self.get_minibatch(
                 mini_batch_size, states, actions, log_probs, returns, advantages
             ):
-                # print('><><>',state['low_dim_states'].shape, state['social_vehicles'].shape)
                 (dist, value), aux_losses = self.ppo_net(state, training=True)
                 entropy = dist.entropy().mean()  # L_S
                 new_pi_log_probs = dist.log_prob(action)

@@ -48,12 +48,13 @@ class CustomFCModel(TorchModelV2, nn.Module):
         )
         nn.Module.__init__(self)
 
-        social_feature_encoder_class = customized_model_kwargs[
-            "adapter"
-        ].social_feature_encoder_class
-        social_feature_encoder_params = customized_model_kwargs[
-            "adapter"
-        ].social_feature_encoder_params
+        if "adapter" in model_config["custom_model_config"]:
+            adapter = model_config["custom_model_config"]["adapter"]
+        else:
+            adapter = customized_model_kwargs["adapter"]
+
+        social_feature_encoder_class = adapter.social_feature_encoder_class
+        social_feature_encoder_params = adapter.social_feature_encoder_params
         self.social_feature_encoder = (
             social_feature_encoder_class(**social_feature_encoder_params)
             if social_feature_encoder_class
