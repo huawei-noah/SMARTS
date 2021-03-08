@@ -64,7 +64,6 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/test_ultra_package.py
-
   test-package-via-wheel:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
@@ -100,7 +99,6 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/test_ultra_package.py
-
   # test-package-via-pypi:
   #   runs-on: ubuntu-18.04
   #   if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
