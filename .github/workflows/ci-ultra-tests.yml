@@ -26,9 +26,9 @@ jobs:
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
-          pip install --upgrade --upgrade-strategy eager -e .
+          pip install --upgrade -e .
           pip install --upgrade numpy
-      - name: Run ULTRA tests
+      - name: Run ultra tests
         run: |
           cd ultra
           . .venv/bin/activate
@@ -56,9 +56,8 @@ jobs:
           cd ultra
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install --upgrade --upgrade-strategy eager pip
-          pip install --upgrade --upgrade-strategy eager wheel
-          pip install --upgrade --upgrade-strategy eager -e .
+          pip install --upgrade pip
+          pip install --upgrade -e .
           pip install --upgrade numpy
       - name: Run test
         run: |
