@@ -238,7 +238,7 @@ class Waypoints:
     ):
         cwp = CachedWaypoint(point, lane_id, lookahead, filter_edge_ids)
         if (
-            np.array_equal(self._cached_waypoints_key.point == cwp.point)
+            np.array_equal(self._cached_waypoints_key.point, cwp.point)
             and (self._cached_waypoints_key.lane_id == cwp.lane_id)
             and (self._cached_waypoints_key.lookahead == cwp.lookahead)
             and (self._cached_waypoints_key.filter_edge_ids == cwp.filter_edge_ids)
