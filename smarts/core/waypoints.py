@@ -122,6 +122,16 @@ LinkedWaypoint = namedtuple(
     defaults=[None, [], False],
 )
 
+CachedWaypoint = namedtuple(
+    "CachedWaypoint",
+    [
+        "point",  # array([float,float,float])
+        "lane_id",  # string, e.g., 'east_0'
+        "lookahead", # int
+        "filter_edge_ids", # bool
+    ],
+    defaults=[np.empty([3,], dtype=float), "", 0, False],
+)
 
 class Waypoints:
     def __init__(self, road_network, spacing, debug=True):
@@ -133,6 +143,8 @@ class Waypoints:
         self._linked_waypoints = self._interpolate_shape_waypoints(shape_wps, spacing)
 
         self._waypoints_kd_tree = self._build_kd_tree(self._linked_waypoints)
+        self._cached_waypoints_key = CachedWaypoint()
+        self._cached_waypoints = None
 
         self._waypoints_by_lane_id = defaultdict(list)
         self._waypoints_by_edge_id = defaultdict(list)
@@ -212,6 +224,14 @@ class Waypoints:
     def waypoint_paths_on_lane_at(
         self, point, lane_id, lookahead, filter_edge_ids: Sequence[str] = None
     ):
+        cwp = CachedWaypoint(point, lane_id, lookahead, filter_edge_ids)
+        if (self._cached_waypoints_key.point == cwp.point).all() and \
+            (self._cached_waypoints_key.lane_id == cwp.lane_id) and \
+            (self._cached_waypoints_key.lookahead == cwp.lookahead) and \
+            (self._cached_waypoints_key.filter_edge_ids == cwp.filter_edge_ids):
+            assert self._cached_waypoints
+            return self._cached_waypoints
+
         lane_kd_tree = self._waypoints_kd_tree_by_lane_id[lane_id]
         closest_linked_wp = self._closest_linked_wp_in_kd_tree_batched(
             [point], self._waypoints_by_lane_id[lane_id], lane_kd_tree, k=1
@@ -220,6 +240,8 @@ class Waypoints:
         unlinked_waypoint_paths = self._waypoints_starting_at_waypoint(
             closest_linked_wp, lookahead, point, filter_edge_ids
         )
+        self._cached_waypoints = unlinked_waypoint_paths
+        self._cached_waypoints_key = CachedWaypoint(point, lane_id, lookahead, filter_edge_ids)
 
         return unlinked_waypoint_paths
 
