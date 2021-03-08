@@ -5,7 +5,7 @@ critic_lr: 5e-4
 actor_lr: 1e-4
 critic_update_rate: 5
 policy_update_rate: 10
-warmup: 100
+warmup: 1000
 batch_size: 32
 hidden_units: 512
 tau: 0.005

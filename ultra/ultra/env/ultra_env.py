@@ -58,12 +58,8 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
-        policy_params = load_yaml(f"ultra/baselines/ppo/ppo/params.yaml")
-        social_vehicle_params = policy_params["social_vehicles"]
-        social_vehicle_params["observation_num_lookahead"] = policy_params[
-            "observation_num_lookahead"
-        ]
-        self.ultra_scores = BaselineAdapter(social_vehicle_params=social_vehicle_params)
+        self.ultra_scores = BaselineAdapter.reward_adapter
+
         super().__init__(
             scenarios=_scenarios,
             agent_specs=agent_specs,
@@ -142,7 +138,7 @@ class UltraEnv(HiWayEnv):
             goal_dist=goal_dist,
             linear_jerk=np.linalg.norm(ego_state.linear_jerk),
             angular_jerk=np.linalg.norm(ego_state.angular_jerk),
-            env_score=self.ultra_scores.reward_adapter(observation, highwayenv_score),
+            env_score=self.ultra_scores(observation, highwayenv_score),
         )
         return info
 

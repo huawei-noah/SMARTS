@@ -51,13 +51,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
         config["scenarios"] = _scenarios
-
-        policy_params = load_yaml(f"ultra/baselines/ppo/ppo/params.yaml")
-        social_vehicle_params = policy_params["social_vehicles"]
-        social_vehicle_params["observation_num_lookahead"] = policy_params[
-            "observation_num_lookahead"
-        ]
-        self.ultra_scores = BaselineAdapter(social_vehicle_params=social_vehicle_params)
+        self.ultra_scores = BaselineAdapter.reward_adapter
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:
@@ -129,7 +123,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             goal_dist=goal_dist,
             linear_jerk=np.linalg.norm(ego_state.linear_jerk),
             angular_jerk=np.linalg.norm(ego_state.angular_jerk),
-            env_score=self.ultra_scores.reward_adapter(observation, highwayenv_score),
+            env_score=self.ultra_scores(observation, highwayenv_score),
         )
         return info
 

@@ -230,6 +230,7 @@ def prepare_test_env_agent(headless=True):
     spec = BaselineAgentSpec(
         action_type=ActionSpaceType.Continuous,
         policy_class=SACPolicy,
+        agent_type="sac",
         max_episode_steps=2,
     )
     env = gym.make(
