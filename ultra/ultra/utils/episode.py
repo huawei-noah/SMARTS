@@ -237,11 +237,12 @@ class Episode:
         if (old_episode is not None) and (eval_rate is not None):
             for agent_id, agent_info in self.info[self.active_tag].items():
                 for key in agent_info.data:
-                    agent_info.data[key] = (
-                        agent_info.data[key]
-                        + old_episode.info[self.active_tag][agent_id].data[key]
-                        * eval_rate
-                    ) / eval_rate
+                    if np.isscalar(agent_info.data[key]):
+                        agent_info.data[key] = (
+                            agent_info.data[key]
+                            + old_episode.info[self.active_tag][agent_id].data[key]
+                            * eval_rate
+                        ) / eval_rate
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
