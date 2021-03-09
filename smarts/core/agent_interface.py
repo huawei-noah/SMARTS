@@ -75,7 +75,7 @@ class Waypoints:
     on the waypoint spacing set. The project default for that is one meter.
     """
 
-    lookahead: int = 32
+    lookahead: int = 50
 
 
 @dataclass

@@ -1023,7 +1023,7 @@ class WaypointsSensor(Sensor):
 
 
 class RoadWaypointsSensor(Sensor):
-    def __init__(self, vehicle, sim, mission_planner, horizon=32):
+    def __init__(self, vehicle, sim, mission_planner, horizon=50):
         self._vehicle = vehicle
         self._sim = sim
         self._mission_planner = mission_planner
@@ -1046,7 +1046,7 @@ class RoadWaypointsSensor(Sensor):
         return self._mission_planner.waypoint_paths_at(
             sim=self._sim,
             pose=self._vehicle.pose,
-            lookahead=32,
+            lookahead=50,
         )
 
     def paths_for_lane(self, lane, overflow_offset=None):

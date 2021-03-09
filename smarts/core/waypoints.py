@@ -45,7 +45,7 @@ from smarts.core.utils.math import (
     vec_to_radians,
 )
 
-# import examples.profiler as profiler
+import examples.profiler as profiler
 
 
 @dataclass(frozen=True)
@@ -254,10 +254,10 @@ class Waypoints:
         unlinked_waypoint_paths = self._waypoints_starting_at_waypoint(
             closest_linked_wp, lookahead, point, filter_edge_ids
         )
-        self._cached_waypoints = unlinked_waypoint_paths
         self._cached_waypoints_key = CachedWaypoint(
             point, lane_id, lookahead, filter_edge_ids
         )
+        self._cached_waypoints = unlinked_waypoint_paths
 
         return unlinked_waypoint_paths
 
@@ -394,7 +394,7 @@ class Waypoints:
 
         return [self._equally_spaced_path(path, point) for path in waypoint_paths]
 
-    # @profiler.profile_line
+    @profiler.profile_line
     def _equally_spaced_path(self, path, point):
         continuous_variables = [
             "ref_wp_positions_x",

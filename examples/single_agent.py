@@ -8,7 +8,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 
-# import examples.profiler as profiler
+import examples.profiler as profiler
 
 logging.basicConfig(level=logging.INFO)
 
@@ -33,7 +33,7 @@ class ChaseViaPointsAgent(Agent):
         )
 
 
-# @profiler.profile_function
+@profiler.profile_function
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
