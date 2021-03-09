@@ -35,7 +35,7 @@ The following steps will show how to create a multi-agent task with 4 agents.
              percent: 1.0  # 100% of these scenarios will be 2 lane, c-intersections.
              specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
        test:
-         total: 2  # There will be 10 testing scenarios.
+         total: 2  # There will be 2 testing scenarios.
          intersection_types:
            2lane_c:
              percent: 1.0  # 100% of these scenarios will be 2 lane, c-intersections.
