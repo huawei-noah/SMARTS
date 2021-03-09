@@ -162,7 +162,6 @@ export default function Simulation({
       while (!stopPolling && playing && !wstate_and_time.done) {
         let wstate, elapsed_times;
         [wstate, elapsed_times] = wstate_and_time.value;
-        console.log(elapsed_times, playing, stopPolling)
         if (!stopPolling) {
           setWorldState(wstate);
           onElapsedTimesChanged(...elapsed_times);
@@ -172,7 +171,6 @@ export default function Simulation({
         }
         wstate_and_time = await it.next();
       }
-      console.log("Exited this function")
     })();
 
     // Called when simulation ID changes
