@@ -167,7 +167,7 @@ export default function Simulation({
           setWorldState(wstate);
           onElapsedTimesChanged(...elapsed_times);
 
-          // play back the existing frames at 100/40 = 20fps
+          // play the frames at 100/40 = 20fps
           await sleep(50);
         }
         wstate_and_time = await it.next();
