@@ -148,22 +148,31 @@ export default function Simulation({
 
     setScene(scene_);
   };
-
+  const sleep = (milliseconds) => {
+    return new Promise(resolve => setTimeout(resolve, milliseconds))
+  }
+  
   // State subscription
   useEffect(() => {
     let stopPolling = false;
     (async () => {
       const it = client.worldstate(simulationId);
-      let wstate_and_time = await it.next();
-      while (!wstate_and_time.done && playing) {
+      let wstate_and_time;
+      if (playing) wstate_and_time = await it.next();
+      while (!stopPolling && playing && !wstate_and_time.done) {
         let wstate, elapsed_times;
         [wstate, elapsed_times] = wstate_and_time.value;
+        console.log(elapsed_times, playing, stopPolling)
         if (!stopPolling) {
           setWorldState(wstate);
           onElapsedTimesChanged(...elapsed_times);
+
+          // play back the existing frames at 100/40 = 25fps
+          await sleep(40)
         }
         wstate_and_time = await it.next();
       }
+      console.log("Exited this function")
     })();
 
     // Called when simulation ID changes
