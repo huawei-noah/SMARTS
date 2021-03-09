@@ -38,15 +38,22 @@ from panda3d.core import (
 
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.utils.math import squared_dist, vec_2d
+from smarts.core.utils import dictionary
 from smarts.sstudio.types import CutIn, UTurn
 
-from .coordinates import BoundingBox, Heading
-from .events import Events
-from .lidar import Lidar
-from .lidar_sensor_params import SensorParams
-from .masks import RenderMasks
-from .scenario import Mission, Via
-from .waypoints import Waypoint
+from smarts.core.coordinates import BoundingBox, Heading
+from smarts.core.events import Events
+from smarts.core.lidar import Lidar
+from smarts.core.lidar_sensor_params import SensorParams
+from smarts.core.masks import RenderMasks
+from smarts.core.scenario import Mission, Via
+from smarts.core.waypoints import Waypoint
+
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
+
 
 logger = logging.getLogger(__name__)
 
@@ -111,47 +118,41 @@ class OccupancyGridMap(NamedTuple):
     metadata: GridMapMetadata
     data: np.ndarray
 
-
+@dataclass
 class DrivableAreaGridMap(NamedTuple):
     metadata: GridMapMetadata
     data: np.ndarray
 
 
-@dataclass
-class ViaPoint:
+class ViaPoint(TypedDict):
     position: Tuple[float, float]
     lane_index: float
     edge_id: str
     required_speed: float
 
 
-@dataclass(frozen=True)
-class Vias:
+class Vias(TypedDict):
     near_via_points: List[ViaPoint]
     """Ordered list of nearby points that have not been hit"""
     hit_via_points: List[ViaPoint]
     """List of points that were hit in the previous step"""
 
-
-@dataclass
-class Observation:
+class Observation(TypedDict):
     events: Events
     ego_vehicle_state: EgoVehicleObservation
     neighborhood_vehicle_states: List[VehicleObservation]
     waypoint_paths: List[List[Waypoint]]
     distance_travelled: float
-
     # TODO: Convert to `namedtuple` or only return point cloud
-    # [points], [hits], [(ray_origin, ray_directino)]
+    # [points], [hits], [(ray_origin, ray_direction)]
     lidar_point_cloud: Tuple[
-        List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
-    ]
+            List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
+        ]
     drivable_area_grid_map: DrivableAreaGridMap
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
     via_data: Vias = None
-
 
 @dataclass
 class Collision:
@@ -306,8 +307,29 @@ class Sensors:
         ):
             logger.warning(f"Agent Id: {agent_id} is done on the first step")
 
+
+        print("999999999999999999999999999999999")
+        print(events)
+        we = Observation(
+                events=events,
+                ego_vehicle_state=ego_vehicle_observation,
+                neighborhood_vehicle_states=neighborhood_vehicles,
+                waypoint_paths=waypoint_paths,
+                distance_travelled=distance_travelled,
+                top_down_rgb=rgb,
+                occupancy_grid_map=ogm,
+                drivable_area_grid_map=drivable_area_grid_map,
+                lidar_point_cloud=lidar,
+                road_waypoints=road_waypoints,
+                via_data=via_data,
+            )
+        # print(type(we))
+        # print(we)
+        print("99999999999999999999999999999999922222")
+        exit()
+
         return (
-            Observation(
+            ObservationDict(
                 events=events,
                 ego_vehicle_state=ego_vehicle_observation,
                 neighborhood_vehicle_states=neighborhood_vehicles,
