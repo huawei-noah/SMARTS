@@ -203,7 +203,11 @@ if __name__ == "__main__":
         type=str,
         default="easy",
     )
-    parser.add_argument("--models", default="models/", help="Directory to saved models")
+    parser.add_argument(
+        "--models",
+        nargs="+",
+        help="The models in the models/ directory of the experiment to evaluate",
+    )
     parser.add_argument(
         "--episodes", help="Number of training episodes", type=int, default=200
     )
@@ -221,7 +225,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--experiment-dir",
-        help="Path to spec file that includes adapters and policy parameters",
+        help="Path to the experiment directory",
         type=str,
     )
     parser.add_argument(
@@ -235,23 +239,33 @@ if __name__ == "__main__":
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
 
-    if not os.path.exists(args.models):
-        raise "Path to model is invalid"
+    if not all([os.path.exists(model_path) for model_path in args.models]):
+        raise "At least one path to a model is invalid"
 
-    if not os.listdir(args.models):
-        raise "No models to evaluate"
+    if not all([os.listdir(model_path) for model_path in args.models]):
+        raise "There are no models to evaluate in at least one model path"
+
+    agent_ids_from_models = [
+        os.path.basename(os.path.normpath(model_path)) for model_path in args.models
+    ]
 
     # Load relevant agent metadata.
     with open(
-        os.path.join(args.models, "../agent_metadata.pkl"), "rb"
+        os.path.join(args.experiment_dir, "agent_metadata.pkl"), "rb"
     ) as metadata_file:
         agent_metadata = pickle.load(metadata_file)
 
-    # Extract the agent IDs and policy classes.
-    agent_ids = agent_metadata["agent_ids"]
-    policy_classes = agent_metadata["agent_classes"]
+    # Extract the agent IDs and policy classes from the metadata and given models.
+    agent_ids = [
+        agent_id
+        for agent_id in agent_metadata["agent_ids"]
+        if agent_id in agent_ids_from_models
+    ]
+    policy_classes = {
+        agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
+    }
 
-    # From a base model directory such as logs/<experiment_name>/models/, assign each agent ID with its
+    # From a base model directory such as logs/<experiment_name>/models/*, assign each agent ID with its
     # checkpoint directories in sorted order based on the checkpoint iteration. The agent IDs are
     # obtained from the direct child folders of the model directory given. As an example result:
     # {
@@ -262,7 +276,7 @@ if __name__ == "__main__":
     # }
     agent_checkpoint_directories = {
         agent_id: sorted(
-            glob.glob(os.path.join(args.models, agent_id, "*")),
+            glob.glob(os.path.join(args.experiment_dir, "models", agent_id, "*")),
             key=lambda x: int(x.split("/")[-1]),
         )
         for agent_id in agent_ids
