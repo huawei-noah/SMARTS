@@ -238,8 +238,9 @@ class Episode:
             for agent_id, agent_info in self.info[self.active_tag].items():
                 for key in agent_info.data:
                     agent_info.data[key] = (
-                        agent_info.data[key] * eval_rate
+                        agent_info.data[key]
                         + old_episode.info[self.active_tag][agent_id].data[key]
+                        * eval_rate
                     ) / eval_rate
 
     def initialize_tb_writer(self):
