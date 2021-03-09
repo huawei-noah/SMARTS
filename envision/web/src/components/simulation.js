@@ -148,10 +148,11 @@ export default function Simulation({
 
     setScene(scene_);
   };
+
   const sleep = (milliseconds) => {
-    return new Promise(resolve => setTimeout(resolve, milliseconds))
-  }
-  
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
+  };
+
   // State subscription
   useEffect(() => {
     let stopPolling = false;
@@ -166,8 +167,8 @@ export default function Simulation({
           setWorldState(wstate);
           onElapsedTimesChanged(...elapsed_times);
 
-          // play back the existing frames at 100/40 = 25fps
-          await sleep(40)
+          // play back the existing frames at 100/40 = 20fps
+          await sleep(50);
         }
         wstate_and_time = await it.next();
       }
