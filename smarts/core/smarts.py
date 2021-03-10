@@ -442,11 +442,10 @@ class SMARTS(ShowBase):
         if self._root_np is not None:
             self._root_np.clearLight()
             self._root_np.removeNode()
-
+            self._root_np = None
         if self._bubble_manager is not None:
             self._bubble_manager.teardown()
             self._bubble_manager = None
-
         if self._trap_manager is not None:
             self._trap_manager.teardown()
             self._trap_manager = None
@@ -476,13 +475,8 @@ class SMARTS(ShowBase):
             self._bullet_client = None
 
         super().destroy()
-
-    # def __exit__(self):
-    #     print("Called exit")
-    #     self.destroy()
     
     def __del__(self):
-        print("called delete")
         self.destroy()
 
     def _teardown_vehicles(self, vehicle_ids):
