@@ -40,7 +40,9 @@ class ScenariosTest(unittest.TestCase):
                 if "traffic" in dirpath:
                     self.assertTrue("all.rou.xml" in files)
                 if "missions.pkl" in files:
-                    with open(os.path.join(dirpath, "missions.pkl"), "rb") as missions_file:
+                    with open(
+                        os.path.join(dirpath, "missions.pkl"), "rb"
+                    ) as missions_file:
                         missions = pickle.load(missions_file)
                     self.assertTrue(len(missions) == 1)
         except Exception as err:
@@ -100,7 +102,9 @@ class ScenariosTest(unittest.TestCase):
                 if "traffic" in dirpath:
                     self.assertTrue("all.rou.xml" in files)
                 if "missions.pkl" in files:
-                    with open(os.path.join(dirpath, "missions.pkl"), "rb") as missions_file:
+                    with open(
+                        os.path.join(dirpath, "missions.pkl"), "rb"
+                    ) as missions_file:
                         missions = pickle.load(missions_file)
                     if "0" in dirpath:  # The train scenario.
                         self.assertTrue(len(missions) == 3)
