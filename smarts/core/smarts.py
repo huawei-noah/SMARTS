@@ -428,11 +428,15 @@ class SMARTS(ShowBase):
         )
 
     def teardown(self):
-        self._agent_manager.teardown()
-        self._vehicle_index.teardown()
+        if self._agent_manager is not None:
+            self._agent_manager.teardown()
+        if self._vehicle_index is not None:
+            self._vehicle_index.teardown()
 
-        self._bullet_client.resetSimulation()
-        self._traffic_sim.teardown()
+        if self._bullet_client is not None:
+            self._bullet_client.resetSimulation()
+        if self._traffic_sim is not None:
+            self._traffic_sim.teardown()
         self._teardown_providers()
 
         if self._root_np is not None:
@@ -461,11 +465,25 @@ class SMARTS(ShowBase):
         if self._visdom:
             self._visdom.teardown()
 
-        self._agent_manager.destroy()
-        self._traffic_sim.destroy()
-        self._bullet_client.disconnect()
+        if self._agent_manager is not None:
+            self._agent_manager.destroy()
+            self._agent_manager = None
+        if self._traffic_sim is not None:
+            self._traffic_sim.destroy()
+            self._traffic_sim = None
+        if self._bullet_client is not None:
+            self._bullet_client.disconnect()
+            self._bullet_client = None
 
         super().destroy()
+
+    # def __exit__(self):
+    #     print("Called exit")
+    #     self.destroy()
+    
+    def __del__(self):
+        print("called delete")
+        self.destroy()
 
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
