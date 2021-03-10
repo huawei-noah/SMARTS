@@ -23,7 +23,6 @@ import json
 import os
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
 
 from ultra.utils.ray import default_ray_kwargs
 
@@ -42,7 +41,8 @@ import torch
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
 from ultra.utils.episode import episodes, LogInfo
-from ultra.utils.level import level
+from ultra.utils.coordinator import coordinator
+from itertools import cycle
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -59,7 +59,7 @@ def train(
     headless,
     seed,
     log_dir,
-):  
+):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
@@ -81,16 +81,22 @@ def train(
     episode_count = 0
     old_episode = None
 
-    level_controller = level(scenario_info[0], scenario_info[1].split(","))
+    agent_coordinator = coordinator("../scenarios/grade_based_task/")
+    # agent_coordinator.build_all_scenarios()
+    counter = cycle(
+        tuple([i * 1 for i in range(agent_coordinator.get_num_of_grades())])
+    )
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-        if (episode.index % (num_episodes / level_controller.get_num_of_levels())) == 0:
-            level_controller.next()
-            print(level_controller.get_level())
-            observations = env.reset(True, level_controller.get_task(), level_controller.get_level())
-            print(level_controller.__str__())
+        if (
+            episode.index % (num_episodes / agent_coordinator.get_num_of_grades())
+        ) == 0:
+            agent_coordinator.next_grade(next(counter) + 1)
+            observations = env.reset(True, agent_coordinator.get_grade())
+            # print(agent_coordinator)
         else:
             observations = env.reset()
+            # print(agent_coordinator)
 
         state = observations[AGENT_ID]
         dones, infos = {"__all__": False}, None
@@ -145,7 +151,7 @@ def train(
             log_dir=log_dir,
             max_episode_steps=max_episode_steps,
             episode_count=episode_count,
-            level_controller=level_controller,
+            agent_coordinator=agent_coordinator,
             **eval_info,
             **env.info,
         )

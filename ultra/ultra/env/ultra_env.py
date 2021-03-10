@@ -22,7 +22,7 @@
 import glob
 import math
 import os
-from itertools import cycle
+from itertools import cycle, chain
 from sys import path
 
 import numpy as np
@@ -184,25 +184,27 @@ class UltraEnv(HiWayEnv):
 
         return observations, rewards, agent_dones, infos
 
-    def reset(self, switch=False, task=None, level=None):
+    def reset(self, switch=False, grade=None):
         if switch:
-            self.scenarios = self.get_task(task, level)
-            if not self.eval_mode:
-                #print("HELLOOOOOOOOOOOOOOOOOOOOOOOOO")
-                _scenarios = glob.glob(f"{self.scenarios['train']}")
-                #print(_scenarios)
-            else:
-                #print("BYEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-                _scenarios = glob.glob(f"{self.scenarios['test']}")
-                #print(_scenarios)
-            self.scenarios_iterator = Scenario.scenario_variations(
+            _scenarios = []
+            for task, level in grade:
+                self.scenarios = self.get_task(task, level)
+                if not self.eval_mode:
+                    _scenarios.append(list(glob.glob(f"{self.scenarios['train']}")))
+                else:
+                    _scenarios.append(list(glob.glob(f"{self.scenarios['test']}")))
+
+            _scenarios = list(chain(*_scenarios))
+            # print(_scenarios)
+
+            self._scenarios_iterator = Scenario.scenario_variations(
                 _scenarios,
                 list(self.agent_specs.keys()),
                 True,  # shuffle_scenarios
             )
 
-        scenario = next(self.scenarios_iterator)
-        print(scenario)
+        scenario = next(self._scenarios_iterator)
+        # print(scenario)
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
@@ -213,20 +215,6 @@ class UltraEnv(HiWayEnv):
         }
 
         return observations
-
-    # def reset(self):
-    #     scenario = next(self._scenarios_iterator)
-    #     print(scenario)
-
-    #     self._dones_registered = 0
-    #     env_observations = self._smarts.reset(scenario)
-
-    #     observations = {
-    #         agent_id: self._agent_specs[agent_id].observation_adapter(obs)
-    #         for agent_id, obs in env_observations.items()
-    #     }
-
-    #     return observations
 
     def get_task(self, task_id, task_level):
         base_dir = os.path.join(os.path.dirname(__file__), "../")

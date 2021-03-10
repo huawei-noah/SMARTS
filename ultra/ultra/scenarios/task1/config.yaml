@@ -18,7 +18,7 @@ levels:
            specs: [[70kmh,p-test,1]]
   no-traffic: # low-density is just a dummy distribution for no-traffic
     train:
-      total: 10000
+      total: 100
       intersection_types:
         2lane_t:
            percent: 0.5
@@ -27,7 +27,7 @@ levels:
            percent: 0.5
            specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
     test:
-      total: 200
+      total: 50
       intersection_types:
         2lane_c:
            percent: 0.5
@@ -37,7 +37,7 @@ levels:
            specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
   easy:
     train:
-      total: 10000
+      total: 100
       intersection_types:
         2lane_t:
            percent: 0.2
@@ -58,7 +58,7 @@ levels:
                    [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
     test:
-      total: 200
+      total: 50
       intersection_types:
         2lane_c:
            percent: 0.5
@@ -74,7 +74,7 @@ levels:
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
   hard:
     train:
-      total: 10000
+      total: 100
       intersection_types:
         2lane_t:
            percent: 0.2
@@ -96,7 +96,7 @@ levels:
                   [50kmh,low-density,0.01],[70kmh,low-density,0.01],[100kmh,low-density,0.01], # 3%
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01]] #3%
     test:
-      total: 200
+      total: 50
       intersection_types:
         2lane_c:
            percent: 0.5

@@ -58,7 +58,7 @@ def evaluation_check(
     timestep_sec,
     headless,
     log_dir,
-    level_controller,
+    agent_coordinator=None,
 ):
     agent_itr = episode.get_itr(agent_id)
 
@@ -85,7 +85,7 @@ def evaluation_check(
                     headless=headless,
                     timestep_sec=timestep_sec,
                     log_dir=log_dir,
-                    level_controller=level_controller,
+                    agent_coordinator=agent_coordinator,
                 )
             ]
         )[0]
@@ -112,7 +112,7 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
-    level_controller,
+    agent_coordinator=None,
     explore=False,
 ):
 
@@ -139,7 +139,7 @@ def evaluate(
     logs = []
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-        observations = env.reset(True, level_controller.get_task(), level_controller.get_level())
+        observations = env.reset(True, agent_coordinator.get_grade())
         state = observations[agent_id]
         dones, infos = {"__all__": False}, None
 

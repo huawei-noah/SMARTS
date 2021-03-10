@@ -1,0 +1,4 @@
+grades:
+  1: [[1,easy]] #[[<task>,<level>]]
+  2: [[1,easy],[1,hard]]
+  # 3: [[1,easy],[1,hard],[1,hijack]]
