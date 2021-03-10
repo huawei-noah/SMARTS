@@ -124,7 +124,7 @@ class Episode:
         experiment_name=None,
         etag=None,
         tb_writer=None,
-        last_eval_iteration=None,
+        last_eval_iterations=defaultdict(lambda: None),
         log_dir=None,
     ):
         self.info = defaultdict(lambda: defaultdict(lambda: LogInfo()))
@@ -153,7 +153,7 @@ class Episode:
         self.steps = 1
         self.active_tag = None
         self.tb_writer = tb_writer
-        self.last_eval_iteration = last_eval_iteration
+        self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
 
     @property
@@ -175,8 +175,8 @@ class Episode:
     def get_itr(self, agent_id):
         return self.agents_itr[agent_id]
 
-    def checkpoint_dir(self, iteration):
-        path = f"{self.model_dir}/{iteration}"
+    def checkpoint_dir(self, agent_id, iteration):
+        path = f"{self.model_dir}/{agent_id}/{iteration}"
         self.make_dir(path)
         return path
 
@@ -220,13 +220,23 @@ class Episode:
         if not os.path.exists(self.ep_log_dir):
             os.makedirs(self.ep_log_dir)
 
-    def record_step(self, agent_id, infos, rewards, total_step=0, loss_output=None):
-        if loss_output:
-            self.log_loss(step=total_step, agent_id=agent_id, loss_output=loss_output)
-        self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
-        self.info[self.active_tag][agent_id].step()
+    def record_step(
+        self, agent_ids_to_record, infos, rewards, total_step=0, loss_outputs=None
+    ):
+        # Record the data for each agent ID.
+        for agent_id in agent_ids_to_record:
+            if loss_outputs:
+                self.log_loss(
+                    step=total_step,
+                    agent_id=agent_id,
+                    loss_output=loss_outputs[agent_id],
+                )
+            self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
+            self.info[self.active_tag][agent_id].step()
+            self.agents_itr[agent_id] += 1
+
+        # Increment this episode's step count.
         self.steps += 1
-        self.agents_itr[agent_id] += 1
 
     def record_episode(self):
         for _, agent_info in self.info[self.active_tag].items():
@@ -291,7 +301,7 @@ def episodes(n, etag=None, log_dir=None):
     ) as table:
         tb_writer = None
         experiment_name = None
-        last_eval_iteration = None
+        last_eval_iterations = defaultdict(lambda: None)
         eval_count = 0
         all_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [])))
         agents_itr = defaultdict(lambda: 0)
@@ -302,14 +312,14 @@ def episodes(n, etag=None, log_dir=None):
                 tb_writer=tb_writer,
                 etag=etag,
                 agents_itr=agents_itr,
-                last_eval_iteration=last_eval_iteration,
+                last_eval_iterations=last_eval_iterations,
                 all_data=all_data,
                 eval_count=eval_count,
                 log_dir=log_dir,
             )
             yield e
             tb_writer = e.tb_writer
-            last_eval_iteration = e.last_eval_iteration
+            last_eval_iterations = e.last_eval_iterations
             experiment_name = e.experiment_name
             all_data = e.all_data
             eval_count = e.eval_count

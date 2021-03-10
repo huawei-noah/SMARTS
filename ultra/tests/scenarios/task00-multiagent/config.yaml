@@ -3,9 +3,12 @@ levels:
     train:
       total: 1
       ego_missions:
-        # left turn from south to west
-      - start: south-SN
+      - start: south-SN  # Turn left going from South to West.
         end:   west-EW
+      - start: west-WE   # Turn right going from West to South.
+        end:   south-NS
+      - start: east-EW   # Turn left going from East to South.
+        end:   south-NS
       intersection_types:
         2lane_t:
            percent: 1
@@ -13,8 +16,7 @@ levels:
     test:
       total: 1
       ego_missions:
-        # left turn from south to west
-      - start: south-SN
+      - start: south-SN  # Turn left going from South to West.
         end:   west-EW
       intersection_types:
         2lane_t:
@@ -24,9 +26,12 @@ levels:
     train:
       total: 1
       ego_missions:
-        # left turn from south to west
-      - start: south-SN
+      - start: south-SN  # Turn left going from South to West.
         end:   west-EW
+      - start: west-WE   # Turn right going from West to South.
+        end:   south-NS
+      - start: east-EW   # Turn left going from East to South.
+        end:   south-NS
       intersection_types:
         2lane_t:
            percent: 1
@@ -34,8 +39,7 @@ levels:
     test:
       total: 1
       ego_missions:
-        # left turn from south to west
-      - start: south-SN
+      - start: south-SN  # Turn left going from South to West.
         end:   west-EW
       intersection_types:
         2lane_t:
@@ -46,9 +50,12 @@ levels:
     train:
       total: 5
       ego_missions:
-        # left turn from south to west
-      - start: south-SN
+      - start: south-SN  # Turn left going from South to West.
         end:   west-EW
+      - start: west-WE   # Turn right going from West to South.
+        end:   south-NS
+      - start: east-EW   # Turn left going from East to South.
+        end:   south-NS
       intersection_types:
         2lane_t:
           percent: 0.2
@@ -71,8 +78,7 @@ levels:
     test:
       total: 2
       ego_missions:
-        # left turn from south to west
-      - start: south-SN
+      - start: south-SN  # Turn left going from South to West.
         end:   west-EW
       intersection_types:
         2lane_c:

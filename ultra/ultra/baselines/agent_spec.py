@@ -57,12 +57,16 @@ class BaselineAgentSpec(AgentSpec):
         task=None,
         max_episode_steps=1200,
         experiment_dir=None,
+        agent_id="",
     ):
         if experiment_dir:
-            print(f"LOADING SPEC from {experiment_dir}/spec.pkl")
+            print(
+                f"Loading spec for {agent_id} from {experiment_dir}/agent_metadata.pkl"
+            )
+            with open(f"{experiment_dir}/agent_metadata.pkl", "rb") as metadata_file:
+                agent_metadata = dill.load(metadata_file)
+                spec = agent_metadata["agent_specs"][agent_id]
 
-            with open(f"{experiment_dir}/spec.pkl", "rb") as input:
-                spec = dill.load(input)
                 new_spec = AgentSpec(
                     interface=spec.interface,
                     agent_params=dict(
@@ -73,6 +77,7 @@ class BaselineAgentSpec(AgentSpec):
                     observation_adapter=spec.observation_adapter,
                     reward_adapter=spec.reward_adapter,
                 )
+
                 spec = new_spec
         else:
             adapter = BaselineAdapter(agent_type=agent_type)

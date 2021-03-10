@@ -60,7 +60,7 @@ class UltraPackageTest(unittest.TestCase):
                 [
                     train.remote(
                         scenario_info=("00", "eval_test"),
-                        policy_class=policy_class,
+                        policy_classes=[policy_class],
                         num_episodes=1,
                         max_episode_steps=2,
                         eval_info={
