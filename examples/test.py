@@ -1,5 +1,5 @@
-from smarts.core.smarts import SMARTS
 from envision.client import Client as Envision
+from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 for i in range(2):

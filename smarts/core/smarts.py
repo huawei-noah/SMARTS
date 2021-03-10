@@ -475,7 +475,7 @@ class SMARTS(ShowBase):
             self._bullet_client = None
 
         super().destroy()
-    
+
     def __del__(self):
         self.destroy()
 
