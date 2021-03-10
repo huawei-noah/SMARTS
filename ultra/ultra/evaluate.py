@@ -54,50 +54,55 @@ def evaluation_check(
     headless,
     log_dir,
 ):
-    agent_iterations = {agent_id: episode.get_itr(agent_id) for agent_id in agent_ids}
-    lowest_agent_iteration = min(agent_iterations.values())
+    # Evaluate agents that have reached the eval_rate.
+    agent_ids_to_evaluate = [
+        agent_id
+        for agent_id in agent_ids
+        if (episode.get_itr(agent_id) + 1) % eval_rate == 0
+        and episode.last_eval_iterations[agent_id] != episode.get_itr(agent_id)
+    ]
 
-    # Only perform evaluation if the agent who has observed the least observations
-    # (iterations) has observed enough observations to perform the evaluation.
-    if ((lowest_agent_iteration + 1) % eval_rate == 0) and (
-        episode.last_eval_iteration != lowest_agent_iteration
-    ):
-        # Get the checkpoint directories for each agent.
-        checkpoint_dirs = {
-            agent_id: episode.checkpoint_dir(agent_id, agent_iteration)
-            for agent_id, agent_iteration in agent_iterations.items()
-        }
+    # Skip evaluation if there are no agents needing an evaluation.
+    if len(agent_ids_to_evaluate) < 1:
+        return
 
-        # Save each agent.
-        for agent_id, checkpoint_dir in checkpoint_dirs.items():
-            agents[agent_id].save(checkpoint_dir)
+    episode.eval_mode()
+    evaluation_data = {}
 
-        # Put the episode in evaluation mode, run the evaluation to obtain the
-        # evaluation results, increment the number of evaluations performed,
-        # set the episode's last_eval_iteration, record data to tensorboard,
-        # and put the episode back in training mode.
-        episode.eval_mode()
-        episode.info[episode.active_tag] = ray.get(
-            [
-                evaluate.remote(
-                    seed=episode.eval_count,
-                    experiment_dir=episode.experiment_dir,
-                    agent_ids=agent_ids,
-                    policy_classes=policy_classes,
-                    checkpoint_dirs=checkpoint_dirs,
-                    scenario_info=scenario_info,
-                    num_episodes=eval_episodes,
-                    max_episode_steps=max_episode_steps,
-                    headless=headless,
-                    timestep_sec=timestep_sec,
-                    log_dir=log_dir,
-                )
-            ]
-        )[0]
+    for agent_id in agent_ids_to_evaluate:
+        # Get the checkpoint directory for the current agent and save its model.
+        checkpoint_directory = episode.checkpoint_dir(
+            agent_id, episode.get_itr(agent_id)
+        )
+        agents[agent_id].save(checkpoint_directory)
+
+        # Perform the evaluation on this agent and save the data.
+        evaluation_data.update(
+            ray.get(
+                [
+                    evaluate.remote(
+                        seed=episode.eval_count,
+                        experiment_dir=episode.experiment_dir,
+                        agent_ids=[agent_id],
+                        policy_classes={agent_id: policy_classes[agent_id]},
+                        checkpoint_dirs={agent_id: checkpoint_directory},
+                        scenario_info=scenario_info,
+                        num_episodes=eval_episodes,
+                        max_episode_steps=max_episode_steps,
+                        headless=headless,
+                        timestep_sec=timestep_sec,
+                        log_dir=log_dir,
+                    )
+                ]
+            )[0]
+        )
         episode.eval_count += 1
-        episode.last_eval_iteration = lowest_agent_iteration
-        episode.record_tensorboard()
-        episode.train_mode()
+        episode.last_eval_iterations[agent_id] = episode.get_itr(agent_id)
+
+    # Put the evaluation data for all agents into the episode and record the TensorBoard.
+    episode.info[episode.active_tag] = evaluation_data
+    episode.record_tensorboard()
+    episode.train_mode()
 
 
 # Number of GPUs should be split between remote functions.

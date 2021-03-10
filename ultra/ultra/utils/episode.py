@@ -115,7 +115,7 @@ class Episode:
         experiment_name=None,
         etag=None,
         tb_writer=None,
-        last_eval_iteration=None,
+        last_eval_iterations=defaultdict(lambda: None),
         log_dir=None,
     ):
         self.info = defaultdict(lambda: defaultdict(lambda: LogInfo()))
@@ -144,7 +144,7 @@ class Episode:
         self.steps = 1
         self.active_tag = None
         self.tb_writer = tb_writer
-        self.last_eval_iteration = last_eval_iteration
+        self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
 
     @property
@@ -292,7 +292,7 @@ def episodes(n, etag=None, log_dir=None):
     ) as table:
         tb_writer = None
         experiment_name = None
-        last_eval_iteration = None
+        last_eval_iterations = defaultdict(lambda: None)
         eval_count = 0
         all_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [])))
         agents_itr = defaultdict(lambda: 0)
@@ -303,14 +303,14 @@ def episodes(n, etag=None, log_dir=None):
                 tb_writer=tb_writer,
                 etag=etag,
                 agents_itr=agents_itr,
-                last_eval_iteration=last_eval_iteration,
+                last_eval_iterations=last_eval_iterations,
                 all_data=all_data,
                 eval_count=eval_count,
                 log_dir=log_dir,
             )
             yield e
             tb_writer = e.tb_writer
-            last_eval_iteration = e.last_eval_iteration
+            last_eval_iterations = e.last_eval_iterations
             experiment_name = e.experiment_name
             all_data = e.all_data
             eval_count = e.eval_count

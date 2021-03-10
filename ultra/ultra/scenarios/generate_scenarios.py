@@ -462,7 +462,6 @@ def build_scenarios(
         task_config = yaml.safe_load(task_file)
         print(f"{root_path}/{task}/config.yaml")
 
-    ego_missions = task_config["ego_missions"]
     level_config = task_config["levels"][level_name]
     scenarios_dir = os.path.dirname(os.path.realpath(__file__))
     task_dir = f"{scenarios_dir}/{task}"
@@ -481,6 +480,13 @@ def build_scenarios(
     start = time.time()
     for mode, mode_seeds in splitted_seeds.items():
         combinations = []
+
+        # Obtain the ego missions specified for this mode and ensure
+        # that test scenarios only have one ego mission.
+        ego_missions = level_config[mode]["ego_missions"]
+        assert not (
+            mode == "test" and (len(ego_missions) != 1)
+        ), "Test scenarios must have one ego mission."
 
         prev_split = 0
         main_seed_count = 0

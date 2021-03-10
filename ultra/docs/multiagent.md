@@ -11,37 +11,40 @@ The following steps will show how to create a multi-agent task with 4 agents.
    ```sh
    $ scl scenario build-all ultra/scenarios/pool/
    ```
-2. Create a multi-agent task (note that for simplicity, this example task's train and test scenarios are the same):
+2. Create a multi-agent task:
    ```sh
    $ touch ultra/scenarios/task0-4agents/config.yaml
    ```
    Edit this `config.yaml` file to include `ego_missions` and `levels`.
    ```yaml
-   ego_missions:  # The number of missions determines the number of agents.
-   - start: south-SN  # Turn left going from South to West.
-     end:   west-EW
-   - start: west-WE   # Turn left going from West to North.
-     end:   north-SN
-   - start: north-NS  # Turn left going from North to East.
-     end:   east-WE
-   - start: east-EW   # Turn left going from East to South.
-     end:   south-NS
    levels:
      no-traffic:  # This is the level name.
        train:
          total: 10  # There will be 10 training scenarios.
+         ego_missions:  # The number of missions determines the number of agents.
+         - start: south-SN  # Turn left going from South to West.
+           end:   west-EW
+         - start: west-WE   # Turn left going from West to North.
+           end:   north-SN
+         - start: north-NS  # Turn left going from North to East.
+           end:   east-WE
+         - start: east-EW   # Turn left going from East to South.
+           end:   south-NS
          intersection_types:
            2lane_c:
              percent: 1.0  # 100% of these scenarios will be 2 lane, c-intersections.
              specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
        test:
          total: 2  # There will be 2 testing scenarios.
+         ego_missions:  # Testing scenarios currenly only support one agent.
+         - start: south-SN  # Turn left going from South to West.
+           end:   west-EW
          intersection_types:
            2lane_c:
              percent: 1.0  # 100% of these scenarios will be 2 lane, c-intersections.
-             specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
+             specs: [[50kmh,low-density,0.34],[70kmh,low-density,0.33],[100kmh,low-density,0.33]]
    ```
-   > This will create a task consisting of 12 scenarios (10 training, 2 testing). Each scenario supports 4 agents, and missions are shuffled so that agents do different missions in different scenarios.
+   > This will create a task consisting of 12 scenarios (10 training, 2 testing). Each scenario supports 4 agents, and missions are shuffled so that agents do different missions in different training scenarios. Each agent will be tested separately, attempting to perform a left-turn from the South lane to the West lane in low-density traffic of various speeds.
 3. Add your task to `ultra/config.yaml`:
    ```yaml
      task0-4agents:  # The name of the task.
