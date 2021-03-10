@@ -177,7 +177,7 @@ class EvaluateTest(unittest.TestCase):
     def test_evaluate_cli_multiagent(self):
         log_dir = "tests/output_eval_cli_logs/"
         experiment_dir = glob.glob("tests/multiagent_test_models/*")[0]
-        models = " ".join(glob.glob(os.path.join(experiment_dir, "models/*")))
+        models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00-multiagent --level eval_test --models {models} --experiment-dir {experiment_dir} "

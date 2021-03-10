@@ -74,6 +74,6 @@ $ python ultra/train.py --task 0-4agents --level no-traffic --policy bdqn,bdqn,b
 
 Once training is complete (or deemed sufficient), evaluate your trained agents on the test scenarios of your task.
 ```sh
-$ python ultra/evaluate.py --task 0-4agents --level no-traffic --experiment-dir logs/<your-experiment-directory>/ --models logs/<your-experiment-directory>/models/*
+$ python ultra/evaluate.py --task 0-4agents --level no-traffic --experiment-dir logs/<your-experiment-directory>/ --models logs/<your-experiment-directory>/models/000/
 ```
 > Running ULTRA's evaluation will not work unless an `agent_metadata.pkl` file is available in the experiment directory. Experiments from older versions of ULTRA (< 0.2) do not have this file.
