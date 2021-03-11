@@ -19,12 +19,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import random
-from collections import defaultdict
-
 import numpy as np
+import random
 from scipy.spatial.distance import euclidean
-
+from collections import defaultdict
 from ultra.utils.common import rotate2d_vector
 
 HORIZONTAL = 0
@@ -69,36 +67,6 @@ def extract_social_vehicle_state_pointnet(
     ]
 
 
-def get_social_vehicles(
-    ego_vehicle_pos,
-    ego_vehicle_heading,
-    neighborhood_vehicles,
-    social_vehicle_config,
-    waypoint_paths,
-):
-    extractor_func = social_vehicle_config["social_vehicle_extractor_func"]
-    encoder_key = social_vehicle_config["encoder_key"]
-    if social_vehicle_config["encoder"]["use_leading_vehicles"]:
-        social_vehicles = get_social_vehicles_leading(
-            ego_vehicle_pos=ego_vehicle_pos,
-            ego_vehicle_heading=ego_vehicle_heading,
-            neighborhood_vehicles=neighborhood_vehicles,
-            waypoint_paths=waypoint_paths,
-            extractor_func=extractor_func,
-            **social_vehicle_config["encoder"]["use_leading_vehicles"]
-        )
-    else:
-        social_vehicles = get_social_vehicles_states_sorted_by_distance(
-            ego_vehicle_pos=ego_vehicle_pos,
-            ego_vehicle_heading=ego_vehicle_heading,
-            neighborhood_vehicles=neighborhood_vehicles,
-            social_vehicle_config=social_vehicle_config,
-            extractor_func=extractor_func,
-        )
-    social_vehicles = np.asarray(social_vehicles).astype(np.float32)
-    return social_vehicles
-
-
 def get_social_vehicles_states_sorted_by_distance(
     ego_vehicle_pos,
     ego_vehicle_heading,
@@ -137,6 +105,7 @@ def get_social_vehicles_leading(
 
     # find ego lane information
     ego_wps = [path[0] for path in waypoint_paths]
+
     ego_closest_waypoint, prev_ego_wp = None, None
     ego_closest_waypoint_min_dist = float("inf")
     for i, wp in enumerate(ego_wps):
@@ -145,6 +114,7 @@ def get_social_vehicles_leading(
             prev_ego_wp = ego_wps[max(i - 1, 0)]
             ego_closest_waypoint = wp
             ego_closest_waypoint_min_dist = temp_dist
+
     ego_lane_id = ego_closest_waypoint.lane_id
     ego_lane_index = ego_closest_waypoint.lane_index
 

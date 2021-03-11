@@ -51,12 +51,25 @@ class TrainTest(unittest.TestCase):
         if os.path.exists(log_dir):
             self.assertTrue(True)
 
+    def test_train_cli_multiagent(self):
+        log_dir = "tests/logs"
+        try:
+            os.system(
+                "python ultra/train.py --task 00-multiagent --level easy --episodes 1 --max-episodes-steps 2 --log-dir tests/logs --policy dqn,bdqn,ppo"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
+
+        if os.path.exists(log_dir):
+            self.assertTrue(True)
+
     def test_train_single_agent(self):
         if os.path.exists("tests/logs"):
             shutil.rmtree("tests/logs")
 
         seed = 2
-        policy_class = "ultra.baselines.sac:sac-v0"
+        policy_classes = ["ultra.baselines.sac:sac-v0"]
 
         ray.shutdown()
         try:
@@ -65,7 +78,7 @@ class TrainTest(unittest.TestCase):
                 [
                     train.remote(
                         scenario_info=("00", "easy"),
-                        policy_class=policy_class,
+                        policy_classes=policy_classes,
                         num_episodes=1,
                         max_episode_steps=2,
                         eval_info={
@@ -75,7 +88,46 @@ class TrainTest(unittest.TestCase):
                         timestep_sec=0.1,
                         headless=True,
                         seed=2,
-                        log_dir="ultra/tests/logs",
+                        log_dir="tests/logs",
+                    )
+                ]
+            )
+            ray.shutdown()
+            self.assertTrue(True)
+        except ray.exceptions.WorkerCrashedError as err:
+            print(err)
+            self.assertTrue(False)
+            ray.shutdown()
+
+    def test_train_multiagent(self):
+        if os.path.exists("tests/logs"):
+            shutil.rmtree("tests/logs")
+
+        seed = 2
+        policy_classes = [
+            "ultra.baslines.sac:sac-v0",
+            "ultra.baselines.ppo:ppo-v0",
+            "ultra.baselines.td3:td3-v0",
+        ]
+
+        ray.shutdown()
+        try:
+            ray.init(ignore_reinit_error=True)
+            ray.wait(
+                [
+                    train.remote(
+                        scenario_info=("00-multiagent", "easy"),
+                        policy_classes=policy_classes,
+                        num_episodes=1,
+                        max_episode_steps=2,
+                        eval_info={
+                            "eval_rate": 1000,
+                            "eval_episodes": 2,
+                        },
+                        timestep_sec=0.1,
+                        headless=True,
+                        seed=2,
+                        log_dir="tests/logs",
                     )
                 ]
             )

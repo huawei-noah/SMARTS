@@ -21,9 +21,8 @@
 # THE SOFTWARE.
 import numpy as np
 import torch
-
-from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.configs import Config
+from ultra.baselines.common.replay_buffer import ReplayBuffer
 
 
 class TD3Config(Config):
@@ -36,9 +35,9 @@ class TD3Config(Config):
             social_vehicle_encoder="pointnet_encoder",
             save_codes=[
                 "ultra/src/train.py",
-                "ultra/baselines/ddpg/config.py",
-                "ultra/baselines/ddpg/policy.py",
-                "ultra/baselines/ddpg/fc_model.py",
+                "ultra/baselines/td3/config.py",
+                "ultra/baselines/td3/policy.py",
+                "ultra/baselines/td3/fc_model.py",
                 "ultra/utils/common.py",
                 "ultra/src/adapter.py",
             ],
