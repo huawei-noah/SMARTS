@@ -18,31 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
-import logging
-from tempfile import NamedTemporaryFile
-from subprocess import check_call
 
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
 
 def generate_glb_from_sumo_network(sumo_net_file, out_glb_file):
-    with NamedTemporaryFile() as tf:
-        ## First translate the map's origin to remove huge (imprecise) offsets.
-        ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
-        ## for netconvert options description.
-        try:
-            check_call(["netconvert",
-                        "--offset.disable-normalization=FALSE",
-                        "-s", sumo_net_file,
-                        "-o", tf.name])
-            sumo_net_file = tf.name
-        except Exception as e:
-            logging.getLogger(__file__).warning(
-                "unable to use netconvert tool to normalize coordinates: {}".format(e)
-            )
-        road_network = SumoRoadNetwork.from_file(net_file=sumo_net_file)
-        glb = road_network.build_glb()
-        glb.write_glb(out_glb_file)
+    road_network = SumoRoadNetwork.from_file(net_file=sumo_net_file)
+    glb = road_network.build_glb()
+    glb.write_glb(out_glb_file)
 
 
 if __name__ == "__main__":
