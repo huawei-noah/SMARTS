@@ -17,11 +17,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 from dataclasses import dataclass
 from multiprocessing import Pipe, Process, Queue
 
 import ijson
-import logging
 
 import smarts.core.scenario as scenario
 
@@ -89,7 +89,7 @@ class Traffic_history_service:
             self._request_queue = None
             self._fetch_history_proc.join(timeout=3)
             if self._fetch_history_proc.is_alive():
-                self._log.warning('fetch history process still alive after teardown')
+                self._log.warning("fetch history process still alive after teardown")
             self._fetch_history_proc = None
             self._history_file_path = None
 
