@@ -163,13 +163,11 @@ export default function Simulation({
       while (!stopPolling && playing && !wstate_and_time.done) {
         let wstate, elapsed_times;
         [wstate, elapsed_times] = wstate_and_time.value;
-        if (!stopPolling) {
-          setWorldState(wstate);
-          onElapsedTimesChanged(...elapsed_times);
+        setWorldState(wstate);
+        onElapsedTimesChanged(...elapsed_times);
 
-          // play the frames at 100/40 = 20fps
-          await sleep(50);
-        }
+        // play the frames every 50ms
+        await sleep(50);
         wstate_and_time = await it.next();
       }
     })();
