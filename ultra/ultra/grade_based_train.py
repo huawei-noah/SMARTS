@@ -97,7 +97,7 @@ def train(
         ) == 0:
             agent_coordinator.next_grade(next(counter) + 1)
             observations = env.reset(True, agent_coordinator.get_grade())
-            # print(agent_coordinator)
+            print(agent_coordinator)
         else:
             observations = env.reset()
             # print(agent_coordinator)
@@ -147,18 +147,19 @@ def train(
             episode.record_tensorboard()
             old_episode = None
 
-        evaluation_check(
-            agent=agent,
-            agent_id=AGENT_ID,
-            policy_class=policy_class,
-            episode=episode,
-            log_dir=log_dir,
-            max_episode_steps=max_episode_steps,
-            episode_count=episode_count,
-            agent_coordinator=agent_coordinator,
-            **eval_info,
-            **env.info,
-        )
+        if (eval_info["eval_episodes"] != 0 ):
+            evaluation_check(
+                agent=agent,
+                agent_id=AGENT_ID,
+                policy_class=policy_class,
+                episode=episode,
+                log_dir=log_dir,
+                max_episode_steps=max_episode_steps,
+                episode_count=episode_count,
+                agent_coordinator=agent_coordinator,
+                **eval_info,
+                **env.info,
+            )
         episode_count += 1
 
         env_score_list.append(episode.info[episode.active_tag][AGENT_ID].data["reached_goal"])
