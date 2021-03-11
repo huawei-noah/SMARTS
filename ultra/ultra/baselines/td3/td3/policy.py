@@ -30,12 +30,12 @@ import random
 import numpy as np
 import torch.optim as optim
 
-from ultra.baselines.ddpg.ddpg.fc_model import (
+from ultra.baselines.td3.td3.fc_model import (
     ActorNetwork,
     CriticNetwork,
 )
 from smarts.core.agent import Agent
-from ultra.baselines.ddpg.ddpg.noise import (
+from ultra.baselines.td3.td3.noise import (
     OrnsteinUhlenbeckProcess,
     LinearSchedule,
 )

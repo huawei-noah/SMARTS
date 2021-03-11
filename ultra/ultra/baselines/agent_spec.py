@@ -81,11 +81,11 @@ class BaselineAgentSpec(AgentSpec):
         else:
             base_dir = os.path.join(os.path.dirname(__file__), "../")
             pool_path = os.path.join(base_dir, "agent_pool.json")
-            
+
             policy_class_name = policy_class.__name__
             agent_name = None
 
-            with open(pool_path, 'r') as f:
+            with open(pool_path, "r") as f:
                 data = json.load(f)
                 agents = data["agents"].keys()
                 for agent in agents:

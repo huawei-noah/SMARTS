@@ -23,7 +23,7 @@ from smarts.zoo.registry import register
 from .sac.sac.policy import SACPolicy
 from .ppo.ppo.policy import PPOPolicy
 from .dqn.dqn.policy import DQNPolicy
-from .ddpg.ddpg.policy import TD3Policy
+from .td3.td3.policy import TD3Policy
 from .bdqn.bdqn.policy import BehavioralDQNPolicy
 from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
@@ -31,40 +31,30 @@ from ultra.baselines.agent_spec import BaselineAgentSpec
 register(
     locator="sac-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous,
-        policy_class=SACPolicy,
-        **kwargs
+        action_type=ActionSpaceType.Continuous, policy_class=SACPolicy, **kwargs
     ),
 )
 register(
     locator="ppo-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous,
-        policy_class=PPOPolicy,
-        **kwargs
+        action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy, **kwargs
     ),
 )
 register(
-    locator="ddpg-v0",
+    locator="td3-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous,
-        policy_class=TD3Policy,
-        **kwargs
+        action_type=ActionSpaceType.Continuous, policy_class=TD3Policy, **kwargs
     ),
 )
 register(
     locator="dqn-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous,
-        policy_class=DQNPolicy,
-        **kwargs
+        action_type=ActionSpaceType.Continuous, policy_class=DQNPolicy, **kwargs
     ),
 )
 register(
     locator="bdqn-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Lane,
-        policy_class=BehavioralDQNPolicy,
-        **kwargs
+        action_type=ActionSpaceType.Lane, policy_class=BehavioralDQNPolicy, **kwargs
     ),
 )

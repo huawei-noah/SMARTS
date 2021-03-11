@@ -12,12 +12,6 @@
             "name" : "sac",
             "locator" : "sac-v0"
         },
-        "ddpg" : {
-            "path" : "ultra.baselines.ddpg",
-            "class" : "TD3Policy",
-            "name" : "ddpg",
-            "locator" : "ddpg-v0"
-        },
         "dqn" : {
             "path" : "ultra.baselines.dqn",
             "class" : "DQNPolicy",
@@ -31,10 +25,10 @@
             "locator" : "bdqn-v0"
         },
         "td3" : {
-            "path" : "ultra.baselines.ddpg",
+            "path" : "ultra.baselines.td3",
             "class" : "TD3Policy",
             "name" : "td3",
-            "locator" : "ddpg-v0"
+            "locator" : "td3-v0"
         }
     }
 }
