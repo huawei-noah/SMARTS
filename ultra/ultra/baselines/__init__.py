@@ -32,7 +32,6 @@ register(
     locator="sac-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
         action_type=ActionSpaceType.Continuous,
-        agent_type="sac",
         policy_class=SACPolicy,
         **kwargs
     ),
@@ -41,7 +40,6 @@ register(
     locator="ppo-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
         action_type=ActionSpaceType.Continuous,
-        agent_type="ppo",
         policy_class=PPOPolicy,
         **kwargs
     ),
@@ -50,7 +48,6 @@ register(
     locator="ddpg-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
         action_type=ActionSpaceType.Continuous,
-        agent_type="td3",
         policy_class=TD3Policy,
         **kwargs
     ),
@@ -59,7 +56,6 @@ register(
     locator="dqn-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
         action_type=ActionSpaceType.Continuous,
-        agent_type="dqn",
         policy_class=DQNPolicy,
         **kwargs
     ),
@@ -68,7 +64,6 @@ register(
     locator="bdqn-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
         action_type=ActionSpaceType.Lane,
-        agent_type="bdqn",
         policy_class=BehavioralDQNPolicy,
         **kwargs
     ),

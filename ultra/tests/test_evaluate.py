@@ -315,7 +315,6 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
         agent_id: BaselineAgentSpec(
             action_type=ActionSpaceType.Continuous,
             policy_class=SACPolicy,
-            agent_type="sac",
             max_episode_steps=2,
         )
         for agent_id in agent_ids
