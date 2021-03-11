@@ -106,11 +106,12 @@ class SumoRoadNetwork:
                             "--offset.disable-normalization=FALSE",
                             "-s", net_file,
                             "-o", tf.name])
-                return sumolib.net.readNet(f.name, withInternal=True)
+                return sumolib.net.readNet(tf.name, withInternal=True)
             except Exception as e:
                 logger.warning(
                     "unable to use netconvert tool to normalize coordinates: {}".format(e)
                 )
+                return net_file
 
     @classmethod
     def from_file(cls, net_file):
