@@ -197,7 +197,6 @@ class SumoTrafficSimulation:
                 you were trying to initialize many SUMO instances at
                 once and we were not able to assign unique port
                 numbers to all SUMO processes.
-
                 Check {self._log_file} for hints"""
             )
             raise e
@@ -679,7 +678,6 @@ class SumoTrafficSimulation:
     ):
         """Reserve an area around a location where vehicles cannot spawn until a given vehicle
         is added.
-
         Args:
             vehicle_id: The vehicle to wait for.
             reserved_location: The space the vehicle takes up.

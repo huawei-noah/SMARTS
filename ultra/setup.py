@@ -49,5 +49,6 @@ setup(
         "setuptools>=41.0.0,!=50.0",
         "dill",
         "black==20.8b1",
+        "ray[rllib]==1.0.1.post1",
     ],
 )

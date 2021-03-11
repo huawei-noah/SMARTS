@@ -19,59 +19,44 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import glob
-import math
-import os
 from itertools import cycle
-from sys import path
-
-import numpy as np
-import yaml, inspect
-from scipy.spatial import distance
-
+import glob, yaml
 from smarts.core.scenario import Scenario
-from smarts.env.hiway_env import HiWayEnv
+from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from ultra.baselines.adapter import BaselineAdapter
 from ultra.baselines.common.yaml_loader import load_yaml
+import numpy as np
+from scipy.spatial import distance
+import math, os
+from sys import path
 
 path.append("./ultra")
-from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
+from ultra.utils.common import (
+    get_closest_waypoint,
+    get_path_to_goal,
+    ego_social_safety,
+)
 
 
-class UltraEnv(HiWayEnv):
-    def __init__(
-        self,
-        agent_specs,
-        scenario_info,
-        headless,
-        timestep_sec,
-        seed,
-        eval_mode=False,
-        ordered_scenarios=False,
-    ):
-        self.timestep_sec = timestep_sec
-        self.headless = headless
-        self.scenario_info = scenario_info
-        self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
-        if not eval_mode:
+class RLlibUltraEnv(RLlibHiWayEnv):
+    def __init__(self, config):
+        print(">>> ENV: ", config["eval_mode"])
+        self.scenario_info = config["scenario_info"]
+        self.scenarios = self.get_task(self.scenario_info[0], self.scenario_info[1])
+        self._timestep_sec = config["timestep_sec"]
+        self._seed = config["seed"]
+        if not config["eval_mode"]:
             _scenarios = glob.glob(f"{self.scenarios['train']}")
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
+        config["scenarios"] = _scenarios
         self.ultra_scores = BaselineAdapter.reward_adapter
+        super().__init__(config=config)
 
-        super().__init__(
-            scenarios=_scenarios,
-            agent_specs=agent_specs,
-            headless=headless,
-            timestep_sec=timestep_sec,
-            seed=seed,
-            visdom=False,
-        )
-
-        if ordered_scenarios:
+        if config["ordered_scenarios"]:
             scenario_roots = []
-            for root in _scenarios:
+            for root in config["scenarios"]:
                 if Scenario.is_valid_scenario(root):
                     # The case that this is a scenario root
                     scenario_roots.append(root)
@@ -81,7 +66,7 @@ class UltraEnv(HiWayEnv):
             # Also see `smarts.env.HiwayEnv`
             self._scenarios_iterator = cycle(
                 Scenario.variations_for_all_scenario_roots(
-                    scenario_roots, list(agent_specs.keys())
+                    scenario_roots, list(config["agent_specs"].keys())
                 )
             )
 
@@ -150,10 +135,34 @@ class UltraEnv(HiWayEnv):
 
         observations, rewards, agent_dones, extras = self._smarts.step(agent_actions)
 
+        observations = {
+            agent_id: obs
+            for agent_id, obs in observations.items()
+            if agent_id in agent_actions
+        }
+        rewards = {
+            agent_id: reward
+            for agent_id, reward in rewards.items()
+            if agent_id in agent_actions
+        }
+        scores = {
+            agent_id: score
+            for agent_id, score in extras["scores"].items()
+            if agent_id in agent_actions
+        }
+
         infos = {
             agent_id: {"score": value, "env_obs": observations[agent_id]}
             for agent_id, value in extras["scores"].items()
         }
+
+        # Ensure all contain the same agent_ids as keys
+        assert (
+            agent_actions.keys()
+            == observations.keys()
+            == rewards.keys()
+            == infos.keys()
+        )
 
         for agent_id in observations:
             agent_spec = self._agent_specs[agent_id]
@@ -189,6 +198,10 @@ class UltraEnv(HiWayEnv):
     def info(self):
         return {
             "scenario_info": self.scenario_info,
-            "timestep_sec": self.timestep_sec,
-            "headless": self.headless,
+            "timestep_sec": self._timestep_sec,
+            "headless": self._headless,
         }
+
+    @property
+    def seed(self):
+        return self._seed

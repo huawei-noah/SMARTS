@@ -386,6 +386,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                     reward=rewards[agent_id],
                     next_state=next_observations[agent_id],
                     done=dones[agent_id],
+                    info=infos[agent_id],
                 )
                 for agent_id in active_agent_ids
             }

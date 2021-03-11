@@ -166,6 +166,7 @@ def train(
                     reward=rewards[agent_id],
                     next_state=next_observations[agent_id],
                     done=dones[agent_id],
+                    info=infos[agent_id],
                 )
                 for agent_id in active_agent_ids
             }
@@ -206,7 +207,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--policy",
-        help="Policies available : [ppo, sac, ddpg, dqn, bdqn]",
+        help="Policies available : [ppo, sac, td3, dqn, bdqn]",
         type=str,
         default="sac",
     )

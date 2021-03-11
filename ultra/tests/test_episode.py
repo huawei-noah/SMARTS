@@ -72,6 +72,7 @@ class EpisodeTest(unittest.TestCase):
                             reward=rewards[AGENT_ID],
                             next_state=next_state,
                             done=dones[AGENT_ID],
+                            info=infos[AGENT_ID],
                         )
                     }
 
@@ -132,6 +133,7 @@ class EpisodeTest(unittest.TestCase):
                         reward=rewards[AGENT_ID],
                         next_state=next_state,
                         done=dones[AGENT_ID],
+                        info=infos[AGENT_ID],
                     )
                     episode.record_step(
                         agent_id=AGENT_ID,

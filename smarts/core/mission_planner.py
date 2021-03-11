@@ -332,7 +332,6 @@ class MissionPlanner:
             default_speed = ego_wps[0][0].speed_limit
         else:
             default_speed = self._mission.task.initial_speed
-
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
             new_wp = replace(ego_wps[0][px], speed_limit=default_speed)

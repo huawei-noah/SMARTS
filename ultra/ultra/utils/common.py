@@ -33,12 +33,20 @@ from scipy.spatial.distance import euclidean
 from skimage.transform import resize
 
 import ultra.utils.geometry as geometry
+from scipy.spatial.distance import euclidean
+import math, datetime
+
+
+def gen_experiment_name():
+    dt = datetime.datetime.today()
+    return f"experiment-{dt.year}.{dt.month}.{dt.day}-{dt.hour}:{dt.minute}:{dt.second}"
 
 
 def rotate2d_vector(vectors, angle):
     ae_cos = np.cos(angle)
     ae_sin = np.sin(angle)
     rot_matrix = np.array([[ae_cos, -ae_sin], [ae_sin, ae_cos]])
+
     vectors_rotated = np.inner(vectors, rot_matrix)
     return vectors_rotated
 
@@ -245,12 +253,11 @@ def ego_social_safety(
 
 
 def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
-
     closest_wp = min(goal_path, key=lambda wp: wp.dist_to(ego_position))
-
     min_dist = float("inf")
     min_dist_idx = -1
     for i, wp in enumerate(goal_path):
+
         if wp.dist_to(ego_position) < min_dist:
             min_dist = wp.dist_to(ego_position)
             min_dist_idx = i
@@ -271,7 +278,6 @@ def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
         ]
 
     waypoints_lookahead = rotate2d_vector(waypoints_lookahead, -ego_heading)
-
     return closest_wp, waypoints_lookahead
 
 

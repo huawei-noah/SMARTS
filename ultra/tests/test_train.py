@@ -107,7 +107,7 @@ class TrainTest(unittest.TestCase):
         policy_classes = [
             "ultra.baslines.sac:sac-v0",
             "ultra.baselines.ppo:ppo-v0",
-            "ultra.baselines.ddpg:ddpg-v0",
+            "ultra.baselines.td3:td3-v0",
         ]
 
         ray.shutdown()
