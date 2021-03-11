@@ -112,7 +112,7 @@ class SumoRoadNetwork:
                 logger.warning(
                     "unable to use netconvert tool to normalize coordinates: {}".format(e)
                 )
-                return net_file
+        return None
 
     @classmethod
     def from_file(cls, net_file):
@@ -121,8 +121,10 @@ class SumoRoadNetwork:
         # loaded into the network graph.
         G = sumolib.net.readNet(net_file, withInternal=True)
         if not cls._check_net_origin(G.getBoundary()):
-            G = cls._shift_coordinates(net_file)
-            assert cls._check_net_origin(G.getBoundary())
+            shifted_G = cls._shift_coordinates(net_file)
+            if shifted_G:
+                assert cls._check_net_origin(shifted_G.getBoundary())
+                G = shifted_G
         return cls(G)
 
     @property
