@@ -22,9 +22,8 @@ import math
 import gym
 import numpy as np
 
-from smarts.core.utils.math import vec_2d, sign
 from smarts.core.coordinates import Heading
-
+from smarts.core.utils.math import sign, vec_2d
 
 DEFAULT_OBSERVATION_SPACE = gym.spaces.Dict(
     {
@@ -191,7 +190,10 @@ def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp
         dist_wp_vehicle_vector = vec_2d(v.position) - vec_2d(nearest_wp.pos)
         # take into account the position of the car instead of its nearest waypoint
         direction_vector = np.array(
-            [math.cos(nearest_wp.heading), math.sin(nearest_wp.heading),]
+            [
+                math.cos(nearest_wp.heading),
+                math.sin(nearest_wp.heading),
+            ]
         ).dot(dist_wp_vehicle_vector)
         dist_to_vehicle = lane_dist + sign(direction_vector) * (
             np.linalg.norm(vec_2d(nearest_wp.pos) - vec_2d(v.position))

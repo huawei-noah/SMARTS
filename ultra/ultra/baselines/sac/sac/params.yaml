@@ -1,0 +1,24 @@
+seed: 2
+action_size: 2
+gamma: 0.99
+critic_lr: 5e-4
+actor_lr: 1e-4
+critic_update_rate: 5
+policy_update_rate: 10
+warmup: 1000
+batch_size: 32
+hidden_units: 512
+tau: 0.005
+logging_freq: 2
+initial_alpha: 0.02
+observation_num_lookahead: 20
+replay_buffer:
+    buffer_size: 1e6
+    batch_size: 32
+social_vehicles:
+    encoder_key: precog_encoder
+    social_policy_hidden_units: 128
+    social_policy_init_std: 0.5
+    social_capacity: 10
+    num_social_features: 4
+    seed: 2

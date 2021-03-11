@@ -20,13 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import unittest
-from ultra.baselines.ppo.ppo.policy import PPOPolicy
-import gym, ray
-from ultra.utils.episode import episodes
+
+import gym
 import numpy as np
-from ultra.baselines.agent_spec import BaselineAgentSpec
-from smarts.core.controllers import ActionSpaceType
+import ray
+
 from smarts.zoo.registry import make
+from ultra.utils.episode import episodes
 
 AGENT_ID = "001"
 timestep_sec = 0.1
@@ -65,13 +65,16 @@ class EpisodeTest(unittest.TestCase):
                     observations, rewards, dones, infos = env.step({AGENT_ID: action})
                     next_state = observations[AGENT_ID]
                     # observations[AGENT_ID]["ego"].update(rewards[AGENT_ID]["log"])
-                    loss_output = agent.step(
-                        state=state,
-                        action=action,
-                        reward=rewards[AGENT_ID],
-                        next_state=next_state,
-                        done=dones[AGENT_ID],
-                    )
+                    loss_outputs = {
+                        AGENT_ID: agent.step(
+                            state=state,
+                            action=action,
+                            reward=rewards[AGENT_ID],
+                            next_state=next_state,
+                            done=dones[AGENT_ID],
+                            info=infos[AGENT_ID],
+                        )
+                    }
 
                     for key in result.keys():
                         if key in observations[AGENT_ID]:
@@ -83,27 +86,27 @@ class EpisodeTest(unittest.TestCase):
                             result[key] += rewards[AGENT_ID]
 
                     episode.record_step(
-                        agent_id=AGENT_ID,
+                        agent_ids_to_record=[AGENT_ID],
                         infos=infos,
                         rewards=rewards,
                         total_step=total_step,
-                        loss_output=loss_output,
+                        loss_outputs=loss_outputs,
                     )
 
                     state = next_state
                     total_step += 1
             env.close()
             episode.record_episode()
-            return result, episode
+            return result, episode.info
 
         ray.init(ignore_reinit_error=True)
-        result, episode = ray.get(run_experiment.remote())
+        result, episode_info = ray.get(run_experiment.remote())
         for key in result.keys():
             self.assertTrue(True)
             # if key in ["episode_reward", "goal_dist"]:
-            #     print(abs(result[key] - episode.info["Train"].data[key]) <= 0.001)
+            #     print(abs(result[key] - episode_info["Train"][AGENT_ID].data[key]) <= 0.001)
             #     # self.assertTrue(
-            #     #     abs(result[key] - episode.info["Train"].data[key]) <= 0.001
+            #     #     abs(result[key] - episode_info["Train"][AGENT_ID].data[key]) <= 0.001
             #     # )
 
     @unittest.skip
@@ -112,7 +115,7 @@ class EpisodeTest(unittest.TestCase):
         def run_experiment():
             agent, env = prepare_test_env_agent()
             episode_count = 0
-            log_dir = "ultra/tests/logs"
+            log_dir = "tests/logs"
             for episode in episodes(2, etag="Train", dir=log_dir):
                 observations = env.reset()
                 total_step = 0
@@ -130,6 +133,7 @@ class EpisodeTest(unittest.TestCase):
                         reward=rewards[AGENT_ID],
                         next_state=next_state,
                         done=dones[AGENT_ID],
+                        info=infos[AGENT_ID],
                     )
                     episode.record_step(
                         agent_id=AGENT_ID,

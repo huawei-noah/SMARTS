@@ -1,4 +1,5 @@
 import numpy as np
+
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType

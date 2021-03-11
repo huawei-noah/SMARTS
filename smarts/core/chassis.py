@@ -270,12 +270,14 @@ class AckermannChassis(Chassis):
             if self._client.getBodyInfo(i)[1].decode("ascii") == "plane":
                 self._plane_id = self._client.getBodyUniqueId(i)
                 self._road_wheel_frictions = {
-                    "road_friction": self._client.getDynamicsInfo(self._plane_id, -1,)[
-                        1
-                    ],
-                    "wheel_friction": self._client.getDynamicsInfo(self._bullet_id, 2,)[
-                        1
-                    ],
+                    "road_friction": self._client.getDynamicsInfo(
+                        self._plane_id,
+                        -1,
+                    )[1],
+                    "wheel_friction": self._client.getDynamicsInfo(
+                        self._bullet_id,
+                        2,
+                    )[1],
                 }
                 break
 
@@ -285,7 +287,9 @@ class AckermannChassis(Chassis):
             tire_parameters_filepath
         ):
             self._client.changeDynamics(
-                self._plane_id, -1, lateralFriction=1e-16,
+                self._plane_id,
+                -1,
+                lateralFriction=1e-16,
             )
             with open(tire_parameters_filepath, "r") as tire_file:
                 self._tire_parameters = yaml.safe_load(tire_file)
@@ -365,7 +369,10 @@ class AckermannChassis(Chassis):
         heading = Heading(yaw_from_quaternion(orn))
 
         pose = Pose.from_explicit_offset(
-            [0, 0, 0], np.array(pos), heading, local_heading=Heading(0),
+            [0, 0, 0],
+            np.array(pos),
+            heading,
+            local_heading=Heading(0),
         )
         return pose
 
@@ -592,7 +599,10 @@ class AckermannChassis(Chassis):
             self._bullet_id,
             [
                 self._joints[name].index
-                for name in ["front_left_steer_joint", "front_right_steer_joint",]
+                for name in [
+                    "front_left_steer_joint",
+                    "front_right_steer_joint",
+                ]
             ],
             pybullet.POSITION_CONTROL,
             targetPositions=[

@@ -17,21 +17,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import random as rand
 import logging
-
+import random as rand
 from collections import defaultdict
-from typing import Dict, Sequence
 from dataclasses import dataclass, replace
+from typing import Dict, Sequence
 
 import numpy as np
 from shapely.geometry import Point, Polygon
 
 from smarts.core.mission_planner import Mission, MissionPlanner
 from smarts.core.scenario import Start, default_entry_tactic
+from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic
-from smarts.core.utils.math import clip, squared_dist
 
 
 @dataclass
@@ -146,7 +145,7 @@ class TrapManager:
             )
             for v_id in sorted_vehicle_ids:
                 # Skip the capturing process if history traffic is used
-                if sim.scenario.traffic_history:
+                if sim.scenario.traffic_history_service.is_in_use:
                     break
 
                 vehicle = vehicles[v_id]

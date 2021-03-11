@@ -1,0 +1,22 @@
+action_space_type: continuous
+seed: 765749
+batch_size: 64
+sticky_actions: 1
+lr: 1e-5
+train_step: 4
+prev_action_size: 2
+target_update: 0.01
+warmup: 10000
+gamma: 0.99
+use_ddqn: True
+observation_num_lookahead: 20
+replay_buffer:
+  buffer_size: 1e6
+  batch_size: 64
+social_vehicles:
+    encoder_key: precog_encoder
+    social_policy_hidden_units: 128
+    social_policy_init_std: 0.5
+    social_capacity: 5
+    num_social_features: 4
+    seed: 2

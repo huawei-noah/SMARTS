@@ -1,0 +1,48 @@
+tasks:
+  task00: # unittest
+    easy:
+      train: "../tests/task/train_mock*"
+      test:  "../tests/task/test_mock*"
+    eval_test:
+      train: "../tests/task/eval_test/eval*"
+      test:  "../tests/task/eval_test/eval*"
+  task00-multiagent: # unittest
+    easy:
+      train: "../tests/task/train_multiagent_mock*"
+      test:  "../tests/task/test_multiagent_mock*"
+    eval_test:
+      train: "../tests/task/eval_test_multiagent/eval*"
+      test:  "../tests/task/eval_test_multiagent/eval*"
+  task0:
+    no-traffic:
+      train: "scenarios/task1/train_no-traffic*"
+      test:  "scenarios/task1/train_no-traffic*"
+    easy:
+      train: "scenarios/task1/train_easy*"
+      test:  "scenarios/task1/train_easy*"
+    medium:
+      train: "scenarios/task1/train_medium*"
+      test:  "scenarios/task1/train_medium*"
+    hard:
+      train: "scenarios/task1/train_hard*"
+      test:  "scenarios/task1/train_hard*"
+  task1:
+    no-traffic:
+      train: "scenarios/task1/train_no-traffic*"
+      test:  "scenarios/task1/test_no-traffic*"
+    easy:
+      train: "scenarios/task1/train_easy*"
+      test:  "scenarios/task1/test_easy*"
+    medium:
+      train: "scenarios/task1/train_medium*"
+      test:  "scenarios/task1/test_medium*"
+    hard:
+      train: "scenarios/task1/train_hard*"
+      test:  "scenarios/task1/test_hard*"
+  task2:
+    lo-hi:
+      train: "scenarios/task2/train_lo-hi*"
+      test:  "scenarios/task2/test_lo-hi*"
+    hi-lo:
+      train: "scenarios/task2/train_hi-lo*"
+      test:  "scenarios/task2/test_hi-lo*"

@@ -1,6 +1,6 @@
 # ULTRA
 
-## Unprotected Left Turn using Reinforcement-learning Agents
+## Unprotected Left Turn for Robust Agents
 
 Ultra provides a gym-based environment using SMARTS for tackling intersection navigation and more specifically unprotected left turn.
 
@@ -20,9 +20,11 @@ Here is the summary of key features:
 Get started by choosing an option below.
 - [Flowchart of ULTRA's interface with SMARTS](docs/_static/ULTRA-flowchart-v1.jpg)
 - [Setting up ULTRA](docs/setup.md)
-- [Train and Evaluate a Basline Agent](docs/getting_started.md)
+- [Train and Evaluate a Baseline Agent](docs/getting_started.md)
 - [Create a Custom Agent](docs/custom_agent.md)
 - [More about ULTRA Agents](docs/agent.md)
+- [ULTRA supports RLlib](docs/rllib.md)
+- [Multi-agent Experiments in ULTRA](docs/multiagent.md)
 
 ### Citing ULTRA
 For a longer introduction to ULTRA, including its purpose, concepts, and benchmarks, please see [ULTRA: A reinforcement learning generatlization benchmark for autonomous driving](https://ml4ad.github.io/files/papers2020/ULTRA:%20A%20reinforcement%20learning%20generalization%20benchmark%20for%20autonomous%20driving.pdf).
@@ -33,7 +35,7 @@ If you use ULTRA in your research, you can use to the following citation.
   author          = {Elsayed, Mohamed and Hassanzadeh, Kimia and Nguyen, Nhat M,
                   and Alban, Montgomery and Zhu, Xiru and Graves, Daniel and
                   Luo, Jun},
-  journal         = { Machine Learning for Autonomous Driving Workshoo, Neural
+  journal         = {Machine Learning for Autonomous Driving Workshoo, Neural
                   Information Processing Systems},
   title           = {ULTRA: A reinforcement learning generalization benchmark
                   for autonomous driving},

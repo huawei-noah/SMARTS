@@ -44,7 +44,12 @@ class KeepLaneAgent(Agent):
 
 
 def run_scenario(
-    scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None,
+    scenarios,
+    sim_name,
+    headless,
+    num_episodes,
+    seed,
+    max_episode_steps=None,
 ):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(

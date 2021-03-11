@@ -27,6 +27,7 @@ agent_list:
           terminal: 0.04807692307692313
           impatience: 0.10817307692307687
           speed: 0.01
+          rate: 1
     - locator: zoo.policies:keep-lane-agent-v0
 
   group_2:
@@ -42,6 +43,7 @@ agent_list:
           terminal: 0.04807692307692313
           impatience: 0.10817307692307687
           speed: 0.01
+          rate: 1
 
     - locator: zoo.policies.open-agent.open_agent:open_agent-v0
       name: open_agent_stable
@@ -55,6 +57,7 @@ agent_list:
           terminal: 0.05
           impatience: 0.2
           speed: 0.01
+          rate: 1
 
     - locator: zoo.policies.open-agent.open_agent:open_agent-v0
       name: open_agent_safe
@@ -68,6 +71,7 @@ agent_list:
           terminal: 0.0
           impatience: 0.0
           speed: 0.01
+          rate: 1
 
   group_3:
     - locator: rl_agent:rl-agent-v0

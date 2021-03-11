@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import pytest
+from helpers.scenario import temp_scenario
 
 import smarts.sstudio.types as t
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -27,9 +28,6 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.sstudio import gen_scenario
-
-from helpers.scenario import temp_scenario
-
 
 AGENT_ID = "006"
 AGENT_ID_2 = "007"
@@ -41,7 +39,10 @@ def scenarios():
         traffic = t.Traffic(
             flows=[
                 t.Flow(
-                    route=t.Route(begin=("west", 1, 0), end=("east", 1, "max"),),
+                    route=t.Route(
+                        begin=("west", 1, 0),
+                        end=("east", 1, "max"),
+                    ),
                     rate=50,
                     actors={t.TrafficActor("car"): 1},
                 )
@@ -57,7 +58,10 @@ def scenarios():
                 ),
             )
         ]
-        scenario = t.Scenario(traffic={"all": traffic}, ego_missions=missions,)
+        scenario = t.Scenario(
+            traffic={"all": traffic},
+            ego_missions=missions,
+        )
 
         gen_scenario(scenario, output_dir=scenario_root)
         yield Scenario.variations_for_all_scenario_roots(
@@ -77,7 +81,10 @@ def empty_scenarios():
                 ),
             )
         ]
-        scenario = t.Scenario(traffic={}, ego_missions=missions,)
+        scenario = t.Scenario(
+            traffic={},
+            ego_missions=missions,
+        )
 
         gen_scenario(scenario, output_dir=scenario_root)
         yield Scenario.variations_for_all_scenario_roots(
@@ -105,7 +112,10 @@ def two_agent_capture_offset_tenth_of_second():
             ),
         ]
 
-        scenario = t.Scenario(traffic={}, ego_missions=missions,)
+        scenario = t.Scenario(
+            traffic={},
+            ego_missions=missions,
+        )
 
         gen_scenario(scenario, output_dir=scenario_root)
         yield Scenario.variations_for_all_scenario_roots(

@@ -17,8 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from ray.rllib.env.multi_agent_env import MultiAgentEnv
 import numpy as np
+from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 import smarts
 from envision.client import Client as Envision
@@ -75,7 +75,8 @@ class RLlibHiWayEnv(MultiAgentEnv):
 
         self._agent_specs = config["agent_specs"]
         self._scenarios_iterator = Scenario.scenario_variations(
-            config["scenarios"], list(self._agent_specs.keys()),
+            config["scenarios"],
+            list(self._agent_specs.keys()),
         )
 
         self._sim_name = config.get("sim_name", None)

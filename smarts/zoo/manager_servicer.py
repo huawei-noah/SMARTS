@@ -18,8 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import cloudpickle
-import grpc
 import logging
 import os
 import pathlib
@@ -27,9 +25,11 @@ import subprocess
 import sys
 import time
 
+import cloudpickle
+import grpc
+
 from smarts.core.utils.networking import find_free_port
-from smarts.zoo import manager_pb2
-from smarts.zoo import manager_pb2_grpc
+from smarts.zoo import manager_pb2, manager_pb2_grpc
 from smarts.zoo import worker as zoo_worker
 
 logging.basicConfig(level=logging.INFO)
