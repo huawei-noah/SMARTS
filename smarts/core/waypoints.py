@@ -102,7 +102,7 @@ class Waypoint:
         if not isinstance(other, Waypoint):
             return False
         return (
-            self.pos.all() == other.pos.all()
+            (self.pos == other.pos).all()
             and self.heading == other.heading
             and self.lane_width == other.lane_width
             and self.speed_limit == other.speed_limit
