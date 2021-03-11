@@ -167,7 +167,10 @@ if __name__ == "__main__":
         default="easy",
     )
     parser.add_argument(
-        "--policy", help="Policies avaliable : [ppo, ddpg, td3]", type=str, default="ppo"
+        "--policy",
+        help="Policies avaliable : [ppo, ddpg, td3]",
+        type=str,
+        default="ppo",
     )
     parser.add_argument(
         "--episodes", help="number of training episodes", type=int, default=1000000
