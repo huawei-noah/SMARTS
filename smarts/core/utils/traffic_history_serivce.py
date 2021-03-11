@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from multiprocessing import Pipe, Process, Queue
 
 import ijson
+import logging
 
 import smarts.core.scenario as scenario
 
@@ -48,6 +49,7 @@ class Traffic_history_service:
         if history_file_path is None:
             return
 
+        self._log = logging.getLogger(self.__class__.__name__)
         send_data_conn, receive_data_conn = Pipe()
         self._receive_data_conn = receive_data_conn
         self._request_queue = Queue()
@@ -86,6 +88,8 @@ class Traffic_history_service:
             self._request_queue.close()
             self._request_queue = None
             self._fetch_history_proc.join(timeout=3)
+            if self._fetch_history_proc.is_alive():
+                self._log.warning('fetch history process still alive after teardown')
             self._fetch_history_proc = None
             self._history_file_path = None
 
