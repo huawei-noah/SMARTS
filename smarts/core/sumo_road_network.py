@@ -92,9 +92,11 @@ class SumoRoadNetwork:
         assert len(bbox) == 4
         return bbox[0] <= 0.0 and bbox[1] <= 0.0 and bbox[2] >= 0.0 and bbox[3] >= 0.0
 
-    @staticmethod
-    def _shift_coordinates(net_file):
+    @classmethod
+    def _shift_coordinates(cls, net_file):
         # TODO: should probably keep the temp file around for subsequent calls...
+        logger = logging.getLogger(cls.__name__)
+        logger.info("normalizing net coordinates...")
         with NamedTemporaryFile() as tf:
             ## Translate the map's origin to remove huge (imprecise) offsets.
             ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
@@ -106,7 +108,7 @@ class SumoRoadNetwork:
                             "-o", tf.name])
                 return sumolib.net.readNet(f.name, withInternal=True)
             except Exception as e:
-                logging.getLogger(__file__).warning(
+                logger.warning(
                     "unable to use netconvert tool to normalize coordinates: {}".format(e)
                 )
 
@@ -118,12 +120,16 @@ class SumoRoadNetwork:
         G = sumolib.net.readNet(net_file, withInternal=True)
         if cls._check_net_origin(G.getBoundary()):
             G = cls._shift_coordinates(net_file)
-            assert(cls._check_net_origin(G.getBoundary())
+            assert cls._check_net_origin(G.getBoundary()
         return cls(G)
 
     @property
     def graph(self):
         return self._graph
+
+    @property
+    def netOffset(self):
+        return self.graph.getLocationOffset()
 
     def _compute_road_polygons(self):
         lane_to_poly = {}
