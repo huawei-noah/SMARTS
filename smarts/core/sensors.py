@@ -38,7 +38,6 @@ from panda3d.core import (
 
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.utils.math import squared_dist, vec_2d
-from smarts.core.utils import dictionary
 from smarts.sstudio.types import CutIn, UTurn
 
 from smarts.core.coordinates import BoundingBox, Heading
@@ -62,7 +61,7 @@ class VehicleObservation(NamedTuple):
     id: str
     position: Tuple[float, float, float]
     bounding_box: BoundingBox
-    heading: Heading
+    heading: float
     speed: float
     edge_id: int
     lane_id: int
@@ -73,7 +72,7 @@ class EgoVehicleObservation(NamedTuple):
     id: str
     position: Tuple[float, float, float]
     bounding_box: BoundingBox
-    heading: Heading
+    heading: float
     speed: float
     steering: float
     yaw_rate: float
@@ -118,7 +117,7 @@ class OccupancyGridMap(NamedTuple):
     metadata: GridMapMetadata
     data: np.ndarray
 
-@dataclass
+
 class DrivableAreaGridMap(NamedTuple):
     metadata: GridMapMetadata
     data: np.ndarray
@@ -131,7 +130,7 @@ class ViaPoint(TypedDict):
     required_speed: float
 
 
-class Vias(TypedDict):
+class Vias(NamedTuple):
     near_via_points: List[ViaPoint]
     """Ordered list of nearby points that have not been hit"""
     hit_via_points: List[ViaPoint]
@@ -154,8 +153,7 @@ class Observation(TypedDict):
     road_waypoints: RoadWaypoints = None
     via_data: Vias = None
 
-@dataclass
-class Collision:
+class Collision(TypedDict):
     collidee_id: str
 
 
@@ -308,8 +306,8 @@ class Sensors:
             logger.warning(f"Agent Id: {agent_id} is done on the first step")
 
 
-        print("999999999999999999999999999999999")
-        print(events)
+        print("9999999999999999999999999323232wq323")
+        # print(ego_vehicle_observation['heading'].source)
         we = Observation(
                 events=events,
                 ego_vehicle_state=ego_vehicle_observation,
@@ -324,12 +322,13 @@ class Sensors:
                 via_data=via_data,
             )
         # print(type(we))
+        # raise KeyError("Hi nice to see you !")
         # print(we)
         print("99999999999999999999999999999999922222")
         exit()
 
         return (
-            ObservationDict(
+            Observation(
                 events=events,
                 ego_vehicle_state=ego_vehicle_observation,
                 neighborhood_vehicle_states=neighborhood_vehicles,
@@ -459,7 +458,7 @@ class Sensors:
 
         vehicle_pos = vehicle.position[:2]
         vehicle_minimum_radius_bounds = (
-            np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
+            np.linalg.norm(vehicle.chassis.dimensions[:2]) * 0.5
         )
         # Check that center of vehicle is still close to route
         # Most lanes are around 3.2 meters wide
@@ -668,7 +667,7 @@ class CameraSensor(Sensor):
 
     def _follow_vehicle(self, camera_np):
         center = self._vehicle.position
-        largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
+        largest_dim = max(self._vehicle._chassis.dimensions)
         camera_np.setPos(center[0], center[1], 20 * largest_dim)
         camera_np.lookAt(*center)
         camera_np.setH(self._vehicle._np.getH())

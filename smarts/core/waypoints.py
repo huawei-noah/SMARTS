@@ -22,7 +22,7 @@ import random
 import warnings
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Sequence, NamedTuple
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -46,9 +46,7 @@ from smarts.core.utils.math import (
     vec_to_radians,
 )
 
-
-@dataclass(frozen=True)
-class Waypoint:
+class Waypoint(NamedTuple):
     pos: np.ndarray  # Point positioned on center of lane
     heading: Heading  # Heading angle of lane at this point (radians)
     lane_width: float  # Width of lane at this point (meters)
@@ -56,11 +54,15 @@ class Waypoint:
     lane_id: str  # ID of lane under waypoint
     lane_index: int  # Index of the lane this waypoint is over. 0 is the outer(right) most lane.
 
-    def dist_to(self, p):
-        """Calculates straight line distance to the given 2D point"""
-        return np.linalg.norm(self.pos - vec_2d(p))
 
-    def relative_heading(self, h: Heading):
+class WaypointMethods():
+    @staticmethod
+    def dist_to(waypoint, p):
+        """Calculates straight line distance to the given 2D point"""
+        return np.linalg.norm(waypoint.pos - vec_2d(p))
+
+    @staticmethod
+    def relative_heading(waypoint, h: Heading):
         """Computes relative heading between the given angle and the waypoint heading
 
         Returns:
@@ -72,43 +74,107 @@ class Waypoint:
             type(h)
         )
 
-        return self.heading.relative_to(h)
+        return waypoint.heading.relative_to(h)
 
-    def signed_lateral_error(self, p):
+    @staticmethod
+    def signed_lateral_error(waypoint, p):
         """Returns the signed lateral distance from the given point to the
         line formed by the waypoint position and the waypoints heading.
 
         Negative signals right of line and Positive left of line
         """
-        return signed_dist_to_line(p, self.pos, self.heading.direction_vector())
+        return signed_dist_to_line(p, waypoint.pos, waypoint.heading.direction_vector())
 
-    @property
+    @staticmethod
     def pose(self):
         return Pose.from_center(tuple(self.pos), self.heading)
 
-    def __hash__(self):
+    def hash(waypoint):
         return hash(
             (
-                *self.pos,
-                self.heading,
-                self.lane_width,
-                self.speed_limit,
-                self.lane_id,
-                self.lane_index,
+                *waypoint.pos,
+                waypoint.heading,
+                waypoint.lane_width,
+                waypoint.speed_limit,
+                waypoint.lane_id,
+                waypoint.lane_index,
             )
         )
 
-    def __eq__(self, other):
+    def eq(waypoint, other):
         if not isinstance(other, Waypoint):
             return False
         return (
-            self.pos.all() == other.pos.all()
-            and self.heading == other.heading
-            and self.lane_width == other.lane_width
-            and self.speed_limit == other.speed_limit
-            and self.lane_id == other.lane_id
-            and self.lane_index == other.lane_index
+            (waypoint.pos == other.pos).all()
+            and waypoint.heading == other.heading
+            and waypoint.lane_width == other.lane_width
+            and waypoint.speed_limit == other.speed_limit
+            and waypoint.lane_id == other.lane_id
+            and waypoint.lane_index == other.lane_index
         )
+
+# @dataclass(frozen=True)
+# class Waypoint:
+#     pos: np.ndarray  # Point positioned on center of lane
+#     heading: Heading  # Heading angle of lane at this point (radians)
+#     lane_width: float  # Width of lane at this point (meters)
+#     speed_limit: float  # Lane speed in m/s
+#     lane_id: str  # ID of lane under waypoint
+#     lane_index: int  # Index of the lane this waypoint is over. 0 is the outer(right) most lane.
+
+#     def dist_to(self, p):
+#         """Calculates straight line distance to the given 2D point"""
+#         return np.linalg.norm(self.pos - vec_2d(p))
+
+#     def relative_heading(self, h: Heading):
+#         """Computes relative heading between the given angle and the waypoint heading
+
+#         Returns:
+#             relative_heading: [-pi..pi]
+#         """
+#         assert isinstance(
+#             h, Heading
+#         ), "Heading h ({}) must be an instance of smarts.core.coordinates.Heading".format(
+#             type(h)
+#         )
+
+#         return self.heading.relative_to(h)
+
+#     def signed_lateral_error(self, p):
+#         """Returns the signed lateral distance from the given point to the
+#         line formed by the waypoint position and the waypoints heading.
+
+#         Negative signals right of line and Positive left of line
+#         """
+#         return signed_dist_to_line(p, self.pos, self.heading.direction_vector())
+
+#     @property
+#     def pose(self):
+#         return Pose.from_center(tuple(self.pos), self.heading)
+
+#     def __hash__(self):
+#         return hash(
+#             (
+#                 *self.pos,
+#                 self.heading,
+#                 self.lane_width,
+#                 self.speed_limit,
+#                 self.lane_id,
+#                 self.lane_index,
+#             )
+#         )
+
+#     def __eq__(self, other):
+#         if not isinstance(other, Waypoint):
+#             return False
+#         return (
+#             self.pos.all() == other.pos.all()
+#             and self.heading == other.heading
+#             and self.lane_width == other.lane_width
+#             and self.speed_limit == other.speed_limit
+#             and self.lane_id == other.lane_id
+#             and self.lane_index == other.lane_index
+#         )
 
 
 LinkedWaypoint = namedtuple(
@@ -495,11 +561,21 @@ class Waypoints:
 
         while not shape_queue.empty():
             shape_wp, previous_wp = shape_queue.get()
+            print("00000000000000000")
+            print("interp_memo", interp_memo)
+            print("shape_wp.wp", shape_wp.wp)
+            print("shape_wp", shape_wp)
+            dummy = {}
+            dummy[shape_wp.wp])            
+            print("2222222222222222222222wwww")
             if shape_wp.wp in interp_memo:
-                if previous_wp is None:
-                    continue
-                previous_wp.nexts.append(interp_memo[shape_wp.wp])
+                # if previous_wp is None:
+                #     continue
+                # previous_wp.nexts.append(interp_memo[shape_wp.wp])
                 continue
+
+            print("END--------------------")
+            exit()
 
             first_linked_waypoint = LinkedWaypoint(
                 wp=Waypoint(

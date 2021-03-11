@@ -39,26 +39,26 @@ with warnings.catch_warnings():
 
 from smarts.core.chassis import AckermannChassis, BoxChassis
 
-from . import glsl, models
-from .agent_manager import AgentManager
-from .bubble_manager import BubbleManager
-from .colors import SceneColors
-from .controllers import ActionSpaceType, Controllers
-from .masks import RenderMasks
-from .motion_planner_provider import MotionPlannerProvider
-from .provider import ProviderState
-from .scenario import Scenario
-from .sensors import Collision
-from .sumo_road_network import SumoRoadNetwork
-from .sumo_traffic_simulation import SumoTrafficSimulation
-from .traffic_history_provider import TrafficHistoryProvider
-from .trap_manager import TrapManager
-from .utils import pybullet
-from .utils.pybullet import bullet_client as bc
-from .utils.visdom_client import VisdomClient
-from .vehicle import VehicleState
-from .vehicle_index import VehicleIndex
-from .waypoints import Waypoints
+from smarts.core import glsl, models
+from smarts.core.agent_manager import AgentManager
+from smarts.core.bubble_manager import BubbleManager
+from smarts.core.colors import SceneColors
+from smarts.core.controllers import ActionSpaceType, Controllers
+from smarts.core.masks import RenderMasks
+from smarts.core.motion_planner_provider import MotionPlannerProvider
+from smarts.core.provider import ProviderState
+from smarts.core.scenario import Scenario
+from smarts.core.sensors import Collision
+from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.traffic_history_provider import TrafficHistoryProvider
+from smarts.core.trap_manager import TrapManager
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.core.utils.visdom_client import VisdomClient
+from smarts.core.vehicle import VehicleState
+from smarts.core.vehicle_index import VehicleIndex
+from smarts.core.waypoints import Waypoints
 
 # disable vsync otherwise we are limited to refresh-rate of screen
 loadPrcFileData("", "sync-video false")
@@ -91,7 +91,7 @@ class SMARTS(ShowBase):
         zoo_addrs=None,
     ):
         try:
-            super().__init__(self, windowType="offscreen")
+            super().__init__(self, windowType="none")
         except Exception as e:
             # Known reasons for this failing:
             raise Exception(
@@ -785,7 +785,7 @@ class SMARTS(ShowBase):
                 [
                     c
                     for c in self._vehicle_collisions[vehicle_id]
-                    if c.collidee_id != self._ground_bullet_id
+                    if c['collidee_id'] != self._ground_bullet_id
                 ]
             )
             > 0
@@ -795,7 +795,7 @@ class SMARTS(ShowBase):
         return [
             c
             for c in self._vehicle_collisions[vehicle_id]
-            if c.collidee_id != self._ground_bullet_id
+            if c['collidee_id'] != self._ground_bullet_id
         ]
 
     def _clear_collisions(self, vehicle_ids):

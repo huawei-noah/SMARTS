@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import glob
 import json
 import logging
@@ -25,11 +28,11 @@ import os
 import pickle
 import random
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, Sequence, Tuple, NamedTuple
 
 import numpy as np
 
@@ -47,8 +50,7 @@ from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
 
 
-@dataclass(frozen=True)
-class Start:
+class Start(NamedTuple):
     position: Tuple[int, int]
     heading: Heading
 
@@ -102,8 +104,7 @@ def default_entry_tactic():
     )
 
 
-@dataclass(frozen=True)
-class Via:
+class Via(NamedTuple):
     lane_id: str
     edge_id: str
     lane_index: int
@@ -112,17 +113,39 @@ class Via:
     required_speed: float
 
 
-@dataclass(frozen=True)
-class Mission:
+class MissionData(NamedTuple):
     start: Start
     goal: Goal
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    route_vias: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str] = ()
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
     task: Tuple[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
+
+class Mission(MissionData):
+    def __new__( 
+        cls, 
+        start, 
+        goal, 
+        route_vias = (), 
+        start_time = 0.1, 
+        entry_tactic = None,
+        task = None,
+        via = ()
+    ):
+        self = super(Mission, cls).__new__(
+            cls,            
+            start=start, 
+            goal=goal, 
+            route_vias=route_vias, 
+            start_time=start_time, 
+            entry_tactic=entry_tactic,
+            task=task,
+            via=via
+        ) 
+        return self
 
     @property
     def has_fixed_route(self):
@@ -140,7 +163,7 @@ class LapMission:
     num_laps: int = None  # None means infinite # of laps
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    route_vias: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str] = ()
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
     via_points: Tuple[Via, ...] = ()
