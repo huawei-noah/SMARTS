@@ -45,7 +45,7 @@ Task 1 Training Scenario|Task 1 Testing Scenario
 
 ## Training a Baseline Agent
 
-Implementations of baseline agents are available in `ultra/baselines/`. Notice, policies such as PPO, SAC, DDPG, and DQN are implemented as baselines. We will run a DQN on Task 1's "easy" level in this example.
+Implementations of baseline agents are available in `ultra/baselines/`. Notice, policies such as PPO, SAC, TD3, and DQN are implemented as baselines. We will run a DQN on Task 1's "easy" level in this example.
 
 - Execute `ultra/train.py`. The following is a list of available arguments.
   - `--task`: The task number to run (default is 1).

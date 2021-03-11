@@ -207,7 +207,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--policy",
-        help="Policies available : [ppo, sac, ddpg, dqn, bdqn]",
+        help="Policies available : [ppo, sac, td3, dqn, bdqn]",
         type=str,
         default="sac",
     )

@@ -46,7 +46,7 @@ class RllibAgent:
                 logger_creator=logger_creator,
             )
         elif self.agent_name == "td3":
-            self.trainer = td3.TD3Trainer(
+            self.trainer = ddpg.TD3Trainer(
                 env=env,
                 config=config,
                 logger_creator=logger_creator,

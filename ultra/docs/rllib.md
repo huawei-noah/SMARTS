@@ -2,7 +2,7 @@
 
 ## Summary
 
-We have integrated Ray's Reinforcement Learning framework inside ULTRA to cater to users who are familiar with RLlib. We have blended ULTRA's environment and agent specifications inside RLlib's configuration to allow their policies to interact with the ULTRA environment. We currently support RLlib's PPO policy, but plan to support SAC, DDPG and DQN.
+We have integrated Ray's Reinforcement Learning framework inside ULTRA to cater to users who are familiar with RLlib. We have blended ULTRA's environment and agent specifications inside RLlib's configuration to allow their policies to interact with the ULTRA environment. We currently support RLlib's PPO policy, but plan to support SAC, TD3 and DQN.
 
 ## Setup
 
