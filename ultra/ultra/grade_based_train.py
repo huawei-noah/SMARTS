@@ -37,6 +37,7 @@ import gym
 import psutil
 import ray
 import torch
+import matplotlib.pyplot as plt
 
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
@@ -46,6 +47,7 @@ from itertools import cycle
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
+plot_name = ""
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
@@ -86,6 +88,8 @@ def train(
     counter = cycle(
         tuple([i * 1 for i in range(agent_coordinator.get_num_of_grades())])
     )
+
+    env_score_list = []
 
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         if (
@@ -156,6 +160,9 @@ def train(
             **env.info,
         )
         episode_count += 1
+
+        env_score_list.append(episode.info[episode.active_tag][AGENT_ID].data["reached_goal"])
+
         if finished:
             break
 
@@ -165,6 +172,29 @@ def train(
     #         print(f"{key}: {summary_log.data[key]}")
 
     # print(f">>>>>>>>>>>>>>>> Scenario success : {scenario_success} <<<<<<<<<<<<<<<<<<")
+
+    x_list = [i for i in range(num_episodes)]
+
+    # print("x axis length:",len(x_list))
+    # print("y axis length:",len(env_score_list))
+    plt.scatter(x_list, env_score_list)
+    plt.plot(x_list, env_score_list)
+
+    # x coordinates for the lines
+    xcoords = [100]
+    # colors for the lines
+    colors = ['r']
+
+    for xc,c in zip(xcoords,colors):
+        plt.axvline(x=xc, label='line at x = {}'.format(xc), c=c)
+
+    plt.legend()
+    
+    plt.savefig(plot_name)
+    # for key, val in summary_log.data.items():
+    #     if not isinstance(val, (list, tuple, np.ndarray)):
+    #         summary_log.data[key] /= num_episodes
+    #         print(f"{key}: {summary_log.data[key]}")
     env.close()
 
 
@@ -221,6 +251,12 @@ if __name__ == "__main__":
         default="logs",
         type=str,
     )
+    parser.add_argument(
+        "--plot-name",
+        help="name of plot",
+        default="foo.png",
+        type=str,
+    )
 
     base_dir = os.path.dirname(__file__)
     pool_path = os.path.join(base_dir, "agent_pool.json")
@@ -236,6 +272,8 @@ if __name__ == "__main__":
 
     # Required string for smarts' class registry
     policy_class = str(policy_path) + ":" + str(policy_locator)
+
+    plot_name = args.plot_name
 
     ray.init()
     ray.wait(

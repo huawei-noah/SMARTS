@@ -37,6 +37,7 @@ import gym
 import psutil
 import ray
 import torch
+import matplotlib.pyplot as plt
 
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
@@ -44,7 +45,7 @@ from ultra.utils.episode import episodes, LogInfo
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
-
+plot_name = ""
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def train(
@@ -78,6 +79,8 @@ def train(
 
     episode_count = 0
     old_episode = None
+
+    env_score_list = []
     for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
         observations = env.reset()
         state = observations[AGENT_ID]
@@ -137,6 +140,9 @@ def train(
             **env.info,
         )
         episode_count += 1
+
+        env_score_list.append(episode.info[episode.active_tag][AGENT_ID].data["reached_goal"])
+
         if finished:
             break
 
@@ -145,7 +151,30 @@ def train(
     #         summary_log.data[key] /= num_episodes
     #         print(f"{key}: {summary_log.data[key]}")
 
-    # print(f">>>>>>>>>>>>>>>> Scenario success : {scenario_success} <<<<<<<<<<<<<<<<<<")
+    #print(f">>>>>>>>>>>>>>>> Scenario success : {scenario_success} <<<<<<<<<<<<<<<<<<")
+
+    x_list = [i for i in range(num_episodes)]
+
+    # print("x axis length:",len(x_list))
+    # print("y axis length:",len(env_score_list))
+    plt.scatter(x_list, env_score_list)
+    plt.plot(x_list, env_score_list)
+
+    # x coordinates for the lines
+    xcoords = [25]
+    # colors for the lines
+    colors = ['r']
+
+    for xc,c in zip(xcoords,colors):
+        plt.axvline(x=xc, label='line at x = {}'.format(xc), c=c)
+
+    plt.legend()
+    
+    plt.savefig("foo.png")
+    # for key, val in summary_log.data.items():
+    #     if not isinstance(val, (list, tuple, np.ndarray)):
+    #         summary_log.data[key] /= num_episodes
+    #         print(f"{key}: {summary_log.data[key]}")
     env.close()
 
 
