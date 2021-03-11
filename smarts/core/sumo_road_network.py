@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from typing import Sequence, Tuple, Union
 from tempfile import NamedTemporaryFile
 from subprocess import check_call
+from functools import lru_cache
 
 import numpy as np
 import trimesh
@@ -93,8 +94,8 @@ class SumoRoadNetwork:
         return bbox[0] <= 0.0 and bbox[1] <= 0.0 and bbox[2] >= 0.0 and bbox[3] >= 0.0
 
     @classmethod
+    @lru_cache(maxsize=1)
     def _shift_coordinates(cls, net_file):
-        # TODO: should probably keep the temp file around for subsequent calls...
         logger = logging.getLogger(cls.__name__)
         logger.info("normalizing net coordinates...")
         with NamedTemporaryFile() as tf:
