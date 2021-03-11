@@ -144,7 +144,7 @@ class BoxChassis(Chassis):
         bullet_client: bc.BulletClient,
     ):
         self._dimensions = dimensions
-        self._bullet_body = BulletBoxShape(self._dimensions.as_lwh, bullet_client)
+        self._bullet_body = BulletBoxShape(self._dimensions, bullet_client)
         self._bullet_constraint = BulletPositionConstraint(
             self._bullet_body, bullet_client
         )

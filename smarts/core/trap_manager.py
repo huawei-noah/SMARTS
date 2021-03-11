@@ -20,7 +20,7 @@
 import logging
 import random as rand
 from collections import defaultdict
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Dict, Sequence
 
 import numpy as np
@@ -80,7 +80,7 @@ class TrapManager:
                 mission = mission_planner.random_endless_mission()
 
             if not mission.entry_tactic:
-                mission = replace(mission, entry_tactic=default_entry_tactic())
+                mission = mission._replace(entry_tactic=default_entry_tactic())
 
             if (
                 not isinstance(mission.entry_tactic, TrapEntryTactic)
@@ -118,7 +118,7 @@ class TrapManager:
         )
 
         def largest_vehicle_plane_dimension(vehicle):
-            return max(*vehicle.chassis.dimensions.as_lwh[:2])
+            return max(*vehicle.chassis.dimensions[:2])
 
         agent_vehicle_comp = [
             (v.position[:2], largest_vehicle_plane_dimension(v), v)
@@ -161,8 +161,7 @@ class TrapManager:
                     (
                         v_id,
                         trap,
-                        replace(
-                            trap.mission,
+                        trap.mission._replace(
                             start=Start(vehicle.position[:2], vehicle.pose.heading),
                         ),
                     )

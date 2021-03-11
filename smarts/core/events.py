@@ -20,13 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
+from typing import Dict, List, NamedTuple
 
-class Events(TypedDict):
-    collisions: bool
+class Events(NamedTuple):
+    collisions: List[Dict[str, str]]
     off_route: bool
     reached_goal: bool
     reached_max_episode_steps: bool

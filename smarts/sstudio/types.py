@@ -22,7 +22,7 @@ import logging
 import random
 from dataclasses import dataclass, field
 from sys import maxsize
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, NamedTuple
 
 from shapely.geometry import GeometryCollection, MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
@@ -30,6 +30,11 @@ from shapely.ops import unary_union
 from smarts.core import gen_id
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.id import SocialAgentId
+
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -371,30 +376,37 @@ class TrapEntryTactic(EntryTactic):
     """The speed that the vehicle starts at when defaulting to emitting"""
 
 
-@dataclass(frozen=True)
-class UTurn:
+
+class UTurn(NamedTuple):
     trigger_radius: int = 100
     """This task will be triggered if any vehicles within this radius"""
     initial_speed: float = None
     """This is the initial speed for the vehicle before it starts u-turn maneuver"""
     target_lane_index: int = 0
 
-    @property
-    def name(self):
-        return "uturn"
+    # @property
+    # def name(self):
+    #     return "uturn"
+    #
+    # Example code to get the instance name:
+    # uturn = UTurn(trigger_radius=0, initial_speed=1, target_lane_index=3)
+    # print(type(uturn).__name__)    
 
 
-@dataclass(frozen=True)
-class CutIn:
+class CutIn(NamedTuple):
     trigger_radius: int = 30
     """This task will be triggered if any vehicles within this radius"""
 
     complete_on_edge_id: Union[str, JunctionEdgeIDResolver] = None
-    """The edge this task will be completed on"""
+    """The edge this task will be completed on."""
 
-    @property
-    def name(self):
-        return "cut_in"
+    # @property
+    # def name(self):
+    #     return "cut_in"
+    #
+    # Example code to get the instance name:
+    # cut_in = CutIn(trigger_radius=0, complete_on_edge_id=None)
+    # print(type(cut_in).__name__)    
 
 
 @dataclass(frozen=True)

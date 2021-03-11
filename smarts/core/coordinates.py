@@ -20,7 +20,7 @@
 import enum
 import math
 from dataclasses import dataclass
-from typing import Optional, Sequence, SupportsFloat, Type, Union
+from typing import Optional, Sequence, SupportsFloat, Type, Union, NamedTuple
 
 import numpy as np
 from typing_extensions import SupportsIndex
@@ -31,23 +31,19 @@ from smarts.core.utils.math import (
     yaw_from_quaternion,
 )
 
-
-@dataclass(frozen=True)
-class BoundingBox:
+class BoundingBox(NamedTuple):
     length: float
     width: float
     height: float
-
-    @property
-    def as_lwh(self):
-        return (self.length, self.width, self.height)
 
 
 class Heading(float):
     """In this space we use radians, 0 is facing north, and turn counter-clockwise."""
 
     def __init__(self, value=...):
-        float.__init__(value)
+        # TODO: Is float.__init__() redundant?
+        # float.__init__(value)
+        pass
 
     def __new__(self, x: Union[SupportsFloat, SupportsIndex] = ...) -> "Heading":
         """A override to constrain heading to -pi to pi"""
