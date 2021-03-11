@@ -25,9 +25,9 @@ import ray.rllib.agents.ddpg as ddpg
 
 
 class RllibAgent:
-    def __init__(self, agent_type, env, config, logger_creator):
-        assert agent_type in ["td3", "ddpg", "dqn", "ppo", "sac"]
-        self.agent_type = agent_type
+    def __init__(self, agent_name, env, config, logger_creator):
+        assert agent_name in ["td3", "ddpg", "ppo"], "Some policies are not currently supported (dqn,sac)"  # dqn and sac not currently supported
+        self.agent_name = agent_name
 
         if self.agent_type == "ppo":
             self.trainer = ppo.PPOTrainer(
@@ -62,7 +62,7 @@ class RllibAgent:
 
     @staticmethod
     def rllib_default_config(agent_type):
-        assert agent_type in ["td3", "ddpg", "dqn", "ppo", "sac"]
+        assert agent_type in ["td3", "ddpg", "ppo"], "Some policies are not currently supported (dqn,sac)" # dqn and sac not currently supported
 
         if agent_type == "ppo":
             return ppo.DEFAULT_CONFIG.copy()

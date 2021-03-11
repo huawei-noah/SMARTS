@@ -67,10 +67,10 @@ def train(
     log_dir,
 ):
 
-    agent_type = policy
-    adapter = BaselineAdapter(agent_type)
+    agent_name = policy
+    adapter = BaselineAdapter(agent_name)
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
-    config = RllibAgent.rllib_default_config(agent_type)
+    config = RllibAgent.rllib_default_config(agent_name)
 
     rllib_policies = {
         "default_policy": (
@@ -141,7 +141,7 @@ def train(
 
     config.update(tune_config)
     agent = RllibAgent(
-        agent_type=agent_type,
+        agent_name=agent_name,
         env=RLlibUltraEnv,
         config=tune_config,
         logger_creator=log_creator(log_dir),
