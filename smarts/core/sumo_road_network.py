@@ -118,9 +118,9 @@ class SumoRoadNetwork:
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
         G = sumolib.net.readNet(net_file, withInternal=True)
-        if cls._check_net_origin(G.getBoundary()):
+        if not cls._check_net_origin(G.getBoundary()):
             G = cls._shift_coordinates(net_file)
-            assert cls._check_net_origin(G.getBoundary()
+            assert cls._check_net_origin(G.getBoundary())
         return cls(G)
 
     @property
