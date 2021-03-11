@@ -23,6 +23,8 @@ import random
 import re
 from dataclasses import dataclass
 from typing import Sequence, Tuple, Union
+from tempfile import NamedTemporaryFile
+from subprocess import check_call
 
 import numpy as np
 import trimesh
@@ -85,12 +87,38 @@ class SumoRoadNetwork:
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
 
+    @staticmethod
+    def _check_net_origin(bbox):
+        assert len(bbox) == 4
+        return bbox[0] <= 0.0 and bbox[1] <= 0.0 and bbox[2] >= 0.0 and bbox[3] >= 0.0
+
+    @staticmethod
+    def _shift_coordinates(net_file):
+        # TODO: should probably keep the temp file around for subsequent calls...
+        with NamedTemporaryFile() as tf:
+            ## Translate the map's origin to remove huge (imprecise) offsets.
+            ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
+            ## for netconvert options description.
+            try:
+                check_call(["netconvert",
+                            "--offset.disable-normalization=FALSE",
+                            "-s", net_file,
+                            "-o", tf.name])
+                return sumolib.net.readNet(f.name, withInternal=True)
+            except Exception as e:
+                logging.getLogger(__file__).warning(
+                    "unable to use netconvert tool to normalize coordinates: {}".format(e)
+                )
+
     @classmethod
     def from_file(cls, net_file):
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
         G = sumolib.net.readNet(net_file, withInternal=True)
+        if cls._check_net_origin(G.getBoundary()):
+            G = cls._shift_coordinates(net_file)
+            assert(cls._check_net_origin(G.getBoundary())
         return cls(G)
 
     @property
