@@ -82,11 +82,12 @@ class Traffic_history_service:
 
     def teardown(self):
         if self.is_in_use:
-            self._request_queue.put(Traffic_history_service.QueueDone)
+            self._request_queue.put(Traffic_history_service.QueueDone())
             self._request_queue.close()
             self._request_queue = None
             self._fetch_history_proc.join(timeout=3)
             self._fetch_history_proc = None
+            self._history_file_path = None
 
     def __del__(self):
         self.teardown()
