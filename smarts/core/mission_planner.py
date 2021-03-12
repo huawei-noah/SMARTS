@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import logging
 import math
 import random
@@ -25,14 +28,14 @@ from typing import Optional
 
 import numpy as np
 
-from .agent_interface import AgentBehavior
-from .coordinates import Heading, Pose
-from .route import EmptyRoute, ShortestRoute
-from .scenario import EndlessGoal, LapMission, Mission, Start
-from .sumo_road_network import SumoRoadNetwork
-from .utils.math import evaluate_bezier as bezier
-from .utils.math import radians_to_vec, vec_to_radians
-from .waypoints import Waypoint, Waypoints
+from smarts.core.agent_interface import AgentBehavior
+from smarts.core.coordinates import Heading, Pose
+from smarts.core.route import EmptyRoute, ShortestRoute
+from smarts.core.scenario import EndlessGoal, LapMission, Mission, Start
+from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.utils.math import evaluate_bezier as bezier
+from smarts.core.utils.math import radians_to_vec, vec_to_radians
+from smarts.core.waypoints import Waypoint, Waypoints
 
 
 class PlanningError(Exception):

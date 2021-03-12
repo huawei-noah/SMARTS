@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import importlib.resources as pkg_resources
 import logging
 import os
@@ -29,12 +32,12 @@ from direct.showbase.ShowBase import ShowBase
 
 from smarts.sstudio.types import UTurn
 
-from . import models
-from .chassis import AckermannChassis, BoxChassis, Chassis
-from .colors import SceneColors
-from .coordinates import BoundingBox, Heading, Pose
-from .masks import RenderMasks
-from .sensors import (
+from smarts.core import models
+from smarts.core.chassis import AckermannChassis, BoxChassis, Chassis
+from smarts.core.colors import SceneColors
+from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.masks import RenderMasks
+from smarts.core.sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
     DrivenPathSensor,
@@ -314,11 +317,11 @@ class Vehicle:
         vehicle_type = "passenger"
         chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
 
-        if isinstance(mission_planner.mission.task, UTurn):
-            if mission_planner.mission.task.initial_speed:
-                initial_speed = mission_planner.mission.task.initial_speed
+        if isinstance(mission_planner.mission.data.task, UTurn):
+            if mission_planner.mission.data.task.initial_speed:
+                initial_speed = mission_planner.mission.data.task.initial_speed
 
-        start = mission_planner.mission.start
+        start = mission_planner.mission.data.start
         start_pose = Pose.from_front_bumper(
             front_bumper_position=numpy.array(start.position),
             heading=start.heading,

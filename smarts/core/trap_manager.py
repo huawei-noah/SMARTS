@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import logging
 import random as rand
 from collections import defaultdict
@@ -26,8 +29,8 @@ from typing import Dict, Sequence
 import numpy as np
 from shapely.geometry import Point, Polygon
 
-from smarts.core.mission_planner import Mission, MissionPlanner
-from smarts.core.scenario import Start, default_entry_tactic
+from smarts.core.mission_planner import MissionPlanner
+from smarts.core.scenario import Start, default_entry_tactic, Mission
 from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic
@@ -79,12 +82,12 @@ class TrapManager:
             if mission is None:
                 mission = mission_planner.random_endless_mission()
 
-            if not mission.entry_tactic:
-                mission = mission._replace(entry_tactic=default_entry_tactic())
+            if not mission.data.entry_tactic:
+                mission.data = mission.data._replace(entry_tactic=default_entry_tactic())
 
             if (
-                not isinstance(mission.entry_tactic, TrapEntryTactic)
-                and mission.entry_tactic
+                not isinstance(mission.data.entry_tactic, TrapEntryTactic)
+                and mission.data.entry_tactic
             ):
                 continue
 
@@ -140,7 +143,7 @@ class TrapManager:
             sorted_vehicle_ids = sorted(
                 list(social_vehicle_ids),
                 key=lambda v: squared_dist(
-                    vehicles[v].position[:2], trap.mission.start.position
+                    vehicles[v].position[:2], trap.mission.data.start.position
                 ),
             )
             for v_id in sorted_vehicle_ids:
@@ -161,7 +164,7 @@ class TrapManager:
                     (
                         v_id,
                         trap,
-                        trap.mission._replace(
+                        trap.mission.replace(
                             start=Start(vehicle.position[:2], vehicle.pose.heading),
                         ),
                     )
@@ -194,12 +197,12 @@ class TrapManager:
                 mission = trap.mission
                 if len(agent_vehicle_comp) > 0:
                     agent_vehicle_comp.sort(
-                        key=lambda v: squared_dist(v[0], mission.start.position)
+                        key=lambda v: squared_dist(v[0], mission.data.start.position)
                     )
 
                     # Make sure there is not an agent vehicle in the same location
                     pos, largest_dimension, _ = agent_vehicle_comp[0]
-                    if squared_dist(pos, mission.start.position) < largest_dimension:
+                    if squared_dist(pos, mission.data.start.position) < largest_dimension:
                         continue
 
                 vehicle = TrapManager._make_vehicle(
@@ -297,26 +300,26 @@ class TrapManager:
         self._traps.clear()
 
     def _mission2trap(self, road_network, mission, default_zone_dist=6):
-        if not (hasattr(mission, "start") and hasattr(mission, "goal")):
+        if not (hasattr(mission.data, "start") and hasattr(mission.data, "goal")):
             raise ValueError(f"Value {mission} is not a mission!")
 
-        activation_delay = mission.start_time
-        patience = mission.entry_tactic.wait_to_hijack_limit_s
-        zone = mission.entry_tactic.zone
-        default_entry_speed = mission.entry_tactic.default_entry_speed
+        activation_delay = mission.data.start_time
+        patience = mission.data.entry_tactic.wait_to_hijack_limit_s
+        zone = mission.data.entry_tactic.zone
+        default_entry_speed = mission.data.entry_tactic.default_entry_speed
         n_lane = None
 
         if default_entry_speed is None:
-            n_lane = n_lane or road_network.nearest_lane(mission.start.position)
+            n_lane = n_lane or road_network.nearest_lane(mission.data.start.position)
             default_entry_speed = n_lane.getSpeed()
 
         if zone is None:
-            n_lane = n_lane or road_network.nearest_lane(mission.start.position)
+            n_lane = n_lane or road_network.nearest_lane(mission.data.start.position)
             lane_speed = n_lane.getSpeed()
             start_edge_id = n_lane.getEdge().getID()
             start_lane = n_lane.getIndex()
             lane_length = n_lane.getLength()
-            start_pos = mission.start.position
+            start_pos = mission.data.start.position
             vehicle_offset_into_lane = road_network.offset_into_lane(
                 n_lane, (start_pos[0], start_pos[1])
             )
@@ -341,7 +344,7 @@ class TrapManager:
             remaining_time_to_activation=activation_delay,
             patience=patience,
             mission=mission,
-            exclusion_prefixes=mission.entry_tactic.exclusion_prefixes,
+            exclusion_prefixes=mission.data.entry_tactic.exclusion_prefixes,
             default_entry_speed=default_entry_speed,
         )
 

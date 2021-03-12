@@ -123,50 +123,31 @@ class MissionData(NamedTuple):
     entry_tactic: EntryTactic = None
     task: Tuple[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
+    route_length: float = 0
+    num_laps: int = None  # None means infinite # of laps
 
-class Mission(MissionData):
-    def __new__( 
-        cls, 
-        start, 
-        goal, 
-        route_vias = (), 
-        start_time = 0.1, 
-        entry_tactic = None,
-        task = None,
-        via = ()
-    ):
-        self = super(Mission, cls).__new__(
-            cls,            
-            start=start, 
-            goal=goal, 
-            route_vias=route_vias, 
-            start_time=start_time, 
-            entry_tactic=entry_tactic,
-            task=task,
-            via=via
-        ) 
-        return self
-
+class Mission:
+    def __init__(self, *args, **kwargs):
+        self.data:MissionData = MissionData(*args, **kwargs)
+        
     @property
     def has_fixed_route(self):
-        return not self.goal.is_endless()
+        return not self.data.goal.is_endless()
 
     def is_complete(self, vehicle, distance_travelled):
-        return self.goal.is_reached(vehicle)
+        return self.data.goal.is_reached(vehicle)
 
+    def replace(self, **kwargs):
+        newMission = Mission(None, None)
+        newMission.data = self.data._replace(**kwargs)
+        return newMission
 
-@dataclass(frozen=True)
+    def __repr__(self):
+        return f"Mission({self.data})"
+
 class LapMission:
-    start: Start
-    goal: Goal
-    route_length: float
-    num_laps: int = None  # None means infinite # of laps
-    # An optional list of edge IDs between the start and end goal that we want to
-    # ensure the mission includes
-    route_vias: Tuple[str] = ()
-    start_time: float = 0.1
-    entry_tactic: EntryTactic = None
-    via_points: Tuple[Via, ...] = ()
+    def __init__(self, *args, **kwargs):
+        self.data:MissionData = MissionData(*args, **kwargs)
 
     @property
     def has_fixed_route(self):
@@ -174,9 +155,12 @@ class LapMission:
 
     def is_complete(self, vehicle, distance_travelled):
         return (
-            self.goal.is_reached(vehicle)
-            and distance_travelled > self.route_length * self.num_laps
+            self.data.goal.is_reached(vehicle)
+            and distance_travelled > self.data.route_length * self.data.num_laps
         )
+
+    def __repr__(self):
+        return f"LapMission({self.data})"
 
 
 class Scenario:
@@ -682,7 +666,7 @@ class Scenario:
                 route_length=route_length,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via_points=to_scenario_via(mission.via, road_network),
+                via=to_scenario_via(mission.via, road_network),
             )
 
         raise RuntimeError(

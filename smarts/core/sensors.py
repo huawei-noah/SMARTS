@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import logging
 import time
 from collections import deque, namedtuple
@@ -40,12 +43,12 @@ from smarts.core.mission_planner import MissionPlanner
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.sstudio.types import CutIn, UTurn
 
-from smarts.core.coordinates import BoundingBox, Heading
+from smarts.core.coordinates import BoundingBox
 from smarts.core.events import Events
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
 from smarts.core.masks import RenderMasks
-from smarts.core.scenario import Mission, Via
+from smarts.core.scenario import MissionData, Via
 from smarts.core.waypoints import Waypoint
 
 try:
@@ -79,7 +82,7 @@ class EgoVehicleObservation(NamedTuple):
     edge_id: int
     lane_id: int
     lane_index: int
-    mission: Mission
+    mission: MissionData
     linear_velocity: np.ndarray
     angular_velocity: np.ndarray
     linear_acceleration: np.ndarray
@@ -253,7 +256,7 @@ class Sensors:
             edge_id=ego_edge_id,
             lane_id=ego_lane_id,
             lane_index=ego_lane_index,
-            mission=sensor_state.mission_planner.mission,
+            mission=sensor_state.mission_planner.mission.data,
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,
             **acceleration_params,
@@ -306,7 +309,7 @@ class Sensors:
             logger.warning(f"Agent Id: {agent_id} is done on the first step")
 
 
-        print("9999999999999999999999999323232wq323")
+        print("9954399999999999999999999323232wq323")
         # print(ego_vehicle_observation['heading'].source)
         we = Observation(
                 events=events,
@@ -1024,12 +1027,12 @@ class WaypointsSensor(Sensor):
                 lookahead=self._lookahead,
             )
 
-        if self._mission_planner.mission.task is not None:
-            if isinstance(self._mission_planner.mission.task, UTurn):
+        if self._mission_planner.mission.data.task is not None:
+            if isinstance(self._mission_planner.mission.data.task, UTurn):
                 waypoints_with_task = self._mission_planner.uturn_waypoints(
                     self._sim, self._vehicle.pose, self._vehicle
                 )
-            elif isinstance(self._mission_planner.mission.task, CutIn):
+            elif isinstance(self._mission_planner.mission.data.task, CutIn):
                 waypoints_with_task = self._mission_planner.cut_in_waypoints(
                     self._sim, self._vehicle.pose, self._vehicle
                 )
@@ -1143,7 +1146,7 @@ class ViaSensor(Sensor):
 
     @property
     def _vias(self) -> Iterable[Via]:
-        return self._mission_planner.mission.via
+        return self._mission_planner.mission.data.via
 
     def __call__(self):
         near_points: List[ViaPoint] = list()
