@@ -26,7 +26,8 @@ from shapely.ops import split
 
 # TODO: Move these into SMARTS and reuse from tests
 BubbleGeometry = namedtuple(
-    "BubbleGeometry", ["bubble", "airlock_entry", "airlock_exit", "airlock"],
+    "BubbleGeometry",
+    ["bubble", "airlock_entry", "airlock_exit", "airlock"],
 )
 
 

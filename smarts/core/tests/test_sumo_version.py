@@ -29,8 +29,8 @@ def test_sumo_lib():
 
 
 def test_sumo_version():
-    from smarts.core.utils.sumo import traci, SUMO_PATH
     from smarts.core.utils import networking
+    from smarts.core.utils.sumo import SUMO_PATH, traci
 
     load_params = [
         "--start",
@@ -48,7 +48,10 @@ def test_sumo_version():
     ]
 
     sumo_proc = subprocess.Popen(
-        sumo_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        sumo_cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
 
     traci_conn = traci.connect(

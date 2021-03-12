@@ -24,11 +24,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 import pytest
+from helpers.bubbles import bubble_geometry
+from helpers.scenario import temp_scenario
 from shapely.geometry import Point
 
 import smarts.sstudio.types as t
-from helpers.scenario import temp_scenario
-from helpers.bubbles import bubble_geometry
 from smarts.core import seed
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
@@ -56,10 +56,13 @@ def scenarios(bubble):
             flows=[
                 t.Flow(
                     route=t.Route(
-                        begin=("west", lane_idx, 0), end=("east", lane_idx, "max"),
+                        begin=("west", lane_idx, 0),
+                        end=("east", lane_idx, "max"),
                     ),
                     rate=50,
-                    actors={t.TrafficActor("car"): 1,},
+                    actors={
+                        t.TrafficActor("car"): 1,
+                    },
                 )
                 for lane_idx in range(3)
             ]

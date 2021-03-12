@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,23 +19,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+import json
+import logging
+import multiprocessing
 import re
 import time
 import uuid
-import json
-import logging
-import threading
+import warnings
 from datetime import datetime
+from pathlib import Path
 from queue import Queue
 from typing import Union
-from pathlib import Path
-import warnings
 
-import websocket
 import numpy as np
+import websocket
 
+from envision import types
 from smarts.core.utils.file import unpack
-from . import types
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -72,7 +75,6 @@ class Client:
     def __init__(
         self,
         endpoint: str = None,
-        num_retries: int = 5,
         wait_between_retries: float = 0.5,
         output_dir: str = None,
         sim_name: str = None,
@@ -92,29 +94,34 @@ class Client:
         if endpoint is None:
             endpoint = "ws://localhost:8081"
 
-        self._logging_thread = None
-        self._logging_queue = Queue()
+        self._logging_process = None
         if output_dir:
-            self._logging_thread = self._spawn_logging_thread(output_dir, client_id)
-            self._logging_thread.start()
+            output_dir = Path(f"{output_dir}/{int(time.time())}")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            path = (output_dir / client_id).with_suffix(".jsonl")
+            self._logging_queue = multiprocessing.Queue()
+            self._logging_process = multiprocessing.Process(
+                target=self._write_log_state,
+                args=(
+                    self._logging_queue,
+                    path,
+                ),
+            )
+            self._logging_process.daemon = True
+            self._logging_process.start()
 
         if not self._headless:
-            self._state_queue = Queue()
-            self._thread = self._connect(
-                endpoint=f"{endpoint}/simulations/{client_id}/broadcast",
-                queue=self._state_queue,
-                num_retries=num_retries,
-                wait_between_retries=wait_between_retries,
+            self._state_queue = multiprocessing.Queue()
+            self._process = multiprocessing.Process(
+                target=self._connect,
+                args=(
+                    f"{endpoint}/simulations/{client_id}/broadcast",
+                    self._state_queue,
+                    wait_between_retries,
+                ),
             )
-            self._thread.start()
-
-    def _spawn_logging_thread(self, output_dir, client_id):
-        output_dir = Path(f"{output_dir}/{int(time.time())}")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        path = (output_dir / client_id).with_suffix(".jsonl")
-        return threading.Thread(
-            target=self._write_log_state, args=(self._logging_queue, path), daemon=True
-        )
+            self._process.daemon = True
+            self._process.start()
 
     @staticmethod
     def _write_log_state(queue, path):
@@ -135,12 +142,10 @@ class Client:
         path: str,
         endpoint: str = "ws://localhost:8081",
         timestep_sec: float = 0.1,
-        num_retries: int = 5,
         wait_between_retries: float = 0.5,
     ):
         client = Client(
             endpoint=endpoint,
-            num_retries=num_retries,
             wait_between_retries=wait_between_retries,
         )
         with open(path, "r") as f:
@@ -155,11 +160,10 @@ class Client:
     def _connect(
         self,
         endpoint,
-        queue,
-        num_retries: int = 50,
+        state_queue,
         wait_between_retries: float = 0.05,
     ):
-        threadlocal = threading.local()
+        connection_established = False
 
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
             # if not already serialized
@@ -181,21 +185,21 @@ class Client:
             self._log.error(f"Connection to Envision terminated with: {error}")
 
         def on_open(ws):
-            setattr(threadlocal, "connection_established", True)
+            nonlocal connection_established
+            connection_established = True
 
             while True:
-                state = queue.get()
+                state = state_queue.get()
                 if type(state) is Client.QueueDone:
                     ws.close()
                     break
 
                 optionally_serialize_and_write(state, ws)
 
-        def run_socket(endpoint, num_retries, wait_between_retries, threadlocal):
-            connection_established = False
-
+        def run_socket(endpoint, wait_between_retries):
+            nonlocal connection_established
             tries = 1
-            while tries <= num_retries and not connection_established:
+            while True:
                 ws = websocket.WebSocketApp(
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
@@ -206,28 +210,27 @@ class Client:
                     warnings.filterwarnings("ignore", category=ResourceWarning)
                     ws.run_forever()
 
-                connection_established = getattr(
-                    threadlocal, "connection_established", False
-                )
-
                 if not connection_established:
+                    self._log.info(f"Attempt {tries} to connect to Envision.")
+                else:
+                    # No information left to send, connection is likely done
+                    if state_queue.empty():
+                        break
+                    # When connection lost, retry again every 3 seconds
+                    wait_between_retries = 3
                     self._log.info(
-                        f"Attempting to connect to Envision tries={tries}/{num_retries}"
+                        f"Connection to Envision lost. Attempt {tries} to reconnect."
                     )
 
-                    tries += 1
-                    time.sleep(wait_between_retries)
+                tries += 1
+                time.sleep(wait_between_retries)
 
-        return threading.Thread(
-            target=run_socket,
-            args=(endpoint, num_retries, wait_between_retries, threadlocal),
-            daemon=True,  # If False, the proc will not terminate until this thread stops
-        )
+        run_socket(endpoint, wait_between_retries)
 
     def send(self, state: types.State):
-        if not self._headless and self._thread.is_alive():
+        if not self._headless and self._process.is_alive():
             self._state_queue.put(state)
-        if self._logging_thread:
+        if self._logging_process:
             self._logging_queue.put(state)
 
     def _send_raw(self, state: str):
@@ -239,13 +242,12 @@ class Client:
     def teardown(self):
         if not self._headless:
             self._state_queue.put(Client.QueueDone())
+            self._process.join(timeout=3)
+            self._process = None
+            self._state_queue.close()
 
-        self._logging_queue.put(Client.QueueDone())
-
-        if not self._headless and self._thread:
-            self._thread.join(timeout=3)
-            self._thread = None
-
-        if self._logging_thread:
-            self._logging_thread.join(timeout=3)
-            self._logging_thread = None
+        if self._logging_process:
+            self._logging_queue.put(Client.QueueDone())
+            self._logging_process.join(timeout=3)
+            self._logging_process = None
+            self._logging_queue.close()

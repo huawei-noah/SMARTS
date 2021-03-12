@@ -56,7 +56,11 @@ def social_spin_on_axle_cw(step, base_position, offset_from_centre):
 
 
 def run(
-    base, client, traffic_sim: SumoTrafficSimulation, plane_body_id, n_steps=1e6,
+    base,
+    client,
+    traffic_sim: SumoTrafficSimulation,
+    plane_body_id,
+    n_steps=1e6,
 ):
     prev_friction_sum = None
     scenario = next(
@@ -172,5 +176,9 @@ if __name__ == "__main__":
         )
 
         run(
-            showbase, client, traffic_sim, plane_body_id, n_steps=int(1e6),
+            showbase,
+            client,
+            traffic_sim,
+            plane_body_id,
+            n_steps=int(1e6),
         )

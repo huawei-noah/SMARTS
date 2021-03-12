@@ -10,7 +10,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.4.13",
+    version="0.4.14",
     packages=find_packages(exclude="tests"),
     include_package_data=True,
     zip_safe=True,
@@ -60,6 +60,8 @@ setup(
         "grpcio==1.30.0",
         "PyYAML",
         "twisted",
+        # The following are used for imitation learning
+        "ijson",
     ],
     extras_require={
         "test": [
@@ -78,8 +80,9 @@ setup(
             "torchvision==0.5.0",
         ],
         "dev": [
-            "black==19.10b0",
+            "black==20.8b1",
             "grpcio-tools==1.30.0",
+            "isort==5.7.0",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",

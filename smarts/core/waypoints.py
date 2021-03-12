@@ -19,27 +19,31 @@
 # THE SOFTWARE.
 import queue
 import random
-import math
-from typing import Sequence
-from dataclasses import dataclass
-from collections import namedtuple, defaultdict
-from scipy.interpolate import interp1d
-import numpy as np
-
 import warnings
+from collections import defaultdict, namedtuple
+from dataclasses import dataclass
+from typing import Sequence
+
+import numpy as np
+from scipy.interpolate import interp1d
+
+from smarts.core.utils.file import suppress_pkg_resources
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
-    from sklearn.neighbors import KDTree
+    with suppress_pkg_resources():
+        # We force sklearn to use a different importer since sklearn's use of pkg_resources is
+        # aggressive
+        from sklearn.neighbors import KDTree
 
-from .coordinates import Heading, Pose
-from .utils.math import (
-    squared_dist,
-    vec_to_radians,
+from smarts.core.coordinates import Heading, Pose
+from smarts.core.utils.math import (
     lerp,
-    vec_2d,
-    signed_dist_to_line,
     radians_to_vec,
+    signed_dist_to_line,
+    squared_dist,
+    vec_2d,
+    vec_to_radians,
 )
 
 
@@ -98,7 +102,7 @@ class Waypoint:
         if not isinstance(other, Waypoint):
             return False
         return (
-            self.pos.all() == other.pos.all()
+            (self.pos == other.pos).all()
             and self.heading == other.heading
             and self.lane_width == other.lane_width
             and self.speed_limit == other.speed_limit
@@ -391,7 +395,12 @@ class Waypoints:
         first_wp_heading = ref_waypoints_coordinates["ref_wp_headings"][0]
         wp_position = np.array([*path[0].wp.pos, 0])
         vehicle_pos = np.array([point[0], point[1], 0])
-        heading_vector = np.array([*radians_to_vec(first_wp_heading), 0,])
+        heading_vector = np.array(
+            [
+                *radians_to_vec(first_wp_heading),
+                0,
+            ]
+        )
         projected_distant_wp_vehicle = np.inner(
             (vehicle_pos - wp_position), heading_vector
         )

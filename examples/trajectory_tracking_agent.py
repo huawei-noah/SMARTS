@@ -2,12 +2,10 @@ import logging
 
 import gym
 
-from smarts.core.utils.episodes import episodes
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
-
 from examples import default_argument_parser
-
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.utils.episodes import episodes
 
 logging.basicConfig(level=logging.INFO)
 

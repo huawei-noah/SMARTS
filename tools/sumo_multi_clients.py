@@ -26,7 +26,10 @@ def start_sumo_server():
         "--remote-port=%s" % PORT,
     ]
     sumo_proc = subprocess.Popen(
-        sumo_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        sumo_cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
 
     time.sleep(0.1)

@@ -17,22 +17,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import numpy as np
-
 from collections import OrderedDict
-from typing import List, Dict
-from gym import spaces
+from typing import Dict, List
 
-from ray.rllib.utils.framework import try_import_tf, get_activation_fn
-from ray.rllib.utils.annotations import override
-from ray.rllib.utils.types import ModelConfigDict, TensorType
-from ray.rllib.models import ModelCatalog
-from ray.rllib.models.tf.misc import normc_initializer
-from ray.rllib.models.modelv2 import ModelV2
-from ray.rllib.models.tf.tf_modelv2 import TFModelV2
-from ray.rllib.models.preprocessors import get_preprocessor
-
+import numpy as np
 import tensorflow as tf
+from gym import spaces
+from ray.rllib.models import ModelCatalog
+from ray.rllib.models.modelv2 import ModelV2
+from ray.rllib.models.preprocessors import get_preprocessor
+from ray.rllib.models.tf.misc import normc_initializer
+from ray.rllib.models.tf.tf_modelv2 import TFModelV2
+from ray.rllib.utils.annotations import override
+from ray.rllib.utils.framework import get_activation_fn, try_import_tf
+from ray.rllib.utils.types import ModelConfigDict, TensorType
 
 tf1, tf, tf_version = try_import_tf()
 

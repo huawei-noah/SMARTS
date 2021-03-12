@@ -6,8 +6,7 @@ import smarts.zoo.worker_pb2 as worker__pb2
 
 
 class WorkerStub(object):
-    """Interface exported by the worker server.
-    """
+    """Interface exported by the worker server."""
 
     def __init__(self, channel):
         """Constructor.
@@ -28,19 +27,16 @@ class WorkerStub(object):
 
 
 class WorkerServicer(object):
-    """Interface exported by the worker server.
-    """
+    """Interface exported by the worker server."""
 
     def build(self, request, context):
-        """Builds Agent according the AgentSpec.
-        """
+        """Builds Agent according the AgentSpec."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
     def act(self, request, context):
-        """Agent processes observations and returns action.
-        """
+        """Agent processes observations and returns action."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
@@ -67,8 +63,7 @@ def add_WorkerServicer_to_server(servicer, server):
 
 # This class is part of an EXPERIMENTAL API.
 class Worker(object):
-    """Interface exported by the worker server.
-    """
+    """Interface exported by the worker server."""
 
     @staticmethod
     def build(

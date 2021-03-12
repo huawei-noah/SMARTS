@@ -2,11 +2,11 @@ import json
 import os
 
 import numpy as np
-import xlwt
 import xlrd
-from xlutils import copy
+import xlwt
 from numpy.linalg import det
 from scipy.signal import savgol_filter
+from xlutils import copy
 
 from zoo.evaluation.metrics.utils import (
     map_agent_to_json_file,

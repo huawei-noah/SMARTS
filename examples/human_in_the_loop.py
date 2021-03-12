@@ -1,15 +1,13 @@
-import logging
 import argparse
+import logging
 
 import gym
-
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
-from smarts.core.utils.episodes import episodes
-
 from pynput.keyboard import Key, Listener
 
 from examples import default_argument_parser
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.utils.episodes import episodes
 
 logging.basicConfig(level=logging.INFO)
 
@@ -80,7 +78,11 @@ class HumanKeyboardAgent(Agent):
 
 
 def main(
-    scenarios, sim_name, headless, num_episodes, seed,
+    scenarios,
+    sim_name,
+    headless,
+    num_episodes,
+    seed,
 ):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(

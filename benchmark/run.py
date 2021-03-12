@@ -1,3 +1,4 @@
+#!/usr/bin/env python -W ignore::DeprecationWarning
 # Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,20 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
-import ray
-
-from gym.spaces import Tuple
+import os
 from pathlib import Path
+
+import ray
 from ray import tune
 
-from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.scenario import Scenario
+from benchmark import gen_config
+from benchmark.common import SimpleCallbacks
 
-from benchmark.agents import load_config
-from benchmark.agents.common import SimpleCallbacks
-
-
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 RUN_NAME = Path(__file__).stem
 EXPERIMENT_NAME = "{scenario}-{n_agent}"
 
@@ -54,59 +51,11 @@ def main(
                 ray.state.cluster_resources()
             )
         )
-    scenario_path = Path(scenario).absolute()
-    agent_missions_count = Scenario.discover_agent_missions_count(scenario_path)
-    if agent_missions_count == 0:
-        agent_ids = ["default_policy"]
-    else:
-        agent_ids = [f"AGENT-{i}" for i in range(agent_missions_count)]
-
-    config = load_config(config_file)
-    agents = {
-        agent_id: AgentSpec(
-            **config["agent"], interface=AgentInterface(**config["interface"])
-        )
-        for agent_id in agent_ids
-    }
-
-    config["env_config"].update(
-        {
-            "seed": 42,
-            "scenarios": [str(scenario_path)],
-            "headless": headless,
-            "agent_specs": agents,
-        }
+    config = gen_config(
+        scenario=scenario, config_file=config_file, paradigm=paradigm, headless=headless
     )
 
-    obs_space, act_space = config["policy"][1:3]
     tune_config = config["run"]["config"]
-
-    if paradigm == "centralized":
-        config["env_config"].update(
-            {
-                "obs_space": Tuple([obs_space] * agent_missions_count),
-                "act_space": Tuple([act_space] * agent_missions_count),
-                "groups": {"group": agent_ids},
-            }
-        )
-        tune_config.update(config["policy"][-1])
-    else:
-        policies = {}
-
-        for k in agents:
-            policies[k] = config["policy"][:-1] + (
-                {**config["policy"][-1], "agent_id": k},
-            )
-
-        tune_config.update(
-            {
-                "multiagent": {
-                    "policies": policies,
-                    "policy_mapping_fn": lambda agent_id: agent_id,
-                },
-            }
-        )
-
     tune_config.update(
         {
             "env_config": config["env_config"],
@@ -116,8 +65,10 @@ def main(
         }
     )
 
+    # TODO(ming): change scenario name (not path)
     experiment_name = EXPERIMENT_NAME.format(
-        scenario=scenario_path.stem, n_agent=len(agents),
+        scenario=scenario.split("/")[-1],
+        n_agent=4,
     )
 
     log_dir = Path(log_dir).expanduser().absolute() / RUN_NAME
@@ -144,7 +95,9 @@ def main(
 def parse_args():
     parser = argparse.ArgumentParser("Benchmark learning")
     parser.add_argument(
-        "scenario", type=str, help="Scenario name",
+        "scenario",
+        type=str,
+        help="Scenario name",
     )
     parser.add_argument(
         "--paradigm",

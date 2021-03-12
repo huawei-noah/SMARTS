@@ -287,23 +287,31 @@ class AgentInterface:
                 action=ActionSpaceType.ActuatorDynamic,
             )
         elif requested_type == AgentType.Laner:  # The lane-following agent
-            interface = AgentInterface(waypoints=True, action=ActionSpaceType.Lane,)
+            interface = AgentInterface(
+                waypoints=True,
+                action=ActionSpaceType.Lane,
+            )
         # The lane-following agent with speed and relative lane change direction
         elif requested_type == AgentType.LanerWithSpeed:
             interface = AgentInterface(
-                waypoints=True, action=ActionSpaceType.LaneWithContinuousSpeed,
+                waypoints=True,
+                action=ActionSpaceType.LaneWithContinuousSpeed,
             )
         # The trajectory tracking agent wich recieves a series of reference trajectory
         # points and speeds to follow
         elif requested_type == AgentType.Tracker:
             interface = AgentInterface(
-                waypoints=True, action=ActionSpaceType.Trajectory,
+                waypoints=True,
+                action=ActionSpaceType.Trajectory,
             )
         # The MPC based trajectory tracking agent wich recieves a series of
         # reference trajectory points and speeds and computes the optimal
         # steering action.
         elif requested_type == AgentType.MPCTracker:
-            interface = AgentInterface(waypoints=True, action=ActionSpaceType.MPC,)
+            interface = AgentInterface(
+                waypoints=True,
+                action=ActionSpaceType.MPC,
+            )
         # For boid control (controlling multiple vehicles)
         elif requested_type == AgentType.Boid:
             interface = AgentInterface(
@@ -314,12 +322,14 @@ class AgentInterface:
         # For empty environment, good for testing control
         elif requested_type == AgentType.Loner:
             interface = AgentInterface(
-                waypoints=True, action=ActionSpaceType.Continuous,
+                waypoints=True,
+                action=ActionSpaceType.Continuous,
             )
         # Plays tag _two vehicles in the env only_
         elif requested_type == AgentType.Tagger:
             interface = AgentInterface(
-                waypoints=True, action=ActionSpaceType.Continuous,
+                waypoints=True,
+                action=ActionSpaceType.Continuous,
             )
         else:
             raise Exception("Unsupported agent type %s" % requested_type)

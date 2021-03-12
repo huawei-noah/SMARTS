@@ -127,4 +127,4 @@ xdummy.log
 OpEn_build/
 
 # Ignore generated ULTRA tasks
-ultra/scenarios/task*/*/
+ultra/ultra/scenarios/task*/*/

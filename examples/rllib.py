@@ -1,27 +1,26 @@
 import argparse
-from datetime import timedelta
 import logging
 import multiprocessing
-from os import stat
 import random
+from datetime import timedelta
+from os import stat
 from pathlib import Path
 from typing import Dict
 
 import numpy as np
 from ray import tune
+from ray.rllib.agents.callbacks import DefaultCallbacks
 from ray.rllib.env.base_env import BaseEnv
 from ray.rllib.evaluation.episode import MultiAgentEpisode
 from ray.rllib.evaluation.rollout_worker import RolloutWorker
 from ray.rllib.policy.policy import Policy
 from ray.rllib.utils.typing import PolicyID
 from ray.tune.schedulers import PopulationBasedTraining
-from ray.rllib.agents.callbacks import DefaultCallbacks
 
 import smarts
+from examples.rllib_agent import TrainingModel, rllib_agent
 from smarts.core.utils.file import copy_tree
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-
-from examples.rllib_agent import TrainingModel, rllib_agent
 
 logging.basicConfig(level=logging.INFO)
 

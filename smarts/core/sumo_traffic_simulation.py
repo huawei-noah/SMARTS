@@ -19,27 +19,27 @@
 # THE SOFTWARE.
 import atexit
 import logging
-import numpy as np
 import os
 import random
 import subprocess
 import time
-
-from shapely.affinity import rotate as shapely_rotate
-from shapely.geometry import Polygon, box as shapely_box
 from typing import List, Sequence
+
+import numpy as np
+import traci.constants as tc
+from shapely.affinity import rotate as shapely_rotate
+from shapely.geometry import Polygon
+from shapely.geometry import box as shapely_box
+from traci.exceptions import FatalTraCIError, TraCIException
 
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import ProviderState, ProviderTLS, ProviderTrafficLight
-from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
+from smarts.core.provider import ProviderState
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_stdout
 from smarts.core.utils.sumo import SUMO_PATH, traci
-
-import traci.constants as tc
-from traci.exceptions import FatalTraCIError, TraCIException
+from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class SumoTrafficSimulation:
@@ -55,19 +55,19 @@ class SumoTrafficSimulation:
                 Since our interface(TRACI) to SUMO is delayed by one simulation step,
                 setting a higher time resolution may lead to unexpected artifacts
         num_external_sumo_clients:
-            wait for the specified number of other clients to connect to SUMO
+            Block and wait on the specified number of other clients to connect to SUMO.
         sumo_port:
-            the port that sumo runs on
+            The port that sumo will attempt to run on.
         auto_start:
-            False to pause simulation when SMARTS run, and wait for user to click 
-            start on sumo-gui
+            False to pause simulation when SMARTS runs, and wait for user to click
+            start on sumo-gui.
         endless_traffic:
-            Not remove vehicles by re-adding back vehicles that exit 
+            Reintroduce vehicles that exit the SUMO simulation.
         allow_reload:
-            True to reload existing SUMO
-        remove_agents_only_mode: 
-            Remove only agent vehicles used by SMARTS and not delete other sumo
-            vehicles when teardown
+            Reset SUMO instead of restarting SUMO when the current map is the same as the previous.
+        remove_agents_only_mode:
+            Remove only agent vehicles used by SMARTS and not delete other SUMO
+            vehicles when the traffic simulation calls teardown
     """
 
     def __init__(
@@ -197,7 +197,6 @@ class SumoTrafficSimulation:
                 you were trying to initialize many SUMO instances at
                 once and we were not able to assign unique port
                 numbers to all SUMO processes.
-
                 Check {self._log_file} for hints"""
             )
             raise e
@@ -263,11 +262,6 @@ class SumoTrafficSimulation:
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
         )
 
-        for tls_id in self._traci_conn.trafficlight.getIDList():
-            self._traci_conn.trafficlight.subscribe(
-                tls_id, [tc.TL_RED_YELLOW_GREEN_STATE, tc.TL_CONTROLLED_LINKS]
-            )
-
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
         #      as zero will step according to a default (non-zero) step-size.
@@ -330,9 +324,6 @@ class SumoTrafficSimulation:
         """
         Args:
             dt: time (in seconds) to simulate during this simulation step
-            managed_vehicles: dict of {vehicle_id: (x, y, heading)}
-                !! The vehicle state should represent the state of the
-                !! vehicles at the start of the current simulation step
         Returns:
             ProviderState representing the state of the SUMO simulation
         """
@@ -391,6 +382,8 @@ class SumoTrafficSimulation:
         for vehicle_id in external_vehicles_that_have_joined:
             dimensions = provider_vehicles[vehicle_id].dimensions
             self._create_vehicle(vehicle_id, dimensions)
+            no_checks = 0b00000
+            self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
 
         # update the state of all current managed vehicles
         for vehicle_id in self._non_sumo_vehicle_ids:
@@ -426,6 +419,8 @@ class SumoTrafficSimulation:
                 )
 
         for vehicle_id in vehicles_that_have_become_external:
+            no_checks = 0b00000
+            self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
             self._traci_conn.vehicle.setColor(
                 vehicle_id, SumoTrafficSimulation._social_agent_vehicle_color()
             )
@@ -437,6 +432,9 @@ class SumoTrafficSimulation:
             )
             self._non_sumo_vehicle_ids.remove(vehicle_id)
             # Let sumo take over speed again
+            # For setSpeedMode look at: https://sumo.dlr.de/docs/TraCI/Change_Vehicle_State.html#speed_mode_0xb3
+            all_checks = 0b11111
+            self._traci_conn.vehicle.setSpeedMode(vehicle_id, all_checks)
             self._traci_conn.vehicle.setSpeed(vehicle_id, -1)
 
         if self._endless_traffic:
@@ -507,7 +505,6 @@ class SumoTrafficSimulation:
     def _compute_provider_state(self) -> ProviderState:
         return ProviderState(
             vehicles=self._compute_traffic_vehicles(),
-            traffic_light_systems=self._compute_traffic_lights(),
         )
 
     def _compute_traffic_vehicles(self) -> List[VehicleState]:
@@ -666,41 +663,6 @@ class SumoTrafficSimulation:
             new_route_edges = route_edges[-1:] + route_edges
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
-    def _compute_traffic_lights(self) -> List[ProviderTLS]:
-        """TraCI will automatically generate TLS programs if none was specified
-        according to the net/program. To support this we opt to use TraCI instead
-        of the sumolib interface for TLS support.
-        """
-
-        sub_results = self._traci_conn.trafficlight.getSubscriptionResults(None)
-
-        tlss = []
-        if not sub_results:
-            return tlss
-
-        for tls_id in sub_results:
-            light_states = sub_results[tls_id][tc.TL_RED_YELLOW_GREEN_STATE]
-            links = sub_results[tls_id][tc.TL_CONTROLLED_LINKS]
-
-            traffic_lights = []
-            for link, state in zip(links, light_states):
-                if not link:
-                    continue
-                lane_start, lane_end, lane_via = [
-                    self._scenario.road_network.lane_by_id(lane) for lane in link[0]
-                ]
-                traffic_lights.append(
-                    ProviderTrafficLight(
-                        lane_in=lane_start,
-                        lane_via=lane_via,
-                        lane_out=lane_end,
-                        state=state,
-                    )
-                )
-            tlss.append(ProviderTLS(tls_id, traffic_lights))
-
-        return tlss
-
     def _unique_id(self):
         route_id = "hiway_id_%s" % self._num_dynamic_ids_used
         self._num_dynamic_ids_used += 1
@@ -710,11 +672,12 @@ class SumoTrafficSimulation:
         return self._traci_conn.vehicle.getRoute(vehicle_id)
 
     def reserve_traffic_location_for_vehicle(
-        self, vehicle_id: str, reserved_location: Polygon,
+        self,
+        vehicle_id: str,
+        reserved_location: Polygon,
     ):
         """Reserve an area around a location where vehicles cannot spawn until a given vehicle
         is added.
-
         Args:
             vehicle_id: The vehicle to wait for.
             reserved_location: The space the vehicle takes up.
@@ -731,7 +694,12 @@ class SumoTrafficSimulation:
         width = sumo_vehicle_state[vehicle_id][tc.VAR_WIDTH]
         heading = Heading.from_sumo(sumo_vehicle_state[vehicle_id][tc.VAR_ANGLE])
 
-        poly = shapely_box(p[0] - width * 0.5, p[1] - length, p[0] + width * 0.5, p[1],)
+        poly = shapely_box(
+            p[0] - width * 0.5,
+            p[1] - length,
+            p[0] + width * 0.5,
+            p[1],
+        )
         return shapely_rotate(poly, heading, use_radians=True)
 
     def _emit_vehicle_by_route(
@@ -760,7 +728,10 @@ class SumoTrafficSimulation:
 
         # XXX: Do not give this a route or it will crash on `moveTo` calls
         self._traci_conn.vehicle.add(
-            vehicle_id, "", departPos=offset_in_lane, departLane=wp.lane_index,
+            vehicle_id,
+            "",
+            departPos=offset_in_lane,
+            departLane=wp.lane_index,
         )
 
         self._traci_conn.vehicle.moveToXY(

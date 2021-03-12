@@ -1,0 +1,95 @@
+levels:
+  easy:
+    train:
+      total: 1
+      ego_missions:
+      - start: south-SN  # Turn left going from South to West.
+        end:   west-EW
+      - start: west-WE   # Turn right going from West to South.
+        end:   south-NS
+      - start: east-EW   # Turn left going from East to South.
+        end:   south-NS
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[70kmh,p-test,1]]
+    test:
+      total: 1
+      ego_missions:
+      - start: south-SN  # Turn left going from South to West.
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[70kmh,p-test,1]]
+  no-traffic:
+    train:
+      total: 1
+      ego_missions:
+      - start: south-SN  # Turn left going from South to West.
+        end:   west-EW
+      - start: west-WE   # Turn right going from West to South.
+        end:   south-NS
+      - start: east-EW   # Turn left going from East to South.
+        end:   south-NS
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[70kmh,no-traffic,1]]
+    test:
+      total: 1
+      ego_missions:
+      - start: south-SN  # Turn left going from South to West.
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[70kmh,no-traffic,1]]
+  # Used in evaluation test
+  eval_test:
+    train:
+      total: 5
+      ego_missions:
+      - start: south-SN  # Turn left going from South to West.
+        end:   west-EW
+      - start: west-WE   # Turn right going from West to South.
+        end:   south-NS
+      - start: east-EW   # Turn left going from East to South.
+        end:   south-NS
+      intersection_types:
+        2lane_t:
+          percent: 0.2
+          specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                  [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                  [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                  [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+        2lane_curvy_t:
+          percent: 0.4
+          specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                  [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
+                  [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                  [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+        3lane_t:
+          percent: 0.4
+          specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                  [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
+                  [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                  [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+    test:
+      total: 2
+      ego_missions:
+      - start: south-SN  # Turn left going from South to West.
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+          percent: 0.5
+          specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                  [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
+                  [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                  [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+        3lane_c:
+          percent: 0.5
+          specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                  [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
+                  [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                  [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%

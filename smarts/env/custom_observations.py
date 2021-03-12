@@ -17,14 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Callable
 from dataclasses import dataclass
+from typing import Callable
 
-import numpy as np
 import gym
+import numpy as np
 
-from smarts.core.utils.math import vec_2d, vec_to_radians, squared_dist
 from smarts.core.coordinates import Heading
+from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
 
 
 @dataclass

@@ -45,7 +45,7 @@ Task 1 Training Scenario|Task 1 Testing Scenario
 
 ## Training a Baseline Agent
 
-Implementations of baseline agents are available in `ultra/baselines/`. Notice, policies such as PPO, SAC, DDPG, and DQN are implemented as baselines. We will run a DQN on Task 1's "easy" level in this example.
+Implementations of baseline agents are available in `ultra/baselines/`. Notice, policies such as PPO, SAC, TD3, and DQN are implemented as baselines. We will run a DQN on Task 1's "easy" level in this example.
 
 - Execute `ultra/train.py`. The following is a list of available arguments.
   - `--task`: The task number to run (default is 1).
@@ -58,6 +58,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--seed`: The environment seed (default is 2).
   - `--policy`: The policy (agent) to train (default is sac).
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
+  - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
 
   Run the following command to train our DQN agent with a quick training session (if you started Envision in the previous section, refresh your browser to observe the training):
   ```sh
@@ -84,6 +85,7 @@ After training your agent, your models should be saved under `logs/<timestamped_
   - `--headless`: Whether to run evaluation without Envision (default is False).
   - `--experiment-dir`: The path to the spec file that includes adapters and policy parameters.
   - `--policy`: The policy (agent) to evaluate (default is sac).
+  - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
 
   For example, let's re-run our DQN's evaluation with the following command:
   ```sh
@@ -95,7 +97,7 @@ After training your agent, your models should be saved under `logs/<timestamped_
 
 To view the Tensorboard results of this experiment, run the command below:
 ```sh
-$ tensorboard --logdir <abolute_path_to_SMARTS>/logs/<timestamped_experiment_name>
+$ tensorboard --logdir <abolute_path_to_ULTRA>/logs/<timestamped_experiment_name>
 ```
 > View the result in your browser with the provided link.
 
