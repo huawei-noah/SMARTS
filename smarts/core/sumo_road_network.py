@@ -131,6 +131,12 @@ class SumoRoadNetwork:
             if shifted_G:
                 assert cls._check_net_origin(shifted_G.getBoundary())
                 G = shifted_G
+                # keep track of having shifted the graph by
+                # injecting state into the network graph.
+                # this is needed because some maps have been pre-shifted,
+                # and will already have a locationOffset, but for those
+                # the offset should not be used (because all their other
+                # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
         return cls(G)
 
