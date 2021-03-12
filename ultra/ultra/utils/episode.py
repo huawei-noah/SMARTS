@@ -192,10 +192,11 @@ class Episode:
         gap_info = self.info["Gap"]
         for agent_id, agent_info in self.info["Train"].items():
             for key in agent_info.data:
-                gap_info[agent_id].data[key] = (
-                    self.info["Train"][agent_id].data[key]
-                    - self.info["Evaluation"][agent_id].data[key]
-                )
+                if np.isscalar(agent_info.data[key]):
+                    gap_info[agent_id].data[key] = (
+                        self.info["Train"][agent_id].data[key]
+                        - self.info["Evaluation"][agent_id].data[key]
+                    )
 
     def reset(self, mode="Train"):
         self.start_time = time.time()
@@ -246,10 +247,12 @@ class Episode:
         if (old_episode is not None) and (eval_rate is not None):
             for agent_id, agent_info in self.info[self.active_tag].items():
                 for key in agent_info.data:
-                    agent_info.data[key] = (
-                        agent_info.data[key] * eval_rate
-                        + old_episode.info[self.active_tag][agent_id].data[key]
-                    ) / eval_rate
+                    if np.isscalar(agent_info.data[key]):
+                        agent_info.data[key] = (
+                            agent_info.data[key] * eval_rate
+                            + old_episode.info[self.active_tag][agent_id].data[key]
+                        ) / eval_rate
+                    # print(f"key: {key}, value: {agent_info.data[key]}")
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
