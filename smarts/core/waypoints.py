@@ -22,12 +22,13 @@ import random
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Sequence, NamedTuple, List
 from functools import lru_cache
 
 import math
 import numpy as np
 
+from .utils.math import inplace_unwrap
 from smarts.core.utils.file import suppress_pkg_resources
 
 with warnings.catch_warnings():
@@ -112,12 +113,13 @@ class Waypoint:
         )
 
 
-class LinkedWaypoint:
-    def __init__(self, wp=None, nexts=[], is_shape_wp=False):
-        self.wp = wp  # Waypoint: current waypoint
-        self.is_shape_wp = is_shape_wp
-        self.nexts = nexts  # list of LinkedWaypoint: list of next immediate waypoints
-        # it's a list of waypoints because a path may branch at junctions
+class LinkedWaypoint(NamedTuple):
+    wp: Waypoint = None  # Waypoint: current waypoint
+    is_shape_wp: bool = False
+    nexts: List[
+        Waypoints
+    ] = []  # list of LinkedWaypoint: list of next immediate waypoints
+    # it's a list of waypoints because a path may branch at junctions
 
     def __hash__(self):
         ## distinguish between different continuations here too
@@ -367,21 +369,6 @@ class Waypoints:
 
         return [self._equally_spaced_path(path, point) for path in waypoint_paths]
 
-    @staticmethod
-    def _inplace_unwrap(wp_array):
-        ## minor optimization hack adapted from
-        ##  https://github.com/numpy/numpy/blob/v1.20.0/numpy/lib/function_base.py#L1492-L1546
-        ## to avoid unnecessary (slow) np array copy
-        ## (as seen in profiling).
-        p = np.asarray(wp_array)
-        dd = np.subtract(p[1:], p[:-1])
-        ddmod = np.mod(dd + math.pi, 2 * math.pi) - math.pi
-        np.copyto(ddmod, math.pi, where=(ddmod == -math.pi) & (dd > 0))
-        ph_correct = ddmod - dd
-        np.copyto(ph_correct, 0, where=abs(dd) < math.pi)
-        p[1:] += ph_correct.cumsum(axis=-1)
-        return p
-
     def _equally_spaced_path(self, path, point):
         continuous_variables = [
             "ref_wp_positions_x",
@@ -415,7 +402,7 @@ class Waypoints:
                 waypoint.wp.speed_limit
             )
 
-        ref_waypoints_coordinates["ref_wp_headings"] = Waypoints._inplace_unwrap(
+        ref_waypoints_coordinates["ref_wp_headings"] = inplace_unwrap(
             ref_waypoints_coordinates["ref_wp_headings"]
         )
         first_wp_heading = ref_waypoints_coordinates["ref_wp_headings"][0]
