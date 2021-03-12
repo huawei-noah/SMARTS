@@ -312,7 +312,6 @@ if __name__ == "__main__":
     # Obtain the policy class IDs from the arguments.
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
-    print("arsg.grade_mode", args.grade_mode)
     ray.init()
     ray.wait(
         [

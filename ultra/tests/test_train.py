@@ -89,6 +89,7 @@ class TrainTest(unittest.TestCase):
                         headless=True,
                         seed=2,
                         log_dir="tests/logs",
+                        grade_mode=False,
                     )
                 ]
             )
@@ -128,6 +129,7 @@ class TrainTest(unittest.TestCase):
                         headless=True,
                         seed=2,
                         log_dir="tests/logs",
+                        grade_mode=False,
                     )
                 ]
             )

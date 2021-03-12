@@ -3,11 +3,7 @@ update_rate: 5
 policy_delay: 2
 noise_clip: 0.5
 policy_noise: 0.2
-<<<<<<< HEAD:ultra/ultra/baselines/ddpg/ddpg/params.yaml
-warmup: 10
-=======
 warmup: 1000
->>>>>>> bbe9a87c2afb401a0e0db2958603eaeeef556fd8:ultra/ultra/baselines/td3/td3/params.yaml
 actor_lr: 1e-4
 critic_lr: 1e-3
 critic_wd: 0.0

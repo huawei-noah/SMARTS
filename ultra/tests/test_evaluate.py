@@ -233,6 +233,7 @@ class EvaluateTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 log_dir=log_dir,
+                grade_mode=False,
             )
             self.assertTrue(True)
         except Exception as err:
@@ -274,34 +275,12 @@ class EvaluateTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 log_dir=log_dir,
+                grade_mode=False,
             )
             self.assertTrue(True)
         except Exception as err:
             print(err)
             self.assertTrue(False)
-
-    def test_extract_policy_from_path(self):
-        paths = [
-            "from.ultra.baselines.sac:sac-v0",
-            "hello.ultra.ppo:ppo-v1",
-            "ultra.custom:custom",
-            "a.sb.ultra.c.d.e.sac:sac-v99",
-            "a.b.c.d.e.ultra.custom_agent.policy:MBPO-v2",
-        ]
-
-        def extract(path):
-            m = re.search(
-                "ultra(.)*([a-zA-Z0-9_]*.)+([a-zA-Z0-9_])+:[a-zA-Z0-9_]+((-)*[a-zA-Z0-9_]*)*",
-                path,
-            )
-
-            try:
-                policy_class = m.group(0)
-            except AttributeError as e:
-                self.assertTrue(False)
-
-        for path in paths:
-            extract(path)
 
     # @classmethod
     # def tearDownClass(cls):
@@ -335,6 +314,8 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
     }
 
     total_step = 0
+    episode_count = 0
+    old_episode = None
     etag = ":".join([policy_class.split(":")[-1] for policy_class in agent_classes])
 
     for episode in episodes(1, etag=etag, log_dir=log_dir):
@@ -344,6 +325,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
         episode.reset()
         experiment_dir = episode.experiment_dir
 
+        # Save relevant agent metadata.
         if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
             if not os.path.exists(experiment_dir):
                 os.makedirs(experiment_dir)
@@ -359,25 +341,20 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                 )
 
         while not dones["__all__"]:
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                episode=episode,
-                eval_rate=10,
-                eval_episodes=1,
-                max_episode_steps=2,
-                policy_classes=agent_classes,
-                scenario_info=scenario_info,
-                timestep_sec=0.1,
-                headless=True,
-                log_dir=log_dir,
-            )
+            # Break if any of the agent's step counts is 1000000 or greater.
+            if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
+                finished = True
+                break
+
+            # Request and perform actions on each agent that received an observation.
             actions = {
                 agent_id: agents[agent_id].act(observation, explore=True)
                 for agent_id, observation in observations.items()
             }
             next_observations, rewards, dones, infos = env.step(actions)
 
+            # Active agents are those that receive observations in this step and the next
+            # step. Step each active agent (obtaining their network loss if applicable).
             active_agent_ids = observations.keys() & next_observations.keys()
             loss_outputs = {
                 agent_id: agents[agent_id].step(
@@ -391,6 +368,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                 for agent_id in active_agent_ids
             }
 
+            # Record the data from this episode.
             episode.record_step(
                 agent_ids_to_record=active_agent_ids,
                 infos=infos,
@@ -399,7 +377,35 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                 loss_outputs=loss_outputs,
             )
 
+            # Update variables for the next step.
             total_step += 1
             observations = next_observations
+
+        episode.record_episode(old_episode, eval_info["eval_rate"])
+        old_episode = episode
+
+        if (episode_count + 1) % eval_info["eval_rate"] == 0:
+            episode.record_tensorboard()
+            old_episode = None
+
+        if eval_info["eval_episodes"] != 0:
+            # Perform the evaluation check.
+            evaluation_check(
+                agents=agents,
+                agent_ids=agent_ids,
+                policy_classes=agent_classes,
+                episode=episode,
+                log_dir=log_dir,
+                max_episode_steps=max_episode_steps,
+                episode_count=episode_count,
+                grade_mode=grade_mode,
+                agent_coordinator=agent_coordinator,
+                **eval_info,
+                **env.info,
+            )
+        episode_count += 1
+
+        if finished:
+            break
 
     env.close()

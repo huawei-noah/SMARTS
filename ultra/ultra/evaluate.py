@@ -252,6 +252,12 @@ if __name__ == "__main__":
         default="logs",
         type=str,
     )
+    parser.add_argument(
+        "--grade-mode",
+        help="Toggle grade mode",
+        default=False,
+        type=bool,
+    )
     args = parser.parse_args()
 
     if not os.path.exists(args.log_dir):
@@ -343,6 +349,7 @@ if __name__ == "__main__":
                         timestep_sec=float(args.timestep),
                         headless=args.headless,
                         log_dir=args.log_dir,
+                        grade_mode=args.grade_mode,
                     )
                 ]
             )[0]
