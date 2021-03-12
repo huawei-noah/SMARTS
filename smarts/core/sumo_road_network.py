@@ -126,7 +126,18 @@ class SumoRoadNetwork:
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
         G = sumolib.net.readNet(net_file, withInternal=True)
-        if not cls._check_net_origin(G.getBoundary()):
+
+        # check to see if we need to shift the map...
+        # if it already has an offset, it's probably been shifted
+        # correctly already, so we don't need to do it.  if not,
+        # then we check to see if the graph's bounding box includes
+        # the origin, and then shift it ourselves if not.
+        origOffset = G.getLocationOffset()
+        if (
+            origOffset[0] == 0
+            and origOffset[1] == 0
+            and not cls._check_net_origin(G.getBoundary())
+        ):
             shifted_G = cls._shift_coordinates(net_file)
             if shifted_G:
                 assert cls._check_net_origin(shifted_G.getBoundary())
