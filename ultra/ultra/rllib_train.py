@@ -26,7 +26,7 @@ import timeit, datetime
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
 import time
-import psutil, dill, torch
+import psutil, dill, torch, inspect
 import ray, torch, argparse
 import numpy as np
 from ray import tune
@@ -34,12 +34,6 @@ from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
 
 from ray.rllib.models import ModelCatalog
-import ray.rllib.agents.ppo as ppo
-import ray.rllib.agents.sac as sac
-import ray.rllib.agents.ddpg as ddpg
-
-# from ray.rllib.agents.sac.sac_torch_model import SACTorchModel
-# from ray.rllib.agents.ddpg.ddpg_torch_model import DDPGTorchModel
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import (
     AgentInterface,
@@ -48,7 +42,8 @@ from smarts.core.agent_interface import (
     NeighborhoodVehicles,
 )
 
-from ultra.baselines.rllib_models.fc_network import CustomFCModel
+from ultra.baselines.rllib.models.fc_network import CustomFCModel
+from ultra.baselines.rllib.agent import RllibAgent
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
@@ -58,34 +53,23 @@ from ultra.utils.episode import log_creator
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
-# TODO : refactor rllib_train.py / move callbacks somewhere else??
-
 
 def train(
-    task, num_episodes, eval_info, timestep_sec, headless, seed, max_samples, log_dir
+    task,
+    num_episodes,
+    policy,
+    eval_info,
+    timestep_sec,
+    headless,
+    seed,
+    training_batch_size,
+    log_dir,
 ):
 
-    # --------------------------------------------------------
-    # Initialize Agent and social_vehicle encoding method
-    # -------------------------------------------------------
-    AGENT_ID = "007"
-
-    social_vehicle_params = dict(
-        encoder_key="pointnet_encoder",
-        social_policy_hidden_units=128,
-        social_polciy_init_std=0.5,
-        num_social_features=4,
-        seed=seed,
-        observation_num_lookahead=20,
-        social_capacity=10,
-    )
-    adapter = BaselineAdapter(
-        social_vehicle_params=social_vehicle_params,
-    )
-
+    agent_name = policy
+    adapter = BaselineAdapter(agent_name)
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
-    # ModelCatalog.register_custom_model("fc_model", DDPGTorchModel)
-    config = ddpg.DEFAULT_CONFIG.copy()
+    config = RllibAgent.rllib_default_config(agent_name)
 
     rllib_policies = {
         "default_policy": (
@@ -124,10 +108,7 @@ def train(
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
-        # "seed":seed,
-        # checking if scenarios are switching correctly
-        # the interval config
-        "train_batch_size": max_samples,  # Debugging value
+        "train_batch_size": training_batch_size,  # Debugging value
         "in_evaluation": True,
         "evaluation_num_episodes": eval_info["eval_episodes"],
         "evaluation_interval": eval_info[
@@ -145,7 +126,6 @@ def train(
             },
             "explore": False,
         },
-        # "custom_eval_function": could be used for env_score?
         "env_config": {
             "seed": seed,
             "scenario_info": task,
@@ -155,22 +135,12 @@ def train(
             "agent_specs": agent_specs,
             "timestep_sec": timestep_sec,
         },
-        "multiagent": {
-            "policies": rllib_policies,
-            # "policy_mapping_fn": policy_mapping
-            # "replay_mode": "independent",
-            # Which metric to use as the "batch size" when building a
-            # MultiAgentBatch. The two supported values are:
-            # env_steps: Count each time the env is "stepped" (no matter how many
-            #   multi-agent actions are passed/how many multi-agent observations
-            #   have been returned in the previous step).
-            # agent_steps: Count each individual agent step as one step.
-            # "count_steps_by": "env_steps",
-        },
+        "multiagent": {"policies": rllib_policies},
     }
 
     config.update(tune_config)
-    trainer = ppo.PPOTrainer(
+    agent = RllibAgent(
+        agent_name=agent_name,
         env=RLlibUltraEnv,
         config=tune_config,
         logger_creator=log_creator(log_dir),
@@ -178,8 +148,8 @@ def train(
 
     # Iteration value in trainer.py (self._iterations) is the technically the number of episodes
     for i in range(num_episodes):
-        results = trainer.train()
-        trainer.log_result(
+        results = agent.train()
+        agent.log_evaluation_metrics(
             results
         )  # Evaluation metrics will now be displayed on Tensorboard
 
@@ -194,6 +164,12 @@ if __name__ == "__main__":
         help="Tasks available : [easy, medium, hard, no-traffic]",
         type=str,
         default="easy",
+    )
+    parser.add_argument(
+        "--policy",
+        help="Policies avaliable : [ppo, ddpg, td3]",
+        type=str,
+        default="ppo",
     )
     parser.add_argument(
         "--episodes", help="number of training episodes", type=int, default=1000000
@@ -220,7 +196,7 @@ if __name__ == "__main__":
         type=int,
     )
     parser.add_argument(
-        "--max-samples",
+        "--training-batch-size",
         help="maximum samples for each training iteration",
         default=4000,
         type=int,
@@ -238,6 +214,7 @@ if __name__ == "__main__":
     train(
         task=(args.task, args.level),
         num_episodes=int(args.episodes),
+        policy=args.policy,
         eval_info={
             "eval_rate": int(args.eval_rate),
             "eval_episodes": int(args.eval_episodes),
@@ -245,7 +222,7 @@ if __name__ == "__main__":
         timestep_sec=float(args.timestep),
         headless=args.headless,
         seed=args.seed,
-        max_samples=args.max_samples,
+        training_batch_size=args.training_batch_size,
         log_dir=args.log_dir,
     )
 

@@ -32,7 +32,7 @@ from smarts.core.agent import Agent
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.common.state_preprocessor import *
+from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class SACPolicy(Agent):
@@ -68,8 +68,8 @@ class SACPolicy(Agent):
         self.observation_num_lookahead = int(
             policy_params.get("observation_num_lookahead", 0)
         )
-        self.social_polciy_init_std = int(
-            policy_params["social_vehicles"].get("social_polciy_init_std", 0)
+        self.social_policy_init_std = int(
+            policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
         self.num_social_features = int(
             policy_params["social_vehicles"].get("num_social_features", 0)
@@ -79,7 +79,7 @@ class SACPolicy(Agent):
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.state_description = get_state_description(
+        self.state_description = BaselineStatePreprocessor.get_state_description(
             policy_params["social_vehicles"],
             policy_params["observation_num_lookahead"],
             self.action_size,
@@ -191,7 +191,6 @@ class SACPolicy(Agent):
             states, actions, rewards, next_states, dones, others = self.memory.sample(
                 device=self.device_name
             )
-
             if self.steps % self.critic_update_rate == 0:
                 critic_loss = self.update_critic(
                     states, actions, rewards, next_states, dones

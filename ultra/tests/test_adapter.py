@@ -33,8 +33,6 @@ from ultra.baselines.agent_spec import BaselineAgentSpec
 AGENT_ID = "001"
 seed = 2
 
-adapter = BaselineAdapter()
-
 
 class AdapterTest(unittest.TestCase):
     def test_observation_features(self):
@@ -48,7 +46,6 @@ class AdapterTest(unittest.TestCase):
         ray.init(ignore_reinit_error=True)
         observations = ray.get(run_experiment.remote())
         ray.shutdown()
-        print((observations[AGENT_ID]["low_dim_states"].dtype))
         self.assertTrue("low_dim_states" in observations[AGENT_ID])
         self.assertTrue("social_vehicles" in observations[AGENT_ID])
 

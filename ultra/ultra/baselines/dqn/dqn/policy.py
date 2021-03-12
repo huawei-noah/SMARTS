@@ -31,7 +31,7 @@ from ultra.baselines.dqn.dqn.explore import EpsilonExplore
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.common.state_preprocessor import *
+from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class DQNPolicy(Agent):
@@ -118,8 +118,8 @@ class DQNPolicy(Agent):
         self.observation_num_lookahead = int(
             policy_params.get("observation_num_lookahead", 0)
         )
-        self.social_polciy_init_std = int(
-            policy_params["social_vehicles"].get("social_polciy_init_std", 0)
+        self.social_policy_init_std = int(
+            policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
         self.num_social_features = int(
             policy_params["social_vehicles"].get("num_social_features", 0)
@@ -129,7 +129,7 @@ class DQNPolicy(Agent):
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.state_description = get_state_description(
+        self.state_description = BaselineStatePreprocessor.get_state_description(
             policy_params["social_vehicles"],
             policy_params["observation_num_lookahead"],
             prev_action_size,

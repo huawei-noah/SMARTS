@@ -34,7 +34,7 @@ from ultra.utils.common import (
 )
 from ultra.baselines.common.yaml_loader import load_yaml
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.state_preprocessor import *
+from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class PPOPolicy(Agent):
@@ -79,8 +79,8 @@ class PPOPolicy(Agent):
         self.observation_num_lookahead = int(
             policy_params.get("observation_num_lookahead", 0)
         )
-        self.social_polciy_init_std = int(
-            policy_params["social_vehicles"].get("social_polciy_init_std", 0)
+        self.social_policy_init_std = int(
+            policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
         self.num_social_features = int(
             policy_params["social_vehicles"].get("num_social_features", 0)
@@ -90,7 +90,7 @@ class PPOPolicy(Agent):
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.state_description = get_state_description(
+        self.state_description = BaselineStatePreprocessor.get_state_description(
             policy_params["social_vehicles"],
             policy_params["observation_num_lookahead"],
             self.action_size,
@@ -118,7 +118,7 @@ class PPOPolicy(Agent):
             self.action_size,
             self.state_size,
             hidden_units=self.hidden_units,
-            init_std=self.social_polciy_init_std,
+            init_std=self.social_policy_init_std,
             seed=self.seed,
             social_feature_encoder_class=self.social_feature_encoder_class,
             social_feature_encoder_params=self.social_feature_encoder_params,
@@ -155,7 +155,7 @@ class PPOPolicy(Agent):
         )
 
         with torch.no_grad():
-            dist, value = self.ppo_net(x=state, unsqueeze=True)
+            dist, value = self.ppo_net(x=state)
         if explore:  # training mode
             action = dist.sample()
             log_prob = dist.log_prob(action)
@@ -222,24 +222,12 @@ class PPOPolicy(Agent):
         return returns
 
     def make_state_from_dict(self, states, device):
-        # TODO: temporary function here. this is copied from replay_buffer.py
-        #  better way is to make PPO use the replay_buffer interface
-        #  but may not be important for now. just make it work
-        # image_keys = states[0]["images"].keys()
-        # images = {}
-        # for k in image_keys:
-        #     _images = (
-        #         torch.cat([e[k].unsqueeze(0) for e in states], dim=0).float().to(device)
-        #     )
-        #     _images = normalize_im(_images)
-        #     images[k] = _images
         low_dim_states = (
             torch.cat([e["low_dim_states"] for e in states], dim=0).float().to(device)
         )
         social_vehicles = [e["social_vehicles"] for e in states]
 
         out = {
-            # "images": images,
             "low_dim_states": low_dim_states,
             "social_vehicles": social_vehicles,
         }

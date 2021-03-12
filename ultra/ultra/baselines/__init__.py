@@ -23,7 +23,7 @@ from smarts.zoo.registry import register
 from .sac.sac.policy import SACPolicy
 from .ppo.ppo.policy import PPOPolicy
 from .dqn.dqn.policy import DQNPolicy
-from .ddpg.ddpg.policy import TD3Policy
+from .td3.td3.policy import TD3Policy
 from .bdqn.bdqn.policy import BehavioralDQNPolicy
 from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
@@ -41,7 +41,7 @@ register(
     ),
 )
 register(
-    locator="ddpg-v0",
+    locator="td3-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
         action_type=ActionSpaceType.Continuous, policy_class=TD3Policy, **kwargs
     ),
