@@ -183,10 +183,11 @@ class Episode:
         gap_info = self.info["Gap"]
         for agent_id, agent_info in self.info["Train"].items():
             for key in agent_info.data:
-                gap_info[agent_id].data[key] = (
-                    self.info["Train"][agent_id].data[key]
-                    - self.info["Evaluation"][agent_id].data[key]
-                )
+                if np.isscalar(gap_info.data[key]):
+                    gap_info[agent_id].data[key] = (
+                        self.info["Train"][agent_id].data[key]
+                        - self.info["Evaluation"][agent_id].data[key]
+                    )
 
     def reset(self, mode="Train"):
         self.start_time = time.time()
