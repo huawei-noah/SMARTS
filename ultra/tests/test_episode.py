@@ -19,6 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os
+import shutil
 import unittest
 
 import gym
@@ -36,9 +38,13 @@ task_level = "easy"
 
 
 class EpisodeTest(unittest.TestCase):
+    # Put generated files and folders in this directory.
+    OUTPUT_DIRECTORY = "tests/episode_test/"
+
     def test_episode_record(self):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
         def run_experiment():
+            log_dir = os.path.join(EpisodeTest.OUTPUT_DIRECTORY, "logs/")
             agent, env = prepare_test_env_agent()
             result = {
                 "episode_reward": 0,
@@ -53,7 +59,7 @@ class EpisodeTest(unittest.TestCase):
                 "off_route": 0,
                 "reached_goal": 0,
             }
-            for episode in episodes(1, etag="Train"):
+            for episode in episodes(1, etag="Train", log_dir=log_dir):
                 observations = env.reset()
                 total_step = 0
                 episode.reset()
@@ -115,8 +121,8 @@ class EpisodeTest(unittest.TestCase):
         def run_experiment():
             agent, env = prepare_test_env_agent()
             episode_count = 0
-            log_dir = "tests/logs"
-            for episode in episodes(2, etag="Train", dir=log_dir):
+            log_dir = os.path.join(EpisodeTest.OUTPUT_DIRECTORY, "logs/")
+            for episode in episodes(2, etag="Train", log_dir=log_dir):
                 observations = env.reset()
                 total_step = 0
                 episode.reset()
@@ -162,6 +168,11 @@ class EpisodeTest(unittest.TestCase):
 
     # def test_save_code(self):
     #     self.assertTrue(True)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(EpisodeTest.OUTPUT_DIRECTORY):
+            shutil.rmtree(EpisodeTest.OUTPUT_DIRECTORY)
 
 
 def prepare_test_env_agent(headless=True):
