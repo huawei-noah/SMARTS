@@ -3,7 +3,6 @@ from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
-    CutIn,
     EndlessMission,
     Flow,
     JunctionEdgeIDResolver,
@@ -19,11 +18,6 @@ from smarts.sstudio.types import (
 ego_missions = [
     Mission(
         route=Route(begin=("edge-south-SN", 1, 10), end=("edge-west-EW", 1, "max")),
-        task=CutIn(
-            complete_on_edge_id=JunctionEdgeIDResolver(
-                "edge-south-SN", 1, "edge-west-EW", 0
-            )
-        ),
     ),
     EndlessMission(
         begin=("edge-south-SN", 1, 10),
