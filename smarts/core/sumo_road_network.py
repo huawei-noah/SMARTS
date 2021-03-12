@@ -103,14 +103,22 @@ class SumoRoadNetwork:
             ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
             ## for netconvert options description.
             try:
-                check_call(["netconvert",
-                            "--offset.disable-normalization=FALSE",
-                            "-s", net_file,
-                            "-o", tf.name])
+                check_call(
+                    [
+                        "netconvert",
+                        "--offset.disable-normalization=FALSE",
+                        "-s",
+                        net_file,
+                        "-o",
+                        tf.name,
+                    ]
+                )
                 return sumolib.net.readNet(tf.name, withInternal=True)
             except Exception as e:
                 logger.warning(
-                    "unable to use netconvert tool to normalize coordinates: {}".format(e)
+                    "unable to use netconvert tool to normalize coordinates: {}".format(
+                        e
+                    )
                 )
         return None
 
@@ -125,7 +133,7 @@ class SumoRoadNetwork:
             if shifted_G:
                 assert cls._check_net_origin(shifted_G.getBoundary())
                 G = shifted_G
-                G._shifted = True
+                G._shifted_by_smarts = True
         return cls(G)
 
     @property
@@ -134,7 +142,11 @@ class SumoRoadNetwork:
 
     @property
     def netOffset(self):
-        return self.graph.getLocationOffset() if getattr(self.graph, '_shifted', False) else [0, 0] 
+        return (
+            self.graph.getLocationOffset()
+            if getattr(self.graph, "_shifted_by_smarts", False)
+            else [0, 0]
+        )
 
     def _compute_road_polygons(self):
         lane_to_poly = {}
