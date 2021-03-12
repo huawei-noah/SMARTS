@@ -113,11 +113,11 @@ class Waypoint:
 
 
 class LinkedWaypoint:
-    def __init__(self, wp = None, nexts = [], is_shape_wp = False):
+    def __init__(self, wp=None, nexts=[], is_shape_wp=False):
         self.wp = wp  # Waypoint: current waypoint
-        self.nexts = nexts  # list of LinkedWaypoint: list of next immediate waypoints
-                            # it's a list of waypoints because a path may branch at junctions
         self.is_shape_wp = is_shape_wp
+        self.nexts = nexts  # list of LinkedWaypoint: list of next immediate waypoints
+        # it's a list of waypoints because a path may branch at junctions
 
     def __hash__(self):
         ## distinguish between different continuations here too
@@ -337,11 +337,7 @@ class Waypoints:
 
     @lru_cache(maxsize=32)
     def _waypoints_starting_at_waypoint(
-        self,
-        waypoint: LinkedWaypoint,
-        lookahead,
-        point,
-        filter_edges: Edges
+        self, waypoint: LinkedWaypoint, lookahead, point, filter_edges: Edges
     ):
         waypoint_paths = [[waypoint]]
         for _ in range(lookahead):
@@ -352,9 +348,11 @@ class Waypoints:
                     # TODO: This could be a problem. What about internal lanes?
                     # Filter only the edges we're interested in
                     edge_id = self._edge(next_wp.wp).getID()
-                    if (filter_edges
+                    if (
+                        filter_edges
                         and filter_edges.edge_ids
-                        and edge_id not in filter_edges.edge_ids):
+                        and edge_id not in filter_edges.edge_ids
+                    ):
                         continue
 
                     new_path = path + [next_wp]
