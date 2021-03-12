@@ -166,18 +166,21 @@ export default function Simulation({
       while (!stopPolling && playing && !wstate_and_time.done) {
         let wstate, elapsed_times;
         [wstate, elapsed_times] = wstate_and_time.value;
-        const currentTime = elapsed_times[0]
+        const currentTime = elapsed_times[0];
         if (prevElapsedTime == null) {
           // default: wait 50ms before playing the next frame
           await sleep(50);
         } else {
-          // msInSec*(currentTime-prevElapsedTime) is the time difference between 
+          // msInSec*(currentTime-prevElapsedTime) is the time difference between
           //   current frame and previous frame
           // Since we could have waited (Date.now() - waitStartTime) to get the current frame,
           //    we deduct this amount from the time we will be waiting
-          await sleep(msInSec*(currentTime-prevElapsedTime)- (Date.now() - waitStartTime))
+          await sleep(
+            msInSec * (currentTime - prevElapsedTime) -
+              (Date.now() - waitStartTime)
+          );
         }
-        prevElapsedTime = currentTime
+        prevElapsedTime = currentTime;
 
         setWorldState(wstate);
         onElapsedTimesChanged(...elapsed_times);
