@@ -20,10 +20,12 @@
 import queue
 import random
 import warnings
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Sequence
+from functools import lru_cache
 
+import math
 import numpy as np
 
 from smarts.core.utils.file import suppress_pkg_resources
@@ -110,16 +112,23 @@ class Waypoint:
         )
 
 
-LinkedWaypoint = namedtuple(
-    "LinkedWaypoint",
-    [
-        "wp",  # Waypoint: current waypoint
-        "nexts",  # list of LinkedWaypoint: list of next immediate waypoints
-        # it's a list of waypoints because a path may branch at junctions
-        "is_shape_wp",
-    ],
-    defaults=[None, [], False],
-)
+class LinkedWaypoint:
+    def __init__(self, wp = None, nexts = [], is_shape_wp = False):
+        self.wp = wp  # Waypoint: current waypoint
+        self.nexts = nexts  # list of LinkedWaypoint: list of next immediate waypoints
+                            # it's a list of waypoints because a path may branch at junctions
+        self.is_shape_wp = is_shape_wp
+
+    def __hash__(self):
+        return hash(self.wp) + sum(hash(nwp.wp) for nwp in self.nexts)
+
+
+class Edges:
+    def __init__(self, edge_ids: Sequence[str]):
+        self.edge_ids = edge_ids
+
+    def __hash__(self):
+        return hash(str(self.edge_ids))  # be careful (don't mutate edge_ids) / only use for lru_cache below.
 
 
 class Waypoints:
@@ -209,18 +218,15 @@ class Waypoints:
         return linked_waypoint.wp
 
     def waypoint_paths_on_lane_at(
-        self, point, lane_id, lookahead, filter_edge_ids: Sequence[str] = None
+        self, point, lane_id, lookahead, filter_edges: Sequence[str] = None
     ):
         lane_kd_tree = self._waypoints_kd_tree_by_lane_id[lane_id]
         closest_linked_wp = self._closest_linked_wp_in_kd_tree_batched(
             [point], self._waypoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
-
-        unlinked_waypoint_paths = self._waypoints_starting_at_waypoint(
-            closest_linked_wp, lookahead, point, filter_edge_ids
+        return self._waypoints_starting_at_waypoint(
+            closest_linked_wp, lookahead, tuple(point), Edges(filter_edges)
         )
-
-        return unlinked_waypoint_paths
 
     def waypoint_paths_at(self, pose, lookahead, filter_from_count=3, within_radius=5):
         closest_linked_wp = self.closest_waypoint(
@@ -324,12 +330,13 @@ class Waypoints:
 
         return [[linked_wps[idx] for idx in idxs] for idxs in closest_indices]
 
+    @lru_cache(maxsize=32)
     def _waypoints_starting_at_waypoint(
         self,
         waypoint: LinkedWaypoint,
         lookahead,
         point,
-        filter_edge_ids: Sequence[str] = None,
+        filter_edges: Edges
     ):
         waypoint_paths = [[waypoint]]
         for _ in range(lookahead):
@@ -340,7 +347,9 @@ class Waypoints:
                     # TODO: This could be a problem. What about internal lanes?
                     # Filter only the edges we're interested in
                     edge_id = self._edge(next_wp.wp).getID()
-                    if filter_edge_ids and edge_id not in filter_edge_ids:
+                    if (filter_edges
+                        and filter_edges.edge_ids
+                        and edge_id not in filter_edges.edge_ids):
                         continue
 
                     new_path = path + [next_wp]
@@ -354,6 +363,20 @@ class Waypoints:
             waypoint_paths = next_waypoint_paths
 
         return [self._equally_spaced_path(path, point) for path in waypoint_paths]
+
+    @staticmethod
+    def _inplace_unwrap(wp_array):
+        ## optimization hack adapted from
+        ##  https://github.com/numpy/numpy/blob/v1.20.0/numpy/lib/function_base.py#L1492-L1546
+        ## to avoid unnecessary (slow) np array copy.
+        p = np.asarray(wp_array)
+        dd = np.subtract(p[1:], p[:-1])
+        ddmod = np.mod(dd + math.pi, 2 * math.pi) - math.pi
+        np.copyto(ddmod, math.pi, where=(ddmod == -math.pi) & (dd > 0))
+        ph_correct = ddmod - dd
+        np.copyto(ph_correct, 0, where=abs(dd) < math.pi)
+        p[1:] += ph_correct.cumsum(axis=-1)
+        return p
 
     def _equally_spaced_path(self, path, point):
         continuous_variables = [
@@ -388,7 +411,7 @@ class Waypoints:
                 waypoint.wp.speed_limit
             )
 
-        ref_waypoints_coordinates["ref_wp_headings"] = np.unwrap(
+        ref_waypoints_coordinates["ref_wp_headings"] = Waypoints._inplace_unwrap(
             ref_waypoints_coordinates["ref_wp_headings"]
         )
         first_wp_heading = ref_waypoints_coordinates["ref_wp_headings"][0]

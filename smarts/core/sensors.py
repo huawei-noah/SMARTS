@@ -993,30 +993,21 @@ class WaypointsSensor(Sensor):
         self._lookahead = lookahead
 
     def __call__(self):
-        waypoints_with_task = None
-
-        @lru_cache(1)
-        def lazy_calculate_waypoints():
-            return self._mission_planner.waypoint_paths_at(
-                sim=self._sim,
-                pose=self._vehicle.pose,
-                lookahead=self._lookahead,
-            )
-
         if self._mission_planner.mission.task is not None:
             if isinstance(self._mission_planner.mission.task, UTurn):
-                waypoints_with_task = self._mission_planner.uturn_waypoints(
+                return self._mission_planner.uturn_waypoints(
                     self._sim, self._vehicle.pose, self._vehicle
                 )
             elif isinstance(self._mission_planner.mission.task, CutIn):
-                waypoints_with_task = self._mission_planner.cut_in_waypoints(
+                return self._mission_planner.cut_in_waypoints(
                     self._sim, self._vehicle.pose, self._vehicle
                 )
 
-        if waypoints_with_task:
-            return waypoints_with_task
-        else:
-            return lazy_calculate_waypoints()
+        return self._mission_planner.waypoint_paths_at(
+            sim=self._sim,
+            pose=self._vehicle.pose,
+            lookahead=self._lookahead,
+        )
 
     def teardown(self):
         pass
