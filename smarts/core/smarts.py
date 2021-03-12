@@ -83,7 +83,7 @@ class SMARTS(ShowBase):
     def __init__(
         self,
         agent_interfaces,
-        traffic_sim,
+        traffic_sim: SumoTrafficSimulation,
         envision: EnvisionClient = None,
         visdom: VisdomClient = None,
         timestep_sec=0.1,
