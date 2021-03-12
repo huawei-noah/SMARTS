@@ -7,6 +7,7 @@ from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
+from smarts.zoo.registry import make as zoo_make
 
 logging.basicConfig(level=logging.INFO)
 
