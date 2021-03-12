@@ -54,6 +54,7 @@ def evaluation_check(
     timestep_sec,
     headless,
     log_dir,
+    grade_mode,
     agent_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
@@ -96,6 +97,7 @@ def evaluation_check(
                         headless=headless,
                         timestep_sec=timestep_sec,
                         log_dir=log_dir,
+                        grade_mode=grade_mode,
                         agent_coordinator=agent_coordinator,
                     )
                 ]
@@ -124,6 +126,7 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
+    grade_mode,
     agent_coordinator=None,
     explore=False,
 ):
@@ -168,7 +171,10 @@ def evaluate(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        observations = env.reset(True, agent_coordinator.get_grade())
+        if grade_mode:
+            observations = env.reset(True, agent_coordinator.get_grade())
+        else:
+            observations = env.reset()
         dones = {"__all__": False}
         infos = None
         episode.reset(mode="Evaluation")

@@ -58,6 +58,7 @@ def train(
     headless,
     seed,
     log_dir,
+    grade_mode,
     policy_ids=None,
 ):
     torch.set_num_threads(1)
@@ -116,13 +117,15 @@ def train(
     agent_coordinator = coordinator("../scenarios/grade_based_task/")
     # agent_coordinator.build_all_scenarios()
     print("Number of Intervals (grades):", agent_coordinator.get_num_of_grades())
+    agent_coordinator.set_grade_mode(grade_mode)
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
-        if agent_coordinator.graduate(episode.index, num_episodes):
-            observations = env.reset(True, agent_coordinator.get_grade())
-            print(agent_coordinator)
-        else:
-            observations = env.reset()
+        if agent_coordinator.get_grade_mode:
+            if agent_coordinator.graduate(episode.index, num_episodes):
+                observations = env.reset(True, agent_coordinator.get_grade())
+                print(agent_coordinator)
+            else:
+                observations = env.reset()
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
         dones = {"__all__": False}
@@ -274,6 +277,12 @@ if __name__ == "__main__":
         default=None,
         type=str,
     )
+    parser.add_argument(
+        "--grade-mode",
+        help="Toggle grade mode",
+        default=False,
+        type=str,
+    )
 
     base_dir = os.path.dirname(__file__)
     pool_path = os.path.join(base_dir, "agent_pool.json")
@@ -312,6 +321,7 @@ if __name__ == "__main__":
                 policy_classes=policy_classes,
                 seed=args.seed,
                 log_dir=args.log_dir,
+                grade_mode=args.grade_mode,
                 policy_ids=policy_ids,
             )
         ]

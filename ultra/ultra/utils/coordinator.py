@@ -28,8 +28,8 @@ from ultra.scenarios.generate_scenarios import build_scenarios
 
 class coordinator:
     def __init__(self, root_dir):
-        # self._task = task
-        # self._level = ""
+        self.mode = False
+
         base_dir = os.path.join(os.path.dirname(__file__), root_dir)
         grades_dir = os.path.join(base_dir, "config.yaml")
 
@@ -37,6 +37,12 @@ class coordinator:
             self.curriculum = yaml.safe_load(task_file)["grades"]
 
         self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
+
+    def set_grade_mode(self, mode):
+        self.mode = mode
+
+    def get_grade_mode(self):
+        return self.mode
 
     def build_all_scenarios(self):
         for key in self.curriculum:

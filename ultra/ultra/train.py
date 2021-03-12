@@ -22,7 +22,6 @@
 import json
 import os
 import sys
-import numpy as np
 
 from ultra.utils.ray import default_ray_kwargs
 
@@ -41,9 +40,11 @@ import matplotlib.pyplot as plt
 
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
-from ultra.utils.episode import episodes, LogInfo
+from ultra.utils.episode import episodes
+from ultra.utils.coordinator import coordinator
 
 num_gpus = 1 if torch.cuda.is_available() else 0
+
 
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
@@ -57,6 +58,7 @@ def train(
     headless,
     seed,
     log_dir,
+    grade_mode,
     policy_ids=None,
 ):
     torch.set_num_threads(1)
@@ -112,9 +114,26 @@ def train(
     episode_count = 0
     old_episode = None
 
+    print(f"grade_mode: {grade_mode}, type: {type(grade_mode)}")
+    if grade_mode:
+        agent_coordinator = coordinator("../scenarios/grade_based_task/")
+        # agent_coordinator.build_all_scenarios()
+        print("\n------------ GRADE MODE : Enabled ------------\n")
+        print("Number of Intervals (grades):", agent_coordinator.get_num_of_grades())
+    else:
+        print("\n------------ GRADE MODE : Disabled ------------\n")
+        agent_coordinator = None
+
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
-        # Reset the environment and retrieve the initial observations.
-        observations = env.reset()
+        if grade_mode:
+            if agent_coordinator.graduate(episode.index, num_episodes):
+                observations = env.reset(True, agent_coordinator.get_grade())
+                print(agent_coordinator)
+            else:
+                observations = env.reset()
+        else:
+            # Reset the environment and retrieve the initial observations.
+            observations = env.reset()
         dones = {"__all__": False}
         infos = None
         episode.reset()
@@ -192,6 +211,9 @@ def train(
                 episode=episode,
                 log_dir=log_dir,
                 max_episode_steps=max_episode_steps,
+                episode_count=episode_count,
+                grade_mode=grade_mode,
+                agent_coordinator=agent_coordinator,
                 **eval_info,
                 **env.info,
             )
@@ -262,6 +284,12 @@ if __name__ == "__main__":
         default=None,
         type=str,
     )
+    parser.add_argument(
+        "--grade-mode",
+        help="Toggle grade mode",
+        default=False,
+        type=bool,
+    )
 
     base_dir = os.path.dirname(__file__)
     pool_path = os.path.join(base_dir, "agent_pool.json")
@@ -284,6 +312,7 @@ if __name__ == "__main__":
     # Obtain the policy class IDs from the arguments.
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
+    print("arsg.grade_mode", args.grade_mode)
     ray.init()
     ray.wait(
         [
@@ -300,6 +329,7 @@ if __name__ == "__main__":
                 policy_classes=policy_classes,
                 seed=args.seed,
                 log_dir=args.log_dir,
+                grade_mode=args.grade_mode,
                 policy_ids=policy_ids,
             )
         ]
