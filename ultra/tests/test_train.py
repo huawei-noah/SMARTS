@@ -27,7 +27,6 @@ import unittest
 
 import gym
 import ray
-from torch import log, log_
 
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make

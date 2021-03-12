@@ -48,7 +48,9 @@ class EvaluateTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         path = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/")
-        multiagent_path = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/")
+        multiagent_path = os.path.join(
+            EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/"
+        )
         generate_command = (
             "python ultra/scenarios/interface.py generate "
             "--task 00 --level eval_test --root-dir tests/scenarios "
@@ -91,7 +93,9 @@ class EvaluateTest(unittest.TestCase):
         if not os.path.exists(path):
             self.assertTrue(False)
 
-        path = glob.glob(os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*/models"))[0]
+        path = glob.glob(
+            os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*/models")
+        )[0]
         if len(os.listdir(path)) == 0:
             self.assertTrue(False)
 
@@ -99,11 +103,17 @@ class EvaluateTest(unittest.TestCase):
         if len(os.listdir(path)) <= 2:
             self.assertTrue(False)
 
-        multiagent_path = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/")
+        multiagent_path = os.path.join(
+            EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/"
+        )
         if not os.path.exists(path):
             self.assertTrue(False)
 
-        multiagent_path = glob.glob(os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*/models"))[0]
+        multiagent_path = glob.glob(
+            os.path.join(
+                EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*/models"
+            )
+        )[0]
         if len(os.listdir(multiagent_path)) < 2:
             self.assertTrue(False)
 
@@ -132,7 +142,9 @@ class EvaluateTest(unittest.TestCase):
             shutil.rmtree(log_dir)
 
     def test_evaluation_check_multiagent(self):
-        log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_check_multiagent_logs/")
+        log_dir = os.path.join(
+            EvaluateTest.OUTPUT_DIRECTORY, "output_eval_check_multiagent_logs/"
+        )
         # ray.init(ignore_reinit_error=True)
         ray.shutdown()
         ray.init()
@@ -155,7 +167,9 @@ class EvaluateTest(unittest.TestCase):
 
     def test_evaluate_cli(self):
         log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_cli_logs/")
-        experiment_dir = glob.glob(os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*"))[0]
+        experiment_dir = glob.glob(
+            os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
+        )[0]
         models = " ".join(glob.glob(os.path.join(experiment_dir, "models/*")))
         evaluate_command = (
             f"python ultra/evaluate.py "
@@ -178,8 +192,12 @@ class EvaluateTest(unittest.TestCase):
             shutil.rmtree(log_dir)
 
     def test_evaluate_cli_multiagent(self):
-        log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_cli_multiagent_logs/")
-        experiment_dir = glob.glob(os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*"))[0]
+        log_dir = os.path.join(
+            EvaluateTest.OUTPUT_DIRECTORY, "output_eval_cli_multiagent_logs/"
+        )
+        experiment_dir = glob.glob(
+            os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*")
+        )[0]
         models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
         evaluate_command = (
             f"python ultra/evaluate.py "
@@ -203,7 +221,9 @@ class EvaluateTest(unittest.TestCase):
 
     def test_evaluate_agent(self):
         seed = 2
-        models_directory = glob.glob(os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*/models/"))[0]
+        models_directory = glob.glob(
+            os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*/models/")
+        )[0]
         log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_agent_logs/")
 
         with open(
@@ -244,8 +264,14 @@ class EvaluateTest(unittest.TestCase):
 
     def test_evaluate_multiagent(self):
         seed = 2
-        models_directory = glob.glob(os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*/models/"))[0]
-        log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_multiagent_logs/")
+        models_directory = glob.glob(
+            os.path.join(
+                EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*/models/"
+            )
+        )[0]
+        log_dir = os.path.join(
+            EvaluateTest.OUTPUT_DIRECTORY, "output_eval_multiagent_logs/"
+        )
 
         with open(
             os.path.join(models_directory, "../agent_metadata.pkl"), "rb"

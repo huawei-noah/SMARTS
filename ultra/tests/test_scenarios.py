@@ -95,7 +95,9 @@ class ScenariosTest(unittest.TestCase):
 
     def test_interface_generate_multiagent(self):
         try:
-            save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/easy-multiagent/")
+            save_dir = os.path.join(
+                ScenariosTest.OUTPUT_DIRECTORY, "maps/easy-multiagent/"
+            )
             if os.path.exists(save_dir):
                 shutil.rmtree(save_dir)
             os.system(
