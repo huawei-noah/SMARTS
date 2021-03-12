@@ -182,7 +182,7 @@ def train(
         if (episode_count + 1) % eval_info["eval_rate"] == 0:
             episode.record_tensorboard()
             old_episode = None
-            
+
         if eval_info["eval_episodes"] != 0:
             # Perform the evaluation check.
             evaluation_check(

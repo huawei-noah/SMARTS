@@ -36,9 +36,7 @@ class coordinator:
         with open(grades_dir, "r") as task_file:
             self.curriculum = yaml.safe_load(task_file)["grades"]
 
-        self.counter = cycle(
-            tuple([i * 1 for i in range(self.get_num_of_grades())])
-        )
+        self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
 
     def build_all_scenarios(self):
         for key in self.curriculum:
@@ -57,7 +55,7 @@ class coordinator:
         self.grade = self.curriculum[grade]
 
     def graduate(self, index, num_episodes):
-        ''' Conditions on when to graduate '''
+        """ Conditions on when to graduate """
 
         # Switch to next grade based on number of episodes completed
         if (index % (num_episodes / self.get_num_of_grades())) == 0:

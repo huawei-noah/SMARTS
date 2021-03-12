@@ -62,7 +62,7 @@ def evaluation_check(
         for agent_id in agent_ids
         # if (episode.get_itr(agent_id) + 1) % eval_rate == 0
         # and episode.last_eval_iterations[agent_id] != episode.get_itr(agent_id)
-        if (episode_count + 1) % eval_rate == 0 
+        if (episode_count + 1) % eval_rate == 0
         and episode.last_eval_iterations[agent_id] != episode_count
     ]
 

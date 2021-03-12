@@ -112,13 +112,13 @@ def train(
 
     episode_count = 0
     old_episode = None
-    
+
     agent_coordinator = coordinator("../scenarios/grade_based_task/")
     # agent_coordinator.build_all_scenarios()
     print("Number of Intervals (grades):", agent_coordinator.get_num_of_grades())
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
-        if (agent_coordinator.graduate(episode.index, num_episodes)):
+        if agent_coordinator.graduate(episode.index, num_episodes):
             observations = env.reset(True, agent_coordinator.get_grade())
             print(agent_coordinator)
         else:
@@ -192,7 +192,7 @@ def train(
         if (episode_count + 1) % eval_info["eval_rate"] == 0:
             episode.record_tensorboard()
             old_episode = None
-            
+
         if eval_info["eval_episodes"] != 0:
             # Perform the evaluation check.
             evaluation_check(
