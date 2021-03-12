@@ -22,10 +22,10 @@ import math
 import random
 import re
 from dataclasses import dataclass
-from typing import Sequence, Tuple, Union
-from tempfile import NamedTemporaryFile
-from subprocess import check_call
 from functools import lru_cache
+from subprocess import check_call
+from tempfile import NamedTemporaryFile
+from typing import Sequence, Tuple, Union
 
 import numpy as np
 import trimesh
@@ -116,9 +116,7 @@ class SumoRoadNetwork:
                 return sumolib.net.readNet(tf.name, withInternal=True)
             except Exception as e:
                 logger.warning(
-                    "unable to use netconvert tool to normalize coordinates: {}".format(
-                        e
-                    )
+                    f"unable to use netconvert tool to normalize coordinates: {e}"
                 )
         return None
 
