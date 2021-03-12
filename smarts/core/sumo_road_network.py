@@ -22,10 +22,10 @@ import math
 import random
 import re
 from dataclasses import dataclass
-from typing import Sequence, Tuple, Union
-from tempfile import NamedTemporaryFile
-from subprocess import check_call
 from functools import lru_cache
+from subprocess import check_call
+from tempfile import NamedTemporaryFile
+from typing import Sequence, Tuple, Union
 
 import numpy as np
 import trimesh
@@ -103,14 +103,20 @@ class SumoRoadNetwork:
             ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
             ## for netconvert options description.
             try:
-                check_call(["netconvert",
-                            "--offset.disable-normalization=FALSE",
-                            "-s", net_file,
-                            "-o", tf.name])
+                check_call(
+                    [
+                        "netconvert",
+                        "--offset.disable-normalization=FALSE",
+                        "-s",
+                        net_file,
+                        "-o",
+                        tf.name,
+                    ]
+                )
                 return sumolib.net.readNet(tf.name, withInternal=True)
             except Exception as e:
                 logger.warning(
-                    "unable to use netconvert tool to normalize coordinates: {}".format(e)
+                    f"unable to use netconvert tool to normalize coordinates: {e}"
                 )
         return None
 
@@ -134,7 +140,11 @@ class SumoRoadNetwork:
 
     @property
     def netOffset(self):
-        return self.graph.getLocationOffset() if getattr(self.graph, '_shifted', False) else [0, 0] 
+        return (
+            self.graph.getLocationOffset()
+            if getattr(self.graph, "_shifted", False)
+            else [0, 0]
+        )
 
     def _compute_road_polygons(self):
         lane_to_poly = {}
