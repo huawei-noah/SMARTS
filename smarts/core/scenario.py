@@ -196,6 +196,10 @@ class Scenario:
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
         self._traffic_history_service = Traffic_history_service(traffic_history)
 
+    @property
+    def mapLocationOffset(self):
+        return self._road_network.netOffset
+
     def __repr__(self):
         return f"""Scenario(
   _root={self._root},
