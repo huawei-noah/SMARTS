@@ -303,6 +303,8 @@ class MissionPlanner:
             heading = Heading(vec_to_radians(pos - prev))
             prev = pos
             lane = self._road_network.nearest_lane(pos)
+            if lane is None:
+                continue
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
