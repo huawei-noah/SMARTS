@@ -159,7 +159,7 @@ class SumoRoadNetwork:
     def netOffset(self):
         return (
             self.graph.getLocationOffset()
-            if getattr(self.graph, "_shifted_by_smarts", False)
+            if self.graph and getattr(self.graph, "_shifted_by_smarts", False)
             else [0, 0]
         )
 
