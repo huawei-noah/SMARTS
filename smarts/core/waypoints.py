@@ -120,6 +120,9 @@ class LinkedWaypoint:
         self.is_shape_wp = is_shape_wp
 
     def __hash__(self):
+        ## distinguish between different continuations here too
+        ## so the lru_cache on _waypoints_starting_at_waypoint() below
+        ## doesn't return the wrong set of waypoints.
         return hash(self.wp) + sum(hash(nwp.wp) for nwp in self.nexts)
 
 
@@ -128,7 +131,9 @@ class Edges:
         self.edge_ids = edge_ids
 
     def __hash__(self):
-        return hash(str(self.edge_ids))  # be careful (don't mutate edge_ids) / only use for lru_cache below.
+        ## be careful: don't mutate edge_ids while using this.
+        ## (only use for lru_cache below)
+        return hash(str(self.edge_ids))
 
 
 class Waypoints:
@@ -218,14 +223,14 @@ class Waypoints:
         return linked_waypoint.wp
 
     def waypoint_paths_on_lane_at(
-        self, point, lane_id, lookahead, filter_edges: Sequence[str] = None
+        self, point, lane_id, lookahead, filter_edge_ids: Sequence[str] = None
     ):
         lane_kd_tree = self._waypoints_kd_tree_by_lane_id[lane_id]
         closest_linked_wp = self._closest_linked_wp_in_kd_tree_batched(
             [point], self._waypoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
         return self._waypoints_starting_at_waypoint(
-            closest_linked_wp, lookahead, tuple(point), Edges(filter_edges)
+            closest_linked_wp, lookahead, tuple(point), Edges(filter_edge_ids)
         )
 
     def waypoint_paths_at(self, pose, lookahead, filter_from_count=3, within_radius=5):
@@ -366,9 +371,10 @@ class Waypoints:
 
     @staticmethod
     def _inplace_unwrap(wp_array):
-        ## optimization hack adapted from
+        ## minor optimization hack adapted from
         ##  https://github.com/numpy/numpy/blob/v1.20.0/numpy/lib/function_base.py#L1492-L1546
-        ## to avoid unnecessary (slow) np array copy.
+        ## to avoid unnecessary (slow) np array copy
+        ## (as seen in profiling).
         p = np.asarray(wp_array)
         dd = np.subtract(p[1:], p[:-1])
         ddmod = np.mod(dd + math.pi, 2 * math.pi) - math.pi
