@@ -125,6 +125,7 @@ class SumoRoadNetwork:
             if shifted_G:
                 assert cls._check_net_origin(shifted_G.getBoundary())
                 G = shifted_G
+                G._shifted = True
         return cls(G)
 
     @property
@@ -133,7 +134,7 @@ class SumoRoadNetwork:
 
     @property
     def netOffset(self):
-        return self.graph.getLocationOffset()
+        return self.graph.getLocationOffset() if getattr(self.graph, '_shifted', False) else [0, 0] 
 
     def _compute_road_polygons(self):
         lane_to_poly = {}
