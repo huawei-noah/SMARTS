@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,7 +19,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import collections.abc as collections_abc
+from collections import namedtuple
 import logging
 import random
 from dataclasses import dataclass, field
@@ -30,11 +34,6 @@ from shapely.ops import unary_union
 from smarts.core import gen_id
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.id import SocialAgentId
-
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -356,26 +355,30 @@ class Traffic:
     flows: Sequence[Flow]
     """Flows are used to define a steady supply of vehicles."""
 
+class EntryTactic(
+    NamedTuple(
+        "EntryTactic", 
+        [
+            ("wait_to_hijack_limit_s", float), # The amount of seconds a hijack will wait to get a vehicle before just emitting
+            ("zone", "MapZone"), # The zone of the hijack area, it's a list of waypoints because a path may branch at junctions
+            ("exclusion_prefixes", Tuple[str, ...]), # The prefixes of vehicles to avoid hijacking
+            ("default_entry_speed", float), # The speed that the vehicle starts at when defaulting to emitting
+        ],
+    )):
 
-@dataclass(frozen=True)
-class EntryTactic:
-    pass
+    def __new__(cls):
+        return super().__new__(cls, wait_to_hijack_limit_s = 0, zone = None, exclusion_prefixes = tuple(), default_entry_speed = None)
 
-
-@dataclass(frozen=True)
-class TrapEntryTactic(EntryTactic):
+class TrapEntryTactic(NamedTuple):
     """An entry tactic that hijacks a vehicle to start the mission."""
-
     wait_to_hijack_limit_s: float
     """The amount of seconds a hijack will wait to get a vehicle before just emitting"""
     zone: "MapZone" = None
-    """The zone of the hijack area"""
+    """The zone of the hijack area, it's a list of waypoints because a path may branch at junctions"""
     exclusion_prefixes: Tuple[str, ...] = tuple()
     """The prefixes of vehicles to avoid hijacking"""
     default_entry_speed: float = None
     """The speed that the vehicle starts at when defaulting to emitting"""
-
-
 
 class UTurn(NamedTuple):
     trigger_radius: int = 100
