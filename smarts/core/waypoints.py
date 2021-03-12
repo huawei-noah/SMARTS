@@ -17,6 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import (
+    annotations,
+)  # to allow for typing to refer to class being defined (LinkedWaypoint)
 import queue
 import random
 import warnings
@@ -116,9 +119,7 @@ class Waypoint:
 class LinkedWaypoint(NamedTuple):
     wp: Waypoint = None  # Waypoint: current waypoint
     is_shape_wp: bool = False
-    nexts: List[
-        Waypoints
-    ] = []  # list of LinkedWaypoint: list of next immediate waypoints
+    nexts: List[LinkedWaypoint] = []  # list of next immediate waypoints
     # it's a list of waypoints because a path may branch at junctions
 
     def __hash__(self):
