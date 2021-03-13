@@ -317,6 +317,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
     episode_count = 0
     old_episode = None
     etag = ":".join([policy_class.split(":")[-1] for policy_class in agent_classes])
+    finished = False
 
     for episode in episodes(1, etag=etag, log_dir=log_dir):
         observations = env.reset()
@@ -403,7 +404,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             log_dir=log_dir,
             episode_count=episode_count,
             grade_mode=False,
-            agent_coordinator=agent_coordinator,
+            agent_coordinator=None,
         )
 
         episode_count += 1
