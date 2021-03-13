@@ -71,7 +71,7 @@ class UltraPackageTest(unittest.TestCase):
                         headless=True,
                         seed=2,
                         log_dir=log_dir,
-                        grade_mode=grade_mode,
+                        grade_mode=False,
                     )
                 ]
             )

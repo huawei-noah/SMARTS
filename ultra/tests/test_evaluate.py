@@ -402,7 +402,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             headless=True,
             log_dir=log_dir,
             episode_count=episode_count,
-            grade_mode=grade_mode,
+            grade_mode=False,
             agent_coordinator=agent_coordinator,
         )
 
