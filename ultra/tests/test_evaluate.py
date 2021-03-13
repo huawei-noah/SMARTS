@@ -381,28 +381,31 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             total_step += 1
             observations = next_observations
 
-        episode.record_episode(old_episode, eval_info["eval_rate"])
+        episode.record_episode(old_episode, 1)
         old_episode = episode
 
-        if (episode_count + 1) % eval_info["eval_rate"] == 0:
+        if (episode_count + 1) % 1 == 0:
             episode.record_tensorboard()
             old_episode = None
 
-        if eval_info["eval_episodes"] != 0:
-            # Perform the evaluation check.
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                episode_count=episode_count,
-                grade_mode=grade_mode,
-                agent_coordinator=agent_coordinator,
-                **eval_info,
-                **env.info,
-            )
+        # Perform the evaluation check.
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            episode=episode,
+            eval_rate=1,
+            eval_episodes=1,
+            max_episode_steps=2,
+            policy_classes=agent_classes,
+            scenario_info=scenario_info,
+            timestep_sec=0.1,
+            headless=True,
+            log_dir=log_dir,
+            episode_count=episode_count,
+            grade_mode=grade_mode,
+            agent_coordinator=agent_coordinator,
+        )
+
         episode_count += 1
 
         if finished:
