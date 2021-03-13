@@ -131,7 +131,7 @@ class SumoRoadNetwork:
             if shifted_G:
                 assert cls._check_net_origin(shifted_G.getBoundary())
                 G = shifted_G
-                G._shifted = True
+                G._shifted_by_smarts = True
         return cls(G)
 
     @property
@@ -142,7 +142,7 @@ class SumoRoadNetwork:
     def netOffset(self):
         return (
             self.graph.getLocationOffset()
-            if getattr(self.graph, "_shifted", False)
+            if getattr(self.graph, "_shifted_by_smarts", False)
             else [0, 0]
         )
 
