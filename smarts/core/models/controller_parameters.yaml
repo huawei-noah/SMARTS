@@ -1,6 +1,6 @@
 sedan:
     control:
-            final_heading_gain: .1
+            final_heading_gain: .15
             final_lateral_gain: 4.65
             final_steering_filter_constant: 23.5
             throttle_filter_constant: 2.5
