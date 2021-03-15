@@ -30,9 +30,12 @@ from ultra.train import train
 
 
 class UltraPackageTest(unittest.TestCase):
+    # Put generated files and folders in this directory.
+    OUTPUT_DIRECTORY = "tests/ultra_package_test/"
+
     def test_simple_train_run(self):
         save_dir = "tests/task/eval_test/"
-        log_dir = "tests/logs"
+        log_dir = os.path.join(UltraPackageTest.OUTPUT_DIRECTORY, "tests/logs")
 
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
@@ -95,3 +98,10 @@ class UltraPackageTest(unittest.TestCase):
             shutil.rmtree(log_dir)
         else:
             self.assertTrue(False)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(UltraPackageTest.OUTPUT_DIRECTORY):
+            shutil.rmtree(UltraPackageTest.OUTPUT_DIRECTORY)
+        if os.path.exists("tests/task/eval_test/"):
+            shutil.rmtree("tests/task/eval_test/")
