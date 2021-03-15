@@ -37,6 +37,7 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
     from sklearn.metrics.pairwise import euclidean_distances
 
+from smarts.core import utils
 from smarts.core.chassis import AckermannChassis, BoxChassis
 
 from . import glsl, models
@@ -473,6 +474,11 @@ class SMARTS(ShowBase):
         if self._bullet_client is not None:
             self._bullet_client.disconnect()
             self._bullet_client = None
+        history_mission_filepath = os.path.join(
+            os.path.dirname(utils.__file__), "temp_vehicle_mission.pkl"
+        )
+        if os.path.exists(history_mission_filepath):
+            os.remove(history_mission_filepath)
 
         super().destroy()
 
