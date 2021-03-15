@@ -20,11 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Tuple
 
 
 class Events(NamedTuple):
-    collisions: List[Dict[str, str]]
+    collisions: List[Tuple[str, str]]
     off_route: bool
     reached_goal: bool
     reached_max_episode_steps: bool

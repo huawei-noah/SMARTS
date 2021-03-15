@@ -91,7 +91,7 @@ class SMARTS(ShowBase):
         zoo_addrs=None,
     ):
         try:
-            super().__init__(self, windowType="offscreen")
+            super().__init__(self, windowType="none")
         except Exception as e:
             # Known reasons for this failing:
             raise Exception(
@@ -780,22 +780,13 @@ class SMARTS(ShowBase):
         return [other_states[i] for i in indices]
 
     def vehicle_did_collide(self, vehicle_id):
-        return (
-            len(
-                [
-                    c
-                    for c in self._vehicle_collisions[vehicle_id]
-                    if c["collidee_id"] != self._ground_bullet_id
-                ]
-            )
-            > 0
-        )
+        return (len(self.vehicle_collisions(vehicle_id))> 0)
 
     def vehicle_collisions(self, vehicle_id):
         return [
             c
             for c in self._vehicle_collisions[vehicle_id]
-            if c["collidee_id"] != self._ground_bullet_id
+            if c.collidee_id != self._ground_bullet_id
         ]
 
     def _clear_collisions(self, vehicle_ids):
