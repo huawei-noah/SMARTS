@@ -20,6 +20,7 @@ setup(
         #   tensorboard needs >=41
         #   50.0 is broken: https://github.com/pypa/setupatools/issues/2353
         "setuptools>=41.0.0,!=50.0",
+        "cached-property",
         "click",  # used in scl
         "gym",
         "panda3d",

@@ -26,6 +26,7 @@ from functools import lru_cache
 from subprocess import check_call
 from tempfile import NamedTemporaryFile
 from typing import Sequence, Tuple, Union
+from cached_property import cached_property
 
 import numpy as np
 import trimesh
@@ -155,7 +156,7 @@ class SumoRoadNetwork:
     def graph(self):
         return self._graph
 
-    @property
+    @cached_property
     def netOffset(self):
         return (
             self.graph.getLocationOffset()
