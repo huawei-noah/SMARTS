@@ -52,7 +52,9 @@ def default_obs_adapter(env_obs):
 
     # Distance of vehicle from center of lane
     closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
-    signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
+    signed_dist_from_center = WaypointMethods.signed_lateral_error(
+        closest_wp, ego.position
+    )
     lane_hwidth = closest_wp.lane_width * 0.5
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
@@ -209,7 +211,9 @@ def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp
         if lane_dist_by_path_index[path_idx] > lane_dist:
             if nearest_wp.lane_index == v.lane_index:
                 headings_of_cars[path_idx] = math.sin(
-                    WaypointMethods.relative_heading(nearest_wp, nv_heading_to_ego_heading(v.heading))
+                    WaypointMethods.relative_heading(
+                        nearest_wp, nv_heading_to_ego_heading(v.heading)
+                    )
                 )
 
             # speed

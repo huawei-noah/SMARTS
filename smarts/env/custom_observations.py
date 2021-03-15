@@ -113,7 +113,9 @@ def _lane_ttc_observation_adapter(env_observation):
 
     # distance of vehicle from center of lane
     closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
-    signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
+    signed_dist_from_center = WaypointMethods.signed_lateral_error(
+        closest_wp, ego.position
+    )
     lane_hwidth = closest_wp.lane_width * 0.5
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
@@ -121,7 +123,9 @@ def _lane_ttc_observation_adapter(env_observation):
 
     return {
         "distance_from_center": np.array([norm_dist_from_center]),
-        "angle_error": np.array([WaypointMethods.relative_heading(closest_wp, ego.heading)]),
+        "angle_error": np.array(
+            [WaypointMethods.relative_heading(closest_wp, ego.heading)]
+        ),
         "speed": np.array([ego.speed]),
         "steering": np.array([ego.steering]),
         "ego_ttc": np.array(ego_ttc),

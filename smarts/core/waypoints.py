@@ -49,6 +49,7 @@ from smarts.core.utils.math import (
     vec_to_radians,
 )
 
+
 class Waypoint(NamedTuple):
     pos: np.ndarray  # Point positioned on center of lane
     heading: Heading  # Heading angle of lane at this point (radians)
@@ -79,9 +80,10 @@ class Waypoint(NamedTuple):
             and self.speed_limit == other.speed_limit
             and self.lane_id == other.lane_id
             and self.lane_index == other.lane_index
-        )    
+        )
 
-class WaypointMethods():
+
+class WaypointMethods:
     @staticmethod
     def dist_to(waypoint, p):
         """Calculates straight line distance to the given 2D point"""
@@ -256,7 +258,8 @@ class Waypoints:
         ]
 
         closest_linked_wp = min(
-            closest_wp_on_each_route_edge, key=lambda l_wp: WaypointMethods.dist_to(l_wp.wp, point)
+            closest_wp_on_each_route_edge,
+            key=lambda l_wp: WaypointMethods.dist_to(l_wp.wp, point),
         )
         closest_lane = self._road_network.lane_by_id(closest_linked_wp.wp.lane_id)
 

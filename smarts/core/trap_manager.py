@@ -83,7 +83,9 @@ class TrapManager:
                 mission = mission_planner.random_endless_mission()
 
             if not mission.data.entry_tactic:
-                mission.data = mission.data._replace(entry_tactic=default_entry_tactic())
+                mission.data = mission.data._replace(
+                    entry_tactic=default_entry_tactic()
+                )
 
             if (
                 not isinstance(mission.data.entry_tactic, TrapEntryTactic)
@@ -202,7 +204,10 @@ class TrapManager:
 
                     # Make sure there is not an agent vehicle in the same location
                     pos, largest_dimension, _ = agent_vehicle_comp[0]
-                    if squared_dist(pos, mission.data.start.position) < largest_dimension:
+                    if (
+                        squared_dist(pos, mission.data.start.position)
+                        < largest_dimension
+                    ):
                         continue
 
                 vehicle = TrapManager._make_vehicle(

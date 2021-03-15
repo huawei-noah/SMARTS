@@ -54,10 +54,12 @@ class Start(NamedTuple):
     position: Tuple[int, int]
     heading: Heading
 
+
 class GoalData(NamedTuple):
     position: Tuple[int, int] = (None, None)
     # target_heading: Heading
     radius: float = None
+
 
 class Goal:
     def is_endless(self):
@@ -69,7 +71,7 @@ class Goal:
 
 class EndlessGoal(Goal):
     def __init__(self):
-        self.data:GoalData = GoalData()
+        self.data: GoalData = GoalData()
 
     def is_endless(self):
         return True
@@ -80,7 +82,7 @@ class EndlessGoal(Goal):
 
 class PositionalGoal(Goal):
     def __init__(self, *args, **kwargs):
-        self.data:GoalData = GoalData(*args, **kwargs)
+        self.data: GoalData = GoalData(*args, **kwargs)
 
     @classmethod
     def fromedge(cls, edge_id, road_network, lane_index=0, lane_offset=None, radius=1):
@@ -133,10 +135,11 @@ class MissionData(NamedTuple):
     route_length: float = 0
     num_laps: int = None  # None means infinite # of laps
 
+
 class Mission:
     def __init__(self, *args, **kwargs):
-        self.data:MissionData = MissionData(*args, **kwargs)
-        
+        self.data: MissionData = MissionData(*args, **kwargs)
+
     @property
     def has_fixed_route(self):
         return not self.data.goal.is_endless()
@@ -152,9 +155,10 @@ class Mission:
     def __repr__(self):
         return f"Mission({self.data})"
 
+
 class LapMission:
     def __init__(self, *args, **kwargs):
-        self.data:MissionData = MissionData(*args, **kwargs)
+        self.data: MissionData = MissionData(*args, **kwargs)
 
     @property
     def has_fixed_route(self):

@@ -3,6 +3,7 @@ import numpy as np
 from smarts.core.agent import Agent
 from smarts.core.waypoints import WaypointMethods
 
+
 class NonInteractiveAgent(Agent):
     def __init__(self, speed=5, target_lane_index=None):
         self.speed = speed

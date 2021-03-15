@@ -192,7 +192,9 @@ class CalObs:
         waypoint_paths = env_obs.waypoint_paths
         wps = [path[0] for path in waypoint_paths]
         closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
-        signed_dist_to_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
+        signed_dist_to_center = WaypointMethods.signed_lateral_error(
+            closest_wp, ego.position
+        )
         # lane_hwidth = closest_wp.lane_width * 0.5
         # norm_dist_from_center = signed_dist_to_center / lane_hwidth
 
@@ -315,7 +317,9 @@ class CalObs:
             wps_with_lane_dist.append((path[-1], path_idx, lane_dist))
 
         # TTC calculation along each path
-        ego_closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
+        ego_closest_wp = min(
+            wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position)
+        )
 
         wps_on_lane = [
             (wp, path_idx, dist)
@@ -410,7 +414,9 @@ class CalObs:
         closest_wps = [path[0] for path in wp_paths]
 
         # distance of vehicle from center of lane
-        ego_closest_wp = min(closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
+        ego_closest_wp = min(
+            closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position)
+        )
 
         ego_lane_index = ego_closest_wp.lane_index
 
@@ -902,8 +908,12 @@ def get_distance_from_center(env_obs):
     closest_wps = [path[0] for path in wp_paths]
 
     # distance of vehicle from center of lane
-    closest_wp = min(closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego_state.position))
-    signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego_state.position)
+    closest_wp = min(
+        closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego_state.position)
+    )
+    signed_dist_from_center = WaypointMethods.signed_lateral_error(
+        closest_wp, ego_state.position
+    )
     lane_hwidth = closest_wp.lane_width * 0.5
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 

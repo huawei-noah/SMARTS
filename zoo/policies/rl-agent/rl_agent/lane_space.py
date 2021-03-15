@@ -499,8 +499,12 @@ def get_observation_adapter(
         closest_wps = [path[0] for path in wp_paths]
 
         # distance of vehicle from center of lane
-        closest_wp = min(closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego_state.position))
-        signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego_state.position)
+        closest_wp = min(
+            closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego_state.position)
+        )
+        signed_dist_from_center = WaypointMethods.signed_lateral_error(
+            closest_wp, ego_state.position
+        )
         lane_hwidth = closest_wp.lane_width * 0.5
         norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
@@ -663,8 +667,12 @@ def get_distance_from_center(env_obs):
     closest_wps = [path[0] for path in wp_paths]
 
     # distance of vehicle from center of lane
-    closest_wp = min(closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego_state.position))
-    signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego_state.position)
+    closest_wp = min(
+        closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego_state.position)
+    )
+    signed_dist_from_center = WaypointMethods.signed_lateral_error(
+        closest_wp, ego_state.position
+    )
     lane_hwidth = closest_wp.lane_width * 0.5
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 

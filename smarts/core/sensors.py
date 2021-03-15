@@ -139,6 +139,7 @@ class Vias(NamedTuple):
     hit_via_points: List[ViaPoint]
     """List of points that were hit in the previous step"""
 
+
 class Observation(NamedTuple):
     events: Events
     ego_vehicle_state: EgoVehicleObservation
@@ -148,13 +149,14 @@ class Observation(NamedTuple):
     # TODO: Convert to `namedtuple` or only return point cloud
     # [points], [hits], [(ray_origin, ray_direction)]
     lidar_point_cloud: Tuple[
-            List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
-        ]
+        List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
+    ]
     drivable_area_grid_map: DrivableAreaGridMap
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
     via_data: Vias = None
+
 
 class Collision(TypedDict):
     collidee_id: str
@@ -249,12 +251,17 @@ class Sensors:
         mission_data = sensor_state.mission_planner.mission.data
         # Change (i)  goal type from EndlessGoal or PositionalGoal to GoalData type
         #        (ii) zone type from "MapZone" to ZoneData type
-        if (mission_data.entry_tactic is not None) and (mission_data.entry_tactic.zone is not None):
-            entry_tactic_data = mission_data.entry_tactic._replace(zone=mission_data.entry_tactic.zone.data)
-            mission_data = mission_data._replace(goal=mission_data.goal.data, entry_tactic=entry_tactic_data)
+        if (mission_data.entry_tactic is not None) and (
+            mission_data.entry_tactic.zone is not None
+        ):
+            entry_tactic_data = mission_data.entry_tactic._replace(
+                zone=mission_data.entry_tactic.zone.data
+            )
+            mission_data = mission_data._replace(
+                goal=mission_data.goal.data, entry_tactic=entry_tactic_data
+            )
         else:
             mission_data = mission_data._replace(goal=mission_data.goal.data)
-
 
         ego_vehicle_observation = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
@@ -318,7 +325,6 @@ class Sensors:
             and agent_id in sim.agent_manager.ego_agent_ids
         ):
             logger.warning(f"Agent Id: {agent_id} is done on the first step")
-
 
         # print("995439999999345673456323232wq323")
         # we = Observation(

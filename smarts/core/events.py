@@ -22,6 +22,7 @@
 
 from typing import Dict, List, NamedTuple
 
+
 class Events(NamedTuple):
     collisions: List[Dict[str, str]]
     off_route: bool

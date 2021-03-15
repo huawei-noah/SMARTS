@@ -47,7 +47,9 @@ def agent_spec():
 
         # distance of vehicle from center of lane
         closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
-        signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
+        signed_dist_from_center = WaypointMethods.signed_lateral_error(
+            closest_wp, ego.position
+        )
         lane_hwidth = closest_wp.lane_width * 0.5
         norm_dist_from_center = signed_dist_from_center / lane_hwidth
 

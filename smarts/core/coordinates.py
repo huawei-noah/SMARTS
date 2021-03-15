@@ -34,6 +34,7 @@ from smarts.core.utils.math import (
     yaw_from_quaternion,
 )
 
+
 class BoundingBox(NamedTuple):
     length: float
     width: float

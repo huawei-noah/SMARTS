@@ -447,7 +447,9 @@ class LaneFollowingController:
 
         next_wp = min(
             candidate_next_wps,
-            key=lambda wp: abs(WaypointMethods.signed_lateral_error(wp, vehicle.position))
+            key=lambda wp: abs(
+                WaypointMethods.signed_lateral_error(wp, vehicle.position)
+            )
             + abs(WaypointMethods.relative_heading(wp, vehicle.heading)),
         )
 

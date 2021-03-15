@@ -355,22 +355,43 @@ class Traffic:
     flows: Sequence[Flow]
     """Flows are used to define a steady supply of vehicles."""
 
+
 class EntryTactic(
     NamedTuple(
-        "EntryTactic", 
+        "EntryTactic",
         [
-            ("wait_to_hijack_limit_s", float), # The amount of seconds a hijack will wait to get a vehicle before just emitting
-            ("zone", "MapZone"), # The zone of the hijack area, it's a list of waypoints because a path may branch at junctions
-            ("exclusion_prefixes", Tuple[str, ...]), # The prefixes of vehicles to avoid hijacking
-            ("default_entry_speed", float), # The speed that the vehicle starts at when defaulting to emitting
+            (
+                "wait_to_hijack_limit_s",
+                float,
+            ),  # The amount of seconds a hijack will wait to get a vehicle before just emitting
+            (
+                "zone",
+                "MapZone",
+            ),  # The zone of the hijack area, it's a list of waypoints because a path may branch at junctions
+            (
+                "exclusion_prefixes",
+                Tuple[str, ...],
+            ),  # The prefixes of vehicles to avoid hijacking
+            (
+                "default_entry_speed",
+                float,
+            ),  # The speed that the vehicle starts at when defaulting to emitting
         ],
-    )):
-
+    )
+):
     def __new__(cls):
-        return super().__new__(cls, wait_to_hijack_limit_s = 0, zone = None, exclusion_prefixes = tuple(), default_entry_speed = None)
+        return super().__new__(
+            cls,
+            wait_to_hijack_limit_s=0,
+            zone=None,
+            exclusion_prefixes=tuple(),
+            default_entry_speed=None,
+        )
+
 
 class TrapEntryTactic(NamedTuple):
     """An entry tactic that hijacks a vehicle to start the mission."""
+
     wait_to_hijack_limit_s: float
     """The amount of seconds a hijack will wait to get a vehicle before just emitting"""
     zone: "MapZone" = None
@@ -379,6 +400,7 @@ class TrapEntryTactic(NamedTuple):
     """The prefixes of vehicles to avoid hijacking"""
     default_entry_speed: float = None
     """The speed that the vehicle starts at when defaulting to emitting"""
+
 
 class UTurn(NamedTuple):
     complete_on_edge_id: str = None
@@ -395,7 +417,7 @@ class UTurn(NamedTuple):
     #
     # Example code to get the instance name:
     # uturn = UTurn(trigger_radius=0, initial_speed=1, target_lane_index=3)
-    # print(type(uturn).__name__)    
+    # print(type(uturn).__name__)
 
 
 class CutIn(NamedTuple):
@@ -414,7 +436,7 @@ class CutIn(NamedTuple):
     #
     # Example code to get the instance name:
     # cut_in = CutIn(trigger_radius=0, complete_on_edge_id=None)
-    # print(type(cut_in).__name__)    
+    # print(type(cut_in).__name__)
 
 
 @dataclass(frozen=True)
@@ -496,6 +518,7 @@ class GroupedLapMission:
     via: Tuple[Via, ...] = ()
     """Points on an edge that an actor must pass through"""
 
+
 class ZoneData(NamedTuple):
     # center point
     start: Tuple[str, int, float] = (None, None, None)
@@ -525,11 +548,12 @@ class Zone:
         """Generates the geometry from this zone."""
         raise NotImplementedError
 
+
 class MapZone(Zone):
     """A descriptor that defines a capture area."""
 
     def __init__(self, **kwargs):
-        self.data:ZoneData = ZoneData(**kwargs)
+        self.data: ZoneData = ZoneData(**kwargs)
 
     def to_geometry(self, road_network: SumoRoadNetwork) -> Polygon:
         def resolve_offset(offset, geometry_length, lane_length):
@@ -623,11 +647,12 @@ class MapZone(Zone):
         geom = unary_union(MultiPolygon(lane_shapes))
         return geom
 
+
 class PositionalZone(Zone):
     """A descriptor that defines a capture area at a specific XY location."""
 
     def __init__(self, **kwargs):
-        self.data:ZoneData = ZoneData(**kwargs)
+        self.data: ZoneData = ZoneData(**kwargs)
 
     def to_geometry(self, road_network: SumoRoadNetwork = None) -> Polygon:
         w, h = self.data.size
