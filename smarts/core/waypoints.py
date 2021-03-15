@@ -129,16 +129,6 @@ class LinkedWaypoint(NamedTuple):
         return hash(self.wp) + sum(hash(nwp.wp) for nwp in self.nexts)
 
 
-class Edges:
-    def __init__(self, edge_ids: Sequence[str]):
-        self.edge_ids = edge_ids
-
-    def __hash__(self):
-        ## be careful: don't mutate edge_ids while using this.
-        ## (only use for lru_cache below)
-        return hash(str(self.edge_ids))
-
-
 class Waypoints:
     def __init__(self, road_network, spacing, debug=True):
         self.spacing = spacing
@@ -233,7 +223,10 @@ class Waypoints:
             [point], self._waypoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
         return self._waypoints_starting_at_waypoint(
-            closest_linked_wp, lookahead, tuple(point), Edges(filter_edge_ids)
+            closest_linked_wp,
+            lookahead,
+            tuple(point),
+            tuple(filter_edge_ids) if filter_edge_ids else (),
         )
 
     def waypoint_paths_at(self, pose, lookahead, filter_from_count=3, within_radius=5):
@@ -340,7 +333,7 @@ class Waypoints:
 
     @lru_cache(maxsize=32)
     def _waypoints_starting_at_waypoint(
-        self, waypoint: LinkedWaypoint, lookahead, point, filter_edges: Edges
+        self, waypoint: LinkedWaypoint, lookahead, point, filter_edge_ids: tuple
     ):
         waypoint_paths = [[waypoint]]
         for _ in range(lookahead):
@@ -351,11 +344,7 @@ class Waypoints:
                     # TODO: This could be a problem. What about internal lanes?
                     # Filter only the edges we're interested in
                     edge_id = self._edge(next_wp.wp).getID()
-                    if (
-                        filter_edges
-                        and filter_edges.edge_ids
-                        and edge_id not in filter_edges.edge_ids
-                    ):
+                    if filter_edge_ids and edge_id not in filter_edge_ids:
                         continue
 
                     new_path = path + [next_wp]
