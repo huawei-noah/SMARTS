@@ -38,11 +38,14 @@ seed = 2
 
 
 class TrainTest(unittest.TestCase):
+    # Put generated files and folders in this directory.
+    OUTPUT_DIRECTORY = "tests/train_test/"
+
     def test_train_cli(self):
-        log_dir = "tests/logs"
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         try:
             os.system(
-                "python ultra/train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --log-dir tests/logs"
+                f"python ultra/train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --log-dir {log_dir}"
             )
         except Exception as err:
             print(err)
@@ -52,10 +55,10 @@ class TrainTest(unittest.TestCase):
             self.assertTrue(True)
 
     def test_train_cli_multiagent(self):
-        log_dir = "tests/logs"
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         try:
             os.system(
-                "python ultra/train.py --task 00-multiagent --level easy --episodes 1 --max-episodes-steps 2 --log-dir tests/logs --policy dqn,bdqn,ppo"
+                f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --max-episodes-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
             )
         except Exception as err:
             print(err)
@@ -65,8 +68,9 @@ class TrainTest(unittest.TestCase):
             self.assertTrue(True)
 
     def test_train_single_agent(self):
-        if os.path.exists("tests/logs"):
-            shutil.rmtree("tests/logs")
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+        if os.path.exists(log_dir):
+            shutil.rmtree(log_dir)
 
         seed = 2
         policy_classes = ["ultra.baselines.sac:sac-v0"]
@@ -88,7 +92,7 @@ class TrainTest(unittest.TestCase):
                         timestep_sec=0.1,
                         headless=True,
                         seed=2,
-                        log_dir="tests/logs",
+                        log_dir=log_dir,
                     )
                 ]
             )
@@ -100,8 +104,9 @@ class TrainTest(unittest.TestCase):
             ray.shutdown()
 
     def test_train_multiagent(self):
-        if os.path.exists("tests/logs"):
-            shutil.rmtree("tests/logs")
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+        if os.path.exists(log_dir):
+            shutil.rmtree(log_dir)
 
         seed = 2
         policy_classes = [
@@ -127,7 +132,7 @@ class TrainTest(unittest.TestCase):
                         timestep_sec=0.1,
                         headless=True,
                         seed=2,
-                        log_dir="tests/logs",
+                        log_dir=log_dir,
                     )
                 ]
             )
@@ -166,5 +171,11 @@ class TrainTest(unittest.TestCase):
         self.assertIsInstance(agent, SACPolicy)
 
     def tearDown(self):
-        if os.path.exists("tests/logs"):
-            shutil.rmtree("tests/logs")
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+        if os.path.exists(log_dir):
+            shutil.rmtree(log_dir)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(TrainTest.OUTPUT_DIRECTORY):
+            shutil.rmtree(TrainTest.OUTPUT_DIRECTORY)

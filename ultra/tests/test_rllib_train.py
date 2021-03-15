@@ -28,14 +28,18 @@ seed = 2
 
 
 class RLlibTrainTest(unittest.TestCase):
+    # Put generated files and folders in this directory.
+    OUTPUT_DIRECTORY = "tests/rllib_train_test/"
+
     @classmethod
     def setUpClass(cls):
-        if os.path.exists("tests/rllib_results"):
-            shutil.rmtree("tests/rllib_results")
+        log_dir = os.path.join(RLlibTrainTest.OUTPUT_DIRECTORY, "tests/rllib_results/")
+        if os.path.exists(log_dir):
+            shutil.rmtree(log_dir)
 
     def test_rllib_train_cli(self):
         ray.shutdown()
-        log_dir = "tests/rllib_results"
+        log_dir = os.path.join(RLlibTrainTest.OUTPUT_DIRECTORY, "tests/rllib_results/")
         try:
             os.system(
                 f"python ultra/rllib_train.py --task 00 --level easy --episodes 1 --training-batch-size 200 --headless True --log-dir {log_dir}"
@@ -50,7 +54,7 @@ class RLlibTrainTest(unittest.TestCase):
             self.assertTrue(False)
 
     def test_rllib_train_method(self):
-        log_dir = "tests/rllib_results"
+        log_dir = os.path.join(RLlibTrainTest.OUTPUT_DIRECTORY, "tests/rllib_results/")
         try:
             ray.shutdown()
             ray.init()
@@ -76,3 +80,8 @@ class RLlibTrainTest(unittest.TestCase):
             self.assertTrue(True)
         else:
             self.assertTrue(False)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(RLlibTrainTest.OUTPUT_DIRECTORY):
+            shutil.rmtree(RLlibTrainTest.OUTPUT_DIRECTORY)

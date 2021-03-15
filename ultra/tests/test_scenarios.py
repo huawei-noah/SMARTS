@@ -28,13 +28,16 @@ from ultra.scenarios.generate_scenarios import *
 
 
 class ScenariosTest(unittest.TestCase):
+    # Put generated files and folders in this directory.
+    OUTPUT_DIRECTORY = "tests/scenarios_test/"
+
     def test_interface_generate(self):
         try:
-            save_dir = "tests/scenarios/maps/easy/"
+            save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/easy/")
             if os.path.exists(save_dir):
                 shutil.rmtree(save_dir)
             os.system(
-                "python ultra/scenarios/interface.py generate --task 00 --level easy --root-dir tests/scenarios --save-dir tests/scenarios/maps/easy/map"
+                f"python ultra/scenarios/interface.py generate --task 00 --level easy --root-dir tests/scenarios --save-dir {save_dir}map"
             )
             for dirpath, dirnames, files in os.walk(save_dir):
                 if "traffic" in dirpath:
@@ -50,7 +53,7 @@ class ScenariosTest(unittest.TestCase):
             self.assertTrue(False)
 
     def test_generate_scenario(self):
-        save_dir = "tests/scenarios/maps/easy/"
+        save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/easy/")
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
 
@@ -71,7 +74,7 @@ class ScenariosTest(unittest.TestCase):
                 self.assertTrue(len(missions) == 1)
 
     def test_generate_no_traffic(self):
-        save_dir = "tests/scenarios/maps/no-traffic/"
+        save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/no-traffic/")
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
         build_scenarios(
@@ -92,7 +95,9 @@ class ScenariosTest(unittest.TestCase):
 
     def test_interface_generate_multiagent(self):
         try:
-            save_dir = "tests/scenarios/maps/easy-multiagent/"
+            save_dir = os.path.join(
+                ScenariosTest.OUTPUT_DIRECTORY, "maps/easy-multiagent/"
+            )
             if os.path.exists(save_dir):
                 shutil.rmtree(save_dir)
             os.system(
@@ -113,3 +118,8 @@ class ScenariosTest(unittest.TestCase):
         except Exception as err:
             print(err)
             self.assertTrue(False)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(ScenariosTest.OUTPUT_DIRECTORY):
+            shutil.rmtree(ScenariosTest.OUTPUT_DIRECTORY)
