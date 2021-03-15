@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Sequence, Tuple, NamedTuple
+from typing import Any, Dict, Sequence, Tuple, NamedTuple, Union
 
 import numpy as np
 
