@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import queue
 import random
 import warnings
@@ -109,8 +112,8 @@ class WaypointMethods():
         return signed_dist_to_line(p, waypoint.pos, waypoint.heading.direction_vector())
 
     @staticmethod
-    def pose(self):
-        return Pose.from_center(tuple(self.pos), self.heading)
+    def pose(waypoint):
+        return Pose.from_center(tuple(waypoint.pos), waypoint.heading)
 
 
 LinkedWaypoint = namedtuple(
@@ -253,7 +256,7 @@ class Waypoints:
         ]
 
         closest_linked_wp = min(
-            closest_wp_on_each_route_edge, key=lambda l_wp: l_wp.wp.dist_to(point)
+            closest_wp_on_each_route_edge, key=lambda l_wp: WaypointMethods.dist_to(l_wp.wp, point)
         )
         closest_lane = self._road_network.lane_by_id(closest_linked_wp.wp.lane_id)
 

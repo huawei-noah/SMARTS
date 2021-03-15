@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import pytest
 
 import smarts.sstudio.types as t
@@ -29,6 +30,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.scenario import temp_scenario
+from smarts.core.waypoints import WaypointMethods
 from smarts.sstudio import gen_scenario
 
 AGENT_ID = "Agent-007"
@@ -125,8 +127,8 @@ def test_lane_following_controller(smarts, agent_spec, scenarios):
         wp_path = agent_obs.waypoint_paths[current_lane]
         lateral_error.append(
             abs(
-                wp_path[0].signed_lateral_error(
-                    agent_obs.ego_vehicle_state.position[0:2]
+                WaypointMethods.signed_lateral_error(
+                    wp_path[0], agent_obs.ego_vehicle_state.position[0:2]
                 )
             )
         )

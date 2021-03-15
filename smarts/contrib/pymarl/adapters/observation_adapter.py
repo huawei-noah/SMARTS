@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import math
 
 import gym
@@ -24,6 +27,7 @@ import numpy as np
 
 from smarts.core.coordinates import Heading
 from smarts.core.utils.math import sign, vec_2d
+from smarts.core.waypoints import WaypointMethods
 
 DEFAULT_OBSERVATION_SPACE = gym.spaces.Dict(
     {
@@ -47,8 +51,8 @@ def default_obs_adapter(env_obs):
     wps = [path[0] for path in waypoint_paths]
 
     # Distance of vehicle from center of lane
-    closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
-    signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
+    closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
+    signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
     lane_hwidth = closest_wp.lane_width * 0.5
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
@@ -154,7 +158,7 @@ def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp
 
     speed_of_closest = 1
     wps = [path[0] for path in waypoint_paths]
-    ego_closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
+    ego_closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
     neighborhood_vehicle_states = neighborhood_vehicle_states or []
     for v in neighborhood_vehicle_states:
         # find all waypoints that are on the same lane as this vehicle
@@ -205,7 +209,7 @@ def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp
         if lane_dist_by_path_index[path_idx] > lane_dist:
             if nearest_wp.lane_index == v.lane_index:
                 headings_of_cars[path_idx] = math.sin(
-                    nearest_wp.relative_heading(nv_heading_to_ego_heading(v.heading))
+                    WaypointMethods.relative_heading(nearest_wp, nv_heading_to_ego_heading(v.heading))
                 )
 
             # speed

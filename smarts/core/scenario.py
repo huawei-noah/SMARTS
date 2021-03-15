@@ -54,9 +54,23 @@ class Start(NamedTuple):
     position: Tuple[int, int]
     heading: Heading
 
+class GoalData(NamedTuple):
+    position: Tuple[int, int] = (None, None)
+    # target_heading: Heading
+    radius: float = None
 
-@dataclass(frozen=True)
 class Goal:
+    def is_endless(self):
+        raise NotImplementedError
+
+    def is_reached(self, vehicle):
+        raise NotImplementedError
+
+
+class EndlessGoal(Goal):
+    def __init__(self):
+        self.data:GoalData = GoalData()
+
     def is_endless(self):
         return True
 
@@ -64,16 +78,9 @@ class Goal:
         return False
 
 
-@dataclass(frozen=True)
-class EndlessGoal(Goal):
-    pass
-
-
-@dataclass(frozen=True)
 class PositionalGoal(Goal):
-    position: Tuple[int, int]
-    # target_heading: Heading
-    radius: float
+    def __init__(self, *args, **kwargs):
+        self.data:GoalData = GoalData(*args, **kwargs)
 
     @classmethod
     def fromedge(cls, edge_id, road_network, lane_index=0, lane_offset=None, radius=1):
@@ -93,9 +100,9 @@ class PositionalGoal(Goal):
 
     def is_reached(self, vehicle):
         a = vehicle.position
-        b = self.position
+        b = self.data.position
         dist = math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
-        return dist <= self.radius
+        return dist <= self.data.radius
 
 
 def default_entry_tactic():
@@ -121,7 +128,7 @@ class MissionData(NamedTuple):
     route_vias: Tuple[str] = ()
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
-    task: Tuple[CutIn, UTurn] = None
+    task: Union[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
     route_length: float = 0
     num_laps: int = None  # None means infinite # of laps
@@ -601,13 +608,13 @@ class Scenario:
                 *mission.route.begin,
                 road_network,
             )
-            start = Start(position, heading)
+            start = Start(position=position, heading=heading)
 
             position, _ = to_position_and_heading(
                 *mission.route.end,
                 road_network,
             )
-            goal = PositionalGoal(position, radius=2)
+            goal = PositionalGoal(position=position, radius=2)
 
             return Mission(
                 start=start,
@@ -623,7 +630,7 @@ class Scenario:
                 *mission.begin,
                 road_network,
             )
-            start = Start(position, heading)
+            start = Start(position=position, heading=heading)
 
             return Mission(
                 start=start,
@@ -659,7 +666,7 @@ class Scenario:
             )
 
             return LapMission(
-                start=Start(start_position, start_heading),
+                start=Start(position=start_position, heading=start_heading),
                 goal=PositionalGoal(end_position, radius=2),
                 route_vias=mission.route.via,
                 num_laps=mission.num_laps,

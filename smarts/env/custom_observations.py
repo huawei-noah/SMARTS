@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 from dataclasses import dataclass
 from typing import Callable
 
@@ -25,6 +28,7 @@ import numpy as np
 
 from smarts.core.coordinates import Heading
 from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
+from smarts.core.waypoints import WaypointMethods
 
 
 @dataclass
@@ -108,8 +112,8 @@ def _lane_ttc_observation_adapter(env_observation):
     wps = [path[0] for path in waypoint_paths]
 
     # distance of vehicle from center of lane
-    closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
-    signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
+    closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
+    signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
     lane_hwidth = closest_wp.lane_width * 0.5
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
@@ -117,7 +121,7 @@ def _lane_ttc_observation_adapter(env_observation):
 
     return {
         "distance_from_center": np.array([norm_dist_from_center]),
-        "angle_error": np.array([closest_wp.relative_heading(ego.heading)]),
+        "angle_error": np.array([WaypointMethods.relative_heading(closest_wp, ego.heading)]),
         "speed": np.array([ego.speed]),
         "steering": np.array([ego.steering]),
         "ego_ttc": np.array(ego_ttc),

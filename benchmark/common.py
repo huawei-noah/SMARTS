@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import math
 from collections import defaultdict
 from typing import Dict, Sequence
@@ -34,6 +37,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.core.scenario import PositionalGoal
 from smarts.core.sensors import Observation
 from smarts.core.utils.math import vec_2d
+from smarts.core.waypoints import WaypointMethods
 
 SPACE_LIB = dict(
     # normalized distance to lane center
@@ -187,8 +191,8 @@ class CalObs:
         ego = env_obs.ego_vehicle_state
         waypoint_paths = env_obs.waypoint_paths
         wps = [path[0] for path in waypoint_paths]
-        closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
-        signed_dist_to_center = closest_wp.signed_lateral_error(ego.position)
+        closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
+        signed_dist_to_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
         # lane_hwidth = closest_wp.lane_width * 0.5
         # norm_dist_from_center = signed_dist_to_center / lane_hwidth
 
@@ -202,7 +206,7 @@ class CalObs:
         ego = env_obs.ego_vehicle_state
         waypoint_paths = env_obs.waypoint_paths
         wps = [path[0] for path in waypoint_paths]
-        closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
+        closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
         closest_path = waypoint_paths[closest_wp.lane_index]
         closest_path_len = len(closest_path)
 
@@ -220,7 +224,7 @@ class CalObs:
         closest_path_wps = [closest_path[i] for i in wp_indices]
 
         heading_errors = [
-            math.sin(math.radians(wp.relative_heading(ego.heading)))
+            math.sin(math.radians(WaypointMethods.relative_heading(wp, ego.heading)))
             for wp in closest_path_wps
         ]
 
@@ -300,7 +304,7 @@ class CalObs:
         ego = env_obs.ego_vehicle_state
         waypoint_paths = env_obs.waypoint_paths
         wps = [path[0] for path in waypoint_paths]
-        closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
+        closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
 
         wps_with_lane_dist = []
         for path_idx, path in enumerate(waypoint_paths):
@@ -311,7 +315,7 @@ class CalObs:
             wps_with_lane_dist.append((path[-1], path_idx, lane_dist))
 
         # TTC calculation along each path
-        ego_closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
+        ego_closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
 
         wps_on_lane = [
             (wp, path_idx, dist)
@@ -406,7 +410,7 @@ class CalObs:
         closest_wps = [path[0] for path in wp_paths]
 
         # distance of vehicle from center of lane
-        ego_closest_wp = min(closest_wps, key=lambda wp: wp.dist_to(ego.position))
+        ego_closest_wp = min(closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
 
         ego_lane_index = ego_closest_wp.lane_index
 
@@ -898,8 +902,8 @@ def get_distance_from_center(env_obs):
     closest_wps = [path[0] for path in wp_paths]
 
     # distance of vehicle from center of lane
-    closest_wp = min(closest_wps, key=lambda wp: wp.dist_to(ego_state.position))
-    signed_dist_from_center = closest_wp.signed_lateral_error(ego_state.position)
+    closest_wp = min(closest_wps, key=lambda wp: WaypointMethods.dist_to(wp, ego_state.position))
+    signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego_state.position)
     lane_hwidth = closest_wp.lane_width * 0.5
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 

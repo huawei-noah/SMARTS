@@ -97,26 +97,26 @@ class MissionPlanner:
 
         if not self._mission.has_fixed_route:
             self._route = EmptyRoute()
-        elif self._mission.task is not None:
+        elif self._mission.data.task is not None:
             # TODO: ensure there is a default route
             self._route = EmptyRoute()
         else:
             start_lane = self._road_network.nearest_lane(
-                self._mission.start.position,
+                self._mission.data.start.position,
                 include_junctions=False,
                 include_special=False,
             )
             start_edge = start_lane.getEdge()
 
             end_lane = self._road_network.nearest_lane(
-                self._mission.goal.position,
+                self._mission.data.goal.data.position,
                 include_junctions=False,
                 include_special=False,
             )
             end_edge = end_lane.getEdge()
 
             intermediary_edges = [
-                self._road_network.edge_by_id(edge) for edge in self._mission.route_vias
+                self._road_network.edge_by_id(edge) for edge in self._mission.data.route_vias
             ]
 
             self._route = ShortestRoute(
@@ -331,10 +331,10 @@ class MissionPlanner:
         ego_wps = self._waypoints.waypoint_paths_on_lane_at(
             ego_position, ego_lane.getID(), 60
         )
-        if self._mission.task.initial_speed is None:
+        if self._mission.data.task.initial_speed is None:
             default_speed = ego_wps[0][0].speed_limit
         else:
-            default_speed = self._mission.task.initial_speed
+            default_speed = self._mission.data.task.initial_speed
 
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
@@ -353,7 +353,7 @@ class MissionPlanner:
             neighborhood_vehicles[0].pose.position[:2]
         )
         start_lane = self._road_network.nearest_lane(
-            self._mission.start.position,
+            self._mission.data.start.position,
             include_junctions=False,
             include_special=False,
         )
@@ -455,7 +455,7 @@ class MissionPlanner:
 
         self._task_is_triggered = True
 
-        target_lane_index = self._mission.task.target_lane_index
+        target_lane_index = self._mission.data.task.target_lane_index
         target_lane_index = min(target_lane_index, len(oncoming_lanes) - 1)
         target_lane = oncoming_lanes[target_lane_index]
 

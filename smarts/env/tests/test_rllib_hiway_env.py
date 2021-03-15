@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 from pathlib import Path
 
 import gym
@@ -34,6 +35,7 @@ from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+from smarts.core.waypoints import WaypointMethods
 
 AGENT_ID = "Agent-007"
 INFO_EXTRA_KEY = "__test_extra__"
@@ -47,14 +49,14 @@ def rllib_agent():
         wps = [path[0] for path in waypoint_paths]
 
         # distance of vehicle from center of lane
-        closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
-        signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
+        closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
+        signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
         lane_hwidth = closest_wp.lane_width * 0.5
         norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
         return {
             "distance_from_center": np.array([norm_dist_from_center]),
-            "angle_error": np.array([closest_wp.relative_heading(ego.heading)]),
+            "angle_error": np.array([WaypointMethods.relative_heading(closest_wp, ego.heading)]),
             "speed": np.array([ego.speed]),
             "steering": np.array([ego.steering]),
         }

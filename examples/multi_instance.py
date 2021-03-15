@@ -10,6 +10,7 @@ from examples import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
+from smarts.core.waypoints import WaypointMethods
 
 logging.basicConfig(level=logging.INFO)
 
@@ -52,11 +53,11 @@ def observation_adapter(env_obs):
     wps = [path[0] for path in waypoint_paths]
 
     # distance of vehicle from center of lane
-    closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
-    signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
+    closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
+    signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
     lane_hwidth = closest_wp.lane_width * 0.5
     dist_from_center = signed_dist_from_center / lane_hwidth
-    angle_error = closest_wp.relative_heading(ego.heading)
+    angle_error = WaypointMethods.relative_heading(closest_wp, ego.heading)
 
     return np.array(
         [dist_from_center, angle_error, ego.speed, ego.steering],

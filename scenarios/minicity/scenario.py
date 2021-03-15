@@ -53,7 +53,7 @@ travelling_bubbles = [
 
 static_bubbles = [
     t.Bubble(
-        zone=t.MapZone((id_, 0, 10), 200, 1),
+        zone=t.MapZone(start=(id_, 0, 10), length=200, n_lanes=1),
         margin=5,
         actor=laner_actor,
     )

@@ -1,7 +1,7 @@
 import numpy as np
 
 from smarts.core.agent import Agent
-
+from smarts.core.waypoints import WaypointMethods
 
 class NonInteractiveAgent(Agent):
     def __init__(self, speed=5, target_lane_index=None):
@@ -27,5 +27,5 @@ class NonInteractiveAgent(Agent):
             if waypoints[0].lane_id in self.target_lanes:
                 wp = waypoints[:5][-1]
                 break
-        dist_to_wp = wp.dist_to(obs.ego_vehicle_state.position)
+        dist_to_wp = WaypointMethods.dist_to(wp, obs.ego_vehicle_state.position)
         return np.array([*wp.pos, wp.heading, dist_to_wp / self.speed])

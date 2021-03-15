@@ -139,7 +139,7 @@ class Vias(NamedTuple):
     hit_via_points: List[ViaPoint]
     """List of points that were hit in the previous step"""
 
-class Observation(TypedDict):
+class Observation(NamedTuple):
     events: Events
     ego_vehicle_state: EgoVehicleObservation
     neighborhood_vehicle_states: List[VehicleObservation]
@@ -245,6 +245,17 @@ class Sensors:
                 )
             )
 
+        # Retrieve mission data
+        mission_data = sensor_state.mission_planner.mission.data
+        # Change (i)  goal type from EndlessGoal or PositionalGoal to GoalData type
+        #        (ii) zone type from "MapZone" to ZoneData type
+        if (mission_data.entry_tactic is not None) and (mission_data.entry_tactic.zone is not None):
+            entry_tactic_data = mission_data.entry_tactic._replace(zone=mission_data.entry_tactic.zone.data)
+            mission_data = mission_data._replace(goal=mission_data.goal.data, entry_tactic=entry_tactic_data)
+        else:
+            mission_data = mission_data._replace(goal=mission_data.goal.data)
+
+
         ego_vehicle_observation = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
             position=ego_vehicle_state.pose.position,
@@ -256,7 +267,7 @@ class Sensors:
             edge_id=ego_edge_id,
             lane_id=ego_lane_id,
             lane_index=ego_lane_index,
-            mission=sensor_state.mission_planner.mission.data,
+            mission=mission_data,
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,
             **acceleration_params,
@@ -309,26 +320,23 @@ class Sensors:
             logger.warning(f"Agent Id: {agent_id} is done on the first step")
 
 
-        print("9954399999999999999999999323232wq323")
-        # print(ego_vehicle_observation['heading'].source)
-        we = Observation(
-                events=events,
-                ego_vehicle_state=ego_vehicle_observation,
-                neighborhood_vehicle_states=neighborhood_vehicles,
-                waypoint_paths=waypoint_paths,
-                distance_travelled=distance_travelled,
-                top_down_rgb=rgb,
-                occupancy_grid_map=ogm,
-                drivable_area_grid_map=drivable_area_grid_map,
-                lidar_point_cloud=lidar,
-                road_waypoints=road_waypoints,
-                via_data=via_data,
-            )
-        # print(type(we))
-        # raise KeyError("Hi nice to see you !")
-        # print(we)
-        print("99999999999999999999999999999999922222")
-        exit()
+        # print("995439999999345673456323232wq323")
+        # we = Observation(
+        #         events=events,
+        #         ego_vehicle_state=ego_vehicle_observation,
+        #         neighborhood_vehicle_states=neighborhood_vehicles,
+        #         waypoint_paths=waypoint_paths,
+        #         distance_travelled=distance_travelled,
+        #         top_down_rgb=rgb,
+        #         occupancy_grid_map=ogm,
+        #         drivable_area_grid_map=drivable_area_grid_map,
+        #         lidar_point_cloud=lidar,
+        #         road_waypoints=road_waypoints,
+        #         via_data=via_data,
+        #     )
+        # # print(type(we))
+        # print("99999999999999999999999999922222")
+        # # exit()
 
         return (
             Observation(

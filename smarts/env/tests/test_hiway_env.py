@@ -19,12 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import gym
 import pytest
 
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
+from smarts.core.waypoints import WaypointMethods
 
 AGENT_ID = "Agent-007"
 
@@ -44,8 +46,8 @@ def agent_spec():
         wps = [path[0] for path in waypoint_paths]
 
         # distance of vehicle from center of lane
-        closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
-        signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
+        closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
+        signed_dist_from_center = WaypointMethods.signed_lateral_error(closest_wp, ego.position)
         lane_hwidth = closest_wp.lane_width * 0.5
         norm_dist_from_center = signed_dist_from_center / lane_hwidth
 

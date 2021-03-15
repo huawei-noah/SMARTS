@@ -381,11 +381,13 @@ class TrapEntryTactic(NamedTuple):
     """The speed that the vehicle starts at when defaulting to emitting"""
 
 class UTurn(NamedTuple):
-    trigger_radius: int = 100
-    """This task will be triggered if any vehicles within this radius"""
+    complete_on_edge_id: str = None
+    """This is variable has no effect on UTurn"""
     initial_speed: float = None
     """This is the initial speed for the vehicle before it starts u-turn maneuver"""
     target_lane_index: int = 0
+    trigger_radius: int = 100
+    """This task will be triggered if any vehicles within this radius"""
 
     # @property
     # def name(self):
@@ -397,11 +399,14 @@ class UTurn(NamedTuple):
 
 
 class CutIn(NamedTuple):
-    trigger_radius: int = 30
-    """This task will be triggered if any vehicles within this radius"""
-
     complete_on_edge_id: Union[str, JunctionEdgeIDResolver] = None
     """The edge this task will be completed on."""
+    initial_speed: float = None
+    """This is variable has no effect on CutIn"""
+    target_lane_index: int = None
+    """This is variable has no effect on CutIn"""
+    trigger_radius: int = 30
+    """This task will be triggered if any vehicles within this radius"""
 
     # @property
     # def name(self):
@@ -430,7 +435,7 @@ class Mission:
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
 
-    task: Tuple[CutIn, UTurn] = None
+    task: Union[CutIn, UTurn] = None
     """A task for the actor to accomplish."""
 
 
@@ -491,21 +496,9 @@ class GroupedLapMission:
     via: Tuple[Via, ...] = ()
     """Points on an edge that an actor must pass through"""
 
-
-@dataclass(frozen=True)
-class Zone:
-    """The base for a descriptor that defines a capture area."""
-
-    def to_geometry(self, road_network: SumoRoadNetwork) -> Polygon:
-        """Generates the geometry from this zone."""
-        raise NotImplementedError
-
-
-@dataclass(frozen=True)
-class MapZone(Zone):
-    """A descriptor that defines a capture area."""
-
-    start: Tuple[str, int, float]
+class ZoneData(NamedTuple):
+    # center point
+    start: Tuple[str, int, float] = (None, None, None)
     """The (edge, lane_index, offset) details of the starting location.
 
     edge:
@@ -515,10 +508,28 @@ class MapZone(Zone):
     offset:
         The offset in metres into the lane. Also acceptable\\: 'max', 'random'
     """
-    length: float
+    length: float = None
     """The length of the geometry along the center of the lane. Also acceptable\\: 'max'"""
-    n_lanes: 2
+    n_lanes: int = 2
     """The number of lanes from right to left that this zone covers."""
+    pos: Tuple[float, float] = (None, None)
+    """A (x,y) position of the zone in the scenario."""
+    size: Tuple[float, float] = (None, None)
+    """The (length, width) dimensions of the zone."""
+
+
+class Zone:
+    """The base for a descriptor that defines a capture area."""
+
+    def to_geometry(self, road_network: SumoRoadNetwork) -> Polygon:
+        """Generates the geometry from this zone."""
+        raise NotImplementedError
+
+class MapZone(Zone):
+    """A descriptor that defines a capture area."""
+
+    def __init__(self, **kwargs):
+        self.data:ZoneData = ZoneData(**kwargs)
 
     def to_geometry(self, road_network: SumoRoadNetwork) -> Polygon:
         def resolve_offset(offset, geometry_length, lane_length):
@@ -555,13 +566,13 @@ class MapZone(Zone):
             return lane_shape
 
         lane_shapes = []
-        edge_id, lane_idx, offset = self.start
+        edge_id, lane_idx, offset = self.data.start
         edge = road_network.edge_by_id(edge_id)
         buffer_from_ends = 1e-6
-        for lane_idx in range(lane_idx, lane_idx + self.n_lanes):
+        for lane_idx in range(lane_idx, lane_idx + self.data.n_lanes):
             lane = edge.getLanes()[lane_idx]
             lane_length = lane.getLength()
-            geom_length = self.length
+            geom_length = self.data.length
 
             if geom_length > lane_length:
                 logging.debug(
@@ -612,21 +623,16 @@ class MapZone(Zone):
         geom = unary_union(MultiPolygon(lane_shapes))
         return geom
 
-
-@dataclass(frozen=True)
 class PositionalZone(Zone):
     """A descriptor that defines a capture area at a specific XY location."""
 
-    # center point
-    pos: Tuple[float, float]
-    """A (x,y) position of the zone in the scenario."""
-    size: Tuple[float, float]
-    """The (length, width) dimensions of the zone."""
+    def __init__(self, **kwargs):
+        self.data:ZoneData = ZoneData(**kwargs)
 
     def to_geometry(self, road_network: SumoRoadNetwork = None) -> Polygon:
-        w, h = self.size
-        p0 = (self.pos[0] - w / 2, self.pos[1] - h / 2)  # min
-        p1 = (self.pos[0] + w / 2, self.pos[1] + h / 2)  # max
+        w, h = self.data.size
+        p0 = (self.data.pos[0] - w / 2, self.data.pos[1] - h / 2)  # min
+        p1 = (self.data.pos[0] + w / 2, self.data.pos[1] + h / 2)  # max
         return Polygon([p0, (p0[0], p1[1]), p1, (p1[0], p0[1])])
 
 

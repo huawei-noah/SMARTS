@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import math
 from enum import Enum
 from functools import partial
@@ -37,6 +40,7 @@ from smarts.core.utils.math import (
     radians_to_vec,
     signed_dist_to_line,
 )
+from smarts.core.waypoints import WaypointMethods
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
@@ -92,10 +96,9 @@ class LaneFollowingController:
         for wp_a, wp_b in reversed(list(zip(wp_path, wp_path[1:]))):
             ewma_road_curviness = lerp(
                 ewma_road_curviness,
-                math.degrees(abs(wp_a.relative_heading(wp_b.heading))),
+                math.degrees(abs(WaypointMethods.relative_heading(wp_a, wp_b.heading))),
                 0.03,
             )
-
         road_curviness_normalization = 2.5
         road_curviness = np.clip(
             ewma_road_curviness / road_curviness_normalization, 0, 1
@@ -142,7 +145,7 @@ class LaneFollowingController:
 
         reference_heading = wp_path[0].heading
         look_ahead_wp = wp_path[look_ahead_wp_num]
-        look_ahead_dist = look_ahead_wp.dist_to(vehicle.position)
+        look_ahead_dist = WaypointMethods.dist_to(look_ahead_wp, vehicle.position)
         vehicle_look_ahead_pt = [
             vehicle.position[0] - look_ahead_dist * math.sin(vehicle.heading),
             vehicle.position[1] + look_ahead_dist * math.cos(vehicle.heading),
@@ -224,8 +227,8 @@ class LaneFollowingController:
             sim, state, vehicle, desired_poles, target_speed
         )
         # LOOK AHEAD CONTROLLER
-        controller_lat_error = wp_path[look_ahead_wp_num].signed_lateral_error(
-            vehicle_look_ahead_pt
+        controller_lat_error = WaypointMethods.signed_lateral_error(
+            wp_path[look_ahead_wp_num], vehicle_look_ahead_pt
         )
 
         abs_heading_error = min(
@@ -444,8 +447,8 @@ class LaneFollowingController:
 
         next_wp = min(
             candidate_next_wps,
-            key=lambda wp: abs(wp.signed_lateral_error(vehicle.position))
-            + abs(wp.relative_heading(vehicle.heading)),
+            key=lambda wp: abs(WaypointMethods.signed_lateral_error(wp, vehicle.position))
+            + abs(WaypointMethods.relative_heading(wp, vehicle.heading)),
         )
 
         state.target_lane_id = next_wp.lane_id
