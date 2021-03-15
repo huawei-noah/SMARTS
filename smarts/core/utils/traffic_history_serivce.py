@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 from dataclasses import dataclass
 from multiprocessing import Pipe, Process, Queue
 
@@ -36,6 +37,9 @@ class Traffic_history_service:
     memory use of traffic history data
     """
 
+    class QueueDone:
+        pass
+
     def __init__(self, history_file_path):
         self._history_file_path = history_file_path
         self._all_timesteps = set()
@@ -45,6 +49,7 @@ class Traffic_history_service:
         if history_file_path is None:
             return
 
+        self._log = logging.getLogger(self.__class__.__name__)
         send_data_conn, receive_data_conn = Pipe()
         self._receive_data_conn = receive_data_conn
         self._request_queue = Queue()
@@ -77,6 +82,20 @@ class Traffic_history_service:
         self._prepare_next_batch()
         self._receive_data_conn.recv()
 
+    def teardown(self):
+        if self.is_in_use:
+            self._request_queue.put(Traffic_history_service.QueueDone())
+            self._request_queue.close()
+            self._request_queue = None
+            self._fetch_history_proc.join(timeout=3)
+            if self._fetch_history_proc.is_alive():
+                self._log.warning("fetch history process still alive after teardown")
+            self._fetch_history_proc = None
+            self._history_file_path = None
+
+    def __del__(self):
+        self.teardown()
+
     @property
     def is_in_use(self):
         return self._history_file_path is not None
@@ -88,6 +107,9 @@ class Traffic_history_service:
         return_batch = {}
         while True:
             historyRange = request_queue.get()
+            if type(historyRange) is Traffic_history_service.QueueDone:
+                break
+
             assert isinstance(historyRange, RequestHistoryRange)
             send_data_conn.send(return_batch)
             return_batch = {}
