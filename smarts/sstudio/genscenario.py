@@ -392,7 +392,7 @@ def _validate_entry_tactic(mission):
         ):
             return
 
-        z_edge, _, _ = mission.entry_tactic.zone.start
+        z_edge, _, _ = mission.entry_tactic.zone.data.start
         if isinstance(mission, types.EndlessMission):
             edge, _, _ = mission.start
             assert (

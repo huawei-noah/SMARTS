@@ -23,7 +23,6 @@
 import logging
 import math
 import random
-from dataclasses import replace
 from typing import Optional
 
 import numpy as np
@@ -339,7 +338,7 @@ class MissionPlanner:
 
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
-            new_wp = replace(ego_wps[0][px], speed_limit=default_speed)
+            new_wp = ego_wps[0][px]._replace(speed_limit=default_speed)
             ego_wps_des_speed.append(new_wp)
 
         ego_wps_des_speed = [ego_wps_des_speed]
