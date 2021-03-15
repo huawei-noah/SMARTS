@@ -18,12 +18,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import os
+import pickle
 from dataclasses import dataclass
 from multiprocessing import Pipe, Process, Queue
 
 import ijson
 
 import smarts.core.scenario as scenario
+from smarts.core import utils
 
 
 @dataclass
@@ -163,6 +166,18 @@ class Traffic_history_service:
 
     @staticmethod
     def fetch_agent_missions(history_file_path):
+        history_mission_filepath = os.path.join(
+            os.path.dirname(utils.__file__), "temp_vehicle_mission.pkl"
+        )
+
+        if not os.path.exists(history_mission_filepath):
+            history_mission = {}
+        else:
+            with open(history_mission_filepath, "rb") as f:
+                history_mission = pickle.load(f)
+        if history_file_path in history_mission:
+            return history_mission[history_file_path]
+
         vehicle_missions = {}
         with open(history_file_path, "rb") as f:
             for t, vehicles_state in ijson.kvitems(f, "", use_float=True):
@@ -177,5 +192,8 @@ class Traffic_history_service:
                         goal=scenario.EndlessGoal(),
                         start_time=float(t),
                     )
+        history_mission[history_file_path] = vehicle_missions
+        with open(history_mission_filepath, "wb") as f:
+            pickle.dump(history_mission, f)
 
         return vehicle_missions
