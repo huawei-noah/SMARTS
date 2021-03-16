@@ -17,8 +17,3 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
-
-
-def get_path_name(directory_name, file_name):
-    return os.path.join(directory_name, file_name)
