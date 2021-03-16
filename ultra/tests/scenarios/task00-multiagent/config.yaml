@@ -5,10 +5,16 @@ levels:
       ego_missions:
       - start: south-SN  # Turn left going from South to West.
         end:   west-EW
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       - start: west-WE   # Turn right going from West to South.
         end:   south-NS
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       - start: east-EW   # Turn left going from East to South.
         end:   south-NS
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       intersection_types:
         2lane_t:
            percent: 1
@@ -18,6 +24,8 @@ levels:
       ego_missions:
       - start: south-SN  # Turn left going from South to West.
         end:   west-EW
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       intersection_types:
         2lane_t:
            percent: 1
@@ -28,10 +36,16 @@ levels:
       ego_missions:
       - start: south-SN  # Turn left going from South to West.
         end:   west-EW
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       - start: west-WE   # Turn right going from West to South.
         end:   south-NS
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       - start: east-EW   # Turn left going from East to South.
         end:   south-NS
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       intersection_types:
         2lane_t:
            percent: 1
@@ -41,6 +55,8 @@ levels:
       ego_missions:
       - start: south-SN  # Turn left going from South to West.
         end:   west-EW
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       intersection_types:
         2lane_t:
            percent: 1
@@ -52,10 +68,16 @@ levels:
       ego_missions:
       - start: south-SN  # Turn left going from South to West.
         end:   west-EW
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       - start: west-WE   # Turn right going from West to South.
         end:   south-NS
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       - start: east-EW   # Turn left going from East to South.
         end:   south-NS
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       intersection_types:
         2lane_t:
           percent: 0.2
@@ -80,6 +102,8 @@ levels:
       ego_missions:
       - start: south-SN  # Turn left going from South to West.
         end:   west-EW
+        start_offset: [50, 120]
+        end_offset:   [50, 120]
       intersection_types:
         2lane_c:
           percent: 0.5
