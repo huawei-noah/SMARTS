@@ -125,6 +125,7 @@ six==1.15.0
 sklearn==0.0
 soupsieve==2.0.1
 supervisor==4.2.1
+sphinxcontrib-apidoc==0.3.0
 tableprint==0.9.1
 tabulate==0.8.7
 tensorboard==2.2.2
@@ -156,4 +157,3 @@ yarl==1.5.1
 yattag==1.14.0
 zipp==3.3.0
 zope.interface==5.1.2
-sphinxcontrib-apidoc==0.3.0
