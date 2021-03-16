@@ -518,7 +518,7 @@ class Scenario:
 
     def discover_missions_of_traffic_histories(self, vehicle_missions={}):
         return Traffic_history_service.fetch_agent_missions(
-            self._traffic_history_service.history_file_path
+            self._traffic_history_service.history_file_path, self._root
         )
 
     @staticmethod
