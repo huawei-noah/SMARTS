@@ -26,7 +26,7 @@ from multiprocessing import Pipe, Process, Queue
 import ijson
 
 import smarts.core.scenario as scenario
-from smarts.core import utils
+from smarts.core.utils import get_path_name
 
 
 @dataclass
@@ -166,8 +166,8 @@ class Traffic_history_service:
 
     @staticmethod
     def fetch_agent_missions(history_file_path):
-        history_mission_filepath = os.path.join(
-            os.path.dirname(utils.__file__), "temp_vehicle_mission.pkl"
+        history_mission_filepath = get_path_name(
+            "temp_vehicle_mission.pkl", os.path.dirname(history_file_path)
         )
 
         if not os.path.exists(history_mission_filepath):
