@@ -55,6 +55,7 @@ def main(scenarios, sim_name, headless, seed, speed, save_dir, write):
             agent_action = agent.act(agent_obs)
             observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
             i += 1
+            print("Step: ", i)
             episode.record_step(observations, rewards, dones, infos)
     except KeyboardInterrupt:
         # discard result
