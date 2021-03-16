@@ -114,7 +114,6 @@ def train(
     episode_count = 0
     old_episode = None
 
-    print(f"grade_mode: {grade_mode}, type: {type(grade_mode)}")
     if grade_mode:
         agent_coordinator = coordinator("../scenarios/grade_based_task/")
         # agent_coordinator.build_all_scenarios()
