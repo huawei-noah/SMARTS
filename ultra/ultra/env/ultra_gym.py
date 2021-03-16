@@ -102,7 +102,7 @@ class UltraGym(UltraEnv):
         max_episode_steps=200,
         action_type="discrete",
         obs_type="image",
-        image_size=256,
+        image_size=image_dim,
         scenario_info=("1", "easy"),
         agent_id="007",
         headless=True,
@@ -116,6 +116,7 @@ class UltraGym(UltraEnv):
         self.scenario_info = scenario_info
         self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
         self.agent_id = agent_id
+        self.image_dim = image_dim
 
         adapter = GymAdapter()
 
@@ -155,6 +156,19 @@ class UltraGym(UltraEnv):
             seed=seed,
         )
 
+    def convert_to_greyscale(self, rgb):
+
+        r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+        gray = 0.2125 * r + 0.7154 * g + 0.0721 * b
+
+        gray_scale = (
+            cv2.resize(
+                gray,
+                (self.image_dim, self.image_dim),
+                interpolation=cv2.INTER_CUBIC,
+            )
+            / 255.0
+        )
     def step(self, agent_action):
         if agent_action not in self.action_space:
             raise ValueError("Not a valid action.")
@@ -212,23 +226,7 @@ class GymAdapter:
             waypoint_paths=env_observation.waypoint_paths,
             events=env_observation.events,
         )
-
-        def rgb2gray(rgb):
-            r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
-            gray = 0.2125 * r + 0.7154 * g + 0.0721 * b
-            return gray
-
-        rgb_ndarray = env_observation.top_down_rgb.data
-        gray_scale = rgb2gray(rgb_ndarray)
-        gray_scale = (
-            cv2.resize(
-                rgb2gray(rgb_ndarray),
-                rgb_ndarray.shape[0:2],
-                interpolation=cv2.INTER_CUBIC,
-            )
-            / 255.0
-        )
-        return np.reshape(np.float32(gray_scale), (256, 256, 1))
+        return env_observation.top_down_rgb.data
 
     def reward_adapter(self, observation, reward):
         env_reward = reward
