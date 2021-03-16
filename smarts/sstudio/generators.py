@@ -29,8 +29,7 @@ from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.core.utils.sumo import sumolib
 from smarts.core.waypoints import Waypoints
-
-from . import types
+from smarts.sstudio import types
 
 
 class InvalidRoute(Exception):

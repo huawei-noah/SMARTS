@@ -52,11 +52,6 @@ from smarts.core.masks import RenderMasks
 from smarts.core.scenario import MissionData, Via
 from smarts.core.waypoints import Waypoint
 
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
-
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +122,7 @@ class DrivableAreaGridMap(NamedTuple):
     data: np.ndarray
 
 
-class ViaPoint(TypedDict):
+class ViaPoint(NamedTuple):
     position: Tuple[float, float]
     lane_index: float
     edge_id: str
@@ -327,7 +322,6 @@ class Sensors:
         ):
             logger.warning(f"Agent Id: {agent_id} is done on the first step")
 
-
         # print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
 
         obs = Observation(
@@ -344,7 +338,7 @@ class Sensors:
             via_data=via_data,
         )
 
-        # TODO: Set observation size at the point of data creation, rather than using 
+        # TODO: Set observation size at the point of data creation, rather than using
         # an adaptor-style fix prior to returning the observation.
         obs = Sensors._fix_observation_size(sim, obs)
 
@@ -353,31 +347,65 @@ class Sensors:
 
         return (obs, done)
 
-
     @classmethod
     def _fix_observation_size(cls, sim, obs):
-        
+
         # Truncate list `li` to reference length `ref` or pad to reference length `ref` with `null_value`.
-        def truncate_pad(li, ref, null_value):
+        def truncate_pad_li(li, ref, null_value):
             if len(li) < ref:
                 li += [null_value] * (ref - len(li))
             elif len(li) > ref:
                 li = li[:ref]
 
+        # Truncate np.ndarray `ar` to reference length `ref` or pad to reference length `ref` with zeros.
+        def truncate_pad_np(ar, ref):
+            ar.resize(ref)
+
         # Truncate/pad number of collisions
-        truncate_pad(obs.events.collisions, sim.obs_config['observation']['events']['collisions'], Collision(collidee_id=None))
+        truncate_pad_li(
+            obs.events.collisions,
+            sim.obs_config["observation"]["events"]["collisions"],
+            None,
+        )
+        # Truncate/pad number of ego_vehicle::mission::route_vias
+        truncate_pad_li(
+            obs.ego_vehicle_state.mission.route_vias,
+            sim.obs_config["observation"]["ego_vehicle_state"]["mission"]["route_vias"],
+            None,
+        )
+        # Truncate/pad number of ego_vehicle_state::mission::entry_tactic::exclusion_prefixes
+        truncate_pad_li(
+            obs.ego_vehicle_state.mission.entry_tactic.exclusion_prefixes,
+            sim.obs_config["observation"]["ego_vehicle_state"]["mission"][
+                "entry_tactic"
+            ]["exclusion_prefixes"],
+            None,
+        )
+        # Truncate/pad number of ego_vehicle_state::mission::entry_tactic::exclusion_prefixes
+        truncate_pad_li(
+            obs.ego_vehicle_state.mission.via,
+            sim.obs_config["observation"]["ego_vehicle_state"]["mission"]["via"],
+            None,
+        )
 
-        #Truncate/pad number of ego_vehicle::mission::route_vias
-        # truncate_pad(obs.ego_vehicle_state.mission.route_vias, sim.config['observation']['ego_vehicle_state']['mission']['route_vias'], Collision(None))
+        # oui = obs.ego_vehicle_state.linear_velocity
+        # print(oui)
+        # print(type(oui))
+        # print("---------------------------------")
 
-        # print(obs.ego_vehicle_state.mission.route_vias)
-        # print("wewewewew")
+        # # Truncate/pad number of ego_vehicle_state::linear_velocity
+        # obs.ego_vehicle_state.linear_velocity.resize(
+        #     sim.obs_config["observation"]["ego_vehicle_state"]["linear_velocity"]
+        # )
 
+        # oui = obs.ego_vehicle_state.linear_velocity
+        # print(oui)
+        # print(type(oui))
+        # print("---------------------------------")
 
+        # exit()
 
         return obs
-
-
 
     @staticmethod
     def step(sim, sensor_state):
@@ -1200,7 +1228,7 @@ class ViaSensor(Sensor):
                 continue
 
             point = ViaPoint(
-                tuple(via.position),
+                position=tuple(via.position),
                 lane_index=via.lane_index,
                 edge_id=via.edge_id,
                 required_speed=via.required_speed,

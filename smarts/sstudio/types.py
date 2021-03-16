@@ -26,7 +26,7 @@ import logging
 import random
 from dataclasses import dataclass, field
 from sys import maxsize
-from typing import Any, Dict, Optional, Sequence, Tuple, Union, NamedTuple
+from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
 
 from shapely.geometry import GeometryCollection, MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
@@ -370,7 +370,7 @@ class EntryTactic(
             ),  # The zone of the hijack area, it's a list of waypoints because a path may branch at junctions
             (
                 "exclusion_prefixes",
-                Tuple[str, ...],
+                List[str],
             ),  # The prefixes of vehicles to avoid hijacking
             (
                 "default_entry_speed",
@@ -384,7 +384,7 @@ class EntryTactic(
             cls,
             wait_to_hijack_limit_s=0,
             zone=None,
-            exclusion_prefixes=tuple(),
+            exclusion_prefixes=[],
             default_entry_speed=None,
         )
 
@@ -396,7 +396,7 @@ class TrapEntryTactic(NamedTuple):
     """The amount of seconds a hijack will wait to get a vehicle before just emitting"""
     zone: "MapZone" = None
     """The zone of the hijack area, it's a list of waypoints because a path may branch at junctions"""
-    exclusion_prefixes: Tuple[str, ...] = tuple()
+    exclusion_prefixes: List[str] = []
     """The prefixes of vehicles to avoid hijacking"""
     default_entry_speed: float = None
     """The speed that the vehicle starts at when defaulting to emitting"""
@@ -690,7 +690,7 @@ class Bubble:
     # and bubble limit will be used.
     limit: BubbleLimits = None
     """The maximum number of actors that could be captured."""
-    exclusion_prefixes: Tuple[str, ...] = field(default_factory=tuple)
+    exclusion_prefixes: List[str] = field(default_factory=list)
     """Used to exclude social actors from capture."""
     id: str = field(default_factory=lambda: f"bubble-{gen_id()}")
     follow_actor_id: str = None

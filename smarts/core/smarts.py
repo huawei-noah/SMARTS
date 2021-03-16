@@ -127,7 +127,9 @@ class SMARTS(ShowBase):
 
         # Retrieve desired lengths of dynamic observations
         if obs_config is None:
-            obs_config = (Path(__file__).absolute().parent).joinpath("obs_config_default.yaml")
+            obs_config = (Path(__file__).absolute().parent).joinpath(
+                "obs_config_default.yaml"
+            )
         with open(obs_config, "r") as f:
             self.obs_config = yaml.safe_load(f)
 
@@ -792,7 +794,7 @@ class SMARTS(ShowBase):
         return [other_states[i] for i in indices]
 
     def vehicle_did_collide(self, vehicle_id):
-        return (len(self.vehicle_collisions(vehicle_id))> 0)
+        return len(self.vehicle_collisions(vehicle_id)) > 0
 
     def vehicle_collisions(self, vehicle_id):
         return [

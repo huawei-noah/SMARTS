@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Sequence, Tuple, NamedTuple, Union
+from typing import Any, Dict, List, NamedTuple, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -109,7 +109,7 @@ class PositionalGoal(Goal):
 
 def default_entry_tactic():
     return sstudio_types.TrapEntryTactic(
-        wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None
+        wait_to_hijack_limit_s=0, exclusion_prefixes=[], zone=None
     )
 
 
@@ -127,11 +127,11 @@ class MissionData(NamedTuple):
     goal: Goal
     # An optional list of edge IDs between the start and end goal that we want to
     # ensure the mission includes
-    route_vias: Tuple[str] = ()
+    route_vias: List[str] = []
     start_time: float = 0.1
     entry_tactic: EntryTactic = None
     task: Union[CutIn, UTurn] = None
-    via: Tuple[Via, ...] = ()
+    via: List[Via] = []
     route_length: float = 0
     num_laps: int = None  # None means infinite # of laps
 
@@ -578,7 +578,7 @@ class Scenario:
 
         def to_scenario_via(
             vias: Tuple[SSVia, ...], sumo_road_network: SumoRoadNetwork
-        ) -> Tuple[Via, ...]:
+        ) -> List[Via]:
             s_vias = []
             for via in vias:
                 lane = sumo_road_network.lane_by_index_on_edge(
@@ -603,7 +603,7 @@ class Scenario:
                     )
                 )
 
-            return tuple(s_vias)
+            return s_vias
 
         # For now we discard the route and just take the start and end to form our
         # missions.
@@ -622,7 +622,7 @@ class Scenario:
 
             return Mission(
                 start=start,
-                route_vias=mission.route.via,
+                route_vias=list(mission.route.via),
                 goal=goal,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
@@ -672,7 +672,7 @@ class Scenario:
             return LapMission(
                 start=Start(position=start_position, heading=start_heading),
                 goal=PositionalGoal(end_position, radius=2),
-                route_vias=mission.route.via,
+                route_vias=list(mission.route.via),
                 num_laps=mission.num_laps,
                 route_length=route_length,
                 start_time=mission.start_time,

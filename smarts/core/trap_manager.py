@@ -24,7 +24,7 @@ import logging
 import random as rand
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, Sequence
+from typing import Dict, List
 
 import numpy as np
 from shapely.geometry import Point, Polygon
@@ -42,7 +42,7 @@ class Trap:
 
     geometry: Polygon
     mission: Mission
-    exclusion_prefixes: Sequence[str]
+    exclusion_prefixes: List[str]
     remaining_time_to_activation: float
     patience: float
     default_entry_speed: float
