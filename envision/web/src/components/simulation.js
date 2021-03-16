@@ -149,19 +149,42 @@ export default function Simulation({
     setScene(scene_);
   };
 
+  const sleep = (milliseconds) => {
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
+  };
+
   // State subscription
   useEffect(() => {
     let stopPolling = false;
     (async () => {
+      const msInSec = 1000;
       const it = client.worldstate(simulationId);
-      let wstate_and_time = await it.next();
-      while (!wstate_and_time.done && playing) {
+      let prevElapsedTime = null;
+      let waitStartTime = null;
+      let wstate_and_time;
+      if (playing) wstate_and_time = await it.next();
+      while (!stopPolling && playing && !wstate_and_time.done) {
         let wstate, elapsed_times;
         [wstate, elapsed_times] = wstate_and_time.value;
-        if (!stopPolling) {
-          setWorldState(wstate);
-          onElapsedTimesChanged(...elapsed_times);
+        const currentTime = elapsed_times[0];
+        if (prevElapsedTime == null) {
+          // default: wait 50ms before playing the next frame
+          await sleep(50);
+        } else {
+          // msInSec*(currentTime-prevElapsedTime) is the time difference between
+          //   current frame and previous frame
+          // Since we could have waited (Date.now() - waitStartTime) to get the current frame,
+          //    we deduct this amount from the time we will be waiting
+          await sleep(
+            msInSec * (currentTime - prevElapsedTime) -
+              (Date.now() - waitStartTime)
+          );
         }
+        prevElapsedTime = currentTime;
+
+        setWorldState(wstate);
+        onElapsedTimesChanged(...elapsed_times);
+        waitStartTime = Date.now();
         wstate_and_time = await it.next();
       }
     })();
