@@ -344,6 +344,8 @@ class Sensors:
             via_data=via_data,
         )
 
+        # TODO: Set observation size at the point of data creation, rather than using 
+        # an adaptor-style fix prior to returning the observation.
         obs = Sensors._fix_observation_size(sim, obs)
 
         # print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
@@ -355,12 +357,21 @@ class Sensors:
     @classmethod
     def _fix_observation_size(cls, sim, obs):
         
+        # Truncate list `li` to reference length `ref` or pad to reference length `ref` with `null_value`.
+        def truncate_pad(li, ref, null_value):
+            if len(li) < ref:
+                li += [null_value] * (ref - len(li))
+            elif len(li) > ref:
+                li = li[:ref]
+
         # Truncate/pad number of collisions
-        if len(obs.events.collisions) < sim.config['observation']['events']['collisions']:
-            li = obs.events.collisions 
-            li += [Collision(None)] * (sim.config['observation']['events']['collisions'] - len(obs.events.collisions))
-        elif len(obs.events.collisions) > sim.config['observation']['events']['collisions']:
-            obs.events.collisions = obs.events.collisions[:sim.config['observation']['events']['collisions']]
+        truncate_pad(obs.events.collisions, sim.obs_config['observation']['events']['collisions'], Collision(collidee_id=None))
+
+        #Truncate/pad number of ego_vehicle::mission::route_vias
+        # truncate_pad(obs.ego_vehicle_state.mission.route_vias, sim.config['observation']['ego_vehicle_state']['mission']['route_vias'], Collision(None))
+
+        # print(obs.ego_vehicle_state.mission.route_vias)
+        # print("wewewewew")
 
 
 

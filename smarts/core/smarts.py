@@ -93,7 +93,7 @@ class SMARTS(ShowBase):
         visdom: VisdomClient = None,
         timestep_sec=0.1,
         reset_agents_only=False,
-        config=None,
+        obs_config=None,
         zoo_addrs=None,
     ):
         try:
@@ -126,10 +126,10 @@ class SMARTS(ShowBase):
         ]
 
         # Retrieve desired lengths of dynamic observations
-        if config is None:
-            config = (Path(__file__).absolute().parent).joinpath("config_default.yaml")
-        with open(config, "r") as f:
-            self.config = yaml.safe_load(f)
+        if obs_config is None:
+            obs_config = (Path(__file__).absolute().parent).joinpath("obs_config_default.yaml")
+        with open(obs_config, "r") as f:
+            self.obs_config = yaml.safe_load(f)
 
         # We buffer provider state between steps to compensate for TRACI's timestep delay
         self._last_provider_state = None

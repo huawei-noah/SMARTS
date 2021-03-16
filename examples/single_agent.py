@@ -49,7 +49,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
-        # config="<full path to file>/config.yaml", # Full path to the observation configuration yaml file.
+        # obs_config="<full path to file>/obs_config.yaml", # Full path to the observation configuration yaml file.
         # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.
         # envision_record_data_replay_path="./data_replay",
     )

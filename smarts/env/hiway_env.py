@@ -60,7 +60,7 @@ class HiWayEnv(gym.Env):
             used to specify envision's uri
         envision_record_data_replay_path:
             used to specify envision's data replay output directory
-        config:
+        obs_config:
             Yaml file consisting of lengths for each dynamic observation 
             parameter to be returned by the SMARTS environment    
         zoo_addrs:
@@ -88,7 +88,7 @@ class HiWayEnv(gym.Env):
         endless_traffic=True,
         envision_endpoint=None,
         envision_record_data_replay_path=None,
-        config=None,
+        obs_config=None,
         zoo_addrs=None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -133,7 +133,7 @@ class HiWayEnv(gym.Env):
             envision=envision_client,
             visdom=visdom_client,
             timestep_sec=timestep_sec,
-            config=config,
+            obs_config=obs_config,
             zoo_addrs=zoo_addrs,
         )
 
