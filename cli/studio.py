@@ -145,6 +145,7 @@ def _clean(scenario):
         "*.rou.alt.xml",
         "social_agents/*",
         "traffic/*",
+        "temp_vehicle_mission.pkl",
     ]
     p = Path(scenario)
     for file_name in to_be_removed:
