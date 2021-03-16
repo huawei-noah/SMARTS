@@ -47,6 +47,20 @@ from ultra.utils.common import (
 
 num_lookahead = 100
 
+class ActionSpace:
+    @staticmethod
+    def from_type(space_type):
+        if space_type == ActionSpaceType.Continuous:
+            return gym.spaces.Box(
+                low=np.array([0.0, 0.0, -1.0]),
+                high=np.array([1.0, 1.0, 1.0]),
+                dtype=np.float32,
+            )
+        elif space_type == ActionSpaceType.Lane:
+            return gym.spaces.Discrete(4)
+        else:
+            raise NotImplementedError
+
 
 class ActionAdapter:
     @staticmethod
@@ -88,6 +102,7 @@ class UltraGym(UltraEnv):
         max_episode_steps=200,
         action_type="discrete",
         obs_type="image",
+        image_size=256,
         scenario_info=("1", "easy"),
         agent_id="007",
         headless=True,
@@ -106,10 +121,10 @@ class UltraGym(UltraEnv):
 
         if action_type == "discrete":
             action_type = ActionSpaceType.Lane
-            self.action_space = gym.spaces.Discrete(4)
         elif action_type == "continuous":
             action_type = ActionSpaceType.Continuous
-            self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,))
+
+        self.action_space = ActionSpace(action_type)
 
         if obs_type == "image":
             self.observation_space = gym.spaces.Box(
