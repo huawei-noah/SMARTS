@@ -165,9 +165,10 @@ class Traffic_history_service:
         return {}
 
     @staticmethod
-    def fetch_agent_missions(history_file_path):
+    def fetch_agent_missions(history_file_path: str, scenario_root_path: str):
+        assert os.path.isdir(scenario_root_path)
         history_mission_filepath = get_path_name(
-            "temp_vehicle_mission.pkl", os.path.dirname(history_file_path)
+            scenario_root_path, "temp_vehicle_mission.pkl"
         )
 
         if not os.path.exists(history_mission_filepath):
@@ -175,6 +176,7 @@ class Traffic_history_service:
         else:
             with open(history_mission_filepath, "rb") as f:
                 history_mission = pickle.load(f)
+
         if history_file_path in history_mission:
             return history_mission[history_file_path]
 
@@ -193,6 +195,8 @@ class Traffic_history_service:
                         start_time=float(t),
                     )
         history_mission[history_file_path] = vehicle_missions
+
+        # update cached history_mission_file
         with open(history_mission_filepath, "wb") as f:
             pickle.dump(history_mission, f)
 
