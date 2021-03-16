@@ -47,6 +47,7 @@ from ultra.utils.common import (
 
 num_lookahead = 100
 
+
 class ActionSpace:
     @staticmethod
     def from_type(space_type):
@@ -103,6 +104,7 @@ class UltraGym(UltraEnv):
         action_type="discrete",
         obs_type="image",
         image_size=image_dim,
+        framestack=2,
         scenario_info=("1", "easy"),
         agent_id="007",
         headless=True,
@@ -117,6 +119,8 @@ class UltraGym(UltraEnv):
         self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
         self.agent_id = agent_id
         self.image_dim = image_dim
+        self.framestack = framestack
+        self.last_obs = [0 for i in range(self.framestack - 1)]
 
         adapter = GymAdapter()
 
@@ -169,14 +173,25 @@ class UltraGym(UltraEnv):
             )
             / 255.0
         )
+
     def step(self, agent_action):
         if agent_action not in self.action_space:
             raise ValueError("Not a valid action.")
+
         results = super().step({self.agent_id: agent_action})
-        return [result[self.agent_id] for result in results]
+        results = [result[self.agent_id] for result in results]
+        obs = np.concatenate((self.last_obs[1:], results[0]))
+        self.last_obs = obs
+        return obs, results[1], results[2], results[3]
 
     def reset(self):
         obs = super().reset()
+        for i in range(self.framestack - 1):
+            self.old_frames = super().step({self.agent_id: self.action_space.sample()})[
+                0
+            ][self.agent_id]
+
+        self.last_obs = obs
         return obs[self.agent_id]
 
 
