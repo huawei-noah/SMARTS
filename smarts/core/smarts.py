@@ -37,7 +37,6 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
     from sklearn.metrics.pairwise import euclidean_distances
 
-from smarts.core import utils
 from smarts.core.chassis import AckermannChassis, BoxChassis
 
 from . import glsl, models
