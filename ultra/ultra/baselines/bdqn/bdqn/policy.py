@@ -19,23 +19,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
-import pathlib
-
-import numpy as np
 import torch
 from torch import nn
-
-from smarts.core.agent import Agent
-from ultra.baselines.bdqn.bdqn.explore import EpsilonExplore
+import numpy as np
 from ultra.baselines.bdqn.bdqn.network import *
+from smarts.core.agent import Agent
+from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
+import pathlib, os, copy
+from ultra.baselines.dqn.dqn.policy import DQNPolicy
 from ultra.baselines.bdqn.bdqn.network import DQNWithSocialEncoder
+from ultra.baselines.bdqn.bdqn.explore import EpsilonExplore
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.state_preprocessor import *
 from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.dqn.dqn.policy import DQNPolicy
-from ultra.utils.common import merge_discrete_action_spaces, to_2d_action, to_3d_action
+from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class BehavioralDQNPolicy(DQNPolicy):
@@ -71,7 +68,7 @@ class BehavioralDQNPolicy(DQNPolicy):
         self.sticky_actions = int(policy_params["sticky_actions"])
         prev_action_size = 1
         self.prev_action = np.zeros(prev_action_size)
-
+        self.action_size = prev_action_size
         index_to_actions = [
             e.tolist() if not isinstance(e, list) else e for e in action_size
         ]
@@ -98,8 +95,8 @@ class BehavioralDQNPolicy(DQNPolicy):
         self.observation_num_lookahead = int(
             policy_params.get("observation_num_lookahead", 0)
         )
-        self.social_polciy_init_std = int(
-            policy_params["social_vehicles"].get("social_polciy_init_std", 0)
+        self.social_policy_init_std = int(
+            policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
         self.num_social_features = int(
             policy_params["social_vehicles"].get("num_social_features", 0)
@@ -109,7 +106,7 @@ class BehavioralDQNPolicy(DQNPolicy):
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.state_description = get_state_description(
+        self.state_description = BaselineStatePreprocessor.get_state_description(
             policy_params["social_vehicles"],
             policy_params["observation_num_lookahead"],
             prev_action_size,
@@ -150,12 +147,8 @@ class BehavioralDQNPolicy(DQNPolicy):
 
         self.action_space_type = "lane"
         self.to_real_action = lambda action: self.lane_actions[action[0]]
-        self.state_preprocessor = StatePreprocessor(
-            preprocess_state, self.lane_action_to_index, self.state_description
-        )
         self.replay = ReplayBuffer(
             buffer_size=int(policy_params["replay_buffer"]["buffer_size"]),
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
-            state_preprocessor=self.state_preprocessor,
             device_name=self.device_name,
         )

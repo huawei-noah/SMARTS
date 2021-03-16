@@ -19,18 +19,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import math
-import random
-from sys import path
-
 import numpy as np
+import torch
 from scipy.spatial import distance
+import random, math, gym
+from sys import path
+from collections import OrderedDict
+from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")
 from ultra.utils.common import (
-    ego_social_safety,
     get_closest_waypoint,
     get_path_to_goal,
+    ego_social_safety,
     rotate2d_vector,
 )
 
@@ -38,60 +41,117 @@ seed = 0
 random.seed(seed)
 num_lookahead = 100
 
-# def action_adapter(agent.id):
-#     agent.action_space_type
-#     pass
-
 
 class BaselineAdapter:
-    def __init__(self):
-        pass
+    def __init__(self, agent_name):
+        self.policy_params = load_yaml(
+            f"ultra/baselines/{agent_name}/{agent_name}/params.yaml"
+        )
+
+        social_vehicle_params = self.policy_params["social_vehicles"]
+        social_vehicle_params["observation_num_lookahead"] = self.policy_params[
+            "observation_num_lookahead"
+        ]
+        self.observation_num_lookahead = social_vehicle_params[
+            "observation_num_lookahead"
+        ]
+        self.num_social_features = social_vehicle_params["num_social_features"]
+        self.social_capacity = social_vehicle_params["social_capacity"]
+        self.social_vehicle_config = get_social_vehicle_configs(
+            encoder_key=social_vehicle_params["encoder_key"],
+            num_social_features=self.num_social_features,
+            social_capacity=self.social_capacity,
+            seed=social_vehicle_params["seed"],
+            social_policy_hidden_units=social_vehicle_params[
+                "social_policy_hidden_units"
+            ],
+            social_policy_init_std=social_vehicle_params["social_policy_init_std"],
+        )
+
+        self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
+
+        self.state_preprocessor = BaselineStatePreprocessor(
+            social_vehicle_config=self.social_vehicle_config,
+            observation_waypoints_lookahead=self.observation_num_lookahead,
+            action_size=2,
+        )
+
+        self.social_feature_encoder_class = self.social_vehicle_encoder[
+            "social_feature_encoder_class"
+        ]
+        self.social_feature_encoder_params = self.social_vehicle_encoder[
+            "social_feature_encoder_params"
+        ]
+
+        self.state_size = self.state_preprocessor.num_low_dim_states
+        if self.social_feature_encoder_class:
+            self.state_size += self.social_feature_encoder_class(
+                **self.social_feature_encoder_params
+            ).output_dim
+        else:
+            self.state_size += self.social_capacity * self.num_social_features
+
+    @property
+    def observation_space(self):
+        low_dim_states_shape = self.state_preprocessor.num_low_dim_states
+        if self.social_feature_encoder_class:
+            social_vehicle_shape = self.social_feature_encoder_class(
+                **self.social_feature_encoder_params
+            ).output_dim
+        else:
+            social_vehicle_shape = self.social_capacity * self.num_social_features
+        return gym.spaces.Dict(
+            {
+                "low_dim_states": gym.spaces.Box(
+                    low=-1e10,
+                    high=1e10,
+                    shape=(low_dim_states_shape,),
+                    dtype=torch.Tensor,
+                ),
+                "social_vehicles": gym.spaces.Box(
+                    low=-1e10,
+                    high=1e10,
+                    shape=(self.social_capacity, self.num_social_features),
+                    dtype=torch.Tensor,
+                ),
+            }
+        )
+
+    @property
+    def action_space(self):
+        return gym.spaces.Box(
+            low=np.array([0.0, 0.0, -1.0]),
+            high=np.array([1.0, 1.0, 1.0]),
+            dtype=np.float32,
+        )
+
+    # def action_adapter(self, model_action):
+    #     # print why this doesn't go through?
+    #     throttle, brake, steering = model_action
+    #     # print(M)
+    #     return np.array([throttle, brake, steering * np.pi * 0.25])
 
     def observation_adapter(self, env_observation):
-        ego_state = env_observation.ego_vehicle_state
-        start = env_observation.ego_vehicle_state.mission.start
-        goal = env_observation.ego_vehicle_state.mission.goal
-        path = get_path_to_goal(
-            goal=goal, paths=env_observation.waypoint_paths, start=start
-        )
-        closest_wp, _ = get_closest_waypoint(
-            num_lookahead=num_lookahead,
-            goal_path=path,
-            ego_position=ego_state.position,
-            ego_heading=ego_state.heading,
-        )
-        signed_dist_from_center = closest_wp.signed_lateral_error(ego_state.position)
-        lane_width = closest_wp.lane_width * 0.5
-        ego_dist_center = signed_dist_from_center / lane_width
-
-        relative_goal_position = np.asarray(goal.position[0:2]) - np.asarray(
-            ego_state.position[0:2]
-        )
-        relative_goal_position_rotated = rotate2d_vector(
-            relative_goal_position, -ego_state.heading
+        state = self.state_preprocessor(
+            state=env_observation,
+            observation_num_lookahead=self.observation_num_lookahead,
+            social_capacity=self.social_capacity,
+            social_vehicle_config=self.social_vehicle_config,
+            # prev_action=self.prev_action
         )
 
-        state = dict(
-            speed=ego_state.speed,
-            relative_goal_position=relative_goal_position_rotated,
-            distance_from_center=ego_dist_center,
-            steering=ego_state.steering,
-            angle_error=closest_wp.relative_heading(ego_state.heading),
-            social_vehicles=env_observation.neighborhood_vehicle_states,
-            road_speed=closest_wp.speed_limit,
-            # ----------
-            # dont normalize the following,
-            start=start.position,
-            goal=goal.position,
-            heading=ego_state.heading,
-            goal_path=path,
-            ego_position=ego_state.position,
-            waypoint_paths=env_observation.waypoint_paths,
-            events=env_observation.events,
-        )
+        if len(state["social_vehicles"]) < self.social_capacity:
+            remain = self.social_capacity - len(state["social_vehicles"])
+            empty_social_vehicles = np.zeros(shape=(remain, 4), dtype=np.float32)
+            state["social_vehicles"] = np.concatenate(
+                (state["social_vehicles"], empty_social_vehicles)
+            )
+        # todo would this cause any issues for precog
+        state["social_vehicles"] = state["social_vehicles"][: self.social_capacity]
         return state  # ego=ego, env_observation=env_observation)
 
-    def reward_adapter(self, observation, reward):
+    @staticmethod
+    def reward_adapter(observation, reward):
         env_reward = reward
         ego_events = observation.events
         ego_observation = observation.ego_vehicle_state
@@ -160,23 +220,25 @@ class BaselineAdapter:
         ego_speed_reward = -0.1 if speed_fraction >= 1 else 0.0
         ego_speed_reward += -0.01 if speed_fraction < 0.01 else 0.0
 
-        rewards = [
-            ego_goal_reward,
-            ego_collision_reward,
-            ego_off_road_reward,
-            ego_off_route_reward,
-            ego_wrong_way,
-            ego_speed_reward,
-            # ego_time_out,
-            ego_dist_center_reward,
-            ego_angle_error_reward,
-            ego_reached_goal,
-            ego_step_reward,
-            env_reward,
-            # ego_linear_jerk,
-            # ego_angular_jerk,
-            # ego_lat_speed,
-            # ego_safety_reward,
-            # social_safety_reward,
-        ]
-        return sum(rewards)
+        rewards = sum(
+            [
+                ego_goal_reward,
+                ego_collision_reward,
+                ego_off_road_reward,
+                ego_off_route_reward,
+                ego_wrong_way,
+                ego_speed_reward,
+                # ego_time_out,
+                ego_dist_center_reward,
+                ego_angle_error_reward,
+                ego_reached_goal,
+                ego_step_reward,
+                env_reward,
+                # ego_linear_jerk,
+                # ego_angular_jerk,
+                # ego_lat_speed,
+                # ego_safety_reward,
+                # social_safety_reward,
+            ]
+        )
+        return rewards

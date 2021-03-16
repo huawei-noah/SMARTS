@@ -79,7 +79,7 @@ function App({ client }) {
     // checks if there is new simulation running every 3 seconds.
     const interval = setInterval(fetchRunningSim, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [matchedSimulationId]);
 
   async function onStartRecording() {
     recorderRef.current = new RecordRTCPromisesHandler(

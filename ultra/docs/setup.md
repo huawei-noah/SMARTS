@@ -6,8 +6,8 @@ ULTRA can be run natively on your machine, or through a Docker container. See in
 
 The following steps can be ignored if you already have the SMARTS environment.
 ```sh
-# 1 - Navigate to the SMARTS directory.
-$ cd <path_to_SMARTS>/SMARTS
+# 1 - Navigate to the ULTRA directory.
+$ cd <path_to_SMARTS>/SMARTS/ultra
 
 # 2 - Create a virtual environment.
 $ python3.7 -m venv .venv

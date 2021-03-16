@@ -259,7 +259,7 @@ class MissionPlanner:
         # cut-in offset should consider the aggressiveness and the speed
         # of the other vehicle.
 
-        cut_in_offset = np.clip(18.5 - aggressiveness, 10, 18.5)
+        cut_in_offset = np.clip(20 - aggressiveness, 10, 20)
 
         if (
             abs(offset - (cut_in_offset + target_offset)) > 1
@@ -289,6 +289,17 @@ class MissionPlanner:
 
             speed_limit = cut_in_speed
 
+            # 1.5 m/s is the threshold for speed offset. If the vehicle speed
+            # is less than target_velocity plus this offset then it will not
+            # perform the cut-in task and instead the speed of the vehicle is
+            # increased.
+            if vehicle.speed < target_velocity + 1.5:
+                nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                    position, lane.getID(), 60
+                )
+                speed_limit = np.clip(target_velocity * 2.1, 0.5, 30)
+                self._task_is_triggered = False
+
         p0 = position
         p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
         p1 = p_temp
@@ -303,6 +314,8 @@ class MissionPlanner:
             heading = Heading(vec_to_radians(pos - prev))
             prev = pos
             lane = self._road_network.nearest_lane(pos)
+            if lane is None:
+                continue
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
@@ -332,7 +345,6 @@ class MissionPlanner:
             default_speed = ego_wps[0][0].speed_limit
         else:
             default_speed = self._mission.task.initial_speed
-
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
             new_wp = replace(ego_wps[0][px], speed_limit=default_speed)
@@ -366,7 +378,7 @@ class MissionPlanner:
         # The aggressiveness is mapped from [0,10] to [0,0.8] domain which
         # represents the portion of intitial distantce which is used for
         # triggering the u-turn task.
-        aggressiveness = 0.8 * self._agent_behavior.aggressiveness / 10
+        aggressiveness = 0.3 + 0.5 * self._agent_behavior.aggressiveness / 10
         distance_threshold = 8
 
         if not self._uturn_is_initialized:
