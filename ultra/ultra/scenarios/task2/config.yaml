@@ -6,8 +6,6 @@ levels:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
-        start_offset: [50, 120]
-        end_offset:   [50, 120]
       intersection_types:
         2lane_t:
            percent: 0.5
@@ -25,8 +23,6 @@ levels:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
-        start_offset: [50, 120]
-        end_offset:   [50, 120]
       intersection_types:
         2lane_t:
            percent: 0.5
@@ -45,8 +41,6 @@ levels:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
-        start_offset: [50, 120]
-        end_offset:   [50, 120]
       intersection_types:
         2lane_t:
            percent: 0.5
@@ -64,8 +58,6 @@ levels:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
-        start_offset: [50, 120]
-        end_offset:   [50, 120]
       intersection_types:
         2lane_t:
            percent: 0.5
