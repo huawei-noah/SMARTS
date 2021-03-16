@@ -474,11 +474,6 @@ class SMARTS(ShowBase):
         if self._bullet_client is not None:
             self._bullet_client.disconnect()
             self._bullet_client = None
-        history_mission_filepath = os.path.join(
-            os.path.dirname(utils.__file__), "temp_vehicle_mission.pkl"
-        )
-        if os.path.exists(history_mission_filepath):
-            os.remove(history_mission_filepath)
 
         super().destroy()
 
