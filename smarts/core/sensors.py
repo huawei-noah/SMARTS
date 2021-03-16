@@ -381,7 +381,7 @@ class Sensors:
             ]["exclusion_prefixes"],
             None,
         )
-        # Truncate/pad number of ego_vehicle_state::mission::entry_tactic::exclusion_prefixes
+        # Truncate/pad number of ego_vehicle_state::mission::via
         truncate_pad_li(
             obs.ego_vehicle_state.mission.via,
             sim.obs_config["observation"]["ego_vehicle_state"]["mission"]["via"],
