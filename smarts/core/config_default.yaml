@@ -1,0 +1,33 @@
+observation:
+  events: 
+    collisions: 10 # List[Tuple["collidee_id", str]] 
+  ego_vehicle_state:
+    mission:
+      route_vias: 10 # Tuple[str, ...]
+      entry_tactic:
+        exclusion_prefixes: 10 # Tuple[str, ...]
+      via: 10 # Tuple[Via()]
+    linear_velocity: 10 # np.ndarray(10,1) 
+    angular_velocity: 10 # np.ndarray(10,1) 
+    linear_acceleration: 10 # np.ndarray(10,1) 
+    angular_acceleration: 10 # np.ndarray(10,1) 
+    linear_jerk: 10 # np.ndarray(10,1) 
+    angular_jerk: 10 # np.ndarray(10,1)
+  neighborhood_vehicle_states: 10 # List[VehicleObservation()]
+  waypoint_paths: [10, 10] # List[List[Waypoint()]]
+  lidar_point_cloud: 10 # 
+    #Tuple[ <----- CHECK LENGTH
+    #     List[np.ndarray], <----- CHECK LENGTH
+    #     List[np.ndarray],  <----- CHECK LENGTH
+    #     List[Tuple[np.ndarray, np.ndarray]] <----- CHECK LENGTH
+    # ]
+  drivable_area_grid_map:  
+    data: 10 # np.ndarray
+  occupancy_grid_map:
+    data: 10 # np.ndarray 
+  top_down_rgb:
+    data: 10 # np.ndarray
+  road_waypoints:
+    lanes: 10 # 
+    route_waypoints: 10 # 
+  via_data: 10 # 

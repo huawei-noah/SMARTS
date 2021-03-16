@@ -166,11 +166,6 @@ class Collision(NamedTuple):
 class Sensors:
     _log = logging.getLogger("Sensors")
 
-    def __init__(self):
-        self._max_episode_steps = max_episode_steps
-        self._mission_planner = mission_planner
-        self._step = 0
-
     @staticmethod
     def observe_batch(sim, agent_id, sensor_states, vehicles):
         """Operates on a batch of vehicles for a single agent."""
@@ -332,63 +327,44 @@ class Sensors:
         ):
             logger.warning(f"Agent Id: {agent_id} is done on the first step")
 
-        print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
-        obs2 = Observation(
-                events=events,
-                ego_vehicle_state=ego_vehicle_observation,
-                neighborhood_vehicle_states=neighborhood_vehicles,
-                waypoint_paths=waypoint_paths,
-                distance_travelled=distance_travelled,
-                top_down_rgb=rgb,
-                occupancy_grid_map=ogm,
-                drivable_area_grid_map=drivable_area_grid_map,
-                lidar_point_cloud=lidar,
-                road_waypoints=road_waypoints,
-                via_data=via_data,
+
+        # print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
+
+        obs = Observation(
+            events=events,
+            ego_vehicle_state=ego_vehicle_observation,
+            neighborhood_vehicle_states=neighborhood_vehicles,
+            waypoint_paths=waypoint_paths,
+            distance_travelled=distance_travelled,
+            top_down_rgb=rgb,
+            occupancy_grid_map=ogm,
+            drivable_area_grid_map=drivable_area_grid_map,
+            lidar_point_cloud=lidar,
+            road_waypoints=road_waypoints,
+            via_data=via_data,
         )
-        print(obs2)
 
+        obs = Sensors._fix_observation_size(sim, obs)
 
+        # print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+        # exit()
 
-        obs3 = Sensors.observation_truncate_pad(obs2)
-        # print(obs3)
-
-
-        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-        exit()
-
-        return (
-            Observation(
-                events=events,
-                ego_vehicle_state=ego_vehicle_observation,
-                neighborhood_vehicle_states=neighborhood_vehicles,
-                waypoint_paths=waypoint_paths,
-                distance_travelled=distance_travelled,
-                top_down_rgb=rgb,
-                occupancy_grid_map=ogm,
-                drivable_area_grid_map=drivable_area_grid_map,
-                lidar_point_cloud=lidar,
-                road_waypoints=road_waypoints,
-                via_data=via_data,
-            ),
-            done,
-        )
+        return (obs, done)
 
 
     @classmethod
-    def observation_truncate_pad(cls, obs):
-        print("inside observation_truncate_pad")
-        new_obs = obs.ego_vehicle_state._asdict()
-       
+    def _fix_observation_size(cls, sim, obs):
+        
         # Truncate/pad number of collisions
-        if len(obs2.events.collisions) > obs_config.events.collisions:
-            obs2.events.collisions=  num_collisions - len(obs2.events.collisions)
+        if len(obs.events.collisions) < sim.config['observation']['events']['collisions']:
+            li = obs.events.collisions 
+            li += [Collision(None)] * (sim.config['observation']['events']['collisions'] - len(obs.events.collisions))
+        elif len(obs.events.collisions) > sim.config['observation']['events']['collisions']:
+            obs.events.collisions = obs.events.collisions[:sim.config['observation']['events']['collisions']]
 
 
 
-
-        print("exiting observation_truncate_pad")
-        return new_obs
+        return obs
 
 
 

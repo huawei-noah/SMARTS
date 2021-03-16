@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,11 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import importlib.resources as pkg_resources
 import logging
 import os
 import warnings
+import yaml
 from collections import defaultdict
+from pathlib import Path
 from typing import List, Sequence
 
 import gltf
@@ -88,10 +93,11 @@ class SMARTS(ShowBase):
         visdom: VisdomClient = None,
         timestep_sec=0.1,
         reset_agents_only=False,
+        config=None,
         zoo_addrs=None,
     ):
         try:
-            super().__init__(self, windowType="none")
+            super().__init__(self, windowType="offscreen")
         except Exception as e:
             # Known reasons for this failing:
             raise Exception(
@@ -118,6 +124,12 @@ class SMARTS(ShowBase):
             self._motion_planner_provider,
             self._traffic_history_provider,
         ]
+
+        # Retrieve desired lengths of dynamic observations
+        if config is None:
+            config = (Path(__file__).absolute().parent).joinpath("config_default.yaml")
+        with open(config, "r") as f:
+            self.config = yaml.safe_load(f)
 
         # We buffer provider state between steps to compensate for TRACI's timestep delay
         self._last_provider_state = None
