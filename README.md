@@ -107,9 +107,12 @@ Several example scripts are provided under [`SMARTS/examples`](./examples), as w
 # ...
 ```
 
-## Documentations
+## Documentation
 
-For
+Documentation is available from [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest) 
+
+Checkout our paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Training School for Autonomous Driving](https://arxiv.org/abs/2010.09776)
+
 
 ## CLI tool
 
