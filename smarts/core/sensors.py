@@ -510,7 +510,11 @@ class Sensors:
 
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
-            np.fabs(HeadingMethods.relative_to(vehicle.pose.heading, closest_waypoint.heading))
+            np.fabs(
+                HeadingMethods.relative_to(
+                    vehicle.pose.heading, closest_waypoint.heading
+                )
+            )
             > 0.5 * np.pi
         )
 

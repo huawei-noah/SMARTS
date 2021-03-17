@@ -63,7 +63,6 @@ class Heading(float):
 
 
 class HeadingMethods:
-
     @classmethod
     def from_bullet(cls, bullet_heading):
         """Bullet's space is in radians, 0 faces north, and we turn
@@ -125,7 +124,7 @@ class HeadingMethods:
     @staticmethod
     def _flip_clockwise(x):
         """Converts clockwise to counter-clockwise, and vice-versa."""
-        return (2 * math.pi - x) % (2 * math.pi)   
+        return (2 * math.pi - x) % (2 * math.pi)
 
 
 @dataclass

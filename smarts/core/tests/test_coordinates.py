@@ -150,27 +150,35 @@ def test_coordinates_heading():
     assert Heading(math.pi + 1) == -math.pi + 1
 
     assert math.isclose(
-        HeadingMethods.relative_to(Heading(math.pi / 4), Heading(math.pi)), Heading(-2.356194490192345)
+        HeadingMethods.relative_to(Heading(math.pi / 4), Heading(math.pi)),
+        Heading(-2.356194490192345),
     )
     assert math.isclose(
-        HeadingMethods.relative_to(Heading(0), Heading(math.pi + 1)), Heading(math.pi - 1)
+        HeadingMethods.relative_to(Heading(0), Heading(math.pi + 1)),
+        Heading(math.pi - 1),
     )
     assert math.isclose(
-        HeadingMethods.relative_to(Heading(math.pi + 1), Heading(0)), Heading(-math.pi + 1)
+        HeadingMethods.relative_to(Heading(math.pi + 1), Heading(0)),
+        Heading(-math.pi + 1),
     )
     assert math.isclose(
-        HeadingMethods.relative_to(Heading(math.pi + 1), Heading(-math.pi - 1)), Heading(2)
+        HeadingMethods.relative_to(Heading(math.pi + 1), Heading(-math.pi - 1)),
+        Heading(2),
     )
 
     assert math.isclose(
-        HeadingMethods.relative_to(Heading(2 * math.pi), Heading(-2 * math.pi)), Heading(0)
+        HeadingMethods.relative_to(Heading(2 * math.pi), Heading(-2 * math.pi)),
+        Heading(0),
     )
     assert math.isclose(
-        HeadingMethods.relative_to(Heading(2 * math.pi), Heading(-2 * math.pi - 1)), Heading(1)
+        HeadingMethods.relative_to(Heading(2 * math.pi), Heading(-2 * math.pi - 1)),
+        Heading(1),
     )
     assert math.isclose(
-        HeadingMethods.relative_to(Heading(2 * math.pi), Heading(4 * math.pi)), Heading(0)
+        HeadingMethods.relative_to(Heading(2 * math.pi), Heading(4 * math.pi)),
+        Heading(0),
     )
     assert math.isclose(
-        HeadingMethods.relative_to(Heading(-2 * math.pi), Heading(-4 * math.pi)), Heading(0)
+        HeadingMethods.relative_to(Heading(-2 * math.pi), Heading(-4 * math.pi)),
+        Heading(0),
     )

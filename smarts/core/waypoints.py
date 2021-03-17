@@ -111,7 +111,9 @@ class WaypointMethods:
 
         Negative signals right of line and Positive left of line
         """
-        return signed_dist_to_line(p, waypoint.pos, HeadingMethods.direction_vector(waypoint.heading))
+        return signed_dist_to_line(
+            p, waypoint.pos, HeadingMethods.direction_vector(waypoint.heading)
+        )
 
     @staticmethod
     def pose(waypoint):
