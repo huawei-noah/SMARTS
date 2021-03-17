@@ -278,7 +278,7 @@ class SMARTS(ShowBase):
         # 8. Truncate or pad dynamic observations to fixed length
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
-        # observations = sensors.fix_observation_size(self._obs_config, observations)
+        observations = sensors.fix_observation_size(self._obs_config, observations)
 
         return observations, rewards, dones, extras
 
