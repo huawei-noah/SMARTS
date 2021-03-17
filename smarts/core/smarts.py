@@ -26,7 +26,6 @@ import os
 import warnings
 import yaml
 from collections import defaultdict
-from pathlib import Path
 from typing import List, Sequence
 
 import gltf
@@ -127,13 +126,12 @@ class SMARTS(ShowBase):
             self._traffic_history_provider,
         ]
 
-        # Retrieve desired lengths of dynamic observations
-        if obs_config is None:
-            obs_config = (Path(__file__).absolute().parent).joinpath(
-                "obs_config_default.yaml"
-            )
-        with open(obs_config, "r") as f:
-            self._obs_config = yaml.safe_load(f)
+        # If available, retrieve desired lengths of dynamic observations
+        if obs_config:
+            with open(obs_config, "r") as f:
+                self.obs_config = yaml.safe_load(f)
+        else:
+            self.obs_config = None
 
         # We buffer provider state between steps to compensate for TRACI's timestep delay
         self._last_provider_state = None
@@ -278,7 +276,8 @@ class SMARTS(ShowBase):
         # 8. Truncate or pad dynamic observations to fixed length
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
-        observations = sensors.fix_observation_size(self._obs_config, observations)
+        if self.obs_config:
+            observations = sensors.fix_observation_size(self.obs_config, observations)
 
         return observations, rewards, dones, extras
 

@@ -1,6 +1,7 @@
 import logging
 
 import gym
+from pathlib import Path
 
 from examples import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
@@ -48,8 +49,8 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         visdom=False,
         timestep_sec=0.1,
         sumo_headless=True,
-        seed=seed,
-        # obs_config="<full path to file>/obs_config.yaml", # Full path to the observation configuration yaml file.
+        seed=seed,        
+        obs_config=(Path(__file__).absolute().parent).joinpath("obs_config.yaml"), # If provided, observations will be truncated/padded to a fixed size as denoted in the config file.
         # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.
         # envision_record_data_replay_path="./data_replay",
     )
