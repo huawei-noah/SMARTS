@@ -3,6 +3,8 @@
 
 SMARTS (Scalable Multi-Agent RL Training School) is a simulation platform for reinforcement learning and multi-agent research on autonomous driving. Its focus is on realistic and diverse interactions. It is part of the [XingTian](https://github.com/huawei-noah/xingtian/) suite of RL platforms from Huawei Noah's Ark Lab.
 
+Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Training School for Autonomous Driving](https://arxiv.org/abs/2010.09776) for background on some of the project goals.
+
 ![](docs/_static/smarts_envision.gif)
 
 ## Multi-Agent experiment as simple as...
@@ -110,8 +112,6 @@ Several example scripts are provided under [`SMARTS/examples`](./examples), as w
 ## Documentation
 
 Documentation is available from [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest) 
-
-Checkout our paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Training School for Autonomous Driving](https://arxiv.org/abs/2010.09776)
 
 
 ## CLI tool
