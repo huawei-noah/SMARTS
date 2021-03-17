@@ -1332,7 +1332,7 @@ def fix_observation_size(obs_config, observations: Dict):
             waypoint_paths=sequence.truncate_pad_li_2d(
                 obs.waypoint_paths,
                 obs_config["observation"]["waypoint_paths"],
-                ([None], None),
+                ([], Waypoint()),
             ),
             distance_travelled=obs.distance_travelled,
             lidar_point_cloud=lidar_point_cloud,
