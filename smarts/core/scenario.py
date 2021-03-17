@@ -114,12 +114,12 @@ def default_entry_tactic():
 
 
 class Via(NamedTuple):
-    lane_id: str
-    edge_id: str
-    lane_index: int
-    position: Tuple[float, float]
-    hit_distance: float
-    required_speed: float
+    lane_id: str = None
+    edge_id: str = None
+    lane_index: int = None
+    position: Tuple[float, float] = (None, None)
+    hit_distance: float = None
+    required_speed: float = None
 
 
 class MissionData(NamedTuple):
@@ -132,7 +132,7 @@ class MissionData(NamedTuple):
     entry_tactic: EntryTactic = None
     task: Union[CutIn, UTurn] = None
     via: List[Via] = []
-    route_length: float = 0
+    route_length: float = None
     num_laps: int = None  # None means infinite # of laps
 
 

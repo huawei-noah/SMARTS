@@ -36,9 +36,9 @@ from smarts.core.utils.math import (
 
 
 class BoundingBox(NamedTuple):
-    length: float
-    width: float
-    height: float
+    length: float = None
+    width: float = None
+    height: float = None
 
 
 class Heading(float):

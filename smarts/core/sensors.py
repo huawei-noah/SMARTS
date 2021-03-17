@@ -42,7 +42,7 @@ from panda3d.core import (
 
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.utils.math import squared_dist, vec_2d
-from smarts.sstudio.types import CutIn, UTurn
+from smarts.sstudio.types import CutIn, UTurn, ZoneData
 
 from smarts.core.coordinates import BoundingBox
 from smarts.core.events import Events
@@ -57,14 +57,14 @@ logger = logging.getLogger(__name__)
 
 
 class VehicleObservation(NamedTuple):
-    id: str
-    position: Tuple[float, float, float]
-    bounding_box: BoundingBox
-    heading: float
-    speed: float
-    edge_id: int
-    lane_id: int
-    lane_index: int
+    id: str = None
+    position: Tuple[float, float, float] = (None, None, None)
+    bounding_box: BoundingBox = BoundingBox()
+    heading: float = None
+    speed: float = None
+    edge_id: int = None
+    lane_id: int = None
+    lane_index: int = None
 
 
 class EgoVehicleObservation(NamedTuple):
@@ -123,16 +123,16 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 class ViaPoint(NamedTuple):
-    position: Tuple[float, float]
-    lane_index: float
-    edge_id: str
-    required_speed: float
+    position: Tuple[float, float] = (None, None)
+    lane_index: float = None
+    edge_id: str = None
+    required_speed: float = None
 
 
 class Vias(NamedTuple):
-    near_via_points: List[ViaPoint]
+    near_via_points: List[ViaPoint] = []
     """Ordered list of nearby points that have not been hit"""
-    hit_via_points: List[ViaPoint]
+    hit_via_points: List[ViaPoint] = []
     """List of points that were hit in the previous step"""
 
 
@@ -151,11 +151,11 @@ class Observation(NamedTuple):
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
-    via_data: Vias = None
+    via_data: Vias = Vias()
 
 
 class Collision(NamedTuple):
-    collidee_id: str
+    collidee_id: str = None
 
 
 class Sensors:
@@ -309,7 +309,11 @@ class Sensors:
         )
         ogm = vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None
         rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
-        lidar = vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
+        lidar = (
+            vehicle.lidar_sensor()
+            if vehicle.subscribed_to_lidar_sensor
+            else ([], [], [])
+        )
 
         done, events = Sensors._is_done_with_events(
             sim, agent_id, vehicle, sensor_state
@@ -322,90 +326,22 @@ class Sensors:
         ):
             logger.warning(f"Agent Id: {agent_id} is done on the first step")
 
-        # print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
-
-        obs = Observation(
-            events=events,
-            ego_vehicle_state=ego_vehicle_observation,
-            neighborhood_vehicle_states=neighborhood_vehicles,
-            waypoint_paths=waypoint_paths,
-            distance_travelled=distance_travelled,
-            top_down_rgb=rgb,
-            occupancy_grid_map=ogm,
-            drivable_area_grid_map=drivable_area_grid_map,
-            lidar_point_cloud=lidar,
-            road_waypoints=road_waypoints,
-            via_data=via_data,
+        return (
+            Observation(
+                events=events,
+                ego_vehicle_state=ego_vehicle_observation,
+                neighborhood_vehicle_states=neighborhood_vehicles,
+                waypoint_paths=waypoint_paths,
+                distance_travelled=distance_travelled,
+                top_down_rgb=rgb,
+                occupancy_grid_map=ogm,
+                drivable_area_grid_map=drivable_area_grid_map,
+                lidar_point_cloud=lidar,
+                road_waypoints=road_waypoints,
+                via_data=via_data,
+            ),
+            done,
         )
-
-        # TODO: Set observation size at the point of data creation, rather than using
-        # an adaptor-style fix prior to returning the observation.
-        obs = Sensors._fix_observation_size(sim, obs)
-
-        # print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-        # exit()
-
-        return (obs, done)
-
-    @classmethod
-    def _fix_observation_size(cls, sim, obs):
-
-        # Truncate list `li` to reference length `ref` or pad to reference length `ref` with `null_value`.
-        def truncate_pad_li(li, ref, null_value):
-            if len(li) < ref:
-                li += [null_value] * (ref - len(li))
-            elif len(li) > ref:
-                li = li[:ref]
-
-        # Truncate np.ndarray `ar` to reference length `ref` or pad to reference length `ref` with zeros.
-        def truncate_pad_np(ar, ref):
-            ar.resize(ref)
-
-        # Truncate/pad number of collisions
-        truncate_pad_li(
-            obs.events.collisions,
-            sim.obs_config["observation"]["events"]["collisions"],
-            None,
-        )
-        # Truncate/pad number of ego_vehicle::mission::route_vias
-        truncate_pad_li(
-            obs.ego_vehicle_state.mission.route_vias,
-            sim.obs_config["observation"]["ego_vehicle_state"]["mission"]["route_vias"],
-            None,
-        )
-        # Truncate/pad number of ego_vehicle_state::mission::entry_tactic::exclusion_prefixes
-        truncate_pad_li(
-            obs.ego_vehicle_state.mission.entry_tactic.exclusion_prefixes,
-            sim.obs_config["observation"]["ego_vehicle_state"]["mission"][
-                "entry_tactic"
-            ]["exclusion_prefixes"],
-            None,
-        )
-        # Truncate/pad number of ego_vehicle_state::mission::via
-        truncate_pad_li(
-            obs.ego_vehicle_state.mission.via,
-            sim.obs_config["observation"]["ego_vehicle_state"]["mission"]["via"],
-            None,
-        )
-
-        # oui = obs.ego_vehicle_state.linear_velocity
-        # print(oui)
-        # print(type(oui))
-        # print("---------------------------------")
-
-        # # Truncate/pad number of ego_vehicle_state::linear_velocity
-        # obs.ego_vehicle_state.linear_velocity.resize(
-        #     sim.obs_config["observation"]["ego_vehicle_state"]["linear_velocity"]
-        # )
-
-        # oui = obs.ego_vehicle_state.linear_velocity
-        # print(oui)
-        # print(type(oui))
-        # print("---------------------------------")
-
-        # exit()
-
-        return obs
 
     @staticmethod
     def step(sim, sensor_state):
