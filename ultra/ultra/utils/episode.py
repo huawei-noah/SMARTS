@@ -250,12 +250,23 @@ class Episode:
             self.make_dir(self.log_dir)
             self.make_dir(self.model_dir)
 
-    def record_tensorboard(self, save_codes=None):
+    def record_tensorboard(self, save_codes=None, recording_step=None):
+        # Due to performing evaluation asynchronously, this may record evaluation
+        # results out of order. For example, if Evaluation 1 began at t = 100 s
+        # and recorded at t = 150 s, but Evaluation 2 began at t = 120 s and
+        # recorded at t = 140 s, the plot of the data will appear to go backwards,
+        # and also only have a data point for Evaluation 2. This seems to be a
+        # known tensorboardX and tensorboard issue that has not yet been resolved:
+        # https://github.com/tensorflow/tensorboard/issues/3570,
+        # https://github.com/lanpa/tensorboardX/milestone/1.
+        # Combat this issue by increasing eval_rate so that overlapping
+        # evaluations are less likely.
+
         # Only create tensorboard once from training process.
         self.initialize_tb_writer()
 
         for agent_id, agent_info in self.info[self.active_tag].items():
-            agent_itr = self.get_itr(agent_id)
+            agent_itr = recording_step if recording_step else self.get_itr(agent_id)
             data = {}
 
             for key, value in agent_info.data.items():
