@@ -111,8 +111,7 @@ Several example scripts are provided under [`SMARTS/examples`](./examples), as w
 
 ## Documentation
 
-Documentation is available from [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest) 
-
+Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest)
 
 ## CLI tool
 
