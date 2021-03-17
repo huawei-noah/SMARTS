@@ -52,6 +52,7 @@ from smarts.core.controllers import ActionSpaceType, Controllers
 from smarts.core.masks import RenderMasks
 from smarts.core.motion_planner_provider import MotionPlannerProvider
 from smarts.core.provider import ProviderState
+from smarts.core import sensors
 from smarts.core.sensors import Collision
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -65,8 +66,6 @@ from smarts.core.vehicle import VehicleState
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.core.waypoints import Waypoints
 
-
-from smarts.core import sensors
 
 
 # disable vsync otherwise we are limited to refresh-rate of screen

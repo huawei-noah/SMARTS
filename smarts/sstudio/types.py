@@ -21,7 +21,6 @@
 # THE SOFTWARE.
 
 import collections.abc as collections_abc
-from collections import namedtuple
 import logging
 import random
 from dataclasses import dataclass, field
@@ -382,7 +381,7 @@ class EntryTactic(
     def __new__(cls):
         return super().__new__(
             cls,
-            wait_to_hijack_limit_s=0,
+            wait_to_hijack_limit_s=None,
             zone=None,
             exclusion_prefixes=[],
             default_entry_speed=None,

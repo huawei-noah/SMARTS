@@ -22,7 +22,7 @@
 
 import logging
 import time
-import yaml
+
 from collections import deque, namedtuple
 from dataclasses import dataclass
 from functools import lru_cache
@@ -71,7 +71,7 @@ class EgoVehicleObservation(NamedTuple):
     id: str
     position: Tuple[float, float, float]
     bounding_box: BoundingBox
-    heading: float
+    heading: Heading
     speed: float
     steering: float
     yaw_rate: float
