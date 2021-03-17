@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unrealeased]
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
+- Hosted Documentation on readthedocs and pointed to documentations and smarts paper in README
 
 ## [Format] - 2021-03-12
 ### Added 
