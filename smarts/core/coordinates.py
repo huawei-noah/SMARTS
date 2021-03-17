@@ -69,7 +69,6 @@ class HeadingMethods:
         counter-clockwise.
         """
         h = Heading(bullet_heading)
-        # h.source = "bullet"
         return h
 
     @classmethod
@@ -78,7 +77,6 @@ class HeadingMethods:
         and we turn counter-clockwise.
         """
         h = Heading(math.radians(p3d_heading))
-        # h.source = "p3d"
         return h
 
     @classmethod
@@ -86,7 +84,6 @@ class HeadingMethods:
         """Sumo's space uses degrees, 0 faces north, and we turn clockwise."""
         heading = HeadingMethods._flip_clockwise(math.radians(sumo_heading))
         h = Heading(heading)
-        # h.source = "sumo"
         return h
 
     @staticmethod
