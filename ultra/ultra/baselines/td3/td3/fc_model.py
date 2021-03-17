@@ -19,10 +19,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
+import torch.nn as nn
 import torch.nn.init as init
 import torch.optim as optim
 
@@ -71,11 +71,13 @@ class ActorNetwork(nn.Module):
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
         social_feature = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
+
         state = (
             torch.cat([low_dim_state, social_feature], -1)
             if len(social_feature) > 0
             else low_dim_state
         )
+
         # print('*** ACTOR STATE SIZE', state.shape)
         a = F.relu(self.l1(state))
         a = F.relu(self.l2(a))
@@ -117,11 +119,13 @@ class CriticNetwork(nn.Module):
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
 
         social_feature = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
+
         state = (
             torch.cat([low_dim_state, social_feature], -1)
             if len(social_feature) > 0
             else low_dim_state
         )
+
         # print('*** CRITIC STATE SIZE', state.shape)
         q = F.relu(self.l1(state))
         q = F.relu(self.l2(torch.cat([q, action], 1)))

@@ -46,6 +46,8 @@ class ActorNetwork(nn.Module):
 
         aux_losses = {}
         social_feature = []
+        if isinstance(social_vehicles_state, list):
+            social_vehicles_state = torch.cat(social_vehicles_state)
         if self.social_feature_encoder is not None:
             social_feature, social_encoder_aux_losses = self.social_feature_encoder(
                 social_vehicles_state, training
@@ -85,6 +87,8 @@ class CriticNetwork(nn.Module):
         social_vehicles_state = state["social_vehicles"]
         aux_losses = {}
         social_feature = []
+        if isinstance(social_vehicles_state, list):
+            social_vehicles_state = torch.cat(social_vehicles_state)
         if self.social_feature_encoder is not None:
             social_feature, social_encoder_aux_losses = self.social_feature_encoder(
                 social_vehicles_state, training

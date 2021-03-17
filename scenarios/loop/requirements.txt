@@ -1,3 +1,3 @@
 --extra-index-url http://localhost:8080
 
-open-agent==0.1.189
+open-agent==0.0.0
