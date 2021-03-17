@@ -104,8 +104,8 @@ class HeadingMethods:
     @staticmethod
     def relative_to(heading, other: "Heading"):
         """
-        Computes the relative heading w.r.t. the given heading
-        >>> Heading(math.pi/4).relative_to(Heading(math.pi))
+        Computes the relative heading w.r.t. the other given heading
+        >>> HeadingMethods.relative_to(Heading(math.pi/4), Heading(math.pi))
         Heading(-2.356194490192345)
         """
         assert isinstance(other, Heading)
