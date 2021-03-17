@@ -51,12 +51,12 @@ from smarts.core.utils.math import (
 
 
 class Waypoint(NamedTuple):
-    pos: np.ndarray = np.array([None, None]) # Point positioned on center of lane
-    heading: Heading = None # Heading angle of lane at this point (radians)
-    lane_width: float = None # Width of lane at this point (meters)
-    speed_limit: float = None # Lane speed in m/s
-    lane_id: str = None # ID of lane under waypoint
-    lane_index: int = None # Index of the lane this waypoint is over. 0 is the outer(right) most lane.
+    pos: np.ndarray = np.array([None, None])  # Point positioned on center of lane
+    heading: Heading = None  # Heading angle of lane at this point (radians)
+    lane_width: float = None  # Width of lane at this point (meters)
+    speed_limit: float = None  # Lane speed in m/s
+    lane_id: str = None  # ID of lane under waypoint
+    lane_index: int = None  # Index of the lane this waypoint is over. 0 is the outer(right) most lane.
 
     def __hash__(self):
         return hash(
