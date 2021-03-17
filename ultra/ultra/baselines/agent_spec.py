@@ -40,6 +40,7 @@ class BaselineAgentSpec(AgentSpec):
     def __init__(
         self,
         policy_class,
+        policy_params,
         action_type,
         checkpoint_dir=None,
         task=None,
@@ -51,6 +52,7 @@ class BaselineAgentSpec(AgentSpec):
     def __new__(
         self,
         policy_class,
+        policy_params,
         action_type,
         checkpoint_dir=None,
         task=None,
@@ -79,23 +81,7 @@ class BaselineAgentSpec(AgentSpec):
 
                 spec = new_spec
         else:
-            base_dir = os.path.join(os.path.dirname(__file__), "../")
-            pool_path = os.path.join(base_dir, "agent_pool.json")
-
-            policy_class_name = policy_class.__name__
-            agent_name = None
-
-            with open(pool_path, "r") as f:
-                data = json.load(f)
-                agents = data["agents"].keys()
-                for agent in agents:
-                    if data["agents"][agent]["class"] == policy_class_name:
-                        agent_name = data["agents"][agent]["name"]
-                        break
-
-            assert agent_name != None
-
-            adapter = BaselineAdapter(agent_name)
+            adapter = BaselineAdapter(policy_params=policy_params)
             spec = AgentSpec(
                 interface=AgentInterface(
                     waypoints=Waypoints(lookahead=20),
