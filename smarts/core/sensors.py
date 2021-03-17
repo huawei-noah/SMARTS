@@ -1195,80 +1195,69 @@ class ViaSensor(Sensor):
         pass
 
 
-def fix_observation_size(obs_config, observations: Dict):
+def fix_observation_size(obs_config: Dict, observations: Dict) -> Dict:
     # Skip empty observations
     if observations == {}:
         return observations
 
-    fixed_size_obs = {}
-    for agent_id, obs in observations.items():
+    def fix_size(obs_config: Dict, obs: NamedTuple) -> Observation:
 
-        events = Events(
-            collisions=sequence.truncate_pad_li(
-                obs.events.collisions,
-                obs_config["observation"]["events"]["collisions"],
-                Collision(),
-            ),
-            off_route=obs.events.off_route,
-            reached_goal=obs.events.reached_goal,
-            reached_max_episode_steps=obs.events.reached_max_episode_steps,
-            off_road=obs.events.off_road,
-            wrong_way=obs.events.wrong_way,
-            not_moving=obs.events.not_moving,
+        # Truncate/pad observation.events
+        collisions = sequence.truncate_pad_li(
+            obs.events.collisions,
+            obs_config["observation"]["events"]["collisions"],
+            Collision(),
         )
+        events = obs.events._replace(collisions=collisions)
 
-        mission = MissionData(
-            start=obs.ego_vehicle_state.mission.start,
-            goal=obs.ego_vehicle_state.mission.goal,
-            route_vias=sequence.truncate_pad_li(
-                obs.ego_vehicle_state.mission.route_vias,
-                obs_config["observation"]["ego_vehicle_state"]["mission"]["route_vias"],
-                None,
-            ),
-            start_time=obs.ego_vehicle_state.mission.start_time,
-            entry_tactic=None,  # EntryTactic removed from observation output
-            task=None,  # Task removed from observation output
-            via=sequence.truncate_pad_li(
+        # Truncate/pad observation.ego_vehicle_state
+        route_vias = sequence.truncate_pad_li(
+            obs.ego_vehicle_state.mission.route_vias,
+            obs_config["observation"]["ego_vehicle_state"]["mission"]["route_vias"],
+            None,
+        )
+        via = (
+            sequence.truncate_pad_li(
                 obs.ego_vehicle_state.mission.via,
                 obs_config["observation"]["ego_vehicle_state"]["mission"]["via"],
                 Via(),
             ),
-            route_length=obs.ego_vehicle_state.mission.route_length,
-            num_laps=obs.ego_vehicle_state.mission.num_laps,
         )
-
-        ego_vehicle_state = EgoVehicleObservation(
-            id=obs.ego_vehicle_state.id,
-            position=obs.ego_vehicle_state.position,
-            bounding_box=obs.ego_vehicle_state.bounding_box,
-            heading=obs.ego_vehicle_state.heading,
-            speed=obs.ego_vehicle_state.speed,
-            steering=obs.ego_vehicle_state.steering,
-            yaw_rate=obs.ego_vehicle_state.yaw_rate,
-            edge_id=obs.ego_vehicle_state.edge_id,
-            lane_id=obs.ego_vehicle_state.lane_id,
-            lane_index=obs.ego_vehicle_state.lane_index,
+        mission = obs.mission._replace(
+            entry_tactic=None,  # EntryTactic removed from observation output
+            task=None,  # Task removed from observation output
+            via=via,
+            route_vias=route_vias,
+        )
+        linear_velocity = (
+            sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_velocity, 3, 0),
+        )
+        angular_velocity = (
+            sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_velocity, 3, 0),
+        )
+        linear_acceleration = (
+            sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_acceleration, 3, 0),
+        )
+        angular_acceleration = (
+            sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_acceleration, 3, 0),
+        )
+        linear_jerk = (
+            sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_jerk, 3, 0),
+        )
+        angular_jerk = (
+            sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_jerk, 3, 0),
+        )
+        ego_vehicle_state = obs.ego_vehicle_state._replace(
             mission=mission,
-            linear_velocity=sequence.truncate_pad_arr(
-                obs.ego_vehicle_state.linear_velocity, 3, 0
-            ),
-            angular_velocity=sequence.truncate_pad_arr(
-                obs.ego_vehicle_state.angular_velocity, 3, 0
-            ),
-            linear_acceleration=sequence.truncate_pad_arr(
-                obs.ego_vehicle_state.linear_acceleration, 3, 0
-            ),
-            angular_acceleration=sequence.truncate_pad_arr(
-                obs.ego_vehicle_state.angular_acceleration, 3, 0
-            ),
-            linear_jerk=sequence.truncate_pad_arr(
-                obs.ego_vehicle_state.linear_jerk, 3, 0
-            ),
-            angular_jerk=sequence.truncate_pad_arr(
-                obs.ego_vehicle_state.angular_jerk, 3, 0
-            ),
+            linear_velocity=linear_velocity,
+            angular_velocity=angular_velocity,
+            linear_acceleration=linear_acceleration,
+            angular_acceleration=angular_acceleration,
+            linear_jerk=linear_jerk,
+            angular_jerk=angular_jerk,
         )
 
+        # Truncate/pad observation.neighborhood_vehicle_states
         neighborhood_vehicle_states = obs.neighborhood_vehicle_states or []
         neighborhood_vehicle_states = (
             sequence.truncate_pad_li(
@@ -1278,6 +1267,7 @@ def fix_observation_size(obs_config, observations: Dict):
             ),
         )
 
+        # Truncate/pad observation.lidar_point_cloud
         lidar_points = sequence.truncate_pad_li(
             obs.lidar_point_cloud[0],
             obs_config["observation"]["lidar_point_cloud"][0],
@@ -1295,7 +1285,8 @@ def fix_observation_size(obs_config, observations: Dict):
         )
         lidar_point_cloud = (lidar_points, lidar_hits, lidar_ray)
 
-        if obs.road_waypoints:  # is not None
+        # Truncate/pad observation.road_waypoints
+        if obs.road_waypoints:
             lanes = {
                 k: sequence.truncate_pad_li(
                     v,
@@ -1313,6 +1304,7 @@ def fix_observation_size(obs_config, observations: Dict):
         else:
             road_waypoints = obs.road_waypoints
 
+        # Truncate/pad observation.via_data
         near_via_points = sequence.truncate_pad_li(
             obs.via_data.near_via_points,
             obs_config["observation"]["via_data"]["near_via_points"],
@@ -1325,7 +1317,8 @@ def fix_observation_size(obs_config, observations: Dict):
         )
         via_data = Vias(near_via_points=near_via_points, hit_via_points=hit_via_points)
 
-        agent_obs = Observation(
+        # Fixed-size observation
+        fixed_obs = Observation(
             events=events,
             ego_vehicle_state=ego_vehicle_state,
             neighborhood_vehicle_states=neighborhood_vehicle_states,
@@ -1343,6 +1336,10 @@ def fix_observation_size(obs_config, observations: Dict):
             via_data=via_data,
         )
 
-        fixed_size_obs[agent_id] = agent_obs
+        return fixed_obs
 
+    fixed_size_obs = {
+        agent_id: fix_size(obs_config, agent_obs)
+        for agent_id, agent_obs in observations.items()
+    }
     return fixed_size_obs

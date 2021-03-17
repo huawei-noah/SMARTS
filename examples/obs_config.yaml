@@ -9,12 +9,7 @@ observation:
       via: 5 # List[Via()]
   neighborhood_vehicle_states: 5 # List[VehicleObservation()]
   waypoint_paths: [5, 5] # List[List[Waypoint()]]
-  lidar_point_cloud: [3, 3, 3] 
-                      # Tuple[ 
-                      #   List[np.ndarray], 
-                      #   List[np.ndarray], 
-                      #   List[Tuple[np.ndarray, np.ndarray]] 
-                      # ]
+  lidar_point_cloud: [5, 5, 5] # Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
   road_waypoints:
     lanes: 5 # List[Waypoint()]
     route_waypoints: 5 # List[Waypoint()]
