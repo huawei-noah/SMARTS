@@ -61,8 +61,7 @@ class HiWayEnv(gym.Env):
         envision_record_data_replay_path:
             used to specify envision's data replay output directory
         obs_config:
-            Yaml file consisting of lengths for each dynamic observation
-            parameter to be returned by the SMARTS environment
+            used to fix the lengths of each dynamic observation
         zoo_addrs:
             List of (ip, port) tuples of zoo server, used to instantiate
             remote social agents

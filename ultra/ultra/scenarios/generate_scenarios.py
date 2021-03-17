@@ -242,7 +242,7 @@ def generate_left_turn_missions(
                             length=zone_range[1],
                             n_lanes=route_lanes[mission["start"]],
                         ),  # area to hijack
-                        exclusion_prefixes=[],  # vehicles to be excluded (check vehicle ids)
+                        exclusion_prefixes=tuple(),  # vehicles to be excluded (check vehicle ids)
                     ),
                 ),
             ],
