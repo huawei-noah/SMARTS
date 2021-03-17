@@ -6,7 +6,7 @@ import multiprocessing as mp
 
 import numpy as np
 
-from smarts.core.coordinates import Heading, Pose
+from smarts.core.coordinates import Heading, HeadingMethods, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
 from smarts.core.chassis import BoxChassis
@@ -38,19 +38,19 @@ def look_at(client, position=(0, 0, 0), top_down=True):
 
 def social_spin_on_bumper_cw(step, front_bumper_position, length):
     return Pose.from_front_bumper(
-        np.array(front_bumper_position[:2]), Heading.from_sumo(step), length
+        np.array(front_bumper_position[:2]), HeadingMethods.from_sumo(step), length
     )
 
 
 def social_spin_on_centre_ccw(step, position):
-    return Pose.from_center(np.array(position), Heading.from_panda3d(step))
+    return Pose.from_center(np.array(position), HeadingMethods.from_panda3d(step))
 
 
 def social_spin_on_axle_cw(step, base_position, offset_from_centre):
     return Pose.from_explicit_offset(
         offset_from_centre,
         np.array(base_position),
-        Heading.from_sumo(step),
+        HeadingMethods.from_sumo(step),
         local_heading=Heading(0),
     )
 

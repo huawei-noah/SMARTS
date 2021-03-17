@@ -58,13 +58,19 @@ class Heading(float):
             value = 0
         return float.__new__(self, value)
 
+    def __repr__(self):
+        return f"Heading({super().__repr__()})"
+
+
+class HeadingMethods:
+
     @classmethod
     def from_bullet(cls, bullet_heading):
         """Bullet's space is in radians, 0 faces north, and we turn
         counter-clockwise.
         """
         h = Heading(bullet_heading)
-        h.source = "bullet"
+        # h.source = "bullet"
         return h
 
     @classmethod
@@ -73,30 +79,31 @@ class Heading(float):
         and we turn counter-clockwise.
         """
         h = Heading(math.radians(p3d_heading))
-        h.source = "p3d"
+        # h.source = "p3d"
         return h
 
     @classmethod
     def from_sumo(cls, sumo_heading):
         """Sumo's space uses degrees, 0 faces north, and we turn clockwise."""
-        heading = Heading._flip_clockwise(math.radians(sumo_heading))
+        heading = HeadingMethods._flip_clockwise(math.radians(sumo_heading))
         h = Heading(heading)
-        h.source = "sumo"
+        # h.source = "sumo"
         return h
 
-    @property
-    def as_panda3d(self):
-        return math.degrees(self)
+    @staticmethod
+    def as_panda3d(heading):
+        return math.degrees(heading)
 
-    @property
-    def as_bullet(self):
-        return self
+    @staticmethod
+    def as_bullet(heading):
+        return heading
 
-    @property
-    def as_sumo(self):
-        return math.degrees(Heading._flip_clockwise(self))
+    @staticmethod
+    def as_sumo(heading):
+        return math.degrees(HeadingMethods._flip_clockwise(heading))
 
-    def relative_to(self, other: "Heading"):
+    @staticmethod
+    def relative_to(heading, other: "Heading"):
         """
         Computes the relative heading w.r.t. the given heading
         >>> Heading(math.pi/4).relative_to(Heading(math.pi))
@@ -104,23 +111,21 @@ class Heading(float):
         """
         assert isinstance(other, Heading)
 
-        rel_heading = Heading(self - other)
+        rel_heading = Heading(heading - other)
 
         assert -math.pi <= rel_heading <= math.pi, f"{rel_heading}"
 
         return Heading(rel_heading)
 
     # 2D directional vector that aligns with Cartesian Coordinate System
-    def direction_vector(self):
-        return radians_to_vec(self)
+    @staticmethod
+    def direction_vector(heading):
+        return radians_to_vec(heading)
 
     @staticmethod
     def _flip_clockwise(x):
         """Converts clockwise to counter-clockwise, and vice-versa."""
-        return (2 * math.pi - x) % (2 * math.pi)
-
-    def __repr__(self):
-        return f"Heading({super().__repr__()})"
+        return (2 * math.pi - x) % (2 * math.pi)   
 
 
 @dataclass
@@ -215,7 +220,7 @@ class Pose:
 
         return (
             np.array([self.position[0] + vprime[0], self.position[1] + vprime[1], 0]),
-            self.heading.as_sumo,
+            HeadingMethods.as_sumo(self.heading),
         )
 
     def as_bullet(self):
@@ -232,4 +237,4 @@ class Pose:
 
     def as_panda3d(self):
         """ Convert to panda3D (object bounds centre position, heading)"""
-        return (self.position, self.heading.as_panda3d)
+        return (self.position, HeadingMethods.as_panda3d(self.heading))

@@ -39,7 +39,7 @@ with warnings.catch_warnings():
         # aggressive
         from sklearn.neighbors import KDTree
 
-from smarts.core.coordinates import Heading, Pose
+from smarts.core.coordinates import Heading, HeadingMethods, Pose
 from smarts.core.utils.math import (
     lerp,
     radians_to_vec,
@@ -102,7 +102,7 @@ class WaypointMethods:
             type(h)
         )
 
-        return waypoint.heading.relative_to(h)
+        return HeadingMethods.relative_to(waypoint.heading, h)
 
     @staticmethod
     def signed_lateral_error(waypoint, p):
@@ -111,7 +111,7 @@ class WaypointMethods:
 
         Negative signals right of line and Positive left of line
         """
-        return signed_dist_to_line(p, waypoint.pos, waypoint.heading.direction_vector())
+        return signed_dist_to_line(p, waypoint.pos, HeadingMethods.direction_vector(waypoint.heading))
 
     @staticmethod
     def pose(waypoint):
@@ -320,7 +320,7 @@ class Waypoints:
             sorted(
                 l_wps,
                 key=lambda _lwp: squared_dist(poses[idx].position[:2], _lwp.wp.pos)
-                + abs(poses[idx].heading.relative_to(_lwp.wp.heading)),
+                + abs(HeadingMethods.relative_to(poses[idx].heading, _lwp.wp.heading)),
             )
             for idx, l_wps in enumerate(linked_waypoints)
         ]
@@ -384,7 +384,7 @@ class Waypoints:
             ref_waypoints_coordinates["ref_wp_positions_x"].append(waypoint.wp.pos[0])
             ref_waypoints_coordinates["ref_wp_positions_y"].append(waypoint.wp.pos[1])
             ref_waypoints_coordinates["ref_wp_headings"].append(
-                waypoint.wp.heading.as_bullet
+                HeadingMethods.as_bullet(waypoint.wp.heading)
             )
             ref_waypoints_coordinates["ref_wp_lane_id"].append(waypoint.wp.lane_id)
             ref_waypoints_coordinates["ref_wp_lane_index"].append(

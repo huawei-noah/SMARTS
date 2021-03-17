@@ -45,7 +45,7 @@ from smarts.core.utils import sequence
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.sstudio.types import CutIn, UTurn, ZoneData
 
-from smarts.core.coordinates import BoundingBox, Heading
+from smarts.core.coordinates import BoundingBox, Heading, HeadingMethods
 from smarts.core.events import Events
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
@@ -510,7 +510,7 @@ class Sensors:
 
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
-            np.fabs(vehicle.pose.heading.relative_to(closest_waypoint.heading))
+            np.fabs(HeadingMethods.relative_to(vehicle.pose.heading, closest_waypoint.heading))
             > 0.5 * np.pi
         )
 
@@ -971,7 +971,7 @@ class TripMeterSensor(Sensor):
 
     @staticmethod
     def _compute_additional_dist_travelled(recent_wp, waypoint):
-        heading_vec = recent_wp.heading.direction_vector()
+        heading_vec = HeadingMethods.direction_vector(recent_wp.heading)
         disp_vec = waypoint.pos - recent_wp.pos
         direction = np.sign(np.dot(heading_vec, disp_vec))
         distance = np.linalg.norm(disp_vec)

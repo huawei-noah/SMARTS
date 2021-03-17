@@ -26,7 +26,7 @@ import pytest
 from direct.showbase.ShowBase import ShowBase
 
 from smarts.core.chassis import BoxChassis
-from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.coordinates import BoundingBox, Heading, HeadingMethods, Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
@@ -54,7 +54,7 @@ def position():
 
 @pytest.fixture
 def heading():
-    return Heading.from_panda3d(-250)
+    return HeadingMethods.from_panda3d(-250)
 
 
 @pytest.fixture

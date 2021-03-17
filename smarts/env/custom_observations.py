@@ -26,7 +26,7 @@ from typing import Callable
 import gym
 import numpy as np
 
-from smarts.core.coordinates import Heading
+from smarts.core.coordinates import Heading, HeadingMethods
 from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
 from smarts.core.waypoints import WaypointMethods
 
@@ -56,7 +56,7 @@ def scan_for_vehicle(
             [other_vehicle_state.position, -self_vehicle_state.position], axis=0
         )
         angle = Heading(vec_to_radians(direction[:2]))
-        rel_angle = angle.relative_to(self_vehicle_state.heading)
+        rel_angle = HeadingMethods.relative_to(angle, self_vehicle_state.heading)
         return min_angle <= rel_angle <= max_angle
     return False
 
@@ -86,7 +86,7 @@ def scan_for_vehicles(
                 [vehicle_state.position, -self_vehicle_state.position], axis=0
             )
             angle = Heading(vec_to_radians(direction[:2]))
-            rel_angle = angle.relative_to(self_vehicle_state.heading)
+            rel_angle = HeadingMethods.relative_to(angle, self_vehicle_state.heading)
             if min_angle <= rel_angle <= max_angle:
                 vehicles.append(vehicle_state)
                 if short_circuit:

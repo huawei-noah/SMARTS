@@ -34,7 +34,7 @@ from traci.exceptions import FatalTraCIError, TraCIException
 
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
-from smarts.core.coordinates import Heading, Pose
+from smarts.core.coordinates import Heading, HeadingMethods, Pose
 from smarts.core.provider import ProviderState
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_stdout
@@ -590,7 +590,7 @@ class SumoTrafficSimulation:
             #      "The insertion-order preservation nature of dict objects is now an
             #      official part of the Python language spec."
             front_bumper_pos = front_bumper_positions[i]
-            heading = Heading.from_sumo(sumo_vehicle[tc.VAR_ANGLE])
+            heading = HeadingMethods.from_sumo(sumo_vehicle[tc.VAR_ANGLE])
             speed = sumo_vehicle[tc.VAR_SPEED]
             vehicle_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
             dimensions = VEHICLE_CONFIGS[vehicle_type].dimensions
@@ -694,7 +694,7 @@ class SumoTrafficSimulation:
         p = sumo_vehicle_state[vehicle_id][tc.VAR_POSITION]
         length = sumo_vehicle_state[vehicle_id][tc.VAR_LENGTH]
         width = sumo_vehicle_state[vehicle_id][tc.VAR_WIDTH]
-        heading = Heading.from_sumo(sumo_vehicle_state[vehicle_id][tc.VAR_ANGLE])
+        heading = HeadingMethods.from_sumo(sumo_vehicle_state[vehicle_id][tc.VAR_ANGLE])
 
         poly = shapely_box(
             p[0] - width * 0.5,
