@@ -44,7 +44,7 @@ from smarts.core.mission_planner import MissionPlanner
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.sstudio.types import CutIn, UTurn, ZoneData
 
-from smarts.core.coordinates import BoundingBox
+from smarts.core.coordinates import BoundingBox, Heading
 from smarts.core.events import Events
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
