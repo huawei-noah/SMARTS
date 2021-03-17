@@ -41,6 +41,7 @@ from panda3d.core import (
 )
 
 from smarts.core.mission_planner import MissionPlanner
+from smarts.core.utils import sequence
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.sstudio.types import CutIn, UTurn, ZoneData
 
@@ -1203,7 +1204,7 @@ def fix_observation_size(obs_config, observations: Dict):
     for agent_id, obs in observations.items():
 
         events = Events(
-            collisions=truncate_pad_li(
+            collisions=sequence.truncate_pad_li(
                 obs.events.collisions,
                 obs_config["observation"]["events"]["collisions"],
                 Collision(),
@@ -1219,7 +1220,7 @@ def fix_observation_size(obs_config, observations: Dict):
         mission = MissionData(
             start=obs.ego_vehicle_state.mission.start,
             goal=obs.ego_vehicle_state.mission.goal,
-            route_vias=truncate_pad_li(
+            route_vias=sequence.truncate_pad_li(
                 obs.ego_vehicle_state.mission.route_vias,
                 obs_config["observation"]["ego_vehicle_state"]["mission"]["route_vias"],
                 None,
@@ -1227,7 +1228,7 @@ def fix_observation_size(obs_config, observations: Dict):
             start_time=obs.ego_vehicle_state.mission.start_time,
             entry_tactic=None,  # EntryTactic removed from observation output
             task=None,  # Task removed from observation output
-            via=truncate_pad_li(
+            via=sequence.truncate_pad_li(
                 obs.ego_vehicle_state.mission.via,
                 obs_config["observation"]["ego_vehicle_state"]["mission"]["via"],
                 Via(),
@@ -1248,42 +1249,46 @@ def fix_observation_size(obs_config, observations: Dict):
             lane_id=obs.ego_vehicle_state.lane_id,
             lane_index=obs.ego_vehicle_state.lane_index,
             mission=mission,
-            linear_velocity=truncate_pad_arr(
+            linear_velocity=sequence.truncate_pad_arr(
                 obs.ego_vehicle_state.linear_velocity, 3, 0
             ),
-            angular_velocity=truncate_pad_arr(
+            angular_velocity=sequence.truncate_pad_arr(
                 obs.ego_vehicle_state.angular_velocity, 3, 0
             ),
-            linear_acceleration=truncate_pad_arr(
+            linear_acceleration=sequence.truncate_pad_arr(
                 obs.ego_vehicle_state.linear_acceleration, 3, 0
             ),
-            angular_acceleration=truncate_pad_arr(
+            angular_acceleration=sequence.truncate_pad_arr(
                 obs.ego_vehicle_state.angular_acceleration, 3, 0
             ),
-            linear_jerk=truncate_pad_arr(obs.ego_vehicle_state.linear_jerk, 3, 0),
-            angular_jerk=truncate_pad_arr(obs.ego_vehicle_state.angular_jerk, 3, 0),
+            linear_jerk=sequence.truncate_pad_arr(
+                obs.ego_vehicle_state.linear_jerk, 3, 0
+            ),
+            angular_jerk=sequence.truncate_pad_arr(
+                obs.ego_vehicle_state.angular_jerk, 3, 0
+            ),
         )
 
         neighborhood_vehicle_states = obs.neighborhood_vehicle_states or []
         neighborhood_vehicle_states = (
-            truncate_pad_li(
+            sequence.truncate_pad_li(
                 neighborhood_vehicle_states,
                 obs_config["observation"]["neighborhood_vehicle_states"],
                 VehicleObservation(),
             ),
         )
 
-        lidar_points = truncate_pad_li(
+        lidar_points = sequence.truncate_pad_li(
             obs.lidar_point_cloud[0],
             obs_config["observation"]["lidar_point_cloud"][0],
             np.array([0, 0, 0]),
         )
-        lidar_hits = truncate_pad_li(
+        lidar_hits = sequence.truncate_pad_li(
             obs.lidar_point_cloud[1],
             obs_config["observation"]["lidar_point_cloud"][1],
             np.array([0, 0, 0]),
         )
-        lidar_ray = truncate_pad_li(
+        lidar_ray = sequence.truncate_pad_li(
             obs.lidar_point_cloud[2],
             obs_config["observation"]["lidar_point_cloud"][2],
             (np.array([0, 0, 0]), np.array([0, 0, 0])),
@@ -1292,14 +1297,14 @@ def fix_observation_size(obs_config, observations: Dict):
 
         if obs.road_waypoints:  # is not None
             lanes = {
-                k: truncate_pad_li(
+                k: sequence.truncate_pad_li(
                     v,
                     obs_config["observation"]["road_waypoints"]["lanes"],
                     Waypoint(),
                 )
                 for k, v in obs.road_waypoints.lanes.items()
             }
-            route_waypoints = truncate_pad_li(
+            route_waypoints = sequence.truncate_pad_li(
                 obs.road_waypoints.route_waypoints,
                 obs_config["observation"]["road_waypoints"]["route_waypoints"],
                 Waypoint(),
@@ -1308,12 +1313,12 @@ def fix_observation_size(obs_config, observations: Dict):
         else:
             road_waypoints = obs.road_waypoints
 
-        near_via_points = truncate_pad_li(
+        near_via_points = sequence.truncate_pad_li(
             obs.via_data.near_via_points,
             obs_config["observation"]["via_data"]["near_via_points"],
             ViaPoint(),
         )
-        hit_via_points = truncate_pad_li(
+        hit_via_points = sequence.truncate_pad_li(
             obs.via_data.hit_via_points,
             obs_config["observation"]["via_data"]["hit_via_points"],
             ViaPoint(),
@@ -1324,7 +1329,7 @@ def fix_observation_size(obs_config, observations: Dict):
             events=events,
             ego_vehicle_state=ego_vehicle_state,
             neighborhood_vehicle_states=neighborhood_vehicle_states,
-            waypoint_paths=truncate_pad_li_2d(
+            waypoint_paths=sequence.truncate_pad_li_2d(
                 obs.waypoint_paths,
                 obs_config["observation"]["waypoint_paths"],
                 ([None], None),
@@ -1341,41 +1346,3 @@ def fix_observation_size(obs_config, observations: Dict):
         fixed_size_obs[agent_id] = agent_obs
 
     return fixed_size_obs
-
-
-# Truncate or pad a 2-dimensional list li to shape (ref[0], ref[1]). Padding uses null_value.
-def truncate_pad_li_2d(li, ref, null_value):
-    temp_li = truncate_pad_li(li, ref[0], null_value[0])
-    new_li = list(
-        map(lambda elem: truncate_pad_li(elem, ref[1], null_value[1]), temp_li)
-    )
-    return new_li
-
-
-# Truncate or pad a 1-dimensional list li to shape (ref,). Padding uses `null_value`.
-def truncate_pad_li(li, ref, null_value):
-    if len(li) == ref:
-        new_li = li
-    elif len(li) < ref:
-        new_li = li + [null_value] * (ref - len(li))
-    else:  # len(li) > ref
-        new_li = li[:ref]
-
-    return new_li
-
-
-# Truncate or pad a 1-dimensional np.ndarray arr to shape (ref,). Padding usses `null_value`.
-def truncate_pad_arr(arr, ref, null_value):
-    if not isinstance(arr, np.ndarray):
-        arr = np.array([arr])
-
-    if len(arr) == ref:
-        new_arr = arr
-    elif len(arr) < ref:
-        new_arr = np.pad(
-            arr, (0, ref - len(arr)), "constant", constant_values=(null_value)
-        )
-    else:  # len(arr) > ref
-        new_arr = arr[:ref]
-
-    return new_arr

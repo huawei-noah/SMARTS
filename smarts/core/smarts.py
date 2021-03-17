@@ -67,7 +67,6 @@ from smarts.core.vehicle_index import VehicleIndex
 from smarts.core.waypoints import Waypoints
 
 
-
 # disable vsync otherwise we are limited to refresh-rate of screen
 loadPrcFileData("", "sync-video false")
 loadPrcFileData("", "model-path %s" % os.getcwd())
