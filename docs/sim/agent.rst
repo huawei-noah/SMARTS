@@ -3,7 +3,7 @@
 How to build an Agent
 ======================
 
-SMARTS provides users the ability to custom their agents. :class:`smarts.core.agent.AgentSpec` has the following fields: 
+SMARTS provides users the ability to customize their agents. :class:`smarts.core.agent.AgentSpec` has the following fields:
 
 .. code-block:: python
 
@@ -31,7 +31,7 @@ An example of how to create an `Agent` instance is shown below.
 
     agent = agent_spec.build_agent()
 
-We will further explain the fields of `Agent` class later on this page. You can also read the source code at :class:`smarts.env.agent`.
+We will further explain the fields of the `Agent` class later on this page. You can also read the source code at :class:`smarts.env.agent`.
 
 ==============
 AgentInterface
@@ -64,7 +64,7 @@ SMARTS provide some interface types, and the differences between them is shown i
     |         debug         |           **T**            |                 **T**                  |              **T**              |        **T**         |
 
 `max_episode_steps` controls the max running steps allowed for the agent in an episode. The default `None` setting means agents have no such limit.
-You can move max_episode_steps control authority to RLlib with their config option `horizon`, but lose the ability to customize 
+You can move `max_episode_steps` control authority to RLlib with their config option `horizon`, but lose the ability to customize
 different max_episode_len for each agent.
 
 `action` controls the agent action type used. There are three `ActionSpaceType`: ActionSpaceType.Continuous, ActionSpaceType.Lane 
@@ -72,7 +72,7 @@ and ActionSpaceType.ActuatorDynamic.
 
 - `ActionSpaceType.Continuous`: continuous action space with throttle, brake, absolute steering angle.
 - `ActionSpaceType.ActuatorDynamic`: continuous action space with throttle, brake, steering rate. Steering rate means the amount of steering angle change *per second* (either positive or negative) to be applied to the current steering angle.
-- `ActionSpaceType.Lane`: discrete lane action space of strings including "keep_lane",  "slow_down", "change_lane_left", "change_lane_right". (WARNING: This is the case in the current version 0.3.2b, but a newer version will soon be released. In this newer version, the action space will no longer being strings, but will be a tuple of an integer for `lane_change` and a float for `target_speed`.)
+- `ActionSpaceType.Lane`: discrete lane action space of strings including "keep_lane",  "slow_down", "change_lane_left", "change_lane_right". (WARNING: This is the case in the current version 0.3.2b, but a newer version will soon be released. In this newer version, the action space will no longer consist of strings, but will be a tuple of an integer for `lane_change` and a float for `target_speed`.)
 
 For other observation options, see :ref:`observations` for details.
 
@@ -112,10 +112,10 @@ For further customization, you can try:
         action=ActionSpaceType.Continuous,
     )
 
-refer to :class:`smarts/core/agent_interface` for more details.
+Refer to :class:`smarts/core/agent_interface` for more details.
 
 
-IMPORTANT: The generation of DrivableAreaGridMap(`drivable_area_grid_map=True`), OGM (`ogm=True`) and RGB (`rgb=True`) images may significantly slow down the environment `step()`. If your model does not consume such observations, we recommend that you set them to `False`.
+IMPORTANT: The generation of a DrivableAreaGridMap (`drivable_area_grid_map=True`), OGM (`ogm=True`) and/or RGB (`rgb=True`) images may significantly slow down the environment `step()`. If your model does not consume such observations, we recommend that you set them to `False`.
 
 IMPORTANT: Depending on how your agent model is set up, `ActionSpaceType.ActuatorDynamic` might allow the agent to learn faster than `ActionSpaceType.Continuous` simply because learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. But, again, it also depends on the design of your agent model. 
 
