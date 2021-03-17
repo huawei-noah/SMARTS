@@ -1223,7 +1223,7 @@ def fix_observation_size(obs_config: Dict, observations: Dict) -> Dict:
                 Via(),
             ),
         )
-        mission = obs.mission._replace(
+        mission = obs.ego_vehicle_state.mission._replace(
             entry_tactic=None,  # EntryTactic removed from observation output
             task=None,  # Task removed from observation output
             via=via,
