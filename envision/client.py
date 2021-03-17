@@ -240,14 +240,16 @@ class Client:
         self._state_queue.put(state)
 
     def teardown(self):
-        if not self._headless:
+        if not self._headless and self._state_queue:
             self._state_queue.put(Client.QueueDone())
             self._process.join(timeout=3)
             self._process = None
             self._state_queue.close()
+            self._state_queue = None
 
-        if self._logging_process:
+        if self._logging_process and self._logging_queue:
             self._logging_queue.put(Client.QueueDone())
             self._logging_process.join(timeout=3)
             self._logging_process = None
             self._logging_queue.close()
+            self._logging_queue = None
