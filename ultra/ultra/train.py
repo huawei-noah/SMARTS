@@ -113,6 +113,9 @@ def train(
 
     episode_count = 0
     old_episode = None
+    total_scenarios_passed = 0.0
+    average_scenarios_passed = 0.0
+    plot_arr = []
 
     if grade_mode:
         agent_coordinator = coordinator("../scenarios/grade_based_task/")
@@ -125,9 +128,16 @@ def train(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if grade_mode:
-            if agent_coordinator.graduate(episode.index, num_episodes):
+            if agent_coordinator.graduate(
+                episode.index,
+                num_episodes,
+                list(agents.keys())[0],
+                average_scenarios_passed,
+            ):
                 observations = env.reset(True, agent_coordinator.get_grade())
                 print(agent_coordinator)
+                total_scenarios_passed = 0
+                average_scenarios_passed = 0
             else:
                 observations = env.reset()
         else:
@@ -197,9 +207,22 @@ def train(
         episode.record_episode(old_episode, eval_info["eval_rate"])
         old_episode = episode
 
+        # print("Reached goal: ", episode.info[episode.active_tag]["000"].data["reached_goal"])
         if (episode_count + 1) % eval_info["eval_rate"] == 0:
+            if grade_mode:
+                average_scenarios_passed = (
+                    total_scenarios_passed / eval_info["eval_rate"]
+                )
+                plot_arr.append(average_scenarios_passed)
+                total_scenarios_passed = 0
             episode.record_tensorboard()
             old_episode = None
+        else:
+            if grade_mode:
+                total_scenarios_passed += episode.info[episode.active_tag]["000"].data[
+                    "reached_goal"
+                ]
+                print("TOTAL SCENARIOs PASSED PER EVAL RATE:", total_scenarios_passed)
 
         if eval_info["eval_episodes"] != 0:
             # Perform the evaluation check.
@@ -220,6 +243,10 @@ def train(
 
         if finished:
             break
+
+    if grade_mode:
+        print("Average scenario sucess array: ")
+        print(plot_arr)
 
     env.close()
 

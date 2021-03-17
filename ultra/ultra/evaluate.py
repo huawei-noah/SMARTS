@@ -109,6 +109,9 @@ def evaluation_check(
     # Put the evaluation data for all agents into the episode and record the TensorBoard.
     episode.info[episode.active_tag] = evaluation_data
     episode.record_tensorboard()
+    episode.gap_mode()
+    episode.calculate_gap()
+    episode.record_tensorboard()
     episode.train_mode()
 
 

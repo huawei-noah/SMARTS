@@ -59,6 +59,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--policy`: The policy (agent) to train (default is sac).
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
   - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
+  - `--grade-mode`: Uses grade-based structure, will ignore the tasks and levels args (default is False).
 
   Run the following command to train our DQN agent with a quick training session (if you started Envision in the previous section, refresh your browser to observe the training):
   ```sh
@@ -92,6 +93,37 @@ After training your agent, your models should be saved under `logs/<timestamped_
   $ python ultra/evaluate.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/ --episodes 5 --policy dqn
   ```
   > This will produce another experiment directory under `logs/` containing the results of the evaluation.
+
+## Using the grade-based structure
+
+The grade-based (GB) structure allows scenarios to be added dynamically during training/testing runs. This is done by dividing an experiment into so called grades, which are combinations of different tasks and levels. 
+
+When an agent is put into training with grade-mode enable (run train.py with flag --grade-mode True), an coordinator object is initialized. It is responsible for setting up the scenarios in each grade and performing graduation (switching) of the agent into the next grade.
+
+Unlike the regular the training setup (grade mode disable), there is another task folder called grade-based-task under ultra/scenarios
+which has the blueprint of which set of scenarios are in each grade
+
+```yaml
+grades:
+  1: [[<task>,<level>]]
+  2: [[<task>,<level>], [<task>,<level>]]
+  # 3: [[<task>,<level>], ... ,[<task>,<level>]] can have as many combinations of tasks and levels
+```
+A more specific example in which we take the three levels from task 1 and distribute it among three grades
+
+```yaml
+grades:
+  1: [[1,no-traffic]]
+  2: [[1,easy]]
+  3: [[1,hard]]
+```
+Now when we enter grade 1, the agent will see only the scenarios that are part of (task 1, level easy), same applies to grades 2 and 3
+
+When an agent goes from one grade to the next it is called graduating. The condition on when to graduate is an open-ended problem. However, currently under graduate method in coordinator.py we can specify when to graduate. Currently, we have two options:
+  - Graduate the agent at every n episodes, thus making the sizes of the grades (based on episodes) to be the same
+  - Graduate the agent based on how successful it is to complete scenarios; i.e. to get an average in terms of percentage of scenarios completed in a grade
+
+> This feature is still a work in progress, feel free to try it out and let us know of any issues, bugs and ofcourse any feedback will be great
 
 ## View Tensorboard Results
 

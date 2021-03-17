@@ -60,17 +60,28 @@ class coordinator:
         # Get task and level information
         self.grade = self.curriculum[grade]
 
-    def graduate(self, index, num_episodes):
+    def graduate(self, index, num_episodes, agent_id, average_scenarios_passed):
         """ Conditions on when to graduate """
 
-        # Switch to next grade based on number of episodes completed
-        if (index % (num_episodes / self.get_num_of_grades())) == 0:
-            self.next_grade(next(self.counter) + 1)
-            return True
-        else:
-            return False
+        # # Switch to next grade based on number of episodes completed
+        # if (episode.index % (num_episodes / self.get_num_of_grades())) == 0:
+        #     self.next_grade(next(self.counter) + 1)
+        #     return True
+        # else:
+        #     return False
 
         # TODO : Switch to next grade on the basis of certain percentage of completed scenarios
+        if index != 0:
+            print("\nAVERAGE SCENARIOS PASSED:", average_scenarios_passed)
+            if average_scenarios_passed > 0.50:
+                self.next_grade(next(self.counter) + 1)
+                return True
+            else:
+                return False
+        else:
+            # Initial switch (admission into curriculum)
+            self.next_grade(next(self.counter) + 1)
+            return True
 
     def get_num_of_grades(self):
         return len(self.curriculum)
