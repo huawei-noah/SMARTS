@@ -7,12 +7,28 @@ test: build-all-scenarios
 		--doctest-modules \
 		--forked \
 		--dist=loadscope \
-		-n `nproc --ignore 2` \
+		-n `nproc --ignore 1` \
 		./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
 		--ignore=./smarts/env/tests/test_learning.py \
 		-k 'not test_long_determinism'
+
+.PHONY: sanity-test
+sanity-test: #build-all-scenarios
+	./test_setup.py
+	PYTHONHASHSEED=42 pytest -v \
+		--doctest-modules \
+		--forked \
+		--dist=loadscope \
+		-n `nproc --ignore 2` \
+		./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests \
+		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+		--ignore=./smarts/env/tests/test_benchmark.py \
+		--ignore=./smarts/env/tests/test_learning.py \
+		--ignore=./smarts/env/tests/test_determinism.py \
+		--ignore=./smarts/env/tests/test_rllib_hiway_env.py \
+		-k 'not test_rllib_example and not test_multi_instance_example'
 
 .PHONY: test-learning
 test-learning: build-all-scenarios
