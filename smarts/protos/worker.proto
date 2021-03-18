@@ -1,4 +1,6 @@
-// Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+// MIT License
+
+// Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -49,4 +51,200 @@ message Observation {
 // Agent's action in response to the observation
 message Action {
     bytes action = 1;
+}
+
+message Observe {
+    message events {
+        message Collisions{
+            string collidee_id=1
+        }
+        repeated Collisions collisions=1
+        bool off_route=2
+        bool reached_goal=3
+        bool reached_max_episode_steps=4
+        bool off_road=5
+        bool wrong_way=6
+        bool not_moving=7
+    }
+    ego_vehicle_state: EgoVehicleObservation(
+        id: str
+        position: Tuple[float, float, float]
+        bounding_box: BoundingBox(
+            length: float
+            width: float
+            height: float
+        )
+        heading: float
+        speed: float
+        steering: float
+        yaw_rate: float
+        edge_id: int
+        lane_id: int
+        lane_index: int
+        mission: MissionData( 
+            start: Start(
+                position: Tuple[int, int]
+                heading: float
+            )
+            goal: GoalData(
+                position: Tuple[int, int] = (None, None)
+                radius: float = None
+            )
+            route_vias: List[str] = []
+            start_time: float = 0.1
+            entry_tactic: EntryTactic(  <----------- Removed
+                wait_to_hijack_limit_s: float
+                zone: ZoneData(
+                    start: Tuple[str, int, float] = (None, None, None)
+                    length: float = None
+                    n_lanes: int = 2
+                    pos: Tuple[float, float] = (None, None)
+                    size: Tuple[float, float] = (None, None)
+                ) = None 
+                exclusion_prefixes: List[str] = []
+                default_entry_speed: float = None 
+            ) = None
+            task: Union[ <----------- Removed
+                CutIn(
+                    complete_on_edge_id: str = None
+                    initial_speed: float = None
+                    target_lane_index: int = None
+                    trigger_radius: int = 30
+                ), 
+                UTurn(   
+                    complete_on_edge_id: str = None
+                    initial_speed: float = None
+                    target_lane_index: int = 0
+                    trigger_radius: int = 100
+                )
+            ] = None
+            via: List[
+                Via(    
+                    lane_id: str
+                    edge_id: str
+                    lane_index: int
+                    position: Tuple[float, float]
+                    hit_distance: float
+                    required_speed: float
+                )
+            ] = []
+            route_length: float = 0
+            num_laps: int = None
+        )
+        linear_velocity: np.ndarray(3,)
+        angular_velocity: np.ndarray(3,)
+        linear_acceleration: np.ndarray(3,) 
+        angular_acceleration: np.ndarray(3,)
+        linear_jerk: np.ndarray(3,)
+        angular_jerk: np.ndarray(3,)
+    )
+    neighborhood_vehicle_states: List[ 
+        VehicleObservation(
+            id: str
+            position: Tuple[float, float, float]
+            bounding_box: BoundingBox(
+                length: float
+                width: float
+                height: float
+            )
+            heading: float
+            speed: float
+            edge_id: int
+            lane_id: int
+            lane_index: int
+        )
+    ]
+    waypoint_paths: List[ 
+        List[ 
+            Waypoint(
+                pos: np.ndarray(2,)
+                heading: float
+                lane_width: float
+                speed_limit: float
+                lane_id: str
+                lane_index: int
+            )
+        ]
+    ]
+    distance_travelled: float
+    lidar_point_cloud: Tuple[
+        List[np.ndarray], 
+        List[np.ndarray],  
+        List[Tuple[np.ndarray, np.ndarray]] 
+    ]
+    drivable_area_grid_map: DrivableAreaGridMap(
+        metadata: GridMapMetadata(
+            created_at: int
+            resolution: float
+            width: int
+            height: int
+            camera_pos: Tuple[float, float, float]
+            camera_heading_in_degrees: float
+        )
+        data: np.ndarray 
+    )
+    occupancy_grid_map: OccupancyGridMap(
+        metadata: GridMapMetadata(
+            created_at: int
+            resolution: float
+            width: int
+            height: int
+            camera_pos: Tuple[float, float, float]
+            camera_heading_in_degrees: float
+        )
+        data: np.ndarray 
+    )
+    top_down_rgb: TopDownRGB(
+        metadata: GridMapMetadata(
+            created_at: int
+            resolution: float
+            width: int
+            height: int
+            camera_pos: Tuple[float, float, float]
+            camera_heading_in_degrees: float
+        )
+        data: np.ndarray 
+    )
+    road_waypoints: RoadWaypoints(
+        lanes: Dict[str, List[ 
+                Waypoint(
+                    pos: np.ndarray(2,)
+                    heading: float
+                    lane_width: float
+                    speed_limit: float
+                    lane_id: str
+                    lane_index: int 
+                )
+            ]
+        ]
+        route_waypoints: List[ 
+            Waypoint(
+                pos: np.ndarray(2,)
+                heading: float
+                lane_width: float
+                speed_limit: float
+                lane_id: str
+                lane_index: int 
+            )
+        ]
+    ) = None
+    via_data: Vias(
+        near_via_points: List[
+            ViaPoint(
+                position: Tuple[float, float]
+                lane_index: float
+                edge_id: str
+                required_speed: float
+            )
+        ]
+        hit_via_points: List[
+            ViaPoint(
+                position: Tuple[float, float]
+                lane_index: float
+                edge_id: str
+                required_speed: float
+            )
+        ]
+    ) = Vias()
+}
 }
