@@ -91,7 +91,9 @@ class TrafficHistoryProvider:
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center(
                         [
-                            *Traffic_history_service.apply_map_location_offset(vehicle_state["position"], self._map_location_offset),
+                            *Traffic_history_service.apply_map_location_offset(
+                                vehicle_state["position"], self._map_location_offset
+                            ),
                             0,
                         ],
                         Heading(vehicle_state["heading"]),
