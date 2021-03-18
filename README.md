@@ -78,7 +78,7 @@ pip install -e .[train]
 
 # make sure you can run tests (and verify they are passing)
 pip install -e .[test]
-make test
+make sanity-test
 
 # then you can run a scenario, see following section for more details
 ```

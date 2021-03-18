@@ -28,7 +28,7 @@ sanity-test: #build-all-scenarios
 		--ignore=./smarts/env/tests/test_learning.py \
 		--ignore=./smarts/env/tests/test_determinism.py \
 		--ignore=./smarts/env/tests/test_rllib_hiway_env.py \
-		-k 'not test_rllib_example and not test_multi_instance_example'
+		-k 'not test_rllib_example'
 
 .PHONY: test-learning
 test-learning: build-all-scenarios
