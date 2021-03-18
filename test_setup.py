@@ -13,7 +13,3 @@ if sumo_path is None:
     exit_with_error('{} environment variable is not set'.format(SUMO_HOME))
 elif not os.path.exists(sumo_path):
     exit_with_error('{} path: {} is invalid'.format(SUMO_HOME, sumo_path))
-
-# print(sys.version_info)
-# if sys.version_info < (3, 7, 9):
-#     exit_with_error('Requires python version >= 3.7.9')
