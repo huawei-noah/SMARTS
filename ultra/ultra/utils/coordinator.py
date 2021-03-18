@@ -70,7 +70,7 @@ class coordinator:
         # else:
         #     return False
 
-        # TODO : Switch to next grade on the basis of certain percentage of completed scenarios
+        # Switch to next grade on the basis of certain percentage of completed scenarios
         if index != 0:
             print("\nAVERAGE SCENARIOS PASSED:", average_scenarios_passed)
             if average_scenarios_passed > 0.50:

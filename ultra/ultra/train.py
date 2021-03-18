@@ -122,6 +122,7 @@ def train(
         # agent_coordinator.build_all_scenarios()
         print("\n------------ GRADE MODE : Enabled ------------\n")
         print("Number of Intervals (grades):", agent_coordinator.get_num_of_grades())
+        grade_length = []
     else:
         print("\n------------ GRADE MODE : Disabled ------------\n")
         agent_coordinator = None
@@ -138,6 +139,7 @@ def train(
                 print(agent_coordinator)
                 total_scenarios_passed = 0
                 average_scenarios_passed = 0
+                grade_length.append(episode.index)
             else:
                 observations = env.reset()
         else:
@@ -245,8 +247,10 @@ def train(
             break
 
     if grade_mode:
-        print("Average scenario sucess array: ")
-        print(plot_arr)
+        print("Average scenario success array: ", plot_arr)
+        print("Epsiode intervals: ", grade_length)
+        # for i in range(len(grade_length)):
+        #     print(f"Grade {i} : {grade_length} ")
 
     env.close()
 
