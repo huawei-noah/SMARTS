@@ -16,7 +16,7 @@ test: build-all-scenarios
 
 .PHONY: sanity-test
 sanity-test: #build-all-scenarios
-	./test_setup.py
+	./tests/test_setup.py
 	PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules \
 		--forked \
