@@ -168,7 +168,9 @@ class Traffic_history_service:
         return [pos + map_offset[i] for i, pos in enumerate(position[:2])]
 
     @staticmethod
-    def fetch_agent_missions(history_file_path: str, scenario_root_path: str, mapLocationOffset):
+    def fetch_agent_missions(
+        history_file_path: str, scenario_root_path: str, mapLocationOffset
+    ):
         assert os.path.isdir(scenario_root_path)
         history_mission_filepath = os.path.join(
             scenario_root_path, "history_mission.pkl"
@@ -191,7 +193,10 @@ class Traffic_history_service:
                         continue
                     vehicle_missions[vehicle_id] = scenario.Mission(
                         start=scenario.Start(
-                            Traffic_history_service.apply_map_location_offset(vehicles_state[vehicle_id]["position"],mapLocationOffset),
+                            Traffic_history_service.apply_map_location_offset(
+                                vehicles_state[vehicle_id]["position"],
+                                mapLocationOffset,
+                            ),
                             scenario.Heading(vehicles_state[vehicle_id]["heading"]),
                         ),
                         goal=scenario.EndlessGoal(),
