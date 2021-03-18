@@ -12,6 +12,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
 - Hosted Documentation on readthedocs and pointed to documentations and smarts paper in README
+- Running imitation learning will now create a cached history_mission.pkl file in scenario folder that stores 
+the missions for all agents.
 ### Fixed
 - In order to avoid precision issues in our coordinates with big floating point numbers,
 we now initially shift road networks (maps) that are offset back to the origin
