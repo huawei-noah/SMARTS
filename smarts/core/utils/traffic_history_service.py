@@ -167,7 +167,7 @@ class Traffic_history_service:
     def fetch_agent_missions(history_file_path: str, scenario_root_path: str):
         assert os.path.isdir(scenario_root_path)
         history_mission_filepath = os.path.join(
-            scenario_root_path, "temp_vehicle_mission.pkl"
+            scenario_root_path, "temp_history_mission.pkl"
         )
 
         if not os.path.exists(history_mission_filepath):
