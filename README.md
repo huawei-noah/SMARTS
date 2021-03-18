@@ -77,7 +77,7 @@ pip install --upgrade pip
 pip install -e .[train]
 
 # make sure you can run sanity-test (and verify they are passing)
-# if tests fail, check sanity_test_result.xml for test report. 
+# if tests fail, check './sanity_test_result.xml' for test report. 
 pip install -e .[test]
 make sanity-test
 

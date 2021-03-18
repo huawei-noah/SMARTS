@@ -15,7 +15,7 @@ test: build-all-scenarios
 		-k 'not test_long_determinism'
 
 .PHONY: sanity-test
-sanity-test: #build-all-scenarios
+sanity-test: build-all-scenarios
 	./tests/test_setup.py
 	PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules \
