@@ -30,7 +30,7 @@ sanity-test: build-all-scenarios
 		./smarts/core/tests/test_smarts.py::test_smarts_doesnt_leak_tasks_after_reset \
 		./tests/test_examples.py::test_examples[multi_agent] \
 		./tests/test_examples.py::test_multi_instance_example \
-		./smarts/env/tests/test_social_agent.py::test_social_agents \
+		./smarts/env/tests/test_social_agent.py::test_social_agents
 
 .PHONY: test-learning
 test-learning: build-all-scenarios
