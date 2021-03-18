@@ -21,14 +21,14 @@ the missions for all agents.
 ### Changed
 - Lowered CPU cost of waypoint generation. This will result in a small increase in memory usage.
 - Set the number of processes used in `make test` to ignore 2 CPUs if possible.
-- Use dummy OpEn agent (open-agent version 0.0.0) for all examples.
+- Use the dummy OpEn agent (open-agent version 0.0.0) for all examples.
 - Improved performance by removing unused traffic light functionality.
 - Limit the memory use of traffic histories by incrementally loading the traffic history file with a worker process.
 ### Fixed
 - In order to avoid precision issues in our coordinates with big floating point numbers,
 we now initially shift road networks (maps) that are offset back to the origin
 using [netconvert](https://sumo.dlr.de/docs/netconvert.html).
-We adapt Sumo vehicle positions to take this into account to allow Sumo to continue,
+We adapt Sumo vehicle positions to take this into account to allow Sumo to continue
 using the original coordinate system.  See Issue #325.
 - Cleanly close down the traffic history provider thread. See PR #665.
 - Improved the disposal of a SMARTS instance. See issue #378.
