@@ -108,6 +108,8 @@ def train(
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
+    episode_count = 0
+    old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
@@ -136,18 +138,6 @@ def train(
             if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
                 finished = True
                 break
-
-            # Perform the evaluation check.
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                **eval_info,
-                **env.info,
-            )
 
             # Request and perform actions on each agent that received an observation.
             actions = {
@@ -188,6 +178,22 @@ def train(
         episode.record_episode()
         episode.record_tensorboard()
 
+        if (episode_count + 1) % eval_info["eval_rate"] == 0:
+            episode.record_tensorboard()
+            old_episode = None
+
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            episode_count=episode_count,
+            **eval_info,
+            **env.info,
+        )
+        episode_count += 1
         if finished:
             break
 
