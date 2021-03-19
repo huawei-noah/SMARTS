@@ -49,7 +49,6 @@ def evaluation_check(
     eval_rate,
     eval_episodes,
     max_episode_steps,
-    episode_count,
     scenario_info,
     timestep_sec,
     headless,
@@ -59,8 +58,8 @@ def evaluation_check(
     agent_ids_to_evaluate = [
         agent_id
         for agent_id in agent_ids
-        if (episode_count + 1) % eval_rate == 0
-        and episode.last_eval_iterations[agent_id] != episode_count
+        if (episode.get_itr(agent_id) + 1) % eval_rate == 0
+        and episode.last_eval_iterations[agent_id] != episode.get_itr(agent_id)
     ]
 
     # Skip evaluation if there are no agents needing an evaluation.
@@ -98,7 +97,7 @@ def evaluation_check(
             )[0]
         )
         episode.eval_count += 1
-        episode.last_eval_iterations[agent_id] = episode_count
+        episode.last_eval_iterations[agent_id] = episode.get_itr(agent_id)
 
     # Put the evaluation data for all agents into the episode and record the TensorBoard.
     episode.info[episode.active_tag] = evaluation_data

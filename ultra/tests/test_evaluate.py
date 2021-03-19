@@ -404,7 +404,6 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                 eval_rate=10,
                 eval_episodes=1,
                 max_episode_steps=2,
-                episode_count=1,
                 policy_classes=agent_classes,
                 scenario_info=scenario_info,
                 timestep_sec=0.1,
