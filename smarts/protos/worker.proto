@@ -46,6 +46,7 @@ message Status {
 // Observation received by the agent
 message Observation {
     bytes payload = 1;
+    Observe observe=2;
 }
 
 // Agent's action in response to the observation
@@ -53,8 +54,9 @@ message Action {
     bytes action = 1;
 }
 
-// ------------------------------------
+// ---------------------------------------------
 
+// Collision events
 message Collisions{
     string collidee_id=1;
 }
@@ -69,14 +71,13 @@ message Events {
     bool not_moving=7;
 }
 
-message VectorInt2{
-    int32 x=1;
-    int32 y=2;
-}
+// Represents np.ndarray((2,), dtype=np.float32)
 message VectorFloat2{
     float x=1;
     float y=2;
 }
+
+// Represents np.ndarray((3,), dtype=np.float32)
 message VectorFloat3{
     float x=1;
     float y=2;
@@ -90,12 +91,12 @@ message BoundingBox{
 }
 
 message Start{
-    VectorInt2 position=1;
+    VectorFloat2 position=1;
     float heading=2;
 }
 
 message Goal{
-    VectorInt2 position=1;
+    VectorFloat2 position=1;
     float radius=2;
 }
 
@@ -149,12 +150,23 @@ message VehicleObservation{
     int32 lane_index=8;
 }
 
+message Waypoint{
+    VectorFloat2 pos=1;
+    float heading=2;
+    float lane_width=3;
+    float speed_limit=4;
+    string lane_id=5;
+    int32 lane_index=6;
+}
 
+message ListWaypoint{
+    repeated Waypoint=1;
+}
 
 message Lidar{
     message Ray{
-        VectorFloat3 elem1=1;
-        VectorFloat3 elem2=1;
+        VectorFloat3 origin=1;
+        VectorFloat3 direction=2;
     }
     
     repeated VectorFloat3 points=1;
@@ -171,14 +183,15 @@ message GridMapMetadata{
     float camera_heading_in_degrees=6;
 }
 
+// Represents a matrix of np.ndarray((x,y), dtype=np.float32)
 message Matrix{
     repeated float data = 1 [packed=true];
-    // `data` is a 2d numpy array representing an image.
-    // The 2d image is reshaped into shape (rows*cols,) for serialization by proto.
-    // To access data, use data[i*cols+j] (row-major).
-    // Alternative storeage method for 2d numpy array is to encode it into base64 string.
-    required uint32 rows = 2;
-    required uint32 cols = 3;
+    // The data is a 2D numpy array representing an image.
+    // The 2D image is reshaped into shape (rows*cols,) for serialization by proto.
+    // To access data, use data[i*cols+j]. Here, i is row number and j is column number.
+    // Alternative storage method for 2D numpy array is to encode it into base64 string.
+    uint32 rows = 2;
+    uint32 cols = 3;
 }
 
 message DrivableAreaGridMap{
@@ -196,19 +209,6 @@ message TopDownRGB{
     Matrix data=2;
 }
 
-message Waypoint{
-    VectorFloat2 pos=1;
-    float heading=2;
-    float lane_width=3;
-    float speed_limit=4;
-    string lane_id=5;
-    int32 lane_index=6;
-}
-
-message ListWaypoint{
-    repeated Waypoint=1;
-}
-
 message RoadWaypoints{
     map<string, ListWaypoint> lanes=1;
     repeated Waypoint route_waypoints=2;
@@ -223,11 +223,11 @@ message ViaPoint{
 
 message Vias{
     repeated ViaPoint near_via_points=1;
-    repeated ViaPoint hit_via_point=2;
+    repeated ViaPoint hit_via_points=2;
 }
 
 message Observe {
-    Events events = 1;
+    Events events=1;
     EgoVehicleObservation ego_vehicle_state=2;
     repeated VehicleObservation neighborhood_vehicle_states=3;
     repeated ListWaypoint Waypoint_paths=4;

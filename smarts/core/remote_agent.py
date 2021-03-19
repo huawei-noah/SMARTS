@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import logging
 import time
 from concurrent import futures
@@ -89,24 +92,24 @@ class RemoteAgent:
         self._manager_channel.close()
 
 
-def convert tuple_to_proto(obs) -> "proto":
+# def convert tuple_to_proto(obs) -> "proto":
 
     
-    raw.version_number = "1.0"
-    raw.sim_card_data = InnerLayer()
-    raw.sim_card_data.iccid = "1"
-    raw.sim_card_data.imei = "2"
+#     raw.version_number = "1.0"
+#     raw.sim_card_data = InnerLayer()
+#     raw.sim_card_data.iccid = "1"
+#     raw.sim_card_data.imei = "2"
 
-    proto = worker_pb2.Observation(
-        events=events,
-        ego_vehicle_state=ego_vehicle_state,
-        neighborhood_vehicle_states=neighborhood_vehicle_states,
-        waypoint_paths=waypoint_paths,
-        distance_travelled=distance_travelled;
-        lidar_point_cloud=lidar_point_cloud,
-        drivable_area_grid_map=drivable_area_grid_map,
-        
+#     proto = worker_pb2.Observation(
+#         events=events,
+#         ego_vehicle_state=ego_vehicle_state,
+#         neighborhood_vehicle_states=neighborhood_vehicle_states,
+#         waypoint_paths=waypoint_paths,
+#         distance_travelled=distance_travelled;
+#         lidar_point_cloud=lidar_point_cloud,
+#         drivable_area_grid_map=drivable_area_grid_map,
 
-    )
 
-    return proto
+#     )
+
+#     return proto

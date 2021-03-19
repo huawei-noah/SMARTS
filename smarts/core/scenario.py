@@ -50,12 +50,12 @@ from smarts.sstudio.types import Via as SSVia
 
 
 class Start(NamedTuple):
-    position: Tuple[int, int]
+    position: Tuple[float, float]
     heading: Heading
 
 
 class GoalData(NamedTuple):
-    position: Tuple[int, int] = (None, None)
+    position: Tuple[float, float] = (None, None)
     # target_heading: Heading
     radius: float = None
 
