@@ -22,6 +22,8 @@
 import datetime
 import math
 import os
+from pathlib import Path
+
 import shutil
 import time
 from collections import defaultdict
@@ -29,6 +31,13 @@ from collections import defaultdict
 import dill
 import numpy as np
 import tableprint as tp
+from ultra.utils.rllib_log_info import RLlibLogInfo
+from ultra.utils.common import gen_experiment_name
+
+import tempfile
+from ray.rllib.agents.callbacks import DefaultCallbacks
+from ray.tune.logger import Logger, UnifiedLogger
+
 from tensorboardX import SummaryWriter
 
 
@@ -114,16 +123,16 @@ class Episode:
         experiment_name=None,
         etag=None,
         tb_writer=None,
-        last_eval_iteration=None,
+        last_eval_iterations=defaultdict(lambda: None),
         log_dir=None,
     ):
         self.info = defaultdict(lambda: defaultdict(lambda: LogInfo()))
         self.all_data = all_data
         self.index = index
         self.eval_count = eval_count
-        dt = datetime.datetime.today()
+
         if experiment_name is None:
-            self.experiment_name = f"experiment-{dt.year}.{dt.month}.{dt.day}-{dt.hour}:{dt.minute}:{dt.second}"
+            self.experiment_name = gen_experiment_name()
             if etag:
                 self.experiment_name = f"{self.experiment_name}-{etag}"
         else:
@@ -143,7 +152,7 @@ class Episode:
         self.steps = 1
         self.active_tag = None
         self.tb_writer = tb_writer
-        self.last_eval_iteration = last_eval_iteration
+        self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
 
     @property
@@ -165,8 +174,8 @@ class Episode:
     def get_itr(self, agent_id):
         return self.agents_itr[agent_id]
 
-    def checkpoint_dir(self, iteration):
-        path = f"{self.model_dir}/{iteration}"
+    def checkpoint_dir(self, agent_id, iteration):
+        path = f"{self.model_dir}/{agent_id}/{iteration}"
         self.make_dir(path)
         return path
 
@@ -223,13 +232,23 @@ class Episode:
         if not os.path.exists(self.ep_log_dir):
             os.makedirs(self.ep_log_dir)
 
-    def record_step(self, agent_id, infos, rewards, total_step=0, loss_output=None):
-        if loss_output:
-            self.log_loss(step=total_step, agent_id=agent_id, loss_output=loss_output)
-        self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
-        self.info[self.active_tag][agent_id].step()
+    def record_step(
+        self, agent_ids_to_record, infos, rewards, total_step=0, loss_outputs=None
+    ):
+        # Record the data for each agent ID.
+        for agent_id in agent_ids_to_record:
+            if loss_outputs:
+                self.log_loss(
+                    step=total_step,
+                    agent_id=agent_id,
+                    loss_output=loss_outputs[agent_id],
+                )
+            self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
+            self.info[self.active_tag][agent_id].step()
+            self.agents_itr[agent_id] += 1
+
+        # Increment this episode's step count.
         self.steps += 1
-        self.agents_itr[agent_id] += 1
 
     def record_episode(self, old_episode=None, eval_rate=None):
         for _, agent_info in self.info[self.active_tag].items():
@@ -304,7 +323,7 @@ def episodes(n, etag=None, log_dir=None):
     ) as table:
         tb_writer = None
         experiment_name = None
-        last_eval_iteration = None
+        last_eval_iterations = defaultdict(lambda: None)
         eval_count = 0
         all_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [])))
         agents_itr = defaultdict(lambda: 0)
@@ -315,14 +334,14 @@ def episodes(n, etag=None, log_dir=None):
                 tb_writer=tb_writer,
                 etag=etag,
                 agents_itr=agents_itr,
-                last_eval_iteration=last_eval_iteration,
+                last_eval_iterations=last_eval_iterations,
                 all_data=all_data,
                 eval_count=eval_count,
                 log_dir=log_dir,
             )
             yield e
             tb_writer = e.tb_writer
-            last_eval_iteration = e.last_eval_iteration
+            last_eval_iterations = e.last_eval_iterations
             experiment_name = e.experiment_name
             all_data = e.all_data
             eval_count = e.eval_count
@@ -345,3 +364,64 @@ def episodes(n, etag=None, log_dir=None):
                 table(row)
             else:
                 table(("", "", "", "", ""))
+
+
+class Callbacks(DefaultCallbacks):
+    @staticmethod
+    def on_episode_start(
+        worker,
+        base_env,
+        policies,
+        episode,
+        **kwargs,
+    ):
+        episode.user_data = RLlibLogInfo()
+
+    @staticmethod
+    def on_episode_step(
+        worker,
+        base_env,
+        episode,
+        **kwargs,
+    ):
+
+        single_agent_id = list(episode._agent_to_last_obs)[0]
+        policy_id = episode.policy_for(single_agent_id)
+        agent_reward_key = (single_agent_id, policy_id)
+
+        info = episode.last_info_for(single_agent_id)
+        reward = episode.agent_rewards[agent_reward_key]
+        if info:
+            episode.user_data.add(info, reward)
+
+    @staticmethod
+    def on_episode_end(
+        worker,
+        base_env,
+        policies,
+        episode,
+        **kwargs,
+    ):
+        episode.user_data.normalize(episode.length)
+        for key, val in episode.user_data.data.items():
+            if not isinstance(val, (list, tuple, np.ndarray)):
+                episode.custom_metrics[key] = val
+
+        print(
+            f"Episode {episode.episode_id} ended:\nlength:{episode.length},\nenv_score:{episode.custom_metrics['env_score']},\ncollision:{episode.custom_metrics['collision']}, \nreached_goal:{episode.custom_metrics['reached_goal']},\ntimeout:{episode.custom_metrics['timed_out']},\noff_road:{episode.custom_metrics['off_road']},\ndist_travelled:{episode.custom_metrics['dist_travelled']},\ngoal_dist:{episode.custom_metrics['goal_dist']}"
+        )
+        print("--------------------------------------------------------")
+
+
+def log_creator(log_dir):
+    result_dir = log_dir
+    result_dir = Path(result_dir).expanduser().resolve().absolute()
+    logdir_prefix = gen_experiment_name()
+
+    def logger_creator(config):
+        if not os.path.exists(result_dir):
+            os.makedirs(result_dir)
+        logdir = tempfile.mkdtemp(prefix=logdir_prefix, dir=result_dir)
+        return UnifiedLogger(config, logdir, loggers=None)
+
+    return logger_creator

@@ -38,6 +38,8 @@ def main(scenarios, headless, seed):
         obs, _, _, _ = smarts.observe_from(smarts.vehicle_index.social_vehicle_ids())
         # TODO: save observations for imitation learning
 
+    smarts.destroy()
+
 
 if __name__ == "__main__":
     parser = default_argument_parser("observation-collection-example")

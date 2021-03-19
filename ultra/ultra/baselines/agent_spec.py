@@ -19,25 +19,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import inspect
-import os
-
-import dill
+import json
 import numpy as np
-import torch
-import yaml
-
-from smarts.core.agent import AgentSpec
+import torch, yaml, os, inspect, dill
+from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import (
-    OGM,
     AgentInterface,
     AgentType,
-    NeighborhoodVehicles,
+    OGM,
     Waypoints,
+    NeighborhoodVehicles,
 )
-from smarts.core.controllers import ActionSpaceType
-from ultra.baselines.adapter import BaselineAdapter
+
 from ultra.baselines.common.yaml_loader import load_yaml
+from smarts.core.agent import AgentSpec
+from ultra.baselines.adapter import BaselineAdapter
 
 
 class BaselineAgentSpec(AgentSpec):
@@ -60,11 +56,16 @@ class BaselineAgentSpec(AgentSpec):
         task=None,
         max_episode_steps=1200,
         experiment_dir=None,
+        agent_id="",
     ):
         if experiment_dir:
-            print(f"LOADING SPEC from {experiment_dir}/spec.pkl")
-            with open(f"{experiment_dir}/spec.pkl", "rb") as input:
-                spec = dill.load(input)
+            print(
+                f"Loading spec for {agent_id} from {experiment_dir}/agent_metadata.pkl"
+            )
+            with open(f"{experiment_dir}/agent_metadata.pkl", "rb") as metadata_file:
+                agent_metadata = dill.load(metadata_file)
+                spec = agent_metadata["agent_specs"][agent_id]
+
                 new_spec = AgentSpec(
                     interface=spec.interface,
                     agent_params=dict(
@@ -75,11 +76,26 @@ class BaselineAgentSpec(AgentSpec):
                     observation_adapter=spec.observation_adapter,
                     reward_adapter=spec.reward_adapter,
                 )
+
                 spec = new_spec
         else:
-            adapter = BaselineAdapter()
-            policy_dir = "/".join(inspect.getfile(policy_class).split("/")[:-1])
-            policy_params = load_yaml(f"{policy_dir}/params.yaml")
+            base_dir = os.path.join(os.path.dirname(__file__), "../")
+            pool_path = os.path.join(base_dir, "agent_pool.json")
+
+            policy_class_name = policy_class.__name__
+            agent_name = None
+
+            with open(pool_path, "r") as f:
+                data = json.load(f)
+                agents = data["agents"].keys()
+                for agent in agents:
+                    if data["agents"][agent]["class"] == policy_class_name:
+                        agent_name = data["agents"][agent]["name"]
+                        break
+
+            assert agent_name != None
+
+            adapter = BaselineAdapter(agent_name)
             spec = AgentSpec(
                 interface=AgentInterface(
                     waypoints=Waypoints(lookahead=20),
@@ -90,7 +106,7 @@ class BaselineAgentSpec(AgentSpec):
                     debug=True,
                 ),
                 agent_params=dict(
-                    policy_params=policy_params, checkpoint_dir=checkpoint_dir
+                    policy_params=adapter.policy_params, checkpoint_dir=checkpoint_dir
                 ),
                 agent_builder=policy_class,
                 observation_adapter=adapter.observation_adapter,

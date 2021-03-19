@@ -2,28 +2,33 @@
     "agents" : {
         "ppo" : {
             "path" : "ultra.baselines.ppo",
+            "class" : "PPOPolicy",
             "name" : "ppo",
             "locator" : "ppo-v0"
         },
         "sac" : {
             "path" : "ultra.baselines.sac",
+            "class" : "SACPolicy",
             "name" : "sac",
             "locator" : "sac-v0"
         },
-        "ddpg" : {
-            "path" : "ultra.baselines.ddpg",
-            "name" : "ddpg",
-            "locator" : "ddpg-v0"
-        },
         "dqn" : {
             "path" : "ultra.baselines.dqn",
+            "class" : "DQNPolicy",
             "name" : "dqn",
             "locator" : "dqn-v0"
         },
         "bdqn" : {
             "path" : "ultra.baselines.bdqn",
+            "class" : "BehavioralDQNPolicy",
             "name" : "bdqn",
             "locator" : "bdqn-v0"
+        },
+        "td3" : {
+            "path" : "ultra.baselines.td3",
+            "class" : "TD3Policy",
+            "name" : "td3",
+            "locator" : "td3-v0"
         }
     }
 }
