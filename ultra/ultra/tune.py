@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import importlib
 import json
 import os
 
@@ -39,11 +40,11 @@ from ray.tune import CLIReporter
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
 from ultra.utils.episode import episodes
-from ultra.baselines.ppo.ppo.tune_params import config as ppo_config
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
+# TODO: Replace with something like a 'rollout' function that is used by both tune.py and train.py.
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 # @ray.remote(num_gpus=num_gpus / 2)
 def tune_train(
@@ -239,34 +240,80 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log-dir",
         help="Log directory location",
-        default="logs",
+        default="tune_logs/",
         type=str,
     )
     parser.add_argument(
-        "--policy-ids",
-        help="Name of each specified policy",
+        "--output-dir",
+        help="Location of the created YAML file with the best parameters",
+        default="tune_results/",
+        type=str,
+    )
+    # parser.add_argument(
+    #     "--policy-ids",
+    #     help="Name of each specified policy",
+    #     default=None,
+    #     type=str,
+    # )
+    parser.add_argument(
+        "--config-module",
+        help="The module containing the tune config dictionary",
         default=None,
         type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--metric",
+        help="The value to optimize for [env_score, episode_reward, reached_goal, ...]",
+        default=None,
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--mode",
+        help="How to optimize the metric [max, min]",
+        default=None,
+        type=str,
+        required=True,
     )
 
     args = parser.parse_args()
 
-    METRIC = "episode_reward"
-    MODE = "max"
-    BEST_PARAMS_DIRECTORY = "tune_results/"
-    policy_classes = ["ultra.baselines.ppo:ppo-v0"]
-    config = ppo_config
+    # METRIC = "episode_reward"
+    # MODE = "max"
+    # BEST_PARAMS_DIRECTORY = "tune_results/"
+    # policy_classes = ["ultra.baselines.ppo:ppo-v0"]
+    # config = ppo_config
+
+    # Obtain the policy class strings for each specified policy.
+    policy_classes = []
+    base_dir = os.path.dirname(__file__)
+    pool_path = os.path.join(base_dir, "agent_pool.json")
+    with open(pool_path, "r") as f:
+        data = json.load(f)
+        for policy in args.policy.split(","):
+            if policy in data["agents"].keys():
+                policy_classes.append(
+                    data["agents"][policy]["path"]
+                    + ":"
+                    + data["agents"][policy]["locator"]
+                )
+            else:
+                raise ImportError("Invalid policy name. Please try again")
+    assert len(policy_classes) == 1, "Only single agent tuning is supported."
+
+    config = importlib.import_module(args.config_module).config
 
     ray.init()
 
     scheduler = ASHAScheduler(
-        metric=METRIC,
-        mode=MODE,
+        metric=args.metric,
+        mode=args.mode,
         max_t=10,
         grace_period=1,
         reduction_factor=2,
     )
-    reporter = CLIReporter(metric_columns=[METRIC, "accuracy", "training_iteration"])
+    reporter = CLIReporter(metric_columns=[args.metric, "training_iteration"])
 
     result = tune.run(
         partial(
@@ -283,26 +330,26 @@ if __name__ == "__main__":
             policy_classes=policy_classes,
             seed=args.seed,
             log_dir=args.log_dir,
-            metric=METRIC,
+            metric=args.metric,
         ),
         config=config,
-        num_samples=100,
+        num_samples=10,
         scheduler=scheduler,
         progress_reporter=reporter,
-        local_dir="tune/",
+        local_dir=args.log_dir,
     )
 
-    best_trial = result.get_best_trial(METRIC, MODE, "last")
-    best_config = result.get_best_config(METRIC, MODE, "last")
+    best_trial = result.get_best_trial(args.metric, args.mode, "last")
+    best_config = result.get_best_config(args.metric, args.mode, "last")
 
     print("Best trial:", best_trial)
     print("Best config:", best_config)
-    print("Saving the best config to {}.".format(BEST_PARAMS_DIRECTORY))
+    print("Saving the best config to {}.".format(args.output_dir))
 
-    if not os.path.exists(BEST_PARAMS_DIRECTORY):
-        os.makedirs(BEST_PARAMS_DIRECTORY)
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
     with open(
-        os.path.join(BEST_PARAMS_DIRECTORY, "best_params.yaml"), "w"
+        os.path.join(args.output_dir, f"best_{args.metric}_params.yaml"), "w"
     ) as best_params_file:
         yaml.dump(
             best_config, best_params_file, default_flow_style=False, sort_keys=False
