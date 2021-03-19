@@ -87,3 +87,26 @@ class RemoteAgent:
 
         # Close manager channel
         self._manager_channel.close()
+
+
+def convert tuple_to_proto(obs) -> "proto":
+
+    
+    raw.version_number = "1.0"
+    raw.sim_card_data = InnerLayer()
+    raw.sim_card_data.iccid = "1"
+    raw.sim_card_data.imei = "2"
+
+    proto = worker_pb2.Observation(
+        events=events,
+        ego_vehicle_state=ego_vehicle_state,
+        neighborhood_vehicle_states=neighborhood_vehicle_states,
+        waypoint_paths=waypoint_paths,
+        distance_travelled=distance_travelled;
+        lidar_point_cloud=lidar_point_cloud,
+        drivable_area_grid_map=drivable_area_grid_map,
+        
+
+    )
+
+    return proto

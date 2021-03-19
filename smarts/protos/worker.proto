@@ -53,198 +53,189 @@ message Action {
     bytes action = 1;
 }
 
-message Observe {
-    message events {
-        message Collisions{
-            string collidee_id=1
-        }
-        repeated Collisions collisions=1
-        bool off_route=2
-        bool reached_goal=3
-        bool reached_max_episode_steps=4
-        bool off_road=5
-        bool wrong_way=6
-        bool not_moving=7
-    }
-    ego_vehicle_state: EgoVehicleObservation(
-        id: str
-        position: Tuple[float, float, float]
-        bounding_box: BoundingBox(
-            length: float
-            width: float
-            height: float
-        )
-        heading: float
-        speed: float
-        steering: float
-        yaw_rate: float
-        edge_id: int
-        lane_id: int
-        lane_index: int
-        mission: MissionData( 
-            start: Start(
-                position: Tuple[int, int]
-                heading: float
-            )
-            goal: GoalData(
-                position: Tuple[int, int] = (None, None)
-                radius: float = None
-            )
-            route_vias: List[str] = []
-            start_time: float = 0.1
-            entry_tactic: EntryTactic(  <----------- Removed
-                wait_to_hijack_limit_s: float
-                zone: ZoneData(
-                    start: Tuple[str, int, float] = (None, None, None)
-                    length: float = None
-                    n_lanes: int = 2
-                    pos: Tuple[float, float] = (None, None)
-                    size: Tuple[float, float] = (None, None)
-                ) = None 
-                exclusion_prefixes: List[str] = []
-                default_entry_speed: float = None 
-            ) = None
-            task: Union[ <----------- Removed
-                CutIn(
-                    complete_on_edge_id: str = None
-                    initial_speed: float = None
-                    target_lane_index: int = None
-                    trigger_radius: int = 30
-                ), 
-                UTurn(   
-                    complete_on_edge_id: str = None
-                    initial_speed: float = None
-                    target_lane_index: int = 0
-                    trigger_radius: int = 100
-                )
-            ] = None
-            via: List[
-                Via(    
-                    lane_id: str
-                    edge_id: str
-                    lane_index: int
-                    position: Tuple[float, float]
-                    hit_distance: float
-                    required_speed: float
-                )
-            ] = []
-            route_length: float = 0
-            num_laps: int = None
-        )
-        linear_velocity: np.ndarray(3,)
-        angular_velocity: np.ndarray(3,)
-        linear_acceleration: np.ndarray(3,) 
-        angular_acceleration: np.ndarray(3,)
-        linear_jerk: np.ndarray(3,)
-        angular_jerk: np.ndarray(3,)
-    )
-    neighborhood_vehicle_states: List[ 
-        VehicleObservation(
-            id: str
-            position: Tuple[float, float, float]
-            bounding_box: BoundingBox(
-                length: float
-                width: float
-                height: float
-            )
-            heading: float
-            speed: float
-            edge_id: int
-            lane_id: int
-            lane_index: int
-        )
-    ]
-    waypoint_paths: List[ 
-        List[ 
-            Waypoint(
-                pos: np.ndarray(2,)
-                heading: float
-                lane_width: float
-                speed_limit: float
-                lane_id: str
-                lane_index: int
-            )
-        ]
-    ]
-    distance_travelled: float
-    lidar_point_cloud: Tuple[
-        List[np.ndarray], 
-        List[np.ndarray],  
-        List[Tuple[np.ndarray, np.ndarray]] 
-    ]
-    drivable_area_grid_map: DrivableAreaGridMap(
-        metadata: GridMapMetadata(
-            created_at: int
-            resolution: float
-            width: int
-            height: int
-            camera_pos: Tuple[float, float, float]
-            camera_heading_in_degrees: float
-        )
-        data: np.ndarray 
-    )
-    occupancy_grid_map: OccupancyGridMap(
-        metadata: GridMapMetadata(
-            created_at: int
-            resolution: float
-            width: int
-            height: int
-            camera_pos: Tuple[float, float, float]
-            camera_heading_in_degrees: float
-        )
-        data: np.ndarray 
-    )
-    top_down_rgb: TopDownRGB(
-        metadata: GridMapMetadata(
-            created_at: int
-            resolution: float
-            width: int
-            height: int
-            camera_pos: Tuple[float, float, float]
-            camera_heading_in_degrees: float
-        )
-        data: np.ndarray 
-    )
-    road_waypoints: RoadWaypoints(
-        lanes: Dict[str, List[ 
-                Waypoint(
-                    pos: np.ndarray(2,)
-                    heading: float
-                    lane_width: float
-                    speed_limit: float
-                    lane_id: str
-                    lane_index: int 
-                )
-            ]
-        ]
-        route_waypoints: List[ 
-            Waypoint(
-                pos: np.ndarray(2,)
-                heading: float
-                lane_width: float
-                speed_limit: float
-                lane_id: str
-                lane_index: int 
-            )
-        ]
-    ) = None
-    via_data: Vias(
-        near_via_points: List[
-            ViaPoint(
-                position: Tuple[float, float]
-                lane_index: float
-                edge_id: str
-                required_speed: float
-            )
-        ]
-        hit_via_points: List[
-            ViaPoint(
-                position: Tuple[float, float]
-                lane_index: float
-                edge_id: str
-                required_speed: float
-            )
-        ]
-    ) = Vias()
+// ------------------------------------
+
+message Collisions{
+    string collidee_id=1;
 }
+
+message Events {
+    repeated Collisions collisions=1;
+    bool off_route=2;
+    bool reached_goal=3;
+    bool reached_max_episode_steps=4;
+    bool off_road=5;
+    bool wrong_way=6;
+    bool not_moving=7;
+}
+
+message VectorInt2{
+    int32 x=1;
+    int32 y=2;
+}
+message VectorFloat2{
+    float x=1;
+    float y=2;
+}
+message VectorFloat3{
+    float x=1;
+    float y=2;
+    float z=3;
+}
+
+message BoundingBox{
+    float length=1;
+    float width=2;
+    float height=3;
+}
+
+message Start{
+    VectorInt2 position=1;
+    float heading=2;
+}
+
+message Goal{
+    VectorInt2 position=1;
+    float radius=2;
+}
+
+message Via{
+    string lane_id=1;
+    string edge_id=2;
+    int32 lane_idx=3;
+    VectorFloat2 position=4;
+    float hit_distance=5;
+    float required_speed=6;
+}   
+
+message Mission{
+    Start start=1;
+    Goal goal=2;
+    repeated string route_vias=3;
+    float start_time=4;
+    repeated Via via=5;
+    float route_length=6;
+    int32 num_laps=7;
+}
+
+message EgoVehicleObservation(
+    string id=1;
+    VectorFloat3 position=2;
+    BoundingBox bounding_box=3; 
+    float heading=4;
+    float speed=5;
+    float steering=6;
+    float yaw_rate=7;
+    int32 edge_id=8;
+    int32 lane_id=9;
+    int32 lane_index=10;
+    Mission mission=11;
+    VectorFloat3 linear_velocity=12;
+    VectorFloat3 angular_velocity=13;
+    VectorFloat3 linear_acceleration=14;
+    VectorFloat3 angular_acceleration=15;
+    VectorFloat3 linear_jerk=16;
+    VectorFloat3 angular_jerk=17;
+}
+
+message VehicleObservation{
+    string id=1;
+    VectorFloat3 position=2;
+    BoundingBox bounding_box=3;
+    float heading=4;
+    float speed=5;
+    int32 edge_id=6;
+    int32 lane_id=7;
+    int32 lane_index=8;
+}
+
+
+
+message Lidar{
+    message Ray{
+        VectorFloat3 elem1=1;
+        VectorFloat3 elem2=1;
+    }
+    
+    repeated VectorFloat3 points=1;
+    repeated VectorFloat3 hits=2;
+    repeated Ray ray=3;
+}
+
+message GridMapMetadata{
+    int32 created_at=1;
+    float resolution=2;
+    int32 width=3;
+    int32 height=4;
+    VectorFloat3 camera_pos=5;
+    float camera_heading_in_degrees=6;
+}
+
+message Matrix{
+    repeated float data = 1 [packed=true];
+    // `data` is a 2d numpy array representing an image.
+    // The 2d image is reshaped into shape (rows*cols,) for serialization by proto.
+    // To access data, use data[i*cols+j] (row-major).
+    // Alternative storeage method for 2d numpy array is to encode it into base64 string.
+    required uint32 rows = 2;
+    required uint32 cols = 3;
+}
+
+message DrivableAreaGridMap{
+    GridMapMetadata metadata=1;
+    Matrix data=2;
+}
+
+message OccupancyGridMap{
+    GridMapMetadata metadata=1;
+    Matrix data=2;
+}
+
+message TopDownRGB{
+    GridMapMetadata metadata=1;
+    Matrix data=2;
+}
+
+message Waypoint{
+    VectorFloat2 pos=1;
+    float heading=2;
+    float lane_width=3;
+    float speed_limit=4;
+    string lane_id=5;
+    int32 lane_index=6;
+}
+
+message ListWaypoint{
+    repeated Waypoint=1;
+}
+
+message RoadWaypoints{
+    map<string, ListWaypoint> lanes=1;
+    repeated Waypoint route_waypoints=2;
+}
+
+message ViaPoint{
+    VectorFloat2 position=1;
+    float lane_index=2;
+    string edge_id=3;
+    float required_speed=4;
+}
+
+message Vias{
+    repeated ViaPoint near_via_points=1;
+    repeated ViaPoint hit_via_point=2;
+}
+
+message Observe {
+    Events events = 1;
+    EgoVehicleObservation ego_vehicle_state=2;
+    repeated VehicleObservation neighborhood_vehicle_states=3;
+    repeated ListWaypoint Waypoint_paths=4;
+    float distance_travelled=5;
+    Lidar lidar_point_cloud=6;
+    DrivableAreaGridMap drivable_area_grid_map=7; 
+    OccupancyGridMap occupancy_grid_map=8;
+    TopDownRGB top_down_rgb=9;
+    RoadWaypoints road_waypoints=10;
+    Vias via_data=11;
 }
