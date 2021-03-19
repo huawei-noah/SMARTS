@@ -29,6 +29,16 @@
             "class" : "TD3Policy",
             "name" : "td3",
             "locator" : "td3-v0"
+        },
+        "open_agent" : {
+            "path" : "open_agent",
+            "name" : "open_agent",
+            "locator" : "open_agent-v0"
+        },
+        "rl_agent" : {
+            "path" : "rl_agent",
+            "name" : "rl_agent",
+            "locator" : "rl-agent-v0"
         }
     }
 }

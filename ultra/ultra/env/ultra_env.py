@@ -142,6 +142,21 @@ class UltraEnv(HiWayEnv):
         )
         return info
 
+    def reset(self):
+        scenario = next(self._scenarios_iterator)
+        print(scenario)
+
+        self._dones_registered = 0
+        env_observations = self._smarts.reset(scenario)
+
+        observations = {
+            agent_id: self._agent_specs[agent_id].observation_adapter(obs)
+            for agent_id, obs in env_observations.items()
+        }
+
+        return observations
+
+
     def step(self, agent_actions):
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)

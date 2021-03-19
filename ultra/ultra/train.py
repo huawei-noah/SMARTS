@@ -93,6 +93,11 @@ def train(
         for agent_id, agent_spec in agent_specs.items()
     }
 
+    # agent_specs["000"] = entrypoint()
+    # agents["000"] = agent_specs["000"].build_agent()
+
+    print("Agent :", type(agents["000"]))
+
     # Create the environment.
     env = gym.make(
         "ultra.env:ultra-v0",
@@ -151,7 +156,7 @@ def train(
 
             # Request and perform actions on each agent that received an observation.
             actions = {
-                agent_id: agents[agent_id].act(observation, explore=True)
+                agent_id: agents[agent_id].act(observation) # zoo agents do not explore
                 for agent_id, observation in observations.items()
             }
             next_observations, rewards, dones, infos = env.step(actions)
@@ -159,17 +164,17 @@ def train(
             # Active agents are those that receive observations in this step and the next
             # step. Step each active agent (obtaining their network loss if applicable).
             active_agent_ids = observations.keys() & next_observations.keys()
-            loss_outputs = {
-                agent_id: agents[agent_id].step(
-                    state=observations[agent_id],
-                    action=actions[agent_id],
-                    reward=rewards[agent_id],
-                    next_state=next_observations[agent_id],
-                    done=dones[agent_id],
-                    info=infos[agent_id],
-                )
-                for agent_id in active_agent_ids
-            }
+            # loss_outputs = {
+            #     agent_id: agents[agent_id].step(
+            #         state=observations[agent_id],
+            #         action=actions[agent_id],
+            #         reward=rewards[agent_id],
+            #         next_state=next_observations[agent_id],
+            #         done=dones[agent_id],
+            #         info=infos[agent_id],
+            #     )
+            #     for agent_id in active_agent_ids
+            # }
 
             # Record the data from this episode.
             episode.record_step(
@@ -177,7 +182,7 @@ def train(
                 infos=infos,
                 rewards=rewards,
                 total_step=total_step,
-                loss_outputs=loss_outputs,
+                # loss_outputs=loss_outputs,
             )
 
             # Update variables for the next step.
