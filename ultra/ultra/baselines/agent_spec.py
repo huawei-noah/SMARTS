@@ -52,8 +52,8 @@ class BaselineAgentSpec(AgentSpec):
     def __new__(
         self,
         policy_class,
-        policy_params,
         action_type,
+        policy_params=None,
         checkpoint_dir=None,
         task=None,
         max_episode_steps=1200,
@@ -81,6 +81,17 @@ class BaselineAgentSpec(AgentSpec):
 
                 spec = new_spec
         else:
+            # If policy_params is None, then there must be a params.yaml file in the same
+            # directory as the policy_class module.
+            if not policy_params:
+                policy_class_module_file = inspect.getfile(policy_class)
+                policy_class_module_directory = os.path.dirname(
+                    policy_class_module_file
+                )
+                policy_params = load_yaml(
+                    os.path.join(policy_class_module_directory, "params.yaml")
+                )
+
             adapter = BaselineAdapter(policy_params=policy_params)
             spec = AgentSpec(
                 interface=AgentInterface(

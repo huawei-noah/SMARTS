@@ -39,6 +39,7 @@ from ray.tune import CLIReporter
 
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
+from ultra.utils.common import agent_pool_value
 from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
@@ -191,7 +192,7 @@ def tune_train(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("intersection-training")
+    parser = argparse.ArgumentParser("intersection-tuning")
     parser.add_argument(
         "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
@@ -286,20 +287,10 @@ if __name__ == "__main__":
     # config = ppo_config
 
     # Obtain the policy class strings for each specified policy.
-    policy_classes = []
-    base_dir = os.path.dirname(__file__)
-    pool_path = os.path.join(base_dir, "agent_pool.json")
-    with open(pool_path, "r") as f:
-        data = json.load(f)
-        for policy in args.policy.split(","):
-            if policy in data["agents"].keys():
-                policy_classes.append(
-                    data["agents"][policy]["path"]
-                    + ":"
-                    + data["agents"][policy]["locator"]
-                )
-            else:
-                raise ImportError("Invalid policy name. Please try again")
+    policy_classes = [
+        agent_pool_value(agent_name, "policy_class")
+        for agent_name in args.policy.split(",")
+    ]
     assert len(policy_classes) == 1, "Only single agent tuning is supported."
 
     config = importlib.import_module(args.config_module).config

@@ -38,7 +38,9 @@ import ray
 import torch
 
 from smarts.zoo.registry import make
+from ultra.baselines.common.yaml_loader import load_yaml
 from ultra.evaluate import evaluation_check
+from ultra.utils.common import agent_pool_value
 from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
@@ -253,24 +255,13 @@ if __name__ == "__main__":
         default=None,
         type=str,
     )
-
-    base_dir = os.path.dirname(__file__)
-    pool_path = os.path.join(base_dir, "agent_pool.json")
     args = parser.parse_args()
 
     # Obtain the policy class strings for each specified policy.
-    policy_classes = []
-    with open(pool_path, "r") as f:
-        data = json.load(f)
-        for policy in args.policy.split(","):
-            if policy in data["agents"].keys():
-                policy_classes.append(
-                    data["agents"][policy]["path"]
-                    + ":"
-                    + data["agents"][policy]["locator"]
-                )
-            else:
-                raise ImportError("Invalid policy name. Please try again")
+    policy_classes = [
+        agent_pool_value(agent_name, "policy_class")
+        for agent_name in args.policy.split(",")
+    ]
 
     # Obtain the policy class IDs from the arguments.
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
