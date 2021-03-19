@@ -126,9 +126,13 @@ def train(
     else:
         print("\n------------ GRADE MODE : Disabled ------------\n")
         agent_coordinator = None
-
+    
+    rotation_counter = 0
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if grade_mode:
+            if rotation_counter > agent_coordinator.get_num_of_grades():
+                finished = True
+                break
             if agent_coordinator.graduate(
                 episode.index,
                 num_episodes,
@@ -140,6 +144,7 @@ def train(
                 total_scenarios_passed = 0
                 average_scenarios_passed = 0
                 grade_length.append(episode.index)
+                rotation_counter += 1
             else:
                 observations = env.reset()
         else:
