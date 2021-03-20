@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-def main(scenarios, sim_name, headless, seed, speed, save_dir, write):
+def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write):
     from zoo import policies
 
     policies.replay_save_dir = save_dir
@@ -39,8 +39,6 @@ def main(scenarios, sim_name, headless, seed, speed, save_dir, write):
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
-        # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.
-        # envision_record_data_replay_path="./data_replay",
     )
 
     episode = next(episodes(n=1))
@@ -48,19 +46,23 @@ def main(scenarios, sim_name, headless, seed, speed, save_dir, write):
     observations = env.reset()
 
     dones = {"__all__": False}
+    MAX_STEPS=2550
     i = 0
     try:
-        while not dones["__all__"] and i < 1500:
+        while not dones["__all__"] and i < max_steps:
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
             observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
             i += 1
-            print("Step: ", i)
+            if i % 10 == 0:
+                print("Step: ", i)
             episode.record_step(observations, rewards, dones, infos)
     except KeyboardInterrupt:
         # discard result
-        i = 2550
+        i = MAX_STEPS
     finally:
+        if dones["__all__"]:
+            i = MAX_STEPS
         try:
             episode.record_scenario(env.scenario_log)
             env.close()
@@ -87,6 +89,12 @@ if __name__ == "__main__":
         help="Replay the agent else write the agent actions out to directory.",
         action="store_true",
     )
+    parser.add_argument(
+        "--max-steps",
+        help="The maximum number of steps.",
+        type=int,
+        default=1500,
+    )
 
     args = parser.parse_args()
 
@@ -96,6 +104,7 @@ if __name__ == "__main__":
         headless=args.headless,
         seed=args.seed,
         speed=args.speed,
+        max_steps=args.max_steps,
         save_dir=args.save_dir,
         write=args.write,
     )
