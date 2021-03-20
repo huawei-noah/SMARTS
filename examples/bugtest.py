@@ -46,7 +46,7 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
     observations = env.reset()
 
     dones = {"__all__": False}
-    MAX_STEPS=2550
+    MAX_STEPS = 2550
     i = 0
     try:
         while not dones["__all__"] and i < max_steps:
