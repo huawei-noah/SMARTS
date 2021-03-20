@@ -59,7 +59,8 @@ ENV PYTHONPATH=/src
 COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e . && \
-    pip install --no-cache-dir -r /tmp/requirements.txt
+    pip install --no-cache-dir -r /tmp/requirements.txt && \
+    rm -r .git
 
 # For Envision
 EXPOSE 8081
