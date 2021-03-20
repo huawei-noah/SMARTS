@@ -1,19 +1,19 @@
 OUTPUT_DIR=$1
-CPUS=$2
+NUM_PARALLEL_TRIALS=$2
 TOTAL_COUNT=$3
 MAX_STEPS_PER_TRIAL=$4
 
-if (( $CPUS < 1 )); then
-    CPUS=1
+if (( $NUM_PARALLEL_TRIALS < 1 )); then
+    NUM_PARALLEL_TRIALS=1
 fi
 
 CURRENT=30
-LOOPS=$(( $TOTAL_COUNT / $CPUS ))
+LOOPS=$(( $TOTAL_COUNT / $NUM_PARALLEL_TRIALS ))
 for (( i=0; i<$LOOPS; i++ ))
 do
-    base=$(( $i * $CPUS ))
+    base=$(( $i * $NUM_PARALLEL_TRIALS ))
     echo iter: $i
-    for (( j=0; j<$CPUS; j++ ))
+    for (( j=0; j<$NUM_PARALLEL_TRIALS; j++ ))
     do
         TEMP_DIR="tmp_${j}/${OUTPUT_DIR}" 
         num=$(( $CURRENT + $j + $base ))
@@ -27,7 +27,7 @@ do
     done
 
     BEST=$MAX_STEPS_PER_TRIAL
-    for (( j=0; j<$CPUS; j++ ))
+    for (( j=0; j<$NUM_PARALLEL_TRIALS; j++ ))
     do
         TEMP_DIR="tmp_${j}/${OUTPUT_DIR}"
         STEP_FILE="${TEMP_DIR}/steps.txt"
