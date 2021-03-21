@@ -272,7 +272,9 @@ class Episode:
             self.make_dir(self.log_dir)
             self.make_dir(self.model_dir)
 
-    def record_tensorboard(self, save_codes=None):
+    def record_tensorboard(
+        self, save_codes=None, record_by_episode=False, draw_grade_line=False
+    ):
         # Only create tensorboard once from training process.
         self.initialize_tb_writer()
 
@@ -280,12 +282,15 @@ class Episode:
             agent_itr = self.get_itr(agent_id)
             data = {}
 
+            manipulated_var = self.index if record_by_episode else agent_itr
+
             for key, value in agent_info.data.items():
                 if not isinstance(value, (list, tuple, np.ndarray)):
+                    # vt_line = 1 if (draw_grade_line == True) and (self.index != 0) else 0
                     self.tb_writer.add_scalar(
                         "{}/{}/{}".format(self.active_tag, agent_id, key),
                         value,
-                        agent_itr,
+                        manipulated_var,
                     )
                     data[key] = value
             self.all_data[self.active_tag][agent_id][agent_itr] = data

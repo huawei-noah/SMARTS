@@ -27,9 +27,10 @@ from ultra.scenarios.generate_scenarios import build_scenarios
 
 
 class coordinator:
-    def __init__(self, root_dir):
+    def __init__(self):
         self.mode = False
 
+        root_dir = "../scenarios/grade_based_task/"  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
         base_dir = os.path.join(os.path.dirname(__file__), root_dir)
         grades_dir = os.path.join(base_dir, "config.yaml")
 
@@ -37,6 +38,12 @@ class coordinator:
             self.curriculum = yaml.safe_load(task_file)["grades"]
 
         self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
+
+        self.cycle_completed = False
+        self.grade_completed = False
+        self.rotation_counter = 0
+        self.plot_arr = []
+        self.grade_length = []
 
     def set_grade_mode(self, mode):
         self.mode = mode
@@ -60,34 +67,53 @@ class coordinator:
         # Get task and level information
         self.grade = self.curriculum[grade]
 
-    def graduate(self, index, num_episodes, agent_id, average_scenarios_passed):
-        """ Conditions on when to graduate """
-
-        # # Switch to next grade based on number of episodes completed
-        # if (episode.index % (num_episodes / self.get_num_of_grades())) == 0:
-        #     self.next_grade(next(self.counter) + 1)
-        #     return True
-        # else:
-        #     return False
-
-        # Switch to next grade on the basis of certain percentage of completed scenarios
-        if index != 0:
-            print("\nAVERAGE SCENARIOS PASSED:", average_scenarios_passed)
-            if average_scenarios_passed > 0.50:
-                self.next_grade(next(self.counter) + 1)
-                return True
-            else:
-                return False
-        else:
-            # Initial switch (admission into curriculum)
-            self.next_grade(next(self.counter) + 1)
-            return True
-
     def get_num_of_grades(self):
         return len(self.curriculum)
 
     def get_grade(self):
         return self.grade
+
+    def graduate(self, index, num_episodes, average_scenarios_passed):
+        """ Conditions on when to graduate """
+
+        # Switch to next grade based on number of episodes completed
+        # if (index % (num_episodes / self.get_num_of_grades())) == 0:
+        #     self.next_grade(next(self.counter) + 1)
+        #     return (True, False)
+        # else:
+        #     return (False, False)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        # Switch to next grade on the basis of certain percentage of completed scenarios
+
+        print("\nAVERAGE SCENARIOS PASSED:", average_scenarios_passed)
+
+        if index != 0:
+            if (
+                average_scenarios_passed > 0.50
+                and self.rotation_counter <= self.get_num_of_grades()
+            ):
+                self.next_grade(next(self.counter) + 1)
+                self.grade_completed = True
+                self.rotation_counter += 1
+                self.grade_length.append(index)
+            else:
+                self.grade_completed = False
+        else:
+            self.next_grade(next(self.counter) + 1)
+            self.grade_completed = True
+            self.rotation_counter += 1
+            self.grade_length.append(index)
+
+        if self.rotation_counter > self.get_num_of_grades():
+            self.cycle_completed = True
+
+        if self.cycle_completed:
+            print("Average scenario success array: ", self.plot_arr)
+            print("Epsiode intervals: ", self.grade_length)
+
+        return (self.grade_completed, self.cycle_completed)
 
     def __str__(self):
         return f"\nCurrent grade: {self.grade}\n"

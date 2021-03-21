@@ -113,12 +113,9 @@ def train(
 
     episode_count = 0
     old_episode = None
-    total_scenarios_passed = 0.0
-    average_scenarios_passed = 0.0
-    plot_arr = []
 
     if grade_mode:
-        agent_coordinator = coordinator("../scenarios/grade_based_task/")
+        agent_coordinator = coordinator()
         # agent_coordinator.build_all_scenarios()
         print("\n------------ GRADE MODE : Enabled ------------\n")
         print("Number of Intervals (grades):", agent_coordinator.get_num_of_grades())
@@ -126,30 +123,31 @@ def train(
     else:
         print("\n------------ GRADE MODE : Disabled ------------\n")
         agent_coordinator = None
-    
-    rotation_counter = 0
+
+    average_scenarios_passed = 0.0
+    total_scenarios_passed = 0.0
+
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if grade_mode:
-            if rotation_counter > agent_coordinator.get_num_of_grades():
-                finished = True
-                break
-            if agent_coordinator.graduate(
-                episode.index,
-                num_episodes,
-                list(agents.keys())[0],
-                average_scenarios_passed,
-            ):
+            switch_grade = agent_coordinator.graduate(
+                episode, num_episodes, average_scenarios_passed
+            )
+
+            # If agent switches to new grade
+            if switch_grade[0] == True:
                 observations = env.reset(True, agent_coordinator.get_grade())
                 print(agent_coordinator)
-                total_scenarios_passed = 0
-                average_scenarios_passed = 0
-                grade_length.append(episode.index)
-                rotation_counter += 1
             else:
                 observations = env.reset()
+
+            # If agent has completed all levels (no cycle through levels again)
+            if switch_grade[1] == True:
+                finished = True
+                break
         else:
             # Reset the environment and retrieve the initial observations.
             observations = env.reset()
+
         dones = {"__all__": False}
         infos = None
         episode.reset()
@@ -216,20 +214,22 @@ def train(
 
         # print("Reached goal: ", episode.info[episode.active_tag]["000"].data["reached_goal"])
         if (episode_count + 1) % eval_info["eval_rate"] == 0:
-            if grade_mode:
-                average_scenarios_passed = (
-                    total_scenarios_passed / eval_info["eval_rate"]
-                )
-                plot_arr.append(average_scenarios_passed)
-                total_scenarios_passed = 0
+            total_scenarios_passed += episode.info[episode.active_tag][
+                list(agents.keys())[0]
+            ].data["reached_goal"]
+            print(
+                "(SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
+                total_scenarios_passed,
+            )
+            average_scenarios_passed = total_scenarios_passed / eval_info["eval_rate"]
             episode.record_tensorboard()
             old_episode = None
+            total_scenarios_passed = 0.0
         else:
-            if grade_mode:
-                total_scenarios_passed += episode.info[episode.active_tag]["000"].data[
-                    "reached_goal"
-                ]
-                print("TOTAL SCENARIOs PASSED PER EVAL RATE:", total_scenarios_passed)
+            total_scenarios_passed += episode.info[episode.active_tag][
+                list(agents.keys())[0]
+            ].data["reached_goal"]
+            print("TOTAL SCENARIOS PASSED PER EVAL RATE:", total_scenarios_passed)
 
         if eval_info["eval_episodes"] != 0:
             # Perform the evaluation check.
@@ -250,12 +250,6 @@ def train(
 
         if finished:
             break
-
-    if grade_mode:
-        print("Average scenario success array: ", plot_arr)
-        print("Epsiode intervals: ", grade_length)
-        # for i in range(len(grade_length)):
-        #     print(f"Grade {i} : {grade_length} ")
 
     env.close()
 
