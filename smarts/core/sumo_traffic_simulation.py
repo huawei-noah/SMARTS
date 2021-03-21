@@ -35,7 +35,7 @@ from traci.exceptions import FatalTraCIError, TraCIException
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import ProviderState, ProviderTLS, ProviderTrafficLight
+from smarts.core.provider import ProviderState
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_stdout
 from smarts.core.utils.sumo import SUMO_PATH, traci
@@ -197,7 +197,6 @@ class SumoTrafficSimulation:
                 you were trying to initialize many SUMO instances at
                 once and we were not able to assign unique port
                 numbers to all SUMO processes.
-
                 Check {self._log_file} for hints"""
             )
             raise e
@@ -263,11 +262,6 @@ class SumoTrafficSimulation:
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
         )
 
-        for tls_id in self._traci_conn.trafficlight.getIDList():
-            self._traci_conn.trafficlight.subscribe(
-                tls_id, [tc.TL_RED_YELLOW_GREEN_STATE, tc.TL_CONTROLLED_LINKS]
-            )
-
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
         #      as zero will step according to a default (non-zero) step-size.
@@ -330,9 +324,6 @@ class SumoTrafficSimulation:
         """
         Args:
             dt: time (in seconds) to simulate during this simulation step
-            managed_vehicles: dict of {vehicle_id: (x, y, heading)}
-                !! The vehicle state should represent the state of the
-                !! vehicles at the start of the current simulation step
         Returns:
             ProviderState representing the state of the SUMO simulation
         """
@@ -514,7 +505,6 @@ class SumoTrafficSimulation:
     def _compute_provider_state(self) -> ProviderState:
         return ProviderState(
             vehicles=self._compute_traffic_vehicles(),
-            traffic_light_systems=self._compute_traffic_lights(),
         )
 
     def _compute_traffic_vehicles(self) -> List[VehicleState]:
@@ -603,6 +593,10 @@ class SumoTrafficSimulation:
             speed = sumo_vehicle[tc.VAR_SPEED]
             vehicle_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
             dimensions = VEHICLE_CONFIGS[vehicle_type].dimensions
+            # adjust sumo vehicle location with map location offset
+            assert len(self._scenario.mapLocationOffset) == 2
+            front_bumper_pos[0] += self._scenario.mapLocationOffset[0]
+            front_bumper_pos[1] += self._scenario.mapLocationOffset[1]
             provider_vehicles.append(
                 VehicleState(
                     # XXX: In the case of the SUMO traffic provider, the vehicle ID is
@@ -673,41 +667,6 @@ class SumoTrafficSimulation:
             new_route_edges = route_edges[-1:] + route_edges
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
-    def _compute_traffic_lights(self) -> List[ProviderTLS]:
-        """TraCI will automatically generate TLS programs if none was specified
-        according to the net/program. To support this we opt to use TraCI instead
-        of the sumolib interface for TLS support.
-        """
-
-        sub_results = self._traci_conn.trafficlight.getSubscriptionResults(None)
-
-        tlss = []
-        if not sub_results:
-            return tlss
-
-        for tls_id in sub_results:
-            light_states = sub_results[tls_id][tc.TL_RED_YELLOW_GREEN_STATE]
-            links = sub_results[tls_id][tc.TL_CONTROLLED_LINKS]
-
-            traffic_lights = []
-            for link, state in zip(links, light_states):
-                if not link:
-                    continue
-                lane_start, lane_end, lane_via = [
-                    self._scenario.road_network.lane_by_id(lane) for lane in link[0]
-                ]
-                traffic_lights.append(
-                    ProviderTrafficLight(
-                        lane_in=lane_start,
-                        lane_via=lane_via,
-                        lane_out=lane_end,
-                        state=state,
-                    )
-                )
-            tlss.append(ProviderTLS(tls_id, traffic_lights))
-
-        return tlss
-
     def _unique_id(self):
         route_id = "hiway_id_%s" % self._num_dynamic_ids_used
         self._num_dynamic_ids_used += 1
@@ -723,7 +682,6 @@ class SumoTrafficSimulation:
     ):
         """Reserve an area around a location where vehicles cannot spawn until a given vehicle
         is added.
-
         Args:
             vehicle_id: The vehicle to wait for.
             reserved_location: The space the vehicle takes up.

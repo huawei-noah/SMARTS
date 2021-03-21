@@ -17,16 +17,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import (
+    annotations,
+)  # to allow for typing to refer to class being defined (LinkedWaypoint)
 import queue
 import random
 import warnings
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Sequence, NamedTuple, List
+from functools import lru_cache
 
+import math
 import numpy as np
-from scipy.interpolate import interp1d
 
+from .utils.math import inplace_unwrap
 from smarts.core.utils.file import suppress_pkg_resources
 
 with warnings.catch_warnings():
@@ -102,7 +107,7 @@ class Waypoint:
         if not isinstance(other, Waypoint):
             return False
         return (
-            self.pos.all() == other.pos.all()
+            (self.pos == other.pos).all()
             and self.heading == other.heading
             and self.lane_width == other.lane_width
             and self.speed_limit == other.speed_limit
@@ -111,16 +116,17 @@ class Waypoint:
         )
 
 
-LinkedWaypoint = namedtuple(
-    "LinkedWaypoint",
-    [
-        "wp",  # Waypoint: current waypoint
-        "nexts",  # list of LinkedWaypoint: list of next immediate waypoints
-        # it's a list of waypoints because a path may branch at junctions
-        "is_shape_wp",
-    ],
-    defaults=[None, [], False],
-)
+class LinkedWaypoint(NamedTuple):
+    wp: Waypoint = None  # Waypoint: current waypoint
+    is_shape_wp: bool = False
+    nexts: List[LinkedWaypoint] = []  # list of next immediate waypoints
+    # it's a list of waypoints because a path may branch at junctions
+
+    def __hash__(self):
+        ## distinguish between different continuations here too
+        ## so the lru_cache on _waypoints_starting_at_waypoint() below
+        ## doesn't return the wrong set of waypoints.
+        return hash(self.wp) + sum(hash(nwp.wp) for nwp in self.nexts)
 
 
 class Waypoints:
@@ -216,12 +222,12 @@ class Waypoints:
         closest_linked_wp = self._closest_linked_wp_in_kd_tree_batched(
             [point], self._waypoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
-
-        unlinked_waypoint_paths = self._waypoints_starting_at_waypoint(
-            closest_linked_wp, lookahead, point, filter_edge_ids
+        return self._waypoints_starting_at_waypoint(
+            closest_linked_wp,
+            lookahead,
+            tuple(point),
+            tuple(filter_edge_ids) if filter_edge_ids else (),
         )
-
-        return unlinked_waypoint_paths
 
     def waypoint_paths_at(self, pose, lookahead, filter_from_count=3, within_radius=5):
         closest_linked_wp = self.closest_waypoint(
@@ -325,12 +331,9 @@ class Waypoints:
 
         return [[linked_wps[idx] for idx in idxs] for idxs in closest_indices]
 
+    @lru_cache(maxsize=32)
     def _waypoints_starting_at_waypoint(
-        self,
-        waypoint: LinkedWaypoint,
-        lookahead,
-        point,
-        filter_edge_ids: Sequence[str] = None,
+        self, waypoint: LinkedWaypoint, lookahead, point, filter_edge_ids: tuple
     ):
         waypoint_paths = [[waypoint]]
         for _ in range(lookahead):
@@ -389,7 +392,7 @@ class Waypoints:
                 waypoint.wp.speed_limit
             )
 
-        ref_waypoints_coordinates["ref_wp_headings"] = np.unwrap(
+        ref_waypoints_coordinates["ref_wp_headings"] = inplace_unwrap(
             ref_waypoints_coordinates["ref_wp_headings"]
         )
         first_wp_heading = ref_waypoints_coordinates["ref_wp_headings"][0]
@@ -434,9 +437,11 @@ class Waypoints:
 
         evenly_spaced_coordinates = {}
         for variable in continuous_variables:
-            evenly_spaced_coordinates[variable] = interp1d(
-                cumulative_path_dist, ref_waypoints_coordinates[variable]
-            )(evenly_spaced_cumulative_path_dist)
+            evenly_spaced_coordinates[variable] = np.interp(
+                evenly_spaced_cumulative_path_dist,
+                cumulative_path_dist,
+                ref_waypoints_coordinates[variable],
+            )
 
         for variable in discrete_variables:
             ref_coordinates = ref_waypoints_coordinates[variable]

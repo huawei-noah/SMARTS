@@ -34,11 +34,6 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
-      - name: Run Header test
-        run : |
-          cd ultra
-          ./header_test.sh
-
   test-package-via-setup:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
@@ -60,7 +55,7 @@ jobs:
           cd ultra
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install --upgrade --upgrade-strategy eager pip
+          pip install --upgrade pip
           pip install --upgrade -e .
           pip install --upgrade numpy
       - name: Run test
@@ -69,7 +64,6 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/test_ultra_package.py
-
   test-package-via-wheel:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
@@ -93,6 +87,7 @@ jobs:
           . .venv/bin/activate
           pip install --upgrade --upgrade-strategy eager pip
           pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade --upgrade-strategy eager -e .
           python setup.py bdist_wheel
           cd dist
           pip install $(ls . | grep ultra)
@@ -104,7 +99,6 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/test_ultra_package.py
-
   # test-package-via-pypi:
   #   runs-on: ubuntu-18.04
   #   if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository

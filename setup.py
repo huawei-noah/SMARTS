@@ -10,7 +10,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.4.14",
+    version="0.4.15",
     packages=find_packages(exclude="tests"),
     include_package_data=True,
     zip_safe=True,
@@ -20,6 +20,7 @@ setup(
         #   tensorboard needs >=41
         #   50.0 is broken: https://github.com/pypa/setupatools/issues/2353
         "setuptools>=41.0.0,!=50.0",
+        "cached-property",
         "click",  # used in scl
         "gym",
         "panda3d",
@@ -60,6 +61,8 @@ setup(
         "grpcio==1.30.0",
         "PyYAML",
         "twisted",
+        # The following are used for imitation learning
+        "ijson",
     ],
     extras_require={
         "test": [

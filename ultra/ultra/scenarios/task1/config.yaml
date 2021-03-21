@@ -1,24 +1,32 @@
-ego_mission:
-  # left turn from south to west
-  start: south-SN
-  end:   west-EW
 levels:
   hijack:
     train:
       total: 10
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 1
            specs: [[70kmh,p-test,1]]
     test:
       total: 10
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 1
            specs: [[70kmh,p-test,1]]
-  no-traffic: # low-density is just a dummy distribution for no-traffic
+  no-traffic:
     train:
       total: 10000
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 0.5
@@ -28,6 +36,10 @@ levels:
            specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
     test:
       total: 200
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_c:
            percent: 0.5
@@ -38,6 +50,10 @@ levels:
   easy:
     train:
       total: 10000
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 0.2
@@ -59,6 +75,10 @@ levels:
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
     test:
       total: 200
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_c:
            percent: 0.5
@@ -75,6 +95,10 @@ levels:
   hard:
     train:
       total: 10000
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 0.2
@@ -97,6 +121,10 @@ levels:
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01]] #3%
     test:
       total: 200
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_c:
            percent: 0.5

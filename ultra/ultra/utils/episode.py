@@ -22,21 +22,23 @@
 import datetime
 import math
 import os
+from pathlib import Path
+
 import shutil
 import time
 from collections import defaultdict
-from contextlib import contextmanager
-from dataclasses import dataclass, field
 
-import cv2
 import dill
 import numpy as np
-import ray
 import tableprint as tp
-from matplotlib import pyplot as plt
-from tensorboardX import SummaryWriter
+from ultra.utils.rllib_log_info import RLlibLogInfo
+from ultra.utils.common import gen_experiment_name
 
-from smarts.core.utils.episodes import EpisodeLog
+import tempfile
+from ray.rllib.agents.callbacks import DefaultCallbacks
+from ray.tune.logger import Logger, UnifiedLogger
+
+from tensorboardX import SummaryWriter
 
 
 class LogInfo:
@@ -60,11 +62,10 @@ class LogInfo:
             "off_route": 0,
             "reached_goal": 0,
             "timed_out": 0,
-            "episode_length": 0,
+            "episode_length": 1,
         }
 
     def add(self, infos, rewards):
-
         self.data["env_score"] += int(infos["logs"]["env_score"])
         self.data["speed"] += infos["logs"]["speed"]
         self.data["max_speed_violation"] += (
@@ -98,10 +99,13 @@ class LogInfo:
         self.data["timed_out"] = int(events.reached_max_episode_steps)
         #
 
-    def normalize(self, steps):
+    def step(self):
+        self.data["episode_length"] += 1
+
+    def normalize(self):
+        steps = self.data["episode_length"]
         self.data["env_score"] /= steps
         self.data["dist_center"] /= steps
-        self.data["episode_length"] = steps
         self.data["speed"] /= steps
         self.data["ego_linear_jerk"] /= steps
         self.data["ego_angular_jerk"] /= steps
@@ -116,20 +120,20 @@ class Episode:
         index,
         agents_itr=defaultdict(lambda: 0),
         eval_count=0,
-        all_data=defaultdict(lambda: defaultdict(lambda: [])),
+        all_data=defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: []))),
         experiment_name=None,
         etag=None,
         tb_writer=None,
-        last_eval_iteration=None,
+        last_eval_iterations=defaultdict(lambda: None),
         log_dir=None,
     ):
-        self.info = {}
+        self.info = defaultdict(lambda: defaultdict(lambda: LogInfo()))
         self.all_data = all_data
         self.index = index
         self.eval_count = eval_count
-        dt = datetime.datetime.today()
+
         if experiment_name is None:
-            self.experiment_name = f"experiment-{dt.year}.{dt.month}.{dt.day}-{dt.hour}:{dt.minute}:{dt.second}"
+            self.experiment_name = gen_experiment_name()
             if etag:
                 self.experiment_name = f"{self.experiment_name}-{etag}"
         else:
@@ -149,7 +153,7 @@ class Episode:
         self.steps = 1
         self.active_tag = None
         self.tb_writer = tb_writer
-        self.last_eval_iteration = last_eval_iteration
+        self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
 
     @property
@@ -171,8 +175,8 @@ class Episode:
     def get_itr(self, agent_id):
         return self.agents_itr[agent_id]
 
-    def checkpoint_dir(self, iteration):
-        path = f"{self.model_dir}/{iteration}"
+    def checkpoint_dir(self, agent_id, iteration):
+        path = f"{self.model_dir}/{agent_id}/{iteration}"
         self.make_dir(path)
         return path
 
@@ -187,36 +191,56 @@ class Episode:
         self.timestep_sec = 0.1
         self.steps = 1
         self.active_tag = mode
-        self.info[self.active_tag] = LogInfo()
+        self.info[self.active_tag] = defaultdict(lambda: LogInfo())
 
     def make_dir(self, dir_name):
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
-    def log_loss(self, step, loss_output):
+    def log_loss(self, step, agent_id, loss_output):
         self.initialize_tb_writer()
         for key, data in loss_output.items():
             if step % data["freq"]:
+                loss_name, loss_type = key.split("/")
                 if data["type"] == "scalar":
-                    self.tb_writer.add_scalar(key, data["data"], step)
+                    self.tb_writer.add_scalar(
+                        "{}/{}/{}".format(loss_name, agent_id, loss_type),
+                        data["data"],
+                        step,
+                    )
                 else:
-                    self.tb_writer.add_histogram(key, data["data"], step)
+                    self.tb_writer.add_histogram(
+                        "{}/{}/{}".format(loss_name, agent_id, loss_type),
+                        data["data"],
+                        step,
+                    )
 
     def save_episode(self, episode_count):
         self.ep_log_dir = "{}/episode_{}".format(self.log_dir, episode_count)
         if not os.path.exists(self.ep_log_dir):
             os.makedirs(self.ep_log_dir)
 
-    def record_step(self, agent_id, infos, rewards, total_step=0, loss_output=None):
-        if loss_output:
-            self.log_loss(step=total_step, loss_output=loss_output)
-        self.info[self.active_tag].add(infos[agent_id], rewards[agent_id])
+    def record_step(
+        self, agent_ids_to_record, infos, rewards, total_step=0, loss_outputs=None
+    ):
+        # Record the data for each agent ID.
+        for agent_id in agent_ids_to_record:
+            if loss_outputs:
+                self.log_loss(
+                    step=total_step,
+                    agent_id=agent_id,
+                    loss_output=loss_outputs[agent_id],
+                )
+            self.info[self.active_tag][agent_id].add(infos[agent_id], rewards[agent_id])
+            self.info[self.active_tag][agent_id].step()
+            self.agents_itr[agent_id] += 1
+
+        # Increment this episode's step count.
         self.steps += 1
-        self.agents_itr[agent_id] += 1
 
     def record_episode(self):
-        # normalize some of the data; keep the rest as is
-        self.info[self.active_tag].normalize(self.steps)
+        for _, agent_info in self.info[self.active_tag].items():
+            agent_info.normalize()
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
@@ -226,25 +250,31 @@ class Episode:
             self.make_dir(self.log_dir)
             self.make_dir(self.model_dir)
 
-    def record_tensorboard(self, agent_id, save_codes=None):
-        # only create tensorboard once from training process
+    def record_tensorboard(self, save_codes=None):
+        # Only create tensorboard once from training process.
         self.initialize_tb_writer()
-        agent_itr = self.get_itr(agent_id)
-        data = {}
-        for key, value in self.info[self.active_tag].data.items():
-            if not isinstance(value, (list, tuple, np.ndarray)):
-                self.tb_writer.add_scalar(
-                    "{}/{}".format(self.active_tag, key), value, agent_itr
-                )
-                data[key] = value
+
+        for agent_id, agent_info in self.info[self.active_tag].items():
+            agent_itr = self.get_itr(agent_id)
+            data = {}
+
+            for key, value in agent_info.data.items():
+                if not isinstance(value, (list, tuple, np.ndarray)):
+                    self.tb_writer.add_scalar(
+                        "{}/{}/{}".format(self.active_tag, agent_id, key),
+                        value,
+                        agent_itr,
+                    )
+                    data[key] = value
+            self.all_data[self.active_tag][agent_id][agent_itr] = data
+
         pkls_dir = f"{self.pkls}/{self.active_tag}"
         if not os.path.exists(pkls_dir):
             os.makedirs(pkls_dir)
-        self.all_data[self.active_tag][agent_itr] = data
         with open(f"{pkls_dir}/results.pkl", "wb") as handle:
             dill.dump(self.all_data[self.active_tag], handle)
 
-        if save_codes and not os.path.exists(self.code_dir):  # save once
+        if save_codes and not os.path.exists(self.code_dir):  # Save once.
             self.make_dir(self.code_dir)
             for code_path in save_codes:
                 try:
@@ -271,9 +301,9 @@ def episodes(n, etag=None, log_dir=None):
     ) as table:
         tb_writer = None
         experiment_name = None
-        last_eval_iteration = None
+        last_eval_iterations = defaultdict(lambda: None)
         eval_count = 0
-        all_data = defaultdict(lambda: defaultdict(lambda: []))
+        all_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [])))
         agents_itr = defaultdict(lambda: 0)
         for i in range(n):
             e = Episode(
@@ -282,27 +312,94 @@ def episodes(n, etag=None, log_dir=None):
                 tb_writer=tb_writer,
                 etag=etag,
                 agents_itr=agents_itr,
-                last_eval_iteration=last_eval_iteration,
+                last_eval_iterations=last_eval_iterations,
                 all_data=all_data,
                 eval_count=eval_count,
                 log_dir=log_dir,
             )
             yield e
             tb_writer = e.tb_writer
-            last_eval_iteration = e.last_eval_iteration
+            last_eval_iterations = e.last_eval_iterations
             experiment_name = e.experiment_name
             all_data = e.all_data
             eval_count = e.eval_count
             agents_itr = e.agents_itr
             if e.active_tag:
+                agent_rewards_strings = [
+                    "{}: {:.4f}".format(
+                        agent_id,
+                        agent_info.data["episode_reward"],
+                    )
+                    for agent_id, agent_info in e.info[e.active_tag].items()
+                ]
                 row = (
                     f"{e.index}/{n}",
                     f"{e.sim2wall_ratio:.2f}",
                     f"{e.steps}",
                     f"{e.steps_per_second:.2f}",
-                    f"{e.info[e.active_tag].data['episode_reward']:.4f}",
+                    ", ".join(agent_rewards_strings),
                 )
                 table(row)
-
             else:
                 table(("", "", "", "", ""))
+
+
+class Callbacks(DefaultCallbacks):
+    @staticmethod
+    def on_episode_start(
+        worker,
+        base_env,
+        policies,
+        episode,
+        **kwargs,
+    ):
+        episode.user_data = RLlibLogInfo()
+
+    @staticmethod
+    def on_episode_step(
+        worker,
+        base_env,
+        episode,
+        **kwargs,
+    ):
+
+        single_agent_id = list(episode._agent_to_last_obs)[0]
+        policy_id = episode.policy_for(single_agent_id)
+        agent_reward_key = (single_agent_id, policy_id)
+
+        info = episode.last_info_for(single_agent_id)
+        reward = episode.agent_rewards[agent_reward_key]
+        if info:
+            episode.user_data.add(info, reward)
+
+    @staticmethod
+    def on_episode_end(
+        worker,
+        base_env,
+        policies,
+        episode,
+        **kwargs,
+    ):
+        episode.user_data.normalize(episode.length)
+        for key, val in episode.user_data.data.items():
+            if not isinstance(val, (list, tuple, np.ndarray)):
+                episode.custom_metrics[key] = val
+
+        print(
+            f"Episode {episode.episode_id} ended:\nlength:{episode.length},\nenv_score:{episode.custom_metrics['env_score']},\ncollision:{episode.custom_metrics['collision']}, \nreached_goal:{episode.custom_metrics['reached_goal']},\ntimeout:{episode.custom_metrics['timed_out']},\noff_road:{episode.custom_metrics['off_road']},\ndist_travelled:{episode.custom_metrics['dist_travelled']},\ngoal_dist:{episode.custom_metrics['goal_dist']}"
+        )
+        print("--------------------------------------------------------")
+
+
+def log_creator(log_dir):
+    result_dir = log_dir
+    result_dir = Path(result_dir).expanduser().resolve().absolute()
+    logdir_prefix = gen_experiment_name()
+
+    def logger_creator(config):
+        if not os.path.exists(result_dir):
+            os.makedirs(result_dir)
+        logdir = tempfile.mkdtemp(prefix=logdir_prefix, dir=result_dir)
+        return UnifiedLogger(config, logdir, loggers=None)
+
+    return logger_creator

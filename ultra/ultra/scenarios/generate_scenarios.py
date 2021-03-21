@@ -55,6 +55,47 @@ from ultra.scenarios.common.social_vehicle_definitions import (
 LANE_LENGTH = 137.85
 
 
+def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
+    if stopwatcher_behavior:  # Put the ego vehicle(s) on the side road.
+        mission_start = "edge-south-side"
+        mission_end = "edge-dead-end"
+        mission_start_lane_index = 0
+        mission_end_lane_index = 0
+        mission_start_offset = 100
+        mission_end_offset = 5
+    else:
+        mission_start = "edge-{}".format(ego_mission["start"])
+        mission_end = "edge-{}".format(ego_mission["end"])
+        mission_start_lane_index = route_lanes[ego_mission["start"]] - 1
+        mission_end_lane_index = route_lanes[ego_mission["end"]] - 1
+        mission_start_offset = (
+            random.randint(
+                ego_mission["start_offset"][0], ego_mission["start_offset"][1]
+            )
+            if "start_offset" in ego_mission
+            else random.randint(50, 120)  # The default range of the offset.
+        )
+        mission_end_offset = (
+            random.randint(ego_mission["end_offset"][0], ego_mission["end_offset"][1])
+            if "end_offset" in ego_mission
+            else random.randint(50, 120)  # The default range of the offset.
+        )
+
+    route = Route(
+        begin=(
+            mission_start,
+            mission_start_lane_index,
+            mission_start_offset,
+        ),
+        end=(
+            mission_end,
+            mission_end_lane_index,
+            mission_end_offset,
+        ),
+    )
+    return route
+
+
 def copy_map_files(scenario, map_dir, speed):
     if not os.path.exists(scenario):
         os.makedirs(scenario)
@@ -112,7 +153,7 @@ def generate_stopwatcher(
 
 
 def generate_left_turn_missions(
-    mission,
+    missions,
     route_distributions,
     route_lanes,
     speed,
@@ -149,29 +190,16 @@ def generate_left_turn_missions(
     for route_key, route_info in route_distributions["routes"].items():
         # to skip None
         if route_info:
-            if stopwatcher_behavior:  # put the ego on the side road
-                ego_start_lane, ego_end_lane = 0, 0
-                mission_start, mission_end = "south-side", "dead-end"
-                ego_start_pos, ego_end_pos = 100, 5
-                ego_num_lanes = 1
-            else:
-                mission_start, mission_end = mission["start"], mission["end"]
-                ego_start_lane, ego_end_lane = (
-                    route_lanes[mission_start] - 1,
-                    route_lanes[mission_end] - 1,
+            ego_routes = [
+                ego_mission_to_route(
+                    ego_mission=ego_mission,
+                    route_lanes=route_lanes,
+                    stopwatcher_behavior=stopwatcher_behavior,
                 )
-                ego_start_pos, ego_end_pos = (
-                    random.randint(50, 120),
-                    random.randint(50, 150),
-                )
-                ego_num_lanes = route_lanes[mission_start]
+                for ego_mission in missions
+            ]
 
-            ego_route = Route(
-                begin=(f"edge-{mission_start}", ego_start_lane, ego_start_pos),
-                end=(f"edge-{mission_end}", ego_end_lane, ego_end_pos),
-            )
             flows, vehicles_log_info = generate_social_vehicles(
-                ego_start_lane=ego_start_lane,
                 route_distribution=route_info["distribution"],
                 begin_time_init=route_info["begin_time_init"],
                 num_vehicles=route_info["vehicles"],
@@ -214,45 +242,47 @@ def generate_left_turn_missions(
 
     copy_map_files(scenario, map_dir, speed)
     if stopwatcher_behavior or "ego_hijacking_params" not in route_distributions:
-        gen_missions(scenario, [Mission(ego_route)])
+        mission_objects = [Mission(ego_route) for ego_route in ego_routes]
     else:
         speed_m_per_s = float("".join(filter(str.isdigit, speed))) * 5.0 / 18.0
         hijacking_params = route_distributions["ego_hijacking_params"]
         zone_range = hijacking_params["zone_range"]
         waiting_time = hijacking_params["wait_to_hijack_limit_s"]
-        start_time = hijacking_params["start_time"]
-
-        if start_time == "default":
-            start_time = random.randint((LANE_LENGTH // speed_m_per_s), 60)
-        gen_missions(
-            scenario,
-            [
-                Mission(
-                    ego_route,
-                    # optional: control hijacking time, place, and emission.
-                    start_time=start_time,  # when to start hijacking (might start later)
-                    entry_tactic=TrapEntryTactic(
-                        wait_to_hijack_limit_s=waiting_time,  # when to give up on hijacking and start emitting a social vehicle instead
-                        zone=MapZone(
-                            start=(
-                                f'edge-{mission["start"]}',
-                                0,
-                                ego_start_pos + zone_range[0],
-                            ),
-                            length=zone_range[1],
-                            n_lanes=route_lanes[mission["start"]],
-                        ),  # area to hijack
-                        exclusion_prefixes=tuple(),  # vehicles to be excluded (check vehicle ids)
-                    ),
-                ),
-            ],
+        start_time = (
+            hijacking_params["start_time"]
+            if hijacking_params["start_time"] != "default"
+            else random.randint((LANE_LENGTH // speed_m_per_s), 60)
         )
+        mission_objects = [
+            Mission(
+                ego_route,
+                # Optional: control hijacking time, place, and emission.
+                start_time=start_time,  # When to start hijacking (might start later).
+                entry_tactic=TrapEntryTactic(
+                    wait_to_hijack_limit_s=waiting_time,  # When to give up on hijacking and start emitting a social vehicle instead.
+                    zone=MapZone(
+                        start=(
+                            ego_route.begin[0],
+                            0,
+                            ego_route.begin[2] + zone_range[0],
+                        ),
+                        length=zone_range[1],
+                        n_lanes=(ego_route.begin[1] + 1),
+                    ),  # Area to hijack.
+                    exclusion_prefixes=tuple(),  # Vehicles to be excluded (check vehicle IDs).
+                ),
+            )
+            for ego_route in ego_routes
+        ]
+    random.shuffle(
+        mission_objects
+    )  # Shuffle the missions so agents don't do the same route all the time.
+    gen_missions(scenario, mission_objects)
 
     traffic = Traffic(flows=all_flows)
     gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
     # patch: remove route files from traffic folder to make intersection empty
     if traffic_density == "no-traffic":
-
         os.remove(f"{scenario}/traffic/all.rou.xml")
     if stopwatcher_behavior:
         metadata["stopwatcher"] = {
@@ -272,7 +302,6 @@ def generate_left_turn_missions(
 
 
 def generate_social_vehicles(
-    ego_start_lane,
     route_distribution,
     start_end_on_different_lanes_probability,
     num_vehicles,
@@ -394,7 +423,7 @@ def generate_social_vehicles(
 
 def scenario_worker(
     seeds,
-    ego_mission,
+    ego_missions,
     route_lanes,
     route_distributions,
     map_dir,
@@ -415,7 +444,7 @@ def scenario_worker(
             route_distributions = dynamic_pattern_func(route_distributions, i)
 
         generate_left_turn_missions(
-            mission=ego_mission,
+            missions=ego_missions,
             route_lanes=route_lanes,
             route_distributions=route_distributions,
             map_dir=map_dir,
@@ -451,7 +480,6 @@ def build_scenarios(
         task_config = yaml.safe_load(task_file)
         print(f"{root_path}/{task}/config.yaml")
 
-    ego_mission = task_config["ego_mission"]
     level_config = task_config["levels"][level_name]
     scenarios_dir = os.path.dirname(os.path.realpath(__file__))
     task_dir = f"{scenarios_dir}/{task}"
@@ -470,6 +498,13 @@ def build_scenarios(
     start = time.time()
     for mode, mode_seeds in splitted_seeds.items():
         combinations = []
+
+        # Obtain the ego missions specified for this mode and ensure
+        # that test scenarios only have one ego mission.
+        ego_missions = level_config[mode]["ego_missions"]
+        assert not (
+            mode == "test" and (len(ego_missions) != 1)
+        ), "Test scenarios must have one ego mission."
 
         prev_split = 0
         main_seed_count = 0
@@ -520,7 +555,7 @@ def build_scenarios(
                     target=scenario_worker,
                     args=(
                         temp_seeds,
-                        ego_mission,
+                        ego_missions,
                         route_lanes,
                         route_distributions,
                         map_dir,

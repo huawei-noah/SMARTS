@@ -83,7 +83,7 @@ class SMARTS(ShowBase):
     def __init__(
         self,
         agent_interfaces,
-        traffic_sim,
+        traffic_sim: SumoTrafficSimulation,
         envision: EnvisionClient = None,
         visdom: VisdomClient = None,
         timestep_sec=0.1,
@@ -428,21 +428,24 @@ class SMARTS(ShowBase):
         )
 
     def teardown(self):
-        self._agent_manager.teardown()
-        self._vehicle_index.teardown()
+        if self._agent_manager is not None:
+            self._agent_manager.teardown()
+        if self._vehicle_index is not None:
+            self._vehicle_index.teardown()
 
-        self._bullet_client.resetSimulation()
-        self._traffic_sim.teardown()
+        if self._bullet_client is not None:
+            self._bullet_client.resetSimulation()
+        if self._traffic_sim is not None:
+            self._traffic_sim.teardown()
         self._teardown_providers()
 
         if self._root_np is not None:
             self._root_np.clearLight()
             self._root_np.removeNode()
-
+            self._root_np = None
         if self._bubble_manager is not None:
             self._bubble_manager.teardown()
             self._bubble_manager = None
-
         if self._trap_manager is not None:
             self._trap_manager.teardown()
             self._trap_manager = None
@@ -461,11 +464,20 @@ class SMARTS(ShowBase):
         if self._visdom:
             self._visdom.teardown()
 
-        self._agent_manager.destroy()
-        self._traffic_sim.destroy()
-        self._bullet_client.disconnect()
+        if self._agent_manager is not None:
+            self._agent_manager.destroy()
+            self._agent_manager = None
+        if self._traffic_sim is not None:
+            self._traffic_sim.destroy()
+            self._traffic_sim = None
+        if self._bullet_client is not None:
+            self._bullet_client.disconnect()
+            self._bullet_client = None
 
         super().destroy()
+
+    def __del__(self):
+        self.destroy()
 
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
@@ -650,6 +662,11 @@ class SMARTS(ShowBase):
         # TODO: Add check to ensure that action spaces are disjoint between providers
         # TODO: It's inconsistent that pybullet is not here
         return self._providers
+
+    def get_provider_by_type(self, requested_type):
+        for provider in self._providers:
+            if isinstance(provider, requested_type):
+                return provider
 
     def _setup_providers(self, scenario) -> ProviderState:
         provider_state = ProviderState()

@@ -20,15 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # Do not make any change to this file when merging. Just use my version.
-import random
 from collections import deque, namedtuple
+import numpy as np
+import random, copy
+import torch
+from ultra.utils.common import normalize_im
 from collections.abc import Iterable
 
-import numpy as np
-import torch
-from torch.utils.data import DataLoader, Dataset, Sampler
-
-from ultra.utils.common import normalize_im
+from torch.utils.data import Dataset, Sampler, DataLoader
 
 Transition = namedtuple(
     "Transition",
@@ -54,10 +53,9 @@ class RandomRLSampler(Sampler):
 class ReplayBufferDataset(Dataset):
     cpu = torch.device("cpu")
 
-    def __init__(self, buffer_size, state_preprocessor, device):
+    def __init__(self, buffer_size, device):
         self.buffer_size = buffer_size
         self.memory = deque(maxlen=self.buffer_size)
-        self.state_preprocessor = state_preprocessor
         self.device = device
 
     def add(
@@ -75,26 +73,28 @@ class ReplayBufferDataset(Dataset):
     ):
         if others is None:
             others = {}
-        state = self.state_preprocessor(
-            state,
-            normalize=False,
-            unsqueeze=False,
-            device=self.device,
-            social_capacity=social_capacity,
-            observation_num_lookahead=observation_num_lookahead,
-            social_vehicle_config=social_vehicle_config,
-            prev_action=prev_action,
+        # dereference the states
+        state = copy.deepcopy(state)
+        next_state = copy.deepcopy(next_state)
+        state["low_dim_states"] = np.float32(
+            np.append(state["low_dim_states"], prev_action)
         )
-        next_state = self.state_preprocessor(
-            next_state,
-            normalize=False,
-            unsqueeze=False,
-            device=self.device,
-            social_capacity=social_capacity,
-            observation_num_lookahead=observation_num_lookahead,
-            social_vehicle_config=social_vehicle_config,
-            prev_action=action,
+        state["low_dim_states"] = torch.from_numpy(state["low_dim_states"]).to(
+            self.device
         )
+        state["social_vehicles"] = torch.from_numpy(state["social_vehicles"]).to(
+            self.device
+        )
+
+        next_state["low_dim_states"] = np.float32(
+            np.append(next_state["low_dim_states"], action)
+        )
+        next_state["social_vehicles"] = torch.from_numpy(
+            next_state["social_vehicles"]
+        ).to(self.device)
+        next_state["low_dim_states"] = torch.from_numpy(
+            next_state["low_dim_states"]
+        ).to(self.device)
 
         action = np.asarray([action]) if not isinstance(action, Iterable) else action
         action = torch.from_numpy(action).float()
@@ -118,14 +118,11 @@ class ReplayBuffer:
         self,
         buffer_size,
         batch_size,
-        state_preprocessor,
         device_name,
         pin_memory=False,
         num_workers=0,
     ):
-        self.replay_buffer_dataset = ReplayBufferDataset(
-            buffer_size, state_preprocessor, device=None
-        )
+        self.replay_buffer_dataset = ReplayBufferDataset(buffer_size, device=None)
         self.sampler = RandomRLSampler(self.replay_buffer_dataset, batch_size)
         self.data_loader = DataLoader(
             self.replay_buffer_dataset,
@@ -145,12 +142,12 @@ class ReplayBuffer:
         return self.replay_buffer_dataset[idx]
 
     def make_state_from_dict(self, states, device):
-        image_keys = states[0]["images"].keys()
-        images = {}
-        for k in image_keys:
-            _images = torch.cat([e[k] for e in states], dim=0).float().to(device)
-            _images = normalize_im(_images)
-            images[k] = _images
+        # image_keys = states[0]["images"].keys()
+        # images = {}
+        # for k in image_keys:
+        #     _images = torch.cat([e[k] for e in states], dim=0).float().to(device)
+        #     _images = normalize_im(_images)
+        #     images[k] = _images
         low_dim_states = (
             torch.cat([e["low_dim_states"] for e in states], dim=0).float().to(device)
         )
@@ -161,7 +158,7 @@ class ReplayBuffer:
         else:
             social_vehicles = False
         out = {
-            "images": images,
+            # "images": images,
             "low_dim_states": low_dim_states,
             "social_vehicles": social_vehicles,
         }

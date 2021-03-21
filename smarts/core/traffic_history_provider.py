@@ -23,18 +23,26 @@ from typing import Set
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Heading, Pose
 from .provider import ProviderState
+from .utils.traffic_history_service import Traffic_history_service
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class TrafficHistoryProvider:
     def __init__(self):
         self._is_setup = False
-        self._current_traffic_history = None
+        self._traffic_history_service = None
+        self._map_location_offset = None
         self.replaced_vehicle_ids = set()
+        self.start_time_offset = 0
+
+    def set_start_time(self, start_time: float):
+        assert start_time >= 0, "start_time should be positive"
+        self.start_time_offset = start_time
 
     def setup(self, scenario) -> ProviderState:
         self._is_setup = True
-        self._current_traffic_history = scenario.traffic_history
+        self._traffic_history_service = scenario._traffic_history_service
+        self._map_location_offset = scenario.mapLocationOffset
         return ProviderState()
 
     def set_replaced_ids(self, vehicle_ids: list):
@@ -46,7 +54,7 @@ class TrafficHistoryProvider:
     def teardown(self):
         self._is_setup = False
         self._frame = None
-        self._current_traffic_history = None
+        self._traffic_history_service = None
         self.replaced_vehicle_ids = set()
 
     @property
@@ -61,17 +69,19 @@ class TrafficHistoryProvider:
         timestamp = min(
             (
                 float(ts)
-                for ts in self._current_traffic_history
+                for ts in self._traffic_history_service.all_timesteps
                 if float(ts) >= elapsed_sim_time
             ),
             default=None,
         )
-        if (
-            not self._current_traffic_history
-            or timestamp is None
-            or str(timestamp) not in self._current_traffic_history
+        if not self._traffic_history_service or timestamp is None:
+            return ProviderState(vehicles=[])
+
+        time_with_offset = str(round(timestamp + self.start_time_offset, 1))
+        if not self._traffic_history_service.fetch_history_at_timestep(
+            time_with_offset
         ):
-            return ProviderState(vehicles=[], traffic_light_systems=[])
+            return ProviderState(vehicles=[])
 
         vehicle_type = "passenger"
         states = ProviderState(
@@ -81,7 +91,9 @@ class TrafficHistoryProvider:
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center(
                         [
-                            *vehicle_state["position"][:2],
+                            *Traffic_history_service.apply_map_location_offset(
+                                vehicle_state["position"], self._map_location_offset
+                            ),
                             0,
                         ],
                         Heading(vehicle_state["heading"]),
@@ -105,12 +117,11 @@ class TrafficHistoryProvider:
                     speed=vehicle_state["speed"],
                     source="HISTORY",
                 )
-                for v_id, vehicle_state in self._current_traffic_history[
-                    str(timestamp)
-                ].items()
+                for v_id, vehicle_state in self._traffic_history_service.fetch_history_at_timestep(
+                    time_with_offset
+                ).items()
                 if v_id not in self.replaced_vehicle_ids
             ],
-            traffic_light_systems=[],
         )
         return states
 

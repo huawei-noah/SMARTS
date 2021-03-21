@@ -18,7 +18,7 @@ replay_buffer:
 social_vehicles:
     encoder_key: precog_encoder
     social_policy_hidden_units: 128
-    social_polciy_init_std: 0.5
+    social_policy_init_std: 0.5
     social_capacity: 10
     num_social_features: 4
     seed: 2

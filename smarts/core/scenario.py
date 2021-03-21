@@ -33,18 +33,18 @@ from typing import Any, Dict, Sequence, Tuple
 
 import numpy as np
 
+from smarts.core.coordinates import Heading
+from smarts.core.data_model import SocialAgent
+from smarts.core.route import ShortestRoute
+from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
+from smarts.core.utils.id import SocialAgentId
+from smarts.core.utils.math import vec_to_radians
+from smarts.core.utils.traffic_history_service import Traffic_history_service
+from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
-
-from .coordinates import Heading
-from .data_model import SocialAgent
-from .route import ShortestRoute
-from .sumo_road_network import SumoRoadNetwork
-from .utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
-from .utils.id import SocialAgentId
-from .utils.math import vec_to_radians
-from .waypoints import Waypoints
 
 
 @dataclass(frozen=True)
@@ -177,7 +177,7 @@ class Scenario:
         social_agents: Dict[str, SocialAgent] = None,
         log_dir: str = None,
         surface_patches: list = None,
-        traffic_history: dict = None,
+        traffic_history: str = None,
     ):
 
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -194,7 +194,11 @@ class Scenario:
         self._net_file_hash = file_md5_hash(self.net_filepath)
         self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
-        self._traffic_history = traffic_history or {}
+        self._traffic_history_service = Traffic_history_service(traffic_history)
+
+    @property
+    def mapLocationOffset(self):
+        return self._road_network.netOffset
 
     def __repr__(self):
         return f"""Scenario(
@@ -512,23 +516,12 @@ class Scenario:
     def set_ego_missions(self, ego_mission):
         self._missions.update(ego_mission)
 
-    def discover_missions_of_traffic_histories(self):
-        vehicle_missions = {}
-        # sort by timestamp
-        sorted_history = sorted(self.traffic_history.items(), key=lambda d: float(d[0]))
-        for t, vehicle_states in sorted_history:
-            for vehicle_id in vehicle_states:
-                if vehicle_id not in vehicle_missions:
-                    vehicle_missions[vehicle_id] = Mission(
-                        start=Start(
-                            vehicle_states[vehicle_id]["position"][:2],
-                            Heading(vehicle_states[vehicle_id]["heading"]),
-                        ),
-                        goal=EndlessGoal(),
-                        start_time=float(t),
-                    )
-
-        return vehicle_missions
+    def discover_missions_of_traffic_histories(self, vehicle_missions={}):
+        return Traffic_history_service.fetch_agent_missions(
+            self._traffic_history_service.history_file_path,
+            self._root,
+            self.mapLocationOffset,
+        )
 
     @staticmethod
     def discover_traffic_histories(scenario_root):
@@ -539,9 +532,7 @@ class Scenario:
         traffic_histories = []
         with open(path, "rb") as f:
             files = pickle.load(f)
-            for file_name in files:
-                with open(os.path.join(scenario_root, file_name), "r") as history_file:
-                    traffic_histories.append(json.loads(history_file.read()))
+            traffic_histories = [os.path.join(scenario_root, f) for f in files]
 
         return traffic_histories
 
@@ -807,12 +798,12 @@ class Scenario:
         os.makedirs(self._log_dir, exist_ok=True)
 
     @property
-    def traffic_history(self):
-        return self._traffic_history
+    def traffic_history_service(self):
+        return self._traffic_history_service
 
-    @traffic_history.setter
-    def traffic_history(self, traffic_history):
-        self._traffic_history = traffic_history
+    @traffic_history_service.setter
+    def traffic_history_service(self, traffic_history_service: Traffic_history_service):
+        self._traffic_history_service = traffic_history_service
 
     @property
     def scenario_hash(self):

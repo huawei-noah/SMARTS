@@ -1,11 +1,11 @@
-ego_mission:
-  # left turn from south to west
-  start: south-SN
-  end:   west-EW
 levels:
   lo-hi:
     train:
       total: 800
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 0.5
@@ -19,6 +19,10 @@ levels:
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
     test:
       total: 200
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 0.5
@@ -33,6 +37,10 @@ levels:
   hi-low:
     train:
       total: 800
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 0.5
@@ -46,6 +54,10 @@ levels:
                    [50kmh,low-density,0.01],[70kmh,low-density,0.01],[100kmh,low-density,0.01]] # 3%
     test:
       total: 200
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 0.5
