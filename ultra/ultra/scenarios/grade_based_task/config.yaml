@@ -1,5 +1,15 @@
-grades:
-  1: [[3,grade1]] #[[<task>,<level>]]
-  2: [[3,grade2]]
-  3: [[3,grade3]]
-  4: [[3,grade4]]
+curriculum: 
+  grades:
+    1: [[3,grade1]] #[[<task>,<level>]]
+    2: [[3,grade2]]
+    3: [[3,grade3]]
+    4: [[3,grade4]]
+  conditions:
+    episode_based:
+      toggle: True 
+      cycle: True 
+    pass_based:
+      toggle: False
+      pass_rate: 0.50
+
+

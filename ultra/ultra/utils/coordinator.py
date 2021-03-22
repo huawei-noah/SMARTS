@@ -35,7 +35,7 @@ class coordinator:
         grades_dir = os.path.join(base_dir, "config.yaml")
 
         with open(grades_dir, "r") as task_file:
-            self.curriculum = yaml.safe_load(task_file)["grades"]
+            self.curriculum = yaml.safe_load(task_file)["curriculum"]
 
         self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
 
@@ -52,8 +52,8 @@ class coordinator:
         return self.mode
 
     def build_all_scenarios(self):
-        for key in self.curriculum:
-            for task, level in self.curriculum[key]:
+        for key in self.curriculum["grades"]:
+            for task, level in self.curriculum["grades"][key]:
                 build_scenarios(
                     task=f"task{task}",
                     level_name=level,
@@ -65,55 +65,66 @@ class coordinator:
 
     def next_grade(self, grade):
         # Get task and level information
-        self.grade = self.curriculum[grade]
+        self.grade = self.curriculum["grades"][grade]
 
     def get_num_of_grades(self):
-        return len(self.curriculum)
+        return len(self.curriculum["grades"])
 
     def get_grade(self):
         return self.grade
 
     def graduate(self, index, num_episodes, average_scenarios_passed):
         """ Conditions on when to graduate """
+        
+        if self.curriculum["conditions"]["episode_based"]["toggle"] == True:
+            # Switch to next grade based on number of episodes completed
+            if (index % int(num_episodes / self.get_num_of_grades())) == 0:
+                self.next_grade(next(self.counter) + 1)
+                self.display()
+                self.rotation_counter += 1 if self.curriculum["conditions"]["episode_based"]["cycle"] else 0
+                self.grade_completed = True
+            else:
+                self.grade_completed = False
 
-        # Switch to next grade based on number of episodes completed
-        # if (index % (num_episodes / self.get_num_of_grades())) == 0:
-        #     self.next_grade(next(self.counter) + 1)
-        #     return (True, False)
-        # else:
-        #     return (False, False)
+
+            if self.rotation_counter > self.get_num_of_grades():
+                self.cycle_completed = True
+            
+            return (self.grade_completed, self.cycle_completed)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         # Switch to next grade on the basis of certain percentage of completed scenarios
 
-        print("\nAVERAGE SCENARIOS PASSED:", average_scenarios_passed)
-
-        if index != 0:
-            if (
-                average_scenarios_passed > 0.50
-                and self.rotation_counter <= self.get_num_of_grades()
-            ):
+        if self.curriculum["conditions"]["pass_based"]["toggle"] == True:
+            print(f"({index}) AVERAGE SCENARIOS PASSED:\n", average_scenarios_passed)
+            if index != 0:
+                if (
+                    average_scenarios_passed > float(self.curriculum["conditions"]["pass_based"]["pass_rate"])
+                    and self.rotation_counter <= self.get_num_of_grades()
+                ):
+                    self.next_grade(next(self.counter) + 1)
+                    self.display()
+                    self.grade_completed = True
+                    self.rotation_counter += 1
+                    self.grade_length.append(index)
+                else:
+                    self.grade_completed = False
+            else:
                 self.next_grade(next(self.counter) + 1)
+                self.display()
                 self.grade_completed = True
                 self.rotation_counter += 1
                 self.grade_length.append(index)
-            else:
-                self.grade_completed = False
-        else:
-            self.next_grade(next(self.counter) + 1)
-            self.grade_completed = True
-            self.rotation_counter += 1
-            self.grade_length.append(index)
 
-        if self.rotation_counter > self.get_num_of_grades():
-            self.cycle_completed = True
+            if self.rotation_counter > self.get_num_of_grades():
+                self.cycle_completed = True
 
-        if self.cycle_completed:
-            print("Average scenario success array: ", self.plot_arr)
-            print("Epsiode intervals: ", self.grade_length)
+            if self.cycle_completed:
+                print("Average scenario success array: ", self.plot_arr)
+                print("Epsiode intervals: ", self.grade_length)
 
-        return (self.grade_completed, self.cycle_completed)
+            return (self.grade_completed, self.cycle_completed)
 
-    def __str__(self):
+    def display(self):
         return f"\nCurrent grade: {self.grade}\n"

@@ -130,7 +130,7 @@ def train(
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if grade_mode:
             switch_grade = agent_coordinator.graduate(
-                episode, num_episodes, average_scenarios_passed
+                episode.index, num_episodes, average_scenarios_passed
             )
 
             # If agent switches to new grade
@@ -214,22 +214,25 @@ def train(
 
         # print("Reached goal: ", episode.info[episode.active_tag]["000"].data["reached_goal"])
         if (episode_count + 1) % eval_info["eval_rate"] == 0:
+            episode.record_tensorboard(record_by_episode=True)
+            old_episode = None
             total_scenarios_passed += episode.info[episode.active_tag][
                 list(agents.keys())[0]
             ].data["reached_goal"]
             print(
-                "(SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
+                f"({episode.index}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
                 total_scenarios_passed,
             )
             average_scenarios_passed = total_scenarios_passed / eval_info["eval_rate"]
-            episode.record_tensorboard()
-            old_episode = None
             total_scenarios_passed = 0.0
         else:
             total_scenarios_passed += episode.info[episode.active_tag][
                 list(agents.keys())[0]
             ].data["reached_goal"]
-            print("TOTAL SCENARIOS PASSED PER EVAL RATE:", total_scenarios_passed)
+            print(
+                f"({episode.index}) TOTAL SCENARIOS PASSED PER EVAL RATE:",
+                total_scenarios_passed,
+            )
 
         if eval_info["eval_episodes"] != 0:
             # Perform the evaluation check.
