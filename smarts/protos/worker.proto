@@ -155,10 +155,9 @@ message Lidar{
         repeated float origin=1;
         repeated float direction=2;
     }
-    
+
     Matrix points = 1;
     Matrix hits = 2;
-
     repeated Ray ray=3;
 }
 

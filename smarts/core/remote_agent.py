@@ -134,13 +134,6 @@ def agent_obs_tuple_to_proto(obs):
         not_moving=obs.events.not_moving,
     )
 
-    # ego_vehicle_state.bounding_box
-    bounding_box = worker_pb2.BoundingBox(
-        length=obs.ego_vehicle_state.bounding_box.length,
-        width=obs.ego_vehicle_state.bounding_box.width,
-        height=obs.ego_vehicle_state.bounding_box.height
-    )
-
     # ego_vehicle_state.mission.via
     via = [ 
         worker_pb2.Via(
@@ -175,7 +168,11 @@ def agent_obs_tuple_to_proto(obs):
     ego_vehicle_state = worker_pb2.EgoVehicleObservation(
         id=obs.ego_vehicle_state.id,
         position=obs.ego_vehicle_state.position,
-        bounding_box=bounding_box, 
+        bounding_box=worker_pb2.BoundingBox(
+            length=obs.ego_vehicle_state.bounding_box.length,
+            width=obs.ego_vehicle_state.bounding_box.width,
+            height=obs.ego_vehicle_state.bounding_box.height,
+        ),
         heading=obs.ego_vehicle_state.heading,
         speed=obs.ego_vehicle_state.speed,
         steering=obs.ego_vehicle_state.steering,
@@ -192,10 +189,32 @@ def agent_obs_tuple_to_proto(obs):
         angular_jerk=obs.ego_vehicle_state.angular_jerk,
     )  
 
-    #Vehicle State
+    # neighborhood_vehicle_states
+    neighborhood_vehicle_states = [ 
+        worker_pb2.VehicleObservation(
+            id=elem.id,
+            position=elem.position,
+            bounding_box=worker_pb2.BoundingBox(
+                length=elem.bounding_box.length,
+                width=elem.bounding_box.width,
+                height=elem.bounding_box.height,
+            ),
+            heading=elem.heading,
+            speed=elem.speed,
+            edge_id=elem.edge_id,
+            lane_id=elem.lane_id,
+            lane_index=elem.lane_index,
+        )
+        for elem in obs.neighborhood_vehicle_states
+    ]
+
+    # vehicle_state
     vehicle_state = worker_pb2.VehicleState(
         events=events,
         ego_vehicle_state=ego_vehicle_state, 
+        neighborhood_vehicle_states=neighborhood_vehicle_states,
+        # repeated ListWaypoint Waypoint_paths=4,
+        distance_travelled=obs.distance_travelled,
     )
 
     # print("vehicle_state.ego_vehicle_state ====>>> ", vehicle_state.ego_vehicle_state)
