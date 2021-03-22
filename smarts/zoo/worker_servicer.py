@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -58,6 +60,12 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
             context.set_details(f"Remote agent not built yet.")
             context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
             return worker_pb2.Action()
+
+        # obs = request.observe
+        # print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
+        # print("request.observe = ",obs)
+        # print("^^^^^^^^^^--------------------------------")
+        # exit()
 
         adapted_obs = self._agent_spec.observation_adapter(
             cloudpickle.loads(request.payload)

@@ -63,7 +63,9 @@ class RemoteAgent:
     def act(self, obs):
         # Run task asynchronously and return a Future.
         self._act_future = self._worker_stub.act.future(
-            worker_pb2.Observation(payload=cloudpickle.dumps(obs))
+            worker_pb2.Observation(
+                payload=cloudpickle.dumps(obs),
+                observe=obs_tuple_to_proto(obs))
         )
 
         return self._act_future
@@ -92,24 +94,76 @@ class RemoteAgent:
         self._manager_channel.close()
 
 
-# def convert tuple_to_proto(obs) -> "proto":
+def obs_tuple_to_proto(obs):
 
-    
-#     raw.version_number = "1.0"
-#     raw.sim_card_data = InnerLayer()
-#     raw.sim_card_data.iccid = "1"
-#     raw.sim_card_data.imei = "2"
+    proto = worker_pb2.Observe(
+        vehicles={
+                agent_id: agent_obs_tuple_to_proto(agent_obs)
+                for agent_id, agent_obs in obs.items()
+            }
+    )
 
-#     proto = worker_pb2.Observation(
-#         events=events,
-#         ego_vehicle_state=ego_vehicle_state,
-#         neighborhood_vehicle_states=neighborhood_vehicle_states,
-#         waypoint_paths=waypoint_paths,
-#         distance_travelled=distance_travelled;
-#         lidar_point_cloud=lidar_point_cloud,
-#         drivable_area_grid_map=drivable_area_grid_map,
+    print("printing below -------------------------------")
+    agent_id = 0
+    for agent, agent_obs in obs.items():
+        agent_id = agent
+        break
+
+    print("proto === ", proto)
+    print("^^^^^^^^^^^ -------------------------------\n")
+
+    return proto
+
+def agent_obs_tuple_to_proto(obs):
+    # Collisions
+    collisions = [ 
+        worker_pb2.Collisions(
+                collidee_id=collision.collidee_id
+            )
+        for collision in obs.events.collisions
+    ]
+
+    # Events
+    events = worker_pb2.Events(
+        off_route=obs.events.off_route,
+        reached_goal=obs.events.reached_goal,
+        reached_max_episode_steps=obs.events.reached_max_episode_steps,
+        off_road=obs.events.off_road,
+        wrong_way=obs.events.wrong_way,
+        not_moving=obs.events.not_moving,
+    )
+    events.collisions.extend(collisions)
+
+    print("obs.ego_vehicle_state ====>>> ", obs.ego_vehicle_state)
 
 
-#     )
+    # EgoVehicleObservation 
+    ego_vehicle_state = worker_pb2.EgoVehicleObservation(
+        id=obs.ego_vehicle_state.id,
+        # VectorFloat3 position=2,
+        # BoundingBox bounding_box=3, 
+        heading=obs.ego_vehicle_state.heading,
+        speed=obs.ego_vehicle_state.speed,
+        steering=obs.ego_vehicle_state.steering,
+        # yaw_rate=obs.ego_vehicle_state.yaw_rate,
+        edge_id=obs.ego_vehicle_state.edge_id,
+        lane_id=obs.ego_vehicle_state.lane_id,
+        lane_index=obs.ego_vehicle_state.lane_index,
+        # Mission mission=11;
+        # VectorFloat3 linear_velocity=12;
+        # VectorFloat3 angular_velocity=13;
+        # VectorFloat3 linear_acceleration=14;
+        # VectorFloat3 angular_acceleration=15;
+        # VectorFloat3 linear_jerk=16;
+        # VectorFloat3 angular_jerk=17;
+    ) 
 
-#     return proto
+    #Vehicle State
+    vehicle_state = worker_pb2.VehicleState(
+        events=events,
+        ego_vehicle_state=ego_vehicle_state, 
+    )
+
+    print("obs.ego_vehicle_state ====>>> ", obs.ego_vehicle_state)
+
+    return vehicle_state

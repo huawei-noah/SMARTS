@@ -75,9 +75,9 @@ class EgoVehicleObservation(NamedTuple):
     heading: Heading
     speed: float
     steering: float
-    yaw_rate: float
-    edge_id: int
-    lane_id: int
+    yaw_rate: np.ndarray
+    edge_id: str
+    lane_id: str
     lane_index: int
     mission: MissionData
     linear_velocity: np.ndarray
@@ -1199,151 +1199,154 @@ class ViaSensor(Sensor):
         pass
 
 
-def fix_observation_size(obs_config: Dict, observations: Dict) -> Dict:
+def fix_observation_size(obs_config: Dict, obs: Dict) -> Dict:
     # Skip empty observations
-    if observations == {}:
-        return observations
+    if obs == {}:
+        return obs
 
-    def fix_size(obs_config: Dict, obs: NamedTuple) -> Observation:
+    fixed_obs = {
+        agent_id: fix_agent_observation_size(obs_config, agent_obs)
+        for agent_id, agent_obs in obs.items()
+    }
+    return fixed_obs
 
-        # Truncate/pad observation.events
-        collisions = sequence.truncate_pad_li(
-            obs.events.collisions,
-            obs_config["observation"]["events"]["collisions"],
-            Collision(),
-        )
-        events = obs.events._replace(collisions=collisions)
+def fix_agent_observation_size(obs_config: Dict, obs: NamedTuple) -> Observation:
 
-        # Truncate/pad observation.ego_vehicle_state
-        route_vias = sequence.truncate_pad_li(
-            obs.ego_vehicle_state.mission.route_vias,
-            obs_config["observation"]["ego_vehicle_state"]["mission"]["route_vias"],
-            None,
-        )
-        via = (
-            sequence.truncate_pad_li(
-                obs.ego_vehicle_state.mission.via,
-                obs_config["observation"]["ego_vehicle_state"]["mission"]["via"],
-                Via(),
-            ),
-        )
-        mission = obs.ego_vehicle_state.mission._replace(
-            entry_tactic=None,  # EntryTactic removed from observation output
-            task=None,  # Task removed from observation output
-            via=via,
-            route_vias=route_vias,
-        )
-        linear_velocity = (
-            sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_velocity, 3, 0),
-        )
-        angular_velocity = (
-            sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_velocity, 3, 0),
-        )
-        linear_acceleration = (
-            sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_acceleration, 3, 0),
-        )
-        angular_acceleration = (
-            sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_acceleration, 3, 0),
-        )
-        linear_jerk = (
-            sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_jerk, 3, 0),
-        )
-        angular_jerk = (
-            sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_jerk, 3, 0),
-        )
-        ego_vehicle_state = obs.ego_vehicle_state._replace(
-            mission=mission,
-            linear_velocity=linear_velocity,
-            angular_velocity=angular_velocity,
-            linear_acceleration=linear_acceleration,
-            angular_acceleration=angular_acceleration,
-            linear_jerk=linear_jerk,
-            angular_jerk=angular_jerk,
-        )
+    # Truncate/pad observation.events
+    collisions = sequence.truncate_pad_li(
+        obs.events.collisions,
+        obs_config["observation"]["events"]["collisions"],
+        Collision(),
+    )
+    events = obs.events._replace(collisions=collisions)
 
-        # Truncate/pad observation.neighborhood_vehicle_states
-        neighborhood_vehicle_states = obs.neighborhood_vehicle_states or []
-        neighborhood_vehicle_states = (
-            sequence.truncate_pad_li(
-                neighborhood_vehicle_states,
-                obs_config["observation"]["neighborhood_vehicle_states"],
-                VehicleObservation(),
-            ),
-        )
+    # Truncate/pad observation.ego_vehicle_state
+    yaw_rate = (
+        sequence.truncate_pad_arr(obs.ego_vehicle_state.yaw_rate, 3, 0),
+    )
+    route_vias = sequence.truncate_pad_li(
+        obs.ego_vehicle_state.mission.route_vias,
+        obs_config["observation"]["ego_vehicle_state"]["mission"]["route_vias"],
+        None,
+    )
+    via = (
+        sequence.truncate_pad_li(
+            obs.ego_vehicle_state.mission.via,
+            obs_config["observation"]["ego_vehicle_state"]["mission"]["via"],
+            Via(),
+        ),
+    )
+    mission = obs.ego_vehicle_state.mission._replace(
+        entry_tactic=None,  # EntryTactic removed from observation output
+        task=None,  # Task removed from observation output
+        via=via,
+        route_vias=route_vias,
+    )
+    linear_velocity = (
+        sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_velocity, 3, 0),
+    )
+    angular_velocity = (
+        sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_velocity, 3, 0),
+    )
+    linear_acceleration = (
+        sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_acceleration, 3, 0),
+    )
+    angular_acceleration = (
+        sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_acceleration, 3, 0),
+    )
+    linear_jerk = (
+        sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_jerk, 3, 0),
+    )
+    angular_jerk = (
+        sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_jerk, 3, 0),
+    )
+    ego_vehicle_state = obs.ego_vehicle_state._replace(
+        mission=mission,
+        linear_velocity=linear_velocity,
+        angular_velocity=angular_velocity,
+        linear_acceleration=linear_acceleration,
+        angular_acceleration=angular_acceleration,
+        linear_jerk=linear_jerk,
+        angular_jerk=angular_jerk,
+    )
 
-        # Truncate/pad observation.lidar_point_cloud
-        lidar_points = sequence.truncate_pad_li(
-            obs.lidar_point_cloud[0],
-            obs_config["observation"]["lidar_point_cloud"][0],
-            np.array([0, 0, 0]),
-        )
-        lidar_hits = sequence.truncate_pad_li(
-            obs.lidar_point_cloud[1],
-            obs_config["observation"]["lidar_point_cloud"][1],
-            np.array([0, 0, 0]),
-        )
-        lidar_ray = sequence.truncate_pad_li(
-            obs.lidar_point_cloud[2],
-            obs_config["observation"]["lidar_point_cloud"][2],
-            (np.array([0, 0, 0]), np.array([0, 0, 0])),
-        )
-        lidar_point_cloud = (lidar_points, lidar_hits, lidar_ray)
+    # Truncate/pad observation.neighborhood_vehicle_states
+    neighborhood_vehicle_states = obs.neighborhood_vehicle_states or []
+    neighborhood_vehicle_states = (
+        sequence.truncate_pad_li(
+            neighborhood_vehicle_states,
+            obs_config["observation"]["neighborhood_vehicle_states"],
+            VehicleObservation(),
+        ),
+    )
 
-        # Truncate/pad observation.road_waypoints
-        if obs.road_waypoints:
-            lanes = {
-                k: sequence.truncate_pad_li(
-                    v,
-                    obs_config["observation"]["road_waypoints"]["lanes"],
-                    Waypoint(),
-                )
-                for k, v in obs.road_waypoints.lanes.items()
-            }
-            route_waypoints = sequence.truncate_pad_li(
-                obs.road_waypoints.route_waypoints,
-                obs_config["observation"]["road_waypoints"]["route_waypoints"],
+    # Truncate/pad observation.lidar_point_cloud
+    lidar_points = sequence.truncate_pad_li(
+        obs.lidar_point_cloud[0],
+        obs_config["observation"]["lidar_point_cloud"][0],
+        np.array([0, 0, 0]),
+    )
+    lidar_hits = sequence.truncate_pad_li(
+        obs.lidar_point_cloud[1],
+        obs_config["observation"]["lidar_point_cloud"][1],
+        np.array([0, 0, 0]),
+    )
+    lidar_ray = sequence.truncate_pad_li(
+        obs.lidar_point_cloud[2],
+        obs_config["observation"]["lidar_point_cloud"][2],
+        (np.array([0, 0, 0]), np.array([0, 0, 0])),
+    )
+    lidar_point_cloud = (lidar_points, lidar_hits, lidar_ray)
+
+    # Truncate/pad observation.road_waypoints
+    if obs.road_waypoints:
+        lanes = {
+            k: sequence.truncate_pad_li(
+                v,
+                obs_config["observation"]["road_waypoints"]["lanes"],
                 Waypoint(),
             )
-            road_waypoints = RoadWaypoints(lanes=lanes, route_waypoints=route_waypoints)
-        else:
-            road_waypoints = obs.road_waypoints
-
-        # Truncate/pad observation.via_data
-        near_via_points = sequence.truncate_pad_li(
-            obs.via_data.near_via_points,
-            obs_config["observation"]["via_data"]["near_via_points"],
-            ViaPoint(),
+            for k, v in obs.road_waypoints.lanes.items()
+        }
+        route_waypoints = sequence.truncate_pad_li(
+            obs.road_waypoints.route_waypoints,
+            obs_config["observation"]["road_waypoints"]["route_waypoints"],
+            Waypoint(),
         )
-        hit_via_points = sequence.truncate_pad_li(
-            obs.via_data.hit_via_points,
-            obs_config["observation"]["via_data"]["hit_via_points"],
-            ViaPoint(),
-        )
-        via_data = Vias(near_via_points=near_via_points, hit_via_points=hit_via_points)
+        road_waypoints = RoadWaypoints(lanes=lanes, route_waypoints=route_waypoints)
+    else:
+        road_waypoints = obs.road_waypoints
 
-        # Fixed-size observation
-        fixed_obs = Observation(
-            events=events,
-            ego_vehicle_state=ego_vehicle_state,
-            neighborhood_vehicle_states=neighborhood_vehicle_states,
-            waypoint_paths=sequence.truncate_pad_li_2d(
-                obs.waypoint_paths,
-                obs_config["observation"]["waypoint_paths"],
-                ([], Waypoint()),
-            ),
-            distance_travelled=obs.distance_travelled,
-            lidar_point_cloud=lidar_point_cloud,
-            drivable_area_grid_map=obs.drivable_area_grid_map,
-            occupancy_grid_map=obs.occupancy_grid_map,
-            top_down_rgb=obs.top_down_rgb,
-            road_waypoints=road_waypoints,
-            via_data=via_data,
-        )
+    # Truncate/pad observation.via_data
+    near_via_points = sequence.truncate_pad_li(
+        obs.via_data.near_via_points,
+        obs_config["observation"]["via_data"]["near_via_points"],
+        ViaPoint(),
+    )
+    hit_via_points = sequence.truncate_pad_li(
+        obs.via_data.hit_via_points,
+        obs_config["observation"]["via_data"]["hit_via_points"],
+        ViaPoint(),
+    )
+    via_data = Vias(near_via_points=near_via_points, hit_via_points=hit_via_points)
 
-        return fixed_obs
+    # Fixed-size observation
+    fixed_obs = Observation(
+        events=events,
+        ego_vehicle_state=ego_vehicle_state,
+        neighborhood_vehicle_states=neighborhood_vehicle_states,
+        waypoint_paths=sequence.truncate_pad_li_2d(
+            obs.waypoint_paths,
+            obs_config["observation"]["waypoint_paths"],
+            ([], Waypoint()),
+        ),
+        distance_travelled=obs.distance_travelled,
+        lidar_point_cloud=lidar_point_cloud,
+        drivable_area_grid_map=obs.drivable_area_grid_map,
+        occupancy_grid_map=obs.occupancy_grid_map,
+        top_down_rgb=obs.top_down_rgb,
+        road_waypoints=road_waypoints,
+        via_data=via_data,
+    )
 
-    fixed_size_obs = {
-        agent_id: fix_size(obs_config, agent_obs)
-        for agent_id, agent_obs in observations.items()
-    }
-    return fixed_size_obs
+    return fixed_obs

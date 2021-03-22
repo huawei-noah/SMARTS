@@ -6,7 +6,8 @@ import smarts.zoo.worker_pb2 as worker__pb2
 
 
 class WorkerStub(object):
-    """Interface exported by the worker server."""
+    """Interface exported by the worker server.
+    """
 
     def __init__(self, channel):
         """Constructor.
@@ -15,106 +16,87 @@ class WorkerStub(object):
             channel: A grpc.Channel.
         """
         self.build = channel.unary_unary(
-            "/worker.Worker/build",
-            request_serializer=worker__pb2.Specification.SerializeToString,
-            response_deserializer=worker__pb2.Status.FromString,
-        )
+                '/worker.Worker/build',
+                request_serializer=worker__pb2.Specification.SerializeToString,
+                response_deserializer=worker__pb2.Status.FromString,
+                )
         self.act = channel.unary_unary(
-            "/worker.Worker/act",
-            request_serializer=worker__pb2.Observation.SerializeToString,
-            response_deserializer=worker__pb2.Action.FromString,
-        )
+                '/worker.Worker/act',
+                request_serializer=worker__pb2.Observation.SerializeToString,
+                response_deserializer=worker__pb2.Action.FromString,
+                )
 
 
 class WorkerServicer(object):
-    """Interface exported by the worker server."""
+    """Interface exported by the worker server.
+    """
 
     def build(self, request, context):
-        """Builds Agent according the AgentSpec."""
+        """Builds Agent according the AgentSpec.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def act(self, request, context):
-        """Agent processes observations and returns action."""
+        """Agent processes observations and returns action.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_WorkerServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "build": grpc.unary_unary_rpc_method_handler(
-            servicer.build,
-            request_deserializer=worker__pb2.Specification.FromString,
-            response_serializer=worker__pb2.Status.SerializeToString,
-        ),
-        "act": grpc.unary_unary_rpc_method_handler(
-            servicer.act,
-            request_deserializer=worker__pb2.Observation.FromString,
-            response_serializer=worker__pb2.Action.SerializeToString,
-        ),
+            'build': grpc.unary_unary_rpc_method_handler(
+                    servicer.build,
+                    request_deserializer=worker__pb2.Specification.FromString,
+                    response_serializer=worker__pb2.Status.SerializeToString,
+            ),
+            'act': grpc.unary_unary_rpc_method_handler(
+                    servicer.act,
+                    request_deserializer=worker__pb2.Observation.FromString,
+                    response_serializer=worker__pb2.Action.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "worker.Worker", rpc_method_handlers
-    )
+            'worker.Worker', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
-# This class is part of an EXPERIMENTAL API.
+ # This class is part of an EXPERIMENTAL API.
 class Worker(object):
-    """Interface exported by the worker server."""
+    """Interface exported by the worker server.
+    """
 
     @staticmethod
-    def build(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def build(request,
             target,
-            "/worker.Worker/build",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/worker.Worker/build',
             worker__pb2.Specification.SerializeToString,
             worker__pb2.Status.FromString,
-            options,
-            channel_credentials,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def act(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def act(request,
             target,
-            "/worker.Worker/act",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/worker.Worker/act',
             worker__pb2.Observation.SerializeToString,
             worker__pb2.Action.FromString,
-            options,
-            channel_credentials,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            call_credentials, compression, wait_for_ready, timeout, metadata)

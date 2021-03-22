@@ -46,7 +46,7 @@ message Status {
 // Observation received by the agent
 message Observation {
     bytes payload = 1;
-    Observe observe=2;
+    optional Observe observe=2;
 }
 
 // Agent's action in response to the observation
@@ -119,16 +119,16 @@ message Mission{
     int32 num_laps=7;
 }
 
-message EgoVehicleObservation(
+message EgoVehicleObservation{
     string id=1;
     VectorFloat3 position=2;
     BoundingBox bounding_box=3; 
     float heading=4;
     float speed=5;
     float steering=6;
-    float yaw_rate=7;
-    int32 edge_id=8;
-    int32 lane_id=9;
+    VectorFloat3 yaw_rate=7;
+    string edge_id=8;
+    string lane_id=9;
     int32 lane_index=10;
     Mission mission=11;
     VectorFloat3 linear_velocity=12;
@@ -160,7 +160,7 @@ message Waypoint{
 }
 
 message ListWaypoint{
-    repeated Waypoint=1;
+    repeated Waypoint Waypoint=1;
 }
 
 message Lidar{
@@ -226,7 +226,7 @@ message Vias{
     repeated ViaPoint hit_via_points=2;
 }
 
-message Observe {
+message VehicleState{
     Events events=1;
     EgoVehicleObservation ego_vehicle_state=2;
     repeated VehicleObservation neighborhood_vehicle_states=3;
@@ -238,4 +238,8 @@ message Observe {
     TopDownRGB top_down_rgb=9;
     RoadWaypoints road_waypoints=10;
     Vias via_data=11;
+}
+
+message Observe{
+    map<string, VehicleState> vehicles=1;
 }
