@@ -104,10 +104,18 @@ Unlike the regular the training setup (grade mode disable), there is another tas
 which has the blueprint of which set of scenarios are in each grade
 
 ```yaml
-grades:
-  1: [[<task>,<level>]]
-  2: [[<task>,<level>], [<task>,<level>]]
-  # 3: [[<task>,<level>], ... ,[<task>,<level>]] can have as many combinations of tasks and levels
+curriculum:
+  grades:
+    1: [[<task>,<level>]]
+    2: [[<task>,<level>], [<task>,<level>]]
+    # 3: [[<task>,<level>], ... ,[<task>,<level>]] can have as many combinations of tasks and levels
+  conditions:
+    episode_based: # Agent graduates after completing a N number of episodes in each grade
+      toggle: <bool> # Enable the condition
+      cycle: <bool> # Cycle through grades
+    pass_based: # Agent graduates after getting an average completion rate, the average is taken over the eval-rate (sampling-rate)
+      toggle: <bool> # Enable the condition
+      pass_rate: <float [0,1]> # Scalar between 0 and 1; describes the threshold completion rate (%)
 ```
 A more specific example in which we take the three levels from task 1 and distribute it among three grades
 
@@ -116,11 +124,27 @@ grades:
   1: [[1,no-traffic]]
   2: [[1,easy]]
   3: [[1,hard]]
+  conditions:
+    episode_based:
+      toggle: True 
+      cycle: True 
+    pass_based:
+      toggle: False
+      pass_rate: 0.50
 ```
-Now when we enter grade 1, the agent will see only the scenarios that are part of (task 1, level easy), same applies to grades 2 and 3
+Now when we enter grade 1, the agent will see only the scenarios that are part of (task 1, level easy), same applies to grades 2 and 3. The condition for graduation is that the agent will complete N number of episodes in each grade. N is the quotient of the total number of episodes / total number of grades. 
+
+To use the grade-based structure, you will follow the same steps as any other training with exception that you will need to turn on --grade-mode by setting that flag to True
+
+```sh
+$ python ultra/train.py --episodes 600 --eval-episodes 0 --eval-rate 50 --policy sac --grade-mode True --max-episode-steps 200
+```
+> Notice that the --task and --level flags are irrelevant because you have already put them in the config file (in grade_based_task folder)
+
+This experiment will run for 600 episodes; each grade will be 200 episodes long and to graduate the agent must traverse those 200 episodes in each grade
 
 When an agent goes from one grade to the next it is called graduating. The condition on when to graduate is an open-ended problem. However, currently under graduate method in coordinator.py we can specify when to graduate. Currently, we have two options:
-  - Graduate the agent at every n episodes, thus making the sizes of the grades (based on episodes) to be the same
+  - Graduate the agent at every n episodes, thus making the sizes of the grades (based on episodes) to be the same; as described above
   - Graduate the agent based on how successful it is to complete scenarios; i.e. to get an average in terms of percentage of scenarios completed in a grade
 
 > This feature is still a work in progress, feel free to try it out and let us know of any issues, bugs and ofcourse any feedback will be great
