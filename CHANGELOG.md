@@ -18,6 +18,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 the missions for all agents.
 - Added ijson as a dependency. 
 - Added cached_property as a dependency.
+- Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
+process
 ### Changed
 - Lowered CPU cost of waypoint generation. This will result in a small increase in memory usage.
 - Set the number of processes used in `make test` to ignore 2 CPUs if possible.
