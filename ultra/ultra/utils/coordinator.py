@@ -75,21 +75,22 @@ class coordinator:
 
     def graduate(self, index, num_episodes, average_scenarios_passed):
         """ Conditions on when to graduate """
-        
+
         if self.curriculum["conditions"]["episode_based"]["toggle"] == True:
             # Switch to next grade based on number of episodes completed
             if (index % int(num_episodes / self.get_num_of_grades())) == 0:
                 self.next_grade(next(self.counter) + 1)
                 self.display()
-                self.rotation_counter += 1 if self.curriculum["conditions"]["episode_based"]["cycle"] else 0
+                self.rotation_counter += (
+                    1 if self.curriculum["conditions"]["episode_based"]["cycle"] else 0
+                )
                 self.grade_completed = True
             else:
                 self.grade_completed = False
 
-
             if self.rotation_counter > self.get_num_of_grades():
                 self.cycle_completed = True
-            
+
             return (self.grade_completed, self.cycle_completed)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,7 +101,8 @@ class coordinator:
             print(f"({index}) AVERAGE SCENARIOS PASSED:\n", average_scenarios_passed)
             if index != 0:
                 if (
-                    average_scenarios_passed > float(self.curriculum["conditions"]["pass_based"]["pass_rate"])
+                    average_scenarios_passed
+                    > float(self.curriculum["conditions"]["pass_based"]["pass_rate"])
                     and self.rotation_counter <= self.get_num_of_grades()
                 ):
                     self.next_grade(next(self.counter) + 1)
