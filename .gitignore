@@ -24,6 +24,7 @@ wheels/
 .installed.cfg
 .DS_Store
 MANIFEST
+sanity_test_result.xml
 pip-wheel-metadata/
 
 # PyInstaller

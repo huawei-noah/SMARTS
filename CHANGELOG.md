@@ -9,6 +9,9 @@ All text added must be human readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unrealeased]
+### Added 
+- Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
+process
 
 ## [0.4.15] - 2021-03-18
 ### Added
