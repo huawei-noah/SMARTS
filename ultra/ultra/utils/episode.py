@@ -250,19 +250,20 @@ class Episode:
         # Increment this episode's step count.
         self.steps += 1
 
-    def record_episode(self, old_episode=None, eval_rate=None):
+    def record_episode(self, old_episode=None, eval_rate=None, count = None):
         for _, agent_info in self.info[self.active_tag].items():
             agent_info.normalize()
 
         if (old_episode is not None) and (eval_rate is not None):
+            count = (count % eval_rate)
             for agent_id, agent_info in self.info[self.active_tag].items():
                 for key in agent_info.data:
                     if np.isscalar(agent_info.data[key]):
                         agent_info.data[key] = (
                             agent_info.data[key]
                             + old_episode.info[self.active_tag][agent_id].data[key]
-                            * eval_rate
-                        ) / eval_rate
+                            * count
+                        ) / (count + 1)
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
