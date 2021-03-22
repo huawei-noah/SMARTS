@@ -63,8 +63,8 @@ class VehicleObservation(NamedTuple):
     bounding_box: BoundingBox = BoundingBox()
     heading: float = None
     speed: float = None
-    edge_id: int = None
-    lane_id: int = None
+    edge_id: str = None
+    lane_id: str = None
     lane_index: int = None
 
 

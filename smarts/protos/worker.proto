@@ -132,8 +132,8 @@ message VehicleObservation{
     BoundingBox bounding_box=3;
     float heading=4;
     float speed=5;
-    int32 edge_id=6;
-    int32 lane_id=7;
+    string edge_id=6;
+    string lane_id=7;
     int32 lane_index=8;
 }
 

@@ -228,7 +228,7 @@ def agent_obs_tuple_to_proto(obs):
     #     print("negative")
 
     # print("\n")
-    # print("obs.ego_vehicle_state ====>>> ", obs.ego_vehicle_state)
+    print("obs ====>>> ", obs)
 
     return vehicle_state
 
