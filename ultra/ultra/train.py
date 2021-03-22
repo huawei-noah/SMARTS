@@ -173,7 +173,7 @@ def train(
             total_step += 1
             observations = next_observations
 
-        episode.record_episode(old_episode, eval_info["eval_rate"], count = episode_count)
+        episode.record_episode(old_episode, eval_info["eval_rate"], count=episode_count)
         old_episode = episode
 
         if (episode_count + 1) % eval_info["eval_rate"] == 0:
