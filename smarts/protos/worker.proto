@@ -71,19 +71,6 @@ message Events {
     bool not_moving=7;
 }
 
-// Represents np.ndarray((2,), dtype=np.float32)
-message VectorFloat2{
-    float x=1;
-    float y=2;
-}
-
-// Represents np.ndarray((3,), dtype=np.float32)
-message VectorFloat3{
-    float x=1;
-    float y=2;
-    float z=3;
-}
-
 message BoundingBox{
     float length=1;
     float width=2;
@@ -91,12 +78,12 @@ message BoundingBox{
 }
 
 message Start{
-    VectorFloat2 position=1;
+    repeated float position=1;
     float heading=2;
 }
 
 message Goal{
-    VectorFloat2 position=1;
+    repeated float position=1;
     float radius=2;
 }
 
@@ -104,7 +91,7 @@ message Via{
     string lane_id=1;
     string edge_id=2;
     int32 lane_idx=3;
-    VectorFloat2 position=4;
+    repeated float position=4;
     float hit_distance=5;
     float required_speed=6;
 }   
@@ -121,27 +108,27 @@ message Mission{
 
 message EgoVehicleObservation{
     string id=1;
-    VectorFloat3 position=2;
+    repeated float position=2;
     BoundingBox bounding_box=3; 
     float heading=4;
     float speed=5;
     float steering=6;
-    VectorFloat3 yaw_rate=7;
+    repeated float yaw_rate=7;
     string edge_id=8;
     string lane_id=9;
     int32 lane_index=10;
     Mission mission=11;
-    VectorFloat3 linear_velocity=12;
-    VectorFloat3 angular_velocity=13;
-    VectorFloat3 linear_acceleration=14;
-    VectorFloat3 angular_acceleration=15;
-    VectorFloat3 linear_jerk=16;
-    VectorFloat3 angular_jerk=17;
+    repeated float linear_velocity=12;
+    repeated float angular_velocity=13;
+    repeated float linear_acceleration=14;
+    repeated float angular_acceleration=15;
+    repeated float linear_jerk=16;
+    repeated float angular_jerk=17;
 }
 
 message VehicleObservation{
     string id=1;
-    VectorFloat3 position=2;
+    repeated float position=2;
     BoundingBox bounding_box=3;
     float heading=4;
     float speed=5;
@@ -151,7 +138,7 @@ message VehicleObservation{
 }
 
 message Waypoint{
-    VectorFloat2 pos=1;
+    repeated float pos=1;
     float heading=2;
     float lane_width=3;
     float speed_limit=4;
@@ -165,12 +152,13 @@ message ListWaypoint{
 
 message Lidar{
     message Ray{
-        VectorFloat3 origin=1;
-        VectorFloat3 direction=2;
+        repeated float origin=1;
+        repeated float direction=2;
     }
     
-    repeated VectorFloat3 points=1;
-    repeated VectorFloat3 hits=2;
+    Matrix points = 1;
+    Matrix hits = 2;
+
     repeated Ray ray=3;
 }
 
@@ -179,17 +167,17 @@ message GridMapMetadata{
     float resolution=2;
     int32 width=3;
     int32 height=4;
-    VectorFloat3 camera_pos=5;
+    repeated float camera_pos=5;
     float camera_heading_in_degrees=6;
 }
 
 // Represents a matrix of np.ndarray((x,y), dtype=np.float32)
 message Matrix{
     repeated float data = 1 [packed=true];
-    // The data is a 2D numpy array representing an image.
-    // The 2D image is reshaped into shape (rows*cols,) for serialization by proto.
+    // The data is a 2D numpy array representing an image or a list of arrays.
+    // The 2D array is reshaped into shape (rows*cols,) for serialization by proto.
     // To access data, use data[i*cols+j]. Here, i is row number and j is column number.
-    // Alternative storage method for 2D numpy array is to encode it into base64 string.
+    // Alternative storage method for 2D numpy array is to encode it into base64 string or into bytes.
     uint32 rows = 2;
     uint32 cols = 3;
 }
@@ -215,7 +203,7 @@ message RoadWaypoints{
 }
 
 message ViaPoint{
-    VectorFloat2 position=1;
+    repeated float position=1;
     float lane_index=2;
     string edge_id=3;
     float required_speed=4;

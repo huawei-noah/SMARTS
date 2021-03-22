@@ -72,7 +72,7 @@ def truncate_pad_arr(arr, ref, null_value):
             Value used for padding.
     """
     if not isinstance(arr, np.ndarray):
-        arr = np.array([arr])
+        raise ValueError(f"Expected arr to be of type np.ndarray, but got {type(arr)}.")
 
     if len(arr) == ref:
         new_arr = arr

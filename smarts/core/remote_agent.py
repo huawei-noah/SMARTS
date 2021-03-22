@@ -115,7 +115,7 @@ def obs_tuple_to_proto(obs):
     return proto
 
 def agent_obs_tuple_to_proto(obs):
-    # Collisions
+    # events.collisions
     collisions = [ 
         worker_pb2.Collisions(
                 collidee_id=collision.collidee_id
@@ -123,8 +123,9 @@ def agent_obs_tuple_to_proto(obs):
         for collision in obs.events.collisions
     ]
 
-    # Events
+    # events
     events = worker_pb2.Events(
+        collisions=collisions,
         off_route=obs.events.off_route,
         reached_goal=obs.events.reached_goal,
         reached_max_episode_steps=obs.events.reached_max_episode_steps,
@@ -132,31 +133,64 @@ def agent_obs_tuple_to_proto(obs):
         wrong_way=obs.events.wrong_way,
         not_moving=obs.events.not_moving,
     )
-    events.collisions.extend(collisions)
 
-    print("obs.ego_vehicle_state ====>>> ", obs.ego_vehicle_state)
+    # ego_vehicle_state.bounding_box
+    bounding_box = worker_pb2.BoundingBox(
+        length=obs.ego_vehicle_state.bounding_box.length,
+        width=obs.ego_vehicle_state.bounding_box.width,
+        height=obs.ego_vehicle_state.bounding_box.height
+    )
 
+    # ego_vehicle_state.mission.via
+    via = [ 
+        worker_pb2.Via(
+            lane_id=elem.lane_id,
+            edge_id=elem.edge_id,
+            lane_index=elem.lane_index,
+            position=elem.position,
+            hit_distance=elem.hit_distance,
+            required_speed=elem.required_speed,
+        )
+        for elem in obs.ego_vehicle_state.mission.via
+    ]
 
-    # EgoVehicleObservation 
+    # ego_vehicle_state.mission
+    mission = worker_pb2.Mission(
+        start=worker_pb2.Start(
+            position=obs.ego_vehicle_state.mission.start.position,
+            heading=obs.ego_vehicle_state.mission.start.heading,
+        ),
+        goal=worker_pb2.Goal(
+            position=obs.ego_vehicle_state.mission.goal.position,
+            radius=obs.ego_vehicle_state.mission.goal.radius,
+        ),
+        route_vias=obs.ego_vehicle_state.mission.route_vias,
+        start_time=obs.ego_vehicle_state.mission.start_time,
+        via=via,
+        route_length=obs.ego_vehicle_state.mission.route_length,
+        num_laps=obs.ego_vehicle_state.mission.num_laps,
+    )
+
+    # ego_vehicle_state 
     ego_vehicle_state = worker_pb2.EgoVehicleObservation(
         id=obs.ego_vehicle_state.id,
-        # VectorFloat3 position=2,
-        # BoundingBox bounding_box=3, 
+        position=obs.ego_vehicle_state.position,
+        bounding_box=bounding_box, 
         heading=obs.ego_vehicle_state.heading,
         speed=obs.ego_vehicle_state.speed,
         steering=obs.ego_vehicle_state.steering,
-        # yaw_rate=obs.ego_vehicle_state.yaw_rate,
+        yaw_rate=obs.ego_vehicle_state.yaw_rate,
         edge_id=obs.ego_vehicle_state.edge_id,
         lane_id=obs.ego_vehicle_state.lane_id,
         lane_index=obs.ego_vehicle_state.lane_index,
-        # Mission mission=11;
-        # VectorFloat3 linear_velocity=12;
-        # VectorFloat3 angular_velocity=13;
-        # VectorFloat3 linear_acceleration=14;
-        # VectorFloat3 angular_acceleration=15;
-        # VectorFloat3 linear_jerk=16;
-        # VectorFloat3 angular_jerk=17;
-    ) 
+        mission=mission,
+        linear_velocity=obs.ego_vehicle_state.linear_velocity,
+        angular_velocity=obs.ego_vehicle_state.angular_velocity,
+        linear_acceleration=obs.ego_vehicle_state.linear_acceleration,
+        angular_acceleration=obs.ego_vehicle_state.angular_acceleration,
+        linear_jerk=obs.ego_vehicle_state.linear_jerk,
+        angular_jerk=obs.ego_vehicle_state.angular_jerk,
+    )  
 
     #Vehicle State
     vehicle_state = worker_pb2.VehicleState(
@@ -164,6 +198,28 @@ def agent_obs_tuple_to_proto(obs):
         ego_vehicle_state=ego_vehicle_state, 
     )
 
-    print("obs.ego_vehicle_state ====>>> ", obs.ego_vehicle_state)
+    # print("vehicle_state.ego_vehicle_state ====>>> ", vehicle_state.ego_vehicle_state)
+    # print("\n")
+    # print("vehicle_state.ego_vehicle_state.position ====>>> ", vehicle_state.ego_vehicle_state.position)
+    # print("\n")
+    # print("type of vehicle_state.ego_vehicle_state.position ====>>> ", type(vehicle_state.ego_vehicle_state.position))
+    # if vehicle_state.ego_vehicle_state.position:
+    #     print("positive")
+    # else:
+    #     print("negative")
+
+    # print("\n")
+    # print("obs.ego_vehicle_state ====>>> ", obs.ego_vehicle_state)
 
     return vehicle_state
+
+
+    # import numpy as np
+    # gf = [np.array([1,0,0]),np.array([2,0,0])]
+    # print(gf)
+
+    # fe = np.ravel(gf)
+    # print(fe)
+    # dw = list(fe.reshape((2,3)))
+    # print(dw)
+    # exit()

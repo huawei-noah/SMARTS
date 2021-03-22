@@ -51,7 +51,7 @@ from smarts.core.utils.math import (
 
 
 class Waypoint(NamedTuple):
-    pos: np.ndarray = np.array([None, None])  # Point positioned on center of lane
+    pos: np.ndarray = np.array([0, 0])  # Point positioned on center of lane
     heading: Heading = None  # Heading angle of lane at this point (radians)
     lane_width: float = None  # Width of lane at this point (meters)
     speed_limit: float = None  # Lane speed in m/s
