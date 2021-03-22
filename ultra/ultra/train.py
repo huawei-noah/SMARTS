@@ -136,7 +136,6 @@ def train(
             # If agent switches to new grade
             if switch_grade[0] == True:
                 observations = env.reset(True, agent_coordinator.get_grade())
-                print(agent_coordinator)
             else:
                 observations = env.reset()
 
