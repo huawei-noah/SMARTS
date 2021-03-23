@@ -68,7 +68,6 @@ To look at the documentation call:
     # Browser will attempt to open on localhost:8082
     scl docs
 
-
 ========
 CLI Tool
 ========
