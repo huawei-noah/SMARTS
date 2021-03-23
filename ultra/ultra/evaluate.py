@@ -172,10 +172,13 @@ def evaluate(
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
+    initial_grade_switch = False
+
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        if grade_mode:
+        if (grade_mode == True) and (initial_grade_switch == False):
             observations = env.reset(True, agent_coordinator.get_grade())
+            initial_grade_switch = True
         else:
             observations = env.reset()
         dones = {"__all__": False}
@@ -185,7 +188,7 @@ def evaluate(
         while not dones["__all__"]:
             # Get and perform the available agents' actions.
             actions = {
-                agent_id: agents[agent_id].act(observation, explore=False)
+                agent_id: agents[agent_id].act(observation, explore=True)
                 for agent_id, observation in observations.items()
             }
             observations, rewards, dones, infos = env.step(actions)

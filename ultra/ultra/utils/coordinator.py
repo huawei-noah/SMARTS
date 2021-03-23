@@ -45,12 +45,6 @@ class coordinator:
         self.plot_arr = []
         self.grade_length = []
 
-    def set_grade_mode(self, mode):
-        self.mode = mode
-
-    def get_grade_mode(self):
-        return self.mode
-
     def build_all_scenarios(self):
         for key in self.curriculum["grades"]:
             for task, level in self.curriculum["grades"][key]:
@@ -73,6 +67,9 @@ class coordinator:
     def get_grade(self):
         return self.grade
 
+    def get_pass_based_sample_rate(self):
+        return self.curriculum["conditions"]["pass_based"]["sample_rate"]
+
     def graduate(self, index, num_episodes, average_scenarios_passed):
         """ Conditions on when to graduate """
 
@@ -80,7 +77,7 @@ class coordinator:
             # Switch to next grade based on number of episodes completed
             if (index % int(num_episodes / self.get_num_of_grades())) == 0:
                 self.next_grade(next(self.counter) + 1)
-                self.display()
+                print(self.display())
                 self.rotation_counter += (
                     1 if self.curriculum["conditions"]["episode_based"]["cycle"] else 0
                 )
@@ -98,15 +95,15 @@ class coordinator:
         # Switch to next grade on the basis of certain percentage of completed scenarios
 
         if self.curriculum["conditions"]["pass_based"]["toggle"] == True:
-            print(f"({index}) AVERAGE SCENARIOS PASSED:\n", average_scenarios_passed)
             if index != 0:
                 if (
                     average_scenarios_passed
                     > float(self.curriculum["conditions"]["pass_based"]["pass_rate"])
                     and self.rotation_counter <= self.get_num_of_grades()
                 ):
+                    # print(f"({index}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
                     self.next_grade(next(self.counter) + 1)
-                    self.display()
+                    print(self.display())
                     self.grade_completed = True
                     self.rotation_counter += 1
                     self.grade_length.append(index)
@@ -114,7 +111,7 @@ class coordinator:
                     self.grade_completed = False
             else:
                 self.next_grade(next(self.counter) + 1)
-                self.display()
+                print(self.display())
                 self.grade_completed = True
                 self.rotation_counter += 1
                 self.grade_length.append(index)

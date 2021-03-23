@@ -177,8 +177,10 @@ class UltraEnv(HiWayEnv):
         return observations, rewards, agent_dones, infos
 
     def reset(self, switch=False, grade=None):
+        # Switch scenario handler into next grade
         if switch:
             _scenarios = []
+            # For each set of task and level, get the tasks's train and test scenarios
             for task, level in grade:
                 self.scenarios = self.get_task(task, level)
                 if not self.eval_mode:
