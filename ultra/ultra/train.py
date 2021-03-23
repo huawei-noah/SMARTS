@@ -218,30 +218,34 @@ def train(
 
         # print("Reached goal: ", episode.info[episode.active_tag]["000"].data["reached_goal"])
         if (episode_count + 1) % eval_info["eval_rate"] == 0:
-            # print("Eval rate!!")
             episode.record_tensorboard(record_by_episode=True)
             old_episode = None
 
-        if (episode_count + 1) % agent_coordinator.get_pass_based_sample_rate() == 0:
-            # print("Pass based sample rate!!")
-            total_scenarios_passed += episode.info[episode.active_tag][
-                list(agents.keys())[0]
-            ].data["reached_goal"]
-            print(
-                f"({episode.index}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
-                total_scenarios_passed,
-            )
-            average_scenarios_passed = total_scenarios_passed / eval_info["eval_rate"]
-            print(f"AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
-            total_scenarios_passed = 0.0
-        else:
-            total_scenarios_passed += episode.info[episode.active_tag][
-                list(agents.keys())[0]
-            ].data["reached_goal"]
-            print(
-                f"({episode.index}) TOTAL SCENARIOS PASSED PER EVAL RATE:",
-                total_scenarios_passed,
-            )
+        if grade_mode:
+            if (
+                episode_count + 1
+            ) % agent_coordinator.get_pass_based_sample_rate() == 0:
+                # print("Pass based sample rate!!")
+                total_scenarios_passed += episode.info[episode.active_tag][
+                    list(agents.keys())[0]
+                ].data["reached_goal"]
+                print(
+                    f"({episode.index}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
+                    total_scenarios_passed,
+                )
+                average_scenarios_passed = (
+                    total_scenarios_passed / eval_info["eval_rate"]
+                )
+                print(f"AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
+                total_scenarios_passed = 0.0
+            else:
+                total_scenarios_passed += episode.info[episode.active_tag][
+                    list(agents.keys())[0]
+                ].data["reached_goal"]
+                print(
+                    f"({episode.index}) TOTAL SCENARIOS PASSED PER EVAL RATE:",
+                    total_scenarios_passed,
+                )
 
         if eval_info["eval_episodes"] != 0:
             # Perform the evaluation check.
