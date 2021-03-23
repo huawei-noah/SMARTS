@@ -1,0 +1,259 @@
+# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+
+import os
+import logging
+from typing import NamedTuple
+import importlib.resources as pkg_resources
+
+import gltf
+from direct.showbase.ShowBase import ShowBase
+from panda3d.core import (
+    ClockObject,
+    NodePath,
+    Shader,
+    loadPrcFileData,
+    FrameBufferProperties,
+    GraphicsOutput,
+    GraphicsPipe,
+    OrthographicLens,
+    Texture,
+    WindowProperties,
+)
+
+from . import glsl, models
+from .masks import RenderMasks
+from .colors import SceneColors
+from .scenario import Scenario
+from .coordinates import Pose
+
+
+class ShowBaseInstance(ShowBase):
+    """ Wraps a singleton instance of ShowBase from Panda3D. """
+
+    def __new__(cls, timestep_sec=0.1):
+        # Singleton pattern:  ensure only 1 Renderer
+        if "__it__" not in cls.__dict__:
+            # disable vsync otherwise we are limited to refresh-rate of screen
+            loadPrcFileData("", "sync-video false")
+            loadPrcFileData("", "model-path %s" % os.getcwd())
+            loadPrcFileData("", "audio-library-name null")
+            loadPrcFileData("", "gl-version 3 3")
+            loadPrcFileData("", "notify-level error")
+            loadPrcFileData("", "print-pipe-types false")
+            # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
+            # loadPrcFileData('', 'threading-model Cull/Draw')
+            # have makeTextureBuffer create a visible window
+            # loadPrcFileData('', 'show-buffers true')
+        it = cls.__dict__.get("__it__")
+        if it is None:
+            cls.__it__ = it = object.__new__(cls)
+            it.init(timestep_sec)
+        else:
+            assert timestep_sec == it._timestep_sec
+        return it
+
+    def __init__(self, timestep_sec=0.1):
+        pass  # singleton pattern, uses init() instead (don't call super().__init__() here!)
+
+    def init(self, timestep_sec=0.1):
+        self._timestep_sec = timestep_sec
+        try:
+            # There can be only 1 ShowBase instance at a time.
+            super().__init__(windowType="offscreen")
+
+            gltf.patch_loader(self.loader)
+
+            self.setBackgroundColor(0, 0, 0, 1)
+
+            # Global clock always proceeds by a fixed dt on each tick
+            self.taskMgr.clock.setMode(ClockObject.M_non_real_time)
+            self.taskMgr.clock.setDt(timestep_sec)
+
+            # Displayed framerate is misleading since we are not using a realtime clock
+            self.setFrameRateMeter(False)
+
+        except Exception as e:
+            # Known reasons for this failing:
+            raise Exception(
+                "Error in initializing framework for opening graphical display and creating scene graph. "
+                "A typical reason is display not found. Try running with different configurations of "
+                "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "
+                "the documentation."
+            ) from e
+
+    def destroy(self):
+        super().destroy()
+        self.__class__.__it__ = None
+
+    def __del__(self):
+        self.destroy()
+
+    def setup_sim_root(self, simid):
+        root_np = NodePath(simid)
+        root_np.reparentTo(self.render)
+
+        with pkg_resources.path(
+            glsl, "unlit_shader.vert"
+        ) as vshader_path, pkg_resources.path(
+            glsl, "unlit_shader.frag"
+        ) as fshader_path:
+            unlit_shader = Shader.load(
+                Shader.SL_GLSL,
+                vertex=str(vshader_path.absolute()),
+                fragment=str(fshader_path.absolute()),
+            )
+            root_np.setShader(unlit_shader)
+
+        return root_np
+
+
+class Renderer:
+    def __init__(self, simid, timestep_sec=0.1):
+        self._log = logging.getLogger(self.__class__.__name__)
+        self._is_setup = False
+        self._simid = simid
+        # Note: Each instance of the SMARTS simulation will have its own Renderer,
+        # but all Renderer objects share the same ShowBaseInstance.
+        self._showbase_instance = ShowBaseInstance(timestep_sec)
+        self._root_np = None
+        self._vehicles_np = None
+        self._road_network_np = None
+
+    @property
+    def clock(self):
+        return self._showbase_instance.taskMgr.clock
+
+    def setup(self, scenario: Scenario):
+        self._root_np = self._showbase_instance.setup_sim_root(self._simid)
+        self._vehicles_np = self._root_np.attachNewNode("vehicles")
+
+        map_path = scenario.map_glb_filepath
+        if self._road_network_np:
+            self._log.debug(
+                "road_network={} already exists. Removing and adding a new "
+                "one from glb_path={}".format(self._road_network_np, map_path)
+            )
+        map_np = self._showbase_instance.loader.loadModel(map_path, noCache=True)
+        np = self._root_np.attachNewNode("road_network")
+        map_np.reparent_to(np)
+        np.hide(RenderMasks.OCCUPANCY_HIDE)
+        np.setColor(SceneColors.Road.value)
+        self._road_network_np = np
+
+        self._is_setup = True
+
+    def render(self):
+        assert self._is_setup
+        self._showbase_instance.taskMgr.mgr.poll()
+
+    def teardown(self):
+        if self._root_np is not None:
+            self._root_np.clearLight()
+            self._root_np.removeNode()
+            self._root_np = None
+        self._vehicles_np = None
+        self._road_network_np = None
+        self._is_setup = False
+
+    def destroy(self):
+        self.teardown()
+        self._showbase_instance = None
+
+    def __del__(self):
+        self.destroy()
+
+    def create_vehicle(self, glb_model: str, vid: str, color, pose: Pose):
+        with pkg_resources.path(models, glb_model) as path:
+            node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
+        node_path.setName("vehicle-%s" % vid)
+        node_path.setColor(color)
+        pos, heading = pose.as_panda3d()
+        node_path.setPosHpr(*pos, heading, 0, 0)
+        node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
+        return node_path
+
+    def begin_rendering_vehicle(self, vehicle_path, is_agent):
+        """ adds the vehicle node to the scene graph """
+        vehicle_path.reparentTo(self._vehicles_np if is_agent else self._root_np)
+
+    class OffscreenCamera(NamedTuple):
+        camera_np: NodePath
+        buffer: GraphicsOutput
+        tex: Texture
+        render_engine: ShowBaseInstance
+
+        def teardown(self):
+            self.camera_np.removeNode()
+            region = self.buffer.getDisplayRegion(0)
+            region.window.clearRenderTextures()
+            self.buffer.removeAllDisplayRegions()
+            self.render_engine.graphicsEngine.removeWindow(self.buffer)
+
+    def build_offscreen_camera(
+        self,
+        name: str,
+        mask: int,
+        width: int,
+        height: int,
+        resolution: float,
+    ):
+        # setup buffer
+        win_props = WindowProperties.size(width, height)
+        fb_props = FrameBufferProperties()
+        fb_props.setRgbColor(True)
+        fb_props.setRgbaBits(8, 8, 8, 1)
+        # XXX: Though we don't need the depth buffer returned, setting this to 0
+        #      causes undefined behaviour where the ordering of meshes is random.
+        fb_props.setDepthBits(8)
+
+        buffer = self._showbase_instance.win.engine.makeOutput(
+            self._showbase_instance.pipe,
+            "{}-buffer".format(name),
+            -100,
+            fb_props,
+            win_props,
+            GraphicsPipe.BFRefuseWindow,
+            self._showbase_instance.win.getGsg(),
+            self._showbase_instance.win,
+        )
+        buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
+
+        # setup texture
+        tex = Texture()
+        region = buffer.getDisplayRegion(0)
+        region.window.addRenderTexture(
+            tex, GraphicsOutput.RTM_copy_ram, GraphicsOutput.RTP_color
+        )
+
+        # setup camera
+        lens = OrthographicLens()
+        lens.setFilmSize(width * resolution, height * resolution)
+
+        camera_np = self._showbase_instance.makeCamera(
+            buffer, camName=name, scene=self._root_np, lens=lens
+        )
+        camera_np.reparentTo(self._root_np)
+
+        # mask is set to make undesireable objects invisible to this camera
+        camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
+
+        return Renderer.OffscreenCamera(camera_np, buffer, tex, self._showbase_instance)

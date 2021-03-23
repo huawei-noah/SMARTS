@@ -74,7 +74,9 @@ def test_smarts_doesnt_leak_tasks_after_reset(smarts, scenarios):
 
     See #237 for details
     """
-    num_tasks_before_reset = len(smarts.taskMgr.mgr.getTasks())
+    num_tasks_before_reset = len(
+        smarts.renderer._showbase_instance.taskMgr.mgr.getTasks()
+    )
 
     scenario = next(scenarios)
     smarts.reset(scenario)
@@ -82,5 +84,7 @@ def test_smarts_doesnt_leak_tasks_after_reset(smarts, scenarios):
     for _ in range(10):
         smarts.step({})
 
-    num_tasks_after_reset = len(smarts.taskMgr.mgr.getTasks())
+    num_tasks_after_reset = len(
+        smarts.renderer._showbase_instance.taskMgr.mgr.getTasks()
+    )
     assert num_tasks_after_reset == num_tasks_before_reset

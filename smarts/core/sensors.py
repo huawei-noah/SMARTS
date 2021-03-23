@@ -25,16 +25,6 @@ from functools import lru_cache
 from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 
 import numpy as np
-from direct.showbase.ShowBase import ShowBase
-from panda3d.core import (
-    FrameBufferProperties,
-    GraphicsOutput,
-    GraphicsPipe,
-    NodePath,
-    OrthographicLens,
-    Texture,
-    WindowProperties,
-)
 
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.utils.math import squared_dist, vec_2d
@@ -47,6 +37,7 @@ from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
 from .scenario import Mission, Via
 from .waypoints import Waypoint
+from .renderer import Renderer
 
 logger = logging.getLogger(__name__)
 
@@ -588,68 +579,35 @@ class SensorState:
 
 
 class CameraSensor(Sensor):
-    def __init__(self, vehicle, scene_np: NodePath, showbase: ShowBase):
-        self._log = logging.getLogger(self.__class__.__name__)
-        self._vehicle = vehicle
-        self._scene_np = scene_np
-        self._showbase = showbase
-
-    def _build_offscreen_camera(
+    def __init__(
         self,
+        vehicle,
+        renderer: Renderer,
         name: str,
         mask: int,
         width: int,
         height: int,
         resolution: float,
     ):
-        # setup buffer
-        win_props = WindowProperties.size(width, height)
-        fb_props = FrameBufferProperties()
-        fb_props.setRgbColor(True)
-        fb_props.setRgbaBits(8, 8, 8, 1)
-        # XXX: Though we don't need the depth buffer returned, setting this to 0
-        #      causes undefined behaviour where the ordering of meshes is random.
-        fb_props.setDepthBits(8)
-
-        buffer = self._showbase.win.engine.makeOutput(
-            self._showbase.pipe,
-            "{}-buffer".format(name),
-            -100,
-            fb_props,
-            win_props,
-            GraphicsPipe.BFRefuseWindow,
-            self._showbase.win.getGsg(),
-            self._showbase.win,
-        )
-        buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
-
-        # setup texture
-        tex = Texture()
-        region = buffer.getDisplayRegion(0)
-        region.window.addRenderTexture(
-            tex, GraphicsOutput.RTM_copy_ram, GraphicsOutput.RTP_color
+        self._log = logging.getLogger(self.__class__.__name__)
+        self._vehicle = vehicle
+        self._camera = renderer.build_offscreen_camera(
+            name,
+            mask,
+            width,
+            height,
+            resolution,
         )
 
-        # setup camera
-        lens = OrthographicLens()
-        lens.setFilmSize(width * resolution, height * resolution)
-
-        camera_np = self._showbase.makeCamera(
-            buffer, camName=name, scene=self._scene_np, lens=lens
-        )
-        camera_np.reparentTo(self._scene_np)
-
-        # mask is set to make undesireable objects invisible to this camera
-        camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
-
-        return OffscreenCamera(camera_np, buffer, tex)
+    def teardown(self):
+        self._camera.teardown()
 
     def _follow_vehicle(self, camera_np):
         center = self._vehicle.position
         largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
         camera_np.setPos(center[0], center[1], 20 * largest_dim)
         camera_np.lookAt(*center)
-        camera_np.setH(self._vehicle._np.getH())
+        camera_np.setH(self._vehicle.renderer_path.getH())
 
     def _wait_for_ram_image(self, format, retries=100):
         # Rarely, we see dropped frames where an image is not available
@@ -675,19 +633,6 @@ class CameraSensor(Sensor):
         return ram_image
 
 
-class OffscreenCamera(NamedTuple):
-    camera_np: NodePath
-    buffer: GraphicsOutput
-    tex: Texture
-
-    def teardown(self, showbase: ShowBase):
-        self.camera_np.removeNode()
-        region = self.buffer.getDisplayRegion(0)
-        region.window.clearRenderTextures()
-        self.buffer.removeAllDisplayRegions()
-        showbase.graphicsEngine.removeWindow(self.buffer)
-
-
 class DrivableAreaGridMapSensor(CameraSensor):
     def __init__(
         self,
@@ -695,18 +640,17 @@ class DrivableAreaGridMapSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        scene_np: NodePath,
-        showbase: ShowBase,
+        renderer: Renderer,
     ):
-        super().__init__(vehicle, scene_np, showbase)
-        self._camera = self._build_offscreen_camera(
+        super().__init__(
+            vehicle,
+            renderer,
             "drivable_area_grid_map",
             RenderMasks.DRIVABLE_AREA_HIDE,
             width,
             height,
             resolution,
         )
-
         self._resolution = resolution
 
     def step(self):
@@ -733,9 +677,6 @@ class DrivableAreaGridMapSensor(CameraSensor):
         )
         return DrivableAreaGridMap(data=image, metadata=metadata)
 
-    def teardown(self):
-        self._camera.teardown(self._showbase)
-
 
 class OGMSensor(CameraSensor):
     def __init__(
@@ -744,14 +685,17 @@ class OGMSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        scene_np: NodePath,
-        showbase: ShowBase,
+        renderer: Renderer,
     ):
-        super().__init__(vehicle, scene_np, showbase)
-        self._camera = self._build_offscreen_camera(
-            "ogm", RenderMasks.OCCUPANCY_HIDE, width, height, resolution
+        super().__init__(
+            vehicle,
+            renderer,
+            "ogm",
+            RenderMasks.OCCUPANCY_HIDE,
+            width,
+            height,
+            resolution,
         )
-
         self._resolution = resolution
 
     def step(self):
@@ -778,9 +722,6 @@ class OGMSensor(CameraSensor):
         )
         return OccupancyGridMap(data=grid, metadata=metadata)
 
-    def teardown(self):
-        self._camera.teardown(self._showbase)
-
 
 class RGBSensor(CameraSensor):
     def __init__(
@@ -789,14 +730,11 @@ class RGBSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        scene_np: NodePath,
-        showbase: ShowBase,
+        renderer: Renderer,
     ):
-        super().__init__(vehicle, scene_np, showbase)
-        self._camera = self._build_offscreen_camera(
-            "rgb", RenderMasks.RGB_HIDE, width, height, resolution
+        super().__init__(
+            vehicle, renderer, "rgb", RenderMasks.RGB_HIDE, width, height, resolution
         )
-
         self._resolution = resolution
 
     def step(self):
@@ -821,23 +759,18 @@ class RGBSensor(CameraSensor):
         )
         return TopDownRGB(data=image, metadata=metadata)
 
-    def teardown(self):
-        self._camera.teardown(self._showbase)
-
 
 class LidarSensor(Sensor):
     def __init__(
         self,
         vehicle,
         bullet_client,
-        showbase: ShowBase,
         sensor_params: SensorParams = None,
         lidar_offset=(0, 0, 1),
     ):
         self._vehicle = vehicle
         self._bullet_client = bullet_client
         self._lidar_offset = np.array(lidar_offset)
-        self._showbase = showbase
 
         self._lidar = Lidar(
             self._vehicle.position + self._lidar_offset,
