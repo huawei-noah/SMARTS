@@ -6,8 +6,8 @@ import numpy as np
 
 class SumTree(object):
     """
-        This SumTree code is modified version of Morvan Zhou:
-        https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/blob/master/contents/5.2_Prioritized_Replay_DQN/RL_brain.py"""
+    This SumTree code is modified version of Morvan Zhou:
+    https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/blob/master/contents/5.2_Prioritized_Replay_DQN/RL_brain.py"""
 
     data_pointer = 0
 
@@ -129,8 +129,8 @@ class Buffer(object):
 
     def store(self, experience):
         """
-         Store a new experience in the tree with max_priority
-         When training the priority is to be ajusted according with the prediction error
+        Store a new experience in the tree with max_priority
+        When training the priority is to be ajusted according with the prediction error
         """
         # find the max priority
         max_priority = np.max(self.tree.tree[-self.tree.capacity :])

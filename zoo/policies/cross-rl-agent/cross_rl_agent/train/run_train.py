@@ -10,11 +10,11 @@ import numpy as np
 import tensorflow as tf
 from ac_network import ActorNetwork, CriticNetwork
 from adapters import (
-    observation_adapter,
     action_adapter,
-    reward_adapter,
-    get_aux_info,
     cross_interface,
+    get_aux_info,
+    observation_adapter,
+    reward_adapter,
 )
 from config import hyperParameters
 from prioritized_replay import Buffer
@@ -290,10 +290,18 @@ def train(training_scenarios, sim_name, headless, num_episodes, seed):
 
 
 def main(
-    training_scenarios, sim_name, headless, num_episodes, seed,
+    training_scenarios,
+    sim_name,
+    headless,
+    num_episodes,
+    seed,
 ):
     train(
-        training_scenarios, sim_name, headless, num_episodes, seed,
+        training_scenarios,
+        sim_name,
+        headless,
+        num_episodes,
+        seed,
     )
 
 

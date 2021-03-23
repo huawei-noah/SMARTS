@@ -2,21 +2,23 @@ from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
+    Distribution,
     Flow,
+    LaneChangingModel,
     Mission,
     RandomRoute,
     Route,
     Scenario,
     Traffic,
     TrafficActor,
-    Distribution,
-    LaneChangingModel,
 )
 
 social_vehicle_num = 100
 
 ego_missions = [
-    Mission(route=Route(begin=("edge-south-SN", 0, 10), end=("edge-east-WE", 0, 8)),),
+    Mission(
+        route=Route(begin=("edge-south-SN", 0, 10), end=("edge-east-WE", 0, 8)),
+    ),
 ]
 
 right_traffic_actor = TrafficActor(
@@ -28,7 +30,11 @@ scenario = Scenario(
     traffic={
         "basic": Traffic(
             flows=[
-                Flow(route=RandomRoute(), rate=1, actors={right_traffic_actor: 1.0},)
+                Flow(
+                    route=RandomRoute(),
+                    rate=1,
+                    actors={right_traffic_actor: 1.0},
+                )
                 for i in range(social_vehicle_num)
             ]
         )

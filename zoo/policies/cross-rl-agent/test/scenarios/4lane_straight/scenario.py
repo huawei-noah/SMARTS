@@ -2,17 +2,17 @@ from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
+    Distribution,
     Flow,
+    JunctionModel,
+    LaneChangingModel,
     Mission,
     RandomRoute,
     Route,
     Scenario,
+    SocialAgentActor,
     Traffic,
     TrafficActor,
-    Distribution,
-    LaneChangingModel,
-    JunctionModel,
-    SocialAgentActor,
 )
 
 social_vehicle_num = 100
@@ -49,7 +49,11 @@ scenario = Scenario(
     traffic={
         "basic": Traffic(
             flows=[
-                Flow(route=RandomRoute(), rate=1, actors={stright_traffic_actor: 1.0},)
+                Flow(
+                    route=RandomRoute(),
+                    rate=1,
+                    actors={stright_traffic_actor: 1.0},
+                )
                 for i in range(social_vehicle_num)
             ]
         )

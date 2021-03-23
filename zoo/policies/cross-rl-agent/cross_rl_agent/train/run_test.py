@@ -8,11 +8,11 @@ import numpy as np
 import tensorflow as tf
 from ac_network import ActorNetwork, CriticNetwork
 from adapters import (
-    observation_adapter,
     action_adapter,
-    reward_adapter,
-    get_aux_info,
     cross_interface,
+    get_aux_info,
+    observation_adapter,
+    reward_adapter,
 )
 from config import hyperParameters
 from soc_mt_ac_network import SocMtActorNetwork, SocMtCriticNetwork
@@ -163,10 +163,18 @@ def test(test_scenarios, sim_name, headless, num_episodes, seed):
 
 
 def main(
-    test_scenarios, sim_name, headless, num_episodes, seed,
+    test_scenarios,
+    sim_name,
+    headless,
+    num_episodes,
+    seed,
 ):
     test(
-        test_scenarios, sim_name, headless, num_episodes, seed,
+        test_scenarios,
+        sim_name,
+        headless,
+        num_episodes,
+        seed,
     )
 
 

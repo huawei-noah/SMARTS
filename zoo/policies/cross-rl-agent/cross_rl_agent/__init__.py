@@ -4,13 +4,14 @@ import cross_rl_agent
 
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import register
+
 from .agent import RLAgent
 from .cross_space import (
-    observation_adapter,
     action_adapter,
-    reward_adapter,
-    get_aux_info,
     cross_interface,
+    get_aux_info,
+    observation_adapter,
+    reward_adapter,
 )
 
 
@@ -21,7 +22,8 @@ def entrypoint():
             observation_adapter=observation_adapter,
             action_adapter=action_adapter,
             agent_builder=lambda: RLAgent(
-                load_path=str(model_path) + "/", policy_name="Soc_Mt_TD3Network",
+                load_path=str(model_path) + "/",
+                policy_name="Soc_Mt_TD3Network",
             ),
         )
 

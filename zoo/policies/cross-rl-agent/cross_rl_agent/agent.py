@@ -4,6 +4,7 @@ This file contains an RLlib-trained policy evaluation usage (not for training).
 import tensorflow as tf
 
 from smarts.core.agent import Agent
+
 from .cross_space import SocMtActorNetwork, SocMtCriticNetwork
 
 
