@@ -53,7 +53,7 @@ class ProviderState:
 class Provider:
     """ A Provider tracks a (sub)set of vehicles that all share the same action space. """
 
-    ## Consider renaming to VehicleSet or somesuch.
+    ## TAI: Consider renaming to VehicleSet or somesuch.
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -69,7 +69,7 @@ class Provider:
         raise NotImplementedError
 
     def reset(self):
-        pass
+        raise NotImplementedError
 
     def teardown(self):
-        pass
+        raise NotImplementedError

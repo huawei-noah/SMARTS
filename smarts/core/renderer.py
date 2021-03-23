@@ -165,6 +165,10 @@ class Renderer:
         assert self._is_setup
         self._showbase_instance.taskMgr.mgr.poll()
 
+    def step(self):
+        """ provided for non-SMARTS uses; normally not used by SMARTS. """
+        self._showbase_instance.taskMgr.step()
+
     def teardown(self):
         if self._root_np is not None:
             self._root_np.clearLight()

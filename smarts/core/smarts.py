@@ -805,7 +805,8 @@ class SMARTS:
 
     def _node_to_collision(self, node):
         for vehicle in self._vehicle_index.vehicles:
-            if (node == vehicle.renderer_path.node()):  # TODO:  why can't we use vehicle.id instead of np here?
+            # TODO:  why can't we use vehicle.id instead of np here?
+            if node == vehicle.renderer_path.node():
                 actor_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle.id)
                 # TODO: Should we specify the collidee as the vehicle ID instead of
                 #       the agent/social ID?
