@@ -75,6 +75,11 @@ class UltraPackageTest(unittest.TestCase):
                         seed=2,
                         log_dir=log_dir,
                         grade_mode=False,
+                        gb_info={
+                            "gb_curriculum_dir": "",
+                            "gb_scenarios_root_dir": None,
+                            "gb_scenarios_save_dir": None,
+                        },
                     )
                 ]
             )
