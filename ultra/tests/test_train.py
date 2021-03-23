@@ -33,7 +33,6 @@ from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.train import train
 
-AGENT_ID = "001"
 seed = 2
 
 
@@ -93,6 +92,11 @@ class TrainTest(unittest.TestCase):
                         headless=True,
                         seed=2,
                         grade_mode=False,
+                        gb_info={
+                            "gb_curriculum_dir": "",
+                            "gb_scenarios_root_dir": None,
+                            "gb_scenarios_save_dir": None,
+                        },
                         log_dir=log_dir,
                     )
                 ]
@@ -134,6 +138,11 @@ class TrainTest(unittest.TestCase):
                         headless=True,
                         seed=2,
                         grade_mode=False,
+                        gb_info={
+                            "gb_curriculum_dir": "",
+                            "gb_scenarios_root_dir": None,
+                            "gb_scenarios_save_dir": None,
+                        },
                         log_dir=log_dir,
                     )
                 ]

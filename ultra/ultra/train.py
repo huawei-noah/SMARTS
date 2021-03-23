@@ -59,6 +59,7 @@ def train(
     seed,
     log_dir,
     grade_mode,
+    gb_info,
     policy_ids=None,
 ):
     torch.set_num_threads(1)
@@ -115,11 +116,15 @@ def train(
     old_episode = None
 
     if grade_mode:
-        agent_coordinator = coordinator()
-        # agent_coordinator.build_all_scenarios()
-        print("\n------------ GRADE MODE : Enabled ------------\n")
-        print("Number of Intervals (grades):", agent_coordinator.get_num_of_grades())
-        grade_length = []
+        agent_coordinator = coordinator(gb_info["gb_curriculum_dir"])
+        print(gb_info)
+        agent_coordinator.build_all_scenarios(
+            gb_info["gb_scenarios_root_dir"], gb_info["gb_scenarios_save_dir"]
+        )
+        print(
+            "\n------------ GRADE MODE : Enabled ------------\n Number of Intervals (grades):",
+            agent_coordinator.get_num_of_grades(),
+        )
     else:
         print("\n------------ GRADE MODE : Disabled ------------\n")
         agent_coordinator = None
@@ -267,6 +272,12 @@ if __name__ == "__main__":
         "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
     parser.add_argument(
+        "--gb-curriculum-dir",
+        help="local path to grade based (GB) task dir. Local path is path from ultra/",
+        type=str,
+        default="../scenarios/grade_based_task/",
+    )
+    parser.add_argument(
         "--level",
         help="Levels available : [easy, medium, hard, no-traffic]",
         type=str,
@@ -292,6 +303,18 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--headless", help="Run without envision", type=bool, default=False
+    )
+    parser.add_argument(
+        "--gb-scenarios-root-dir",
+        help="Build scenarios and stores in given dir",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--gb-scenarios-save-dir",
+        help="Save the scenarios in specified directory",
+        type=str,
+        default=None,
     )
     parser.add_argument(
         "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
@@ -365,6 +388,11 @@ if __name__ == "__main__":
                 seed=args.seed,
                 log_dir=args.log_dir,
                 grade_mode=args.grade_mode,
+                gb_info={
+                    "gb_curriculum_dir": args.gb_curriculum_dir,
+                    "gb_scenarios_root_dir": args.gb_scenarios_root_dir,
+                    "gb_scenarios_save_dir": args.gb_scenarios_save_dir,
+                },
                 policy_ids=policy_ids,
             )
         ]

@@ -27,10 +27,10 @@ from ultra.scenarios.generate_scenarios import build_scenarios
 
 
 class coordinator:
-    def __init__(self):
+    def __init__(self, gb_task_dir):
         self.mode = False
 
-        root_dir = "../scenarios/grade_based_task/"  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
+        root_dir = gb_task_dir  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
         base_dir = os.path.join(os.path.dirname(__file__), root_dir)
         grades_dir = os.path.join(base_dir, "config.yaml")
 
@@ -45,16 +45,16 @@ class coordinator:
         self.plot_arr = []
         self.grade_length = []
 
-    def build_all_scenarios(self):
+    def build_all_scenarios(self, root_path, save_dir):
         for key in self.curriculum["grades"]:
             for task, level in self.curriculum["grades"][key]:
                 build_scenarios(
                     task=f"task{task}",
                     level_name=level,
-                    root_path="ultra/scenarios",
+                    root_path=root_path,
                     stopwatcher_behavior=None,
                     stopwatcher_route=None,
-                    save_dir=None,
+                    save_dir=save_dir,
                 )
 
     def next_grade(self, grade):

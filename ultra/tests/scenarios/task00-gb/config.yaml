@@ -1,0 +1,64 @@
+# Task 3 will be focusing on training on "n" number of lanes and testing on "n+1" number of lanes. For now, all
+# training and testing sets are going to have the same number of traffic densities
+
+levels:
+  test_grade1:
+    train:
+      total: 5
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
+    test:
+      total: 5
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+           percent: 1
+           specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  test_grade2:
+    train:
+      total: 5
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
+    test:
+      total: 5
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+           percent: 1
+           specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  test_grade3:
+    train:
+      total: 5
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
+    test:
+      total: 5
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+           percent: 1
+           specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
+  

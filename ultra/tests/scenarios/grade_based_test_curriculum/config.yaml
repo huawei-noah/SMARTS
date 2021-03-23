@@ -1,0 +1,13 @@
+curriculum: 
+  grades:
+    1: [["00-gb",test_grade1]] #[[<task>,<level>]]
+    2: [["00-gb",test_grade2]]
+    3: [["00-gb",test_grade3]]
+  conditions:
+    episode_based:
+      toggle: True 
+      cycle: False 
+    pass_based:
+      toggle: False
+      pass_rate: 0.50
+      sample_rate: 5
