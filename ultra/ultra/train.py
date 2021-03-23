@@ -111,6 +111,7 @@ def train(
     episode_count = 0
     old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
+
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
         dones = {"__all__": False}
@@ -132,6 +133,19 @@ def train(
                     metadata_file,
                     pickle.HIGHEST_PROTOCOL,
                 )
+
+        if eval_info["eval_episodes"] != 0:
+            evaluation_check(
+                agents=agents,
+                agent_ids=agent_ids,
+                policy_classes=agent_classes,
+                episode=episode,
+                log_dir=log_dir,
+                max_episode_steps=max_episode_steps,
+                episode_count=episode_count,
+                **eval_info,
+                **env.info,
+            )
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
@@ -180,18 +194,6 @@ def train(
             episode.record_tensorboard()
             old_episode = None
 
-        if eval_info["eval_episodes"] != 0:
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                episode_count=episode_count,
-                **eval_info,
-                **env.info,
-            )
         episode_count += 1
         if finished:
             break
