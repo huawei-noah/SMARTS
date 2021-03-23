@@ -312,7 +312,7 @@ if __name__ == "__main__":
         "--gb-scenarios-root-dir",
         help="Build scenarios and stores in given dir",
         type=str,
-        default=None,
+        default="ultra/scenarios",
     )
     parser.add_argument(
         "--gb-scenarios-save-dir",
