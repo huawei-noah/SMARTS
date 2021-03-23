@@ -68,7 +68,6 @@ To look at the documentation call:
     # Browser will attempt to open on localhost:8082
     scl docs
 
-Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning Training School for Autonomous Driving <https://arxiv.org/abs/2010.09776>`_ for background on some of the project goals.
 
 ========
 CLI Tool
