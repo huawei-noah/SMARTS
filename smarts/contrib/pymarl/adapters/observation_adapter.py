@@ -161,7 +161,8 @@ def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp
     speed_of_closest = 1
     wps = [path[0] for path in waypoint_paths]
     ego_closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
-    neighborhood_vehicle_states = neighborhood_vehicle_states or []
+    # TODO: Given that the neighborhood_vehicle_states default value is changed to [], this line below may be removed.
+    neighborhood_vehicle_states = neighborhood_vehicle_states or []  
     for v in neighborhood_vehicle_states:
         # find all waypoints that are on the same lane as this vehicle
         wps_on_lane = [

@@ -78,12 +78,12 @@ message BoundingBox{
 }
 
 message Start{
-    repeated float position=1;
+    repeated float position=1; // Represents Tuple[float, float]
     float heading=2;
 }
 
 message Goal{
-    repeated float position=1;
+    repeated float position=1; // Represents Tuple[float, float]
     float radius=2;
 }
 
@@ -91,7 +91,7 @@ message Via{
     string lane_id=1;
     string edge_id=2;
     int32 lane_idx=3;
-    repeated float position=4;
+    repeated float position=4; // Represents Tuple[float, float]
     float hit_distance=5;
     float required_speed=6;
 }   
@@ -108,27 +108,27 @@ message Mission{
 
 message EgoVehicleObservation{
     string id=1;
-    repeated float position=2;
+    repeated float position=2; // Represents Tuple[float, float, float]
     BoundingBox bounding_box=3; 
     float heading=4;
     float speed=5;
     float steering=6;
-    repeated float yaw_rate=7;
+    repeated float yaw_rate=7; // Represents np.ndarray((3,), dtype=float)
     string edge_id=8;
     string lane_id=9;
     int32 lane_index=10;
     Mission mission=11;
-    repeated float linear_velocity=12;
-    repeated float angular_velocity=13;
-    repeated float linear_acceleration=14;
-    repeated float angular_acceleration=15;
-    repeated float linear_jerk=16;
-    repeated float angular_jerk=17;
+    repeated float linear_velocity=12; // Represents np.ndarray((3,), dtype=float)
+    repeated float angular_velocity=13; // Represents np.ndarray((3,), dtype=float)
+    repeated float linear_acceleration=14; // Represents np.ndarray((3,), dtype=float)
+    repeated float angular_acceleration=15; // Represents np.ndarray((3,), dtype=float)
+    repeated float linear_jerk=16; // Represents np.ndarray((3,), dtype=float)
+    repeated float angular_jerk=17; // Represents np.ndarray((3,), dtype=float)
 }
 
 message VehicleObservation{
     string id=1;
-    repeated float position=2;
+    repeated float position=2; // Represents Tuple[float, float, float]
     BoundingBox bounding_box=3;
     float heading=4;
     float speed=5;
@@ -138,7 +138,7 @@ message VehicleObservation{
 }
 
 message Waypoint{
-    repeated float pos=1;
+    repeated float pos=1; // Represents np.ndarray((2,), dtype=float)
     float heading=2;
     float lane_width=3;
     float speed_limit=4;
@@ -147,18 +147,13 @@ message Waypoint{
 }
 
 message ListWaypoint{
-    repeated Waypoint Waypoint=1;
+    repeated Waypoint waypoint=1;
 }
 
 message Lidar{
-    message Ray{
-        repeated float origin=1;
-        repeated float direction=2;
-    }
-
-    Matrix points = 1;
-    Matrix hits = 2;
-    repeated Ray ray=3;
+    Matrix points = 1; // Represents List[np.ndarray(3,)],
+    Matrix hits = 2; // Represents List[np.ndarray(3,)],
+    repeated Matrix ray=3; // Represents List[(origin,direction), ... ] of shape List[np.ndarray((2,3), dtype=float)] 
 }
 
 message GridMapMetadata{
@@ -166,7 +161,7 @@ message GridMapMetadata{
     float resolution=2;
     int32 width=3;
     int32 height=4;
-    repeated float camera_pos=5;
+    repeated float camera_pos=5; // Represents Tuple[float, float, float]
     float camera_heading_in_degrees=6;
 }
 
@@ -217,7 +212,7 @@ message VehicleState{
     Events events=1;
     EgoVehicleObservation ego_vehicle_state=2;
     repeated VehicleObservation neighborhood_vehicle_states=3;
-    repeated ListWaypoint Waypoint_paths=4;
+    repeated ListWaypoint waypoint_paths=4;
     float distance_travelled=5;
     Lidar lidar_point_cloud=6;
     DrivableAreaGridMap drivable_area_grid_map=7; 

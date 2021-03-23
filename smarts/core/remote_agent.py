@@ -103,14 +103,9 @@ def obs_tuple_to_proto(obs):
             }
     )
 
-    print("printing below -------------------------------")
-    agent_id = 0
-    for agent, agent_obs in obs.items():
-        agent_id = agent
-        break
-
-    print("proto === ", proto)
-    print("^^^^^^^^^^^ -------------------------------\n")
+    print("printing proto below -------------------------------")
+    print("proto ================ \n ", proto)
+    print("^^^^^^^^^^^ -------------------------------\n\n")
 
     return proto
 
@@ -188,7 +183,7 @@ def agent_obs_tuple_to_proto(obs):
         linear_jerk=obs.ego_vehicle_state.linear_jerk,
         angular_jerk=obs.ego_vehicle_state.angular_jerk,
     )  
-
+    
     # neighborhood_vehicle_states
     neighborhood_vehicle_states = [ 
         worker_pb2.VehicleObservation(
@@ -208,13 +203,57 @@ def agent_obs_tuple_to_proto(obs):
         for elem in obs.neighborhood_vehicle_states
     ]
 
+    # waypoint_paths
+    waypoint_paths=[
+        worker_pb2.ListWaypoint( 
+            waypoint=[
+                worker_pb2.Waypoint(    
+                    pos=elem.pos,
+                    heading=elem.heading,
+                    lane_width=elem.lane_width,
+                    speed_limit=elem.speed_limit,
+                    lane_id=elem.lane_id,
+                    lane_index=elem.lane_index,
+                )
+                for elem in list_elem
+            ]
+        )
+        for list_elem in obs.waypoint_paths
+    ]
+
+    # lidar_point_cloud 
+    lidar_point_cloud=worker_pb2.Lidar(
+        points=worker_pb2.Matrix(
+            data=np.ravel(obs.lidar_point_cloud[0]),
+            rows=len(obs.lidar_point_cloud[0]),
+            cols=3,
+        ),
+        hits=worker_pb2.Matrix(
+            data=np.ravel(obs.lidar_point_cloud[1]),
+            rows=len(obs.lidar_point_cloud[1]),
+            cols=3,
+        ),
+        ray=[worker_pb2.Matrix(
+                data=np.ravel(elem),
+                rows=2,
+                cols=3,
+            )
+            for elem in obs.lidar_point_cloud[2]
+        ],
+    )
+
+    # drivable_area_grid_map
+    # drivable_area_grid_map = 
+
     # vehicle_state
     vehicle_state = worker_pb2.VehicleState(
         events=events,
-        ego_vehicle_state=ego_vehicle_state, 
+        ego_vehicle_state=ego_vehicle_state,
         neighborhood_vehicle_states=neighborhood_vehicle_states,
-        # repeated ListWaypoint Waypoint_paths=4,
+        waypoint_paths=waypoint_paths,
         distance_travelled=obs.distance_travelled,
+        lidar_point_cloud=lidar_point_cloud,
+        # drivable_area_grid_map=drivable_area_grid_map,
     )
 
     # print("vehicle_state.ego_vehicle_state ====>>> ", vehicle_state.ego_vehicle_state)

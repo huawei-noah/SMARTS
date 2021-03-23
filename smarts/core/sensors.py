@@ -145,8 +145,15 @@ class Observation(NamedTuple):
     distance_travelled: float
     # TODO: Convert to `namedtuple` or only return point cloud
     # [points], [hits], [(ray_origin, ray_direction)]
+    # TODO: Convert type to Tuple[
+    #     List[np.ndarray], 
+    #     List[np.ndarray], 
+    #     List[np.ndarray((2,3), dtype=float)]
+    # ]
     lidar_point_cloud: Tuple[
-        List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
+        List[np.ndarray], 
+        List[np.ndarray], 
+        List[Tuple[np.ndarray, np.ndarray]]
     ]
     drivable_area_grid_map: DrivableAreaGridMap
     occupancy_grid_map: OccupancyGridMap
@@ -180,7 +187,7 @@ class Sensors:
 
     @staticmethod
     def observe(sim, agent_id, sensor_state, vehicle):
-        neighborhood_vehicles = None
+        neighborhood_vehicles = []
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicles = vehicle.neighborhood_vehicles_sensor()
 
