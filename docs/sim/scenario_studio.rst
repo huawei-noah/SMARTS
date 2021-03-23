@@ -132,6 +132,15 @@ To modify the properties, for example change the number of lanes to 2 lanes by c
 
   scl scenario build --clean <path-to-scenario-folder>
 
+To create custom connections between edges, first click the following icon on top bar:
+
+.. image:: ../_static/connection_icon.png
+
+The first lane you select would be the source lane, highlighted in blue. Then select other lanes as target lanes to connect to.
+
+.. image:: ../_static/create_connection.png
+
+
 =====================
 Create traffic routes
 =====================
