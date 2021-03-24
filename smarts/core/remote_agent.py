@@ -102,6 +102,7 @@ def obs_to_proto(obs):
     print("INSIDE OBS TO PROTO++++++++++++++++++++++++++")
     print(obs)
     print("--------------------------------------------------\n")
+    # exit()
     proto = worker_pb2.Observe(
         vehicles={
             agent_id: agent_obs_to_proto(agent_obs)
