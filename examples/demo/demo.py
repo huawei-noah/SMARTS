@@ -118,6 +118,7 @@ def prey_reward_adapter(observations, env_reward_signal):
 
 class PredatorAgent(Agent):
     def act(self, obs):
+        print(obs)
         return [0.5, 0, 1]
 
 class PreyAgent(Agent):

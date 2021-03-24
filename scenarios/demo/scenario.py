@@ -3,6 +3,9 @@ from pathlib import Path
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
+from smarts.core import seed
+
+seed(42)
 
 traffic = t.Traffic(
     flows=[
@@ -27,6 +30,15 @@ traffic = t.Traffic(
 ego_missions = [
     t.Mission(
         route=t.Route(begin=("gneE70", 0, 10), end=("gneE72", 0, 0)),
+    ),
+    t.Mission(
+        route=t.Route(begin=("gneE71", 0, 0), end=("gneE72", 0, 'max')),
+    ),
+    t.Mission(
+        route=t.Route(begin=("gneE68", 0, 0), end=("gneE69", 0, 'max')),
+    ),
+    t.Mission(
+        route=t.Route(begin=("-gneE75", 0, 0), end=("-gneE76", 0, 'max')),
     ),
 ]
 
