@@ -42,6 +42,7 @@ class UltraEnv(HiWayEnv):
     def __init__(
         self,
         agent_specs,
+        grade_mode,
         scenario_info,
         headless,
         timestep_sec,
@@ -52,13 +53,17 @@ class UltraEnv(HiWayEnv):
         self.timestep_sec = timestep_sec
         self.headless = headless
         self.agent_specs = agent_specs
-        self.scenario_info = scenario_info
-        self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
         self.eval_mode = eval_mode
-        if not self.eval_mode:
-            _scenarios = glob.glob(f"{self.scenarios['train']}")
+
+        if not grade_mode:
+            self.scenario_info = scenario_info
+            self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
+            if not self.eval_mode:
+                _scenarios = glob.glob(f"{self.scenarios['train']}")
+            else:
+                _scenarios = glob.glob(f"{self.scenarios['test']}")
         else:
-            _scenarios = glob.glob(f"{self.scenarios['test']}")
+            _scenarios = self.get_scenarios(scenario_info)
 
         self.ultra_scores = BaselineAdapter.reward_adapter
 
@@ -179,16 +184,7 @@ class UltraEnv(HiWayEnv):
     def reset(self, switch=False, grade=None):
         # Switch scenario handler into next grade
         if switch:
-            _scenarios = []
-            # For each set of task and level, get the tasks's train and test scenarios
-            for task, level in grade:
-                self.scenarios = self.get_task(task, level)
-                if not self.eval_mode:
-                    _scenarios.append(list(glob.glob(f"{self.scenarios['train']}")))
-                else:
-                    _scenarios.append(list(glob.glob(f"{self.scenarios['test']}")))
-
-            _scenarios = list(chain(*_scenarios))
+            _scenarios = self.get_scenarios(grade)
             # print(_scenarios)
 
             self._scenarios_iterator = Scenario.scenario_variations(
@@ -209,6 +205,21 @@ class UltraEnv(HiWayEnv):
         }
 
         return observations
+
+    def get_scenarios(self, grade):
+        """only for grade based structure"""
+        _scenarios = []
+        # For each set of task and level, get the tasks's train and test scenarios
+        for task, level in grade:
+            self.scenarios = self.get_task(task, level)
+            if not self.eval_mode:
+                _scenarios.append(list(glob.glob(f"{self.scenarios['train']}")))
+            else:
+                _scenarios.append(list(glob.glob(f"{self.scenarios['test']}")))
+
+        _scenarios = list(chain(*_scenarios))
+
+        return _scenarios
 
     def get_task(self, task_id, task_level):
         base_dir = os.path.join(os.path.dirname(__file__), "../")

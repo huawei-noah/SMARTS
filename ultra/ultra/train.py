@@ -97,23 +97,10 @@ def train(
         for agent_id, agent_spec in agent_specs.items()
     }
 
-    # Create the environment.
-    env = gym.make(
-        "ultra.env:ultra-v0",
-        agent_specs=agent_specs,
-        scenario_info=scenario_info,
-        headless=headless,
-        timestep_sec=timestep_sec,
-        seed=seed,
-    )
-
     # Define an 'etag' for this experiment's data directory based off policy_classes.
     # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
-
-    episode_count = 0
-    old_episode = None
 
     if grade_mode:
         agent_coordinator = coordinator(gb_info["gb_curriculum_dir"])
@@ -129,6 +116,26 @@ def train(
         print("\n------------ GRADE MODE : Disabled ------------\n")
         agent_coordinator = None
 
+    if grade_mode:
+        agent_coordinator.next_grade()
+        scenario_info = tuple(agent_coordinator.get_grade())
+    else:
+        pass
+
+    # Create the environment.
+    env = gym.make(
+        "ultra.env:ultra-v0",
+        agent_specs=agent_specs,
+        grade_mode=grade_mode,
+        scenario_info=scenario_info,
+        headless=headless,
+        timestep_sec=timestep_sec,
+        seed=seed,
+    )
+
+    episode_count = 0
+    old_episode = None
+
     average_scenarios_passed = 0.0
     total_scenarios_passed = 0.0
 
@@ -138,17 +145,19 @@ def train(
                 episode.index, num_episodes, average_scenarios_passed
             )
 
-            # If agent switches to new grade
-            if switch_grade[0] == True:
-                observations = env.reset(True, agent_coordinator.get_grade())
-                average_scenarios_passed = 0.0
-            else:
-                observations = env.reset()
-
             # If agent has completed all levels (no cycle through levels again)
             if switch_grade[1] == True:
                 finished = True
                 break
+
+            # If agent switches to new grade
+            if switch_grade[0] == True:
+                observations = env.reset(True, agent_coordinator.get_grade())
+                agent_coordinator.display()
+                average_scenarios_passed = 0.0
+            else:
+                observations = env.reset()
+
         else:
             # Reset the environment and retrieve the initial observations.
             observations = env.reset()
@@ -231,20 +240,22 @@ def train(
                     list(agents.keys())[0]
                 ].data["reached_goal"]
                 print(
-                    f"({episode.index}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
+                    f"({episode.index + 1}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
                     total_scenarios_passed,
                 )
                 average_scenarios_passed = (
                     total_scenarios_passed / eval_info["eval_rate"]
                 )
-                print(f"AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
+                print(
+                    f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
+                )
                 total_scenarios_passed = 0.0
             else:
                 total_scenarios_passed += episode.info[episode.active_tag][
                     list(agents.keys())[0]
                 ].data["reached_goal"]
                 print(
-                    f"({episode.index}) TOTAL SCENARIOS PASSED PER EVAL RATE:",
+                    f"({episode.index + 1}) TOTAL SCENARIOS PASSED PER EVAL RATE:",
                     total_scenarios_passed,
                 )
 
@@ -280,7 +291,7 @@ if __name__ == "__main__":
         "--gb-curriculum-dir",
         help="local path to grade based (GB) task dir. Local path is path from ultra/",
         type=str,
-        default="../scenarios/grade_based_task/",
+        default="../scenarios/grade_based_curriculum/",
     )
     parser.add_argument(
         "--level",

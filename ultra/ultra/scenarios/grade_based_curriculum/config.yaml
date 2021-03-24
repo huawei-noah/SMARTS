@@ -6,10 +6,10 @@ curriculum:
     4: [[3,grade4]]
   conditions:
     episode_based:
-      toggle: False 
-      cycle: False 
-    pass_based:
       toggle: True
+      cycle: True 
+    pass_based:
+      toggle: False
       pass_rate: 0.40
       sample_rate: 30
 

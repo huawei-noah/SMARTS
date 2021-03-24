@@ -57,9 +57,10 @@ class coordinator:
                     save_dir=save_dir,
                 )
 
-    def next_grade(self, grade):
+    def next_grade(self):
         # Get task and level information
-        self.grade = self.curriculum["grades"][grade]
+        counter = next(self.counter) + 1
+        self.grade = self.curriculum["grades"][counter]
 
     def get_num_of_grades(self):
         return len(self.curriculum["grades"])
@@ -72,16 +73,29 @@ class coordinator:
 
     def graduate(self, index, num_episodes, average_scenarios_passed=None):
         """ Conditions on when to graduate """
+        episode_based_toggle = self.curriculum["conditions"]["episode_based"]["toggle"]
+        pass_based_toggle = self.curriculum["conditions"]["pass_based"]["toggle"]
 
-        if self.curriculum["conditions"]["episode_based"]["toggle"] == True:
+        if episode_based_toggle == pass_based_toggle:
+            raise Exception(
+                "Both condition toggles are set to True. Only one condition should be chosen"
+            )
+
+        if episode_based_toggle == True:
             # Switch to next grade based on number of episodes completed
-            if (index % int(num_episodes / self.get_num_of_grades())) == 0:
-                self.next_grade(next(self.counter) + 1)
-                print(self.display())
+            if (
+                index % int(num_episodes / self.get_num_of_grades())
+            ) == 0 and index != 0:
+                self.next_grade()
                 self.rotation_counter += (
-                    1 if self.curriculum["conditions"]["episode_based"]["cycle"] else 0
+                    0 if self.curriculum["conditions"]["episode_based"]["cycle"] else 1
                 )
                 self.grade_completed = True
+            elif index == 0:
+                self.rotation_counter += (
+                    0 if self.curriculum["conditions"]["episode_based"]["cycle"] else 1
+                )
+                self.display()
             else:
                 self.grade_completed = False
 
@@ -94,7 +108,7 @@ class coordinator:
 
         # Switch to next grade on the basis of certain percentage of completed scenarios
 
-        if self.curriculum["conditions"]["pass_based"]["toggle"] == True:
+        if pass_based_toggle == True:
             if index != 0:
                 if (
                     average_scenarios_passed
@@ -102,17 +116,14 @@ class coordinator:
                     and self.rotation_counter <= self.get_num_of_grades()
                 ):
                     # print(f"({index}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
-                    self.next_grade(next(self.counter) + 1)
-                    print(self.display())
+                    self.next_grade()
                     self.grade_completed = True
                     self.rotation_counter += 1
                     self.grade_length.append(index)
                 else:
                     self.grade_completed = False
             else:
-                self.next_grade(next(self.counter) + 1)
-                print(self.display())
-                self.grade_completed = True
+                self.display()
                 self.rotation_counter += 1
                 self.grade_length.append(index)
 
@@ -126,4 +137,4 @@ class coordinator:
             return (self.grade_completed, self.cycle_completed)
 
     def display(self):
-        return f"\nCurrent grade: {self.grade}\n"
+        print(f"\nCurrent grade: {self.grade}\n")
