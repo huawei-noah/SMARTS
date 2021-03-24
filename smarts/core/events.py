@@ -22,6 +22,9 @@
 
 from typing import List, NamedTuple, Tuple
 
+from smarts.core import sensors
+from smarts.zoo import worker_pb2
+
 
 class Events(NamedTuple):
     collisions: List[Tuple[str, str]]
@@ -31,3 +34,17 @@ class Events(NamedTuple):
     off_road: bool
     wrong_way: bool
     not_moving: bool
+
+
+def events_to_proto(events: Events) -> worker_pb2.Events:
+    return worker_pb2.Events(
+        collisions=[
+            sensors.collision_to_proto(collision) for collision in events.collisions
+        ],
+        off_route=events.off_route,
+        reached_goal=events.reached_goal,
+        reached_max_episode_steps=events.reached_max_episode_steps,
+        off_road=events.off_road,
+        wrong_way=events.wrong_way,
+        not_moving=events.not_moving,
+    )

@@ -20,15 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import numpy as np
 import queue
 import random
 import warnings
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
-from typing import Sequence, NamedTuple
-
-import numpy as np
 from scipy.interpolate import interp1d
+from typing import Sequence, NamedTuple
 
 from smarts.core.utils.file import suppress_pkg_resources
 
@@ -48,6 +47,7 @@ from smarts.core.utils.math import (
     vec_2d,
     vec_to_radians,
 )
+from smarts.zoo import worker_pb2
 
 
 class Waypoint(NamedTuple):
@@ -81,6 +81,17 @@ class Waypoint(NamedTuple):
             and self.lane_id == other.lane_id
             and self.lane_index == other.lane_index
         )
+
+
+def waypoint_to_proto(waypoint: Waypoint) -> worker_pb2.Waypoint:
+    return worker_pb2.Waypoint(
+        pos=waypoint.pos,
+        heading=waypoint.heading,
+        lane_width=waypoint.lane_width,
+        speed_limit=waypoint.speed_limit,
+        lane_id=waypoint.lane_id,
+        lane_index=waypoint.lane_index,
+    )
 
 
 class WaypointMethods:

@@ -33,12 +33,21 @@ from smarts.core.utils.math import (
     radians_to_vec,
     yaw_from_quaternion,
 )
+from smarts.zoo import worker_pb2
 
 
 class BoundingBox(NamedTuple):
     length: float = None
     width: float = None
     height: float = None
+
+
+def bounding_box_to_proto(bounding_box: BoundingBox) -> worker_pb2.BoundingBox:
+    return worker_pb2.BoundingBox(
+        length=bounding_box.length,
+        width=bounding_box.width,
+        height=bounding_box.height,
+    )
 
 
 class Heading(float):

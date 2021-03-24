@@ -6,8 +6,7 @@ import smarts.zoo.manager_pb2 as manager__pb2
 
 
 class ManagerStub(object):
-    """Interface exported by the manager.
-    """
+    """Interface exported by the manager."""
 
     def __init__(self, channel):
         """Constructor.
@@ -16,88 +15,108 @@ class ManagerStub(object):
             channel: A grpc.Channel.
         """
         self.spawn_worker = channel.unary_unary(
-                '/manager.Manager/spawn_worker',
-                request_serializer=manager__pb2.Machine.SerializeToString,
-                response_deserializer=manager__pb2.Port.FromString,
-                )
+            "/manager.Manager/spawn_worker",
+            request_serializer=manager__pb2.Machine.SerializeToString,
+            response_deserializer=manager__pb2.Port.FromString,
+        )
         self.stop_worker = channel.unary_unary(
-                '/manager.Manager/stop_worker',
-                request_serializer=manager__pb2.Port.SerializeToString,
-                response_deserializer=manager__pb2.Status.FromString,
-                )
+            "/manager.Manager/stop_worker",
+            request_serializer=manager__pb2.Port.SerializeToString,
+            response_deserializer=manager__pb2.Status.FromString,
+        )
 
 
 class ManagerServicer(object):
-    """Interface exported by the manager.
-    """
+    """Interface exported by the manager."""
 
     def spawn_worker(self, request, context):
         """Spawn worker processes.
         Returns the address (ip, port) of new worker process.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def stop_worker(self, request, context):
-        """Stop worker process.
-        """
+        """Stop worker process."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_ManagerServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'spawn_worker': grpc.unary_unary_rpc_method_handler(
-                    servicer.spawn_worker,
-                    request_deserializer=manager__pb2.Machine.FromString,
-                    response_serializer=manager__pb2.Port.SerializeToString,
-            ),
-            'stop_worker': grpc.unary_unary_rpc_method_handler(
-                    servicer.stop_worker,
-                    request_deserializer=manager__pb2.Port.FromString,
-                    response_serializer=manager__pb2.Status.SerializeToString,
-            ),
+        "spawn_worker": grpc.unary_unary_rpc_method_handler(
+            servicer.spawn_worker,
+            request_deserializer=manager__pb2.Machine.FromString,
+            response_serializer=manager__pb2.Port.SerializeToString,
+        ),
+        "stop_worker": grpc.unary_unary_rpc_method_handler(
+            servicer.stop_worker,
+            request_deserializer=manager__pb2.Port.FromString,
+            response_serializer=manager__pb2.Status.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'manager.Manager', rpc_method_handlers)
+        "manager.Manager", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class Manager(object):
-    """Interface exported by the manager.
-    """
+    """Interface exported by the manager."""
 
     @staticmethod
-    def spawn_worker(request,
+    def spawn_worker(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/manager.Manager/spawn_worker',
+            "/manager.Manager/spawn_worker",
             manager__pb2.Machine.SerializeToString,
             manager__pb2.Port.FromString,
-            options, channel_credentials,
-            call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def stop_worker(request,
+    def stop_worker(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/manager.Manager/stop_worker',
+            "/manager.Manager/stop_worker",
             manager__pb2.Port.SerializeToString,
             manager__pb2.Status.FromString,
-            options, channel_credentials,
-            call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )

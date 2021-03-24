@@ -24,6 +24,7 @@ import glob
 import json
 import logging
 import math
+import numpy as np
 import os
 import pickle
 import random
@@ -33,7 +34,6 @@ from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Sequence, Tuple, Union
 
-import numpy as np
 
 from smarts.core.coordinates import Heading
 from smarts.core.data_model import SocialAgent
@@ -47,6 +47,7 @@ from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
+from smarts.zoo import worker_pb2
 
 
 class Start(NamedTuple):
@@ -54,10 +55,24 @@ class Start(NamedTuple):
     heading: Heading
 
 
+def start_to_proto(start: Start) -> worker_pb2.Start:
+    return worker_pb2.Start(
+        position=start.position,
+        heading=start.heading,
+    )
+
+
 class GoalData(NamedTuple):
     position: Tuple[float, float] = (None, None)
     # target_heading: Heading
     radius: float = None
+
+
+def goal_to_proto(goal: GoalData) -> worker_pb2.Goal:
+    return worker_pb2.Goal(
+        position=goal.position,
+        radius=goal.radius,
+    )
 
 
 class Goal:
@@ -121,6 +136,17 @@ class Via(NamedTuple):
     required_speed: float = None
 
 
+def via_to_proto(via: Via) -> worker_pb2.Via:
+    return worker_pb2.Via(
+        lane_id=via.lane_id,
+        edge_id=via.edge_id,
+        lane_index=via.lane_index,
+        position=via.position,
+        hit_distance=via.hit_distance,
+        required_speed=via.required_speed,
+    )
+
+
 class MissionData(NamedTuple):
     start: Start
     goal: Goal
@@ -133,6 +159,18 @@ class MissionData(NamedTuple):
     via: List[Via] = []
     route_length: float = None
     num_laps: int = None  # None means infinite # of laps
+
+
+def mission_to_proto(mission: MissionData) -> worker_pb2.Mission:
+    return worker_pb2.Mission(
+        start=start_to_proto(mission.start),
+        goal=goal_to_proto(mission.goal),
+        route_vias=mission.route_vias,
+        start_time=mission.start_time,
+        via=[via_to_proto(via) for via in mission.via],
+        route_length=mission.route_length,
+        num_laps=mission.num_laps,
+    )
 
 
 class Mission:

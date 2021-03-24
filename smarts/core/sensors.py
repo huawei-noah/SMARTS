@@ -45,14 +45,16 @@ from smarts.core.utils import sequence
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.sstudio.types import CutIn, UTurn, ZoneData
 
+from smarts.core import coordinates
 from smarts.core.coordinates import BoundingBox, Heading, HeadingMethods
 from smarts.core.events import Events
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
 from smarts.core.masks import RenderMasks
+from smarts.core import scenario
 from smarts.core.scenario import MissionData, Via
 from smarts.core.waypoints import Waypoint
-
+from smarts.zoo import worker_pb2
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,23 @@ class VehicleObservation(NamedTuple):
     edge_id: str = None
     lane_id: str = None
     lane_index: int = None
+
+
+def vehicle_observation_to_proto(
+    vehicle_observation: VehicleObservation,
+) -> worker_pb2.VehicleObservation:
+    return worker_pb2.VehicleObservation(
+        id=vehicle_observation.id,
+        position=vehicle_observation.position,
+        bounding_box=coordinates.bounding_box_to_proto(
+            vehicle_observation.bounding_box
+        ),
+        heading=vehicle_observation.heading,
+        speed=vehicle_observation.speed,
+        edge_id=vehicle_observation.edge_id,
+        lane_id=vehicle_observation.lane_id,
+        lane_index=vehicle_observation.lane_index,
+    )
 
 
 class EgoVehicleObservation(NamedTuple):
@@ -88,6 +107,30 @@ class EgoVehicleObservation(NamedTuple):
     angular_jerk: np.ndarray
 
 
+def ego_vehicle_observation_to_proto(
+    ego: EgoVehicleObservation,
+) -> worker_pb2.EgoVehicleObservation:
+    return worker_pb2.EgoVehicleObservation(
+        id=ego.id,
+        position=ego.position,
+        bounding_box=coordinates.bounding_box_to_proto(ego.bounding_box),
+        heading=ego.heading,
+        speed=ego.speed,
+        steering=ego.steering,
+        yaw_rate=ego.yaw_rate,
+        edge_id=ego.edge_id,
+        lane_id=ego.lane_id,
+        lane_index=ego.lane_index,
+        mission=scenario.mission_to_proto(ego.mission),
+        linear_velocity=ego.linear_velocity,
+        angular_velocity=ego.angular_velocity,
+        linear_acceleration=ego.linear_acceleration,
+        angular_acceleration=ego.angular_acceleration,
+        linear_jerk=ego.linear_jerk,
+        angular_jerk=ego.angular_jerk,
+    )
+
+
 class RoadWaypoints(NamedTuple):
     lanes: Dict[str, List[Waypoint]]
     route_waypoints: List[Waypoint]
@@ -108,6 +151,19 @@ class GridMapMetadata(NamedTuple):
     camera_heading_in_degrees: float
 
 
+def grid_map_metadata_to_proto(
+    grid_map_metadata: GridMapMetadata,
+) -> worker_pb2.GridMapMetadata:
+    return worker_pb2.GridMapMetadata(
+        created_at=grid_map_metadata.created_at,
+        resolution=grid_map_metadata.resolution,
+        width=grid_map_metadata.width,
+        height=grid_map_metadata.height,
+        camera_pos=grid_map_metadata.camera_pos,
+        camera_heading_in_degrees=grid_map_metadata.camera_heading_in_degrees,
+    )
+
+
 class TopDownRGB(NamedTuple):
     metadata: GridMapMetadata
     data: np.ndarray
@@ -123,6 +179,20 @@ class DrivableAreaGridMap(NamedTuple):
     data: np.ndarray
 
 
+def grid_map_to_proto(grid_map) -> worker_pb2.GridMap:
+    if grid_map == None:
+        return None
+
+    return worker_pb2.GridMap(
+        metadata=grid_map_metadata_to_proto(grid_map.metadata),
+        data=worker_pb2.Matrix(
+            data=np.ravel(grid_map.data),
+            rows=(grid_map.data).shape[0],
+            cols=(grid_map.data).shape[1],
+        ),
+    )
+
+
 class ViaPoint(NamedTuple):
     position: Tuple[float, float] = (None, None)
     lane_index: float = None
@@ -130,11 +200,27 @@ class ViaPoint(NamedTuple):
     required_speed: float = None
 
 
+def via_point_to_proto(via_point: ViaPoint) -> worker_pb2.ViaPoint:
+    return worker_pb2.ViaPoint(
+        position=via_point.position,
+        lane_index=via_point.lane_index,
+        edge_id=via_point.edge_id,
+        required_speed=via_point.required_speed,
+    )
+
+
 class Vias(NamedTuple):
     near_via_points: List[ViaPoint] = []
     """Ordered list of nearby points that have not been hit"""
     hit_via_points: List[ViaPoint] = []
     """List of points that were hit in the previous step"""
+
+
+def vias_to_proto(vias: Vias) -> worker_pb2.Vias:
+    return worker_pb2.Vias(
+        near_via_points=[via_point_to_proto(elem) for elem in vias.near_via_points],
+        hit_via_points=[via_point_to_proto(elem) for elem in vias.hit_via_points],
+    )
 
 
 class Observation(NamedTuple):
@@ -146,14 +232,12 @@ class Observation(NamedTuple):
     # TODO: Convert to `namedtuple` or only return point cloud
     # [points], [hits], [(ray_origin, ray_direction)]
     # TODO: Convert type to Tuple[
-    #     List[np.ndarray], 
-    #     List[np.ndarray], 
+    #     List[np.ndarray((3,), dtype=float)],
+    #     List[np.ndarray((3,), dtype=float)],
     #     List[np.ndarray((2,3), dtype=float)]
     # ]
     lidar_point_cloud: Tuple[
-        List[np.ndarray], 
-        List[np.ndarray], 
-        List[Tuple[np.ndarray, np.ndarray]]
+        List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
     ]
     drivable_area_grid_map: DrivableAreaGridMap
     occupancy_grid_map: OccupancyGridMap
@@ -164,6 +248,10 @@ class Observation(NamedTuple):
 
 class Collision(NamedTuple):
     collidee_id: str = None
+
+
+def collision_to_proto(collision: Collision) -> worker_pb2.Collision:
+    return worker_pb2.Collision(collidee_id=collision.collidee_id)
 
 
 class Sensors:
@@ -228,10 +316,10 @@ class Sensors:
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
-            "linear_acceleration": np.array([0,0,0]),
-            "angular_acceleration": np.array([0,0,0]),
-            "linear_jerk": np.array([0,0,0]),
-            "angular_jerk": np.array([0,0,0]),
+            "linear_acceleration": np.array([0, 0, 0]),
+            "angular_acceleration": np.array([0, 0, 0]),
+            "linear_jerk": np.array([0, 0, 0]),
+            "angular_jerk": np.array([0, 0, 0]),
         }
         if vehicle.subscribed_to_accelerometer_sensor:
             acceleration_values = vehicle.accelerometer_sensor(
@@ -1126,7 +1214,12 @@ class AccelerometerSensor(Sensor):
             self.angular_accelerations.append(angular_velocity)
 
         if len(self.linear_accelerations) < 3 or len(self.angular_accelerations) < 3:
-            return (np.array([0,0,0]), np.array([0,0,0]), np.array([0,0,0]), np.array([0,0,0]))
+            return (
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+                np.array([0, 0, 0]),
+            )
 
         linear_acc = self.linear_accelerations[0] - self.linear_accelerations[1]
         last_linear_acc = self.linear_accelerations[1] - self.linear_accelerations[2]
@@ -1217,6 +1310,7 @@ def fix_observation_size(obs_config: Dict, obs: Dict) -> Dict:
     }
     return fixed_obs
 
+
 def fix_agent_observation_size(obs_config: Dict, obs: NamedTuple) -> Observation:
 
     # Truncate/pad observation.events
@@ -1228,9 +1322,7 @@ def fix_agent_observation_size(obs_config: Dict, obs: NamedTuple) -> Observation
     events = obs.events._replace(collisions=collisions)
 
     # Truncate/pad observation.ego_vehicle_state
-    yaw_rate = (
-        sequence.truncate_pad_arr(obs.ego_vehicle_state.yaw_rate, 3, 0),
-    )
+    yaw_rate = (sequence.truncate_pad_arr(obs.ego_vehicle_state.yaw_rate, 3, 0),)
     route_vias = sequence.truncate_pad_li(
         obs.ego_vehicle_state.mission.route_vias,
         obs_config["observation"]["ego_vehicle_state"]["mission"]["route_vias"],
@@ -1261,9 +1353,7 @@ def fix_agent_observation_size(obs_config: Dict, obs: NamedTuple) -> Observation
     angular_acceleration = (
         sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_acceleration, 3, 0),
     )
-    linear_jerk = (
-        sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_jerk, 3, 0),
-    )
+    linear_jerk = (sequence.truncate_pad_arr(obs.ego_vehicle_state.linear_jerk, 3, 0),)
     angular_jerk = (
         sequence.truncate_pad_arr(obs.ego_vehicle_state.angular_jerk, 3, 0),
     )

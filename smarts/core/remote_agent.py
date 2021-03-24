@@ -25,8 +25,10 @@ import time
 from concurrent import futures
 
 import cloudpickle
+import numpy as np
 import grpc
 
+from smarts.core import events, scenario, sensors, waypoints
 from smarts.core.agent import AgentSpec
 from smarts.zoo import manager_pb2, manager_pb2_grpc, worker_pb2, worker_pb2_grpc
 
@@ -64,8 +66,8 @@ class RemoteAgent:
         # Run task asynchronously and return a Future.
         self._act_future = self._worker_stub.act.future(
             worker_pb2.Observation(
-                payload=cloudpickle.dumps(obs),
-                observe=obs_tuple_to_proto(obs))
+                payload=cloudpickle.dumps(obs), observe=obs_tuple_to_proto(obs)
+            )
         )
 
         return self._act_future
@@ -98,131 +100,44 @@ def obs_tuple_to_proto(obs):
 
     proto = worker_pb2.Observe(
         vehicles={
-                agent_id: agent_obs_tuple_to_proto(agent_obs)
-                for agent_id, agent_obs in obs.items()
-            }
+            agent_id: agent_obs_tuple_to_proto(agent_obs)
+            for agent_id, agent_obs in obs.items()
+        }
     )
 
-    print("printing proto below -------------------------------")
-    print("proto ================ \n ", proto)
-    print("^^^^^^^^^^^ -------------------------------\n\n")
+    if obs == {}:
+        print("printing first proto below -------------------------------")
+        print("proto ================ \n ", proto)
+        print("^^^^^^^^^^^ -------------------------------\n\n")
+    else:
+        k = 0
+        for agent_id, agent_obs in obs.items():
+            print(agent_id)
+            k = agent_id
+            break
+
+        print("printing second proto below -------------------------------")
+        print("proto ================ \n ", proto)
+        print(
+            "proto.vehicles[].drivable_area_grid_map ======================== \n ",
+            proto.vehicles[k].drivable_area_grid_map,
+        )
+        print("^^^^^^^^^^^ -------------------------------\n\n")
 
     return proto
 
+
 def agent_obs_tuple_to_proto(obs):
-    # events.collisions
-    collisions = [ 
-        worker_pb2.Collisions(
-                collidee_id=collision.collidee_id
-            )
-        for collision in obs.events.collisions
-    ]
-
-    # events
-    events = worker_pb2.Events(
-        collisions=collisions,
-        off_route=obs.events.off_route,
-        reached_goal=obs.events.reached_goal,
-        reached_max_episode_steps=obs.events.reached_max_episode_steps,
-        off_road=obs.events.off_road,
-        wrong_way=obs.events.wrong_way,
-        not_moving=obs.events.not_moving,
-    )
-
-    # ego_vehicle_state.mission.via
-    via = [ 
-        worker_pb2.Via(
-            lane_id=elem.lane_id,
-            edge_id=elem.edge_id,
-            lane_index=elem.lane_index,
-            position=elem.position,
-            hit_distance=elem.hit_distance,
-            required_speed=elem.required_speed,
-        )
-        for elem in obs.ego_vehicle_state.mission.via
-    ]
-
-    # ego_vehicle_state.mission
-    mission = worker_pb2.Mission(
-        start=worker_pb2.Start(
-            position=obs.ego_vehicle_state.mission.start.position,
-            heading=obs.ego_vehicle_state.mission.start.heading,
-        ),
-        goal=worker_pb2.Goal(
-            position=obs.ego_vehicle_state.mission.goal.position,
-            radius=obs.ego_vehicle_state.mission.goal.radius,
-        ),
-        route_vias=obs.ego_vehicle_state.mission.route_vias,
-        start_time=obs.ego_vehicle_state.mission.start_time,
-        via=via,
-        route_length=obs.ego_vehicle_state.mission.route_length,
-        num_laps=obs.ego_vehicle_state.mission.num_laps,
-    )
-
-    # ego_vehicle_state 
-    ego_vehicle_state = worker_pb2.EgoVehicleObservation(
-        id=obs.ego_vehicle_state.id,
-        position=obs.ego_vehicle_state.position,
-        bounding_box=worker_pb2.BoundingBox(
-            length=obs.ego_vehicle_state.bounding_box.length,
-            width=obs.ego_vehicle_state.bounding_box.width,
-            height=obs.ego_vehicle_state.bounding_box.height,
-        ),
-        heading=obs.ego_vehicle_state.heading,
-        speed=obs.ego_vehicle_state.speed,
-        steering=obs.ego_vehicle_state.steering,
-        yaw_rate=obs.ego_vehicle_state.yaw_rate,
-        edge_id=obs.ego_vehicle_state.edge_id,
-        lane_id=obs.ego_vehicle_state.lane_id,
-        lane_index=obs.ego_vehicle_state.lane_index,
-        mission=mission,
-        linear_velocity=obs.ego_vehicle_state.linear_velocity,
-        angular_velocity=obs.ego_vehicle_state.angular_velocity,
-        linear_acceleration=obs.ego_vehicle_state.linear_acceleration,
-        angular_acceleration=obs.ego_vehicle_state.angular_acceleration,
-        linear_jerk=obs.ego_vehicle_state.linear_jerk,
-        angular_jerk=obs.ego_vehicle_state.angular_jerk,
-    )  
-    
-    # neighborhood_vehicle_states
-    neighborhood_vehicle_states = [ 
-        worker_pb2.VehicleObservation(
-            id=elem.id,
-            position=elem.position,
-            bounding_box=worker_pb2.BoundingBox(
-                length=elem.bounding_box.length,
-                width=elem.bounding_box.width,
-                height=elem.bounding_box.height,
-            ),
-            heading=elem.heading,
-            speed=elem.speed,
-            edge_id=elem.edge_id,
-            lane_id=elem.lane_id,
-            lane_index=elem.lane_index,
-        )
-        for elem in obs.neighborhood_vehicle_states
-    ]
-
-    # waypoint_paths
-    waypoint_paths=[
-        worker_pb2.ListWaypoint( 
-            waypoint=[
-                worker_pb2.Waypoint(    
-                    pos=elem.pos,
-                    heading=elem.heading,
-                    lane_width=elem.lane_width,
-                    speed_limit=elem.speed_limit,
-                    lane_id=elem.lane_id,
-                    lane_index=elem.lane_index,
-                )
-                for elem in list_elem
-            ]
+    # obs.waypoint_paths
+    waypoint_paths = [
+        worker_pb2.ListWaypoint(
+            waypoints=[waypoints.waypoint_to_proto(elem) for elem in list_elem]
         )
         for list_elem in obs.waypoint_paths
     ]
 
-    # lidar_point_cloud 
-    lidar_point_cloud=worker_pb2.Lidar(
+    # obs.lidar_point_cloud
+    lidar_point_cloud = worker_pb2.Lidar(
         points=worker_pb2.Matrix(
             data=np.ravel(obs.lidar_point_cloud[0]),
             rows=len(obs.lidar_point_cloud[0]),
@@ -233,7 +148,8 @@ def agent_obs_tuple_to_proto(obs):
             rows=len(obs.lidar_point_cloud[1]),
             cols=3,
         ),
-        ray=[worker_pb2.Matrix(
+        ray=[
+            worker_pb2.Matrix(
                 data=np.ravel(elem),
                 rows=2,
                 cols=3,
@@ -242,18 +158,24 @@ def agent_obs_tuple_to_proto(obs):
         ],
     )
 
-    # drivable_area_grid_map
-    # drivable_area_grid_map = 
-
     # vehicle_state
     vehicle_state = worker_pb2.VehicleState(
-        events=events,
-        ego_vehicle_state=ego_vehicle_state,
-        neighborhood_vehicle_states=neighborhood_vehicle_states,
+        events=events.events_to_proto(obs.events),
+        ego_vehicle_state=sensors.ego_vehicle_observation_to_proto(
+            obs.ego_vehicle_state
+        ),
+        neighborhood_vehicle_states=[
+            sensors.vehicle_observation_to_proto(elem)
+            for elem in obs.neighborhood_vehicle_states
+        ],
         waypoint_paths=waypoint_paths,
         distance_travelled=obs.distance_travelled,
         lidar_point_cloud=lidar_point_cloud,
-        # drivable_area_grid_map=drivable_area_grid_map,
+        drivable_area_grid_map=sensors.grid_map_to_proto(obs.drivable_area_grid_map),
+        occupancy_grid_map=sensors.grid_map_to_proto(obs.occupancy_grid_map),
+        top_down_rgb=sensors.grid_map_to_proto(obs.top_down_rgb),
+        # RoadWaypoints road_waypoints=10,
+        via_data=sensors.vias_to_proto(obs.via_data),
     )
 
     # print("vehicle_state.ego_vehicle_state ====>>> ", vehicle_state.ego_vehicle_state)
@@ -270,7 +192,6 @@ def agent_obs_tuple_to_proto(obs):
     print("obs ====>>> ", obs)
 
     return vehicle_state
-
 
     # import numpy as np
     # gf = [np.array([1,0,0]),np.array([2,0,0])]

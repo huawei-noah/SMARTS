@@ -57,12 +57,12 @@ message Action {
 // ---------------------------------------------
 
 // Collision events
-message Collisions{
+message Collision{
     string collidee_id=1;
 }
 
 message Events {
-    repeated Collisions collisions=1;
+    repeated Collision collisions=1;
     bool off_route=2;
     bool reached_goal=3;
     bool reached_max_episode_steps=4;
@@ -147,7 +147,7 @@ message Waypoint{
 }
 
 message ListWaypoint{
-    repeated Waypoint waypoint=1;
+    repeated Waypoint waypoints=1;
 }
 
 message Lidar{
@@ -176,17 +176,7 @@ message Matrix{
     uint32 cols = 3;
 }
 
-message DrivableAreaGridMap{
-    GridMapMetadata metadata=1;
-    Matrix data=2;
-}
-
-message OccupancyGridMap{
-    GridMapMetadata metadata=1;
-    Matrix data=2;
-}
-
-message TopDownRGB{
+message GridMap{
     GridMapMetadata metadata=1;
     Matrix data=2;
 }
@@ -215,9 +205,9 @@ message VehicleState{
     repeated ListWaypoint waypoint_paths=4;
     float distance_travelled=5;
     Lidar lidar_point_cloud=6;
-    DrivableAreaGridMap drivable_area_grid_map=7; 
-    OccupancyGridMap occupancy_grid_map=8;
-    TopDownRGB top_down_rgb=9;
+    GridMap drivable_area_grid_map=7; 
+    GridMap occupancy_grid_map=8;
+    GridMap top_down_rgb=9;
     RoadWaypoints road_waypoints=10;
     Vias via_data=11;
 }
