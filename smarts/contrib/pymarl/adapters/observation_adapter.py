@@ -84,7 +84,7 @@ def default_obs_adapter(env_obs):
     if sum(ego_lane_dist > 0) > 3:
         ego_lane_dist[0] = 0
         ego_lane_dist[-1] = 0
-    if env_obs.occupancy_grid_map is not None:
+    if env_obs.occupancy_grid_map.data.size is not 0:
         proximity = proximity_detection(env_obs.occupancy_grid_map[1])
     else:
         proximity = [0] * 6

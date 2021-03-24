@@ -79,11 +79,11 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
         #     comparison = cloudpickle.loads(request.payload)
         #     print(
         #         "payload comparison ================= \n",
-        #         comparison[k].ego_vehicle_state,
+        #         comparison[k].occupancy_grid_map
         #     )
         #     print(
         #         "converted proto[0]->obs[0] =================== \n",
-        #         obs[k].ego_vehicle_state,
+        #         obs[k].occupancy_grid_map
         #     )
         #     # print(type(comparison[k].waypoint_paths[0][0]))
         #     # print(type(obs[k].waypoint_paths[0][0]))

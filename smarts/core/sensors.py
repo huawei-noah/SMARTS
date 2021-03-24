@@ -242,17 +242,17 @@ def proto_to_grid_map_metadata(proto: worker_pb2.GridMapMetadata) -> GridMapMeta
 
 class TopDownRGB(NamedTuple):
     metadata: GridMapMetadata = GridMapMetadata()
-    data: np.ndarray = np.zeros((1, 1), dtype=float)
+    data: np.ndarray = np.empty(shape=(0, 0), dtype=np.float32)
 
 
 class OccupancyGridMap(NamedTuple):
     metadata: GridMapMetadata = GridMapMetadata()
-    data: np.ndarray = np.zeros((1, 1), dtype=float)
+    data: np.ndarray = np.empty(shape=(0, 0), dtype=np.float32)
 
 
 class DrivableAreaGridMap(NamedTuple):
     metadata: GridMapMetadata = GridMapMetadata()
-    data: np.ndarray = np.zeros((1, 1), dtype=float)
+    data: np.ndarray = np.empty(shape=(0, 0), dtype=np.float32)
 
 
 def grid_map_to_proto(grid_map) -> worker_pb2.GridMap:
