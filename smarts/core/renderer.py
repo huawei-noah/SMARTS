@@ -68,7 +68,9 @@ class _ShowBaseInstance(ShowBase):
             cls.__it__ = it = object.__new__(cls)
             it.init(timestep_sec)
         else:
-            assert timestep_sec == it._timestep_sec
+            assert (
+                timestep_sec == it._timestep_sec
+            ), "Multiple simultaneous instances of SMARTS must use same timestep_sec value."
         return it
 
     def __init__(self, timestep_sec=0.1):
@@ -94,10 +96,10 @@ class _ShowBaseInstance(ShowBase):
         except Exception as e:
             # Known reasons for this failing:
             raise Exception(
-                "Error in initializing framework for opening graphical display and creating scene graph. "
+                f"Error in initializing framework for opening graphical display and creating scene graph. "
                 "A typical reason is display not found. Try running with different configurations of "
                 "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "
-                "the documentation."
+                "the documentation.\nException was: {e}"
             ) from e
 
     def destroy(self):
