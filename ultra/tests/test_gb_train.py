@@ -33,6 +33,8 @@ from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.train import train
 from ultra.utils.coordinator import coordinator
+from ultra.utils.episode import episodes
+from itertools import cycle
 
 seed = 2
 
@@ -43,12 +45,12 @@ class GBTrainTest(unittest.TestCase):
 
     def test_gb_train_cli(self):
         log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs/")
-        task_dir = "../../tests/scenarios/grade_based_test_curriculum"
+        curriculum_dir = "../../tests/scenarios/grade_based_test_curriculum"
         save_dir = "tests/gb_train_test/gb"
 
         try:
             os.system(
-                f"python ultra/train.py --grade-mode True --gb-curriculum-dir {task_dir} --task 00 --level easy \
+                f"python ultra/train.py --grade-mode True --gb-curriculum-dir {curriculum_dir} --task 00 --level easy \
                 --headless True --episodes 6 --max-episode-steps 2 --gb-scenarios-root-dir tests/scenarios \
                 --gb-scenarios-save-dir {save_dir} --log-dir {log_dir}"
             )
@@ -101,6 +103,35 @@ class GBTrainTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
             ray.shutdown()
+
+    def test_coordinator(self):
+        log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs/")
+        gb_curriculum_dir = "../../tests/scenarios/grade_based_test_curriculum"
+        num_episodes = 8
+        etag = "sac-v0"
+
+        agent_coordinator = coordinator(gb_curriculum_dir)
+
+        grade_iterator = iter(
+            cycle(
+                [
+                    ["00-gb", "test_grade1"],
+                    ["00-gb", "test_grade2"],
+                    ["00-gb", "test_grade3"],
+                ]
+            )
+        )
+
+        for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
+            switch_grade = agent_coordinator.graduate(episode.index, num_episodes)
+            # If agent switches to new grade
+            if switch_grade[0] == True:
+                self.assertEqual(next(grade_iterator), agent_coordinator.get_grade()[0])
+
+            # If agent has completed all levels (no cycle through levels again)
+            if switch_grade[1] == True:
+                finished = True
+                self.assertTrue(finished)
 
     @classmethod
     def tearDownClass(cls):

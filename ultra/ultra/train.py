@@ -117,10 +117,10 @@ def train(
 
     if grade_mode:
         agent_coordinator = coordinator(gb_info["gb_curriculum_dir"])
-        print(gb_info)
-        agent_coordinator.build_all_scenarios(
-            gb_info["gb_scenarios_root_dir"], gb_info["gb_scenarios_save_dir"]
-        )
+        # To build all scenarios from all grades
+        # agent_coordinator.build_all_scenarios(
+        #     gb_info["gb_scenarios_root_dir"], gb_info["gb_scenarios_save_dir"]
+        # )
         print(
             "\n------------ GRADE MODE : Enabled ------------\n Number of Intervals (grades):",
             agent_coordinator.get_num_of_grades(),
@@ -141,6 +141,7 @@ def train(
             # If agent switches to new grade
             if switch_grade[0] == True:
                 observations = env.reset(True, agent_coordinator.get_grade())
+                average_scenarios_passed = 0.0
             else:
                 observations = env.reset()
 

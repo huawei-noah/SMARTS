@@ -27,10 +27,10 @@ from ultra.scenarios.generate_scenarios import build_scenarios
 
 
 class coordinator:
-    def __init__(self, gb_task_dir):
+    def __init__(self, gb_curriculum_dir):
         self.mode = False
 
-        root_dir = gb_task_dir  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
+        root_dir = gb_curriculum_dir  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
         base_dir = os.path.join(os.path.dirname(__file__), root_dir)
         grades_dir = os.path.join(base_dir, "config.yaml")
 
@@ -70,7 +70,7 @@ class coordinator:
     def get_pass_based_sample_rate(self):
         return self.curriculum["conditions"]["pass_based"]["sample_rate"]
 
-    def graduate(self, index, num_episodes, average_scenarios_passed):
+    def graduate(self, index, num_episodes, average_scenarios_passed=None):
         """ Conditions on when to graduate """
 
         if self.curriculum["conditions"]["episode_based"]["toggle"] == True:

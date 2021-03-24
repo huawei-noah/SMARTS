@@ -10,7 +10,7 @@ curriculum:
       cycle: False 
     pass_based:
       toggle: True
-      pass_rate: 0.50
+      pass_rate: 0.40
       sample_rate: 30
 
 
