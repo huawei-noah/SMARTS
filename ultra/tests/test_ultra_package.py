@@ -75,6 +75,7 @@ class UltraPackageTest(unittest.TestCase):
                         grade_mode=False,
                         gb_info={
                             "gb_curriculum_dir": "",
+                            "gb_build_scenarios": False,
                             "gb_scenarios_root_dir": None,
                             "gb_scenarios_save_dir": None,
                         },
