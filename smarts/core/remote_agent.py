@@ -174,7 +174,7 @@ def agent_obs_tuple_to_proto(obs):
         drivable_area_grid_map=sensors.grid_map_to_proto(obs.drivable_area_grid_map),
         occupancy_grid_map=sensors.grid_map_to_proto(obs.occupancy_grid_map),
         top_down_rgb=sensors.grid_map_to_proto(obs.top_down_rgb),
-        # RoadWaypoints road_waypoints=10,
+        road_waypoints=sensors.road_waypoints_to_proto(obs.road_waypoints),
         via_data=sensors.vias_to_proto(obs.via_data),
     )
 

@@ -46,12 +46,13 @@ from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.sstudio.types import CutIn, UTurn, ZoneData
 
 from smarts.core import coordinates
+from smarts.core import scenario
+from smarts.core import waypoints
 from smarts.core.coordinates import BoundingBox, Heading, HeadingMethods
 from smarts.core.events import Events
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
 from smarts.core.masks import RenderMasks
-from smarts.core import scenario
 from smarts.core.scenario import MissionData, Via
 from smarts.core.waypoints import Waypoint
 from smarts.zoo import worker_pb2
@@ -134,6 +135,23 @@ def ego_vehicle_observation_to_proto(
 class RoadWaypoints(NamedTuple):
     lanes: Dict[str, List[Waypoint]]
     route_waypoints: List[Waypoint]
+
+
+def road_waypoints_to_proto(road_waypoints: RoadWaypoints) -> worker_pb2.RoadWaypoints:
+    if road_waypoints == None:
+        return None
+
+    return worker_pb2.RoadWaypoints(
+        lanes={
+            k: worker_pb2.ListWaypoint(
+                waypoints=[waypoints.waypoint_to_proto(elem) for elem in list_elem]
+            )
+            for k, list_elem in road_waypoints.lanes()
+        },
+        route_waypoints=[
+            waypoints.waypoint_to_proto(elem) for elem in road_waypoints.route_waypoints
+        ],
+    )
 
 
 class GridMapMetadata(NamedTuple):
