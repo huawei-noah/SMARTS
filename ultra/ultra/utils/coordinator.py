@@ -137,4 +137,7 @@ class coordinator:
             return (self.grade_completed, self.cycle_completed)
 
     def display(self):
-        print(f"\nCurrent grade: {self.grade}\n")
+        try:
+            print(f"\nCurrent grade: {self.grade}\n")
+        except:
+            pass

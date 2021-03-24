@@ -126,11 +126,11 @@ def train(
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs=agent_specs,
-        grade_mode=grade_mode,
         scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
+        grade_mode=grade_mode,
     )
 
     episode_count = 0

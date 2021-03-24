@@ -42,11 +42,11 @@ class UltraEnv(HiWayEnv):
     def __init__(
         self,
         agent_specs,
-        grade_mode,
         scenario_info,
         headless,
         timestep_sec,
         seed,
+        grade_mode=False,
         eval_mode=False,
         ordered_scenarios=False,
     ):
