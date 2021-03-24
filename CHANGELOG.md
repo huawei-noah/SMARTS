@@ -21,7 +21,7 @@ using [netconvert](https://sumo.dlr.de/docs/netconvert.html).
 We adapt Sumo vehicle positions to take this into account to allow Sumo to continue
 using the original coordinate system.  See Issue #325.
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. 
-See Issue #407.
+See Issue #597.
 
 ## [Format] - 2021-03-12
 ### Added 

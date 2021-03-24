@@ -311,7 +311,6 @@ class SMARTS:
 
         self._renderer.setup(scenario)
         self._setup_bullet_client(self._bullet_client)
-
         provider_state = self._setup_providers(self._scenario)
         self._agent_manager.setup_agents(self)
 
