@@ -104,7 +104,7 @@ def proto_to_vehicle_observation(
 
 class EgoVehicleObservation(NamedTuple):
     id: str
-    position: Tuple[float, float, float]
+    position: np.ndarray  # np.ndarray((3,), dtype=float)
     bounding_box: BoundingBox
     heading: Heading
     speed: float
@@ -143,6 +143,30 @@ def ego_vehicle_observation_to_proto(
         angular_acceleration=ego.angular_acceleration,
         linear_jerk=ego.linear_jerk,
         angular_jerk=ego.angular_jerk,
+    )
+
+
+def proto_to_ego_vehicle_observation(
+    proto: worker_pb2.EgoVehicleObservation,
+) -> EgoVehicleObservation:
+    return EgoVehicleObservation(
+        id=proto.id,
+        position=np.array(proto.position),
+        bounding_box=coordinates.proto_to_bounding_box(proto.bounding_box),
+        heading=proto.heading,
+        speed=proto.speed,
+        steering=proto.steering,
+        yaw_rate=np.array(proto.yaw_rate),
+        edge_id=proto.edge_id,
+        lane_id=proto.lane_id,
+        lane_index=proto.lane_index,
+        mission=scenario.proto_to_mission(proto.mission),
+        linear_velocity=np.array(proto.linear_velocity),
+        angular_velocity=np.array(proto.angular_velocity),
+        linear_acceleration=np.array(proto.linear_acceleration),
+        angular_acceleration=np.array(proto.angular_acceleration),
+        linear_jerk=np.array(proto.linear_jerk),
+        angular_jerk=np.array(proto.angular_jerk),
     )
 
 

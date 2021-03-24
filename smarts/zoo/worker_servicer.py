@@ -64,39 +64,40 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
 
         proto = request.observe.vehicles
         obs = remote_agent.proto_to_obs(proto)
-        if obs == {}:
-            print("received empty proto below -------------------------------")
-            print("received proto->obs {} ================ \n ", obs)
-            print("^^^^^^^^^^^ -------------------------------\n\n")
-        else:
-            k = 0
-            for agent_id, agent_obs in obs.items():
-                print(agent_id)
-                k = agent_id
-                break
+        # if obs == {}:
+        #     print("received empty proto below -------------------------------")
+        #     print("received proto->obs {} ================ \n ", obs)
+        #     print("^^^^^^^^^^^ -------------------------------\n\n")
+        # else:
+        #     k = 0
+        #     for agent_id, agent_obs in obs.items():
+        #         print(agent_id)
+        #         k = agent_id
+        #         break
 
-            print("received second proto below -------------------------------")
-            comparison = cloudpickle.loads(request.payload)
-            print(
-                "payload comparison ================= \n",
-                comparison[k].road_waypoints,
-            )
-            print(
-                "converted proto[0]->obs[0] =================== \n",
-                obs[k].road_waypoints,
-            )
-            # print(type(comparison[k].waypoint_paths[0][0]))
-            # print(type(obs[k].waypoint_paths[0][0]))
-            # print(type(comparison[k].waypoint_paths[0][0].pos))
-            # print(type(obs[k].waypoint_paths[0][0].pos))
-            # print(len(obs[k].waypoint_paths), len(obs[k].waypoint_paths[0]))
-            # print(len(comparison[k].waypoint_paths), len(comparison[k].waypoint_paths[0]))
-            print("^^^^^^^^^^^ -------------------------------\n\n")
-            exit()
+        #     print("received second proto below -------------------------------")
+        #     comparison = cloudpickle.loads(request.payload)
+        #     print(
+        #         "payload comparison ================= \n",
+        #         comparison[k].ego_vehicle_state,
+        #     )
+        #     print(
+        #         "converted proto[0]->obs[0] =================== \n",
+        #         obs[k].ego_vehicle_state,
+        #     )
+        #     # print(type(comparison[k].waypoint_paths[0][0]))
+        #     # print(type(obs[k].waypoint_paths[0][0]))
+        #     # print(type(comparison[k].waypoint_paths[0][0].pos))
+        #     # print(type(obs[k].waypoint_paths[0][0].pos))
+        #     # print(len(obs[k].waypoint_paths), len(obs[k].waypoint_paths[0]))
+        #     # print(len(comparison[k].waypoint_paths), len(comparison[k].waypoint_paths[0]))
+        #     print("^^^^^^^^^^^ -------------------------------\n\n")
+        #     exit()
 
-        adapted_obs = self._agent_spec.observation_adapter(
-            cloudpickle.loads(request.payload)
-        )
+        # adapted_obs = self._agent_spec.observation_adapter(
+        #     cloudpickle.loads(request.payload)
+        # )
+        adapted_obs = self._agent_spec.observation_adapter(obs)
         action = self._agent.act(adapted_obs)
         adapted_action = self._agent_spec.action_adapter(action)
         return worker_pb2.Action(action=cloudpickle.dumps(adapted_action))

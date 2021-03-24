@@ -97,7 +97,7 @@ class SMARTS(ShowBase):
         zoo_addrs=None,
     ):
         try:
-            super().__init__(self, windowType="none")
+            super().__init__(self, windowType="offscreen")
         except Exception as e:
             # Known reasons for this failing:
             raise Exception(

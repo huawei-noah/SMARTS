@@ -51,7 +51,7 @@ from smarts.zoo import worker_pb2
 
 
 class Start(NamedTuple):
-    position: Tuple[float, float]
+    position: np.ndarray  # np.ndarray((2,), dtype=float)
     heading: Heading
 
 
@@ -62,8 +62,15 @@ def start_to_proto(start: Start) -> worker_pb2.Start:
     )
 
 
+def proto_to_start(proto: worker_pb2.Start) -> Start:
+    return Start(
+        position=np.array(proto.position),
+        heading=proto.heading,
+    )
+
+
 class GoalData(NamedTuple):
-    position: Tuple[float, float] = (None, None)
+    position: np.ndarray = np.array([None, None], dtype=float)
     # target_heading: Heading
     radius: float = None
 
@@ -72,6 +79,13 @@ def goal_to_proto(goal: GoalData) -> worker_pb2.Goal:
     return worker_pb2.Goal(
         position=goal.position,
         radius=goal.radius,
+    )
+
+
+def proto_to_goal(proto: worker_pb2.Goal) -> GoalData:
+    return GoalData(
+        position=np.array(proto.position),
+        radius=proto.radius,
     )
 
 
@@ -147,6 +161,17 @@ def via_to_proto(via: Via) -> worker_pb2.Via:
     )
 
 
+def proto_to_via(proto: worker_pb2.Via) -> Via:
+    return Via(
+        lane_id=proto.lane_id,
+        edge_id=proto.edge_id,
+        lane_index=proto.lane_index,
+        position=tuple(proto.position),
+        hit_distance=proto.hit_distance,
+        required_speed=proto.required_speed,
+    )
+
+
 class MissionData(NamedTuple):
     start: Start
     goal: Goal
@@ -170,6 +195,18 @@ def mission_to_proto(mission: MissionData) -> worker_pb2.Mission:
         via=[via_to_proto(via) for via in mission.via],
         route_length=mission.route_length,
         num_laps=mission.num_laps,
+    )
+
+
+def proto_to_mission(proto: worker_pb2.Mission) -> MissionData:
+    return MissionData(
+        start=proto_to_start(proto.start),
+        goal=proto_to_goal(proto.goal),
+        route_vias=list(proto.route_vias),
+        start_time=proto.start_time,
+        via=[proto_to_via(elem) for elem in proto.via],
+        route_length=proto.route_length,
+        num_laps=proto.num_laps,
     )
 
 

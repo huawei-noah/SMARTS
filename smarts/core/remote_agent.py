@@ -210,7 +210,9 @@ def agent_proto_to_obs(proto: worker_pb2.VehicleState) -> sensors.Observation:
 
     obs = sensors.Observation(
         events=events.proto_to_events(proto.events),
-        ego_vehicle_state=None,
+        ego_vehicle_state=sensors.proto_to_ego_vehicle_observation(
+            proto.ego_vehicle_state
+        ),
         neighborhood_vehicle_states=[
             sensors.proto_to_vehicle_observation(elem)
             for elem in proto.neighborhood_vehicle_states
