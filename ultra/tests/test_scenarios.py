@@ -119,6 +119,33 @@ class ScenariosTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
+    def test_generate_scenarios_with_offset(self):
+        save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/offset_test/")
+        if os.path.exists(save_dir):
+            shutil.rmtree(save_dir)
+
+        build_scenarios(
+            task="task00",
+            level_name="offset_test",
+            stopwatcher_behavior=None,
+            stopwatcher_route=None,
+            root_path="tests/scenarios",
+            save_dir=save_dir,
+        )
+        for dirpath, dirnames, files in os.walk(save_dir):
+            if "missions.pkl" in files:
+                with open(os.path.join(dirpath, "missions.pkl"), "rb") as missions_file:
+                    missions = pickle.load(missions_file)
+                # Get the first mission's route's begin and end offset.
+                begin_offset = missions[0].mission.route.begin[2]
+                end_offset = missions[0].mission.route.end[2]
+                self.assertTrue(
+                    begin_offset in {78, 79, 80, 81}
+                )  # Values from start_offset range in tests/scenarios/task00/config.yaml.
+                self.assertTrue(
+                    end_offset in {40, 41, 42, 43, 44}
+                )  # Values from end_offset range in tests/scenarios/task00/config.yaml.
+
     @classmethod
     def tearDownClass(cls):
         if os.path.exists(ScenariosTest.OUTPUT_DIRECTORY):

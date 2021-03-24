@@ -79,7 +79,7 @@ class LaneFollowingController:
         # This lookahead value is coupled with a few calculations below, changing it
         # may affect stability of the controller.
         wp_paths = sensor_state.mission_planner.waypoint_paths_at(
-            sim, vehicle.pose, lookahead=30
+            sim, vehicle.pose, lookahead=16
         )
         current_lane = LaneFollowingController.find_current_lane(
             wp_paths, vehicle.position

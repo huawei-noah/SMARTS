@@ -52,7 +52,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--level`: The level of the task (default is easy).
   - `--episodes`: The number of training episodes to run (default is 1000000).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
-  - `--headless`: Whether to run training without Envision (default is False).
+  - `--headless`: Whether to run training without Envision (default is True).
   - `--eval-episodes`: The number of evaluation episodes (default is 200).
   - `--eval-rate`: The rate at which evaluation occurs based on the number of observations (default is 10000).
   - `--seed`: The environment seed (default is 2).
@@ -83,7 +83,7 @@ After training your agent, your models should be saved under `logs/<timestamped_
   - `--models`: The path to the saved model (default is models/).
   - `--episodes`: The number of evaluation episodes (default is 200).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
-  - `--headless`: Whether to run evaluation without Envision (default is False).
+  - `--headless`: Whether to run evaluation without Envision (default is True).
   - `--experiment-dir`: The path to the spec file that includes adapters and policy parameters.
   - `--policy`: The policy (agent) to evaluate (default is sac).
   - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
