@@ -150,6 +150,17 @@ message ListWaypoint{
     repeated Waypoint waypoints=1;
 }
 
+// Represents a matrix of np.ndarray((x,y), dtype=np.float32)
+message Matrix{
+    repeated float data = 1 [packed=true];
+    // The data is a 2D numpy array representing an image or a list of arrays.
+    // The 2D array is reshaped into shape (rows*cols,) for serialization by proto.
+    // To access data, use data[i*cols+j]. Here, i is row number and j is column number.
+    // Alternative storage method for 2D numpy array is to encode it into base64 string or into bytes.
+    uint32 rows = 2;
+    uint32 cols = 3;
+}
+
 message Lidar{
     Matrix points = 1; // Represents List[np.ndarray(3,)],
     Matrix hits = 2; // Represents List[np.ndarray(3,)],
@@ -163,17 +174,6 @@ message GridMapMetadata{
     int32 height=4;
     repeated float camera_pos=5; // Represents Tuple[float, float, float]
     float camera_heading_in_degrees=6;
-}
-
-// Represents a matrix of np.ndarray((x,y), dtype=np.float32)
-message Matrix{
-    repeated float data = 1 [packed=true];
-    // The data is a 2D numpy array representing an image or a list of arrays.
-    // The 2D array is reshaped into shape (rows*cols,) for serialization by proto.
-    // To access data, use data[i*cols+j]. Here, i is row number and j is column number.
-    // Alternative storage method for 2D numpy array is to encode it into base64 string or into bytes.
-    uint32 rows = 2;
-    uint32 cols = 3;
 }
 
 message GridMap{

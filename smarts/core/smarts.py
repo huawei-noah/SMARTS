@@ -43,16 +43,15 @@ with warnings.catch_warnings():
 
 from smarts.core.chassis import AckermannChassis, BoxChassis
 
-from smarts.core import glsl, models
+from smarts.core import glsl, models, sensors
 from smarts.core.agent_manager import AgentManager
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.colors import SceneColors
 from smarts.core.controllers import ActionSpaceType, Controllers
+from smarts.core.events import Collision
 from smarts.core.masks import RenderMasks
 from smarts.core.motion_planner_provider import MotionPlannerProvider
 from smarts.core.provider import ProviderState
-from smarts.core import sensors
-from smarts.core.sensors import Collision
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -98,7 +97,7 @@ class SMARTS(ShowBase):
         zoo_addrs=None,
     ):
         try:
-            super().__init__(self, windowType="offscreen")
+            super().__init__(self, windowType="none")
         except Exception as e:
             # Known reasons for this failing:
             raise Exception(

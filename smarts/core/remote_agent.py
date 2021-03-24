@@ -66,7 +66,8 @@ class RemoteAgent:
         # Run task asynchronously and return a Future.
         self._act_future = self._worker_stub.act.future(
             worker_pb2.Observation(
-                payload=cloudpickle.dumps(obs), observe=obs_to_proto(obs),
+                payload=cloudpickle.dumps(obs),
+                observe=obs_to_proto(obs),
             )
         )
 
@@ -126,6 +127,7 @@ def obs_to_proto(obs):
 
     return proto
 
+
 def agent_obs_to_proto(obs):
     # obs.waypoint_paths
     waypoint_paths = [
@@ -177,51 +179,56 @@ def agent_obs_to_proto(obs):
         via_data=sensors.vias_to_proto(obs.via_data),
     )
 
-    # print("agent_obs_tuple_to_proto VVVVVVVVV\n", obs)
-    # print("-----------------------------------------")
+    print("vehic----", vehicle_state.drivable_area_grid_map)
 
     return vehicle_state
 
-    # import numpy as np
-    # gf = [np.array([1,0,0]),np.array([2,0,0])]
-    # print(gf)
-
-    # fe = np.ravel(gf)
-    # print(fe)
-    # dw = list(fe.reshape((2,3)))
-    # print(dw)
-    # exit()
 
 def proto_to_obs(proto):
+    obs = {
+        agent_id: agent_proto_to_obs(agent_proto)
+        for agent_id, agent_proto in proto.items()
+    }
 
-    print(proto)
-    print("first printing ********************")
-    
-    obs = {}
-    # proto = proto(
-    #     vehicles={
-    #         agent_id: agent_obs_tuple_to_proto(agent_obs)
-    #         for agent_id, agent_obs in obs.items()
-    #     }
-    # )
+    return obs
 
-    # if obs == {}:
-    #     print("printing first proto below -------------------------------")
-    #     print("proto ================ \n ", proto)
-    #     print("^^^^^^^^^^^ -------------------------------\n\n")
-    # else:
-    #     k = 0
-    #     for agent_id, agent_obs in obs.items():
-    #         print(agent_id)
-    #         k = agent_id
-    #         break
 
-    #     print("printing second proto below -------------------------------")
-    #     print("proto ================ \n ", proto)
-    #     print(
-    #         "proto.vehicles[].drivable_area_grid_map ======================== \n ",
-    #         proto.vehicles[k].drivable_area_grid_map,
-    #     )
-    #     print("^^^^^^^^^^^ -------------------------------\n\n")
+def agent_proto_to_obs(proto: worker_pb2.VehicleState) -> sensors.Observation:
+    # proto.waypoint_paths
+    waypoint_paths = [
+        [waypoints.proto_to_waypoint(elem) for elem in list_elem.waypoints]
+        for list_elem in proto.waypoint_paths
+    ]
+
+    # obs.lidar_point_cloud
+    lidar_point_cloud = (
+        list(sensors.proto_matrix_to_obs(proto.lidar_point_cloud.points)),
+        list(sensors.proto_matrix_to_obs(proto.lidar_point_cloud.hits)),
+        [
+            tuple(sensors.proto_matrix_to_obs(elem))
+            for elem in proto.lidar_point_cloud.ray
+        ],
+    )
+
+    obs = sensors.Observation(
+        events=events.proto_to_events(proto.events),
+        ego_vehicle_state=None,
+        neighborhood_vehicle_states=[
+            sensors.proto_to_vehicle_observation(elem)
+            for elem in proto.neighborhood_vehicle_states
+        ],
+        waypoint_paths=waypoint_paths,
+        distance_travelled=proto.distance_travelled,
+        lidar_point_cloud=lidar_point_cloud,
+        drivable_area_grid_map=sensors.proto_to_grid_map(
+            proto.drivable_area_grid_map, sensors.DrivableAreaGridMap
+        ),
+        occupancy_grid_map=sensors.proto_to_grid_map(
+            proto.occupancy_grid_map, sensors.OccupancyGridMap
+        ),
+        top_down_rgb=sensors.proto_to_grid_map(proto.top_down_rgb, sensors.TopDownRGB),
+        road_waypoints=None,
+        via_data=None,
+    )
 
     return obs

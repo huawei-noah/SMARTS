@@ -87,6 +87,21 @@ def vehicle_observation_to_proto(
     )
 
 
+def proto_to_vehicle_observation(
+    proto: worker_pb2.VehicleObservation,
+) -> VehicleObservation:
+    return VehicleObservation(
+        id=proto.id,
+        position=tuple(proto.position),
+        bounding_box=coordinates.proto_to_bounding_box(proto.bounding_box),
+        heading=proto.heading,
+        speed=proto.speed,
+        edge_id=proto.edge_id,
+        lane_id=proto.lane_id,
+        lane_index=proto.lane_index,
+    )
+
+
 class EgoVehicleObservation(NamedTuple):
     id: str
     position: Tuple[float, float, float]
@@ -181,6 +196,17 @@ def grid_map_metadata_to_proto(
     )
 
 
+def proto_to_grid_map_metadata(proto: worker_pb2.GridMapMetadata) -> GridMapMetadata:
+    return GridMapMetadata(
+        created_at=proto.created_at,
+        resolution=proto.resolution,
+        width=proto.width,
+        height=proto.height,
+        camera_pos=tuple(proto.camera_pos),
+        camera_heading_in_degrees=proto.camera_heading_in_degrees,
+    )
+
+
 class TopDownRGB(NamedTuple):
     metadata: GridMapMetadata
     data: np.ndarray
@@ -208,6 +234,20 @@ def grid_map_to_proto(grid_map) -> worker_pb2.GridMap:
             cols=(grid_map.data).shape[1],
         ),
     )
+
+
+def proto_to_grid_map(proto: worker_pb2.GridMap, class_type):
+    if proto:
+        return None
+
+    return class_type(
+        metadata=proto_to_grid_map_metadata(proto.metadata),
+        data=proto_matrix_to_obs(proto.data),
+    )
+
+
+def proto_matrix_to_obs(proto: worker_pb2.Matrix) -> np.ndarray:
+    return np.array(proto.data).reshape((proto.rows, proto.cols))
 
 
 class ViaPoint(NamedTuple):

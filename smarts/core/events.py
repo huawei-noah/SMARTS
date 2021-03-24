@@ -37,9 +37,7 @@ class Events(NamedTuple):
 
 def events_to_proto(events: Events) -> worker_pb2.Events:
     return worker_pb2.Events(
-        collisions=[
-            collision_to_proto(collision) for collision in events.collisions
-        ],
+        collisions=[collision_to_proto(collision) for collision in events.collisions],
         off_route=events.off_route,
         reached_goal=events.reached_goal,
         reached_max_episode_steps=events.reached_max_episode_steps,
@@ -49,9 +47,25 @@ def events_to_proto(events: Events) -> worker_pb2.Events:
     )
 
 
+def proto_to_events(proto: worker_pb2.Events) -> Events:
+    return Events(
+        collisions=[proto_to_collision(collision) for collision in proto.collisions],
+        off_route=proto.off_route,
+        reached_goal=proto.reached_goal,
+        reached_max_episode_steps=proto.reached_max_episode_steps,
+        off_road=proto.off_road,
+        wrong_way=proto.wrong_way,
+        not_moving=proto.not_moving,
+    )
+
+
 class Collision(NamedTuple):
     collidee_id: str = None
 
 
 def collision_to_proto(collision: Collision) -> worker_pb2.Collision:
     return worker_pb2.Collision(collidee_id=collision.collidee_id)
+
+
+def proto_to_collision(proto: worker_pb2.Collision) -> Collision:
+    return Collision(collidee_id=proto.collidee_id)

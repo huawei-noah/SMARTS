@@ -50,6 +50,14 @@ def bounding_box_to_proto(bounding_box: BoundingBox) -> worker_pb2.BoundingBox:
     )
 
 
+def proto_to_bounding_box(proto: worker_pb2.BoundingBox) -> BoundingBox:
+    return BoundingBox(
+        length=proto.length,
+        width=proto.width,
+        height=proto.height,
+    )
+
+
 class Heading(float):
     """In this space we use radians, 0 is facing north, and turn counter-clockwise."""
 

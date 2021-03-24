@@ -94,6 +94,17 @@ def waypoint_to_proto(waypoint: Waypoint) -> worker_pb2.Waypoint:
     )
 
 
+def proto_to_waypoint(proto: worker_pb2.Waypoint) -> Waypoint:
+    return Waypoint(
+        pos=np.array(proto.pos),
+        heading=proto.heading,
+        lane_width=proto.lane_width,
+        speed_limit=proto.speed_limit,
+        lane_id=proto.lane_id,
+        lane_index=proto.lane_index,
+    )
+
+
 class WaypointMethods:
     @staticmethod
     def dist_to(waypoint, p):
