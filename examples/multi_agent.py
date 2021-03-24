@@ -58,7 +58,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
 if __name__ == "__main__":
     parser = default_argument_parser("multi-agent-example")
     args = parser.parse_args()
-
+    print(args.scenarios)
     main(
         scenarios=args.scenarios,
         sim_name=args.sim_name,
