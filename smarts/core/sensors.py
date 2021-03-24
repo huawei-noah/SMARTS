@@ -147,20 +147,17 @@ def ego_vehicle_observation_to_proto(
 
 
 class RoadWaypoints(NamedTuple):
-    lanes: Dict[str, List[Waypoint]]
-    route_waypoints: List[Waypoint]
+    lanes: Dict[str, List[Waypoint]] = {}
+    route_waypoints: List[Waypoint] = []
 
 
 def road_waypoints_to_proto(road_waypoints: RoadWaypoints) -> worker_pb2.RoadWaypoints:
-    if road_waypoints == None:
-        return None
-
     return worker_pb2.RoadWaypoints(
         lanes={
             k: worker_pb2.ListWaypoint(
                 waypoints=[waypoints.waypoint_to_proto(elem) for elem in list_elem]
             )
-            for k, list_elem in road_waypoints.lanes()
+            for k, list_elem in road_waypoints.lanes
         },
         route_waypoints=[
             waypoints.waypoint_to_proto(elem) for elem in road_waypoints.route_waypoints
@@ -168,19 +165,31 @@ def road_waypoints_to_proto(road_waypoints: RoadWaypoints) -> worker_pb2.RoadWay
     )
 
 
+def proto_to_road_waypoints(proto: worker_pb2.RoadWaypoints) -> RoadWaypoints:
+    return RoadWaypoints(
+        lanes={
+            k: [waypoints.proto_to_waypoint(elem) for elem in list_elem]
+            for k, list_elem in proto.lanes
+        },
+        route_waypoints=[
+            waypoints.proto_to_waypoint(elem) for elem in proto.route_waypoints
+        ],
+    )
+
+
 class GridMapMetadata(NamedTuple):
     # time at which the map was loaded
-    created_at: int
+    created_at: int = None
     # map resolution in world-space-distance/cell
-    resolution: float
+    resolution: float = None
     # map width in # of cells
-    width: int
+    width: int = None
     # map height in # of cells
-    height: int
+    height: int = None
     # camera position when project onto the map
-    camera_pos: Tuple[float, float, float]
+    camera_pos: Tuple[float, float, float] = None
     # camera rotation angle along z-axis when project onto the map
-    camera_heading_in_degrees: float
+    camera_heading_in_degrees: float = None
 
 
 def grid_map_metadata_to_proto(
@@ -208,24 +217,21 @@ def proto_to_grid_map_metadata(proto: worker_pb2.GridMapMetadata) -> GridMapMeta
 
 
 class TopDownRGB(NamedTuple):
-    metadata: GridMapMetadata
-    data: np.ndarray
+    metadata: GridMapMetadata = GridMapMetadata()
+    data: np.ndarray = np.zeros((1, 1), dtype=float)
 
 
 class OccupancyGridMap(NamedTuple):
-    metadata: GridMapMetadata
-    data: np.ndarray
+    metadata: GridMapMetadata = GridMapMetadata()
+    data: np.ndarray = np.zeros((1, 1), dtype=float)
 
 
 class DrivableAreaGridMap(NamedTuple):
-    metadata: GridMapMetadata
-    data: np.ndarray
+    metadata: GridMapMetadata = GridMapMetadata()
+    data: np.ndarray = np.zeros((1, 1), dtype=float)
 
 
 def grid_map_to_proto(grid_map) -> worker_pb2.GridMap:
-    if grid_map == None:
-        return None
-
     return worker_pb2.GridMap(
         metadata=grid_map_metadata_to_proto(grid_map.metadata),
         data=worker_pb2.Matrix(
@@ -237,9 +243,6 @@ def grid_map_to_proto(grid_map) -> worker_pb2.GridMap:
 
 
 def proto_to_grid_map(proto: worker_pb2.GridMap, class_type):
-    if proto:
-        return None
-
     return class_type(
         metadata=proto_to_grid_map_metadata(proto.metadata),
         data=proto_matrix_to_obs(proto.data),
@@ -266,6 +269,15 @@ def via_point_to_proto(via_point: ViaPoint) -> worker_pb2.ViaPoint:
     )
 
 
+def proto_to_via_point(proto: worker_pb2.ViaPoint) -> ViaPoint:
+    return ViaPoint(
+        position=tuple(proto.position),
+        lane_index=proto.lane_index,
+        edge_id=proto.edge_id,
+        required_speed=proto.required_speed,
+    )
+
+
 class Vias(NamedTuple):
     near_via_points: List[ViaPoint] = []
     """Ordered list of nearby points that have not been hit"""
@@ -277,6 +289,13 @@ def vias_to_proto(vias: Vias) -> worker_pb2.Vias:
     return worker_pb2.Vias(
         near_via_points=[via_point_to_proto(elem) for elem in vias.near_via_points],
         hit_via_points=[via_point_to_proto(elem) for elem in vias.hit_via_points],
+    )
+
+
+def proto_to_vias(proto: worker_pb2.Vias) -> Vias:
+    return Vias(
+        near_via_points=[proto_to_via_point(elem) for elem in proto.near_via_points],
+        hit_via_points=[proto_to_via_point(elem) for elem in proto.hit_via_points],
     )
 
 
@@ -299,7 +318,7 @@ class Observation(NamedTuple):
     drivable_area_grid_map: DrivableAreaGridMap
     occupancy_grid_map: OccupancyGridMap
     top_down_rgb: TopDownRGB
-    road_waypoints: RoadWaypoints = None
+    road_waypoints: RoadWaypoints = RoadWaypoints()
     via_data: Vias = Vias()
 
 
@@ -424,7 +443,7 @@ class Sensors:
         road_waypoints = (
             vehicle.road_waypoints_sensor()
             if vehicle.subscribed_to_road_waypoints_sensor
-            else None
+            else RoadWaypoints()
         )
 
         near_via_points = []
@@ -450,10 +469,14 @@ class Sensors:
         drivable_area_grid_map = (
             vehicle.drivable_area_grid_map_sensor()
             if vehicle.subscribed_to_drivable_area_grid_map_sensor
-            else None
+            else DrivableAreaGridMap()
         )
-        ogm = vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None
-        rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
+        ogm = (
+            vehicle.ogm_sensor()
+            if vehicle.subscribed_to_ogm_sensor
+            else OccupancyGridMap()
+        )
+        rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else TopDownRGB()
         lidar = (
             vehicle.lidar_sensor()
             if vehicle.subscribed_to_lidar_sensor

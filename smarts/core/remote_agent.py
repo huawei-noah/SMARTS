@@ -179,8 +179,6 @@ def agent_obs_to_proto(obs):
         via_data=sensors.vias_to_proto(obs.via_data),
     )
 
-    print("vehic----", vehicle_state.drivable_area_grid_map)
-
     return vehicle_state
 
 
@@ -227,8 +225,8 @@ def agent_proto_to_obs(proto: worker_pb2.VehicleState) -> sensors.Observation:
             proto.occupancy_grid_map, sensors.OccupancyGridMap
         ),
         top_down_rgb=sensors.proto_to_grid_map(proto.top_down_rgb, sensors.TopDownRGB),
-        road_waypoints=None,
-        via_data=None,
+        road_waypoints=sensors.proto_to_road_waypoints(proto.road_waypoints),
+        via_data=sensors.proto_to_vias(proto.via_data),
     )
 
     return obs
