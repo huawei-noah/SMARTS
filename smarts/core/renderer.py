@@ -46,7 +46,7 @@ from .scenario import Scenario
 from .coordinates import Pose
 
 
-class ShowBaseInstance(ShowBase):
+class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
     def __new__(cls, timestep_sec=0.1):
@@ -131,7 +131,7 @@ class Renderer:
         self._simid = simid
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
-        self._showbase_instance = ShowBaseInstance(timestep_sec)
+        self._showbase_instance = _ShowBaseInstance(timestep_sec)
         self._root_np = None
         self._vehicles_np = None
         self._road_network_np = None
@@ -201,7 +201,7 @@ class Renderer:
         camera_np: NodePath
         buffer: GraphicsOutput
         tex: Texture
-        render_engine: ShowBaseInstance
+        render_engine: _ShowBaseInstance
 
         def teardown(self):
             self.camera_np.removeNode()
