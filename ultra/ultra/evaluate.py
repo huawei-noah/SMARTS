@@ -67,73 +67,52 @@ def evaluation_check(
     if len(agent_ids_to_evaluate) < 1:
         return
 
-    episode.eval_mode()
-    evaluation_data = {}
-
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
         checkpoint_directory = episode.checkpoint_dir(agent_id, episode_count)
         agents[agent_id].save(checkpoint_directory)
 
         # Perform the evaluation on this agent and save the data.
-        evaluation_data.update(
-            ray.get(
-                [
-                    evaluate.remote(
-                        seed=episode.eval_count,
-                        experiment_dir=episode.experiment_dir,
-                        agent_ids=[agent_id],
-                        policy_classes={agent_id: policy_classes[agent_id]},
-                        checkpoint_dirs={agent_id: checkpoint_directory},
-                        scenario_info=scenario_info,
-                        num_episodes=eval_episodes,
-                        max_episode_steps=max_episode_steps,
-                        headless=headless,
-                        timestep_sec=timestep_sec,
-                        log_dir=log_dir,
-                        eval_mode = True,
-                    )
-                ]
-            )[0]
+        data = ray.get(
+            [
+                evaluate.remote(
+                    seed=episode.eval_count,
+                    experiment_dir=episode.experiment_dir,
+                    agent_ids=[agent_id],
+                    policy_classes={agent_id: policy_classes[agent_id]},
+                    checkpoint_dirs={agent_id: checkpoint_directory},
+                    scenario_info=scenario_info,
+                    num_episodes=eval_episodes,
+                    max_episode_steps=max_episode_steps,
+                    headless=headless,
+                    timestep_sec=timestep_sec,
+                    log_dir=log_dir,
+                    eval_mode=True,
+                ),
+                evaluate.remote(
+                    seed=episode.eval_count,
+                    experiment_dir=episode.experiment_dir,
+                    agent_ids=[agent_id],
+                    policy_classes={agent_id: policy_classes[agent_id]},
+                    checkpoint_dirs={agent_id: checkpoint_directory},
+                    scenario_info=scenario_info,
+                    num_episodes=eval_episodes,
+                    max_episode_steps=max_episode_steps,
+                    headless=headless,
+                    timestep_sec=timestep_sec,
+                    log_dir=log_dir,
+                    eval_mode=False,
+                ),
+            ]
         )
 
     # Put the evaluation data for all agents into the episode and record the TensorBoard.
-    episode.info[episode.active_tag] = evaluation_data
+    episode.eval_mode()
+    episode.info[episode.active_tag] = data[0]
     episode.record_tensorboard()
 
     episode.eval_train_mode()
-    training_evaluation_data = {}
-    for agent_id in agent_ids_to_evaluate:
-        # Get the checkpoint directory for the current agent and save its model.
-        checkpoint_directory = episode.checkpoint_dir(agent_id, episode_count)
-        agents[agent_id].save(checkpoint_directory)
-
-        # Perform the evaluation on this agent with training data and save the data.
-        training_evaluation_data.update(
-            ray.get(
-                [
-                    evaluate.remote(
-                        seed=episode.eval_count,
-                        experiment_dir=episode.experiment_dir,
-                        agent_ids=[agent_id],
-                        policy_classes={agent_id: policy_classes[agent_id]},
-                        checkpoint_dirs={agent_id: checkpoint_directory},
-                        scenario_info=scenario_info,
-                        num_episodes=eval_episodes,
-                        max_episode_steps=max_episode_steps,
-                        headless=headless,
-                        timestep_sec=timestep_sec,
-                        log_dir=log_dir,
-                        eval_mode = False,
-                    )
-                ]
-            )[0]
-        )
-        episode.eval_count += 1
-        episode.last_eval_iterations[agent_id] = episode_count
-
-    # Put the evaluation data for all agents into the episode and record the TensorBoard.
-    episode.info[episode.active_tag] = training_evaluation_data
+    episode.info[episode.active_tag] = data[1]
     episode.record_tensorboard()
 
     episode.gap_mode()
@@ -157,7 +136,7 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
-    eval_mode = True,
+    eval_mode=True,
 ):
     torch.set_num_threads(1)
 
