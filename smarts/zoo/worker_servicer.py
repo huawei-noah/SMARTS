@@ -92,7 +92,6 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
         #     # print(len(obs[k].waypoint_paths), len(obs[k].waypoint_paths[0]))
         #     # print(len(comparison[k].waypoint_paths), len(comparison[k].waypoint_paths[0]))
         #     print("^^^^^^^^^^^ -------------------------------\n\n")
-        #     exit()
 
         # adapted_obs = self._agent_spec.observation_adapter(
         #     cloudpickle.loads(request.payload)

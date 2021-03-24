@@ -99,10 +99,18 @@ class RemoteAgent:
 
 def obs_to_proto(obs):
 
-    print("INSIDE OBS TO PROTO++++++++++++++++++++++++++")
-    print(obs)
-    print("--------------------------------------------------\n")
-    # exit()
+    print("INSIDE OBS TO PROTO============================")
+    if obs == {}:
+        print("printing empty obs: ", obs)
+        pass
+    else:
+        # print("obs.keys()",obs.keys())
+        print(obs)
+        print("EXITING EXITING***")
+        # exit()
+    print("----------------------------------------------")
+    print("**********************************************\n\n")
+
     proto = worker_pb2.Observe(
         vehicles={
             agent_id: agent_obs_to_proto(agent_obs)

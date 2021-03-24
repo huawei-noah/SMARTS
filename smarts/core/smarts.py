@@ -258,18 +258,13 @@ class SMARTS(ShowBase):
 
         observations, rewards, scores, dones = self._agent_manager.observe(self)
 
-        print("INSIDE SMART STEP 4 =======================================")
-        print(observations)
-        print("---------------------------------------------\n")
-
-
         response_for_ego = self._agent_manager.filter_response_for_ego(
             (observations, rewards, scores, dones)
         )
 
         # 5. Send observations to social agents
-        print("INSIDE SMART STEP 5 =======================================")
-        print(observations)
+        print("INSIDE SMART STEP 5 ===========================")
+        print("observations.keys()",observations.keys())
         print("---------------------------------------------\n")
         self._agent_manager.send_observations_to_social_agents(observations)
 

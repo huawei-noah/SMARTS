@@ -301,6 +301,11 @@ class AgentManager:
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
+            print("send_observations_to_social ===================")
+            print("observations.keys()",observations.keys())
+            print("agent_id", agent_id)
+            print("obs.keys()",obs.keys())
+            print("---------------------------------------------\n")
             self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
     def switch_initial_agent(self, agent_interface):
@@ -474,6 +479,12 @@ class AgentManager:
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
+            print("reset_agents ===================================")
+            print("observations.keys()=",observations.keys())
+            print("agent_id=", agent_id)
+            print("obs.keys()=",obs.keys())
+            print("obs=", obs)
+            print("---------------------------------------------\n")
             self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
         # Observations contain those for social agents; filter them out
