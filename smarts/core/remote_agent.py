@@ -66,7 +66,7 @@ class RemoteAgent:
         # Run task asynchronously and return a Future.
         self._act_future = self._worker_stub.act.future(
             worker_pb2.Observation(
-                payload=cloudpickle.dumps(obs), observe=obs_tuple_to_proto(obs)
+                payload=cloudpickle.dumps(obs), observe=obs_to_proto(obs),
             )
         )
 
@@ -96,38 +96,37 @@ class RemoteAgent:
         self._manager_channel.close()
 
 
-def obs_tuple_to_proto(obs):
+def obs_to_proto(obs):
 
     proto = worker_pb2.Observe(
         vehicles={
-            agent_id: agent_obs_tuple_to_proto(agent_obs)
+            agent_id: agent_obs_to_proto(agent_obs)
             for agent_id, agent_obs in obs.items()
         }
     )
 
-    if obs == {}:
-        print("printing first proto below -------------------------------")
-        print("proto ================ \n ", proto)
-        print("^^^^^^^^^^^ -------------------------------\n\n")
-    else:
-        k = 0
-        for agent_id, agent_obs in obs.items():
-            print(agent_id)
-            k = agent_id
-            break
+    # if obs == {}:
+    #     print("printing first proto below -------------------------------")
+    #     print("proto ================ \n ", proto)
+    #     print("^^^^^^^^^^^ -------------------------------\n\n")
+    # else:
+    #     k = 0
+    #     for agent_id, agent_obs in obs.items():
+    #         print(agent_id)
+    #         k = agent_id
+    #         break
 
-        print("printing second proto below -------------------------------")
-        print("proto ================ \n ", proto)
-        print(
-            "proto.vehicles[].drivable_area_grid_map ======================== \n ",
-            proto.vehicles[k].drivable_area_grid_map,
-        )
-        print("^^^^^^^^^^^ -------------------------------\n\n")
+    #     print("printing second proto below -------------------------------")
+    #     print("proto ================ \n ", proto)
+    #     print(
+    #         "proto.vehicles[].drivable_area_grid_map ======================== \n ",
+    #         proto.vehicles[k].drivable_area_grid_map,
+    #     )
+    #     print("^^^^^^^^^^^ -------------------------------\n\n")
 
     return proto
 
-
-def agent_obs_tuple_to_proto(obs):
+def agent_obs_to_proto(obs):
     # obs.waypoint_paths
     waypoint_paths = [
         worker_pb2.ListWaypoint(
@@ -178,18 +177,8 @@ def agent_obs_tuple_to_proto(obs):
         via_data=sensors.vias_to_proto(obs.via_data),
     )
 
-    # print("vehicle_state.ego_vehicle_state ====>>> ", vehicle_state.ego_vehicle_state)
-    # print("\n")
-    # print("vehicle_state.ego_vehicle_state.position ====>>> ", vehicle_state.ego_vehicle_state.position)
-    # print("\n")
-    # print("type of vehicle_state.ego_vehicle_state.position ====>>> ", type(vehicle_state.ego_vehicle_state.position))
-    # if vehicle_state.ego_vehicle_state.position:
-    #     print("positive")
-    # else:
-    #     print("negative")
-
-    # print("\n")
-    print("obs ====>>> ", obs)
+    # print("agent_obs_tuple_to_proto VVVVVVVVV\n", obs)
+    # print("-----------------------------------------")
 
     return vehicle_state
 
@@ -202,3 +191,37 @@ def agent_obs_tuple_to_proto(obs):
     # dw = list(fe.reshape((2,3)))
     # print(dw)
     # exit()
+
+def proto_to_obs(proto):
+
+    print(proto)
+    print("first printing ********************")
+    
+    obs = {}
+    # proto = proto(
+    #     vehicles={
+    #         agent_id: agent_obs_tuple_to_proto(agent_obs)
+    #         for agent_id, agent_obs in obs.items()
+    #     }
+    # )
+
+    # if obs == {}:
+    #     print("printing first proto below -------------------------------")
+    #     print("proto ================ \n ", proto)
+    #     print("^^^^^^^^^^^ -------------------------------\n\n")
+    # else:
+    #     k = 0
+    #     for agent_id, agent_obs in obs.items():
+    #         print(agent_id)
+    #         k = agent_id
+    #         break
+
+    #     print("printing second proto below -------------------------------")
+    #     print("proto ================ \n ", proto)
+    #     print(
+    #         "proto.vehicles[].drivable_area_grid_map ======================== \n ",
+    #         proto.vehicles[k].drivable_area_grid_map,
+    #     )
+    #     print("^^^^^^^^^^^ -------------------------------\n\n")
+
+    return obs

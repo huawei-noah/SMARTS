@@ -40,21 +40,20 @@ from panda3d.core import (
     WindowProperties,
 )
 
-from smarts.core.mission_planner import MissionPlanner
-from smarts.core.utils import sequence
-from smarts.core.utils.math import squared_dist, vec_2d
-from smarts.sstudio.types import CutIn, UTurn, ZoneData
-
 from smarts.core import coordinates
 from smarts.core import scenario
 from smarts.core import waypoints
 from smarts.core.coordinates import BoundingBox, Heading, HeadingMethods
-from smarts.core.events import Events
+from smarts.core.events import Events, Collision
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
+from smarts.core.mission_planner import MissionPlanner
 from smarts.core.masks import RenderMasks
 from smarts.core.scenario import MissionData, Via
+from smarts.core.utils import sequence
+from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.core.waypoints import Waypoint
+from smarts.sstudio.types import CutIn, UTurn, ZoneData
 from smarts.zoo import worker_pb2
 
 logger = logging.getLogger(__name__)
@@ -262,14 +261,6 @@ class Observation(NamedTuple):
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
     via_data: Vias = Vias()
-
-
-class Collision(NamedTuple):
-    collidee_id: str = None
-
-
-def collision_to_proto(collision: Collision) -> worker_pb2.Collision:
-    return worker_pb2.Collision(collidee_id=collision.collidee_id)
 
 
 class Sensors:

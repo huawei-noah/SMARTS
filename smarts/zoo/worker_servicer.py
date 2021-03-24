@@ -27,6 +27,7 @@ import time
 import cloudpickle
 import grpc
 
+from smarts.core import remote_agent
 from smarts.zoo import worker as zoo_worker
 from smarts.zoo import worker_pb2, worker_pb2_grpc
 
@@ -61,11 +62,30 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
             context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
             return worker_pb2.Action()
 
-        # obs = request.observe
-        # print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
-        # print("request.observe = ",obs)
-        # print("^^^^^^^^^^--------------------------------")
-        # exit()
+        proto = request.observe.vehicles
+        print(proto)
+        # obs = remote_agent.proto_to_obs(proto)
+        # if obs == {}:
+        #     print("received empty proto below -------------------------------")
+        #     print("received proto ================ \n ", obs)
+        #     print("^^^^^^^^^^^ -------------------------------\n\n")
+        # else:
+        #     k = 0
+        #     for agent_id, agent_obs in obs.items():
+        #         print(agent_id)
+        #         k = agent_id
+        #         break
+
+        #     print("received second proto below -------------------------------")
+        #     comparison = cloudpickle.loads(request.payload)
+        #     print("payload ================= \n", comparison)
+        #     print("proto =================== \n ", obs)
+        #     # print(
+        #     #     "proto.vehicles[].drivable_area_grid_map ======================== \n ",
+        #     #     proto.vehicles[k].drivable_area_grid_map,
+        #     # )
+        #     print("^^^^^^^^^^^ -------------------------------\n\n")
+        #     exit()
 
         adapted_obs = self._agent_spec.observation_adapter(
             cloudpickle.loads(request.payload)
