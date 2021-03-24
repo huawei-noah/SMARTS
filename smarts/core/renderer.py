@@ -107,10 +107,9 @@ class ShowBaseInstance(ShowBase):
     def __del__(self):
         self.destroy()
 
-    def setup_sim_root(self, simid):
+    def setup_sim_root(self, simid: str):
         root_np = NodePath(simid)
         root_np.reparentTo(self.render)
-
         with pkg_resources.path(
             glsl, "unlit_shader.vert"
         ) as vshader_path, pkg_resources.path(
@@ -122,12 +121,11 @@ class ShowBaseInstance(ShowBase):
                 fragment=str(fshader_path.absolute()),
             )
             root_np.setShader(unlit_shader)
-
         return root_np
 
 
 class Renderer:
-    def __init__(self, simid, timestep_sec=0.1):
+    def __init__(self, simid: str, timestep_sec=0.1):
         self._log = logging.getLogger(self.__class__.__name__)
         self._is_setup = False
         self._simid = simid
@@ -195,7 +193,7 @@ class Renderer:
         node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
         return node_path
 
-    def begin_rendering_vehicle(self, vehicle_path, is_agent):
+    def begin_rendering_vehicle(self, vehicle_path: NodePath, is_agent: bool):
         """ adds the vehicle node to the scene graph """
         vehicle_path.reparentTo(self._vehicles_np if is_agent else self._root_np)
 

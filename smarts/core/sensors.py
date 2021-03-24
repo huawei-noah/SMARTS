@@ -602,9 +602,13 @@ class CameraSensor(Sensor):
     def teardown(self):
         self._camera.teardown()
 
-    def _follow_vehicle(self, camera_np):
+    def step(self):
+        self._follow_vehicle()
+
+    def _follow_vehicle(self):
         center = self._vehicle.position
         largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
+        camera_np = self._camera.camera_np
         camera_np.setPos(center[0], center[1], 20 * largest_dim)
         camera_np.lookAt(*center)
         camera_np.setH(self._vehicle.renderer_path.getH())
@@ -653,9 +657,6 @@ class DrivableAreaGridMapSensor(CameraSensor):
         )
         self._resolution = resolution
 
-    def step(self):
-        self._follow_vehicle(camera_np=self._camera.camera_np)
-
     def __call__(self) -> DrivableAreaGridMap:
         assert (
             self._camera is not None
@@ -698,9 +699,6 @@ class OGMSensor(CameraSensor):
         )
         self._resolution = resolution
 
-    def step(self):
-        self._follow_vehicle(camera_np=self._camera.camera_np)
-
     def __call__(self) -> OccupancyGridMap:
         assert self._camera is not None, "OGM has not been initialized"
 
@@ -736,9 +734,6 @@ class RGBSensor(CameraSensor):
             vehicle, renderer, "rgb", RenderMasks.RGB_HIDE, width, height, resolution
         )
         self._resolution = resolution
-
-    def step(self):
-        self._follow_vehicle(camera_np=self._camera.camera_np)
 
     def __call__(self) -> TopDownRGB:
         assert self._camera is not None, "RGB has not been initialized"

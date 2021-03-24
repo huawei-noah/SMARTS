@@ -51,7 +51,8 @@ class ProviderState:
 
 
 class Provider:
-    """ A Provider tracks a (sub)set of vehicles that all share the same action space. """
+    """A Provider tracks a (sub)set of vehicles that all share the same action space.
+    This is a base class (interface) from which all Providers should inherit."""
 
     ## TAI: Consider renaming to VehicleSet or somesuch.
 

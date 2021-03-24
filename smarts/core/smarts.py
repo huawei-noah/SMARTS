@@ -793,25 +793,16 @@ class SMARTS:
 
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
-                collision = self._node_to_collision(collidee.renderer_path.node())
+                actor_id = self._vehicle_index.actor_id_from_vehicle_id(collidee.id)
+                # TODO: Should we specify the collidee as the vehicle ID instead of
+                #       the agent/social ID?
+                collision = Collision(collidee_id=actor_id)
                 self._vehicle_collisions[vehicle_id].append(collision)
 
     def _bullet_id_to_vehicle(self, bullet_id):
         for vehicle in self._vehicle_index.vehicles:
             if bullet_id == vehicle.chassis.bullet_id:
                 return vehicle
-
-        assert False, "Only collisions with agent or social vehicles is supported"
-
-    def _node_to_collision(self, node):
-        for vehicle in self._vehicle_index.vehicles:
-            # TODO:  why can't we use vehicle.id instead of np here?
-            if node == vehicle.renderer_path.node():
-                actor_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle.id)
-                # TODO: Should we specify the collidee as the vehicle ID instead of
-                #       the agent/social ID?
-                return Collision(collidee_id=actor_id)
-
         assert False, "Only collisions with agent or social vehicles is supported"
 
     def _try_emit_envision_state(self, provider_state, obs, scores):
