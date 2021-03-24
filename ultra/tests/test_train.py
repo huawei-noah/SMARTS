@@ -57,7 +57,7 @@ class TrainTest(unittest.TestCase):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         try:
             os.system(
-                f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --max-episodes-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
+                f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --max-episode-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
             )
         except Exception as err:
             print(err)
@@ -94,6 +94,7 @@ class TrainTest(unittest.TestCase):
                         grade_mode=False,
                         gb_info={
                             "gb_curriculum_dir": "",
+                            "gb_build_scenarios": False,
                             "gb_scenarios_root_dir": None,
                             "gb_scenarios_save_dir": None,
                         },
@@ -140,6 +141,7 @@ class TrainTest(unittest.TestCase):
                         grade_mode=False,
                         gb_info={
                             "gb_curriculum_dir": "",
+                            "gb_build_scenarios": False,
                             "gb_scenarios_root_dir": None,
                             "gb_scenarios_save_dir": None,
                         },

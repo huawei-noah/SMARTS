@@ -90,6 +90,7 @@ class GBTrainTest(unittest.TestCase):
                         grade_mode=True,
                         gb_info={
                             "gb_curriculum_dir": "../tests/scenarios/grade_based_test_curriculum",
+                            "gb_build_scenarios": True,
                             "gb_scenarios_root_dir": True,
                             "gb_scenarios_save_dir": "../",
                         },

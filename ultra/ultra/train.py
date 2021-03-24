@@ -105,22 +105,19 @@ def train(
     if grade_mode:
         agent_coordinator = coordinator(gb_info["gb_curriculum_dir"])
         # To build all scenarios from all grades
-        # agent_coordinator.build_all_scenarios(
-        #     gb_info["gb_scenarios_root_dir"], gb_info["gb_scenarios_save_dir"]
-        # )
+        if gb_info["gb_build_scenarios"]:
+            agent_coordinator.build_all_scenarios(
+                gb_info["gb_scenarios_root_dir"], gb_info["gb_scenarios_save_dir"]
+            )
         print(
             "\n------------ GRADE MODE : Enabled ------------\n Number of Intervals (grades):",
             agent_coordinator.get_num_of_grades(),
         )
-    else:
-        print("\n------------ GRADE MODE : Disabled ------------\n")
-        agent_coordinator = None
-
-    if grade_mode:
         agent_coordinator.next_grade()
         scenario_info = tuple(agent_coordinator.get_grade())
     else:
-        pass
+        print("\n------------ GRADE MODE : Disabled ------------\n")
+        agent_coordinator = None
 
     # Create the environment.
     env = gym.make(
@@ -322,7 +319,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--gb-scenarios-root-dir",
-        help="Build scenarios and stores in given dir",
+        help="Root directory where gb tasks are stored",
         type=str,
         default="ultra/scenarios",
     )
@@ -362,6 +359,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--grade-mode",
         help="Toggle grade mode",
+        default=False,
+        type=bool,
+    )
+    parser.add_argument(
+        "--gb-build-scenarios",
+        help="Build all scenarios from curriculum",
         default=False,
         type=bool,
     )
@@ -406,6 +409,7 @@ if __name__ == "__main__":
                 grade_mode=args.grade_mode,
                 gb_info={
                     "gb_curriculum_dir": args.gb_curriculum_dir,
+                    "gb_build_scenarios": args.gb_build_scenarios,
                     "gb_scenarios_root_dir": args.gb_scenarios_root_dir,
                     "gb_scenarios_save_dir": args.gb_scenarios_save_dir,
                 },
