@@ -46,13 +46,13 @@ class GBTrainTest(unittest.TestCase):
     def test_gb_train_cli(self):
         log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs/")
         curriculum_dir = "../../tests/scenarios/grade_based_test_curriculum"
-        save_dir = "tests/gb_train_test/gb"
+        save_dir = "tests/gb_train_test/"
 
         try:
             os.system(
                 f"python ultra/train.py --grade-mode True --gb-curriculum-dir {curriculum_dir} --task 00 --level easy \
                 --headless True --episodes 6 --max-episode-steps 2 --gb-scenarios-root-dir tests/scenarios \
-                --gb-scenarios-save-dir {save_dir} --log-dir {log_dir}"
+                --gb-scenarios-save-dir {save_dir} --log-dir {log_dir} --gb-build-scenarios True"
             )
         except Exception as err:
             print(err)
@@ -63,7 +63,7 @@ class GBTrainTest(unittest.TestCase):
 
     def test_gb_train_single_agent(self):
         log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs/")
-        save_dir = "tests/scenarios/task00-gb"
+        save_dir = "tests/scenarios/"
         if os.path.exists(log_dir):
             shutil.rmtree(log_dir)
 
@@ -76,7 +76,7 @@ class GBTrainTest(unittest.TestCase):
             ray.wait(
                 [
                     train.remote(
-                        scenario_info=("00-gb", "easy"),  # Irrelevant
+                        scenario_info=("00-gb", "test_grade1"),
                         policy_classes=policy_classes,
                         num_episodes=1,
                         max_episode_steps=2,
@@ -127,6 +127,7 @@ class GBTrainTest(unittest.TestCase):
             switch_grade = agent_coordinator.graduate(episode.index, num_episodes)
             # If agent switches to new grade
             if switch_grade[0] == True:
+                agent_coordinator.display()
                 self.assertEqual(next(grade_iterator), agent_coordinator.get_grade()[0])
 
             # If agent has completed all levels (no cycle through levels again)

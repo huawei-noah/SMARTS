@@ -63,6 +63,7 @@ class UltraEnv(HiWayEnv):
             else:
                 _scenarios = glob.glob(f"{self.scenarios['test']}")
         else:
+            self.scenario_info = scenario_info
             _scenarios = self.get_scenarios(scenario_info)
 
         self.ultra_scores = BaselineAdapter.reward_adapter

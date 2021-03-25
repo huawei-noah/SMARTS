@@ -13,6 +13,16 @@ tasks:
     eval_test:
       train: "../tests/task/eval_test_multiagent/train_*"
       test:  "../tests/task/eval_test_multiagent/test_*"
+  task00-gb: # unittest
+    test_grade1:
+      train: "../tests/gb_train_test/train_*"
+      test:  "../tests/gb_train_test/test_*"
+    test_grade2:
+      train: "../tests/gb_train_test/train_*"
+      test:  "../tests/gb_train_test/test_*"
+    test_grade3:
+      train: "../tests/gb_train_test/train_*"
+      test:  "../tests/gb_train_test/test_*"
   task0:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
