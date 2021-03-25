@@ -7,19 +7,6 @@ jobs:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.13-minimal
-    strategy:
-      matrix:
-        tests:
-          - ./tests/test_adapter.py
-          - ./tests/test_analysis.py
-          - ./tests/test_env.py
-          - ./tests/test_episode.py
-          - ./tests/test_evaluate.py
-          - ./tests/test_rllib_train.py
-          - ./tests/test_gb_train.py
-          - ./tests/test_scenarios.py
-          - ./tests/test_social_vehicles.py
-          - ./tests/test_train.py
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -47,11 +34,8 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          --doctest-modules \
           --forked \
-          --dist=no \
-          -n auto \
-          ${{matrix.tests}}
+          ./tests/ 
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
