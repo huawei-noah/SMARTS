@@ -16,19 +16,19 @@ import multiprocessing
 
 import gym
 import numpy as np
+from ray import tune
+from ray.rllib.utils import try_import_tf
+from ray.tune.schedulers import PopulationBasedTraining
 
-from smarts.env.hiway_env import HiWayEnv
+from rllib_agent import RLLibTFSavedModelAgent, TrainingModel
+
+from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec, Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
 
 PREDATOR_IDS = ["PRED1", "PRED2"]
 PREY_IDS = ["PREY1", "PREY2"]
-
-ACTION_SPACE = gym.spaces.Box(
-    low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32,
-)
-
 
 def action_adapter(model_action):
     throttle, brake, steering = model_action
@@ -37,7 +37,10 @@ def action_adapter(model_action):
 # create different observation adaptor for prev and predator
 # prev should see further than predator (All angles), predator maybe frontal vision
 def observation_adapter(observations):
+    if observations.drivable_area_grid_map:
+        print(observations.drivable_area_grid_map.data)
     nv_states = observations.neighborhood_vehicle_states
+    nv_states = nv_states
 
     nv_states = [
         {
@@ -118,18 +121,19 @@ def prey_reward_adapter(observations, env_reward_signal):
 
 class PredatorAgent(Agent):
     def act(self, obs):
-        print(obs)
         return [0.5, 0, 1]
 
 class PreyAgent(Agent):
     def act(self, obs):
         return [0.5, 0, -1] # throttle: 0->1, brake: 0->1, steering -1-> 1
 
+
 def main(scenario, headless, resume_training, result_dir, seed):
     agent_specs = {}
+    temp_model_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "model")
     for agent_id in PREDATOR_IDS:
         agent_specs[agent_id] = AgentSpec(
-            interface=AgentInterface.from_type(AgentType.Standard),
+            interface=AgentInterface.from_type(AgentType.Full),
             agent_builder=PredatorAgent,
             observation_adapter=observation_adapter,
             reward_adapter=predator_reward_adapter,

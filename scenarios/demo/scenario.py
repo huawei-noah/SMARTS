@@ -7,43 +7,43 @@ from smarts.core import seed
 
 seed(42)
 
-traffic = t.Traffic(
-    flows=[
-        t.Flow(
-            route=t.Route(
-                begin=("-gneE69", 0, 10),
-                end=("gneE77", 0, 0),
-            ),
-            rate=60*60,
-            actors={
-                t.TrafficActor(
-                    name="car",
-                    vehicle_type=random.choice(
-                        ["passenger", "bus", "coach", "truck", "trailer"]
-                    ),
-                ): 1
-            },
-        )
-    ]
-)
+# traffic = t.Traffic(
+#     flows=[
+#         t.Flow(
+#             route=t.Route(
+#                 begin=("-gneE69", 0, 10),
+#                 end=("gneE77", 0, 0),
+#             ),
+#             rate=60*60,
+#             actors={
+#                 t.TrafficActor(
+#                     name="car",
+#                     vehicle_type=random.choice(
+#                         ["passenger", "bus", "coach", "truck", "trailer"]
+#                     ),
+#                 ): 1
+#             },
+#         )
+#     ]
+# )
 
 ego_missions = [
     t.Mission(
-        route=t.Route(begin=("gneE70", 0, 10), end=("gneE72", 0, 0)),
+        route=t.Route(begin=("-gneE72", 0, 0), end=("gneE72", 0, 'max')), # prey 1
     ),
     t.Mission(
-        route=t.Route(begin=("gneE71", 0, 0), end=("gneE72", 0, 'max')),
+        route=t.Route(begin=("gneE71", 0, 0), end=("gneE72", 0, 'max')), # prey 2
     ),
     t.Mission(
-        route=t.Route(begin=("gneE68", 0, 0), end=("gneE69", 0, 'max')),
+        route=t.Route(begin=("-gneE72", 1, 20), end=("gneE72", 0, 'max')), # pred 1
     ),
     t.Mission(
-        route=t.Route(begin=("-gneE75", 0, 0), end=("-gneE76", 0, 'max')),
+        route=t.Route(begin=("gneE71", 0, 'max'), end=("gneE72", 0, 'max')), # pred 2
     ),
 ]
 
 scenario = t.Scenario(
-    traffic={"all": traffic},
+    # traffic={"all": traffic},
     ego_missions=ego_missions,
 )
 
