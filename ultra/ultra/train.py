@@ -143,16 +143,17 @@ def train(
                 break
 
             # Perform the evaluation check.
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                **eval_info,
-                **env.info,
-            )
+            if eval_info["eval_episodes"] != 0:
+                evaluation_check(
+                    agents=agents,
+                    agent_ids=agent_ids,
+                    policy_classes=agent_classes,
+                    episode=episode,
+                    log_dir=log_dir,
+                    max_episode_steps=max_episode_steps,
+                    **eval_info,
+                    **env.info,
+                )
 
             # Request and perform actions on each agent that received an observation.
             actions = {

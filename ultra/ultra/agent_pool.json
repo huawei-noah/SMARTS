@@ -36,7 +36,7 @@
             "locator" : "open_agent-v0"
         },
         "rl_agent" : {
-            "path" : "rl_agent",
+            "path" : "rl-agent",
             "name" : "rl_agent",
             "locator" : "rl-agent-v0"
         }

@@ -169,7 +169,7 @@ def evaluate(
         while not dones["__all__"]:
             # Get and perform the available agents' actions.
             actions = {
-                agent_id: agents[agent_id].act(observation, explore=False)
+                agent_id: agents[agent_id].act(observation)
                 for agent_id, observation in observations.items()
             }
             observations, rewards, dones, infos = env.step(actions)
