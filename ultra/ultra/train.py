@@ -229,32 +229,12 @@ def train(
             old_episode = None
 
         if grade_mode:
-            if (
-                episode_count + 1
-            ) % agent_coordinator.get_pass_based_sample_rate() == 0:
-                # print("Pass based sample rate!!")
-                total_scenarios_passed += episode.info[episode.active_tag][
-                    list(agents.keys())[0]
-                ].data["reached_goal"]
-                print(
-                    f"({episode.index + 1}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
-                    total_scenarios_passed,
-                )
-                average_scenarios_passed = (
-                    total_scenarios_passed / eval_info["eval_rate"]
-                )
-                print(
-                    f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
-                )
-                total_scenarios_passed = 0.0
-            else:
-                total_scenarios_passed += episode.info[episode.active_tag][
-                    list(agents.keys())[0]
-                ].data["reached_goal"]
-                print(
-                    f"({episode.index + 1}) TOTAL SCENARIOS PASSED PER EVAL RATE:",
-                    total_scenarios_passed,
-                )
+            (
+                average_scenarios_passed,
+                total_scenarios_passed,
+            ) = agent_coordinator.calculate_average_scenario_passed(
+                episode, total_scenarios_passed, agents, average_scenarios_passed
+            )
 
         if eval_info["eval_episodes"] != 0:
             # Perform the evaluation check.

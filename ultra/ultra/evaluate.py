@@ -155,6 +155,7 @@ def evaluate(
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
+        grade_mode=grade_mode,
         eval_mode=True,
     )
 

@@ -61,6 +61,24 @@ class GBTrainTest(unittest.TestCase):
         if os.path.exists(log_dir):
             self.assertTrue(True)
 
+    def test_gb_train_cli_with_evaluation(self):
+        log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs/")
+        curriculum_dir = "../../tests/scenarios/grade_based_test_curriculum"
+        save_dir = "tests/gb_train_test/"
+
+        try:
+            os.system(
+                f"python ultra/train.py --grade-mode True --gb-curriculum-dir {curriculum_dir} --task 00 --level easy \
+                --headless True --episodes 6 --max-episode-steps 2 --eval-rate 2 --gb-scenarios-root-dir tests/scenarios \
+                --eval-episodes 1 --gb-scenarios-save-dir {save_dir} --log-dir {log_dir} --gb-build-scenarios True"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
+
+        if os.path.exists(log_dir):
+            self.assertTrue(True)
+
     def test_gb_train_single_agent(self):
         log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs/")
         save_dir = "tests/scenarios/"

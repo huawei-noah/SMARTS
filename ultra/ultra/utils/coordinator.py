@@ -76,9 +76,13 @@ class coordinator:
         episode_based_toggle = self.curriculum["conditions"]["episode_based"]["toggle"]
         pass_based_toggle = self.curriculum["conditions"]["pass_based"]["toggle"]
 
-        if episode_based_toggle == pass_based_toggle:
+        if episode_based_toggle == pass_based_toggle == True:
             raise Exception(
                 "Both condition toggles are set to True. Only one condition should be chosen"
+            )
+        elif episode_based_toggle == pass_based_toggle == False:
+            raise Exception(
+                "Both condition toggles are set to False. Please choose one condition"
             )
 
         if episode_based_toggle == True:
@@ -135,6 +139,35 @@ class coordinator:
                 print("Epsiode intervals: ", self.grade_length)
 
             return (self.grade_completed, self.cycle_completed)
+
+    def calculate_average_scenario_passed(
+        self, episode, total_scenarios_passed, agents, asp
+    ):
+        if (episode.index + 1) % self.get_pass_based_sample_rate() == 0:
+            total_scenarios_passed += episode.info[episode.active_tag][
+                list(agents.keys())[0]
+            ].data["reached_goal"]
+            print(
+                f"({episode.index + 1}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
+                total_scenarios_passed,
+            )
+            average_scenarios_passed = (
+                total_scenarios_passed / self.get_pass_based_sample_rate()
+            )
+            print(
+                f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
+            )
+            total_scenarios_passed = 0.0
+            return average_scenarios_passed, total_scenarios_passed
+        else:
+            total_scenarios_passed += episode.info[episode.active_tag][
+                list(agents.keys())[0]
+            ].data["reached_goal"]
+            print(
+                f"({episode.index + 1}) TOTAL SCENARIOS PASSED PER EVAL RATE:",
+                total_scenarios_passed,
+            )
+            return asp, total_scenarios_passed
 
     def display(self):
         try:
