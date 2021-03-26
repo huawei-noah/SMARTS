@@ -97,7 +97,7 @@ class SMARTS(ShowBase):
         zoo_addrs=None,
     ):
         try:
-            super().__init__(self, windowType="offscreen")
+            super().__init__(self, windowType="none")
         except Exception as e:
             # Known reasons for this failing:
             raise Exception(
@@ -256,16 +256,29 @@ class SMARTS(ShowBase):
         # so that all updates are ready before rendering happens per frame
         self.taskMgr.mgr.poll()
 
+        print("1 BEFORE SMARTS STEP 4 ===========================")
+        # print("1 initial observations.keys()", observations.keys())
+        # TODO: Unify format of `observations` for boid and non-boid agents.
+        # Currently, for boids: {<agent_id>: {<vehicle_id>: Sensors.Observation()}}.
+        # Currently, for non-boids: {<agent_id>: Sensors.Observation()}.
+        # Example:
+        # observations = {
+        #     'BUBBLE-AGENT-boid-6d967d70':{ # boid agent_id
+        #         'car-flow-route-west_2_0-east_2_max': Sensors.Observation(), # vehicle_id 
+        #         'car-flow-route-west_1_0-east_1_max': Sensors.Observation(), # vehicle_id
+        #     },
+        #     'Agent-007': Sensors.Observation(), # non-boid agent_id
+        # }
         observations, rewards, scores, dones = self._agent_manager.observe(self)
+        print("1 AFTER SMARTS STEP 4")
+        print("1 observations.keys()", observations.keys())
+        print("1 ---------------------------------------------\n\n\n")
 
         response_for_ego = self._agent_manager.filter_response_for_ego(
             (observations, rewards, scores, dones)
         )
 
         # 5. Send observations to social agents
-        print("INSIDE SMART STEP 5 ===========================")
-        print("observations.keys()",observations.keys())
-        print("---------------------------------------------\n")
         self._agent_manager.send_observations_to_social_agents(observations)
 
         # 6. Clear done agents
@@ -343,7 +356,11 @@ class SMARTS(ShowBase):
         self._elapsed_sim_time = 0
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        print("1A BEFORE SMARTS RESET")
         observations, _, _, _ = self._agent_manager.observe(self)
+        print("1A AFTER SMARTS RESET")
+        print("1A observations.keys()", observations.keys())
+        print("1A ---------------------------------------------\n\n\n")
         observations_for_ego = self._agent_manager.reset_agents(observations)
 
         # Visualization
