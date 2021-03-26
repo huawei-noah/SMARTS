@@ -35,7 +35,7 @@ jobs:
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           ./tests/ \
-          --ignore==./tests/test_ultra_package
+          --ignore==./tests/test_ultra_package.py
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
