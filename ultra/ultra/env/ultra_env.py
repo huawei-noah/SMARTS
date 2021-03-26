@@ -156,7 +156,6 @@ class UltraEnv(HiWayEnv):
 
         return observations
 
-
     def step(self, agent_actions):
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)

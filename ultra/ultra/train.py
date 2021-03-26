@@ -164,7 +164,9 @@ def train(
                 }
             except TypeError as e:
                 actions = {
-                    agent_id: agents[agent_id].act(observation) # zoo agents do not explore
+                    agent_id: agents[agent_id].act(
+                        observation
+                    )  # zoo agents do not explore
                     for agent_id, observation in observations.items()
                 }
 
