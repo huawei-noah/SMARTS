@@ -168,7 +168,7 @@ def vehicle_obs_to_proto(obs):
 
 def proto_to_obs(proto):
     if "NON_BOID" in proto.keys():
-        obs = agent_proto_to_obs(proto["NON_BOID"])
+        obs = vehicle_proto_to_obs(proto["NON_BOID"])
     else:
         obs = {
             vehicle_id: vehicle_proto_to_obs(vehicle_proto)
