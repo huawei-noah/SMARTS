@@ -265,12 +265,6 @@ if __name__ == "__main__":
         "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
     parser.add_argument(
-        "--gb-curriculum-dir",
-        help="local path to grade based (GB) task dir. Local path is path from ultra/",
-        type=str,
-        default="../scenarios/grade_based_curriculum/",
-    )
-    parser.add_argument(
         "--level",
         help="Levels available : [easy, medium, hard, no-traffic]",
         type=str,
@@ -296,18 +290,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--headless", help="Run without envision", type=bool, default=True
-    )
-    parser.add_argument(
-        "--gb-scenarios-root-dir",
-        help="Root directory where gb tasks are stored",
-        type=str,
-        default="ultra/scenarios",
-    )
-    parser.add_argument(
-        "--gb-scenarios-save-dir",
-        help="Save the scenarios in specified directory",
-        type=str,
-        default=None,
     )
     parser.add_argument(
         "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
@@ -337,16 +319,34 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "--grade-mode",
-        help="Toggle grade mode",
+        "--gb-mode",
+        help="Toggle grade based mode",
         default=False,
         type=bool,
+    )
+    parser.add_argument(
+        "--gb-curriculum-dir",
+        help="local path to grade based (GB) curriculum dir. Local path is path from ultra/",
+        type=str,
+        default="../scenarios/grade_based_curriculum/",
     )
     parser.add_argument(
         "--gb-build-scenarios",
         help="Build all scenarios from curriculum",
         default=False,
         type=bool,
+    )
+    parser.add_argument(
+        "--gb-scenarios-root-dir",
+        help="Root directory where gb tasks are stored",
+        type=str,
+        default="ultra/scenarios",
+    )
+    parser.add_argument(
+        "--gb-scenarios-save-dir",
+        help="Save the scenarios in specified directory",
+        type=str,
+        default=None,
     )
 
     base_dir = os.path.dirname(__file__)
@@ -386,7 +386,7 @@ if __name__ == "__main__":
                 policy_classes=policy_classes,
                 seed=args.seed,
                 log_dir=args.log_dir,
-                grade_mode=args.grade_mode,
+                grade_mode=args.gb_mode,
                 gb_info={
                     "gb_curriculum_dir": args.gb_curriculum_dir,
                     "gb_build_scenarios": args.gb_build_scenarios,

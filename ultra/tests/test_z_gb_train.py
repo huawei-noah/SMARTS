@@ -50,7 +50,7 @@ class GBTrainTest(unittest.TestCase):
 
         try:
             os.system(
-                f"python ultra/train.py --grade-mode True --gb-curriculum-dir {curriculum_dir} --task 00 --level easy \
+                f"python ultra/train.py --gb-mode True --gb-curriculum-dir {curriculum_dir} --task 00 --level easy \
                 --headless True --episodes 6 --max-episode-steps 2 --gb-scenarios-root-dir tests/scenarios \
                 --gb-scenarios-save-dir {save_dir} --log-dir {log_dir} --gb-build-scenarios True"
             )
@@ -68,7 +68,7 @@ class GBTrainTest(unittest.TestCase):
 
         try:
             os.system(
-                f"python ultra/train.py --grade-mode True --gb-curriculum-dir {curriculum_dir} --task 00 --level easy \
+                f"python ultra/train.py --gb-mode True --gb-curriculum-dir {curriculum_dir} --task 00 --level easy \
                 --headless True --episodes 6 --max-episode-steps 2 --eval-rate 2 --gb-scenarios-root-dir tests/scenarios \
                 --eval-episodes 1 --gb-scenarios-save-dir {save_dir} --log-dir {log_dir} --gb-build-scenarios True"
             )

@@ -59,7 +59,11 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--policy`: The policy (agent) to train (default is sac).
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
   - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
-  - `--grade-mode`: Uses grade-based structure, will ignore the tasks and levels args (default is False).
+  - `--gb-mode`: Use the grade-based structure, will ignore the tasks and levels flag (default is False).
+  - `--gb-curriculum-dir`: Path to the grade based curriculum directory which is used to gather task and level information of the grades (default is ../scenarios/grade_based_curriculum/).
+  - `--gb-build-scenarios` : Option to automatically build all the scenarios which will be needed from each grade. If you have already build the scenarios then simply ignore this flag (default is False).
+  - `--gb-scenarios-root-dir` : Specifiy the directory where the gb tasks (config files) are stored (default is ultra/scenarios).
+  - `--gb-scenarios-save-dir` : Specifiy the directory to save the scenarios in. Default is to save the scenarios inside it's respective task directory (default is None)
 
   Run the following command to train our DQN agent with a quick training session (if you started Envision in the previous section, refresh your browser to observe the training):
   ```sh
@@ -112,10 +116,11 @@ curriculum:
   conditions:
     episode_based: # Agent graduates after completing a N number of episodes in each grade
       toggle: <bool> # Enable the condition
-      cycle: <bool> # Cycle through grades
+      cycle: <bool> # Option to keep cycling through grades to episodes limit
     pass_based: # Agent graduates after getting an average completion rate, the average is taken over the eval-rate (sampling-rate)
       toggle: <bool> # Enable the condition
-      pass_rate: <float [0,1]> # Scalar between 0 and 1; describes the threshold completion rate (%)
+      pass_rate: <float> # Scalar between 0 and 1; describes the threshold completion rate (%)
+      sample_rate: <int> # Takes the average of the total scenarios passed tsp) wrt the sample rate 
 ```
 A more specific example in which we take the three levels from task 1 and distribute it among three grades
 
@@ -129,8 +134,9 @@ grades:
       toggle: True 
       cycle: True 
     pass_based:
-      toggle: False
-      pass_rate: 0.50
+      toggle: False 
+      pass_rate: 0.50 # If the average scenario passed exceeds more than 0.5 then grade is switched
+      sample_rate: 30 # Every 30 episodes slot, the average scenario passed (asp) is calculated (asp = tsp / sample_rate)
 ```
 Now when we enter grade 1, the agent will see only the scenarios that are part of (task 1, level easy), same applies to grades 2 and 3. The condition for graduation is that the agent will complete N number of episodes in each grade. N is the quotient of the total number of episodes / total number of grades. 
 
