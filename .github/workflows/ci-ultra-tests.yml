@@ -35,12 +35,12 @@ jobs:
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           ./tests/ \
-          --ignore=./tests/test_ultra_package.py
-          --ignore=./tests/test_adapter.py
-          --ignore=./tests/test_env.py
-          --ignore=./tests/test_episodes.py
-          --ignore=./tests/test_scenarios.py
-          --ignore=./tests/test_social_vehicles.py
+          --ignore=./tests/test_ultra_package.py \
+          --ignore=./tests/test_adapter.py \
+          --ignore=./tests/test_env.py \
+          --ignore=./tests/test_episodes.py \
+          --ignore=./tests/test_scenarios.py \
+          --ignore=./tests/test_social_vehicles.py \
           --ignore=./tests/test_z_gb_train.py
 
   test-light-base-tests:
@@ -75,11 +75,11 @@ jobs:
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           ./tests/ \
-          --ignore=./tests/test_ultra_package.py
-          --ignore=./tests/test_train.py
-          --ignore=./tests/test_rllib_train.py
-          --ignore=./tests/test_evaluate.py
-          --ignore=./tests/test_analysis.py
+          --ignore=./tests/test_ultra_package.py \
+          --ignore=./tests/test_train.py \
+          --ignore=./tests/test_rllib_train.py \
+          --ignore=./tests/test_evaluate.py \
+          --ignore=./tests/test_analysis.py \
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
