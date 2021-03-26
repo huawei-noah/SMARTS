@@ -30,6 +30,7 @@ os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
 import pickle
 import time
+import warnings
 
 import dill
 import gym
@@ -155,27 +156,38 @@ def train(
                     **env.info,
                 )
 
-            # Request and perform actions on each agent that received an observation.
-            actions = {
-                agent_id: agents[agent_id].act(observation) # zoo agents do not explore
-                for agent_id, observation in observations.items()
-            }
+            try:
+                # Request and perform actions on each agent that received an observation.
+                actions = {
+                    agent_id: agents[agent_id].act(observation, explore=True)
+                    for agent_id, observation in observations.items()
+                }
+            except TypeError as e:
+                actions = {
+                    agent_id: agents[agent_id].act(observation) # zoo agents do not explore
+                    for agent_id, observation in observations.items()
+                }
+
             next_observations, rewards, dones, infos = env.step(actions)
 
             # Active agents are those that receive observations in this step and the next
             # step. Step each active agent (obtaining their network loss if applicable).
             active_agent_ids = observations.keys() & next_observations.keys()
-            # loss_outputs = {
-            #     agent_id: agents[agent_id].step(
-            #         state=observations[agent_id],
-            #         action=actions[agent_id],
-            #         reward=rewards[agent_id],
-            #         next_state=next_observations[agent_id],
-            #         done=dones[agent_id],
-            #         info=infos[agent_id],
-            #     )
-            #     for agent_id in active_agent_ids
-            # }
+            try:
+                loss_outputs = {
+                    agent_id: agents[agent_id].step(
+                        state=observations[agent_id],
+                        action=actions[agent_id],
+                        reward=rewards[agent_id],
+                        next_state=next_observations[agent_id],
+                        done=dones[agent_id],
+                        info=infos[agent_id],
+                    )
+                    for agent_id in active_agent_ids
+                }
+            except AttributeError as e:
+                # warnings.warn("The agent does not support step()")
+                continue
 
             # Record the data from this episode.
             episode.record_step(
