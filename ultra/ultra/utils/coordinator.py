@@ -74,11 +74,17 @@ class coordinator:
     def graduate(self, index, num_episodes, average_scenarios_passed=None):
         """ Conditions on when to graduate """
 
-        episode_based_toggle = bool(self.curriculum["conditions"]["episode_based"]["toggle"])
-        episode_based_cycle = bool(self.curriculum["conditions"]["episode_based"]["cycle"])
-        
+        episode_based_toggle = bool(
+            self.curriculum["conditions"]["episode_based"]["toggle"]
+        )
+        episode_based_cycle = bool(
+            self.curriculum["conditions"]["episode_based"]["cycle"]
+        )
+
         pass_based_toggle = bool(self.curriculum["conditions"]["pass_based"]["toggle"])
-        pass_based_pass_rate = float(self.curriculum["conditions"]["pass_based"]["pass_rate"])
+        pass_based_pass_rate = float(
+            self.curriculum["conditions"]["pass_based"]["pass_rate"]
+        )
 
         if episode_based_toggle == pass_based_toggle == True:
             raise Exception(
@@ -95,14 +101,10 @@ class coordinator:
                 index % int(num_episodes / self.get_num_of_grades())
             ) == 0 and index != 0:
                 self.next_grade()
-                self.rotation_counter += (
-                    0 if episode_based_cycle else 1
-                )
+                self.rotation_counter += 0 if episode_based_cycle else 1
                 self.grade_completed = True
             elif index == 0:
-                self.rotation_counter += (
-                    0 if episode_based_cycle else 1
-                )
+                self.rotation_counter += 0 if episode_based_cycle else 1
                 self.display()
             else:
                 self.grade_completed = False
@@ -119,8 +121,7 @@ class coordinator:
         if pass_based_toggle == True:
             if index != 0:
                 if (
-                    average_scenarios_passed
-                    > pass_based_pass_rate
+                    average_scenarios_passed > pass_based_pass_rate
                     and self.rotation_counter <= self.get_num_of_grades()
                 ):
                     # print(f"({index}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
