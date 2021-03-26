@@ -27,7 +27,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass
 from scipy.interpolate import interp1d
-from typing import Sequence, NamedTuple
+from typing import NamedTuple, Sequence
 
 from smarts.core.utils.file import suppress_pkg_resources
 
@@ -51,7 +51,9 @@ from smarts.zoo import worker_pb2
 
 
 class Waypoint(NamedTuple):
-    pos: np.ndarray = np.array([0, 0])  # Point positioned on center of lane
+    pos: np.ndarray = np.array(
+        [0, 0], dtype=np.float32
+    )  # Point positioned on center of lane
     heading: Heading = None  # Heading angle of lane at this point (radians)
     lane_width: float = None  # Width of lane at this point (meters)
     speed_limit: float = None  # Lane speed in m/s

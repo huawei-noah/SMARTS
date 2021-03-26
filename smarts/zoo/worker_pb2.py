@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x0cworker.proto\x12\x06worker" \n\rSpecification\x12\x0f\n\x07payload\x18\x01 \x01(\x0c"\x08\n\x06Status"Q\n\x0bObservation\x12\x0f\n\x07payload\x18\x01 \x01(\x0c\x12%\n\x07observe\x18\x02 \x01(\x0b\x32\x0f.worker.ObserveH\x00\x88\x01\x01\x42\n\n\x08_observe"\x18\n\x06\x41\x63tion\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\x0c" \n\tCollision\x12\x13\n\x0b\x63ollidee_id\x18\x01 \x01(\t"\xb4\x01\n\x06\x45vents\x12%\n\ncollisions\x18\x01 \x03(\x0b\x32\x11.worker.Collision\x12\x11\n\toff_route\x18\x02 \x01(\x08\x12\x14\n\x0creached_goal\x18\x03 \x01(\x08\x12!\n\x19reached_max_episode_steps\x18\x04 \x01(\x08\x12\x10\n\x08off_road\x18\x05 \x01(\x08\x12\x11\n\twrong_way\x18\x06 \x01(\x08\x12\x12\n\nnot_moving\x18\x07 \x01(\x08"<\n\x0b\x42oundingBox\x12\x0e\n\x06length\x18\x01 \x01(\x02\x12\r\n\x05width\x18\x02 \x01(\x02\x12\x0e\n\x06height\x18\x03 \x01(\x02"*\n\x05Start\x12\x10\n\x08position\x18\x01 \x03(\x02\x12\x0f\n\x07heading\x18\x02 \x01(\x02"(\n\x04Goal\x12\x10\n\x08position\x18\x01 \x03(\x02\x12\x0e\n\x06radius\x18\x02 \x01(\x02"y\n\x03Via\x12\x0f\n\x07lane_id\x18\x01 \x01(\t\x12\x0f\n\x07\x65\x64ge_id\x18\x02 \x01(\t\x12\x10\n\x08lane_idx\x18\x03 \x01(\x05\x12\x10\n\x08position\x18\x04 \x03(\x02\x12\x14\n\x0chit_distance\x18\x05 \x01(\x02\x12\x16\n\x0erequired_speed\x18\x06 \x01(\x02"\xad\x01\n\x07Mission\x12\x1c\n\x05start\x18\x01 \x01(\x0b\x32\r.worker.Start\x12\x1a\n\x04goal\x18\x02 \x01(\x0b\x32\x0c.worker.Goal\x12\x12\n\nroute_vias\x18\x03 \x03(\t\x12\x12\n\nstart_time\x18\x04 \x01(\x02\x12\x18\n\x03via\x18\x05 \x03(\x0b\x32\x0b.worker.Via\x12\x14\n\x0croute_length\x18\x06 \x01(\x02\x12\x10\n\x08num_laps\x18\x07 \x01(\x05"\x95\x03\n\x15\x45goVehicleObservation\x12\n\n\x02id\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x03(\x02\x12)\n\x0c\x62ounding_box\x18\x03 \x01(\x0b\x32\x13.worker.BoundingBox\x12\x0f\n\x07heading\x18\x04 \x01(\x02\x12\r\n\x05speed\x18\x05 \x01(\x02\x12\x10\n\x08steering\x18\x06 \x01(\x02\x12\x10\n\x08yaw_rate\x18\x07 \x03(\x02\x12\x0f\n\x07\x65\x64ge_id\x18\x08 \x01(\t\x12\x0f\n\x07lane_id\x18\t \x01(\t\x12\x12\n\nlane_index\x18\n \x01(\x05\x12 \n\x07mission\x18\x0b \x01(\x0b\x32\x0f.worker.Mission\x12\x17\n\x0flinear_velocity\x18\x0c \x03(\x02\x12\x18\n\x10\x61ngular_velocity\x18\r \x03(\x02\x12\x1b\n\x13linear_acceleration\x18\x0e \x03(\x02\x12\x1c\n\x14\x61ngular_acceleration\x18\x0f \x03(\x02\x12\x13\n\x0blinear_jerk\x18\x10 \x03(\x02\x12\x14\n\x0c\x61ngular_jerk\x18\x11 \x03(\x02"\xb3\x01\n\x12VehicleObservation\x12\n\n\x02id\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x03(\x02\x12)\n\x0c\x62ounding_box\x18\x03 \x01(\x0b\x32\x13.worker.BoundingBox\x12\x0f\n\x07heading\x18\x04 \x01(\x02\x12\r\n\x05speed\x18\x05 \x01(\x02\x12\x0f\n\x07\x65\x64ge_id\x18\x06 \x01(\t\x12\x0f\n\x07lane_id\x18\x07 \x01(\t\x12\x12\n\nlane_index\x18\x08 \x01(\x05"v\n\x08Waypoint\x12\x0b\n\x03pos\x18\x01 \x03(\x02\x12\x0f\n\x07heading\x18\x02 \x01(\x02\x12\x12\n\nlane_width\x18\x03 \x01(\x02\x12\x13\n\x0bspeed_limit\x18\x04 \x01(\x02\x12\x0f\n\x07lane_id\x18\x05 \x01(\t\x12\x12\n\nlane_index\x18\x06 \x01(\x05"3\n\x0cListWaypoint\x12#\n\twaypoints\x18\x01 \x03(\x0b\x32\x10.worker.Waypoint"6\n\x06Matrix\x12\x10\n\x04\x64\x61ta\x18\x01 \x03(\x02\x42\x02\x10\x01\x12\x0c\n\x04rows\x18\x02 \x01(\r\x12\x0c\n\x04\x63ols\x18\x03 \x01(\r"b\n\x05Lidar\x12\x1e\n\x06points\x18\x01 \x01(\x0b\x32\x0e.worker.Matrix\x12\x1c\n\x04hits\x18\x02 \x01(\x0b\x32\x0e.worker.Matrix\x12\x1b\n\x03ray\x18\x03 \x03(\x0b\x32\x0e.worker.Matrix"\x8f\x01\n\x0fGridMapMetadata\x12\x12\n\ncreated_at\x18\x01 \x01(\x05\x12\x12\n\nresolution\x18\x02 \x01(\x02\x12\r\n\x05width\x18\x03 \x01(\x05\x12\x0e\n\x06height\x18\x04 \x01(\x05\x12\x12\n\ncamera_pos\x18\x05 \x03(\x02\x12!\n\x19\x63\x61mera_heading_in_degrees\x18\x06 \x01(\x02"R\n\x07GridMap\x12)\n\x08metadata\x18\x01 \x01(\x0b\x32\x17.worker.GridMapMetadata\x12\x1c\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\x0e.worker.Matrix"\xaf\x01\n\rRoadWaypoints\x12/\n\x05lanes\x18\x01 \x03(\x0b\x32 .worker.RoadWaypoints.LanesEntry\x12)\n\x0froute_waypoints\x18\x02 \x03(\x0b\x32\x10.worker.Waypoint\x1a\x42\n\nLanesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.worker.ListWaypoint:\x02\x38\x01"Y\n\x08ViaPoint\x12\x10\n\x08position\x18\x01 \x03(\x02\x12\x12\n\nlane_index\x18\x02 \x01(\x02\x12\x0f\n\x07\x65\x64ge_id\x18\x03 \x01(\t\x12\x16\n\x0erequired_speed\x18\x04 \x01(\x02"[\n\x04Vias\x12)\n\x0fnear_via_points\x18\x01 \x03(\x0b\x32\x10.worker.ViaPoint\x12(\n\x0ehit_via_points\x18\x02 \x03(\x0b\x32\x10.worker.ViaPoint"\xf1\x03\n\x0cVehicleState\x12\x1e\n\x06\x65vents\x18\x01 \x01(\x0b\x32\x0e.worker.Events\x12\x38\n\x11\x65go_vehicle_state\x18\x02 \x01(\x0b\x32\x1d.worker.EgoVehicleObservation\x12?\n\x1bneighborhood_vehicle_states\x18\x03 \x03(\x0b\x32\x1a.worker.VehicleObservation\x12,\n\x0ewaypoint_paths\x18\x04 \x03(\x0b\x32\x14.worker.ListWaypoint\x12\x1a\n\x12\x64istance_travelled\x18\x05 \x01(\x02\x12(\n\x11lidar_point_cloud\x18\x06 \x01(\x0b\x32\r.worker.Lidar\x12/\n\x16\x64rivable_area_grid_map\x18\x07 \x01(\x0b\x32\x0f.worker.GridMap\x12+\n\x12occupancy_grid_map\x18\x08 \x01(\x0b\x32\x0f.worker.GridMap\x12%\n\x0ctop_down_rgb\x18\t \x01(\x0b\x32\x0f.worker.GridMap\x12-\n\x0eroad_waypoints\x18\n \x01(\x0b\x32\x15.worker.RoadWaypoints\x12\x1e\n\x08via_data\x18\x0b \x01(\x0b\x32\x0c.worker.Vias"\x81\x01\n\x07Observe\x12/\n\x08vehicles\x18\x01 \x03(\x0b\x32\x1d.worker.Observe.VehiclesEntry\x1a\x45\n\rVehiclesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.worker.VehicleState:\x02\x38\x01\x32h\n\x06Worker\x12\x30\n\x05\x62uild\x12\x15.worker.Specification\x1a\x0e.worker.Status"\x00\x12,\n\x03\x61\x63t\x12\x13.worker.Observation\x1a\x0e.worker.Action"\x00\x62\x06proto3',
+    serialized_pb=b'\n\x0cworker.proto\x12\x06worker" \n\rSpecification\x12\x0f\n\x07payload\x18\x01 \x01(\x0c"\x08\n\x06Status"\x89\x01\n\x0bObservation\x12\x33\n\x08vehicles\x18\x01 \x03(\x0b\x32!.worker.Observation.VehiclesEntry\x1a\x45\n\rVehiclesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.worker.VehicleState:\x02\x38\x01"\x18\n\x06\x41\x63tion\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\x0c" \n\tCollision\x12\x13\n\x0b\x63ollidee_id\x18\x01 \x01(\t"\xb4\x01\n\x06\x45vents\x12%\n\ncollisions\x18\x01 \x03(\x0b\x32\x11.worker.Collision\x12\x11\n\toff_route\x18\x02 \x01(\x08\x12\x14\n\x0creached_goal\x18\x03 \x01(\x08\x12!\n\x19reached_max_episode_steps\x18\x04 \x01(\x08\x12\x10\n\x08off_road\x18\x05 \x01(\x08\x12\x11\n\twrong_way\x18\x06 \x01(\x08\x12\x12\n\nnot_moving\x18\x07 \x01(\x08"<\n\x0b\x42oundingBox\x12\x0e\n\x06length\x18\x01 \x01(\x02\x12\r\n\x05width\x18\x02 \x01(\x02\x12\x0e\n\x06height\x18\x03 \x01(\x02"*\n\x05Start\x12\x10\n\x08position\x18\x01 \x03(\x02\x12\x0f\n\x07heading\x18\x02 \x01(\x02"(\n\x04Goal\x12\x10\n\x08position\x18\x01 \x03(\x02\x12\x0e\n\x06radius\x18\x02 \x01(\x02"y\n\x03Via\x12\x0f\n\x07lane_id\x18\x01 \x01(\t\x12\x0f\n\x07\x65\x64ge_id\x18\x02 \x01(\t\x12\x10\n\x08lane_idx\x18\x03 \x01(\x05\x12\x10\n\x08position\x18\x04 \x03(\x02\x12\x14\n\x0chit_distance\x18\x05 \x01(\x02\x12\x16\n\x0erequired_speed\x18\x06 \x01(\x02"\xad\x01\n\x07Mission\x12\x1c\n\x05start\x18\x01 \x01(\x0b\x32\r.worker.Start\x12\x1a\n\x04goal\x18\x02 \x01(\x0b\x32\x0c.worker.Goal\x12\x12\n\nroute_vias\x18\x03 \x03(\t\x12\x12\n\nstart_time\x18\x04 \x01(\x02\x12\x18\n\x03via\x18\x05 \x03(\x0b\x32\x0b.worker.Via\x12\x14\n\x0croute_length\x18\x06 \x01(\x02\x12\x10\n\x08num_laps\x18\x07 \x01(\x05"\x95\x03\n\x15\x45goVehicleObservation\x12\n\n\x02id\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x03(\x02\x12)\n\x0c\x62ounding_box\x18\x03 \x01(\x0b\x32\x13.worker.BoundingBox\x12\x0f\n\x07heading\x18\x04 \x01(\x02\x12\r\n\x05speed\x18\x05 \x01(\x02\x12\x10\n\x08steering\x18\x06 \x01(\x02\x12\x10\n\x08yaw_rate\x18\x07 \x03(\x02\x12\x0f\n\x07\x65\x64ge_id\x18\x08 \x01(\t\x12\x0f\n\x07lane_id\x18\t \x01(\t\x12\x12\n\nlane_index\x18\n \x01(\x05\x12 \n\x07mission\x18\x0b \x01(\x0b\x32\x0f.worker.Mission\x12\x17\n\x0flinear_velocity\x18\x0c \x03(\x02\x12\x18\n\x10\x61ngular_velocity\x18\r \x03(\x02\x12\x1b\n\x13linear_acceleration\x18\x0e \x03(\x02\x12\x1c\n\x14\x61ngular_acceleration\x18\x0f \x03(\x02\x12\x13\n\x0blinear_jerk\x18\x10 \x03(\x02\x12\x14\n\x0c\x61ngular_jerk\x18\x11 \x03(\x02"\xb3\x01\n\x12VehicleObservation\x12\n\n\x02id\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x03(\x02\x12)\n\x0c\x62ounding_box\x18\x03 \x01(\x0b\x32\x13.worker.BoundingBox\x12\x0f\n\x07heading\x18\x04 \x01(\x02\x12\r\n\x05speed\x18\x05 \x01(\x02\x12\x0f\n\x07\x65\x64ge_id\x18\x06 \x01(\t\x12\x0f\n\x07lane_id\x18\x07 \x01(\t\x12\x12\n\nlane_index\x18\x08 \x01(\x05"v\n\x08Waypoint\x12\x0b\n\x03pos\x18\x01 \x03(\x02\x12\x0f\n\x07heading\x18\x02 \x01(\x02\x12\x12\n\nlane_width\x18\x03 \x01(\x02\x12\x13\n\x0bspeed_limit\x18\x04 \x01(\x02\x12\x0f\n\x07lane_id\x18\x05 \x01(\t\x12\x12\n\nlane_index\x18\x06 \x01(\x05"3\n\x0cListWaypoint\x12#\n\twaypoints\x18\x01 \x03(\x0b\x32\x10.worker.Waypoint"6\n\x06Matrix\x12\x10\n\x04\x64\x61ta\x18\x01 \x03(\x02\x42\x02\x10\x01\x12\x0c\n\x04rows\x18\x02 \x01(\r\x12\x0c\n\x04\x63ols\x18\x03 \x01(\r"b\n\x05Lidar\x12\x1e\n\x06points\x18\x01 \x01(\x0b\x32\x0e.worker.Matrix\x12\x1c\n\x04hits\x18\x02 \x01(\x0b\x32\x0e.worker.Matrix\x12\x1b\n\x03ray\x18\x03 \x03(\x0b\x32\x0e.worker.Matrix"\x8f\x01\n\x0fGridMapMetadata\x12\x12\n\ncreated_at\x18\x01 \x01(\x05\x12\x12\n\nresolution\x18\x02 \x01(\x02\x12\r\n\x05width\x18\x03 \x01(\x05\x12\x0e\n\x06height\x18\x04 \x01(\x05\x12\x12\n\ncamera_pos\x18\x05 \x03(\x02\x12!\n\x19\x63\x61mera_heading_in_degrees\x18\x06 \x01(\x02"R\n\x07GridMap\x12)\n\x08metadata\x18\x01 \x01(\x0b\x32\x17.worker.GridMapMetadata\x12\x1c\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\x0e.worker.Matrix"\xaf\x01\n\rRoadWaypoints\x12/\n\x05lanes\x18\x01 \x03(\x0b\x32 .worker.RoadWaypoints.LanesEntry\x12)\n\x0froute_waypoints\x18\x02 \x03(\x0b\x32\x10.worker.Waypoint\x1a\x42\n\nLanesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.worker.ListWaypoint:\x02\x38\x01"Y\n\x08ViaPoint\x12\x10\n\x08position\x18\x01 \x03(\x02\x12\x12\n\nlane_index\x18\x02 \x01(\x02\x12\x0f\n\x07\x65\x64ge_id\x18\x03 \x01(\t\x12\x16\n\x0erequired_speed\x18\x04 \x01(\x02"[\n\x04Vias\x12)\n\x0fnear_via_points\x18\x01 \x03(\x0b\x32\x10.worker.ViaPoint\x12(\n\x0ehit_via_points\x18\x02 \x03(\x0b\x32\x10.worker.ViaPoint"\xf1\x03\n\x0cVehicleState\x12\x1e\n\x06\x65vents\x18\x01 \x01(\x0b\x32\x0e.worker.Events\x12\x38\n\x11\x65go_vehicle_state\x18\x02 \x01(\x0b\x32\x1d.worker.EgoVehicleObservation\x12?\n\x1bneighborhood_vehicle_states\x18\x03 \x03(\x0b\x32\x1a.worker.VehicleObservation\x12,\n\x0ewaypoint_paths\x18\x04 \x03(\x0b\x32\x14.worker.ListWaypoint\x12\x1a\n\x12\x64istance_travelled\x18\x05 \x01(\x02\x12(\n\x11lidar_point_cloud\x18\x06 \x01(\x0b\x32\r.worker.Lidar\x12/\n\x16\x64rivable_area_grid_map\x18\x07 \x01(\x0b\x32\x0f.worker.GridMap\x12+\n\x12occupancy_grid_map\x18\x08 \x01(\x0b\x32\x0f.worker.GridMap\x12%\n\x0ctop_down_rgb\x18\t \x01(\x0b\x32\x0f.worker.GridMap\x12-\n\x0eroad_waypoints\x18\n \x01(\x0b\x32\x15.worker.RoadWaypoints\x12\x1e\n\x08via_data\x18\x0b \x01(\x0b\x32\x0c.worker.Vias2h\n\x06Worker\x12\x30\n\x05\x62uild\x12\x15.worker.Specification\x1a\x0e.worker.Status"\x00\x12,\n\x03\x61\x63t\x12\x13.worker.Observation\x1a\x0e.worker.Action"\x00\x62\x06proto3',
 )
 
 
@@ -84,24 +84,24 @@ _STATUS = _descriptor.Descriptor(
 )
 
 
-_OBSERVATION = _descriptor.Descriptor(
-    name="Observation",
-    full_name="worker.Observation",
+_OBSERVATION_VEHICLESENTRY = _descriptor.Descriptor(
+    name="VehiclesEntry",
+    full_name="worker.Observation.VehiclesEntry",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="payload",
-            full_name="worker.Observation.payload",
+            name="key",
+            full_name="worker.Observation.VehiclesEntry.key",
             index=0,
             number=1,
-            type=12,
+            type=9,
             cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=b"",
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -112,8 +112,8 @@ _OBSERVATION = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="observe",
-            full_name="worker.Observation.observe",
+            name="value",
+            full_name="worker.Observation.VehiclesEntry.value",
             index=1,
             number=2,
             type=11,
@@ -134,22 +134,55 @@ _OBSERVATION = _descriptor.Descriptor(
     extensions=[],
     nested_types=[],
     enum_types=[],
+    serialized_options=b"8\001",
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=137,
+    serialized_end=206,
+)
+
+_OBSERVATION = _descriptor.Descriptor(
+    name="Observation",
+    full_name="worker.Observation",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="vehicles",
+            full_name="worker.Observation.vehicles",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[
+        _OBSERVATION_VEHICLESENTRY,
+    ],
+    enum_types=[],
     serialized_options=None,
     is_extendable=False,
     syntax="proto3",
     extension_ranges=[],
-    oneofs=[
-        _descriptor.OneofDescriptor(
-            name="_observe",
-            full_name="worker.Observation._observe",
-            index=0,
-            containing_type=None,
-            create_key=_descriptor._internal_create_key,
-            fields=[],
-        ),
-    ],
-    serialized_start=68,
-    serialized_end=149,
+    oneofs=[],
+    serialized_start=69,
+    serialized_end=206,
 )
 
 
@@ -189,8 +222,8 @@ _ACTION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=151,
-    serialized_end=175,
+    serialized_start=208,
+    serialized_end=232,
 )
 
 
@@ -230,8 +263,8 @@ _COLLISION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=177,
-    serialized_end=209,
+    serialized_start=234,
+    serialized_end=266,
 )
 
 
@@ -385,8 +418,8 @@ _EVENTS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=212,
-    serialized_end=392,
+    serialized_start=269,
+    serialized_end=449,
 )
 
 
@@ -464,8 +497,8 @@ _BOUNDINGBOX = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=394,
-    serialized_end=454,
+    serialized_start=451,
+    serialized_end=511,
 )
 
 
@@ -524,8 +557,8 @@ _START = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=456,
-    serialized_end=498,
+    serialized_start=513,
+    serialized_end=555,
 )
 
 
@@ -584,8 +617,8 @@ _GOAL = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=500,
-    serialized_end=540,
+    serialized_start=557,
+    serialized_end=597,
 )
 
 
@@ -720,8 +753,8 @@ _VIA = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=542,
-    serialized_end=663,
+    serialized_start=599,
+    serialized_end=720,
 )
 
 
@@ -875,8 +908,8 @@ _MISSION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=666,
-    serialized_end=839,
+    serialized_start=723,
+    serialized_end=896,
 )
 
 
@@ -1220,8 +1253,8 @@ _EGOVEHICLEOBSERVATION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=842,
-    serialized_end=1247,
+    serialized_start=899,
+    serialized_end=1304,
 )
 
 
@@ -1394,8 +1427,8 @@ _VEHICLEOBSERVATION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1250,
-    serialized_end=1429,
+    serialized_start=1307,
+    serialized_end=1486,
 )
 
 
@@ -1530,8 +1563,8 @@ _WAYPOINT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1431,
-    serialized_end=1549,
+    serialized_start=1488,
+    serialized_end=1606,
 )
 
 
@@ -1571,8 +1604,8 @@ _LISTWAYPOINT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1551,
-    serialized_end=1602,
+    serialized_start=1608,
+    serialized_end=1659,
 )
 
 
@@ -1650,8 +1683,8 @@ _MATRIX = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1604,
-    serialized_end=1658,
+    serialized_start=1661,
+    serialized_end=1715,
 )
 
 
@@ -1729,8 +1762,8 @@ _LIDAR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1660,
-    serialized_end=1758,
+    serialized_start=1717,
+    serialized_end=1815,
 )
 
 
@@ -1865,8 +1898,8 @@ _GRIDMAPMETADATA = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1761,
-    serialized_end=1904,
+    serialized_start=1818,
+    serialized_end=1961,
 )
 
 
@@ -1925,8 +1958,8 @@ _GRIDMAP = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1906,
-    serialized_end=1988,
+    serialized_start=1963,
+    serialized_end=2045,
 )
 
 
@@ -1985,8 +2018,8 @@ _ROADWAYPOINTS_LANESENTRY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2100,
-    serialized_end=2166,
+    serialized_start=2157,
+    serialized_end=2223,
 )
 
 _ROADWAYPOINTS = _descriptor.Descriptor(
@@ -2046,8 +2079,8 @@ _ROADWAYPOINTS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1991,
-    serialized_end=2166,
+    serialized_start=2048,
+    serialized_end=2223,
 )
 
 
@@ -2144,8 +2177,8 @@ _VIAPOINT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2168,
-    serialized_end=2257,
+    serialized_start=2225,
+    serialized_end=2314,
 )
 
 
@@ -2204,8 +2237,8 @@ _VIAS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2259,
-    serialized_end=2350,
+    serialized_start=2316,
+    serialized_end=2407,
 )
 
 
@@ -2435,119 +2468,13 @@ _VEHICLESTATE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2353,
-    serialized_end=2850,
+    serialized_start=2410,
+    serialized_end=2907,
 )
 
-
-_OBSERVE_VEHICLESENTRY = _descriptor.Descriptor(
-    name="VehiclesEntry",
-    full_name="worker.Observe.VehiclesEntry",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="key",
-            full_name="worker.Observe.VehiclesEntry.key",
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="value",
-            full_name="worker.Observe.VehiclesEntry.value",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=b"8\001",
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2913,
-    serialized_end=2982,
-)
-
-_OBSERVE = _descriptor.Descriptor(
-    name="Observe",
-    full_name="worker.Observe",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="vehicles",
-            full_name="worker.Observe.vehicles",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[
-        _OBSERVE_VEHICLESENTRY,
-    ],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2853,
-    serialized_end=2982,
-)
-
-_OBSERVATION.fields_by_name["observe"].message_type = _OBSERVE
-_OBSERVATION.oneofs_by_name["_observe"].fields.append(
-    _OBSERVATION.fields_by_name["observe"]
-)
-_OBSERVATION.fields_by_name["observe"].containing_oneof = _OBSERVATION.oneofs_by_name[
-    "_observe"
-]
+_OBSERVATION_VEHICLESENTRY.fields_by_name["value"].message_type = _VEHICLESTATE
+_OBSERVATION_VEHICLESENTRY.containing_type = _OBSERVATION
+_OBSERVATION.fields_by_name["vehicles"].message_type = _OBSERVATION_VEHICLESENTRY
 _EVENTS.fields_by_name["collisions"].message_type = _COLLISION
 _MISSION.fields_by_name["start"].message_type = _START
 _MISSION.fields_by_name["goal"].message_type = _GOAL
@@ -2579,9 +2506,6 @@ _VEHICLESTATE.fields_by_name["occupancy_grid_map"].message_type = _GRIDMAP
 _VEHICLESTATE.fields_by_name["top_down_rgb"].message_type = _GRIDMAP
 _VEHICLESTATE.fields_by_name["road_waypoints"].message_type = _ROADWAYPOINTS
 _VEHICLESTATE.fields_by_name["via_data"].message_type = _VIAS
-_OBSERVE_VEHICLESENTRY.fields_by_name["value"].message_type = _VEHICLESTATE
-_OBSERVE_VEHICLESENTRY.containing_type = _OBSERVE
-_OBSERVE.fields_by_name["vehicles"].message_type = _OBSERVE_VEHICLESENTRY
 DESCRIPTOR.message_types_by_name["Specification"] = _SPECIFICATION
 DESCRIPTOR.message_types_by_name["Status"] = _STATUS
 DESCRIPTOR.message_types_by_name["Observation"] = _OBSERVATION
@@ -2605,7 +2529,6 @@ DESCRIPTOR.message_types_by_name["RoadWaypoints"] = _ROADWAYPOINTS
 DESCRIPTOR.message_types_by_name["ViaPoint"] = _VIAPOINT
 DESCRIPTOR.message_types_by_name["Vias"] = _VIAS
 DESCRIPTOR.message_types_by_name["VehicleState"] = _VEHICLESTATE
-DESCRIPTOR.message_types_by_name["Observe"] = _OBSERVE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Specification = _reflection.GeneratedProtocolMessageType(
@@ -2634,12 +2557,22 @@ Observation = _reflection.GeneratedProtocolMessageType(
     "Observation",
     (_message.Message,),
     {
+        "VehiclesEntry": _reflection.GeneratedProtocolMessageType(
+            "VehiclesEntry",
+            (_message.Message,),
+            {
+                "DESCRIPTOR": _OBSERVATION_VEHICLESENTRY,
+                "__module__": "worker_pb2"
+                # @@protoc_insertion_point(class_scope:worker.Observation.VehiclesEntry)
+            },
+        ),
         "DESCRIPTOR": _OBSERVATION,
         "__module__": "worker_pb2"
         # @@protoc_insertion_point(class_scope:worker.Observation)
     },
 )
 _sym_db.RegisterMessage(Observation)
+_sym_db.RegisterMessage(Observation.VehiclesEntry)
 
 Action = _reflection.GeneratedProtocolMessageType(
     "Action",
@@ -2871,31 +2804,10 @@ VehicleState = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(VehicleState)
 
-Observe = _reflection.GeneratedProtocolMessageType(
-    "Observe",
-    (_message.Message,),
-    {
-        "VehiclesEntry": _reflection.GeneratedProtocolMessageType(
-            "VehiclesEntry",
-            (_message.Message,),
-            {
-                "DESCRIPTOR": _OBSERVE_VEHICLESENTRY,
-                "__module__": "worker_pb2"
-                # @@protoc_insertion_point(class_scope:worker.Observe.VehiclesEntry)
-            },
-        ),
-        "DESCRIPTOR": _OBSERVE,
-        "__module__": "worker_pb2"
-        # @@protoc_insertion_point(class_scope:worker.Observe)
-    },
-)
-_sym_db.RegisterMessage(Observe)
-_sym_db.RegisterMessage(Observe.VehiclesEntry)
 
-
+_OBSERVATION_VEHICLESENTRY._options = None
 _MATRIX.fields_by_name["data"]._options = None
 _ROADWAYPOINTS_LANESENTRY._options = None
-_OBSERVE_VEHICLESENTRY._options = None
 
 _WORKER = _descriptor.ServiceDescriptor(
     name="Worker",
@@ -2904,8 +2816,8 @@ _WORKER = _descriptor.ServiceDescriptor(
     index=0,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_start=2984,
-    serialized_end=3088,
+    serialized_start=2909,
+    serialized_end=3013,
     methods=[
         _descriptor.MethodDescriptor(
             name="build",

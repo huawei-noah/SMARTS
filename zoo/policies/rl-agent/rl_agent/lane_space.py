@@ -102,9 +102,9 @@ def get_observation_adapter(
         intersection_crash_flag = False
 
         # default 10s
-        lane_ttc = np.array([1] * 5, dtype=float)
+        lane_ttc = np.array([1] * 5, dtype=np.float32)
         # default 100m
-        lane_dist = np.array([1] * 5, dtype=float)
+        lane_dist = np.array([1] * 5, dtype=np.float32)
         # default 120km/h
         closest_lane_nv_rel_speed = 1
 

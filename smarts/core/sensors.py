@@ -104,7 +104,7 @@ def proto_to_vehicle_observation(
 
 class EgoVehicleObservation(NamedTuple):
     id: str
-    position: np.ndarray  # np.ndarray((3,), dtype=float)
+    position: np.ndarray  # np.ndarray((3,), dtype=np.float32)
     bounding_box: BoundingBox
     heading: Heading
     speed: float
@@ -211,7 +211,7 @@ class GridMapMetadata(NamedTuple):
     # map height in # of cells
     height: int = None
     # camera position when project onto the map
-    camera_pos: Tuple[float, float, float] = None
+    camera_pos: Tuple[float, float, float] = (None, None, None)
     # camera rotation angle along z-axis when project onto the map
     camera_heading_in_degrees: float = None
 
@@ -332,9 +332,9 @@ class Observation(NamedTuple):
     # TODO: Convert to `namedtuple` or only return point cloud
     # [points], [hits], [(ray_origin, ray_direction)]
     # TODO: Convert type to Tuple[
-    #     List[np.ndarray((3,), dtype=float)],
-    #     List[np.ndarray((3,), dtype=float)],
-    #     List[np.ndarray((2,3), dtype=float)]
+    #     List[np.ndarray((3,), dtype=np.float32)],
+    #     List[np.ndarray((3,), dtype=np.float32)],
+    #     List[np.ndarray((2,3), dtype=np.float32)]
     # ]
     lidar_point_cloud: Tuple[
         List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
@@ -408,10 +408,10 @@ class Sensors:
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
-            "linear_acceleration": np.array([0, 0, 0]),
-            "angular_acceleration": np.array([0, 0, 0]),
-            "linear_jerk": np.array([0, 0, 0]),
-            "angular_jerk": np.array([0, 0, 0]),
+            "linear_acceleration": np.array([0, 0, 0], dtype=np.float32),
+            "angular_acceleration": np.array([0, 0, 0], dtype=np.float32),
+            "linear_jerk": np.array([0, 0, 0], dtype=np.float32),
+            "angular_jerk": np.array([0, 0, 0], dtype=np.float32),
         }
         if vehicle.subscribed_to_accelerometer_sensor:
             acceleration_values = vehicle.accelerometer_sensor(
@@ -1311,10 +1311,10 @@ class AccelerometerSensor(Sensor):
 
         if len(self.linear_accelerations) < 3 or len(self.angular_accelerations) < 3:
             return (
-                np.array([0, 0, 0]),
-                np.array([0, 0, 0]),
-                np.array([0, 0, 0]),
-                np.array([0, 0, 0]),
+                np.array([0, 0, 0], dtype=np.float32),
+                np.array([0, 0, 0], dtype=np.float32),
+                np.array([0, 0, 0], dtype=np.float32),
+                np.array([0, 0, 0], dtype=np.float32),
             )
 
         linear_acc = self.linear_accelerations[0] - self.linear_accelerations[1]
@@ -1477,17 +1477,17 @@ def fix_agent_observation_size(obs_config: Dict, obs: NamedTuple) -> Observation
     lidar_points = sequence.truncate_pad_li(
         obs.lidar_point_cloud[0],
         obs_config["observation"]["lidar_point_cloud"][0],
-        np.array([0, 0, 0]),
+        np.array([0, 0, 0], dtype=np.float32),
     )
     lidar_hits = sequence.truncate_pad_li(
         obs.lidar_point_cloud[1],
         obs_config["observation"]["lidar_point_cloud"][1],
-        np.array([0, 0, 0]),
+        np.array([0, 0, 0], dtype=np.float32),
     )
     lidar_ray = sequence.truncate_pad_li(
         obs.lidar_point_cloud[2],
         obs_config["observation"]["lidar_point_cloud"][2],
-        (np.array([0, 0, 0]), np.array([0, 0, 0])),
+        (np.array([0, 0, 0], dtype=np.float32), np.array([0, 0, 0], dtype=np.float32)),
     )
     lidar_point_cloud = (lidar_points, lidar_hits, lidar_ray)
 

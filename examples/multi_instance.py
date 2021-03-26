@@ -52,7 +52,7 @@ def observation_adapter(env_obs):
     waypoint_paths = env_obs.waypoint_paths
     wps = [path[0] for path in waypoint_paths]
 
-    # distance of vehicle from center of lane
+    # Distance of vehicle from center of lane
     closest_wp = min(wps, key=lambda wp: WaypointMethods.dist_to(wp, ego.position))
     signed_dist_from_center = WaypointMethods.signed_lateral_error(
         closest_wp, ego.position

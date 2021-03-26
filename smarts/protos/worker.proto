@@ -45,16 +45,13 @@ message Status {
 
 // Observation received by the agent
 message Observation {
-    bytes payload = 1;
-    optional Observe observe=2;
+    map<string, VehicleState> vehicles=1;
 }
 
 // Agent's action in response to the observation
 message Action {
     bytes action = 1;
 }
-
-// ---------------------------------------------
 
 // Collision events
 message Collision{
@@ -113,17 +110,17 @@ message EgoVehicleObservation{
     float heading=4;
     float speed=5;
     float steering=6;
-    repeated float yaw_rate=7; // Represents np.ndarray((3,), dtype=float)
+    repeated float yaw_rate=7; // Represents np.ndarray((3,), dtype=np.float32)
     string edge_id=8;
     string lane_id=9;
     int32 lane_index=10;
     Mission mission=11;
-    repeated float linear_velocity=12; // Represents np.ndarray((3,), dtype=float)
-    repeated float angular_velocity=13; // Represents np.ndarray((3,), dtype=float)
-    repeated float linear_acceleration=14; // Represents np.ndarray((3,), dtype=float)
-    repeated float angular_acceleration=15; // Represents np.ndarray((3,), dtype=float)
-    repeated float linear_jerk=16; // Represents np.ndarray((3,), dtype=float)
-    repeated float angular_jerk=17; // Represents np.ndarray((3,), dtype=float)
+    repeated float linear_velocity=12; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float angular_velocity=13; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float linear_acceleration=14; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float angular_acceleration=15; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float linear_jerk=16; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float angular_jerk=17; // Represents np.ndarray((3,), dtype=np.float32)
 }
 
 message VehicleObservation{
@@ -138,7 +135,7 @@ message VehicleObservation{
 }
 
 message Waypoint{
-    repeated float pos=1; // Represents np.ndarray((2,), dtype=float)
+    repeated float pos=1; // Represents np.ndarray((2,), dtype=np.float32)
     float heading=2;
     float lane_width=3;
     float speed_limit=4;
@@ -152,11 +149,11 @@ message ListWaypoint{
 
 // Represents a matrix of np.ndarray((x,y), dtype=np.float32)
 message Matrix{
-    repeated float data = 1 [packed=true];
     // The data is a 2D numpy array representing an image or a list of arrays.
     // The 2D array is reshaped into shape (rows*cols,) for serialization by proto.
     // To access data, use data[i*cols+j]. Here, i is row number and j is column number.
     // Alternative storage method for 2D numpy array is to encode it into base64 string or into bytes.
+    repeated float data = 1 [packed=true];
     uint32 rows = 2;
     uint32 cols = 3;
 }
@@ -164,7 +161,7 @@ message Matrix{
 message Lidar{
     Matrix points = 1; // Represents List[np.ndarray(3,)],
     Matrix hits = 2; // Represents List[np.ndarray(3,)],
-    repeated Matrix ray=3; // Represents List[(origin,direction), ... ] of shape List[np.ndarray((2,3), dtype=float)] 
+    repeated Matrix ray=3; // Represents List[(origin,direction), ... ] of shape List[np.ndarray((2,3), dtype=np.float32)] 
 }
 
 message GridMapMetadata{
@@ -210,8 +207,4 @@ message VehicleState{
     GridMap top_down_rgb=9;
     RoadWaypoints road_waypoints=10;
     Vias via_data=11;
-}
-
-message Observe{
-    map<string, VehicleState> vehicles=1;
 }

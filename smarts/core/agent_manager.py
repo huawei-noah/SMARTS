@@ -157,11 +157,9 @@ class AgentManager:
                     )
                     for vehicle in vehicles
                 }
-
                 observations[agent_id], dones[agent_id] = Sensors.observe_batch(
                     sim, agent_id, sensor_states, {v.id: v for v in vehicles}
                 )
-
                 rewards[agent_id] = {
                     vehicle_id: self._vehicle_reward(vehicle_id, sim)
                     for vehicle_id in sensor_states.keys()
@@ -181,7 +179,6 @@ class AgentManager:
 
                 vehicle = sim.vehicle_index.vehicle_by_id(vehicle_ids[0])
                 sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-
                 observations[agent_id], dones[agent_id] = Sensors.observe(
                     sim, agent_id, sensor_state, vehicle
                 )

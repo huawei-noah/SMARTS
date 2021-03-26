@@ -51,7 +51,7 @@ from smarts.zoo import worker_pb2
 
 
 class Start(NamedTuple):
-    position: np.ndarray  # np.ndarray((2,), dtype=float)
+    position: np.ndarray  # np.ndarray((2,), dtype=np.float32)
     heading: Heading
 
 
@@ -70,7 +70,7 @@ def proto_to_start(proto: worker_pb2.Start) -> Start:
 
 
 class GoalData(NamedTuple):
-    position: np.ndarray = np.array([None, None], dtype=float)
+    position: np.ndarray = np.array([0, 0], dtype=np.float32)
     # target_heading: Heading
     radius: float = None
 

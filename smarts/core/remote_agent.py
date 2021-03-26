@@ -66,8 +66,7 @@ class RemoteAgent:
         # Run task asynchronously and return a Future.
         self._act_future = self._worker_stub.act.future(
             worker_pb2.Observation(
-                payload=cloudpickle.dumps(obs),
-                observe=obs_to_proto(obs),
+                vehicles=obs_to_proto(obs),
             )
         )
 
@@ -98,25 +97,23 @@ class RemoteAgent:
 
 
 def obs_to_proto(obs):
+    # if obs is non_boid_agent, i.e., obs=Sensors.Observation()
+    if isinstance(obs, tuple):
+        vehicle_obs = vehicle_obs_to_proto(obs)
+        proto = {"NON_BOID": vehicle_obs}
 
     # if obs is empty, i.e., obs=={}, or
     # if obs is boid_agent, i.e., obs={<vehicle_id>: Sensors.Observation()}
-    if isinstance(obs, dict):
-        proto = worker_pb2.Observe(
-            vehicles={
-                agent_id: agent_obs_to_proto(agent_obs)
-                for agent_id, agent_obs in obs.items()
-            }
-        )
-    # if obs is non_boid_agent, i.e., obs=Sensors.Observation()
     else:
-        agent_obs = agent_obs_to_proto(obs)
-        proto = worker_pb2.Observe(vehicles={"NON_BOID": agent_obs})
+        proto = {
+            vehicle_id: vehicle_obs_to_proto(vehicle_obs)
+            for vehicle_id, vehicle_obs in obs.items()
+        }
 
     return proto
 
 
-def agent_obs_to_proto(obs):
+def vehicle_obs_to_proto(obs):
     # obs.waypoint_paths
     waypoint_paths = [
         worker_pb2.ListWaypoint(
@@ -147,7 +144,6 @@ def agent_obs_to_proto(obs):
         ],
     )
 
-    # vehicle_state
     vehicle_state = worker_pb2.VehicleState(
         events=events.events_to_proto(obs.events),
         ego_vehicle_state=sensors.ego_vehicle_observation_to_proto(
@@ -175,21 +171,21 @@ def proto_to_obs(proto):
         obs = agent_proto_to_obs(proto["NON_BOID"])
     else:
         obs = {
-            agent_id: agent_proto_to_obs(agent_proto)
-            for agent_id, agent_proto in proto.items()
+            vehicle_id: vehicle_proto_to_obs(vehicle_proto)
+            for vehicle_id, vehicle_proto in proto.items()
         }
 
     return obs
 
 
-def agent_proto_to_obs(proto: worker_pb2.VehicleState) -> sensors.Observation:
+def vehicle_proto_to_obs(proto: worker_pb2.VehicleState) -> sensors.Observation:
     # proto.waypoint_paths
     waypoint_paths = [
         [waypoints.proto_to_waypoint(elem) for elem in list_elem.waypoints]
         for list_elem in proto.waypoint_paths
     ]
 
-    # obs.lidar_point_cloud
+    # proto.lidar_point_cloud
     lidar_point_cloud = (
         list(sensors.proto_matrix_to_obs(proto.lidar_point_cloud.points)),
         list(sensors.proto_matrix_to_obs(proto.lidar_point_cloud.hits)),
