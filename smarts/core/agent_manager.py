@@ -157,17 +157,11 @@ class AgentManager:
                     )
                     for vehicle in vehicles
                 }
-                print("2 BOID BEFORE AGENT MANAGER OBSERVE")
-                print("2 VEHICLES",vehicles)
-                print("2 SENSOR_STATES",sensor_states)
-                print("2 Observation=",observations.keys())
-                print("2 Agent ID=",agent_id)
+
                 observations[agent_id], dones[agent_id] = Sensors.observe_batch(
                     sim, agent_id, sensor_states, {v.id: v for v in vehicles}
                 )
-                print("2 AFTER AGENT MANAGER OBSERVE")
-                print("2 Observation=",observations.keys())
-                print("2 --------------------")
+
                 rewards[agent_id] = {
                     vehicle_id: self._vehicle_reward(vehicle_id, sim)
                     for vehicle_id in sensor_states.keys()
@@ -187,15 +181,10 @@ class AgentManager:
 
                 vehicle = sim.vehicle_index.vehicle_by_id(vehicle_ids[0])
                 sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-                print("2A NON BOID BEFORE AGENT MANAGER OBSERVE")
-                print("2A initial Observations=", observations.keys())
-                print("2A Agent ID=",agent_id)
+
                 observations[agent_id], dones[agent_id] = Sensors.observe(
                     sim, agent_id, sensor_state, vehicle
                 )
-                print("2A AFTER AGENT MANAGER OBSERVE")
-                print("2A Observations=", observations.keys())
-                print("2A ------------")
 
                 if sim.vehicle_index.vehicle_is_shadowed(vehicle.id):
                     # It is not a shadowing agent's fault if it is done
@@ -488,12 +477,6 @@ class AgentManager:
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
-            print("reset_agents ===================================")
-            print("observations.keys()=",observations.keys())
-            print("agent_id=", agent_id)
-            print("obs.keys()=",obs.keys())
-            # print("obs=", obs)
-            print("---------------------------------------------\n")
             self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
         # Observations contain those for social agents; filter them out

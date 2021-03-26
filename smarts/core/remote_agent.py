@@ -99,43 +99,19 @@ class RemoteAgent:
 
 def obs_to_proto(obs):
 
-    # print("INSIDE OBS TO PROTO============================")
-    # if obs == {}:
-    #     print("printing empty obs: ", obs)
-    #     pass
-    # else:
-    #     print("obs.keys()",obs.keys())
-    #     # print(obs)
-    #     print("EXITING EXITING***")
-    # print("----------------------------------------------")
-    # print("**********************************************\n\n")
-    # # exit()
-
-    proto = worker_pb2.Observe(
-        vehicles={
-            agent_id: agent_obs_to_proto(agent_obs)
-            for agent_id, agent_obs in obs.items()
-        }
-    )
-
-    # if obs == {}:
-    #     print("printing first proto below -------------------------------")
-    #     print("proto ================ \n ", proto)
-    #     print("^^^^^^^^^^^ -------------------------------\n\n")
-    # else:
-    #     k = 0
-    #     for agent_id, agent_obs in obs.items():
-    #         print(agent_id)
-    #         k = agent_id
-    #         break
-
-    #     print("printing second proto below -------------------------------")
-    #     print("proto ================ \n ", proto)
-    #     print(
-    #         "proto.vehicles[].drivable_area_grid_map ======================== \n ",
-    #         proto.vehicles[k].drivable_area_grid_map,
-    #     )
-    #     print("^^^^^^^^^^^ -------------------------------\n\n")
+    # if obs is empty, i.e., obs=={}, or
+    # if obs is boid_agent, i.e., obs={<vehicle_id>: Sensors.Observation()}
+    if isinstance(obs, dict):
+        proto = worker_pb2.Observe(
+            vehicles={
+                agent_id: agent_obs_to_proto(agent_obs)
+                for agent_id, agent_obs in obs.items()
+            }
+        )
+    # if obs is non_boid_agent, i.e., obs=Sensors.Observation()
+    else:
+        agent_obs = agent_obs_to_proto(obs)
+        proto = worker_pb2.Observe(vehicles={"NON_BOID": agent_obs})
 
     return proto
 
@@ -195,10 +171,13 @@ def agent_obs_to_proto(obs):
 
 
 def proto_to_obs(proto):
-    obs = {
-        agent_id: agent_proto_to_obs(agent_proto)
-        for agent_id, agent_proto in proto.items()
-    }
+    if "NON_BOID" in proto.keys():
+        obs = agent_proto_to_obs(proto["NON_BOID"])
+    else:
+        obs = {
+            agent_id: agent_proto_to_obs(agent_proto)
+            for agent_id, agent_proto in proto.items()
+        }
 
     return obs
 

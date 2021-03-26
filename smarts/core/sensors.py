@@ -357,19 +357,16 @@ class Sensors:
         assert sensor_states.keys() == vehicles.keys()
 
         observations, dones = {}, {}
-        print("3 INSIDE SENSORS OBSERVE_BATCH")
         for vehicle_id, vehicle in vehicles.items():
             sensor_state = sensor_states[vehicle_id]
             observations[vehicle_id], dones[vehicle_id] = Sensors.observe(
                 sim, agent_id, sensor_state, vehicle
             )
 
-        print("3 Observations batch =", observations.keys())
         return observations, dones
 
     @staticmethod
     def observe(sim, agent_id, sensor_state, vehicle):
-        print("3A INSIDE SENSORS OBSERVE")
         neighborhood_vehicles = []
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicles = vehicle.neighborhood_vehicles_sensor()
