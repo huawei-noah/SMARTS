@@ -71,6 +71,7 @@ class RLLibTFSavedModelAgent(Agent):
         # These tensor names were found by inspecting the trained model
         res = self._sess.run(self._output_node, feed_dict={self._input_node: [obs]})
         action = res[0]
+        print(f"output action: {action}")
         return action
 
 

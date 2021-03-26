@@ -287,7 +287,7 @@ def main(args):
             None,
             rllib_agent["observation_space"],
             rllib_agent["action_space"],
-            {"model": {"custom_model": TrainingModel.NAME}},
+            {"model": {"custom_model": TrainingModel.NAME}}, # choose a default model?
         )
         for agent_id, rllib_agent in rllib_agents.items()
     }
@@ -368,3 +368,15 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(args)
+
+
+# Failure # 1 (occurred at 2021-03-25_18-32-07)
+# Traceback (most recent call last):
+#   File "/home/kyber/work/SMARTS/.venv/lib/python3.7/site-packages/ray/tune/trial_runner.py", line 726, in _process_trial
+#     result = self.trial_executor.fetch_result(trial)
+#   File "/home/kyber/work/SMARTS/.venv/lib/python3.7/site-packages/ray/tune/ray_trial_executor.py", line 489, in fetch_result
+#     result = ray.get(trial_future[0], timeout=DEFAULT_GET_TIMEOUT)
+#   File "/home/kyber/work/SMARTS/.venv/lib/python3.7/site-packages/ray/worker.py", line 1454, in get
+#     raise value
+# ray.exceptions.RayActorError: The actor died unexpectedly before finishing this task.
+
