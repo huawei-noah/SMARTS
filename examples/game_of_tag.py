@@ -27,13 +27,14 @@ import multiprocessing
 
 import gym
 import numpy as np
+from typing import List
 from ray import tune
 from ray.rllib.utils import try_import_tf
 from ray.tune.schedulers import PopulationBasedTraining
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 
 from rllib_agent import RLLibTFSavedModelAgent, TrainingModel
 
@@ -51,7 +52,6 @@ ACTION_SPACE = gym.spaces.Box(
     dtype=np.float32,
 )
 
-NUM_NEIGHBORHOOD_VEHICLES = len(PREDATOR_IDS) + len(PREY_IDS)
 NEIGHBORHOOD_VEHICLE_STATES = gym.spaces.Dict(
     {
         "heading": gym.spaces.Box(low=-1 * np.pi, high=np.pi, shape=(1,)),
@@ -59,15 +59,15 @@ NEIGHBORHOOD_VEHICLE_STATES = gym.spaces.Dict(
         "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
     }
 )
+
 OBSERVATION_SPACE = gym.spaces.Dict(
     {
         "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
         "speed": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
         "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
         "drivable_area_grid_map": gym.spaces.Box(low=0, high=256, shape=(256, 256, 1)),
-        "neighborhood_vehicle_states": gym.spaces.Tuple(
-            tuple([NEIGHBORHOOD_VEHICLE_STATES] * NUM_NEIGHBORHOOD_VEHICLES)
-        ),
+        "predator_vehicles": gym.spaces.Tuple(tuple([NEIGHBORHOOD_VEHICLE_STATES]*len(PREDATOR_IDS))),
+        "prey_vehicles": gym.spaces.Tuple(tuple([NEIGHBORHOOD_VEHICLE_STATES]*len(PREY_IDS))),
     }
 )
 
@@ -77,40 +77,47 @@ def action_adapter(model_action):
     return np.array([throttle, brake, steering])
 
 
-def observation_adapter(observations):
-    nv_states = observations.neighborhood_vehicle_states
-    nv_states = nv_states[:NUM_NEIGHBORHOOD_VEHICLES]
-    drivable_area_grid_map = (
-        np.zeros((256, 256, 1))
-        if drivable_area_grid_map is None
-        else observations.drivable_area_grid_map.data
-    )
-
-    nv_states = [
+def get_specifc_vehicle_states(nv_states, wanted_ids: List[str]):
+    """ return vehicle states of vehicle that has id in wanted_ids
+        append 0 if not enough
+    """
+    states = [
         {
             "heading": np.array([v.heading]),
             "speed": np.array([v.speed]),
             "position": np.array(v.position),
         }
         for v in nv_states
-    ]
-
-    # XXX: Since traffic vehicles don't all spawn at once, we fill the remainder
-    #      w/ dummy values.
-    nv_states += [
+        if v.id in wanted_ids
+    ] 
+    states += [
         {
             "heading": np.array([0]),
             "speed": np.array([0]),
             "position": np.array([0, 0, 0]),
         }
-    ] * (NUM_NEIGHBORHOOD_VEHICLES - len(nv_states))
+    ] * (len(wanted_ids) - len(states))
+    return states
+    
+
+def observation_adapter(observations):
+    nv_states = observations.neighborhood_vehicle_states
+    drivable_area_grid_map = (
+        np.zeros((256, 256, 1))
+        if drivable_area_grid_map is None
+        else observations.drivable_area_grid_map.data
+    )
+
+    predator_states = get_specifc_vehicle_states(nv_states, PREDATOR_IDS)
+    prey_states = get_specifc_vehicle_states(nv_states, PREY_IDS)
 
     ego = observations.ego_vehicle_state
     return {
         "steering": np.array([ego.steering]),
         "speed": np.array([ego.speed]),
         "position": np.array(ego.position),
-        "neighborhood_vehicle_states": tuple(nv_states),
+        "predator_vehicles": tuple(predator_states),
+        "prey_vehicles": tuple(prey_states),
         "drivable_area_grid_map": drivable_area_grid_map,
     }
 
@@ -178,11 +185,17 @@ def prey_reward_adapter(observations, env_reward_signal):
 
 
 rllib_agents = {}
+
+shared_interface = AgentInterface.from_type(AgentType.Full)
+shared_interface.done_criteria = DoneCriteria(off_route=False, not_moving=True)
+# shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
+
+# predator_neighborhood_vehicles=NeighborhoodVehicles(radius=30)
 for agent_id in PREDATOR_IDS:
     rllib_agents[agent_id] = {
         "agent_spec": AgentSpec(
-            interface=AgentInterface.from_type(AgentType.Standard),
-            agent_builder=lambda: RLLibTFSavedModelPolicy(
+            interface=shared_interface,
+            agent_builder=lambda: RLLibTFSavedModelAgent(
                 os.path.join(os.path.dirname(os.path.realpath(__file__)), "model"),
                 OBSERVATION_SPACE,
             ),
@@ -197,8 +210,8 @@ for agent_id in PREDATOR_IDS:
 for agent_id in PREY_IDS:
     rllib_agents[agent_id] = {
         "agent_spec": AgentSpec(
-            interface=AgentInterface.from_type(AgentType.Standard),
-            agent_builder=lambda: RLLibTFSavedModelPolicy(
+            interface=shared_interface,
+            agent_builder=lambda: RLLibTFSavedModelAgent(
                 os.path.join(
                     os.path.dirname(os.path.realpath(__file__)), "model"
                 ),  # assume model exists
@@ -264,6 +277,7 @@ def main(args):
             "num_sgd_iter": lambda: random.randint(1, 30),
             # "sgd_minibatch_size": lambda: random.randint(128, 16384),
             # "train_batch_size": lambda: random.randint(2000, 160000),
+            "train_batch_size": lambda: 2000,
         },
         custom_explore_fn=explore,
     )
