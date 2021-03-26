@@ -147,9 +147,8 @@ class Vehicle:
             self._color = config.color
 
         # TODO: Move this into the VehicleGeometry class
-        self._renderer_path = renderer.create_vehicle(
-            config.glb_model, self._id, self._color, pose
-        )
+        self._renderer = renderer
+        renderer.create_vehicle_node(config.glb_model, self._id, self._color, pose)
         self._initialized = True
         self._has_stepped = False
 
@@ -210,11 +209,6 @@ class Vehicle:
     # @speed.setter
     # def speed(self, speed):
     #     self._chassis.speed = speed
-
-    @property
-    def renderer_path(self):
-        self._assert_initialized()
-        return self._renderer_path
 
     @property
     def vehicle_color(self):
@@ -492,8 +486,7 @@ class Vehicle:
         self._chassis.control(*args, **kwargs)
 
     def sync_to_renderer(self):
-        pos, heading = self._chassis.pose.as_panda3d()
-        self._renderer_path.setPosHpr(*pos, heading, 0, 0)
+        self._renderer.update_vehicle_node(self._id, self.chassis.pose)
 
     @lru_cache(maxsize=1)
     def _warn_AckermannChassis_set_pose(self):
@@ -530,7 +523,7 @@ class Vehicle:
 
         if not exclude_chassis:
             self._chassis.teardown()
-        self._renderer_path.removeNode()
+        self._renderer.remove_vehicle_node(self._id)
         self._initialized = False
 
     def _meta_create_sensor_functions(self):

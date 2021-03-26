@@ -606,35 +606,8 @@ class CameraSensor(Sensor):
         self._follow_vehicle()
 
     def _follow_vehicle(self):
-        center = self._vehicle.position
         largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
-        camera_np = self._camera.camera_np
-        camera_np.setPos(center[0], center[1], 20 * largest_dim)
-        camera_np.lookAt(*center)
-        camera_np.setH(self._vehicle.renderer_path.getH())
-
-    def _wait_for_ram_image(self, format, retries=100):
-        # Rarely, we see dropped frames where an image is not available
-        # for our observation calculations.
-        #
-        # We've seen this happen fairly reliable when we are initializing
-        # a multi-agent + multi-instance simulation.
-        #
-        # To deal with this, we can try to force a render and block until
-        # we are fairly certain we have an image in ram to return to the user
-        for i in range(retries):
-            if self._camera.tex.mightHaveRamImage():
-                break
-            self._log.debug(
-                f"No image available (attempt {i}/{retries}), forcing a render"
-            )
-            region = self._camera.buffer.getDisplayRegion(0)
-            region.window.engine.renderFrame()
-
-        assert self._camera.tex.mightHaveRamImage()
-        ram_image = self._camera.tex.getRamImageAs(format)
-        assert ram_image is not None
-        return ram_image
+        self._camera.update(self._vehicle.pose, 20 * largest_dim)
 
 
 class DrivableAreaGridMapSensor(CameraSensor):
@@ -662,7 +635,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
             self._camera is not None
         ), "Drivable area grid map has not been initialized"
 
-        ram_image = self._wait_for_ram_image(format="A")
+        ram_image = self._camera.wait_for_ram_image(format="A")
         mem_view = memoryview(ram_image)
         image = np.frombuffer(mem_view, np.uint8)
         image.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
@@ -702,7 +675,7 @@ class OGMSensor(CameraSensor):
     def __call__(self) -> OccupancyGridMap:
         assert self._camera is not None, "OGM has not been initialized"
 
-        ram_image = self._wait_for_ram_image(format="A")
+        ram_image = self._camera.wait_for_ram_image(format="A")
         mem_view = memoryview(ram_image)
         grid = np.frombuffer(mem_view, np.uint8)
         grid.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
@@ -738,7 +711,7 @@ class RGBSensor(CameraSensor):
     def __call__(self) -> TopDownRGB:
         assert self._camera is not None, "RGB has not been initialized"
 
-        ram_image = self._wait_for_ram_image(format="RGB")
+        ram_image = self._camera.wait_for_ram_image(format="RGB")
         mem_view = memoryview(ram_image)
         image = np.frombuffer(mem_view, np.uint8)
         image.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 3)

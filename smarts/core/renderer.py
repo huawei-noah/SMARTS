@@ -19,6 +19,9 @@
 # THE SOFTWARE.
 
 
+from __future__ import (
+    annotations,
+)  # to allow for typing to refer to class being defined (Renderer)
 import os
 import logging
 from typing import NamedTuple
@@ -142,6 +145,7 @@ class Renderer:
         self._root_np = None
         self._vehicles_np = None
         self._road_network_np = None
+        self._vehicle_nodes = {}
 
     @property
     def clock(self):
@@ -198,7 +202,7 @@ class Renderer:
     def __del__(self):
         self.destroy()
 
-    def create_vehicle(self, glb_model: str, vid: str, color, pose: Pose):
+    def create_vehicle_node(self, glb_model: str, vid: str, color, pose: Pose):
         with pkg_resources.path(models, glb_model) as path:
             node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
         node_path.setName("vehicle-%s" % vid)
@@ -206,24 +210,73 @@ class Renderer:
         pos, heading = pose.as_panda3d()
         node_path.setPosHpr(*pos, heading, 0, 0)
         node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
-        return node_path
+        self._vehicle_nodes[vid] = node_path
 
-    def begin_rendering_vehicle(self, vehicle_path: NodePath, is_agent: bool):
+    def begin_rendering_vehicle(self, vid: str, is_agent: bool):
         """ adds the vehicle node to the scene graph """
+        vehicle_path = self._vehicle_nodes.get(vid, None)
+        if not vehicle_path:
+            self._log.warn(f"Renderer ignoring invalid vehicle id {vid}")
+            return
         vehicle_path.reparentTo(self._vehicles_np if is_agent else self._root_np)
+
+    def update_vehicle_node(self, vid: str, pose: Pose):
+        vehicle_path = self._vehicle_nodes.get(vid, None)
+        if not vehicle_path:
+            self._log.warn(f"Renderer ignoring invalid vehicle id {vid}")
+            return
+        pos, heading = pose.as_panda3d()
+        vehicle_path.setPosHpr(*pos, heading, 0, 0)
+
+    def remove_vehicle_node(self, vid: str):
+        vehicle_path = self._vehicle_nodes.get(vid, None)
+        if not vehicle_path:
+            self._log.warn(f"Renderer ignoring invalid vehicle id {vid}")
+            return
+        vehicle_path.removeNode()
+
 
     class OffscreenCamera(NamedTuple):
         camera_np: NodePath
         buffer: GraphicsOutput
         tex: Texture
-        render_engine: _ShowBaseInstance
+        renderer: Renderer
+
+        def wait_for_ram_image(self, img_format: str, retries=100):
+            # Rarely, we see dropped frames where an image is not available
+            # for our observation calculations.
+            #
+            # We've seen this happen fairly reliable when we are initializing
+            # a multi-agent + multi-instance simulation.
+            #
+            # To deal with this, we can try to force a render and block until
+            # we are fairly certain we have an image in ram to return to the user
+            for i in range(retries):
+                if self.tex.mightHaveRamImage():
+                    break
+                self.renderer._log.debug(
+                    f"No image available (attempt {i}/{retries}), forcing a render"
+                )
+                region = self.buffer.getDisplayRegion(0)
+                region.window.engine.renderFrame()
+
+            assert self.tex.mightHaveRamImage()
+            ram_image = self.tex.getRamImageAs(img_format)
+            assert ram_image is not None
+            return ram_image
+
+        def update(self, pose: Pose, height: float):
+            pos, heading = pose.as_panda3d()
+            self.camera_np.setPos(pos[0], pos[1], height)
+            self.camera_np.lookAt(*pos)
+            self.camera_np.setH(heading)
 
         def teardown(self):
             self.camera_np.removeNode()
             region = self.buffer.getDisplayRegion(0)
             region.window.clearRenderTextures()
             self.buffer.removeAllDisplayRegions()
-            self.render_engine.graphicsEngine.removeWindow(self.buffer)
+            self.renderer._showbase_instance.graphicsEngine.removeWindow(self.buffer)
 
     def build_offscreen_camera(
         self,
@@ -273,4 +326,4 @@ class Renderer:
         # mask is set to make undesireable objects invisible to this camera
         camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
 
-        return Renderer.OffscreenCamera(camera_np, buffer, tex, self._showbase_instance)
+        return Renderer.OffscreenCamera(camera_np, buffer, tex, self)
