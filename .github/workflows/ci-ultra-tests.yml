@@ -34,8 +34,8 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          --forked \
-          ./tests/ 
+          ./tests/ \
+          --ignore==./tests/test_ultra_package
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
