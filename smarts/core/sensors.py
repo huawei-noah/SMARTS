@@ -211,7 +211,7 @@ class GridMapMetadata(NamedTuple):
     # map height in # of cells
     height: int = None
     # camera position when project onto the map
-    camera_pos: Tuple[float, float, float] = (None, None, None)
+    camera_pos: Tuple[float, float, float] = (0, 0, 0)
     # camera rotation angle along z-axis when project onto the map
     camera_heading_in_degrees: float = None
 
