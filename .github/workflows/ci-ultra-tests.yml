@@ -28,7 +28,7 @@ jobs:
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade -e .
           pip install --upgrade numpy
-      - name: Run ultra tests
+      - name: Run ultra tests (heavy)
         run: |
           cd ultra
           . .venv/bin/activate
@@ -68,7 +68,7 @@ jobs:
           pip install --upgrade --upgrade-strategy eager wheel
           pip install --upgrade -e .
           pip install --upgrade numpy
-      - name: Run ultra tests
+      - name: Run ultra tests (light)
         run: |
           cd ultra
           . .venv/bin/activate
