@@ -50,7 +50,7 @@ class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
     def __new__(cls, timestep_sec=0.1):
-        # Singleton pattern:  ensure only 1 Renderer
+        # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
@@ -133,6 +133,11 @@ class Renderer:
         self._simid = simid
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
+        # Multiple simultaneous SMARTS instances should probably still be avoided
+        # though (because of the note in render() below), but this Renderer class at
+        # least give us the ability to scope their scene graphs via different root_nps
+        # such that a running SMARTS instance should not get messed up by setting
+        # up another in parallel with it.
         self._showbase_instance = _ShowBaseInstance(timestep_sec)
         self._root_np = None
         self._vehicles_np = None
@@ -163,6 +168,14 @@ class Renderer:
 
     def render(self):
         assert self._is_setup
+        # Note: if there are multiple renderers (SMARTS instances),
+        # this will trigger all of them to render too, even if some
+        # others aren't ready to do so yet.  Their own step cycles will
+        # then re-render on schedule and *hopefully* fix whatever problems
+        # this creates for them.  It's unclear if there is a way around this.
+        # This has the negative consequence that the ShowBase clock
+        # should not be relied upon as the main SMARTS clock if instances
+        # are going to be run overlapping.
         self._showbase_instance.taskMgr.mgr.poll()
 
     def step(self):
