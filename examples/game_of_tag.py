@@ -151,7 +151,6 @@ def predator_reward_adapter(observations, env_reward_signal):
 
     # Decreased reward for increased distance away from prey
     # ! check if the penalty is reasonable, staying alive should be sizable enough to keep agent on road or reduce this penalty
-    # use the absolute of environment reward to encourage predator to drive around.
     rew -= 0.1 * min(
         [np.linalg.norm(predator_pos - prey_pos) for prey_pos in prey_positions],
         default=0,
@@ -200,7 +199,6 @@ rllib_agents = {}
 # add custom done criteria - maybe not 
 # 1: add on_shoulder as event in observation
 # map offset difference between sumo-gui and envision
-# agent_interface full
 
 # Test to see training with ActuatorDynamic or absoluteSteering which is better
 # add max_episode_steps in agent_interface #StandardWithAbsoluteSteering
