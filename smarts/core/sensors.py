@@ -635,7 +635,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
             self._camera is not None
         ), "Drivable area grid map has not been initialized"
 
-        ram_image = self._camera.wait_for_ram_image(format="A")
+        ram_image = self._camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
         image = np.frombuffer(mem_view, np.uint8)
         image.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
@@ -675,7 +675,7 @@ class OGMSensor(CameraSensor):
     def __call__(self) -> OccupancyGridMap:
         assert self._camera is not None, "OGM has not been initialized"
 
-        ram_image = self._camera.wait_for_ram_image(format="A")
+        ram_image = self._camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
         grid = np.frombuffer(mem_view, np.uint8)
         grid.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
@@ -711,7 +711,7 @@ class RGBSensor(CameraSensor):
     def __call__(self) -> TopDownRGB:
         assert self._camera is not None, "RGB has not been initialized"
 
-        ram_image = self._camera.wait_for_ram_image(format="RGB")
+        ram_image = self._camera.wait_for_ram_image(img_format="RGB")
         mem_view = memoryview(ram_image)
         image = np.frombuffer(mem_view, np.uint8)
         image.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 3)
