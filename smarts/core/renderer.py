@@ -24,6 +24,7 @@ from __future__ import (
 )  # to allow for typing to refer to class being defined (Renderer)
 import os
 import logging
+from threading import Lock
 from typing import NamedTuple
 import importlib.resources as pkg_resources
 
@@ -75,6 +76,7 @@ class _ShowBaseInstance(ShowBase):
         pass  # singleton pattern, uses init() instead (don't call super().__init__() here!)
 
     def init(self):
+        self._render_lock = Lock()
         try:
             # There can be only 1 ShowBase instance at a time.
             super().__init__(windowType="offscreen")
@@ -103,7 +105,8 @@ class _ShowBaseInstance(ShowBase):
 
     def setup_sim_root(self, simid: str):
         root_np = NodePath(simid)
-        root_np.reparentTo(self.render)
+        with self._render_lock:
+            root_np.reparentTo(self.render)
         with pkg_resources.path(
             glsl, "unlit_shader.vert"
         ) as vshader_path, pkg_resources.path(
@@ -117,6 +120,19 @@ class _ShowBaseInstance(ShowBase):
             root_np.setShader(unlit_shader)
         return root_np
 
+    def render_node(self, sim_root: NodePath):
+        # Hack to prevent other SMARTS instances from also rendering
+        # when we call poll() here.
+        hidden = []
+        with self._render_lock:
+            for np in self.render.children:
+                if np != sim_root and not np.isHidden():
+                    np.hide()
+                    hidden.append(np)
+            self.taskMgr.mgr.poll()
+            for np in hidden:
+                np.show()
+
 
 class Renderer:
     def __init__(self, simid: str):
@@ -125,11 +141,6 @@ class Renderer:
         self._simid = simid
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
-        # Multiple simultaneous SMARTS instances should probably still be avoided
-        # though (because of the note in render() below), but this Renderer class at
-        # least give us the ability to scope their scene graphs via different root_nps
-        # such that a running SMARTS instance should not get messed up by setting
-        # up another in parallel with it.
         self._showbase_instance = _ShowBaseInstance()
         self._root_np = None
         self._vehicles_np = None
@@ -157,12 +168,7 @@ class Renderer:
 
     def render(self):
         assert self._is_setup
-        # Note: if there are multiple renderers (SMARTS instances),
-        # this will trigger all of them to render too, even if some
-        # others aren't ready to do so yet.  Their own step cycles will
-        # then re-render on schedule and *hopefully* fix whatever problems
-        # this creates for them.  It's unclear if there is a way around this.
-        self._showbase_instance.taskMgr.mgr.poll()
+        self._showbase_instance.render_node(self._root_np)
 
     def step(self):
         """ provided for non-SMARTS uses; normally not used by SMARTS. """
@@ -216,7 +222,6 @@ class Renderer:
             self._log.warn(f"Renderer ignoring invalid vehicle id {vid}")
             return
         vehicle_path.removeNode()
-
 
     class OffscreenCamera(NamedTuple):
         camera_np: NodePath
