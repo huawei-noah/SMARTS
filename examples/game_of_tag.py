@@ -182,6 +182,8 @@ def prey_reward_adapter(observations, env_reward_signal):
 
     # Increased reward for increased distance away from predators
     # not neccessary? just reward for staying alive. Remove this reward?
+    
+    # Penalize "on_shoulder" event after on_shoulder is added. 
 
     # rew += 0.1 * min(
     #     [
@@ -195,12 +197,16 @@ def prey_reward_adapter(observations, env_reward_signal):
 
 
 rllib_agents = {}
-# add custom done criteria
+# add custom done criteria - maybe not 
 # 1: add on_shoulder as event in observation
 # map offset difference between sumo-gui and envision
 # agent_interface full
 
-shared_interface = AgentInterface.from_type(AgentType.Standard)
+# Test to see training with ActuatorDynamic or absoluteSteering which is better
+# add max_episode_steps in agent_interface #StandardWithAbsoluteSteering
+# Use a small potion of drivable grid map as observation. Maybe only the area in front of the vehicle
+
+shared_interface = AgentInterface.from_type(AgentType.Full, max_episode_steps=1000) #100s
 shared_interface.done_criteria = DoneCriteria(off_route=False, off_road=True)
 # shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
 
@@ -301,7 +307,8 @@ def main(args):
             None,
             rllib_agent["observation_space"],
             rllib_agent["action_space"],
-            {"model": {"custom_model": TrainingModel.NAME}}, # choose a default model?
+            # TrainingModel is a FullyConnectedNetwork, which is the default in rllib
+            {"model": {"custom_model": TrainingModel.NAME}},
         )
         for agent_id, rllib_agent in rllib_agents.items()
     }
@@ -309,7 +316,7 @@ def main(args):
     tune_config = {
         "env": RLlibHiWayEnv,
         "log_level": "WARN",
-        "num_workers": 1,
+        "num_workers": 2,
         # 'sample_batch_size': 1,  # XXX: 200
         # 'train_batch_size': 1,
         # 'sgd_minibatch_size': 1,
@@ -320,7 +327,7 @@ def main(args):
             "sim_name": "game_of_tag",
             "scenarios": [os.path.abspath(args.scenario)],
             "headless": False,
-            "sumo_headless": False,
+            # "visdom": True,
             "agent_specs": {
                 agent_id: rllib_agent["agent_spec"]
                 for agent_id, rllib_agent in rllib_agents.items()
@@ -352,7 +359,8 @@ def main(args):
         resume=args.resume_training,
         local_dir=local_dir,
         reuse_actors=True,
-        max_failures=2,
+        max_failures=1,
+        export_formats=["model", "checkpoint"],
         config=tune_config,
         scheduler=pbt,
     )
