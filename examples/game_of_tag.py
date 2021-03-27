@@ -60,6 +60,7 @@ NEIGHBORHOOD_VEHICLE_STATES = gym.spaces.Dict(
     }
 )
 
+# Input layer: input layer can be dictionary
 OBSERVATION_SPACE = gym.spaces.Dict(
     {
         "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
@@ -73,11 +74,12 @@ OBSERVATION_SPACE = gym.spaces.Dict(
 
 
 def action_adapter(model_action):
+    print("Entered action_adapter")
     throttle, brake, steering = model_action
     return np.array([throttle, brake, steering])
 
 
-def get_specifc_vehicle_states(nv_states, wanted_ids: List[str]):
+def get_specfic_vehicle_states(nv_states, wanted_ids: List[str]):
     """ return vehicle states of vehicle that has id in wanted_ids
         append 0 if not enough
     """
@@ -108,10 +110,11 @@ def observation_adapter(observations):
         else observations.drivable_area_grid_map.data
     )
 
-    predator_states = get_specifc_vehicle_states(nv_states, PREDATOR_IDS)
-    prey_states = get_specifc_vehicle_states(nv_states, PREY_IDS)
+    predator_states = get_specfic_vehicle_states(nv_states, PREDATOR_IDS)
+    prey_states = get_specfic_vehicle_states(nv_states, PREY_IDS)
 
     ego = observations.ego_vehicle_state
+    print("Entered observation_adapter")
     return {
         "steering": np.array([ego.steering]),
         "speed": np.array([ego.speed]),
@@ -121,12 +124,13 @@ def observation_adapter(observations):
         "drivable_area_grid_map": drivable_area_grid_map,
     }
 
-
+# add a bit of reward for staying alive
 def predator_reward_adapter(observations, env_reward_signal):
     """+ if collides with prey
     - if collides with social vehicle
     - if off road
     """
+    print("Entered predator_reward_adapter")
     rew = env_reward_signal
     events = observations.events
     for c in observations.events.collisions:
@@ -136,7 +140,8 @@ def predator_reward_adapter(observations, env_reward_signal):
             # Collided with something other than the prey
             rew -= 10
     if events.off_road:
-        rew -= 10
+        # have a time limit for 
+        rew -= 10 # if 10 then after 100 steps, then it tries to suicide
 
     predator_pos = observations.ego_vehicle_state.position
 
@@ -145,6 +150,8 @@ def predator_reward_adapter(observations, env_reward_signal):
     prey_positions = [p.position for p in prey_vehicles]
 
     # Decreased reward for increased distance away from prey
+    # ! check if the penalty is reasonable, staying alive should be sizable enough to keep agent on road or reduce this penalty
+    # use the absolute of environment reward to encourage predator to drive around.
     rew -= 0.1 * min(
         [np.linalg.norm(predator_pos - prey_pos) for prey_pos in prey_positions],
         default=0,
@@ -159,6 +166,7 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
+    print("Entered prey_reward_adapter")
     rew = env_reward_signal
     events = observations.events
     for c in events.collisions:
@@ -173,13 +181,15 @@ def prey_reward_adapter(observations, env_reward_signal):
     predator_positions = [p.position for p in predator_vehicles]
 
     # Increased reward for increased distance away from predators
-    rew += 0.1 * min(
-        [
-            np.linalg.norm(prey_pos - predator_pos)
-            for predator_pos in predator_positions
-        ],
-        default=0,
-    )
+    # not neccessary? just reward for staying alive. Remove this reward?
+
+    # rew += 0.1 * min(
+    #     [
+    #         np.linalg.norm(prey_pos - predator_pos)
+    #         for predator_pos in predator_positions
+    #     ],
+    #     default=0,
+    # )
 
     return rew
 
@@ -187,7 +197,7 @@ def prey_reward_adapter(observations, env_reward_signal):
 rllib_agents = {}
 
 shared_interface = AgentInterface.from_type(AgentType.Full)
-shared_interface.done_criteria = DoneCriteria(off_route=False, not_moving=True)
+shared_interface.done_criteria = DoneCriteria(off_route=False)
 # shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
 
 # predator_neighborhood_vehicles=NeighborhoodVehicles(radius=30)
@@ -195,7 +205,7 @@ for agent_id in PREDATOR_IDS:
     rllib_agents[agent_id] = {
         "agent_spec": AgentSpec(
             interface=shared_interface,
-            agent_builder=lambda: RLLibTFSavedModelAgent(
+            agent_builder=lambda: RLLibTFSavedModelAgent( ## maybe fine since it might understand which mode it is in. Try 2 models at first
                 os.path.join(os.path.dirname(os.path.realpath(__file__)), "model"),
                 OBSERVATION_SPACE,
             ),
@@ -295,7 +305,7 @@ def main(args):
     tune_config = {
         "env": RLlibHiWayEnv,
         "log_level": "WARN",
-        "num_workers": 2,
+        "num_workers": 1,
         # 'sample_batch_size': 1,  # XXX: 200
         # 'train_batch_size': 1,
         # 'sgd_minibatch_size': 1,
@@ -306,6 +316,7 @@ def main(args):
             "sim_name": "game_of_tag",
             "scenarios": [os.path.abspath(args.scenario)],
             "headless": False,
+            "sumo_headless": False,
             "agent_specs": {
                 agent_id: rllib_agent["agent_spec"]
                 for agent_id, rllib_agent in rllib_agents.items()
@@ -336,7 +347,8 @@ def main(args):
         #      the new arguments as they are stored alongside the checkpoint.
         resume=args.resume_training,
         local_dir=local_dir,
-        max_failures=0,
+        reuse_actors=True,
+        max_failures=2,
         config=tune_config,
         scheduler=pbt,
     )

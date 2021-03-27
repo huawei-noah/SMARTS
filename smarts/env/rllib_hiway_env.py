@@ -61,6 +61,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
     """
 
     def __init__(self, config):
+        print("rllib_hiway_env init")
         seed = int(config.get("seed", 42))
 
         # See https://rllib.readthedocs.io/en/latest/rllib-env.html#configuring-environments
@@ -94,8 +95,10 @@ class RLlibHiWayEnv(MultiAgentEnv):
         self._timestep_sec = config.get("timestep_sec", 0.1)
         self._smarts = None  # Created on env.setup()
         self._dones_registered = 0
+        print("rllib_hiway_env done init")
 
     def step(self, agent_actions):
+        print("Start stepping here")
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
@@ -152,6 +155,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         return observations, rewards, dones, infos
 
     def reset(self):
+        print("rllib reset here")
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
