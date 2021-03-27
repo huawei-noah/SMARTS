@@ -78,7 +78,7 @@ class SMARTS:
         self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._scenario: Scenario = None
-        self._renderer = Renderer(self._sim_id, timestep_sec)
+        self._renderer = Renderer(self._sim_id)
         self._envision: EnvisionClient = envision
         self._visdom: VisdomClient = visdom
         self._timestep_sec = timestep_sec
@@ -160,7 +160,6 @@ class SMARTS:
         #
         # To compensate for this, we:
         #
-        # 0. Advance the simulation clock
         # 1. Fetch social agent actions
         # 2. Step all providers and harmonize state
         # 3. Step bubble manager
@@ -168,20 +167,15 @@ class SMARTS:
         # 5. Send observations to social agents
         # 6. Clear done agents
         # 7. Perform visualization
+        # 8. Advance the simulation clock
         #
         # In this way, observations and reward are computed with data that is
         # consistently with one step of latencey and the agent will observe consistent
         # data.
 
-        # 0. Advance the simulation clock
-        # This is sort-of hacky:  We're assuming the "renderer"
-        # we use to populate our camera sensors has a clock,
-        # i.e., is part of a larger engine.  This is because
-        # we originally used Panda3D for both purposes.
-        # Ideally, we may eventually disentangle the clock from
-        # the renderer and drive the simulation with our own clock.
-        dt = self._renderer.clock.get_dt()
-        self._elapsed_sim_time = self.renderer.clock.get_frame_time()
+        # The following is simultated to happen in dt seconds.
+        # This isn't a realtime simulation though.
+        dt = self._timestep_sec
 
         # 1. Fetch agent actions
         all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
@@ -228,6 +222,10 @@ class SMARTS:
 
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
+
+        # 8. Advance the simulation clock.
+        self._elapsed_sim_time += dt
+
         return observations, rewards, dones, extras
 
     def _teardown_done_agents_and_vehicles(self, dones):
@@ -286,7 +284,6 @@ class SMARTS:
         # Tell history provide to ignore vehicles if we have assigned mission to them
         self._traffic_history_provider.set_replaced_ids(scenario.missions.keys())
 
-        self._renderer.clock.reset()
         self._elapsed_sim_time = 0
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
@@ -641,9 +638,7 @@ class SMARTS:
         accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions))
 
         for provider in self.providers:
-            provider_state = self._step_provider(
-                provider, actions, dt, self._elapsed_sim_time
-            )
+            provider_state = self._step_provider(provider, actions, dt)
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
                 provider_state.filter(self._vehicle_index.agent_vehicle_ids())
@@ -653,7 +648,7 @@ class SMARTS:
         self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
 
-    def _step_provider(self, provider, actions, dt, elapsed_sim_time):
+    def _step_provider(self, provider, actions, dt):
         def agent_controls_vehicles(agent_id):
             vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
             return len(vehicles) > 0
@@ -681,7 +676,7 @@ class SMARTS:
                     assert len(vehicle_ids) == 1
                     provider_actions[vehicle_ids[0]] = action
 
-        provider_state = provider.step(provider_actions, dt, elapsed_sim_time)
+        provider_state = provider.step(provider_actions, dt, self._elapsed_sim_time)
         return provider_state
 
     @property

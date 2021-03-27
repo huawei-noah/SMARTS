@@ -30,7 +30,6 @@ import importlib.resources as pkg_resources
 import gltf
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
-    ClockObject,
     NodePath,
     Shader,
     loadPrcFileData,
@@ -52,7 +51,7 @@ from .coordinates import Pose
 class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
-    def __new__(cls, timestep_sec=0.1):
+    def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
             # disable vsync otherwise we are limited to refresh-rate of screen
@@ -69,29 +68,19 @@ class _ShowBaseInstance(ShowBase):
         it = cls.__dict__.get("__it__")
         if it is None:
             cls.__it__ = it = object.__new__(cls)
-            it.init(timestep_sec)
-        else:
-            assert (
-                timestep_sec == it._timestep_sec
-            ), "Multiple simultaneous instances of SMARTS must use same timestep_sec value."
+            it.init()
         return it
 
-    def __init__(self, timestep_sec=0.1):
+    def __init__(self):
         pass  # singleton pattern, uses init() instead (don't call super().__init__() here!)
 
-    def init(self, timestep_sec=0.1):
-        self._timestep_sec = timestep_sec
+    def init(self):
         try:
             # There can be only 1 ShowBase instance at a time.
             super().__init__(windowType="offscreen")
 
             gltf.patch_loader(self.loader)
-
             self.setBackgroundColor(0, 0, 0, 1)
-
-            # Global clock always proceeds by a fixed dt on each tick
-            self.taskMgr.clock.setMode(ClockObject.M_non_real_time)
-            self.taskMgr.clock.setDt(timestep_sec)
 
             # Displayed framerate is misleading since we are not using a realtime clock
             self.setFrameRateMeter(False)
@@ -130,7 +119,7 @@ class _ShowBaseInstance(ShowBase):
 
 
 class Renderer:
-    def __init__(self, simid: str, timestep_sec=0.1):
+    def __init__(self, simid: str):
         self._log = logging.getLogger(self.__class__.__name__)
         self._is_setup = False
         self._simid = simid
@@ -141,15 +130,11 @@ class Renderer:
         # least give us the ability to scope their scene graphs via different root_nps
         # such that a running SMARTS instance should not get messed up by setting
         # up another in parallel with it.
-        self._showbase_instance = _ShowBaseInstance(timestep_sec)
+        self._showbase_instance = _ShowBaseInstance()
         self._root_np = None
         self._vehicles_np = None
         self._road_network_np = None
         self._vehicle_nodes = {}
-
-    @property
-    def clock(self):
-        return self._showbase_instance.taskMgr.clock
 
     def setup(self, scenario: Scenario):
         self._root_np = self._showbase_instance.setup_sim_root(self._simid)
@@ -177,9 +162,6 @@ class Renderer:
         # others aren't ready to do so yet.  Their own step cycles will
         # then re-render on schedule and *hopefully* fix whatever problems
         # this creates for them.  It's unclear if there is a way around this.
-        # This has the negative consequence that the ShowBase clock
-        # should not be relied upon as the main SMARTS clock if instances
-        # are going to be run overlapping.
         self._showbase_instance.taskMgr.mgr.poll()
 
     def step(self):
