@@ -66,7 +66,7 @@ OBSERVATION_SPACE = gym.spaces.Dict(
         "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
         "speed": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
         "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
-        "drivable_area_grid_map": gym.spaces.Box(low=0, high=256, shape=(256, 256, 1)),
+        # "drivable_area_grid_map": gym.spaces.Box(low=0, high=256, shape=(256, 256, 1)),
         "predator_vehicles": gym.spaces.Tuple(tuple([NEIGHBORHOOD_VEHICLE_STATES]*len(PREDATOR_IDS))),
         "prey_vehicles": gym.spaces.Tuple(tuple([NEIGHBORHOOD_VEHICLE_STATES]*len(PREY_IDS))),
     }
@@ -104,11 +104,11 @@ def get_specfic_vehicle_states(nv_states, wanted_ids: List[str]):
 
 def observation_adapter(observations):
     nv_states = observations.neighborhood_vehicle_states
-    drivable_area_grid_map = (
-        np.zeros((256, 256, 1))
-        if drivable_area_grid_map is None
-        else observations.drivable_area_grid_map.data
-    )
+    # drivable_area_grid_map = (
+    #     np.zeros((256, 256, 1))
+    #     if drivable_area_grid_map is None
+    #     else observations.drivable_area_grid_map.data
+    # )
 
     predator_states = get_specfic_vehicle_states(nv_states, PREDATOR_IDS)
     prey_states = get_specfic_vehicle_states(nv_states, PREY_IDS)
@@ -121,7 +121,7 @@ def observation_adapter(observations):
         "position": np.array(ego.position),
         "predator_vehicles": tuple(predator_states),
         "prey_vehicles": tuple(prey_states),
-        "drivable_area_grid_map": drivable_area_grid_map,
+        # "drivable_area_grid_map": drivable_area_grid_map,
     }
 
 # add a bit of reward for staying alive
@@ -195,9 +195,13 @@ def prey_reward_adapter(observations, env_reward_signal):
 
 
 rllib_agents = {}
+# add custom done criteria
+# 1: add on_shoulder as event in observation
+# map offset difference between sumo-gui and envision
+# agent_interface full
 
-shared_interface = AgentInterface.from_type(AgentType.Full)
-shared_interface.done_criteria = DoneCriteria(off_route=False)
+shared_interface = AgentInterface.from_type(AgentType.Standard)
+shared_interface.done_criteria = DoneCriteria(off_route=False, off_road=True)
 # shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
 
 # predator_neighborhood_vehicles=NeighborhoodVehicles(radius=30)
