@@ -31,7 +31,7 @@ SMARTS RLlib Tips
 Resume or continue training
 ---------------------------
 
-If you want to continue an aborted experiemnt. you can set `resume=True` in `tune.run`. But note that`resume=True` will continue to use the same configuration as was set in the original experiment.
+If you want to continue an aborted experiment. you can set `resume=True` in `tune.run`. But note that`resume=True` will continue to use the same configuration as was set in the original experiment.
 To make changes to a started experiment, you can edit the latest experiment file in `~/ray_results/rllib_example`.
 
 Or if you want to start a new experiment but train from an existing checkpoint, you can set `restore=checkpoint_path` in `tune.run`.

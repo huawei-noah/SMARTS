@@ -25,9 +25,10 @@ from typing import List, NamedTuple, Tuple
 
 class Events(NamedTuple):
     collisions: List[Tuple[str, str]]
+    not_moving: bool
+    off_road: bool
     off_route: bool
+    on_shoulder: bool
     reached_goal: bool
     reached_max_episode_steps: bool
-    off_road: bool
     wrong_way: bool
-    not_moving: bool

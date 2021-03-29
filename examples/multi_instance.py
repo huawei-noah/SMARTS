@@ -192,6 +192,6 @@ if __name__ == "__main__":
         evaluation_scenarios=[args.evaluation_scenario],
         sim_name=args.sim_name,
         headless=args.headless,
-        num_episodes=args.num_episodes,
+        num_episodes=args.episodes,
         seed=args.seed,
     )

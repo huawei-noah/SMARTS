@@ -254,3 +254,18 @@ def evaluate_bezier(points, total):
     bezier = get_bezier_curve(points)
     new_points = np.array([bezier(t) for t in np.linspace(0, 1, total)])
     return new_points[:, 0], new_points[:, 1]
+
+
+def inplace_unwrap(wp_array):
+    ## minor optimization hack adapted from
+    ##  https://github.com/numpy/numpy/blob/v1.20.0/numpy/lib/function_base.py#L1492-L1546
+    ## to avoid unnecessary (slow) np array copy
+    ## (as seen in profiling).
+    p = np.asarray(wp_array)
+    dd = np.subtract(p[1:], p[:-1])
+    ddmod = np.mod(dd + math.pi, 2 * math.pi) - math.pi
+    np.copyto(ddmod, math.pi, where=(ddmod == -math.pi) & (dd > 0))
+    ph_correct = ddmod - dd
+    np.copyto(ph_correct, 0, where=abs(dd) < math.pi)
+    p[1:] += ph_correct.cumsum(axis=-1)
+    return p
