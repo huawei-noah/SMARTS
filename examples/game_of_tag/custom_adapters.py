@@ -102,6 +102,8 @@ def predator_reward_adapter(observations, env_reward_signal):
     if events.off_road:
         # have a time limit for 
         rew -= 10 # if 10 then after 100 steps, then it tries to suicide
+    elif events.on_shoulder:
+        rew -= 5
 
     predator_pos = observations.ego_vehicle_state.position
 
@@ -132,6 +134,8 @@ def prey_reward_adapter(observations, env_reward_signal):
         rew -= 10
     if events.off_road:
         rew -= 10
+    elif events.on_shoulder:
+        rew -= 5
 
     prey_pos = observations.ego_vehicle_state.position
 
