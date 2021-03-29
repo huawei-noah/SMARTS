@@ -1396,10 +1396,6 @@ class ViaSensor(Sensor):
 
 
 def fix_observation_size(obs_config: Dict, obs: Dict) -> Dict:
-    # Skip empty observations
-    if obs == {}:
-        return obs
-
     fixed_obs = {
         agent_id: fix_agent_observation_size(obs_config, agent_obs)
         for agent_id, agent_obs in obs.items()
