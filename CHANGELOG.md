@@ -11,7 +11,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unrealeased]
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
+
+### Changed 
 - A complete proto schema is implemented for parsing and serializing the observations sent to the remote agent.
+
 
 ## [Format] - 2021-03-12
 ### Added 
