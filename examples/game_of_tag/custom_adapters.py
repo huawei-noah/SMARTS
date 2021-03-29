@@ -115,15 +115,17 @@ def predator_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
-    print(f"original rew: {env_reward_signal}")
-    rew = env_reward_signal
+    rew = -0.25
     events = observations.events
     for c in observations.events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREY_IDS):
             rew += 20
+            print(f"predator collided with prey {c.collidee_id}")
         else:
             # Collided with something other than the prey
             rew -= 25
+            print(f"predator collided with others {c.collidee_id}")
+
     if events.off_road:
         # have a time limit for 
         rew -= 30 # if 10 then after 100 steps, then it tries to suicide
@@ -151,15 +153,16 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
-    print(f"original reward: {env_reward_signal}")
-    rew = env_reward_signal
+    rew = -0.25
     events = observations.events
     for c in events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREDATOR_IDS):
-            rew += 20
+            rew -= 20
+            print(f"prey collided with Predator {c.collidee_id}")
         else:
             # Collided with something other than the prey
             rew -= 25
+            print(f"prey collided with other vehicle {c.collidee_id}")
     if events.off_road:
         rew -= 30
     elif events.on_shoulder:
@@ -183,13 +186,5 @@ def prey_reward_adapter(observations, env_reward_signal):
         ],
         default=0,
     )
-    xxx = 0.1 * min(
-        [
-            np.linalg.norm(prey_pos - predator_pos)
-            for predator_pos in predator_positions
-        ],
-        default=0,
-    )
-    print(f"prey_reward_adapter dis reward: {xxx}")
 
     return rew

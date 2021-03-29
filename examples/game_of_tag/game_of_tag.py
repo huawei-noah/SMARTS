@@ -36,8 +36,8 @@ rllib_agents = {}
 # add custom done criteria - maybe not 
 # map offset difference between sumo-gui and envision
 
-shared_interface = AgentInterface.from_type(AgentType.Full, max_episode_steps=1000) #100s
-shared_interface.done_criteria = DoneCriteria(off_route=False, off_road=True)
+shared_interface = AgentInterface.from_type(AgentType.Full, max_episode_steps=300) #100s
+shared_interface.done_criteria = DoneCriteria(off_route=False, off_road=False)
 # shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
 
 # predator_neighborhood_vehicles=NeighborhoodVehicles(radius=30)
@@ -149,8 +149,6 @@ def main(args):
         )
         for agent_id, rllib_agent in rllib_agents.items()
     }
-
-    print(rllib_policies)
 
     tune_config = {
         "env": RLlibHiWayEnv,
