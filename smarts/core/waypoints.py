@@ -31,7 +31,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, NamedTuple, Sequence 
+from typing import List, NamedTuple, Sequence
 
 from smarts.core.utils.file import suppress_pkg_resources
 from smarts.core.utils.math import inplace_unwrap
