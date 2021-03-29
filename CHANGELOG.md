@@ -12,6 +12,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
 
+### Changed 
+- The `Observation` class and all related classes are properly type formatted. 
+- Observation returned by SMARTS only consists of data and does not include any corresponding class methods.
+- Variable-length observations are truncated or padded (with default values) to a fixed length when the desired lengths are specified in an observation configuration yaml file.
+
+
 ## [Format] - 2021-03-12
 ### Added 
 – Describe any new features that have been added since the last version was released.
