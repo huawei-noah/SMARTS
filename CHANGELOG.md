@@ -8,11 +8,14 @@ All text added must be human readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
-## [Unrealeased]
+## [Unreleased]
 ### Added 
 - Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
 process
 - Added `on_shoulder` as part of events in observation returned from each step of simulation
+### Changed 
+- A complete proto schema is implemented for parsing and serializing the observations sent to the remote agent.
+
 
 ## [0.4.15] - 2021-03-18
 ### Added
@@ -39,9 +42,6 @@ using the original coordinate system.  See Issue #325.
 - Envision now resumes from current frame after un-pausing.
 - Skipped generation of cut-in waypoints if they are further off-road than SMARTS currently supports to avoid process crash.
 - Fix envision error 15 by cleanly shutting down the envision worker process.
-
-### Changed 
-- A complete proto schema is implemented for parsing and serializing the observations sent to the remote agent.
 
 
 ## [Format] - 2021-03-12
