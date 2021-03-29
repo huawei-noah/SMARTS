@@ -129,11 +129,13 @@ def train(
         if grade_mode:
             graduate_agent = agent_coordinator.graduate(
                 episode.index, num_episodes, average_scenarios_passed
-            )  
-            if graduate_agent[1] == True: # If agent has completed all levels (no cycle through levels again)
+            )
+            if (
+                graduate_agent[1] == True
+            ):  # If agent has completed all levels (no cycle through levels again)
                 finished = True
                 break
-            elif graduate_agent[0] == True: # If agent switches to new grade
+            elif graduate_agent[0] == True:  # If agent switches to new grade
                 observations = env.reset(True, agent_coordinator.get_grade())
                 agent_coordinator.display()
                 average_scenarios_passed = 0.0
@@ -241,6 +243,7 @@ def train(
             break
 
     env.close()
+
 
 def gb_setup(gb_info):
     agent_coordinator = coordinator(gb_info["gb_curriculum_dir"])
