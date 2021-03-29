@@ -20,11 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import (
+    annotations,
+)  # to allow for typing to refer to class being defined (LinkedWaypoint)
+
 import numpy as np
 import queue
 import random
 import warnings
-from __future__ import annotations # to allow for typing to refer to class being defined (LinkedWaypoint)
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache

@@ -60,12 +60,13 @@ message Collision{
 
 message Events {
     repeated Collision collisions=1;
-    bool off_route=2;
-    bool reached_goal=3;
-    bool reached_max_episode_steps=4;
-    bool off_road=5;
-    bool wrong_way=6;
-    bool not_moving=7;
+    bool not_moving=2;
+    bool off_road=3;
+    bool off_route=4;
+    bool on_shoulder=5;
+    bool reached_goal=6;
+    bool reached_max_episode_steps=7;
+    bool wrong_way=8;
 }
 
 message BoundingBox{
