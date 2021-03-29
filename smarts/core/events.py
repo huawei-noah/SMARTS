@@ -27,18 +27,20 @@ from smarts.zoo import worker_pb2
 
 class Events(NamedTuple):
     collisions: List[Tuple[str, str]]
+    not_moving: bool
+    off_road: bool
     off_route: bool
+    on_shoulder: bool
     reached_goal: bool
     reached_max_episode_steps: bool
-    off_road: bool
     wrong_way: bool
-    not_moving: bool
 
 
 def events_to_proto(events: Events) -> worker_pb2.Events:
     return worker_pb2.Events(
         collisions=[collision_to_proto(collision) for collision in events.collisions],
         off_route=events.off_route,
+        on_shoulder=events.on_shoulder,
         reached_goal=events.reached_goal,
         reached_max_episode_steps=events.reached_max_episode_steps,
         off_road=events.off_road,
@@ -51,6 +53,7 @@ def proto_to_events(proto: worker_pb2.Events) -> Events:
     return Events(
         collisions=[proto_to_collision(collision) for collision in proto.collisions],
         off_route=proto.off_route,
+        on_shoulder=proto.on_shoulder,
         reached_goal=proto.reached_goal,
         reached_max_episode_steps=proto.reached_max_episode_steps,
         off_road=proto.off_road,
