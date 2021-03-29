@@ -9,17 +9,6 @@ it collides into the other vehicle. There can be multiple predators and
 multiple prey in a map. Social vehicles act as obstacles where both the
 predator and prey must avoid them.
 """
-
-### Find a paper for tag: Not found yet
-# continuous controller, vs. lane controller
-# 2 preys and 2 predators. preys learn to run away from predators.
-# should still use ray and rllib? (Or pytorch)
-
-# 9:30 standups M,W,Th
-# Tech: Tuesday, Friday
-# BM: Monday, Thursday
-
-
 import argparse
 import os
 import random
@@ -45,12 +34,7 @@ tf = try_import_tf()
 
 rllib_agents = {}
 # add custom done criteria - maybe not 
-# 1: add on_shoulder as event in observation
 # map offset difference between sumo-gui and envision
-
-# Test to see training with ActuatorDynamic or absoluteSteering which is better
-# add max_episode_steps in agent_interface #StandardWithAbsoluteSteering
-# Use a small potion of drivable grid map as observation. Maybe only the area in front of the vehicle
 
 shared_interface = AgentInterface.from_type(AgentType.Full, max_episode_steps=1000) #100s
 shared_interface.done_criteria = DoneCriteria(off_route=False, off_road=True)
@@ -248,15 +232,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(args)
-
-
-# Failure # 1 (occurred at 2021-03-25_18-32-07)
-# Traceback (most recent call last):
-#   File "/home/kyber/work/SMARTS/.venv/lib/python3.7/site-packages/ray/tune/trial_runner.py", line 726, in _process_trial
-#     result = self.trial_executor.fetch_result(trial)
-#   File "/home/kyber/work/SMARTS/.venv/lib/python3.7/site-packages/ray/tune/ray_trial_executor.py", line 489, in fetch_result
-#     result = ray.get(trial_future[0], timeout=DEFAULT_GET_TIMEOUT)
-#   File "/home/kyber/work/SMARTS/.venv/lib/python3.7/site-packages/ray/worker.py", line 1454, in get
-#     raise value
-# ray.exceptions.RayActorError: The actor died unexpectedly before finishing this task.
-

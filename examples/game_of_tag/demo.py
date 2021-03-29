@@ -20,108 +20,17 @@ from ray import tune
 from ray.rllib.utils import try_import_tf
 from ray.tune.schedulers import PopulationBasedTraining
 
-from rllib_agent import RLLibTFSavedModelAgent, TrainingModel
+from examples.rllib_agent import RLLibTFSavedModelAgent, TrainingModel
+from examples.game_of_tag.custom_adapters import *
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec, Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
 
-PREDATOR_IDS = ["PRED1", "PRED2"]
-PREY_IDS = ["PREY1", "PREY2"]
-
-def action_adapter(model_action):
-    throttle, brake, steering = model_action
-    return np.array([throttle, brake, steering])
-
-# create different observation adaptor for prev and predator
-# prev should see further than predator (All angles), predator maybe frontal vision
-def observation_adapter(observations):
-    if observations.drivable_area_grid_map:
-        print(observations.drivable_area_grid_map.data)
-    nv_states = observations.neighborhood_vehicle_states
-    nv_states = nv_states
-
-    nv_states = [
-        {
-            "heading": np.array([v.heading]),
-            "speed": np.array([v.speed]),
-            "position": np.array(v.position),
-        }
-        for v in nv_states
-    ]
-
-    ego = observations.ego_vehicle_state
-    return {
-        "steering": np.array([ego.steering]),
-        "speed": np.array([ego.speed]),
-        "position": np.array(ego.position),
-        "neighborhood_vehicle_states": tuple(nv_states),
-    }
-
-def predator_reward_adapter(observations, env_reward_signal):
-    """+ if collides with prey
-    - if collides with social vehicle
-    - if off road
-    """
-    rew = env_reward_signal
-    events = observations.events
-    for c in observations.events.collisions:
-        if c.collidee_id in PREY_IDS:
-            rew += 10
-        else:
-            # Collided with something other than the prey
-            rew -= 10
-    if events.off_road:
-        rew -= 10
-
-    predator_pos = observations.ego_vehicle_state.position
-
-    neighborhood_vehicles = observations.neighborhood_vehicle_states
-    prey_vehicles = filter(lambda v: v.id in PREY_IDS, neighborhood_vehicles)
-    prey_positions = [p.position for p in prey_vehicles]
-
-    # Decreased reward for increased distance away from prey
-    rew -= 0.1 * min(
-        [np.linalg.norm(predator_pos - prey_pos) for prey_pos in prey_positions],
-        default=0,
-    )
-
-    return rew
-
-def prey_reward_adapter(observations, env_reward_signal):
-    """+ based off the distance away from the predator (optional)
-    - if collides with prey
-    - if collides with social vehicle
-    - if off road
-    """
-    rew = env_reward_signal
-    events = observations.events
-    for c in events.collisions:
-        rew -= 10
-    if events.off_road:
-        rew -= 10
-
-    prey_pos = observations.ego_vehicle_state.position
-
-    neighborhood_vehicles = observations.neighborhood_vehicle_states
-    predator_vehicles = filter(lambda v: v.id in PREDATOR_IDS, neighborhood_vehicles)
-    predator_positions = [p.position for p in predator_vehicles]
-
-    # Increased reward for increased distance away from predators
-    rew += 0.1 * min(
-        [
-            np.linalg.norm(prey_pos - predator_pos)
-            for predator_pos in predator_positions
-        ],
-        default=0,
-    )
-
-    return rew
-
 class PredatorAgent(Agent):
     def act(self, obs):
-        return [0.5, 0, 1]
+        return [0.5, 0, -1]
 
 class PreyAgent(Agent):
     def act(self, obs):
@@ -175,6 +84,7 @@ def main(scenario, headless, resume_training, result_dir, seed):
 
             observations, rewards, dones, infos = env.step(actions)
             episode.record_step(observations, rewards, dones, infos)
+        break
 
     env.close()
 

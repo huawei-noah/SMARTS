@@ -1,6 +1,8 @@
 import gym
 import numpy as np
+import random
 from typing import List
+import time
 
 
 PREDATOR_IDS = ["PRED1", "PRED2"]
@@ -26,7 +28,7 @@ OBSERVATION_SPACE = gym.spaces.Dict(
         "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
         "speed": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
         "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
-        # "drivable_area_grid_map": gym.spaces.Box(low=0, high=256, shape=(256, 256, 1)),
+        "drivable_area_grid_map": gym.spaces.Box(low=0, high=1, shape=(6, 4)),
         "predator_vehicles": gym.spaces.Tuple(tuple([NEIGHBORHOOD_VEHICLE_STATES]*len(PREDATOR_IDS))),
         "prey_vehicles": gym.spaces.Tuple(tuple([NEIGHBORHOOD_VEHICLE_STATES]*len(PREY_IDS))),
     }
@@ -34,15 +36,20 @@ OBSERVATION_SPACE = gym.spaces.Dict(
 
 
 def action_adapter(model_action):
-    print("Entered action_adapter")
     throttle, brake, steering = model_action
     return np.array([throttle, brake, steering])
 
+def _is_vehicle_wanted(id, wanted_ids: List[str]):
+    for wanted_id in wanted_ids:
+        if wanted_id in id:
+            return True
+    return False
 
 def get_specfic_vehicle_states(nv_states, wanted_ids: List[str]):
     """ return vehicle states of vehicle that has id in wanted_ids
         append 0 if not enough
     """
+
     states = [
         {
             "heading": np.array([v.heading]),
@@ -50,7 +57,7 @@ def get_specfic_vehicle_states(nv_states, wanted_ids: List[str]):
             "position": np.array(v.position),
         }
         for v in nv_states
-        if v.id in wanted_ids
+        if _is_vehicle_wanted(v.id, wanted_ids)
     ] 
     states += [
         {
@@ -60,28 +67,46 @@ def get_specfic_vehicle_states(nv_states, wanted_ids: List[str]):
         }
     ] * (len(wanted_ids) - len(states))
     return states
-    
+
+def congregate_map(grid_map):
+    block_size = 5
+    drivable_area = 1
+    non_drivable_area = 0
+    scaled_width = int(grid_map.shape[0]/block_size)
+    scaled_height = int(grid_map.shape[1]/block_size)
+    congregated_map = np.zeros((scaled_width, scaled_height))
+    for vertical in range(0,grid_map.shape[0],block_size):
+        for horizontal in range(0, grid_map.shape[1], block_size):
+            portion = grid_map[vertical:vertical+block_size,horizontal:horizontal+block_size]
+            drivable = np.count_nonzero(portion > non_drivable_area) > int(block_size*block_size/2) # 12
+            congregated_map[int(vertical/block_size),int(horizontal/block_size)] = drivable_area if drivable else non_drivable_area
+    return congregated_map
+
+def resize_grid_map(grid_map):
+    grid_map = grid_map[100:130,120:140] # vertical take 100->130, horizontal take 120->140
+    # grid_map is 30x20
+    map_6x4 = congregate_map(grid_map)
+    return map_6x4
 
 def observation_adapter(observations):
     nv_states = observations.neighborhood_vehicle_states
-    # drivable_area_grid_map = (
-    #     np.zeros((256, 256, 1))
-    #     if drivable_area_grid_map is None
-    #     else observations.drivable_area_grid_map.data
-    # )
+    drivable_area_grid_map = (
+        np.zeros((6,4))
+        if observations.drivable_area_grid_map is None
+        else resize_grid_map(observations.drivable_area_grid_map.data)
+    )
 
     predator_states = get_specfic_vehicle_states(nv_states, PREDATOR_IDS)
     prey_states = get_specfic_vehicle_states(nv_states, PREY_IDS)
 
     ego = observations.ego_vehicle_state
-    print("Entered observation_adapter")
     return {
         "steering": np.array([ego.steering]),
         "speed": np.array([ego.speed]),
         "position": np.array(ego.position),
         "predator_vehicles": tuple(predator_states),
         "prey_vehicles": tuple(prey_states),
-        # "drivable_area_grid_map": drivable_area_grid_map,
+        "drivable_area_grid_map": drivable_area_grid_map,
     }
 
 # add a bit of reward for staying alive
@@ -90,25 +115,24 @@ def predator_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
-    print("Entered predator_reward_adapter")
+    print(f"original rew: {env_reward_signal}")
     rew = env_reward_signal
     events = observations.events
     for c in observations.events.collisions:
-        if c.collidee_id in PREY_IDS:
-            rew += 10
+        if _is_vehicle_wanted(c.collidee_id, PREY_IDS):
+            rew += 20
         else:
             # Collided with something other than the prey
-            rew -= 10
+            rew -= 25
     if events.off_road:
         # have a time limit for 
-        rew -= 10 # if 10 then after 100 steps, then it tries to suicide
+        rew -= 30 # if 10 then after 100 steps, then it tries to suicide
     elif events.on_shoulder:
-        rew -= 5
+        rew -= 10
 
     predator_pos = observations.ego_vehicle_state.position
-
     neighborhood_vehicles = observations.neighborhood_vehicle_states
-    prey_vehicles = filter(lambda v: v.id in PREY_IDS, neighborhood_vehicles)
+    prey_vehicles = filter(lambda v: _is_vehicle_wanted(v.id, PREY_IDS), neighborhood_vehicles)
     prey_positions = [p.position for p in prey_vehicles]
 
     # Decreased reward for increased distance away from prey
@@ -127,20 +151,24 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
-    print("Entered prey_reward_adapter")
+    print(f"original reward: {env_reward_signal}")
     rew = env_reward_signal
     events = observations.events
     for c in events.collisions:
-        rew -= 10
+        if _is_vehicle_wanted(c.collidee_id, PREDATOR_IDS):
+            rew += 20
+        else:
+            # Collided with something other than the prey
+            rew -= 25
     if events.off_road:
-        rew -= 10
+        rew -= 30
     elif events.on_shoulder:
-        rew -= 5
+        rew -= 10
 
     prey_pos = observations.ego_vehicle_state.position
 
     neighborhood_vehicles = observations.neighborhood_vehicle_states
-    predator_vehicles = filter(lambda v: v.id in PREDATOR_IDS, neighborhood_vehicles)
+    predator_vehicles = filter(lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS), neighborhood_vehicles)
     predator_positions = [p.position for p in predator_vehicles]
 
     # Increased reward for increased distance away from predators
@@ -148,12 +176,20 @@ def prey_reward_adapter(observations, env_reward_signal):
     
     # Penalize "on_shoulder" event after on_shoulder is added. 
 
-    # rew += 0.1 * min(
-    #     [
-    #         np.linalg.norm(prey_pos - predator_pos)
-    #         for predator_pos in predator_positions
-    #     ],
-    #     default=0,
-    # )
+    rew += 0.1 * min(
+        [
+            np.linalg.norm(prey_pos - predator_pos)
+            for predator_pos in predator_positions
+        ],
+        default=0,
+    )
+    xxx = 0.1 * min(
+        [
+            np.linalg.norm(prey_pos - predator_pos)
+            for predator_pos in predator_positions
+        ],
+        default=0,
+    )
+    print(f"prey_reward_adapter dis reward: {xxx}")
 
     return rew
