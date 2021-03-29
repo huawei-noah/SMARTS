@@ -11,6 +11,15 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unrealeased]
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
+- Hosted Documentation on readthedocs and pointed to documentations and smarts paper in README
+- Running imitation learning will now create a cached history_mission.pkl file in scenario folder that stores 
+the missions for all agents.
+### Fixed
+- In order to avoid precision issues in our coordinates with big floating point numbers,
+we now initially shift road networks (maps) that are offset back to the origin
+using [netconvert](https://sumo.dlr.de/docs/netconvert.html).
+We adapt Sumo vehicle positions to take this into account to allow Sumo to continue
+using the original coordinate system.  See Issue #325.
 
 ### Changed 
 - A complete proto schema is implemented for parsing and serializing the observations sent to the remote agent.

@@ -593,6 +593,10 @@ class SumoTrafficSimulation:
             speed = sumo_vehicle[tc.VAR_SPEED]
             vehicle_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
             dimensions = VEHICLE_CONFIGS[vehicle_type].dimensions
+            # adjust sumo vehicle location with map location offset
+            assert len(self._scenario.mapLocationOffset) == 2
+            front_bumper_pos[0] += self._scenario.mapLocationOffset[0]
+            front_bumper_pos[1] += self._scenario.mapLocationOffset[1]
             provider_vehicles.append(
                 VehicleState(
                     # XXX: In the case of the SUMO traffic provider, the vehicle ID is

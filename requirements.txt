@@ -11,6 +11,7 @@ attrs==20.2.0
 Automat==20.2.0
 beautifulsoup4==4.9.3
 blessings==1.7
+cached-property==1.5.2
 cachetools==4.1.1
 certifi==2020.6.20
 chardet==3.0.2
