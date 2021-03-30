@@ -19,9 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import glob
 import os
 import shutil
 import unittest
+
+from ultra.tune import _AVAILABLE_TUNE_METRICS
+from ultra.utils.episode import LogInfo
 
 
 class TuneTest(unittest.TestCase):
@@ -32,21 +36,44 @@ class TuneTest(unittest.TestCase):
         TASK = "00"
         LEVEL = "easy"
         POLICY = "ppo"
-        EPISODES = 1
-        MAX_EPISODE_STEPS = 1200
+        EPISODES = 2
+        MAX_EPISODE_STEPS = 50
+        TIMESTEP = 0.1
         HEADLESS = True
-        TUNE_LOG_DIR = os.path.join(TuneTest.OUTPUT_DIRECTORY, "tune_logs/")
-        TUNE_OUTPUT_DIR = os.path.join(TuneTest.OUTPUT_DIRECTORY, "tune_results/")
+        EVAL_EPISODES = 2
+        SAVE_RATE = 1
+        SEED = 2
+        LOG_DIR = os.path.join(TuneTest.OUTPUT_DIRECTORY, "tune_logs/")
         CONFIG_MODULE = "ultra.baselines.ppo.ppo.tune_params"
         METRIC = "episode_reward"
         MODE = "max"
+        SCOPE = "last"
+        GRACE_PERIOD = 1
+        REDUCTION_FACTOR = 2
+        BRACKETS = 1
+        NUM_SAMPLES = 2
 
         tune_command = (
             "python ultra/tune.py "
-            f"--task {TASK} --level {LEVEL} --policy {POLICY} --episodes {EPISODES} "
-            f"--max-episode-steps {MAX_EPISODE_STEPS} --headless {HEADLESS} "
-            f"--log-dir {TUNE_LOG_DIR} --output-dir {TUNE_OUTPUT_DIR} "
-            f"--config-module {CONFIG_MODULE} --metric {METRIC} --mode {MODE}"
+            f"--task {TASK} "
+            f"--level {LEVEL} "
+            f"--policy {POLICY} "
+            f"--episodes {EPISODES} "
+            f"--max-episode-steps {MAX_EPISODE_STEPS} "
+            f"--timestep {TIMESTEP} "
+            f"--headless {HEADLESS} "
+            f"--eval-episodes {EVAL_EPISODES} "
+            f"--save-rate {SAVE_RATE} "
+            f"--seed {SEED} "
+            f"--log-dir {LOG_DIR} "
+            f"--config-module {CONFIG_MODULE} "
+            f"--metric {METRIC} "
+            f"--mode {MODE} "
+            f"--scope {SCOPE} "
+            f"--grace-period {GRACE_PERIOD} "
+            f"--reduction-factor {REDUCTION_FACTOR} "
+            f"--brackets {BRACKETS} "
+            f"--num-samples {NUM_SAMPLES}"
         )
 
         try:
@@ -55,8 +82,29 @@ class TuneTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
-        self.assertTrue(os.path.exists(TUNE_LOG_DIR))
-        self.assertTrue(os.path.exists(TUNE_OUTPUT_DIR))
+        # Ensure tuning was performed.
+        self.assertTrue(os.path.exists(LOG_DIR))
+        tune_experiment_dir = glob.glob(os.path.join(LOG_DIR, "*/"))[0]
+        tune_experiment_evaluation_dir = os.path.join(
+            tune_experiment_dir, "evaluation/"
+        )
+
+        # Ensure evaluation was performed.
+        self.assertTrue(os.path.exists(tune_experiment_evaluation_dir))
+        self.assertTrue(len(os.listdir(tune_experiment_evaluation_dir)) > 0)
+
+        # Ensure the best parameters were saved.
+        self.assertTrue(
+            any(
+                filename.endswith(".yaml")
+                for filename in os.listdir(tune_experiment_dir)
+            )
+        )
+
+    def test_tune_metrics_availability(self):
+        log_info = LogInfo()
+        for metric in _AVAILABLE_TUNE_METRICS:
+            self.assertTrue(metric in log_info.data)
 
     @classmethod
     def tearDownClass(cls):
