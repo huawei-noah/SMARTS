@@ -103,14 +103,20 @@ class coordinator:
                 self.next_grade()
                 self.rotation_counter += 0 if episode_based_cycle else 1
                 self.grade_completed = True
+                self.grade_length.append(index)
             elif index == 0:
                 self.rotation_counter += 0 if episode_based_cycle else 1
+                self.grade_length.append(index)
                 self.display()
             else:
                 self.grade_completed = False
 
             if self.rotation_counter > self.get_num_of_grades():
                 self.cycle_completed = True
+
+            if self.cycle_completed:
+                # print("Average scenario success array: ", self.plot_arr)
+                print("Episode intervals: ", self.grade_length)
 
             return (self.grade_completed, self.cycle_completed)
 
@@ -140,8 +146,8 @@ class coordinator:
                 self.cycle_completed = True
 
             if self.cycle_completed:
-                print("Average scenario success array: ", self.plot_arr)
-                print("Epsiode intervals: ", self.grade_length)
+                # print("Average scenario success array: ", self.plot_arr)
+                print("Episode intervals: ", self.grade_length)
 
             return (self.grade_completed, self.cycle_completed)
 
