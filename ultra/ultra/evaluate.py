@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import os
 import pickle
+from typing import Sequence, Tuple
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -197,6 +198,114 @@ def evaluate(
     return summary_log
 
 
+def evaluate_saved_models(
+    experiment_dir: str,
+    log_dir: str,
+    headless: bool,
+    max_episode_steps: int,
+    model_paths: Sequence[str],
+    num_episodes: int,
+    scenario_info: Tuple[str, str],
+    timestep: float,
+):
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    if not all([os.path.exists(model_path) for model_path in model_paths]):
+        raise "At least one path to a model is invalid"
+    if not all([os.listdir(model_path) for model_path in model_paths]):
+        raise "There are no models to evaluate in at least one model path"
+
+    # Get agent IDs from the models to be evaluated.
+    agent_ids_from_models = [
+        os.path.basename(os.path.normpath(model_path)) for model_path in model_paths
+    ]
+
+    # Load relevant agent metadata.
+    with open(
+        os.path.join(experiment_dir, "agent_metadata.pkl"), "rb"
+    ) as metadata_file:
+        agent_metadata = pickle.load(metadata_file)
+
+    # Extract the agent IDs and policy classes from the metadata and given models.
+    agent_ids = [
+        agent_id
+        for agent_id in agent_metadata["agent_ids"]
+        if agent_id in agent_ids_from_models
+    ]
+    policy_classes = {
+        agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
+    }
+
+    # From a base model directory such as logs/<experiment_name>/models/*, assign each agent ID with its
+    # checkpoint directories in sorted order based on the checkpoint iteration. The agent IDs are
+    # obtained from the direct child folders of the model directory given. As an example result:
+    # {
+    #     '000': ['logs/<experiment_name>/models/000/1042', 'logs/<experiment_name>/models/000/2062'],
+    #     '001': ['logs/<experiment_name>/models/001/999', 'logs/<experiment_name>/models/001/1999'],
+    #     '003': ['logs/<experiment_name>/models/003/1009', 'logs/<experiment_name>/models/003/2120'],
+    #     '002': ['logs/<experiment_name>/models/002/1053', 'logs/<experiment_name>/models/002/2041'],
+    # }
+    agent_checkpoint_directories = {
+        agent_id: sorted(
+            glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
+            key=lambda x: int(x.split("/")[-1]),
+        )
+        for agent_id in agent_ids
+    }
+
+    # Assert each agent ID has the same number of checkpoints saved.
+    directories_iterator = iter(agent_checkpoint_directories.values())
+    number_of_checkpoints = len(next(directories_iterator))
+    assert all(
+        len(checkpoint_directory) == number_of_checkpoints
+        for checkpoint_directory in directories_iterator
+    ), "Not all agents have the same number of checkpoints saved"
+
+    # Define an 'etag' for this experiment's data directory based off policy_classes.
+    # E.g. From a {"000": "ultra.baselines.dqn:dqn-v0", "001": "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes dict, transform it to an etag of "dqn-v0:ppo-v0-evaluation".
+    etag = (
+        ":".join([policy_classes[agent_id].split(":")[-1] for agent_id in agent_ids])
+        + "-evaluation"
+    )
+
+    ray.init()
+    try:
+        for episode in episodes(
+            number_of_checkpoints,
+            etag=etag,
+            log_dir=log_dir,
+        ):
+            # Obtain a checkpoint directory for each agent.
+            current_checkpoint_directories = {
+                agent_id: agent_directories[episode.index]
+                for agent_id, agent_directories in agent_checkpoint_directories.items()
+            }
+            episode.eval_mode()
+            episode.info[episode.active_tag] = ray.get(
+                [
+                    evaluate.remote(
+                        experiment_dir=experiment_dir,
+                        agent_ids=agent_ids,
+                        policy_classes=policy_classes,
+                        seed=episode.eval_count,
+                        checkpoint_dirs=current_checkpoint_directories,
+                        scenario_info=scenario_info,
+                        num_episodes=num_episodes,
+                        max_episode_steps=max_episode_steps,
+                        timestep_sec=timestep,
+                        headless=headless,
+                        log_dir=log_dir,
+                    )
+                ]
+            )[0]
+            episode.record_tensorboard()
+            episode.eval_count += 1
+    finally:
+        time.sleep(1)
+        ray.shutdown()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("intersection-evaluation")
     parser.add_argument(
@@ -241,100 +350,13 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if not os.path.exists(args.log_dir):
-        os.makedirs(args.log_dir)
-
-    if not all([os.path.exists(model_path) for model_path in args.models]):
-        raise "At least one path to a model is invalid"
-
-    if not all([os.listdir(model_path) for model_path in args.models]):
-        raise "There are no models to evaluate in at least one model path"
-
-    agent_ids_from_models = [
-        os.path.basename(os.path.normpath(model_path)) for model_path in args.models
-    ]
-
-    # Load relevant agent metadata.
-    with open(
-        os.path.join(args.experiment_dir, "agent_metadata.pkl"), "rb"
-    ) as metadata_file:
-        agent_metadata = pickle.load(metadata_file)
-
-    # Extract the agent IDs and policy classes from the metadata and given models.
-    agent_ids = [
-        agent_id
-        for agent_id in agent_metadata["agent_ids"]
-        if agent_id in agent_ids_from_models
-    ]
-    policy_classes = {
-        agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
-    }
-
-    # From a base model directory such as logs/<experiment_name>/models/*, assign each agent ID with its
-    # checkpoint directories in sorted order based on the checkpoint iteration. The agent IDs are
-    # obtained from the direct child folders of the model directory given. As an example result:
-    # {
-    #     '000': ['logs/<experiment_name>/models/000/1042', 'logs/<experiment_name>/models/000/2062'],
-    #     '001': ['logs/<experiment_name>/models/001/999', 'logs/<experiment_name>/models/001/1999'],
-    #     '003': ['logs/<experiment_name>/models/003/1009', 'logs/<experiment_name>/models/003/2120'],
-    #     '002': ['logs/<experiment_name>/models/002/1053', 'logs/<experiment_name>/models/002/2041'],
-    # }
-    agent_checkpoint_directories = {
-        agent_id: sorted(
-            glob.glob(os.path.join(args.experiment_dir, "models", agent_id, "*")),
-            key=lambda x: int(x.split("/")[-1]),
-        )
-        for agent_id in agent_ids
-    }
-
-    # Assert each agent ID has the same number of checkpoints saved.
-    directories_iterator = iter(agent_checkpoint_directories.values())
-    number_of_checkpoints = len(next(directories_iterator))
-    assert all(
-        len(checkpoint_directory) == number_of_checkpoints
-        for checkpoint_directory in directories_iterator
-    ), "Not all agents have the same number of checkpoints saved"
-
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a {"000": "ultra.baselines.dqn:dqn-v0", "001": "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes dict, transform it to an etag of "dqn-v0:ppo-v0-evaluation".
-    etag = (
-        ":".join([policy_classes[agent_id].split(":")[-1] for agent_id in agent_ids])
-        + "-evaluation"
+    evaluate_saved_models(
+        experiment_dir=args.experiment_dir,
+        log_dir=args.log_dir,
+        headless=args.headless,
+        max_episode_steps=int(args.max_episode_steps),
+        model_paths=args.models,
+        num_episodes=int(args.episodes),
+        scenario_info=(args.task, args.level),
+        timestep=float(args.timestep),
     )
-
-    ray.init()
-    try:
-        for episode in episodes(
-            number_of_checkpoints,
-            etag=etag,
-            log_dir=args.log_dir,
-        ):
-            # Obtain a checkpoint directory for each agent.
-            current_checkpoint_directories = {
-                agent_id: agent_directories[episode.index]
-                for agent_id, agent_directories in agent_checkpoint_directories.items()
-            }
-            episode.eval_mode()
-            episode.info[episode.active_tag] = ray.get(
-                [
-                    evaluate.remote(
-                        experiment_dir=args.experiment_dir,
-                        agent_ids=agent_ids,
-                        policy_classes=policy_classes,
-                        seed=episode.eval_count,
-                        checkpoint_dirs=current_checkpoint_directories,
-                        scenario_info=(args.task, args.level),
-                        num_episodes=int(args.episodes),
-                        max_episode_steps=int(args.max_episode_steps),
-                        timestep_sec=float(args.timestep),
-                        headless=args.headless,
-                        log_dir=args.log_dir,
-                    )
-                ]
-            )[0]
-            episode.record_tensorboard()
-            episode.eval_count += 1
-    finally:
-        time.sleep(1)
-        ray.shutdown()

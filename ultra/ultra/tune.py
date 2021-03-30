@@ -19,47 +19,62 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from functools import partial
+import glob
 import importlib
-import json
 import os
+import pickle
+from typing import Sequence, Tuple
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
 
+import dill
 import gym
 import torch
 import yaml
 
 import ray
 from ray import tune
-from functools import partial
-from ray.tune.schedulers import ASHAScheduler
 from ray.tune import CLIReporter
+from ray.tune.analysis.experiment_analysis import ExperimentAnalysis
+from ray.tune.schedulers import ASHAScheduler
+from ray.tune.trial import Trial
 
 from smarts.zoo.registry import make
-from ultra.evaluate import evaluation_check
+from ultra.evaluate import evaluate_saved_models
 from ultra.utils.common import agent_pool_value
 from ultra.utils.episode import episodes
 
-num_gpus = 1 if torch.cuda.is_available() else 0
+_AVAILABLE_TUNE_METRICS = [
+    "episode_length",
+    "episode_reward",
+    "env_score",
+]
+_AVAILABLE_TUNE_MODES = [
+    "max",
+    "min",
+]
+_AVAILABLE_TUNE_SCOPES = ["all", "last", "avg", "last-5-avg", "last-10-avg"]
 
 
-# TODO: Replace with something like a 'rollout' function that is used by both tune.py and train.py.
-# @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-# @ray.remote(num_gpus=num_gpus / 2)
+# TODO: Replace tune_train with something like a 'rollout' function that
+# can be used by both tune.py and train.py. This requires refactoring
+# train.py so that it can...
+# 1) Accept configs for the agents
+# 2) Return/yield an Episode object (or information) about the episode
 def tune_train(
     config,
     scenario_info,
     num_episodes,
     policy_classes,
     max_episode_steps,
-    eval_info,
+    save_rate,
     timestep_sec,
     headless,
     seed,
     log_dir,
-    # metrics,
     metric,
 ):
     torch.set_num_threads(1)
@@ -113,24 +128,28 @@ def tune_train(
         dones = {"__all__": False}
         infos = None
         episode.reset()
+        experiment_dir = episode.experiment_dir
+
+        # Save relevant agent metadata.
+        if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
+            if not os.path.exists(experiment_dir):
+                os.makedirs(experiment_dir)
+            with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
+                dill.dump(
+                    {
+                        "agent_ids": agent_ids,
+                        "agent_classes": agent_classes,
+                        "agent_specs": agent_specs,
+                    },
+                    metadata_file,
+                    pickle.HIGHEST_PROTOCOL,
+                )
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
             if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
                 finished = True
                 break
-
-            # # Perform the evaluation check.
-            # evaluation_check(
-            #     agents=agents,
-            #     agent_ids=agent_ids,
-            #     policy_classes=agent_classes,
-            #     episode=episode,
-            #     log_dir=log_dir,
-            #     max_episode_steps=max_episode_steps,
-            #     **eval_info,
-            #     **env.info,
-            # )
 
             # Request and perform actions on each agent that received an observation.
             actions = {
@@ -171,6 +190,13 @@ def tune_train(
         episode.record_episode()
         episode.record_tensorboard()
 
+        # Save the agent if we have reached its save rate.
+        if (episode.index + 1) % save_rate == 0:
+            for agent_id in agent_ids:
+                checkpoint_directory = episode.checkpoint_dir(agent_id, episode.index)
+                agents[agent_id].save(checkpoint_directory)
+
+        # Average the metric over the number of agents (1 agent).
         tune_value = sum(
             [
                 episode.info[episode.active_tag][agent_id].data[metric]
@@ -178,17 +204,64 @@ def tune_train(
             ]
         ) / len(agent_ids)
         tune.report(**{metric: tune_value})
-        # # TODO: Make general for multi-agent...
-        # tune_values = {
-        #     metric: episode.info[episode.active_tag][0].data[metric]
-        #     for metric in metrics
-        # }
-        # tune.report(**tune_values)
 
         if finished:
             break
 
     env.close()
+
+
+def _save_best_params(best_conditions: Sequence[str], result: ExperimentAnalysis):
+    best_log_dir = result.get_best_logdir(*best_conditions)
+    best_config = result.get_best_config(*best_conditions)
+    tune_experiment_dir = os.path.join(best_log_dir, "../")
+    best_params_file_path = os.path.join(
+        tune_experiment_dir, f"best_{args.metric}_params.yaml"
+    )
+
+    print(f"Saving best params saved to {best_params_file_path}.")
+    with open(best_params_file_path, "w") as best_params_file:
+        yaml.dump(
+            best_config, best_params_file, default_flow_style=False, sort_keys=False
+        )
+
+
+def _perform_evaluation_on_best(
+    best_conditions: Sequence[str],
+    headless: bool,
+    max_episode_steps: int,
+    num_episodes: int,
+    result: ExperimentAnalysis,
+    scenario_info: Tuple[str, str],
+    timestep: float,
+):
+    best_trial = result.get_best_trial(*best_conditions)
+    best_log_dir = result.get_best_logdir(*best_conditions)
+    evaluation_results_dir = os.path.join(best_log_dir, "../evaluation/")
+    evaluation_experiment_dir = glob.glob(
+        os.path.join(best_log_dir, args.log_dir, "*/")
+    )[0]
+    evaluation_models_dir = glob.glob(
+        os.path.join(evaluation_experiment_dir, "models/*/")
+    )
+
+    print(f"Evaluating the best performing trial ({best_trial}).")
+    evaluate_saved_models(
+        experiment_dir=evaluation_experiment_dir,
+        log_dir=evaluation_results_dir,
+        headless=headless,
+        max_episode_steps=max_episode_steps,
+        model_paths=evaluation_models_dir,
+        num_episodes=num_episodes,
+        scenario_info=scenario_info,
+        timestep=timestep,
+    )
+
+
+def _default_trial_name_creator(trial: Trial):
+    # trial.trainable_name is the string 'DEFAULT'
+    # trial.trial_id is a string of numbers 'XXXXX_YYYYY'
+    return f"{trial.trainable_name}_{trial.trial_id}"
 
 
 if __name__ == "__main__":
@@ -206,10 +279,13 @@ if __name__ == "__main__":
         "--policy",
         help="Policies available : [ppo, sac, td3, dqn, bdqn]",
         type=str,
-        default="sac",
+        default="ppo",
     )
     parser.add_argument(
-        "--episodes", help="Number of training episodes", type=int, default=1000000
+        "--episodes",
+        help="Maximum number of tuning episodes for each sampled set of hyperparameters",
+        type=int,
+        default=10000,
     )
     parser.add_argument(
         "--max-episode-steps",
@@ -221,16 +297,19 @@ if __name__ == "__main__":
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="Run without envision", type=bool, default=False
+        "--headless", help="Run without envision", type=bool, default=True
     )
     parser.add_argument(
-        "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
-    )
-    parser.add_argument(
-        "--eval-rate",
-        help="Evaluation rate based on number of observations",
+        "--eval-episodes",
+        help="Number of evaluation episodes to perform on the best config after tuning",
         type=int,
-        default=10000,
+        default=200,
+    )
+    parser.add_argument(
+        "--save-rate",
+        help="Save rate based on number of observations",
+        type=int,
+        default=1000,
     )
     parser.add_argument(
         "--seed",
@@ -245,46 +324,61 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "--output-dir",
-        help="Location of the created YAML file with the best parameters",
-        default="tune_results/",
-        type=str,
-    )
-    # parser.add_argument(
-    #     "--policy-ids",
-    #     help="Name of each specified policy",
-    #     default=None,
-    #     type=str,
-    # )
-    parser.add_argument(
         "--config-module",
         help="The module containing the tune config dictionary",
-        default=None,
+        default="ultra.baselines.ppo.ppo.tune_params",
         type=str,
-        required=True,
     )
     parser.add_argument(
         "--metric",
-        help="The value to optimize for [env_score, episode_reward, reached_goal, ...]",
-        default=None,
+        help="The value to optimize [{}]".format(", ".join(_AVAILABLE_TUNE_METRICS)),
+        default="episode_reward",
         type=str,
-        required=True,
     )
     parser.add_argument(
         "--mode",
-        help="How to optimize the metric [max, min]",
-        default=None,
+        help="How to optimize the metric [{}]".format(", ".join(_AVAILABLE_TUNE_MODES)),
+        default="max",
         type=str,
-        required=True,
+    )
+    parser.add_argument(
+        "--scope",
+        help="How to compare the trials [{}]".format(", ".join(_AVAILABLE_TUNE_SCOPES)),
+        default="last",
+        type=str,
+    )
+    parser.add_argument(
+        "--grace-period",
+        help="Used by the scheduler to only stop trials at least this old in time",
+        default=None,
+        type=int,
+    )
+    parser.add_argument(
+        "--reduction-factor",
+        help="Used by the scheduler to set halving rate and amount",
+        default=2,
+        type=int,
+    )
+    parser.add_argument(
+        "--brackets",
+        help="Used by the scheduler as the number of brackets",
+        default=1,
+        type=int,
+    )
+    parser.add_argument(
+        "--num-samples",
+        help="Number of samples to draw from the config to train",
+        default=100,
+        type=int,
     )
 
     args = parser.parse_args()
 
-    # METRIC = "episode_reward"
-    # MODE = "max"
-    # BEST_PARAMS_DIRECTORY = "tune_results/"
-    # policy_classes = ["ultra.baselines.ppo:ppo-v0"]
-    # config = ppo_config
+    assert (
+        args.metric in _AVAILABLE_TUNE_METRICS
+    ), f"Unsupported metric '{args.metric}'."
+    assert args.mode in _AVAILABLE_TUNE_MODES, f"Unsupported mode '{args.mode}'."
+    assert args.scope in _AVAILABLE_TUNE_SCOPES, f"Unsupported scope '{args.scope}'."
 
     # Obtain the policy class strings for each specified policy.
     policy_classes = [
@@ -293,16 +387,26 @@ if __name__ == "__main__":
     ]
     assert len(policy_classes) == 1, "Only single agent tuning is supported."
 
+    config_module = importlib.import_module(args.config_module)
     config = importlib.import_module(args.config_module).config
+    grace_period = (
+        int(args.grace_period) if args.grace_period else int(args.episodes / 10)
+    )
 
     ray.init()
 
+    # If time_attr is "training_iteration", it increments for
+    # each trial every time tune.report is called.
     scheduler = ASHAScheduler(
-        metric=args.metric,
-        mode=args.mode,
-        max_t=10,
-        grace_period=1,
-        reduction_factor=2,
+        time_attr="training_iteration",  # Used for comparing time.
+        metric=args.metric,  # The training result objective value attribute.
+        mode=args.mode,  # Whether to minimize or maximize the metric.
+        max_t=int(args.episodes),  # Maximum time units (time_attr) per trial.
+        grace_period=grace_period,  # Only stop trials at least this old in time.
+        reduction_factor=int(
+            args.reduction_factor
+        ),  # Used to set halving rate and amount.
+        brackets=int(args.brackets),  # Number of brackets.
     )
     reporter = CLIReporter(metric_columns=[args.metric, "training_iteration"])
 
@@ -312,10 +416,7 @@ if __name__ == "__main__":
             scenario_info=(args.task, args.level),
             num_episodes=int(args.episodes),
             max_episode_steps=int(args.max_episode_steps),
-            eval_info={
-                "eval_rate": int(args.eval_rate),
-                "eval_episodes": int(args.eval_episodes),
-            },
+            save_rate=int(args.save_rate),
             timestep_sec=float(args.timestep),
             headless=args.headless,
             policy_classes=policy_classes,
@@ -324,24 +425,25 @@ if __name__ == "__main__":
             metric=args.metric,
         ),
         config=config,
-        num_samples=10,
+        num_samples=int(args.num_samples),
         scheduler=scheduler,
         progress_reporter=reporter,
         local_dir=args.log_dir,
+        trial_name_creator=_default_trial_name_creator,
     )
 
-    best_trial = result.get_best_trial(args.metric, args.mode, "last")
-    best_config = result.get_best_config(args.metric, args.mode, "last")
+    ray.shutdown()
 
-    print("Best trial:", best_trial)
-    print("Best config:", best_config)
-    print("Saving the best config to {}.".format(args.output_dir))
-
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
-    with open(
-        os.path.join(args.output_dir, f"best_{args.metric}_params.yaml"), "w"
-    ) as best_params_file:
-        yaml.dump(
-            best_config, best_params_file, default_flow_style=False, sort_keys=False
-        )
+    _save_best_params(
+        best_conditions=[args.metric, args.mode, args.scope],
+        result=result,
+    )
+    _perform_evaluation_on_best(
+        best_conditions=[args.metric, args.mode, args.scope],
+        headless=args.headless,
+        max_episode_steps=int(args.max_episode_steps),
+        num_episodes=int(args.eval_episodes),
+        result=result,
+        scenario_info=(args.task, args.level),
+        timestep=float(args.timestep),
+    )
