@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import logging
 import math
+import os
 import random
 import re
 from dataclasses import dataclass
@@ -85,9 +86,10 @@ class GLBData:
 
 
 class SumoRoadNetwork:
-    def __init__(self, graph):
+    def __init__(self, graph, net_file):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
+        self._net_file = net_file
 
     @staticmethod
     def _check_net_origin(bbox):
@@ -96,29 +98,30 @@ class SumoRoadNetwork:
 
     @classmethod
     @lru_cache(maxsize=1)
-    def _shift_coordinates(cls, net_file):
+    def _shift_coordinates(cls, net_file_path):
+        net_file_folder = os.path.dirname(net_file_path)
+        out_path = os.path.join(net_file_folder, "shifted_map.net.xml")
         logger = logging.getLogger(cls.__name__)
-        logger.info("normalizing net coordinates...")
-        with NamedTemporaryFile() as tf:
-            ## Translate the map's origin to remove huge (imprecise) offsets.
-            ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
-            ## for netconvert options description.
-            try:
-                check_call(
-                    [
-                        "netconvert",
-                        "--offset.disable-normalization=FALSE",
-                        "-s",
-                        net_file,
-                        "-o",
-                        tf.name,
-                    ]
-                )
-                return sumolib.net.readNet(tf.name, withInternal=True)
-            except Exception as e:
-                logger.warning(
-                    f"unable to use netconvert tool to normalize coordinates: {e}"
-                )
+        logger.info(f"normalizing net coordinates into {out_path}...")
+        ## Translate the map's origin to remove huge (imprecise) offsets.
+        ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
+        ## for netconvert options description.
+        try:
+            check_call(
+                [
+                    "netconvert",
+                    "--offset.disable-normalization=FALSE",
+                    "-s",
+                    net_file_path,
+                    "-o",
+                    out_path,
+                ]
+            )
+            return out_path
+        except Exception as e:
+            logger.warning(
+                f"unable to use netconvert tool to normalize coordinates: {e}"
+            )
         return None
 
     @classmethod
@@ -133,16 +136,17 @@ class SumoRoadNetwork:
         # correctly already, so we don't need to do it.  if not,
         # then we check to see if the graph's bounding box includes
         # the origin, and then shift it ourselves if not.
-        origOffset = G.getLocationOffset()
+        original_offset = G.getLocationOffset()
         if (
-            origOffset[0] == 0
-            and origOffset[1] == 0
+            original_offset[0] == 0
+            and original_offset[1] == 0
             and not cls._check_net_origin(G.getBoundary())
         ):
-            shifted_G = cls._shift_coordinates(net_file)
-            if shifted_G:
-                assert cls._check_net_origin(shifted_G.getBoundary())
-                G = shifted_G
+            shifted_net_file = cls._shift_coordinates(net_file)
+            if shifted_net_file:
+                G = sumolib.net.readNet(shifted_net_file, withInternal=True)
+                assert cls._check_net_origin(G.getBoundary())
+                net_file = shifted_net_file
                 # keep track of having shifted the graph by
                 # injecting state into the network graph.
                 # this is needed because some maps have been pre-shifted,
@@ -150,14 +154,20 @@ class SumoRoadNetwork:
                 # the offset should not be used (because all their other
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
-        return cls(G)
+        return cls(G, net_file)
 
     @property
     def graph(self):
         return self._graph
 
+    @property
+    def net_file(self):
+        """ This is the net file (*.net.xml) that corresponds with our possibly-offset coordinates. """
+        return self._net_file
+
     @cached_property
-    def netOffset(self):
+    def net_offset(self):
+        """ This is our offset from what's in the original net file. """
         return (
             self.graph.getLocationOffset()
             if self.graph and getattr(self.graph, "_shifted_by_smarts", False)

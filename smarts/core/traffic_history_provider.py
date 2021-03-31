@@ -42,7 +42,7 @@ class TrafficHistoryProvider(Provider):
     def setup(self, scenario) -> ProviderState:
         self._is_setup = True
         self._traffic_history_service = scenario._traffic_history_service
-        self._map_location_offset = scenario.mapLocationOffset
+        self._map_location_offset = scenario.road_network.net_offset
         return ProviderState()
 
     def set_replaced_ids(self, vehicle_ids: list):
