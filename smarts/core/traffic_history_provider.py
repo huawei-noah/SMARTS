@@ -22,12 +22,12 @@ from typing import Set
 
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Heading, Pose
-from .provider import ProviderState
+from .provider import Provider, ProviderState
 from .utils.traffic_history_service import Traffic_history_service
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class TrafficHistoryProvider:
+class TrafficHistoryProvider(Provider):
     def __init__(self):
         self._is_setup = False
         self._traffic_history_service = None

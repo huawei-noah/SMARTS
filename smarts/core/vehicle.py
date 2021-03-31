@@ -25,7 +25,6 @@ from functools import lru_cache
 
 import numpy
 import yaml
-from direct.showbase.ShowBase import ShowBase
 
 from smarts.sstudio.types import UTurn
 
@@ -33,7 +32,7 @@ from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
-from .masks import RenderMasks
+from .renderer import Renderer
 from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
@@ -120,7 +119,7 @@ class Vehicle:
         self,
         id: str,
         pose: Pose,
-        showbase: ShowBase,
+        renderer: Renderer,
         chassis: Chassis,
         # TODO: We should not be leaking SUMO here.
         sumo_vehicle_type="passenger",
@@ -133,7 +132,6 @@ class Vehicle:
         self._id = id
 
         self._chassis = chassis
-        self._showbase = showbase
         self._sumo_vehicle_type = sumo_vehicle_type
         self._action_space = action_space
         self._speed = None
@@ -149,24 +147,13 @@ class Vehicle:
             self._color = config.color
 
         # TODO: Move this into the VehicleGeometry class
-        self._np = self._build_model(pose, config, showbase)
+        self._renderer = renderer
+        renderer.create_vehicle_node(config.glb_model, self._id, self._color, pose)
         self._initialized = True
         self._has_stepped = False
 
     def _assert_initialized(self):
         assert self._initialized, f"Vehicle({self.id}) is not initialized"
-
-    def _build_model(self, pose: Pose, config: VehicleConfig, showbase):
-        with pkg_resources.path(models, config.glb_model) as path:
-            node_path = showbase.loader.loadModel(str(path.absolute()))
-
-        node_path.setName("vehicle-%s" % self._id)
-        node_path.setColor(self._color)
-        pos, heading = pose.as_panda3d()
-        node_path.setPosHpr(*pos, heading, 0, 0)
-        node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
-
-        return node_path
 
     def __repr__(self):
         return f"""Vehicle({self.id},
@@ -222,11 +209,6 @@ class Vehicle:
     # @speed.setter
     # def speed(self, speed):
     #     self._chassis.speed = speed
-
-    @property
-    def np(self):
-        self._assert_initialized()
-        return self._np
 
     @property
     def vehicle_color(self):
@@ -373,7 +355,7 @@ class Vehicle:
         vehicle = Vehicle(
             id=vehicle_id,
             pose=start_pose,
-            showbase=sim,
+            renderer=sim.renderer,
             chassis=chassis,
             color=vehicle_color,
         )
@@ -385,7 +367,7 @@ class Vehicle:
         return Vehicle(
             id=vehicle_id,
             pose=vehicle_state.pose,
-            showbase=sim,
+            renderer=sim.renderer,
             chassis=BoxChassis(
                 pose=vehicle_state.pose,
                 speed=vehicle_state.speed,
@@ -455,8 +437,7 @@ class Vehicle:
                     width=agent_interface.drivable_area_grid_map.width,
                     height=agent_interface.drivable_area_grid_map.height,
                     resolution=agent_interface.drivable_area_grid_map.resolution,
-                    scene_np=sim.np,
-                    showbase=sim,
+                    renderer=sim.renderer,
                 )
             )
         if agent_interface.ogm:
@@ -466,8 +447,7 @@ class Vehicle:
                     width=agent_interface.ogm.width,
                     height=agent_interface.ogm.height,
                     resolution=agent_interface.ogm.resolution,
-                    scene_np=sim.np,
-                    showbase=sim,
+                    renderer=sim.renderer,
                 )
             )
         if agent_interface.rgb:
@@ -477,8 +457,7 @@ class Vehicle:
                     width=agent_interface.rgb.width,
                     height=agent_interface.rgb.height,
                     resolution=agent_interface.rgb.resolution,
-                    scene_np=sim.np,
-                    showbase=sim,
+                    renderer=sim.renderer,
                 )
             )
         if agent_interface.lidar:
@@ -486,7 +465,6 @@ class Vehicle:
                 LidarSensor(
                     vehicle=vehicle,
                     bullet_client=sim.bc,
-                    showbase=sim,
                     sensor_params=agent_interface.lidar.sensor_params,
                 )
             )
@@ -507,9 +485,8 @@ class Vehicle:
     def control(self, *args, **kwargs):
         self._chassis.control(*args, **kwargs)
 
-    def sync_to_panda3d(self):
-        pos, heading = self._chassis.pose.as_panda3d()
-        self._np.setPosHpr(*pos, heading, 0, 0)
+    def sync_to_renderer(self):
+        self._renderer.update_vehicle_node(self._id, self.chassis.pose)
 
     @lru_cache(maxsize=1)
     def _warn_AckermannChassis_set_pose(self):
@@ -546,7 +523,7 @@ class Vehicle:
 
         if not exclude_chassis:
             self._chassis.teardown()
-        self._np.removeNode()
+        self._renderer.remove_vehicle_node(self._id)
         self._initialized = False
 
     def _meta_create_sensor_functions(self):

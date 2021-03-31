@@ -20,24 +20,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from itertools import cycle
+import threading
 
-import numpy as np
 import pytest
 
-from smarts.core.agent_interface import (
-    ActionSpaceType,
-    AgentInterface,
-    NeighborhoodVehicles,
-)
-from smarts.core.coordinates import Heading
+from smarts.core.renderer import Renderer
+from smarts.core.colors import SceneColors
+from smarts.core.coordinates import Pose, Heading
 from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
-from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 
 @pytest.fixture
-def scenarios():
+def scenario():
     mission = Mission(
         start=Start((71.65, 63.78), Heading(math.pi * 0.91)), goal=EndlessGoal()
     )
@@ -46,45 +40,41 @@ def scenarios():
         route="basic.rou.xml",
         missions={"Agent-007": mission},
     )
-    return cycle([scenario])
+    return scenario
 
 
-@pytest.fixture
-def smarts():
-    buddha = AgentInterface(
-        max_episode_steps=1000,
-        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
-        action=ActionSpaceType.Lane,
-    )
-    agents = {"Agent-007": buddha}
-    smarts = SMARTS(
-        agents,
-        traffic_sim=SumoTrafficSimulation(headless=True),
-        envision=None,
-    )
+class RenderThread(threading.Thread):
+    def __init__(self, r, scenario, num_steps=3):
+        self._rid = "r{}".format(r)
+        super().__init__(target=self.test_renderer, name=self._rid)
+        self._rdr = Renderer(self._rid)
+        self._scenario = scenario
+        self._num_steps = num_steps
+        self._vid = "r{}_car".format(r)
 
-    yield smarts
-    smarts.destroy()
+    def test_renderer(self):
+        self._rdr.setup(self._scenario)
+        pose = Pose(
+            position=[71.65, 53.78, 0],
+            orientation=[0, 0, 0, 0],
+            heading_=Heading(math.pi * 0.91),
+        )
+        self._rdr.create_vehicle_node(
+            "simple_car.glb", self._vid, SceneColors.SocialVehicle.value, pose
+        )
+        self._rdr.begin_rendering_vehicle(self._vid, is_agent=False)
+        for s in range(self._num_steps):
+            self._rdr.render()
+            pose.position[0] = pose.position[0] + s
+            pose.position[1] = pose.position[1] + s
+            self._rdr.update_vehicle_node(self._vid, pose)
+        self._rdr.remove_vehicle_node(self._vid)
 
 
-def test_smarts_doesnt_leak_tasks_after_reset(smarts, scenarios):
-    """We have had issues in the past where we would forget to clean up tasks between episodes
-    resulting in a gradual decay in performance, this test gives us a bit of a smoke screen
-    against this class of regressions.
-
-    See #237 for details
-    """
-    num_tasks_before_reset = len(
-        smarts.renderer._showbase_instance.taskMgr.mgr.getTasks()
-    )
-
-    scenario = next(scenarios)
-    smarts.reset(scenario)
-
-    for _ in range(10):
-        smarts.step({})
-
-    num_tasks_after_reset = len(
-        smarts.renderer._showbase_instance.taskMgr.mgr.getTasks()
-    )
-    assert num_tasks_after_reset == num_tasks_before_reset
+def test_multiple_renderers(scenario):
+    num_renderers = 3
+    rts = [RenderThread(r, scenario) for r in range(num_renderers)]
+    for rt in rts:
+        rt.start()
+    for rt in rts:
+        rt.join()

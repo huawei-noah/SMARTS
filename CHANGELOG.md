@@ -39,6 +39,7 @@ using the original coordinate system.  See Issue #325.
 - Envision now resumes from current frame after un-pausing.
 - Skipped generation of cut-in waypoints if they are further off-road than SMARTS currently supports to avoid process crash.
 - Fix envision error 15 by cleanly shutting down the envision worker process.
+- Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 
 ## [Format] - 2021-03-12
 ### Added 
