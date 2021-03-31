@@ -15,7 +15,9 @@ from smarts.core.utils.episodes import episodes
 try:
     open_agent = importlib.import_module("open_agent")
 except ModuleNotFoundError as e:
-    raise ModuleNotFoundError(f"Ensure that the open-agent has been installed with `pip install open-agent")
+    raise ModuleNotFoundError(
+        f"Ensure that the open-agent has been installed with `pip install open-agent"
+    )
 
 from examples import default_argument_parser
 
