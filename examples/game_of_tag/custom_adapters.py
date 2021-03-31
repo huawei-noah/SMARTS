@@ -127,6 +127,7 @@ def predator_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
+    print(observations.events)
     # maybe remove this
     rew = 0.2*np.sum(np.absolute(observations.ego_vehicle_state.linear_velocity)) # encourage predator to drive
     events = observations.events

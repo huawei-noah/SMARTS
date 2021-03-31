@@ -25,7 +25,7 @@ from examples.game_of_tag.custom_adapters import *
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec, Agent
-from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.utils.episodes import episodes
 
 class PredatorAgent(Agent):
@@ -39,10 +39,12 @@ class PreyAgent(Agent):
 
 def main(scenario, headless, resume_training, result_dir, seed):
     agent_specs = {}
-    temp_model_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "model")
+
+    shared_interface = AgentInterface.from_type(AgentType.Full, max_episode_steps=300) #100s
+    shared_interface.done_criteria = DoneCriteria(off_route=False, off_road=False)
     for agent_id in PREDATOR_IDS:
         agent_specs[agent_id] = AgentSpec(
-            interface=AgentInterface.from_type(AgentType.Full),
+            interface=shared_interface,
             agent_builder=PredatorAgent,
             observation_adapter=observation_adapter,
             reward_adapter=predator_reward_adapter,
@@ -51,7 +53,7 @@ def main(scenario, headless, resume_training, result_dir, seed):
 
     for agent_id in PREY_IDS:
         agent_specs[agent_id] = AgentSpec(
-            interface=AgentInterface.from_type(AgentType.Standard),
+            interface=shared_interface,
             agent_builder=PreyAgent,
             observation_adapter=observation_adapter,
             reward_adapter=prey_reward_adapter,
