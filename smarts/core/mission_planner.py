@@ -379,32 +379,12 @@ class MissionPlanner:
 
         if n_lane.getID() not in lane_id_list:
             return ego_wps_des_speed
-
-        # if (self._prev_kyber_x_position is None) and (
-        #     self._prev_kyber_y_position is None
-        # ):
-        #     self._prev_kyber_x_position = neighborhood_vehicles[0].pose.position[0]
-        #     self._prev_kyber_y_position = neighborhood_vehicles[0].pose.position[1]
-
-        # velocity_vector = np.array(
-        #     [
-        #         (-self._prev_kyber_x_position + neighborhood_vehicles[0].pose.position[0]) / sim.timestep_sec,
-        #         (-self._prev_kyber_y_position + neighborhood_vehicles[0].pose.position[1]) / sim.timestep_sec,
-        #     ]
-        # )
-        # target_velocity = np.dot(
-        #     velocity_vector, radians_to_vec(neighborhood_vehicles[0].pose.heading)
-        # )
-
-        # self._prev_kyber_x_position = neighborhood_vehicles[0].pose.position[0]
-        # self._prev_kyber_y_position = neighborhood_vehicles[0].pose.position[1]
         # The aggressiveness is mapped from [0,10] to [0,0.8] domain which
         # represents the portion of intitial distantce which is used for
         # triggering the u-turn task.
         distance_threshold = 8
 
         if not self._uturn_is_initialized:
-            # self._uturn_target_velocity_window=[target_velocity]*10
             self._uturn_initial_distant = (
                 -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
             )
@@ -432,64 +412,6 @@ class MissionPlanner:
                 return ego_wps_des_speed
             else:
                 self._task_is_triggered = True
-        #         if (self._prev_kyber_x_position is None) and (
-        #             self._prev_kyber_y_position is None
-        #         ):
-        #             self._prev_kyber_x_position = neighborhood_vehicles[0].pose.position[0]
-        #             self._prev_kyber_y_position = neighborhood_vehicles[0].pose.position[1]
-
-        #         velocity_vector = np.array(
-        #             [
-        #                 (-self._prev_kyber_x_position + neighborhood_vehicles[0].pose.position[0]) / sim.timestep_sec,
-        #                 (-self._prev_kyber_y_position + neighborhood_vehicles[0].pose.position[1]) / sim.timestep_sec,
-        #             ]
-        #         )
-        #         target_velocity = np.dot(
-        #             velocity_vector, radians_to_vec(neighborhood_vehicles[0].pose.heading)
-        #         )
-
-        #         self._prev_kyber_x_position = neighborhood_vehicles[0].pose.position[0]
-        #         self._prev_kyber_y_position = neighborhood_vehicles[0].pose.position[1]
-        #         # print(self._insufficient_initial_distant,target_velocity,neighborhood_vehicles[0].speed,"+++++++++++++++")
-        #  #############################
-        #         v_uturn=start_lane.getSpeed()/1.5
-        #         ttc=8-0.3*self._agent_behavior.aggressiveness
-        #         self._uturn_target_velocity_window.append(target_velocity)
-        #         self._uturn_target_velocity_window.pop(0)
-        #         target_velocity1=sum(self._uturn_target_velocity_window)/len(self._uturn_target_velocity_window)
-        #         print(self._insufficient_initial_distant,target_velocity,neighborhood_vehicles[0].speed,"+++++++++++++++",target_velocity1)
-
-        #         if (
-        #             horizontal_distant > 0
-        #             and self._task_is_triggered is False
-        #             and horizontal_distant
-        #             > 3*target_velocity1*math.pi*self._uturn_initial_height/(2*v_uturn)+ttc*abs(target_velocity1-v_uturn)
-        #         ):
-        #             return ego_wps_des_speed
-        # print("-----------------------")
-
-        # v_uturn=start_lane.getSpeed()/2
-        # ttc=2*(self._agent_behavior.aggressiveness/10)+(1-self._agent_behavior.aggressiveness/10)*15
-        # self._uturn_target_velocity_window.append(target_velocity)
-        # self._uturn_target_velocity_window.pop(0)
-        # target_velocity1=sum(self._uturn_target_velocity_window)/len(self._uturn_target_velocity_window)
-        # print(self._insufficient_initial_distant,target_velocity,neighborhood_vehicles[0].speed,"+++++++++++++++",target_velocity1)
-        # radius_of_uturn=3*self._uturn_initial_height/2
-        # theta=math.acos(1-(self._uturn_initial_height)/(2*radius_of_uturn))
-
-        # if (
-        #     horizontal_distant > 0
-        #     and self._task_is_triggered is False
-        #     and horizontal_distant
-        #     > target_velocity1*radius_of_uturn*theta/(v_uturn)+ttc*abs(target_velocity1)+radius_of_uturn*math.sin(theta)
-        #     +8
-        # ):
-        #     return ego_wps_des_speed
-
-        # print(ttc,vehicle.pose.position[0]-neighborhood_vehicles[0].pose.position[0],">>>>>>>>>>>>>>>>>>>>>>>>",theta*(180/3.14),target_velocity1,"::::::::::::::",v_uturn,vehicle.speed,target_velocity1*radius_of_uturn*theta/(v_uturn))
-        # y1=neighborhood_vehicles[0].pose.position[1]-(vehicle.pose.position[1]+math.sqrt(2.1**2+1)*math.sin(math.atan(1/2.1)+vehicle.pose.heading))
-        # if y1<1.5:
-        #     print(vehicle.pose.position[0]-neighborhood_vehicles[0].pose.position[0],"<><><><><><><><><><><><><><><><><>",theta*(180/3.14),target_velocity1,"::::::::::::::",v_uturn,vehicle.speed,target_velocity1*radius_of_uturn*theta/(v_uturn))
         lane = self._road_network.nearest_lane(vehicle.pose.position[:2])
         v_uturn = lane.getSpeed() / 3
         HHH = self._uturn_initial_height - lane.getWidth() / 2
@@ -506,7 +428,6 @@ class MissionPlanner:
                     - 4 * (aaa ** 2 - bbb ** 2) * (aaa ** 2 + bbb ** 2)
                 )
             )
-            # print((2*aaa*ddd+s1)/(2*(aaa**2+bbb**2)),"+++++++++++++",self._uturn_initial_height)
 
             ccc = math.acos((2 * aaa * ddd - s1) / (2 * (aaa ** 2 + bbb ** 2)))
         else:
@@ -517,11 +438,9 @@ class MissionPlanner:
                     - 4 * (aaa ** 2 - bbb ** 2) * (aaa ** 2 + bbb ** 2)
                 )
             )
-            # print((2*aaa*ddd+s1)/(2*(aaa**2+bbb**2)),"+++++++++++++",self._uturn_initial_height)
 
             ccc = math.acos((2 * aaa * ddd + s1) / (2 * (aaa ** 2 + bbb ** 2)))
 
-        # print(ccc*180/3.14,"<<<<<<<<<<<<<<<")
         agg = self._agent_behavior.aggressiveness
         ttc = 3 * agg / 10 + (1 - agg / 10) * 8
 
@@ -534,20 +453,6 @@ class MissionPlanner:
             + RRR * math.sin(ccc)
         ):
             return ego_wps_des_speed
-
-        # if (
-        #     horizontal_distant > 0
-        #     and self._task_is_triggered is False
-        #     and horizontal_distant
-        #     > (1 - aggressiveness) * (self._uturn_initial_distant - 1)
-        #     + aggressiveness
-        #     * (
-        #         (1 * self._uturn_initial_height * 3.14 / 13.8)
-        #         * neighborhood_vehicles[0].speed
-        #         + distance_threshold
-        #     )
-        # ):
-        #     return ego_wps_des_speed
 
         if not neighborhood_vehicles and not self._task_is_triggered:
             return ego_wps_des_speed

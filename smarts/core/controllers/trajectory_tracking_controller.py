@@ -219,14 +219,6 @@ class TrajectoryTrackingController:
         lateral_gain = 0.61
         heading_gain = 0.01
         # heading_gain=0.01
-        # lateral_gain=0.61
-        # print("<><><><><><><><><>",abs(TrajectoryTrackingController.curvature_calculation(trajectory, 0,num_points=3)))
-        # if abs(TrajectoryTrackingController.curvature_calculation(trajectory, 0,num_points=3))<150:
-        #     heading_gain=0.05
-        #     lateral_gain=0.71
-        #     velocity_gain*=0.5
-        # lateral_gain=.61
-        # heading_gain=0.05
 
         lateral_error_derivative_gain = 0.15
         heading_error_derivative_gain = 0.5
@@ -339,7 +331,6 @@ class TrajectoryTrackingController:
         absolute_ahead_curvature = abs(
             TrajectoryTrackingController.curvature_calculation(trajectory, 4)
         )
-        # print(abs(TrajectoryTrackingController.curvature_calculation(trajectory, 0)),"curvature::::::::::::")
         if absolute_ahead_curvature < 30 and speed_reduction_activation:
             desired_speed = np.clip(0.8 * desired_speed, 0, 8.3)
         elif absolute_ahead_curvature < 100 and speed_reduction_activation:
