@@ -259,7 +259,10 @@ class MissionPlanner:
         # cut-in offset should consider the aggressiveness and the speed
         # of the other vehicle.
 
-        cut_in_offset = np.clip(20 - aggressiveness, 10, 20)
+        cut_in_offset = np.clip(15 - 0.5 * aggressiveness, 10, 15)
+        position_gain = 6
+        if aggressiveness > 8:
+            position_gain = 4
 
         if (
             abs(offset - (cut_in_offset + target_offset)) > 1
@@ -272,7 +275,7 @@ class MissionPlanner:
             speed_limit = np.clip(
                 np.clip(
                     (target_velocity * 1.1)
-                    - 6 * (offset - (cut_in_offset + target_offset)),
+                    - position_gain * (offset - (cut_in_offset + target_offset)),
                     0.5 * target_velocity,
                     2 * target_velocity,
                 ),
@@ -285,7 +288,7 @@ class MissionPlanner:
                 position, target_lane.getID(), 60
             )
 
-            cut_in_speed = target_velocity * 2.3
+            cut_in_speed = target_velocity * 1.5
 
             speed_limit = cut_in_speed
 
@@ -293,11 +296,11 @@ class MissionPlanner:
             # is less than target_velocity plus this offset then it will not
             # perform the cut-in task and instead the speed of the vehicle is
             # increased.
-            if vehicle.speed < target_velocity + 1.5:
+            if vehicle.speed < 0.7 * target_velocity + 0.5:
                 nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                     position, lane.getID(), 60
                 )
-                speed_limit = np.clip(target_velocity * 2.1, 0.5, 30)
+                speed_limit = np.clip(target_velocity * 1.5, 0.5, 30)
                 self._task_is_triggered = False
 
         p0 = position
@@ -375,10 +378,7 @@ class MissionPlanner:
 
         if n_lane.getID() not in lane_id_list:
             return ego_wps_des_speed
-        # The aggressiveness is mapped from [0,10] to [0,0.8] domain which
-        # represents the portion of intitial distantce which is used for
-        # triggering the u-turn task.
-        aggressiveness = 0.3 + 0.5 * self._agent_behavior.aggressiveness / 10
+
         distance_threshold = 8
 
         if not self._uturn_is_initialized:
@@ -410,17 +410,39 @@ class MissionPlanner:
             else:
                 self._task_is_triggered = True
 
+        lane = self._road_network.nearest_lane(vehicle.pose.position[:2])
+        v_uturn = lane.getSpeed() / 3
+        closest_lane_edge = self._uturn_initial_height - lane.getWidth() / 2
+        uturn_radius = 3 * lane.getWidth() / 2
+        theta_1 = math.atan(vehicle.width / vehicle.length)
+        half_diagonal = math.sqrt((vehicle.length) ** 2 + (vehicle.width) ** 2) / 2
+        b1 = (math.cos(theta_1)) * half_diagonal
+        a1 = closest_lane_edge - uturn_radius
+        if closest_lane_edge < uturn_radius + vehicle.length / 2:
+            d1 = -(uturn_radius - half_diagonal * math.sin(theta_1))
+            s1 = math.sqrt(
+                4 * (a1 ** 2) * (d1 ** 2)
+                - 4 * (a1 ** 2 - b1 ** 2) * (a1 ** 2 + b1 ** 2)
+            )
+            c1 = math.acos((2 * a1 * d1 - s1) / (2 * (a1 ** 2 + b1 ** 2)))
+        else:
+            d1 = -(uturn_radius + half_diagonal * math.sin(theta_1))
+            s1 = math.sqrt(
+                4 * (a1 ** 2) * (d1 ** 2)
+                - 4 * (a1 ** 2 - b1 ** 2) * (a1 ** 2 + b1 ** 2)
+            )
+            c1 = math.acos((2 * a1 * d1 + s1) / (2 * (a1 ** 2 + b1 ** 2)))
+
+        aggressiveness = self._agent_behavior.aggressiveness
+        ttc = 3 * aggressiveness / 10 + (1 - aggressiveness / 10) * 10
+
         if (
             horizontal_distant > 0
             and self._task_is_triggered is False
             and horizontal_distant
-            > (1 - aggressiveness) * (self._uturn_initial_distant - 1)
-            + aggressiveness
-            * (
-                (1 * self._uturn_initial_height * 3.14 / 13.8)
-                * neighborhood_vehicles[0].speed
-                + distance_threshold
-            )
+            > neighborhood_vehicles[0].speed * uturn_radius * c1 / v_uturn
+            + ttc * neighborhood_vehicles[0].speed
+            + uturn_radius * math.sin(c1)
         ):
             return ego_wps_des_speed
 
@@ -445,8 +467,15 @@ class MissionPlanner:
         vehicle_dist = np.linalg.norm(
             vehicle.pose.position[:2] - neighborhood_vehicles[0].pose.position[:2]
         )
-        if vehicle_dist < 5.5:
-            speed_limit = 1.5 * lane.getSpeed()
+        vec = vehicle.pose.position[:2] - neighborhood_vehicles[0].pose.position[:2]
+
+        if vehicle_dist < 12.6:
+            speed_limit = np.clip(
+                lane.getSpeed()
+                + 10 * np.dot(vec, radians_to_vec(vehicle.pose.heading)),
+                0,
+                30,
+            )
 
         if (
             heading_diff < -0.95

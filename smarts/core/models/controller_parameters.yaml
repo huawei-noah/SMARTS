@@ -1,14 +1,14 @@
 sedan:
     control:
-            final_heading_gain: .15
-            final_lateral_gain: 4.65
+            final_heading_gain: 0.01
+            final_lateral_gain: 0.61
             final_steering_filter_constant: 23.5
             throttle_filter_constant: 2.5
-            velocity_gain: 5.1
+            velocity_gain: 2.55
             velocity_integral_gain: 0
             traction_gain: 6
-            final_lateral_error_derivative_gain: 0.3
-            final_heading_error_derivative_gain: 3.1
+            final_lateral_error_derivative_gain: 0.15
+            final_heading_error_derivative_gain: 0.5
             initial_look_ahead_distant: 6
             derivative_activation: 1
             speed_reduction_activation: 1
