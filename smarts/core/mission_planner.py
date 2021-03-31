@@ -62,6 +62,7 @@ class MissionPlanner:
         self._prev_kyber_x_position = None
         self._prev_kyber_y_position = None
         self._first_uturn = True
+        self._uturn_target_velocity_window=[0]*10
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9
@@ -259,7 +260,10 @@ class MissionPlanner:
         # cut-in offset should consider the aggressiveness and the speed
         # of the other vehicle.
 
-        cut_in_offset = np.clip(20 - aggressiveness, 10, 20)
+        cut_in_offset = np.clip(15 - 0.5*aggressiveness, 10, 15)
+        position_gain=6
+        if aggressiveness>8:
+            position_gain=4
 
         if (
             abs(offset - (cut_in_offset + target_offset)) > 1
@@ -272,7 +276,7 @@ class MissionPlanner:
             speed_limit = np.clip(
                 np.clip(
                     (target_velocity * 1.1)
-                    - 6 * (offset - (cut_in_offset + target_offset)),
+                    - position_gain * (offset - (cut_in_offset + target_offset)),
                     0.5 * target_velocity,
                     2 * target_velocity,
                 ),
@@ -285,7 +289,7 @@ class MissionPlanner:
                 position, target_lane.getID(), 60
             )
 
-            cut_in_speed = target_velocity * 2.3
+            cut_in_speed = target_velocity * 1.5
 
             speed_limit = cut_in_speed
 
@@ -293,12 +297,17 @@ class MissionPlanner:
             # is less than target_velocity plus this offset then it will not
             # perform the cut-in task and instead the speed of the vehicle is
             # increased.
-            if vehicle.speed < target_velocity + 1.5:
+            if vehicle.speed < 0.7*target_velocity + 0.5:
                 nei_wps = self._waypoints.waypoint_paths_on_lane_at(
                     position, lane.getID(), 60
                 )
-                speed_limit = np.clip(target_velocity * 2.1, 0.5, 30)
+                speed_limit = np.clip(target_velocity * 1.5, 0.5, 30)
                 self._task_is_triggered = False
+        # nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+        #         position, lane.getID(), 60
+        #     )
+        # speed_limit = 80/3.6
+        #print(abs(target_position[0]-position[0]),vehicle.speed,target_vehicle.speed,velocity_vector[0],sim.elapsed_sim_time)
 
         p0 = position
         p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
@@ -314,6 +323,8 @@ class MissionPlanner:
             heading = Heading(vec_to_radians(pos - prev))
             prev = pos
             lane = self._road_network.nearest_lane(pos)
+            if lane is None:
+                continue
             lane_id = lane.getID()
             lane_index = lane_id.split("_")[-1]
             width = lane.getWidth()
@@ -343,7 +354,6 @@ class MissionPlanner:
             default_speed = ego_wps[0][0].speed_limit
         else:
             default_speed = self._mission.task.initial_speed
-
         ego_wps_des_speed = []
         for px in range(len(ego_wps[0])):
             new_wp = replace(ego_wps[0][px], speed_limit=default_speed)
@@ -374,13 +384,34 @@ class MissionPlanner:
 
         if n_lane.getID() not in lane_id_list:
             return ego_wps_des_speed
+
+        # if (self._prev_kyber_x_position is None) and (
+        #     self._prev_kyber_y_position is None
+        # ):
+        #     self._prev_kyber_x_position = neighborhood_vehicles[0].pose.position[0]
+        #     self._prev_kyber_y_position = neighborhood_vehicles[0].pose.position[1]
+
+        # velocity_vector = np.array(
+        #     [
+        #         (-self._prev_kyber_x_position + neighborhood_vehicles[0].pose.position[0]) / sim.timestep_sec,
+        #         (-self._prev_kyber_y_position + neighborhood_vehicles[0].pose.position[1]) / sim.timestep_sec,
+        #     ]
+        # )
+        # target_velocity = np.dot(
+        #     velocity_vector, radians_to_vec(neighborhood_vehicles[0].pose.heading)
+        # )
+
+        # self._prev_kyber_x_position = neighborhood_vehicles[0].pose.position[0]
+        # self._prev_kyber_y_position = neighborhood_vehicles[0].pose.position[1]
         # The aggressiveness is mapped from [0,10] to [0,0.8] domain which
         # represents the portion of intitial distantce which is used for
         # triggering the u-turn task.
-        aggressiveness = 0.3 + 0.5 * self._agent_behavior.aggressiveness / 10
+        # aggressiveness = 0.3 + 0.5 * self._agent_behavior.aggressiveness / 10
         distance_threshold = 8
 
+
         if not self._uturn_is_initialized:
+            # self._uturn_target_velocity_window=[target_velocity]*10
             self._uturn_initial_distant = (
                 -vehicle.pose.position[0] + neighborhood_vehicles[0].pose.position[0]
             )
@@ -408,20 +439,121 @@ class MissionPlanner:
                 return ego_wps_des_speed
             else:
                 self._task_is_triggered = True
+#         if (self._prev_kyber_x_position is None) and (
+#             self._prev_kyber_y_position is None
+#         ):
+#             self._prev_kyber_x_position = neighborhood_vehicles[0].pose.position[0]
+#             self._prev_kyber_y_position = neighborhood_vehicles[0].pose.position[1]
+
+#         velocity_vector = np.array(
+#             [
+#                 (-self._prev_kyber_x_position + neighborhood_vehicles[0].pose.position[0]) / sim.timestep_sec,
+#                 (-self._prev_kyber_y_position + neighborhood_vehicles[0].pose.position[1]) / sim.timestep_sec,
+#             ]
+#         )
+#         target_velocity = np.dot(
+#             velocity_vector, radians_to_vec(neighborhood_vehicles[0].pose.heading)
+#         )
+
+#         self._prev_kyber_x_position = neighborhood_vehicles[0].pose.position[0]
+#         self._prev_kyber_y_position = neighborhood_vehicles[0].pose.position[1]
+#         # print(self._insufficient_initial_distant,target_velocity,neighborhood_vehicles[0].speed,"+++++++++++++++")
+#  #############################
+#         v_uturn=start_lane.getSpeed()/1.5
+#         ttc=8-0.3*self._agent_behavior.aggressiveness
+#         self._uturn_target_velocity_window.append(target_velocity)
+#         self._uturn_target_velocity_window.pop(0)
+#         target_velocity1=sum(self._uturn_target_velocity_window)/len(self._uturn_target_velocity_window)
+#         print(self._insufficient_initial_distant,target_velocity,neighborhood_vehicles[0].speed,"+++++++++++++++",target_velocity1)
+
+#         if (
+#             horizontal_distant > 0
+#             and self._task_is_triggered is False
+#             and horizontal_distant
+#             > 3*target_velocity1*math.pi*self._uturn_initial_height/(2*v_uturn)+ttc*abs(target_velocity1-v_uturn)
+#         ):
+#             return ego_wps_des_speed
+        # print("-----------------------")
+
+        # v_uturn=start_lane.getSpeed()/2
+        # ttc=2*(self._agent_behavior.aggressiveness/10)+(1-self._agent_behavior.aggressiveness/10)*15
+        # self._uturn_target_velocity_window.append(target_velocity)
+        # self._uturn_target_velocity_window.pop(0)
+        # target_velocity1=sum(self._uturn_target_velocity_window)/len(self._uturn_target_velocity_window)
+        # print(self._insufficient_initial_distant,target_velocity,neighborhood_vehicles[0].speed,"+++++++++++++++",target_velocity1)
+        # radius_of_uturn=3*self._uturn_initial_height/2
+        # theta=math.acos(1-(self._uturn_initial_height)/(2*radius_of_uturn))
+
+        # if (
+        #     horizontal_distant > 0
+        #     and self._task_is_triggered is False
+        #     and horizontal_distant
+        #     > target_velocity1*radius_of_uturn*theta/(v_uturn)+ttc*abs(target_velocity1)+radius_of_uturn*math.sin(theta)
+        #     +8
+        # ):
+        #     return ego_wps_des_speed
+
+        # print(ttc,vehicle.pose.position[0]-neighborhood_vehicles[0].pose.position[0],">>>>>>>>>>>>>>>>>>>>>>>>",theta*(180/3.14),target_velocity1,"::::::::::::::",v_uturn,vehicle.speed,target_velocity1*radius_of_uturn*theta/(v_uturn))
+        # y1=neighborhood_vehicles[0].pose.position[1]-(vehicle.pose.position[1]+math.sqrt(2.1**2+1)*math.sin(math.atan(1/2.1)+vehicle.pose.heading))
+        # if y1<1.5:
+        #     print(vehicle.pose.position[0]-neighborhood_vehicles[0].pose.position[0],"<><><><><><><><><><><><><><><><><>",theta*(180/3.14),target_velocity1,"::::::::::::::",v_uturn,vehicle.speed,target_velocity1*radius_of_uturn*theta/(v_uturn))
+        lane = self._road_network.nearest_lane(vehicle.pose.position[:2])
+        v_uturn=lane.getSpeed()/3
+        HHH=self._uturn_initial_height-lane.getWidth()/2
+        RRR=3*lane.getWidth()/2
+        thet=math.atan(vehicle.width/vehicle.length)
+        half_dia=math.sqrt((vehicle.length)**2+(vehicle.width)**2)/2
+        bbb=(math.cos(thet))*half_dia
+        aaa=HHH-RRR
+        if HHH<RRR+vehicle.length/2:
+            ddd=-(RRR-half_dia*math.sin(thet))
+            s1=math.sqrt(4*(aaa**2)*(ddd**2)-4*(aaa**2-bbb**2)*(aaa**2+bbb**2))
+            # print((2*aaa*ddd+s1)/(2*(aaa**2+bbb**2)),"+++++++++++++",self._uturn_initial_height)
+            
+            ccc=math.acos((2*aaa*ddd-s1)/(2*(aaa**2+bbb**2)))
+        else:
+            ddd=-(RRR+half_dia*math.sin(thet))
+            s1=math.sqrt(4*(aaa**2)*(ddd**2)-4*(aaa**2-bbb**2)*(aaa**2+bbb**2))
+            # print((2*aaa*ddd+s1)/(2*(aaa**2+bbb**2)),"+++++++++++++",self._uturn_initial_height)
+            
+            ccc=math.acos((2*aaa*ddd+s1)/(2*(aaa**2+bbb**2)))
+        
+        #print(ccc*180/3.14,"<<<<<<<<<<<<<<<")
+        agg= self._agent_behavior.aggressiveness
+        ttc=3*agg/10+(1-agg/10)*8
+        
 
         if (
             horizontal_distant > 0
             and self._task_is_triggered is False
             and horizontal_distant
-            > (1 - aggressiveness) * (self._uturn_initial_distant - 1)
-            + aggressiveness
-            * (
-                (1 * self._uturn_initial_height * 3.14 / 13.8)
-                * neighborhood_vehicles[0].speed
-                + distance_threshold
-            )
+            > neighborhood_vehicles[0].speed*RRR*ccc/v_uturn+ttc*neighborhood_vehicles[0].speed+RRR*math.sin(ccc)
         ):
             return ego_wps_des_speed
+
+
+
+
+
+
+
+
+
+
+
+        # if (
+        #     horizontal_distant > 0
+        #     and self._task_is_triggered is False
+        #     and horizontal_distant
+        #     > (1 - aggressiveness) * (self._uturn_initial_distant - 1)
+        #     + aggressiveness
+        #     * (
+        #         (1 * self._uturn_initial_height * 3.14 / 13.8)
+        #         * neighborhood_vehicles[0].speed
+        #         + distance_threshold
+        #     )
+        # ):
+        #     return ego_wps_des_speed
 
         if not neighborhood_vehicles and not self._task_is_triggered:
             return ego_wps_des_speed
@@ -444,8 +576,11 @@ class MissionPlanner:
         vehicle_dist = np.linalg.norm(
             vehicle.pose.position[:2] - neighborhood_vehicles[0].pose.position[:2]
         )
-        if vehicle_dist < 5.5:
-            speed_limit = 1.5 * lane.getSpeed()
+        vec=vehicle.pose.position[:2] - neighborhood_vehicles[0].pose.position[:2]
+
+        if vehicle_dist < 12.6:
+            # speed_limit = 1.5 * lane.getSpeed()
+            speed_limit=np.clip(lane.getSpeed()+10*np.dot(vec,radians_to_vec(vehicle.pose.heading)),0,30)
 
         if (
             heading_diff < -0.95
