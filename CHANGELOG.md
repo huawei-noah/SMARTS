@@ -14,6 +14,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 process
 - Added `on_shoulder` as part of events in observation returned from each step of simulation
 
+### Fixed
+- Update `ego_open_agent` to use the package instead of the zoo directory version.
+
 ## [0.4.15] - 2021-03-18
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
