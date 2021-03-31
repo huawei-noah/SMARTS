@@ -161,7 +161,8 @@ export default class Client {
             continue;
           }
 
-          let item = this._stateQueues[simulationId].pop();
+          // Removes the oldest element
+          let item = this._stateQueues[simulationId].shift();
           let elapsed_times = [
             item.current_elapsed_time,
             item.total_elapsed_time,

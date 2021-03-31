@@ -197,7 +197,6 @@ class SumoTrafficSimulation:
                 you were trying to initialize many SUMO instances at
                 once and we were not able to assign unique port
                 numbers to all SUMO processes.
-
                 Check {self._log_file} for hints"""
             )
             raise e
@@ -594,6 +593,10 @@ class SumoTrafficSimulation:
             speed = sumo_vehicle[tc.VAR_SPEED]
             vehicle_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
             dimensions = VEHICLE_CONFIGS[vehicle_type].dimensions
+            # adjust sumo vehicle location with map location offset
+            assert len(self._scenario.mapLocationOffset) == 2
+            front_bumper_pos[0] += self._scenario.mapLocationOffset[0]
+            front_bumper_pos[1] += self._scenario.mapLocationOffset[1]
             provider_vehicles.append(
                 VehicleState(
                     # XXX: In the case of the SUMO traffic provider, the vehicle ID is
@@ -679,7 +682,6 @@ class SumoTrafficSimulation:
     ):
         """Reserve an area around a location where vehicles cannot spawn until a given vehicle
         is added.
-
         Args:
             vehicle_id: The vehicle to wait for.
             reserved_location: The space the vehicle takes up.

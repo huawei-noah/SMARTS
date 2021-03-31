@@ -40,7 +40,7 @@ from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import vec_to_radians
-from smarts.core.utils.traffic_history_serivce import Traffic_history_service
+from smarts.core.utils.traffic_history_service import Traffic_history_service
 from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
@@ -195,6 +195,10 @@ class Scenario:
         self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
         self._traffic_history_service = Traffic_history_service(traffic_history)
+
+    @property
+    def mapLocationOffset(self):
+        return self._road_network.netOffset
 
     def __repr__(self):
         return f"""Scenario(
@@ -514,7 +518,9 @@ class Scenario:
 
     def discover_missions_of_traffic_histories(self, vehicle_missions={}):
         return Traffic_history_service.fetch_agent_missions(
-            self._traffic_history_service.history_file_path
+            self._traffic_history_service.history_file_path,
+            self._root,
+            self.mapLocationOffset,
         )
 
     @staticmethod

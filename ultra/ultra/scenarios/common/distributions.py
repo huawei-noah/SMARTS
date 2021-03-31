@@ -157,7 +157,7 @@ t_patterns = {
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
-            "wait_to_hijack_limit_s": 1000,
+            "wait_to_hijack_limit_s": 10,
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
         # t-intersection has no north route
@@ -236,7 +236,7 @@ t_patterns = {
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
-            "wait_to_hijack_limit_s": 1000,
+            "wait_to_hijack_limit_s": 10,
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
@@ -315,7 +315,7 @@ t_patterns = {
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
-            "wait_to_hijack_limit_s": 1000,
+            "wait_to_hijack_limit_s": 10,
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
@@ -507,7 +507,7 @@ cross_patterns = {
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
-            "wait_to_hijack_limit_s": 1000,
+            "wait_to_hijack_limit_s": 10,
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
@@ -588,7 +588,7 @@ cross_patterns = {
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
-            "wait_to_hijack_limit_s": 1000,
+            "wait_to_hijack_limit_s": 10,
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
@@ -669,7 +669,7 @@ cross_patterns = {
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
-            "wait_to_hijack_limit_s": 1000,
+            "wait_to_hijack_limit_s": 10,
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },

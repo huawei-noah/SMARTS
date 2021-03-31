@@ -303,11 +303,6 @@ class MissionPlanner:
                 )
                 speed_limit = np.clip(target_velocity * 1.5, 0.5, 30)
                 self._task_is_triggered = False
-        # nei_wps = self._waypoints.waypoint_paths_on_lane_at(
-        #         position, lane.getID(), 60
-        #     )
-        # speed_limit = 80/3.6
-        # print(abs(target_position[0]-position[0]),vehicle.speed,target_vehicle.speed,velocity_vector[0],sim.elapsed_sim_time)
 
         p0 = position
         p_temp = nei_wps[0][len(nei_wps[0]) // 3].pos
@@ -406,7 +401,6 @@ class MissionPlanner:
         # The aggressiveness is mapped from [0,10] to [0,0.8] domain which
         # represents the portion of intitial distantce which is used for
         # triggering the u-turn task.
-        # aggressiveness = 0.3 + 0.5 * self._agent_behavior.aggressiveness / 10
         distance_threshold = 8
 
         if not self._uturn_is_initialized:

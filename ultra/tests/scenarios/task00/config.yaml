@@ -1,17 +1,21 @@
-ego_mission:
-  # left turn from south to west
-  start: south-SN
-  end:   west-EW
 levels:
   easy:
     train:
       total: 1
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 1
            specs: [[70kmh,p-test,1]]
     test:
       total: 1
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 1
@@ -19,12 +23,20 @@ levels:
   no-traffic:
     train:
       total: 1
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 1
            specs: [[70kmh,no-traffic,1]]
     test:
       total: 1
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
            percent: 1
@@ -33,6 +45,10 @@ levels:
   eval_test:
     train:
       total: 5
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_t:
           percent: 0.2
@@ -54,6 +70,10 @@ levels:
                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
     test:
       total: 2
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
       intersection_types:
         2lane_c:
           percent: 0.5
@@ -67,3 +87,26 @@ levels:
                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+  offset_test:
+    train:
+      total: 10
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+        start_offset: [78, 81]
+        end_offset:   [40, 44]
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[70kmh,p-test,1]]
+    test:
+      total: 1
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+        start_offset: [78, 81]
+        end_offset:   [40, 44]
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[70kmh,p-test,1]]
