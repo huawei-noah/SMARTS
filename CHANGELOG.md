@@ -18,16 +18,18 @@ process
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
 - Hosted Documentation on `readthedocs` and pointed to the smarts paper and useful parts of the documentation in the README.
-- Running imitation learning will now create a cached history_mission.pkl file in scenario folder that stores 
+- Running imitation learning will now create a cached `history_mission.pkl` file in scenario folder that stores 
 the missions for all agents.
 - Added ijson as a dependency. 
-- Added cached_property as a dependency.
+- Added `cached_property` as a dependency.
+- Added `renderer_optional` parameter to SMARTS class.  See issue #725.
 ### Changed
 - Lowered CPU cost of waypoint generation. This will result in a small increase in memory usage.
 - Set the number of processes used in `make test` to ignore 2 CPUs if possible.
 - Use the dummy OpEn agent (open-agent version 0.0.0) for all examples.
 - Improved performance by removing unused traffic light functionality.
 - Limit the memory use of traffic histories by incrementally loading the traffic history file with a worker process.
+- Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 ### Fixed
 - In order to avoid precision issues in our coordinates with big floating point numbers,
 we now initially shift road networks (maps) that are offset back to the origin
@@ -39,8 +41,6 @@ using the original coordinate system.  See Issue #325.
 - Envision now resumes from current frame after un-pausing.
 - Skipped generation of cut-in waypoints if they are further off-road than SMARTS currently supports to avoid process crash.
 - Fix envision error 15 by cleanly shutting down the envision worker process.
-- Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
-- Added `renderer_optional` parameter to SMARTS class.  See issue #725.
 
 ## [Format] - 2021-03-12
 ### Added 
