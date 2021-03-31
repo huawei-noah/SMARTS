@@ -421,15 +421,19 @@ class MissionPlanner:
         if closest_lane_edge < uturn_radius + vehicle.length / 2:
             d1 = -(uturn_radius - half_diagonal * math.sin(theta_1))
             s1 = math.sqrt(
-                4 * (a1 ** 2) * (d1 ** 2)
-                - 4 * (a1 ** 2 - b1 ** 2) * (a1 ** 2 + b1 ** 2)
+                abs(
+                    4 * (a1 ** 2) * (d1 ** 2)
+                    - 4 * (a1 ** 2 - b1 ** 2) * (a1 ** 2 + b1 ** 2)
+                )
             )
             c1 = math.acos((2 * a1 * d1 - s1) / (2 * (a1 ** 2 + b1 ** 2)))
         else:
             d1 = -(uturn_radius + half_diagonal * math.sin(theta_1))
             s1 = math.sqrt(
-                4 * (a1 ** 2) * (d1 ** 2)
-                - 4 * (a1 ** 2 - b1 ** 2) * (a1 ** 2 + b1 ** 2)
+                abs(
+                    4 * (a1 ** 2) * (d1 ** 2)
+                    - 4 * (a1 ** 2 - b1 ** 2) * (a1 ** 2 + b1 ** 2)
+                )
             )
             c1 = math.acos((2 * a1 * d1 + s1) / (2 * (a1 ** 2 + b1 ** 2)))
 
