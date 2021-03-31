@@ -22,14 +22,16 @@ from typing import Set
 
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Heading, Pose
-from .provider import ProviderState
+from .provider import Provider, ProviderState
+from .utils.traffic_history_service import Traffic_history_service
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class TrafficHistoryProvider:
+class TrafficHistoryProvider(Provider):
     def __init__(self):
         self._is_setup = False
         self._traffic_history_service = None
+        self._map_location_offset = None
         self.replaced_vehicle_ids = set()
         self.start_time_offset = 0
 
@@ -40,6 +42,7 @@ class TrafficHistoryProvider:
     def setup(self, scenario) -> ProviderState:
         self._is_setup = True
         self._traffic_history_service = scenario._traffic_history_service
+        self._map_location_offset = scenario.mapLocationOffset
         return ProviderState()
 
     def set_replaced_ids(self, vehicle_ids: list):
@@ -88,7 +91,9 @@ class TrafficHistoryProvider:
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center(
                         [
-                            *vehicle_state["position"][:2],
+                            *Traffic_history_service.apply_map_location_offset(
+                                vehicle_state["position"], self._map_location_offset
+                            ),
                             0,
                         ],
                         Heading(vehicle_state["heading"]),

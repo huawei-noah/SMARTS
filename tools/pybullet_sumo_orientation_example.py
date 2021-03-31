@@ -56,7 +56,7 @@ def social_spin_on_axle_cw(step, base_position, offset_from_centre):
 
 
 def run(
-    base,
+    renderer,
     client,
     traffic_sim: SumoTrafficSimulation,
     plane_body_id,
@@ -114,7 +114,7 @@ def run(
             vehicles[v] = Vehicle(
                 id=v_id,
                 pose=pose,
-                showbase=showbase,
+                renderer=renderer,
                 chassis=BoxChassis(
                     pose=pose,
                     speed=0,
@@ -132,7 +132,7 @@ def run(
             vehicles[pv.vehicle_id].control(pv.pose, pv.speed)
 
         client.stepSimulation()
-        showbase.taskMgr.step()
+        renderer.step()
 
         look_at(client, tuple([0, 0, 0]), top_down=False)
 
@@ -145,8 +145,8 @@ if __name__ == "__main__":
     # https://turtlemonvh.github.io/python-multiprocessing-and-corefoundation-libraries.html
     # mp.set_start_method('spawn', force=True)
 
-    # showbase = ShowBase(windowType="onscreen")
-    showbase = mock.MagicMock()
+    # renderer = Renderer("sumo_orientation_example")
+    renderer = mock.MagicMock()
 
     client = bc.BulletClient(pybullet.GUI)
     # client = BulletClient(pybullet.GUI)
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         )
 
         run(
-            showbase,
+            renderer,
             client,
             traffic_sim,
             plane_body_id,
