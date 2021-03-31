@@ -49,7 +49,6 @@ def evaluation_check(
     eval_rate,
     eval_episodes,
     max_episode_steps,
-    episode_count,
     scenario_info,
     timestep_sec,
     headless,
@@ -59,8 +58,8 @@ def evaluation_check(
     agent_ids_to_evaluate = [
         agent_id
         for agent_id in agent_ids
-        if episode_count % eval_rate == 0
-        and episode.last_eval_iterations[agent_id] != episode_count
+        if episode.index % eval_rate == 0
+        and episode.last_eval_iterations[agent_id] != episode.index
     ]
 
     # Skip evaluation if there are no agents needing an evaluation.
@@ -69,7 +68,7 @@ def evaluation_check(
 
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
-        checkpoint_directory = episode.checkpoint_dir(agent_id, episode_count)
+        checkpoint_directory = episode.checkpoint_dir(agent_id, episode.index)
         agents[agent_id].save(checkpoint_directory)
 
         # Perform the evaluation on this agent and save the data.

@@ -108,7 +108,6 @@ def train(
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
-    episode_count = 0
     old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
 
@@ -142,7 +141,6 @@ def train(
                 episode=episode,
                 log_dir=log_dir,
                 max_episode_steps=max_episode_steps,
-                episode_count=episode_count,
                 **eval_info,
                 **env.info,
             )
@@ -187,14 +185,13 @@ def train(
             total_step += 1
             observations = next_observations
 
-        episode.record_episode(old_episode, eval_info["eval_rate"], count=episode_count)
+        episode.record_episode(old_episode, eval_info["eval_rate"])
         old_episode = episode
 
-        if (episode_count + 1) % eval_info["eval_rate"] == 0:
+        if (episode.index + 1) % eval_info["eval_rate"] == 0:
             episode.record_tensorboard()
             old_episode = None
 
-        episode_count += 1
         if finished:
             break
 

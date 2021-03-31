@@ -253,12 +253,12 @@ class Episode:
         # Increment this episode's step count.
         self.steps += 1
 
-    def record_episode(self, old_episode=None, eval_rate=None, count=None):
+    def record_episode(self, old_episode=None, eval_rate=None):
         for _, agent_info in self.info[self.active_tag].items():
             agent_info.normalize()
 
         if (old_episode is not None) and (eval_rate is not None):
-            count = count % eval_rate
+            count = self.index % eval_rate
             for agent_id, agent_info in self.info[self.active_tag].items():
                 for key in agent_info.data:
                     if np.isscalar(agent_info.data[key]):
