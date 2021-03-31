@@ -210,14 +210,14 @@ class TrajectoryTrackingController:
         steering_filter_constant = lerp(
             12, final_steering_filter_constant, normalized_speed
         )
-        heading_error_derivative_gain = 0*lerp(
+        heading_error_derivative_gain = 0 * lerp(
             1.5, final_heading_error_derivative_gain, normalized_speed
         )
-        lateral_error_derivative_gain = 0*lerp(
+        lateral_error_derivative_gain = 0 * lerp(
             0.2, final_lateral_error_derivative_gain, normalized_speed
         )
-        lateral_gain=.61
-        heading_gain=0.01
+        lateral_gain = 0.61
+        heading_gain = 0.01
         # heading_gain=0.01
         # lateral_gain=0.61
         # print("<><><><><><><><><>",abs(TrajectoryTrackingController.curvature_calculation(trajectory, 0,num_points=3)))
@@ -228,14 +228,21 @@ class TrajectoryTrackingController:
         # lateral_gain=.61
         # heading_gain=0.05
 
-        lateral_error_derivative_gain=0.15
-        heading_error_derivative_gain=.5
-        if abs(TrajectoryTrackingController.curvature_calculation(trajectory, 0,num_points=3))<150:
-            heading_gain=0.05
+        lateral_error_derivative_gain = 0.15
+        heading_error_derivative_gain = 0.5
+        if (
+            abs(
+                TrajectoryTrackingController.curvature_calculation(
+                    trajectory, 0, num_points=3
+                )
+            )
+            < 150
+        ):
+            heading_gain = 0.05
             # lateral_gain=0.71
             # velocity_gain*=0.5
-            lateral_error_derivative_gain=0.015
-            heading_error_derivative_gain=.05
+            lateral_error_derivative_gain = 0.015
+            heading_error_derivative_gain = 0.05
 
         (
             heading_error,

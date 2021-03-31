@@ -94,7 +94,7 @@ def vehicle(bullet_client, vehicle_controller_file, timestep_sec=time_step):
 
 
 # We test 3 values for radius of the circular trajectory
-@pytest.fixture(params=np.arange(10, 30, 10))
+@pytest.fixture(params=np.arange(10, 20, 5))
 def radius(request):
     return request.param
 

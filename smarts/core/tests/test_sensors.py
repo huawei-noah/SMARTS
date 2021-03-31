@@ -126,6 +126,8 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
     scenario = next(uturn_scenarios)
     sim = mock.Mock()
     vehicle = mock.Mock()
+    vehicle.width = 1
+    vehicle.length = 2.1
     sim.elapsed_sim_time = 1
     sim.timestep_sec = 0.1
     nei_vehicle = mock.Mock()
