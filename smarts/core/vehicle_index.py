@@ -601,7 +601,8 @@ class VehicleIndex:
         Vehicle.attach_sensors_to_vehicle(
             sim, vehicle, agent_interface, sensor_state.mission_planner
         )
-        sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=True)
+        if sim.renderer:
+            sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=True)
 
         vehicle_id = _2id(vehicle.id)
         agent_id = _2id(original_agent_id)
@@ -635,7 +636,8 @@ class VehicleIndex:
         )
 
         vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id)
-        sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=False)
+        if sim.renderer:
+            sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=False)
 
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id

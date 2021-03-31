@@ -139,13 +139,13 @@ class Renderer:
         self._log = logging.getLogger(self.__class__.__name__)
         self._is_setup = False
         self._simid = simid
-        # Note: Each instance of the SMARTS simulation will have its own Renderer,
-        # but all Renderer objects share the same ShowBaseInstance.
-        self._showbase_instance = _ShowBaseInstance()
         self._root_np = None
         self._vehicles_np = None
         self._road_network_np = None
         self._vehicle_nodes = {}
+        # Note: Each instance of the SMARTS simulation will have its own Renderer,
+        # but all Renderer objects share the same ShowBaseInstance.
+        self._showbase_instance = _ShowBaseInstance()
 
     @property
     def id(self):

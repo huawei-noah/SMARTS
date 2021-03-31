@@ -148,7 +148,8 @@ class Vehicle:
 
         # TODO: Move this into the VehicleGeometry class
         self._renderer = renderer
-        renderer.create_vehicle_node(config.glb_model, self._id, self._color, pose)
+        if renderer:
+            renderer.create_vehicle_node(config.glb_model, self._id, self._color, pose)
         self._initialized = True
         self._has_stepped = False
 
@@ -431,6 +432,10 @@ class Vehicle:
             )
 
         if agent_interface.drivable_area_grid_map:
+            if not sim.renderer:
+                raise Exception(
+                    "A renderer is required to add a drivable_area_grid_map.  Ensure that `renderer_optional=False` is set when creating SMARTS instance."
+                )
             vehicle.attach_drivable_area_grid_map_sensor(
                 DrivableAreaGridMapSensor(
                     vehicle=vehicle,
@@ -441,6 +446,10 @@ class Vehicle:
                 )
             )
         if agent_interface.ogm:
+            if not sim.renderer:
+                raise Exception(
+                    "A renderer is required to add an OGM.  Ensure that `renderer_optional=False` is set when creating SMARTS instance."
+                )
             vehicle.attach_ogm_sensor(
                 OGMSensor(
                     vehicle=vehicle,
@@ -451,6 +460,10 @@ class Vehicle:
                 )
             )
         if agent_interface.rgb:
+            if not sim.renderer:
+                raise Exception(
+                    "A renderer is required to add an RGB camera.  Ensure that `renderer_optional=False` is set when creating SMARTS instance."
+                )
             vehicle.attach_rgb_sensor(
                 RGBSensor(
                     vehicle=vehicle,
@@ -486,6 +499,7 @@ class Vehicle:
         self._chassis.control(*args, **kwargs)
 
     def sync_to_renderer(self):
+        assert self._renderer
         self._renderer.update_vehicle_node(self._id, self.chassis.pose)
 
     @lru_cache(maxsize=1)
@@ -523,7 +537,8 @@ class Vehicle:
 
         if not exclude_chassis:
             self._chassis.teardown()
-        self._renderer.remove_vehicle_node(self._id)
+        if self._renderer:
+            self._renderer.remove_vehicle_node(self._id)
         self._initialized = False
 
     def _meta_create_sensor_functions(self):
