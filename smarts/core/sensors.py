@@ -362,6 +362,7 @@ class Sensors:
             reached_goal=reached_goal,
             reached_max_episode_steps=reached_max_episode_steps,
             off_route=is_off_route,
+            on_shoulder=is_on_shoulder,
             wrong_way=is_wrong_way,
             not_moving=is_not_moving,
         )
