@@ -38,7 +38,6 @@ from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
 from shapely.ops import snap, triangulate
 from trimesh.exchange import gltf
 
-from .utils.id import Id
 from .utils.math import rotate_around_point
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
@@ -101,8 +100,8 @@ class SumoRoadNetwork:
     @lru_cache(maxsize=1)
     def _shift_coordinates(cls, net_file_path):
         net_file_folder = os.path.dirname(net_file_path)
-        uniqname = Id.new("shifted_map")
-        out_path = os.path.join(net_file_folder, f"{uniqname}.net.xml")
+        out_path = os.path.join(net_file_folder, f"shifted_map-AUTOGEN.net.xml")
+        assert out_path != net_file_path
         logger = logging.getLogger(cls.__name__)
         logger.info(f"normalizing net coordinates into {out_path}...")
         ## Translate the map's origin to remove huge (imprecise) offsets.
