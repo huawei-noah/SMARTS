@@ -147,6 +147,10 @@ class Renderer:
         self._road_network_np = None
         self._vehicle_nodes = {}
 
+    @property
+    def id(self):
+        return self._simid
+
     def setup(self, scenario: Scenario):
         self._root_np = self._showbase_instance.setup_sim_root(self._simid)
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
