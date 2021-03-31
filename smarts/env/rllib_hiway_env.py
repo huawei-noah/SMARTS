@@ -78,9 +78,8 @@ class RLlibHiWayEnv(MultiAgentEnv):
             config["scenarios"],
             list(self._agent_specs.keys()),
         )
-
         self._sim_name = config.get("sim_name", None)
-        self._headless = config.get("headless", False)
+        self._headless = False # config.get("headless", False)
         self._num_external_sumo_clients = config.get("num_external_sumo_clients", 0)
         self._sumo_headless = config.get("sumo_headless", True)
         self._sumo_port = config.get("sumo_port")

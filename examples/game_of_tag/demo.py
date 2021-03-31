@@ -85,7 +85,6 @@ def main(scenario, headless, resume_training, result_dir, seed):
             observations, rewards, dones, infos = env.step(actions)
             episode.record_step(observations, rewards, dones, infos)
         break
-
     env.close()
 
 

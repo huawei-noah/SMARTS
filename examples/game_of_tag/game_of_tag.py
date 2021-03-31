@@ -37,7 +37,7 @@ rllib_agents = {}
 # map offset difference between sumo-gui and envision
 
 shared_interface = AgentInterface.from_type(AgentType.Full, max_episode_steps=300) #100s
-shared_interface.done_criteria = DoneCriteria(off_route=False, off_road=False)
+shared_interface.done_criteria = DoneCriteria(off_route=False) #off_road=False? Try to still have off_road event but off_road=False in done creteria
 # shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
 
 # predator_neighborhood_vehicles=NeighborhoodVehicles(radius=30)
@@ -149,7 +149,7 @@ def main(args):
         )
         for agent_id, rllib_agent in rllib_agents.items()
     }
-
+    print(f"arg headless: {args.headless}")
     tune_config = {
         "env": RLlibHiWayEnv,
         "log_level": "WARN",
@@ -161,10 +161,9 @@ def main(args):
         "horizon": 10000,
         "env_config": {
             "seed": 42,
-            "sim_name": "game_of_tag",
+            "sim_name": "game_of_tag_works?",
             "scenarios": [os.path.abspath(args.scenario)],
-            "headless": False,
-            # "visdom": True,
+            "headless": args.headless,
             "agent_specs": {
                 agent_id: rllib_agent["agent_spec"]
                 for agent_id, rllib_agent in rllib_agents.items()
@@ -195,6 +194,7 @@ def main(args):
         # XXX: Beware, resuming after changing tune params will not pick up
         #      the new arguments as they are stored alongside the checkpoint.
         resume=args.resume_training,
+        #restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_d21f4_00000_0_2021-03-29_18-12-16/checkpoint_115/checkpoint-115",
         local_dir=local_dir,
         reuse_actors=True,
         max_failures=1,

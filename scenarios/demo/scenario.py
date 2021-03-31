@@ -29,16 +29,16 @@ seed(42)
 
 ego_missions = [
     t.Mission(
-        route=t.Route(begin=("-gneE72", 0, 0), end=("gneE72", 0, 'max')), # prey 1
+        route=t.Route(begin=("-gneE72", 1, 0), end=("gneE72", 0, 'max')), # pred 1
     ),
     t.Mission(
-        route=t.Route(begin=("gneE71", 0, 0), end=("gneE72", 0, 'max')), # prey 2
+        route=t.Route(begin=("gneE71", 2, 0), end=("gneE72", 0, 'max')), # pred 2
     ),
     t.Mission(
-        route=t.Route(begin=("-gneE72", 1, 20), end=("gneE72", 0, 'max')), # pred 1
+        route=t.Route(begin=("-gneE72", 1, 20), end=("gneE72", 0, 'max')), # prey 1
     ),
     t.Mission(
-        route=t.Route(begin=("gneE71", 0, 'max'), end=("gneE72", 0, 'max')), # pred 2
+        route=t.Route(begin=("gneE71", 0, 'max'), end=("gneE72", 0, 'max')), # prey 2
     ),
 ]
 

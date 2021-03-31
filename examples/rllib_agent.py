@@ -43,6 +43,7 @@ def action_adapter(model_action):
     return np.array([throttle, brake, steering * np.pi * 0.25])
 
 
+# to make this network smaller, neural network accept bits?
 class TrainingModel(FullyConnectedNetwork):
     NAME = "FullyConnectedNetwork"
 

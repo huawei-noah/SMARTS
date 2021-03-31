@@ -27,13 +27,25 @@ OBSERVATION_SPACE = gym.spaces.Dict(
     {
         "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
         "speed": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
+        # add acceleration?
+        # add distance between prey and predator
         "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,)),
-        "drivable_area_grid_map": gym.spaces.Box(low=0, high=1, shape=(6, 4)),
+        "drivable_area_grid_map": gym.spaces.Box(low=0, high=1, shape=(6, 4)), # bitmap, change to a python integer/bitmap(binary number with 0 or 1)
         "predator_vehicles": gym.spaces.Tuple(tuple([NEIGHBORHOOD_VEHICLE_STATES]*len(PREDATOR_IDS))),
         "prey_vehicles": gym.spaces.Tuple(tuple([NEIGHBORHOOD_VEHICLE_STATES]*len(PREY_IDS))),
     }
 )
 
+# break 256x256 to a sequence of integers
+# by grids of 64 and encode it, 
+# 00001000
+# 00000000
+# 00000000
+# 00000000
+# 00001000
+# 00000000
+# 00000000
+# 00000000
 
 def action_adapter(model_action):
     throttle, brake, steering = model_action
@@ -83,8 +95,8 @@ def congregate_map(grid_map):
     return congregated_map
 
 def resize_grid_map(grid_map):
-    grid_map = grid_map[100:130,120:140] # vertical take 100->130, horizontal take 120->140
-    # grid_map is 30x20
+    grid_map = grid_map[100:130,120:140] # vertical take 100->130, horizontal take 120->140, 
+    # grid_map is 30x20, 6x4 2d array
     map_6x4 = congregate_map(grid_map)
     return map_6x4
 
@@ -115,7 +127,8 @@ def predator_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
-    rew = -0.25
+    # maybe remove this
+    rew = 0.2*np.sum(np.absolute(observations.ego_vehicle_state.linear_velocity)) # encourage predator to drive
     events = observations.events
     for c in observations.events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREY_IDS):
@@ -126,9 +139,13 @@ def predator_reward_adapter(observations, env_reward_signal):
             rew -= 25
             print(f"predator collided with others {c.collidee_id}")
 
-    if events.off_road:
+    ###  Check why off_road event is not generated when off_road done creteria is False
+    if events.off_road: 
+        # if 1 agent goes off_road, both agent receive 0 reward. 
+        # if both prey or both predator went off_road, the other agent will receive 0 rewards onwards.
+        print("predator offroad")
         # have a time limit for 
-        rew -= 30 # if 10 then after 100 steps, then it tries to suicide
+        rew -= 30 # if 10 then after 100 steps, then it tries to suicide, too high
     elif events.on_shoulder:
         rew -= 10
 
@@ -153,7 +170,7 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
-    rew = -0.25
+    rew = 0.2*np.sum(np.absolute(observations.ego_vehicle_state.linear_velocity)) # encourages driving
     events = observations.events
     for c in events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREDATOR_IDS):
@@ -164,6 +181,7 @@ def prey_reward_adapter(observations, env_reward_signal):
             rew -= 25
             print(f"prey collided with other vehicle {c.collidee_id}")
     if events.off_road:
+        print("prey offroad")
         rew -= 30
     elif events.on_shoulder:
         rew -= 10
