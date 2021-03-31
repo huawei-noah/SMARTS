@@ -40,8 +40,8 @@ class BaselineAgentSpec(AgentSpec):
     def __init__(
         self,
         policy_class,
-        policy_params,
         action_type,
+        policy_params=None,
         checkpoint_dir=None,
         task=None,
         max_episode_steps=1200,
