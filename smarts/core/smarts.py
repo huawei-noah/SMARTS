@@ -81,7 +81,7 @@ class SMARTS:
         self._scenario: Scenario = None
         try:
             self._renderer = Renderer(self._sim_id)
-        except Exception as e:
+        except RendererException as e:
             if not renderer_optional:
                 raise e
             self._log.info(

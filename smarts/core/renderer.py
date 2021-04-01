@@ -49,6 +49,16 @@ from .scenario import Scenario
 from .coordinates import Pose
 
 
+class RendererException(Exception):
+    """An exception raised if a renderer is required but not available."""
+
+    @classmethod
+    def required_to(cls, thing):
+        return cls(
+            "A renderer is required to {thing}.  Ensure that `renderer_optional=False` is set when creating SMARTS instance."
+        )
+
+
 class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
@@ -89,7 +99,7 @@ class _ShowBaseInstance(ShowBase):
 
         except Exception as e:
             # Known reasons for this failing:
-            raise Exception(
+            raise RendererException(
                 f"Error in initializing framework for opening graphical display and creating scene graph. "
                 "A typical reason is display not found. Try running with different configurations of "
                 "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "

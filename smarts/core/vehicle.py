@@ -32,7 +32,7 @@ from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
-from .renderer import Renderer
+from .renderer import Renderer, RendererException
 from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
@@ -433,9 +433,7 @@ class Vehicle:
 
         if agent_interface.drivable_area_grid_map:
             if not sim.renderer:
-                raise Exception(
-                    "A renderer is required to add a drivable_area_grid_map.  Ensure that `renderer_optional=False` is set when creating SMARTS instance."
-                )
+                raise RendererException.required_to("add a drivable_area_grid_map")
             vehicle.attach_drivable_area_grid_map_sensor(
                 DrivableAreaGridMapSensor(
                     vehicle=vehicle,
@@ -447,9 +445,7 @@ class Vehicle:
             )
         if agent_interface.ogm:
             if not sim.renderer:
-                raise Exception(
-                    "A renderer is required to add an OGM.  Ensure that `renderer_optional=False` is set when creating SMARTS instance."
-                )
+                raise RendererException.required_to("add an OGM")
             vehicle.attach_ogm_sensor(
                 OGMSensor(
                     vehicle=vehicle,
@@ -461,9 +457,7 @@ class Vehicle:
             )
         if agent_interface.rgb:
             if not sim.renderer:
-                raise Exception(
-                    "A renderer is required to add an RGB camera.  Ensure that `renderer_optional=False` is set when creating SMARTS instance."
-                )
+                raise RendererException.required_to("add an RGB camera")
             vehicle.attach_rgb_sensor(
                 RGBSensor(
                     vehicle=vehicle,
