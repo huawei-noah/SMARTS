@@ -39,8 +39,8 @@ def init_tensorflow():
     return configProto
 
 
-def train(training_scenarios, sim_name, headless, num_episodes, seed, with_soc_mt):
-    WITH_SOC_MT = with_soc_mt
+def train(training_scenarios, sim_name, headless, num_episodes, seed, without_soc_mt):
+    WITH_SOC_MT = without_soc_mt
     config = hyperParameters()
     configProto = init_tensorflow()
 
@@ -324,7 +324,7 @@ def default_argument_parser(program: str):
         type=int,
         default=5000,
     )
-    parser.add_argument("--with-soc-mt", help="Enable social mt.", action="store_true")
+    parser.add_argument("--without-soc-mt", help="Enable social mt.", action="store_true")
     return parser
 
 
@@ -338,5 +338,5 @@ if __name__ == "__main__":
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,
-        with_soc_mt=args.with_soc_mt,
+        without_soc_mt=args.without_soc_mt,
     )
