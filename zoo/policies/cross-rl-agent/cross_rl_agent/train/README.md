@@ -1,30 +1,30 @@
-# generate scenario
-run
+# Build scenarios
+To build the scenarios run:
 ```bash
+# cd zoo/policies/cross-rl-agent/cross_rl_agent/train
 $ scl scenario build-all scenarios
 ```
 
-# open envision
-run
+# Open envision
+To start the envision server run the following:
 ```bash
+# cd zoo/policies/cross-rl-agent/cross_rl_agent/train
 $ scl envision start -s scenarios
 ```
-and open `localhost:8081` in your local browser
+and open `localhost:8081` in your local browser.
 
-# run simple keep lane example
-run
+# Run simple keep lane example
+To run an example run:
 ```bash
-$ python run_keeplane.py scenarios/4lane_left_turn
+# cd zoo/policies/cross-rl-agent/cross_rl_agent/train
+$ python run_test.py scenarios/4lane_left_turn
 ```
-and refresh the browser
 
 
-
-# run train example 
-run
+# Run train example 
+To train an agent:
 ```bash
-$ python run_train.py scenarios/4lane_left_turn
+# cd zoo/policies/cross-rl-agent/cross_rl_agent/train
+$ python run_train.py scenarios/4lane_left_turn #--headless
 ```
-and refresh the browser,
-for fast training, you can turn off envision by pass param `headless=True`
-into env
+For fast training, you can stop the envision server and add `--headless`.
