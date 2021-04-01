@@ -13,6 +13,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
 process
 - Added `on_shoulder` as part of events in observation returned from each step of simulation
+- Added description of map creation and how to modify the map to allow users to create their own traffic routes in docs
+- Added reference to SMARTS paper in front page of docs
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed sumo road network offset bug for shifted maps.  See issue #716.
