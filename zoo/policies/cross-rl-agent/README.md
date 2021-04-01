@@ -6,10 +6,3 @@ This provides rl agent for cross scenarios
 cd cross-rl-agent
 pip install -e .
 ```
-
-# run test
-```bash
-cd test
-scl scenario build-all scenarios
-python egoless_example.py scenarios/4lane_left_turn
-```
