@@ -55,4 +55,4 @@ scenario = Scenario(
     social_agent_missions=social_agent_missions,
 )
 
-gen_scenario(scenario=scenario, output_dir=Path(__file__).parent, ovewrite=True)
+gen_scenario(scenario=scenario, output_dir=Path(__file__).parent)

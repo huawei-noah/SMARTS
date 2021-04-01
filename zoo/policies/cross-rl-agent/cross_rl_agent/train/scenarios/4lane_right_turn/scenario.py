@@ -42,4 +42,4 @@ scenario = Scenario(
     ego_missions=ego_missions,
 )
 
-gen_scenario(scenario=scenario, output_dir=Path(__file__).parent, ovewrite=True)
+gen_scenario(scenario=scenario, output_dir=Path(__file__).parent)
