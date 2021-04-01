@@ -14,6 +14,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 process
 - Added `on_shoulder` as part of events in observation returned from each step of simulation
 - Added `renderer_optional` parameter to SMARTS class.  See issue #725.
+### Changed
+- Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 
 ## [0.4.15] - 2021-03-18
 ### Added
@@ -29,7 +31,6 @@ the missions for all agents.
 - Use the dummy OpEn agent (open-agent version 0.0.0) for all examples.
 - Improved performance by removing unused traffic light functionality.
 - Limit the memory use of traffic histories by incrementally loading the traffic history file with a worker process.
-- Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 ### Fixed
 - In order to avoid precision issues in our coordinates with big floating point numbers,
 we now initially shift road networks (maps) that are offset back to the origin
