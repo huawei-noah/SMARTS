@@ -324,9 +324,7 @@ def default_argument_parser(program: str):
         type=int,
         default=5000,
     )
-    parser.add_argument(
-        "--with-soc-mt", help="Enable social mt.", action="store_true"
-    )
+    parser.add_argument("--with-soc-mt", help="Enable social mt.", action="store_true")
     return parser
 
 
