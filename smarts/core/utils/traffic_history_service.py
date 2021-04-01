@@ -169,7 +169,7 @@ class Traffic_history_service:
 
     @staticmethod
     def fetch_agent_missions(
-        history_file_path: str, scenario_root_path: str, mapLocationOffset
+        history_file_path: str, scenario_root_path: str, map_offset
     ):
         assert os.path.isdir(scenario_root_path)
         history_mission_filepath = os.path.join(
@@ -195,7 +195,7 @@ class Traffic_history_service:
                         start=scenario.Start(
                             Traffic_history_service.apply_map_location_offset(
                                 vehicles_state[vehicle_id]["position"],
-                                mapLocationOffset,
+                                map_offset,
                             ),
                             scenario.Heading(vehicles_state[vehicle_id]["heading"]),
                         ),
