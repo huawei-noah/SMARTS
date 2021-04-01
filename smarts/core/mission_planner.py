@@ -62,7 +62,6 @@ class MissionPlanner:
         self._prev_kyber_x_position = None
         self._prev_kyber_y_position = None
         self._first_uturn = True
-        self._uturn_target_velocity_window = [0] * 10
 
     def random_endless_mission(
         self, min_range_along_lane=0.3, max_range_along_lane=0.9

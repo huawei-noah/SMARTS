@@ -210,12 +210,6 @@ class TrajectoryTrackingController:
         steering_filter_constant = lerp(
             12, final_steering_filter_constant, normalized_speed
         )
-        heading_error_derivative_gain = 0 * lerp(
-            1.5, final_heading_error_derivative_gain, normalized_speed
-        )
-        lateral_error_derivative_gain = 0 * lerp(
-            0.2, final_lateral_error_derivative_gain, normalized_speed
-        )
         lateral_gain = 0.61
         heading_gain = 0.01
         # heading_gain=0.01
