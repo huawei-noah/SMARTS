@@ -95,7 +95,8 @@ And if you have an additional file you wish to turn into a map you can use the c
   python3 -m smarts.sstudio.sumo2mesh dataset_public/2lane_sharp/map.net.xml dataset_public/2lane_sharp/map.egg --format=egg
 
 
-The following describes a few basic operations to edit maps.
+Create map
+---------------
 
 First, to start `netedit`, run the following on terminal:
 
@@ -111,7 +112,8 @@ Use shortcut key "e" to change to edge mode. Click "chain" and "two-way" icons l
 
 Then click on map to start creating new edges and lanes.
 
-Edit existing maps:
+Edit existing map
+----------------------
 
 "file" -> "Open Network..." to open an existing map. 
 
