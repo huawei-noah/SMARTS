@@ -28,19 +28,23 @@ from smarts.core.agent import AgentSpec, Agent
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.utils.episodes import episodes
 
+
 class PredatorAgent(Agent):
     def act(self, obs):
-        return [0.5, 0, -1]
+        return [0.5, 0, 0]
+
 
 class PreyAgent(Agent):
     def act(self, obs):
-        return [0.5, 0, -1] # throttle: 0->1, brake: 0->1, steering -1-> 1
+        return [0.5, 0, 0]  # throttle: 0->1, brake: 0->1, steering -1-> 1
 
 
 def main(scenario, headless, resume_training, result_dir, seed):
     agent_specs = {}
 
-    shared_interface = AgentInterface.from_type(AgentType.Full, max_episode_steps=300) #100s
+    shared_interface = AgentInterface.from_type(
+        AgentType.Full, max_episode_steps=300
+    )  # 100s
     shared_interface.done_criteria = DoneCriteria(off_route=False, off_road=False)
     for agent_id in PREDATOR_IDS:
         agent_specs[agent_id] = AgentSpec(
@@ -88,7 +92,6 @@ def main(scenario, headless, resume_training, result_dir, seed):
             episode.record_step(observations, rewards, dones, infos)
         break
     env.close()
-
 
 
 if __name__ == "__main__":

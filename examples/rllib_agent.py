@@ -56,7 +56,7 @@ class RLLibTFSavedModelAgent(Agent):
         path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._sess = tf.compat.v1.Session(graph=tf.Graph())
-        tf.compat.v1.saved_model.load( # model should be already trained
+        tf.compat.v1.saved_model.load(  # model should be already trained
             self._sess, export_dir=path_to_model, tags=["serve"]
         )
         self._output_node = self._sess.graph.get_tensor_by_name("default_policy/add:0")

@@ -33,11 +33,15 @@ tf = try_import_tf()
 # NUM_SOCIAL_VEHICLES = 10 ######### Why we have to define how many social vehicles?
 
 rllib_agents = {}
-# add custom done criteria - maybe not 
+# add custom done criteria - maybe not
 # map offset difference between sumo-gui and envision
 
-shared_interface = AgentInterface.from_type(AgentType.Full, max_episode_steps=300) #100s
-shared_interface.done_criteria = DoneCriteria(off_route=False) #off_road=False? Try to still have off_road event but off_road=False in done creteria
+shared_interface = AgentInterface.from_type(
+    AgentType.Full, max_episode_steps=300
+)  # 100s
+shared_interface.done_criteria = DoneCriteria(
+    off_route=False
+)  # off_road=False? Try to still have off_road event but off_road=False in done creteria
 # shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
 
 # predator_neighborhood_vehicles=NeighborhoodVehicles(radius=30)
@@ -45,7 +49,7 @@ for agent_id in PREDATOR_IDS:
     rllib_agents[agent_id] = {
         "agent_spec": AgentSpec(
             interface=shared_interface,
-            agent_builder=lambda: RLLibTFSavedModelAgent( ## maybe fine since it might understand which mode it is in. Try 2 models at first
+            agent_builder=lambda: RLLibTFSavedModelAgent(  ## maybe fine since it might understand which mode it is in. Try 2 models at first
                 os.path.join(os.path.dirname(os.path.realpath(__file__)), "model"),
                 OBSERVATION_SPACE,
             ),
@@ -171,7 +175,7 @@ def main(args):
         },
         "multiagent": {
             "policies": rllib_policies,
-            "policies_to_train":["predator_policy", "prey_policy"],
+            "policies_to_train": ["predator_policy", "prey_policy"],
             "policy_mapping_fn": policy_mapper,
         },
         "callbacks": {
@@ -194,7 +198,7 @@ def main(args):
         # XXX: Beware, resuming after changing tune params will not pick up
         #      the new arguments as they are stored alongside the checkpoint.
         resume=args.resume_training,
-        #restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_d21f4_00000_0_2021-03-29_18-12-16/checkpoint_115/checkpoint-115",
+        # restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_d21f4_00000_0_2021-03-29_18-12-16/checkpoint_115/checkpoint-115",
         local_dir=local_dir,
         reuse_actors=True,
         max_failures=1,
