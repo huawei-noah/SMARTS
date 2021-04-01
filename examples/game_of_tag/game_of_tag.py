@@ -153,7 +153,6 @@ def main(args):
         )
         for agent_id, rllib_agent in rllib_agents.items()
     }
-    print(rllib)
     print(f"arg headless: {args.headless}")
     tune_config = {
         "env": RLlibHiWayEnv,
