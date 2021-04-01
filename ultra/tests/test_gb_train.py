@@ -32,7 +32,7 @@ from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.train import train
-from ultra.utils.coordinator import coordinator
+from ultra.utils.coordinator import Coordinator
 from ultra.utils.episode import episodes
 from itertools import cycle
 
@@ -129,7 +129,7 @@ class GBTrainTest(unittest.TestCase):
         num_episodes = 8
         etag = "sac-v0"
 
-        agent_coordinator = coordinator(gb_curriculum_dir)
+        agent_coordinator = Coordinator(gb_curriculum_dir, num_episodes)
 
         grade_iterator = iter(
             cycle(

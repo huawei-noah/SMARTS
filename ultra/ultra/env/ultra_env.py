@@ -54,8 +54,9 @@ class UltraEnv(HiWayEnv):
         self.headless = headless
         self.agent_specs = agent_specs
         self.eval_mode = eval_mode
+        self.grade_mode = grade_mode
 
-        if not grade_mode:
+        if not self.grade_mode:
             self.scenario_info = scenario_info
             self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
             if not self.eval_mode:
@@ -195,7 +196,17 @@ class UltraEnv(HiWayEnv):
             )
 
         scenario = next(self._scenarios_iterator)
-        # print(scenario)
+        # print(str(scenario._root))
+        root = str(scenario._root).split("/")[-1]
+        for i in ["no-traffic", "low-density", "mid-density", "high-density"]:
+            if i in root:
+                # print(f"Route: {root}")
+                # print(f"Scenario density: {i}")
+                scenario_density = i
+            else:
+                continue
+
+        scenario_info = {"root": root, "scenario_density": scenario_density}
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
@@ -205,7 +216,10 @@ class UltraEnv(HiWayEnv):
             for agent_id, obs in env_observations.items()
         }
 
-        return observations
+        if self.grade_mode:
+            return observations, scenario_info
+        else:
+            return observations
 
     def get_scenarios(self, grade):
         """only for grade based structure"""

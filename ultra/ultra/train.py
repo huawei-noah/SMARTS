@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
 from ultra.utils.episode import episodes
-from ultra.utils.coordinator import coordinator
+from ultra.utils.coordinator import Coordinator, CurriculumInfo
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -103,7 +103,7 @@ def train(
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
     if grade_mode:
-        agent_coordinator, scenario_info = gb_setup(gb_info)
+        agent_coordinator, scenario_info = gb_setup(gb_info, num_episodes)
     else:
         print("\n------------ GRADE MODE : Disabled ------------\n")
         agent_coordinator = None
@@ -130,17 +130,18 @@ def train(
             graduate_agent = agent_coordinator.graduate(
                 episode.index, num_episodes, average_scenarios_passed
             )
-            if graduate_agent[1] == True:
-                # If agent has completed all levels then break loop (no cycle through levels again)
-                finished = True
-                break
-            elif graduate_agent[0] == True:
+            if graduate_agent[0] == True:
                 # If agent switches to new grade
-                observations = env.reset(True, agent_coordinator.get_grade())
-                agent_coordinator.display()
+                observations, scenario_type = env.reset(
+                    True, agent_coordinator.get_grade()
+                )
                 average_scenarios_passed = 0.0
             else:
-                observations = env.reset()
+                observations, scenario_type = env.reset()
+
+            density_counter = agent_coordinator.record_density_data(
+                scenario_type["scenario_density"]
+            )
         else:
             # Reset the environment and retrieve the initial observations.
             observations = env.reset()
@@ -206,6 +207,12 @@ def train(
             total_step += 1
             observations = next_observations
 
+        if (CurriculumInfo.episode_based_cycle == False) and (
+            episode.index + 1 == num_episodes
+        ):
+            # Special case when grade cycling is off and last 'display()' needs to executed
+            agent_coordinator.display()
+
         episode.record_episode(old_episode, eval_info["eval_rate"])
         old_episode = episode
 
@@ -213,6 +220,10 @@ def train(
         if (episode_count + 1) % eval_info["eval_rate"] == 0:
             episode.record_tensorboard(record_by_episode=True)
             old_episode = None
+
+        episode.record_density_tensorboard(
+            scenario_type["scenario_density"], density_counter
+        )
 
         if grade_mode:
             (
@@ -239,14 +250,22 @@ def train(
             )
         episode_count += 1
 
+        if graduate_agent[1] == True:
+            # If agent has completed all levels then break loop (no cycle through levels again)
+            print(agent_coordinator.get_checkpoints())
+            break
+
         if finished:
             break
+
+    # scenario density plotting on stand-by for now
+    # agent_coordinator.plot_densities_data()
 
     env.close()
 
 
-def gb_setup(gb_info):
-    agent_coordinator = coordinator(gb_info["gb_curriculum_dir"])
+def gb_setup(gb_info, num_episodes):
+    agent_coordinator = Coordinator(gb_info["gb_curriculum_dir"], num_episodes)
     # To build all scenarios from all grades
     if gb_info["gb_build_scenarios"]:
         agent_coordinator.build_all_scenarios(

@@ -272,8 +272,27 @@ class Episode:
             self.make_dir(self.log_dir)
             self.make_dir(self.model_dir)
 
+    def record_density_tensorboard(self, scenario_density, density_counter):
+        self.initialize_tb_writer()
+
+        for agent_id, agent_info in self.info[self.active_tag].items():
+            for key, value in agent_info.data.items():
+                if not isinstance(value, (list, tuple, np.ndarray)):
+                    if key is "episode_reward" or key is "reached_goal":
+                        # print(f"Recording {key} for {scenario_density}; counter = {density_counter}")
+                        self.tb_writer.add_scalar(
+                            "{}/{}/{}".format(scenario_density, agent_id, key),
+                            value,
+                            density_counter,
+                        )
+
     def record_tensorboard(
-        self, save_codes=None, record_by_episode=False, draw_grade_line=False
+        self,
+        save_codes=None,
+        record_by_episode=False,
+        draw_grade_line=False,
+        scenario_density=None,
+        density_counter=None,
     ):
         # Only create tensorboard once from training process.
         self.initialize_tb_writer()
@@ -293,7 +312,7 @@ class Episode:
                         manipulated_var,
                     )
                     data[key] = value
-            self.all_data[self.active_tag][agent_id][agent_itr] = data
+            self.all_data[self.active_tag][agent_id][manipulated_var] = data
 
         pkls_dir = f"{self.pkls}/{self.active_tag}"
         if not os.path.exists(pkls_dir):
