@@ -46,7 +46,7 @@ We just run a `scenario.py` file as a regular Python script to generate scenario
   python3 scenario/scenario.py
 
 IMPORTANT: if you want to train model on one scenario, remember to set the `end` time of flow larger or equal to your expected
-training time, since SMARTS will continue the flow after each `reset` called. However, if there are multi scenarios to train
+training time, since SMARTS will continue the flow after each `reset` call. However, if there are multiple scenarios to train
 for one worker, you can relax this restriction since after the scenario change, the flow will also be reset to the beginning time.
 
 =================
@@ -95,7 +95,7 @@ And if you have an additional file you wish to turn into a map you can use the c
   python3 -m smarts.sstudio.sumo2mesh dataset_public/2lane_sharp/map.net.xml dataset_public/2lane_sharp/map.egg --format=egg
 
 
-The following describes a few basic operations to edit maps
+The following describes a few basic operations to edit maps.
 
 First, to start `netedit`, run the following on terminal:
 
