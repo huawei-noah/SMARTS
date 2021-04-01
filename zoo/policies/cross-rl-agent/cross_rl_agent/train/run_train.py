@@ -29,7 +29,6 @@ warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "Agent-007"
-WITH_SOC_MT = True
 
 
 def init_tensorflow():
@@ -40,7 +39,8 @@ def init_tensorflow():
     return configProto
 
 
-def train(training_scenarios, sim_name, headless, num_episodes, seed):
+def train(training_scenarios, sim_name, headless, num_episodes, seed, with_soc_mt):
+    WITH_SOC_MT = with_soc_mt
     config = hyperParameters()
     configProto = init_tensorflow()
 
@@ -289,22 +289,6 @@ def train(training_scenarios, sim_name, headless, num_episodes, seed):
         env.close()
 
 
-def main(
-    training_scenarios,
-    sim_name,
-    headless,
-    num_episodes,
-    seed,
-):
-    train(
-        training_scenarios,
-        sim_name,
-        headless,
-        num_episodes,
-        seed,
-    )
-
-
 def default_argument_parser(program: str):
     """This factory method returns a vanilla `argparse.ArgumentParser` with the
     minimum subset of arguments that should be supported.
@@ -340,6 +324,9 @@ def default_argument_parser(program: str):
         type=int,
         default=5000,
     )
+    parser.add_argument(
+        "--with-soc-mt", help="Enable social mt.", action="store_true"
+    )
     return parser
 
 
@@ -347,10 +334,11 @@ if __name__ == "__main__":
     parser = default_argument_parser("pytorch-example")
     args = parser.parse_args()
 
-    main(
+    train(
         training_scenarios=args.scenarios,
         sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.episodes,
         seed=args.seed,
+        with_soc_mt=args.with_soc_mt,
     )
