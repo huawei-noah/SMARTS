@@ -5,8 +5,6 @@ This provides rl agent for cross scenarios
 ```bash
 cd cross-rl-agent
 pip install -e .
-# or 
-pip install cross_rl_agent-0.1.0-py3-none-any.whl 
 ```
 
 # run test
