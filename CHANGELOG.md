@@ -36,6 +36,7 @@ we now initially shift road networks (maps) that are offset back to the origin
 using [netconvert](https://sumo.dlr.de/docs/netconvert.html).
 We adapt Sumo vehicle positions to take this into account to allow Sumo to continue
 using the original coordinate system.  See Issue #325.
+    - This fix will require all Scenarios to be rebuilt (`scl scenario build-all --clean ./scenarios`).
 - Cleanly close down the traffic history provider thread. See PR #665.
 - Improved the disposal of a SMARTS instance. See issue #378.
 - Envision now resumes from current frame after un-pausing.
