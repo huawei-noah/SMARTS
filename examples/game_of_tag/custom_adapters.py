@@ -20,10 +20,15 @@ PREDATOR_IDS = ["PRED1", "PRED2"]
 PREY_IDS = ["PREY1", "PREY2"]
 
 ACTION_SPACE = gym.spaces.Box(
-    low=np.array([0.0, 0.0, -1.0]),
+    low=np.array([0.0, 0.0, -1.0]), # throttle can be negative?
     high=np.array([1.0, 1.0, 1.0]),
     dtype=np.float32,
 )
+
+## To-do
+# Try with a less complicated map first
+# Try to see if predator distance with prey award can be positive
+
 
 NEIGHBORHOOD_VEHICLE_STATES = gym.spaces.Dict(
     {
@@ -183,8 +188,9 @@ def predator_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
+    ## small negative reward for drivable_grid_map have on_drivable blocks
+
     collided_with_prey = False
-    # maybe remove this
     rew = global_rewards.base_reward
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
@@ -210,14 +216,14 @@ def predator_reward_adapter(observations, env_reward_signal):
 
     # Decreased reward for increased distance away from prey
     # ! check if the penalty is reasonable, staying alive should be sizable enough to keep agent on road or reduce this penalty
-    rew -= 0.1 * min_distance_to_rival(
-        observations.ego_vehicle_state.position,
-        PREY_IDS,
-        observations.neighborhood_vehicle_states,
-    )
+    # rew -= 0.1 * min_distance_to_rival(
+    #     observations.ego_vehicle_state.position,
+    #     PREY_IDS,
+    #     observations.neighborhood_vehicle_states,
+    # )
     if not collided_with_prey and events.reached_max_episode_steps:
         # predator failed to catch the prey
-        reward -= global_rewards.reached_max_episode_steps
+        rew -= global_rewards.game_ended
 
     # if no prey vehicle avaliable, have 0 reward instead
     prey_vehicles = list(filter(
@@ -233,7 +239,7 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if off road
     """
     collided_with_pred = False
-    rew = 0.2
+    rew = -1*global_rewards.base_reward
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
     # )  # encourages driving
@@ -254,15 +260,15 @@ def prey_reward_adapter(observations, env_reward_signal):
         rew += global_rewards.on_shoulder_deduction
 
     # Increased reward for increased distance away from predators
-    rew += 0.1 * min_distance_to_rival(
-        observations.ego_vehicle_state.position,
-        PREDATOR_IDS,
-        observations.neighborhood_vehicle_states,
-    )
+    # rew += 0.1 * min_distance_to_rival(
+    #     observations.ego_vehicle_state.position,
+    #     PREDATOR_IDS,
+    #     observations.neighborhood_vehicle_states,
+    # )
 
     if not collided_with_pred and events.reached_max_episode_steps:
         # prey survived
-        reward += global_rewards.reached_max_episode_steps
+        rew += global_rewards.game_ended
 
     # if no predator vehicle avaliable, have 0 reward instead
     predator_vehicles = list(filter(
