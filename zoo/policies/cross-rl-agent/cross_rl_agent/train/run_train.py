@@ -39,7 +39,15 @@ def init_tensorflow():
     return configProto
 
 
-def train(training_scenarios, sim_name, headless, num_episodes, seed, without_soc_mt):
+def train(
+    training_scenarios,
+    sim_name,
+    headless,
+    num_episodes,
+    seed,
+    without_soc_mt,
+    session_dir,
+):
     WITH_SOC_MT = without_soc_mt
     config = hyperParameters()
     configProto = init_tensorflow()
@@ -119,12 +127,12 @@ def train(training_scenarios, sim_name, headless, num_episodes, seed, without_so
             # save the model from time to time
             if config.model_save_frequency:
                 if episode.index % config.model_save_frequency == 0:
-                    save_path = saver.save(sess, "models/" + model_name + ".ckpt")
+                    save_path = saver.save(sess, f"{session_dir}/{model_name}.ckpt")
                     print("latest model saved")
                 if episode.index % config.model_save_frequency_no_paste == 0:
                     saver.save(
                         sess,
-                        "models/" + model_name + "_" + str(episode.index) + ".ckpt",
+                        f"{session_dir}/{model_name}_{str(episode.index)}.ckpt",
                     )
                     print("model saved")
 
@@ -324,12 +332,20 @@ def default_argument_parser(program: str):
         type=int,
         default=5000,
     )
-    parser.add_argument("--without-soc-mt", help="Enable social mt.", action="store_true")
     return parser
 
 
 if __name__ == "__main__":
     parser = default_argument_parser("pytorch-example")
+    parser.add_argument(
+        "--without-soc-mt", help="Enable social mt.", action="store_true"
+    )
+    parser.add_argument(
+        "--session-dir",
+        help="The save directory for the model.",
+        type=str,
+        default="model/",
+    )
     args = parser.parse_args()
 
     train(
@@ -339,4 +355,5 @@ if __name__ == "__main__":
         num_episodes=args.episodes,
         seed=args.seed,
         without_soc_mt=args.without_soc_mt,
+        session_dir=args.session_dir,
     )
