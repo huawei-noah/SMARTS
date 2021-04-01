@@ -9,6 +9,7 @@ from dataclasses import dataclass
 class Rewards:
     base_reward: float = 0
     collesion_with_target: float = 10.0
+    game_ended: float = 10
     collesion_with_other_deduction: float = -12.0
     off_road_deduction: float = -12
     on_shoulder_deduction: float = -2
@@ -156,7 +157,6 @@ def observation_adapter(observations):
     prey_states = get_specfic_vehicle_states(nv_states, PREY_IDS)
 
     ego = observations.ego_vehicle_state
-    print(ego)
     return {
         "steering": np.array([ego.steering]),
         "speed": np.array([ego.speed]),
@@ -183,6 +183,7 @@ def predator_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
+    collided_with_prey = False
     # maybe remove this
     rew = global_rewards.base_reward
     # rew = 0.2 * np.sum(
@@ -192,15 +193,14 @@ def predator_reward_adapter(observations, env_reward_signal):
     for c in observations.events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREY_IDS):
             rew += global_rewards.collesion_with_target
+            collided_with_prey = True
             print(f"predator collided with prey {c.collidee_id}")
         else:
             # Collided with something other than the prey
             rew += global_rewards.collesion_with_other_deduction
             print(f"predator collided with others {c.collidee_id}")
 
-    ###  Check why off_road event is not generated when off_road done creteria is False
     if events.off_road:
-        # if 1 agent goes off_road, both agent receive 0 reward.
         # if both prey or both predator went off_road, the other agent will receive 0 rewards onwards.
         print("predator offroad")
         # have a time limit for
@@ -215,7 +215,15 @@ def predator_reward_adapter(observations, env_reward_signal):
         PREY_IDS,
         observations.neighborhood_vehicle_states,
     )
-    return rew
+    if not collided_with_prey and events.reached_max_episode_steps:
+        # predator failed to catch the prey
+        reward -= global_rewards.reached_max_episode_steps
+
+    # if no prey vehicle avaliable, have 0 reward instead
+    prey_vehicles = list(filter(
+        lambda v: _is_vehicle_wanted(v.id, PREY_IDS), observations.neighborhood_vehicle_states,
+    ))
+    return rew if len(prey_vehicles) > 0 else 0
 
 
 def prey_reward_adapter(observations, env_reward_signal):
@@ -224,6 +232,7 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
+    collided_with_pred = False
     rew = 0.2
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
@@ -232,6 +241,7 @@ def prey_reward_adapter(observations, env_reward_signal):
     for c in events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREDATOR_IDS):
             rew -= global_rewards.collesion_with_target
+            collided_with_pred = True
             print(f"prey collided with Predator {c.collidee_id}")
         else:
             # Collided with something other than the prey
@@ -250,4 +260,12 @@ def prey_reward_adapter(observations, env_reward_signal):
         observations.neighborhood_vehicle_states,
     )
 
-    return rew
+    if not collided_with_pred and events.reached_max_episode_steps:
+        # prey survived
+        reward += global_rewards.reached_max_episode_steps
+
+    # if no predator vehicle avaliable, have 0 reward instead
+    predator_vehicles = list(filter(
+        lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS), observations.neighborhood_vehicle_states,
+    ))
+    return rew if len(predator_vehicles) > 0 else 0

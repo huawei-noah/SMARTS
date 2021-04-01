@@ -45,7 +45,7 @@ def main(scenario, headless, resume_training, result_dir, seed):
     shared_interface = AgentInterface.from_type(
         AgentType.Full, max_episode_steps=300
     )  # 100s
-    shared_interface.done_criteria = DoneCriteria(off_route=False, off_road=False)
+    shared_interface.done_criteria = DoneCriteria(off_route=False)
     for agent_id in PREDATOR_IDS:
         agent_specs[agent_id] = AgentSpec(
             interface=shared_interface,
