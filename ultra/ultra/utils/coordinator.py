@@ -155,16 +155,19 @@ class Coordinator:
             "high-density": 0,
         }
 
-    def plot_densities_data(self):
+    def plot_densities_data(self, file):
         data = []
+        print(self.densities_data)
         for grade in self.densities_data:
             temp1 = []
             temp2 = []
             for key, val in grade.items():
                 temp2.append(key)
+                print("GRADE SIZE:,", self.grade_size)
                 temp1.append(round(val / self.grade_size, 2))
             data.append(temp1)
 
+        print("DATA:>>>>>>>>>>>>>>>>>>>:", data)
         X = np.arange(self.get_num_of_grades())
         fig = plt.figure()
         ax = fig.add_axes([0.1, 0.1, 0.75, 0.75])
@@ -172,17 +175,19 @@ class Coordinator:
         colors = ["g", "m", "b", "r"]
         inc = 0.0
         counter = 0
-        for color in colors:
-            ax.bar(X + inc, data[counter], color=color, width=0.25)
-            inc += 0.25
-            counter += 1
+        if len(data) == 1:
+            ax.bar(X + inc, data[counter], color="blue", width=0.25)
+        else:
+            for color in colors:
+                ax.bar(X + inc, data[counter], color=color, width=0.25)
+                inc += 0.25
+                counter += 1
 
         ax.set_ylabel("Probability of scenarios in grade")
         ax.set_title("Probability (%)")
         ax.set_xticks(X)
-        ax.set_xticklabels(labels)
 
-        plt.savefig("density_data.png")
+        plt.savefig(file)
 
     def get_pass_based_sample_rate(self):
         return self.curriculum["conditions"]["pass_based"]["sample_rate"]

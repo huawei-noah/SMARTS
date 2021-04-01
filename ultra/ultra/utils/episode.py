@@ -281,7 +281,9 @@ class Episode:
                     if key is "episode_reward" or key is "reached_goal":
                         # print(f"Recording {key} for {scenario_density}; counter = {density_counter}")
                         self.tb_writer.add_scalar(
-                            "{}/{}/{}".format(scenario_density, agent_id, key),
+                            "{}/{}/{}".format(
+                                f"{self.active_tag}-{scenario_density}", agent_id, key
+                            ),
                             value,
                             density_counter,
                         )

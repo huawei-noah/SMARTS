@@ -207,11 +207,12 @@ def train(
             total_step += 1
             observations = next_observations
 
-        if (CurriculumInfo.episode_based_cycle == False) and (
-            episode.index + 1 == num_episodes
-        ):
-            # Special case when grade cycling is off and last 'display()' needs to executed
-            agent_coordinator.display()
+        if grade_mode:
+            if (CurriculumInfo.episode_based_cycle == False) and (
+                episode.index + 1 == num_episodes
+            ):
+                # Special case when grade cycling is off and last 'display()' needs to executed
+                agent_coordinator.display()
 
         episode.record_episode(old_episode, eval_info["eval_rate"])
         old_episode = episode
@@ -221,11 +222,10 @@ def train(
             episode.record_tensorboard(record_by_episode=True)
             old_episode = None
 
-        episode.record_density_tensorboard(
-            scenario_type["scenario_density"], density_counter
-        )
-
         if grade_mode:
+            episode.record_density_tensorboard(
+                scenario_type["scenario_density"], density_counter
+            )
             (
                 average_scenarios_passed,
                 total_scenarios_passed,
@@ -259,7 +259,7 @@ def train(
             break
 
     # scenario density plotting on stand-by for now
-    # agent_coordinator.plot_densities_data()
+    agent_coordinator.plot_densities_data("train_data.png")
 
     env.close()
 

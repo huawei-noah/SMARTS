@@ -27,6 +27,7 @@ os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
 import glob
 import time
+import copy
 from pydoc import locate
 
 import gym
@@ -71,6 +72,9 @@ def evaluation_check(
     if len(agent_ids_to_evaluate) < 1:
         return
 
+    agent_coordinator_eval = copy.deepcopy(agent_coordinator)
+    # agent_coordinator.grade_size = eval_episodes
+
     episode.eval_mode()
     evaluation_data = {}
 
@@ -98,7 +102,7 @@ def evaluation_check(
                         timestep_sec=timestep_sec,
                         log_dir=log_dir,
                         grade_mode=grade_mode,
-                        agent_coordinator=agent_coordinator,
+                        agent_coordinator=agent_coordinator_eval,
                     )
                 ]
             )[0]
@@ -108,10 +112,13 @@ def evaluation_check(
 
     # Put the evaluation data for all agents into the episode and record the TensorBoard.
     episode.info[episode.active_tag] = evaluation_data
-    episode.record_tensorboard()
+    episode.record_tensorboard(record_by_episode=True)
     episode.gap_mode()
     episode.calculate_gap()
-    episode.record_tensorboard()
+    episode.record_tensorboard(record_by_episode=True)
+    if grade_mode:
+        agent_coordinator_eval.reset_grade_densities_counter()
+        agent_coordinator_eval.plot_densities_data("test_data.png")
     episode.train_mode()
 
 
@@ -148,6 +155,7 @@ def evaluate(
     }
 
     # Create the environment with the specified agents.
+    print("GRADE MODE:", grade_mode)
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs=agent_specs,
@@ -177,11 +185,17 @@ def evaluate(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        if (grade_mode == True) and (initial_grade_switch == False):
-            observations = env.reset(True, agent_coordinator.get_grade())
-            initial_grade_switch = True
+        if grade_mode != False:
+            if initial_grade_switch == False:
+                observations, scenario_type = env.reset(
+                    True, agent_coordinator.get_grade()
+                )
+                initial_grade_switch = True
+            else:
+                observations, scenario_type = env.reset()
         else:
             observations = env.reset()
+
         dones = {"__all__": False}
         infos = None
         episode.reset(mode="Evaluation")
@@ -199,7 +213,13 @@ def evaluate(
                 agent_ids_to_record=infos.keys(), infos=infos, rewards=rewards
             )
 
-        episode.record_episode()
+        if grade_mode:
+            density_counter = agent_coordinator.record_density_data(
+                scenario_type["scenario_density"]
+            )
+            episode.record_density_tensorboard(
+                scenario_type["scenario_density"], density_counter
+            )
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
