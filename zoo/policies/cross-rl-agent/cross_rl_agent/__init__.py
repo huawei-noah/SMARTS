@@ -28,6 +28,4 @@ def entrypoint():
         )
 
 
-# RLAgent(load_path=model_path, policy_name="Soc_Mt_TD3Network")
-
 register(locator="cross_rl_agent-v0", entry_point=entrypoint)
