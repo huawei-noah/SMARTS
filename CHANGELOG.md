@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 process
 - Added `on_shoulder` as part of events in observation returned from each step of simulation
 ### Fixed
+- Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed sumo road network offset bug for shifted maps.  See issue #716.
 
 ## [0.4.15] - 2021-03-18
