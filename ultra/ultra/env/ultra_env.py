@@ -196,17 +196,19 @@ class UltraEnv(HiWayEnv):
             )
 
         scenario = next(self._scenarios_iterator)
-        # print(str(scenario._root))
-        root = str(scenario._root).split("/")[-1]
-        for i in ["no-traffic", "low-density", "mid-density", "high-density"]:
-            if i in root:
-                # print(f"Route: {root}")
-                # print(f"Scenario density: {i}")
-                scenario_density = i
-            else:
-                continue
 
-        scenario_info = {"root": root, "scenario_density": scenario_density}
+        if self.grade_mode:
+            # print(str(scenario._root))
+            root = str(scenario._root).split("/")[-1]
+            for i in ["no-traffic", "low-density", "mid-density", "high-density"]:
+                if i in root:
+                    # print(f"Route: {root}")
+                    # print(f"Scenario density: {i}")
+                    scenario_density = i
+                else:
+                    continue
+
+            scenario_info = {"root": root, "scenario_density": scenario_density}
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
