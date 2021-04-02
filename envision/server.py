@@ -428,6 +428,9 @@ def run(scenario_dirs, max_capacity_mb=500, port=8081):
     signal.signal(
         signal.SIGINT, lambda signal, _: ioloop.add_callback_from_signal(on_shutdown)
     )
+    signal.signal(
+        signal.SIGTERM, lambda signal, _: ioloop.add_callback_from_signal(on_shutdown)
+    )
     ioloop.start()
 
 
