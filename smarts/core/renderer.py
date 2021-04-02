@@ -220,6 +220,7 @@ class Renderer:
         if not vehicle_path:
             self._log.warn(f"Renderer ignoring invalid vehicle id {vid}")
             return
+        # TAI: consider reparenting hijacked vehicles too?
         vehicle_path.reparentTo(self._vehicles_np if is_agent else self._root_np)
 
     def update_vehicle_node(self, vid: str, pose: Pose):

@@ -35,7 +35,7 @@ def look_at(client, position=(0, 0, 0), top_down=True):
         )
 
 
-def run(renderer, client, vehicle, plane_body_id, sliders, n_steps=1e6):
+def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
     prev_friction_sum = None
 
     controller_state = TrajectoryTrackingControllerState()
@@ -90,7 +90,6 @@ def run(renderer, client, vehicle, plane_body_id, sliders, n_steps=1e6):
 
         client.stepSimulation()
         vehicle.sync_chassis()
-        renderer.step()
 
         frictions_ = frictions(sliders)
 
@@ -134,9 +133,6 @@ if __name__ == "__main__":
     # https://turtlemonvh.github.io/python-multiprocessing-and-corefoundation-libraries.html
     # mp.set_start_method('spawn', force=True)
 
-    # renderer = Renderer("trajsectory_example")
-    renderer = mock.MagicMock()
-
     client = bc.BulletClient(pybullet.GUI)
     # client = BulletClient(pybullet.GUI)
     # client.configureDebugVisualizer(pybullet.COV_ENABLE_GUI, 0)
@@ -177,7 +173,6 @@ if __name__ == "__main__":
             vehicle = Vehicle(
                 id="vehicle",
                 pose=pose,
-                renderer=renderer,
                 chassis=AckermannChassis(
                     pose=pose,
                     bullet_client=client,
@@ -185,7 +180,6 @@ if __name__ == "__main__":
             )
 
             run(
-                renderer,
                 client,
                 vehicle,
                 plane_body_id,

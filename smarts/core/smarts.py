@@ -73,21 +73,12 @@ class SMARTS:
         timestep_sec=0.1,
         reset_agents_only=False,
         zoo_addrs=None,
-        renderer_optional=False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._scenario: Scenario = None
-        try:
-            self._renderer = Renderer(self._sim_id)
-        except RendererException as e:
-            if not renderer_optional:
-                raise e
-            self._log.info(
-                f"Unable to create Renderer; continuing without one.\nException was:  {e}"
-            )
-            self._renderer = None
+        self._renderer = None
         self._envision: EnvisionClient = envision
         self._visdom: VisdomClient = visdom
         self._timestep_sec = timestep_sec
@@ -208,10 +199,10 @@ class SMARTS:
         # Agents
         self._agent_manager.step_sensors(self)
 
-        # runs through the render pipeline
-        # MUST perform this after step_sensors() above, and before observe() below,
-        # so that all updates are ready before rendering happens per frame
         if self._renderer:
+            # runs through the render pipeline (for camera-based sensors)
+            # MUST perform this after step_sensors() above, and before observe() below,
+            # so that all updates are ready before rendering happens per frame
             self._renderer.render()
 
         observations, rewards, scores, dones = self._agent_manager.observe(self)
@@ -437,7 +428,16 @@ class SMARTS:
 
     @property
     def renderer(self):
+        if not self._renderer:
+            self._renderer = Renderer(self._sim_id)
+            if self._scenario:
+                self._renderer.setup(self._scenario)
+                self._vehicle_index.begin_rendering_vehicles(self._renderer)
         return self._renderer
+
+    @property
+    def is_rendering(self):
+        return self._renderer is not None
 
     @property
     def road_stiffness(self):

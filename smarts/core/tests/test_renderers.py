@@ -49,12 +49,7 @@ def smarts():
         agents,
         traffic_sim=SumoTrafficSimulation(headless=True),
         envision=None,
-        renderer_optional=True,
     )
-    if smarts.renderer:
-        # Hack to simulate when we can't start a ShowBase instance
-        smarts._renderer.destroy()
-        smarts._renderer = None
     yield smarts
     smarts.destroy()
 
@@ -111,6 +106,10 @@ def test_multiple_renderers(scenario):
 
 def test_optional_renderer(smarts, scenario):
     smarts.reset(scenario)
-    assert not smarts.renderer
+    assert not smarts.is_rendering
+    for _ in range(10):
+        smarts.step({})
+    renderer = smarts.renderer
+    assert smarts.is_rendering
     for _ in range(10):
         smarts.step({})

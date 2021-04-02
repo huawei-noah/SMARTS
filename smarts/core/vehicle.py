@@ -119,7 +119,6 @@ class Vehicle:
         self,
         id: str,
         pose: Pose,
-        renderer: Renderer,
         chassis: Chassis,
         # TODO: We should not be leaking SUMO here.
         sumo_vehicle_type="passenger",
@@ -139,17 +138,14 @@ class Vehicle:
         self._meta_create_sensor_functions()
         self._sensors = {}
 
-        config = VEHICLE_CONFIGS[sumo_vehicle_type]
-
         # Color override
         self._color = color
         if self._color is None:
+            config = VEHICLE_CONFIGS[sumo_vehicle_type]
             self._color = config.color
 
-        # TODO: Move this into the VehicleGeometry class
-        self._renderer = renderer
-        if renderer:
-            renderer.create_vehicle_node(config.glb_model, self._id, self._color, pose)
+        self._renderer = None
+
         self._initialized = True
         self._has_stepped = False
 
@@ -205,6 +201,10 @@ class Vehicle:
     def sensors(self):
         self._assert_initialized()
         return self._sensors
+
+    @property
+    def renderer(self):
+        return self._renderer
 
     # # TODO: See issue #898 This is a currently a no-op
     # @speed.setter
@@ -356,7 +356,6 @@ class Vehicle:
         vehicle = Vehicle(
             id=vehicle_id,
             pose=start_pose,
-            renderer=sim.renderer,
             chassis=chassis,
             color=vehicle_color,
         )
@@ -368,7 +367,6 @@ class Vehicle:
         return Vehicle(
             id=vehicle_id,
             pose=vehicle_state.pose,
-            renderer=sim.renderer,
             chassis=BoxChassis(
                 pose=vehicle_state.pose,
                 speed=vehicle_state.speed,
@@ -492,9 +490,17 @@ class Vehicle:
     def control(self, *args, **kwargs):
         self._chassis.control(*args, **kwargs)
 
+    def create_renderer_node(self, renderer):
+        assert not self._renderer
+        self._renderer = renderer
+        config = VEHICLE_CONFIGS[self._sumo_vehicle_type]
+        self._renderer.create_vehicle_node(
+            config.glb_model, self._id, self.vehicle_color, self.pose
+        )
+
     def sync_to_renderer(self):
         assert self._renderer
-        self._renderer.update_vehicle_node(self._id, self.chassis.pose)
+        self._renderer.update_vehicle_node(self._id, self.pose)
 
     @lru_cache(maxsize=1)
     def _warn_AckermannChassis_set_pose(self):

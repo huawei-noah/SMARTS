@@ -13,7 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
 process
 - Added `on_shoulder` as part of events in observation returned from each step of simulation
-- Added `renderer_optional` parameter to SMARTS class.  See issue #725.
+- Only create `Renderer` on demand if vehicles are using camera-based sensors. See issue #725.
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 
