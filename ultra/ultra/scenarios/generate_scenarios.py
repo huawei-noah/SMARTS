@@ -32,7 +32,7 @@ from collections import Counter, defaultdict
 from dataclasses import replace
 from multiprocessing import Manager, Process
 from shutil import copyfile
-
+import sumolib
 import numpy as np
 import yaml
 
@@ -111,6 +111,7 @@ def get_direction(route_key):
         "south-west": ["south-SN", "west-EW"],
         "north-east": ["north-NS", "east-WE"],
         "north-west": ["north-NS", "west-EW"],
+        "north-south": ["north-NS", "south-NS"],
         "east-north": ["east-EW", "north-SN"],
         "east-south": ["east-EW", "south-NS"],
         "east-west": ["east-EW", "west-EW"],
@@ -163,6 +164,7 @@ def generate_left_turn_missions(
     stopwatcher_behavior,
     stopwatcher_route,
     seed,
+    stops,
     intersection_name,
     traffic_density,
 ):
@@ -198,7 +200,6 @@ def generate_left_turn_missions(
                 )
                 for ego_mission in missions
             ]
-
             flows, vehicles_log_info = generate_social_vehicles(
                 route_distribution=route_info["distribution"],
                 begin_time_init=route_info["begin_time_init"],
@@ -209,6 +210,7 @@ def generate_left_turn_missions(
                 start_end_on_different_lanes_probability=route_info[
                     "start_end_on_different_lanes_probability"
                 ],
+                stops=stops,
                 deadlock_optimization=route_info["deadlock_optimization"],
                 stopwatcher_info=stopwatcher_info,
             )
@@ -280,7 +282,43 @@ def generate_left_turn_missions(
     gen_missions(scenario, mission_objects)
 
     traffic = Traffic(flows=all_flows)
-    gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
+    try:
+        add_stops = True
+        gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
+        if stops:
+            route_file = f"{scenario}/traffic/all.rou.xml"
+            output_file = f"{scenario}/traffic/all2.rou.xml"
+            net_file = f"{scenario}/map.net.xml"
+            net = sumolib.net.readNet(net_file)
+            with open(output_file, 'a') as output:
+                sumolib.writeXMLHeader(output,"routes")  # noqa
+                output.write('<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">\n')
+                for veh_type in sumolib.output.parse(route_file, 'vType'):
+                    output.write(veh_type.toXML(' '*4))
+                for veh in sumolib.output.parse(route_file, 'vehicle'):
+                    edgesList = veh.route[0].edges.split()
+                    lastEdge = net.getEdge(edgesList[0])
+                    lanes = lastEdge.getLanes()
+                    for lane in lanes:
+                        if stops:
+                            stop_route, stop_lane, stop_pos = stops[0]
+                            if lane.getID() == f'edge-{stop_route}_{stop_lane}':
+                                start_position = stop_pos
+                                stopAttrs = {"lane": lane.getID()}
+                                stopAttrs["duration"] = "1000" # for a long time
+                                veh.setAttribute('departPos', stop_pos)
+                                veh.setAttribute('depart', 0)
+                                veh.addChild("stop", attrs=stopAttrs)
+                                stops.pop(0)
+                                break
+                    output.write(veh.toXML(' '*4))
+                output.write('</routes>\n')
+            output.close()
+
+
+
+    except Exception as arr:
+        print(arr)
     # patch: remove route files from traffic folder to make intersection empty
     if traffic_density == "no-traffic":
         os.remove(f"{scenario}/traffic/all.rou.xml")
@@ -309,6 +347,7 @@ def generate_social_vehicles(
     route_lanes,
     route_has_turn,
     stopwatcher_info,
+    stops,
     begin_time_init=None,
     deadlock_optimization=True,
 ):
@@ -405,6 +444,7 @@ def generate_social_vehicles(
                     actors={behavior: 1.0},
                 )
             )
+            print('>>', start_lane, end_lane)
 
         log_info[behavior_idx]["count"] += 1
         log_info["route_distribution"] = route_distribution
@@ -437,12 +477,12 @@ def scenario_worker(
     mode,
     total_seeds,
     percent,
+    stops,
     dynamic_pattern_func,
 ):
     for i, seed in enumerate(seeds):
         if not dynamic_pattern_func is None:
             route_distributions = dynamic_pattern_func(route_distributions, i)
-
         generate_left_turn_missions(
             missions=ego_missions,
             route_lanes=route_lanes,
@@ -454,6 +494,7 @@ def scenario_worker(
             stopwatcher_behavior=stopwatcher_behavior,
             stopwatcher_route=stopwatcher_route,
             seed=seed,
+            stops=stops,
             traffic_density=traffic_density,
             intersection_name=intersection_type,
         )
@@ -512,14 +553,14 @@ def build_scenarios(
         intersection_types = level_config[mode]["intersection_types"]
         intersections = sorted(
             [
-                [_type, intersection_types[_type]["percent"]]
+                [_type, intersection_types[_type]["percent"], intersection_types[_type]["stops"]]
                 for _type in intersection_types
             ],
             key=lambda x: x[1],
             reverse=True,
         )
         log_dict[mode] = {x: {"count": 0, "percent": 0} for x in intersection_types}
-        for intersection_type, intersection_percent in intersections:
+        for intersection_type, intersection_percent, stops in intersections:
             part = int(float(intersection_percent) * len(mode_seeds))
             cur_split = prev_split + part
             seeds = mode_seeds[prev_split:cur_split]
@@ -551,6 +592,7 @@ def build_scenarios(
                 else:
                     temp_save_dir = save_dir
 
+
                 sub_proc = Process(
                     target=scenario_worker,
                     args=(
@@ -569,6 +611,7 @@ def build_scenarios(
                         mode,
                         seeds,
                         percent,
+                        stops,
                         dynamic_pattern_func,
                     ),
                 )
@@ -590,7 +633,7 @@ def build_scenarios(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("generate scenarios")
-    parser.add_argument("--task", help="type a task id [0, 1, 2, 3]", type=str)
+    parser.add_argument("--task", help="type a task id [0, 1, 2, 3, X]", type=str)
     parser.add_argument("--level", help="easy/medium/hard, lo-hi/hi-lo", type=str)
     parser.add_argument(
         "--stopwatcher",
