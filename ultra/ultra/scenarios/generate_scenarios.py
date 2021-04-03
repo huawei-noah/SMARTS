@@ -290,11 +290,14 @@ def generate_left_turn_missions(
             output_file = f"{scenario}/traffic/all2.rou.xml"
             net_file = f"{scenario}/map.net.xml"
             net = sumolib.net.readNet(net_file)
+            print('------------------')
             with open(output_file, 'a') as output:
                 sumolib.writeXMLHeader(output,"routes")  # noqa
                 output.write('<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">\n')
                 for veh_type in sumolib.output.parse(route_file, 'vType'):
                     output.write(veh_type.toXML(' '*4))
+
+                vehicles = []
                 for veh in sumolib.output.parse(route_file, 'vehicle'):
                     edgesList = veh.route[0].edges.split()
                     lastEdge = net.getEdge(edgesList[0])
@@ -305,12 +308,18 @@ def generate_left_turn_missions(
                             if lane.getID() == f'edge-{stop_route}_{stop_lane}':
                                 start_position = stop_pos
                                 stopAttrs = {"lane": lane.getID()}
+                                stopAttrs["endPos"] = stop_pos
                                 stopAttrs["duration"] = "1000" # for a long time
                                 veh.setAttribute('departPos', stop_pos)
                                 veh.setAttribute('depart', 0)
+                                veh.setAttribute('departLane', stop_lane)
                                 veh.addChild("stop", attrs=stopAttrs)
                                 stops.pop(0)
                                 break
+                    vehicles.append([float(veh.depart), veh.id, veh])
+                vehicles.sort(key=lambda x: (x[0], x[1]))
+                for veh_depart, veh_id, veh in vehicles:
+                    print(veh_id, veh_depart)
                     output.write(veh.toXML(' '*4))
                 output.write('</routes>\n')
             output.close()
@@ -444,8 +453,6 @@ def generate_social_vehicles(
                     actors={behavior: 1.0},
                 )
             )
-            print('>>', start_lane, end_lane)
-
         log_info[behavior_idx]["count"] += 1
         log_info["route_distribution"] = route_distribution
         log_info["num_vehicles"] = (
