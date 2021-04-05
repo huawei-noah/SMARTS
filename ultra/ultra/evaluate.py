@@ -92,7 +92,7 @@ def evaluation_check(
                         headless=headless,
                         timestep_sec=timestep_sec,
                         log_dir=log_dir,
-                        eval_mode = True
+                        eval_mode=True,
                     )
                 ]
             )[0]
@@ -130,7 +130,7 @@ def evaluation_check(
                         headless=headless,
                         timestep_sec=timestep_sec,
                         log_dir=log_dir,
-                        eval_mode = False
+                        eval_mode=False,
                     )
                 ]
             )[0]
