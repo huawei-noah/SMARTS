@@ -36,6 +36,7 @@ import ray
 import torch
 
 from smarts.zoo.registry import make
+from ultra.utils.common import str_to_bool
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
 from ultra.utils.coordinator import ScenarioDataHandler
@@ -266,7 +267,7 @@ if __name__ == "__main__":
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="Run without envision", type=bool, default=True
+        "--headless", help="Run without envision", type=str_to_bool, default="True"
     )
     parser.add_argument(
         "--experiment-dir",
