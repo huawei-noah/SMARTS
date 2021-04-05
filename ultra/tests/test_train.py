@@ -44,7 +44,7 @@ class TrainTest(unittest.TestCase):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         try:
             os.system(
-                f"python ultra/train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --log-dir {log_dir}"
+                f"python ultra/train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --eval-episodes 0 --log-dir {log_dir}"
             )
         except Exception as err:
             print(err)
@@ -57,7 +57,7 @@ class TrainTest(unittest.TestCase):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         try:
             os.system(
-                f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --max-episode-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
+                f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --max-episode-steps 2 --eval-episodes 0 --log-dir {log_dir} --policy dqn,bdqn,ppo"
             )
         except Exception as err:
             print(err)

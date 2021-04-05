@@ -89,7 +89,7 @@ class MultiAgentEvaluateTest(unittest.TestCase):
             self.assertTrue(False)
 
         multiagent_path = "tests/task/eval_test_multiagent"
-        if len(os.listdir(path)) <= 2:
+        if len(os.listdir(multiagent_path)) <= 2:
             self.assertTrue(False)
 
     def test_evaluation_check_multiagent(self):
@@ -307,12 +307,8 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             total_step += 1
             observations = next_observations
 
-        episode.record_episode(old_episode, 1)
         old_episode = episode
-
-        if (episode_count + 1) % 1 == 0:
-            episode.record_tensorboard()
-            old_episode = None
+        episode.record_episode(old_episode, 1)
 
         # Perform the evaluation check.
         evaluation_check(
@@ -327,12 +323,11 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             timestep_sec=0.1,
             headless=True,
             log_dir=log_dir,
-            episode_count=episode_count,
             grade_mode=False,
             agent_coordinator=None,
         )
 
-        episode_count += 1
+        episode.record_tensorboard()
 
         if finished:
             break
