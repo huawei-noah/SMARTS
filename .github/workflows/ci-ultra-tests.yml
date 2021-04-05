@@ -41,7 +41,7 @@ jobs:
           --ignore=./tests/test_episodes.py \
           --ignore=./tests/test_scenarios.py \
           --ignore=./tests/test_social_vehicles.py \
-          --ignore=./tests/test_gb_train.py
+          --ignore=./tests/test_gb_train.py \
           --ignore=./tests/test_rllib_train.py \
 
   test-light-base-tests:
