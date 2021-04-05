@@ -44,7 +44,7 @@ class TuneTest(unittest.TestCase):
         SAVE_RATE = 1
         SEED = 2
         LOG_DIR = os.path.join(TuneTest.OUTPUT_DIRECTORY, "tune_logs/")
-        CONFIG_MODULE = "ultra.baselines.ppo.ppo.tune_params"
+        CONFIG_MODULE = "tests.tune.ppo_config"
         METRIC = "episode_reward"
         MODE = "max"
         SCOPE = "last"
