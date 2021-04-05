@@ -142,16 +142,15 @@ class GBTrainTest(unittest.TestCase):
         )
 
         for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
-            switch_grade = agent_coordinator.graduate(episode.index, num_episodes)
+            graduate = agent_coordinator.graduate(episode.index, num_episodes)
             # If agent switches to new grade
-            if switch_grade[0] == True:
-                agent_coordinator.display()
+            if graduate == True:
                 self.assertEqual(next(grade_iterator), agent_coordinator.get_grade()[0])
 
             # If agent has completed all levels (no cycle through levels again)
-            if switch_grade[1] == True:
-                finished = True
-                self.assertTrue(finished)
+            if agent_coordinator.check_cycle_condition(episode.index):
+                print("No cycling of grades -> run completed")
+                break
 
     @classmethod
     def tearDownClass(cls):

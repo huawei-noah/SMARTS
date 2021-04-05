@@ -256,11 +256,11 @@ def train(
         if finished:
             break
 
-    print(agent_coordinator.get_checkpoints())
+    # print(agent_coordinator.get_checkpoints())
 
-    filepath = os.path.join(episode.experiment_dir, "Train.csv")
-    scenario_data_handler.plot_densities_data(filepath)
-    # scenario density plotting on stand-by for now
+    if grade_mode:
+        filepath = os.path.join(episode.experiment_dir, "Train.csv")
+        scenario_data_handler.plot_densities_data(filepath)
 
     env.close()
 

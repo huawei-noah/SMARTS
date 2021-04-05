@@ -230,10 +230,11 @@ def evaluate(
 
     env.close()
 
-    filepath = os.path.join(checkpoint_dirs["000"], "Test.csv")
-    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
-    scenario_data_handler_eval.save_grade_density(num_episodes)
-    scenario_data_handler_eval.plot_densities_data(num_episodes, filepath)
+    if grade_mode:
+        filepath = os.path.join(checkpoint_dirs["000"], "Test.csv")
+        scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+        scenario_data_handler_eval.save_grade_density(num_episodes)
+        scenario_data_handler_eval.plot_densities_data(num_episodes, filepath)
 
     return summary_log
 
