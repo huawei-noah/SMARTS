@@ -32,7 +32,7 @@ from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
-from .renderer import Renderer
+from .renderer import Renderer, RendererException
 from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
@@ -119,7 +119,6 @@ class Vehicle:
         self,
         id: str,
         pose: Pose,
-        renderer: Renderer,
         chassis: Chassis,
         # TODO: We should not be leaking SUMO here.
         sumo_vehicle_type="passenger",
@@ -139,16 +138,14 @@ class Vehicle:
         self._meta_create_sensor_functions()
         self._sensors = {}
 
-        config = VEHICLE_CONFIGS[sumo_vehicle_type]
-
         # Color override
         self._color = color
         if self._color is None:
+            config = VEHICLE_CONFIGS[sumo_vehicle_type]
             self._color = config.color
 
-        # TODO: Move this into the VehicleGeometry class
-        self._renderer = renderer
-        renderer.create_vehicle_node(config.glb_model, self._id, self._color, pose)
+        self._renderer = None
+
         self._initialized = True
         self._has_stepped = False
 
@@ -204,6 +201,10 @@ class Vehicle:
     def sensors(self):
         self._assert_initialized()
         return self._sensors
+
+    @property
+    def renderer(self):
+        return self._renderer
 
     # # TODO: See issue #898 This is a currently a no-op
     # @speed.setter
@@ -355,7 +356,6 @@ class Vehicle:
         vehicle = Vehicle(
             id=vehicle_id,
             pose=start_pose,
-            renderer=sim.renderer,
             chassis=chassis,
             color=vehicle_color,
         )
@@ -367,7 +367,6 @@ class Vehicle:
         return Vehicle(
             id=vehicle_id,
             pose=vehicle_state.pose,
-            renderer=sim.renderer,
             chassis=BoxChassis(
                 pose=vehicle_state.pose,
                 speed=vehicle_state.speed,
@@ -431,6 +430,8 @@ class Vehicle:
             )
 
         if agent_interface.drivable_area_grid_map:
+            if not sim.renderer:
+                raise RendererException.required_to("add a drivable_area_grid_map")
             vehicle.attach_drivable_area_grid_map_sensor(
                 DrivableAreaGridMapSensor(
                     vehicle=vehicle,
@@ -441,6 +442,8 @@ class Vehicle:
                 )
             )
         if agent_interface.ogm:
+            if not sim.renderer:
+                raise RendererException.required_to("add an OGM")
             vehicle.attach_ogm_sensor(
                 OGMSensor(
                     vehicle=vehicle,
@@ -451,6 +454,8 @@ class Vehicle:
                 )
             )
         if agent_interface.rgb:
+            if not sim.renderer:
+                raise RendererException.required_to("add an RGB camera")
             vehicle.attach_rgb_sensor(
                 RGBSensor(
                     vehicle=vehicle,
@@ -485,8 +490,17 @@ class Vehicle:
     def control(self, *args, **kwargs):
         self._chassis.control(*args, **kwargs)
 
+    def create_renderer_node(self, renderer):
+        assert not self._renderer
+        self._renderer = renderer
+        config = VEHICLE_CONFIGS[self._sumo_vehicle_type]
+        self._renderer.create_vehicle_node(
+            config.glb_model, self._id, self.vehicle_color, self.pose
+        )
+
     def sync_to_renderer(self):
-        self._renderer.update_vehicle_node(self._id, self.chassis.pose)
+        assert self._renderer
+        self._renderer.update_vehicle_node(self._id, self.pose)
 
     @lru_cache(maxsize=1)
     def _warn_AckermannChassis_set_pose(self):
@@ -523,7 +537,8 @@ class Vehicle:
 
         if not exclude_chassis:
             self._chassis.teardown()
-        self._renderer.remove_vehicle_node(self._id)
+        if self._renderer:
+            self._renderer.remove_vehicle_node(self._id)
         self._initialized = False
 
     def _meta_create_sensor_functions(self):

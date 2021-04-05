@@ -578,6 +578,7 @@ class CameraSensor(Sensor):
         height: int,
         resolution: float,
     ):
+        assert renderer
         self._log = logging.getLogger(self.__class__.__name__)
         self._vehicle = vehicle
         self._camera = renderer.build_offscreen_camera(
