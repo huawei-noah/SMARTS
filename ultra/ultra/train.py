@@ -127,6 +127,7 @@ def train(
     average_scenarios_passed = 0.0
     total_scenarios_passed = 0.0
 
+    old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if grade_mode:
             graduate = agent_coordinator.graduate(
@@ -175,12 +176,28 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
+        if eval_info["eval_episodes"] != 0:
+            # Perform the evaluation check.
+            evaluation_check(
+                agents=agents,
+                agent_ids=agent_ids,
+                policy_classes=agent_classes,
+                episode=episode,
+                log_dir=log_dir,
+                max_episode_steps=max_episode_steps,
+                episode_count=episode_count,
+                grade_mode=grade_mode,
+                agent_coordinator=agent_coordinator,
+                **eval_info,
+                **env.info,
+            )
+
+
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
             if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
                 finished = True
                 break
-
             # Request and perform actions on each agent that received an observation.
             actions = {
                 agent_id: agents[agent_id].act(observation, explore=True)
@@ -217,14 +234,8 @@ def train(
             observations = next_observations
 
         episode.record_episode(
-            old_episode, eval_info["eval_rate"]
+            eval_info["eval_rate"]
         )  # Add scenario in loginfo
-        old_episode = episode
-
-        # print("Reached goal: ", episode.info[episode.active_tag]["000"].data["reached_goal"])
-        if (episode.index + 1) % eval_info["eval_rate"] == 0:
-            episode.record_tensorboard(record_by_episode=True)
-            old_episode = None
 
         if grade_mode:
             episode.record_density_tensorboard(scenario)
@@ -234,24 +245,6 @@ def train(
             ) = agent_coordinator.calculate_average_scenario_passed(
                 episode, total_scenarios_passed, agents, average_scenarios_passed
             )
-
-        if eval_info["eval_episodes"] != 0:
-            # Perform the evaluation check.
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                episode_count=episode_count,
-                grade_mode=grade_mode,
-                agent_coordinator=agent_coordinator,
-                **eval_info,
-                **env.info,
-            )
-
-        episode_count += 1
 
         if finished:
             break

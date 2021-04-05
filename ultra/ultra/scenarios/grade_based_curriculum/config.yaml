@@ -7,6 +7,9 @@ curriculum:
   conditions:
     episode_based:
       toggle: False
+      cycle: False
+    pass_based:
+      toggle: True
       pass_rate: 0.40
       sample_rate: 15
 
