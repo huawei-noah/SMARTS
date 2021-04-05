@@ -49,6 +49,7 @@ from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
 
+from ultra.utils.common import str_to_bool
 from ultra.utils.episode import Callbacks
 from ultra.utils.episode import log_creator
 
@@ -179,7 +180,7 @@ if __name__ == "__main__":
         "--timestep", help="environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="run without envision", type=bool, default=True
+        "--headless", help="run without envision", type=str_to_bool, default="True"
     )
     parser.add_argument(
         "--eval-episodes", help="number of evaluation episodes", type=int, default=100
