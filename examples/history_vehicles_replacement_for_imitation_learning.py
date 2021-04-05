@@ -44,14 +44,14 @@ def main(scenarios, headless, seed):
                 TrafficHistoryProvider
             )
             assert traffic_history_provider
-            traffic_history_provider.set_start_time(mission.start_time)
+            traffic_history_provider.start_time = mission.start_time
 
             modified_mission = replace(mission, start_time=0.0)
             scenario.set_ego_missions({agent_id: modified_mission})
             observations = smarts.reset(scenario)
 
             dones = {agent_id: False}
-            while not dones[agent_id]:
+            while not dones.get(agent_id, False):
                 agent_obs = observations[agent_id]
                 agent_action = agent.act(agent_obs)
 

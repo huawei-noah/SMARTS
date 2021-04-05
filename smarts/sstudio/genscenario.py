@@ -26,6 +26,8 @@ import itertools
 import logging
 import os
 import pickle
+import subprocess
+import sys
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Sequence, Tuple, Union
@@ -41,7 +43,7 @@ def gen_scenario(
     scenario: types.Scenario,
     output_dir: Path,
     seed: int = 42,
-    ovewrite: bool = False,
+    overwrite: bool = False,
 ):
     """This is now the preferred way to generate a scenario. Instead of calling the
     gen_* methods directly, we provide this higher-level abstraction that takes care
@@ -59,7 +61,7 @@ def gen_scenario(
                 traffic=traffic,
                 name=name,
                 seed=seed,
-                overwrite=ovewrite,
+                overwrite=overwrite,
             )
 
     if scenario.ego_missions:
@@ -75,7 +77,7 @@ def gen_scenario(
                     vehicle_count=mission.actor_count,
                     num_laps=mission.num_laps,
                     seed=seed,
-                    overwrite=ovewrite,
+                    overwrite=overwrite,
                 )
             else:
                 missions.append(mission)
@@ -85,7 +87,7 @@ def gen_scenario(
                 scenario=output_dir,
                 missions=missions,
                 seed=seed,
-                overwrite=ovewrite,
+                overwrite=overwrite,
             )
 
     if scenario.social_agent_missions:
@@ -110,7 +112,11 @@ def gen_scenario(
         gen_friction_map(scenario=output_dir, surface_patches=scenario.friction_maps)
 
     if scenario.traffic_histories:
-        gen_traffic_histories(scenario=output_dir, histories=scenario.traffic_histories)
+        gen_traffic_histories(
+            scenario=output_dir,
+            histories_datasets=scenario.traffic_histories,
+            overwrite=overwrite,
+        )
 
 
 def gen_traffic(
@@ -403,7 +409,18 @@ def _validate_entry_tactic(mission):
             ), f"Zone edge `{z_edge}` is not the same edge as `types.Mission` route begin edge `{edge}`"
 
 
-def gen_traffic_histories(scenario: str, histories):
-    output_path = os.path.join(scenario, "traffic_histories.pkl")
-    with open(output_path, "wb") as f:
-        pickle.dump(histories, f)
+def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
+    genhistories_py = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
+    )
+    for hdsr in histories_datasets:
+        hds = os.path.join(scenario, hdsr)
+        if not os.path.exists(hds):
+            raise ValueError(f"Traffic history dataset file missing: {hds}")
+        base = os.path.splitext(os.path.basename(hds))[0]
+        th_file = f"{base}.shf"
+        if os.path.exists(os.path.join(scenario, th_file)) and not overwrite:
+            continue
+        subprocess.check_call(
+            [sys.executable, genhistories_py, hdsr, "-f", th_file], cwd=scenario
+        )

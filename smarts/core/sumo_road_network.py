@@ -86,10 +86,13 @@ class GLBData:
 
 
 class SumoRoadNetwork:
-    def __init__(self, graph, net_file):
+    def __init__(self, graph, net_file, default_lane_width=None):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
         self._net_file = net_file
+        self._default_lane_width = (
+            default_lane_width if default_lane_width is not None else 3.2
+        )
 
     @staticmethod
     def _check_net_origin(bbox):
@@ -126,7 +129,7 @@ class SumoRoadNetwork:
         return None
 
     @classmethod
-    def from_file(cls, net_file):
+    def from_file(cls, net_file, default_lane_width=None):
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
@@ -155,7 +158,7 @@ class SumoRoadNetwork:
                 # the offset should not be used (because all their other
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
-        return cls(G, net_file)
+        return cls(G, net_file, default_lane_width)
 
     @property
     def graph(self):
@@ -174,6 +177,14 @@ class SumoRoadNetwork:
             if self.graph and getattr(self.graph, "_shifted_by_smarts", False)
             else [0, 0]
         )
+
+    @property
+    def default_lane_width(self):
+        return self._default_lane_width
+
+    @default_lane_width.setter
+    def default_lane_width(self, default_lane_width):
+        self._default_lane_width = default_lane_width
 
     def _compute_road_polygons(self):
         lane_to_poly = {}
@@ -374,7 +385,7 @@ class SumoRoadNetwork:
         return LaneData(sumo_lane=lane, lane_speed=lane_speed)
 
     def nearest_lanes(
-        self, point, radius=10, include_junctions=True, include_special=True
+        self, point, radius=None, include_junctions=True, include_special=True
     ) -> Sequence[Tuple[Lane, float]]:
         """The closest lanes to the given point
 
@@ -385,6 +396,8 @@ class SumoRoadNetwork:
             include_special: Whether to include lanes who are on "special" edges (for example 'internal' edges)
         """
 
+        if radius is None:
+            radius = max(10, 2 * self._default_lane_width)
         x, y = point
         candidate_lanes = self._graph.getNeighboringLanes(
             x, y, r=radius, includeJunctions=include_junctions, allowFallback=False
@@ -400,7 +413,7 @@ class SumoRoadNetwork:
         return candidate_lanes
 
     def nearest_lane(
-        self, point, radius=10, include_junctions=True, include_special=True
+        self, point, radius=None, include_junctions=True, include_special=True
     ) -> Lane:
         """Find the nearest lane to the given point
 
@@ -410,6 +423,8 @@ class SumoRoadNetwork:
             include_junctions: Whether the shape of a junction should be considered when computing distance to lane
             include_special: Whether to include lanes who are on "special" edges (for example 'internal' edges)
         """
+        if radius is None:
+            radius = max(10, 2 * self._default_lane_width)
         nearest_lanes = self.nearest_lanes(
             point, radius, include_junctions, include_special
         )
@@ -522,7 +537,8 @@ class SumoRoadNetwork:
         #
         # return False
 
-        nearest_lanes = self.nearest_lanes(point[:2], radius=5)
+        radius = max(5, 2 * self._default_lane_width)
+        nearest_lanes = self.nearest_lanes(point[:2], radius=radius)
         return any(0.5 * nl.getWidth() + 1e-1 > dist for nl, dist in nearest_lanes)
 
     def road_nodes_with_triggers(self):

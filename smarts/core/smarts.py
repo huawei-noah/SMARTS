@@ -224,7 +224,7 @@ class SMARTS:
         extras = dict(scores=scores)
 
         # 8. Advance the simulation clock.
-        self._elapsed_sim_time += dt
+        self._elapsed_sim_time = round(self._elapsed_sim_time + dt, 3)
 
         return observations, rewards, dones, extras
 

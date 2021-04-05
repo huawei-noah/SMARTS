@@ -18,44 +18,54 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from itertools import cycle
-from typing import Set
+from typing import Set, NamedTuple
+import sqlite3
 
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Heading, Pose
 from .provider import Provider, ProviderState
-from .utils.traffic_history_service import Traffic_history_service
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class TrafficHistoryProvider(Provider):
     def __init__(self):
         self._is_setup = False
-        self._traffic_history_service = None
         self._map_location_offset = None
-        self.replaced_vehicle_ids = set()
-        self.start_time_offset = 0
+        self._replaced_vehicle_ids = set()
+        self._start_time_offset = 0
+        self._histories_db = None
 
-    def set_start_time(self, start_time: float):
+    @property
+    def start_time(self):
+        return self._start_time_offset
+
+    @start_time.setter
+    def start_time(self, start_time: float):
         assert start_time >= 0, "start_time should be positive"
-        self.start_time_offset = start_time
+        self._start_time_offset = start_time
 
     def setup(self, scenario) -> ProviderState:
-        self._is_setup = True
-        self._traffic_history_service = scenario._traffic_history_service
+        if scenario.traffic_history:
+            self._histories_db = sqlite3.connect(scenario.traffic_history)
         self._map_location_offset = scenario.road_network.net_offset
+        self._is_setup = True
         return ProviderState()
 
     def set_replaced_ids(self, vehicle_ids: list):
-        self.replaced_vehicle_ids.update(vehicle_ids)
+        self._replaced_vehicle_ids.update(vehicle_ids)
+
+    def create_vehicle(self, provider_vehicle: VehicleState):
+        pass
 
     def reset(self):
         pass
 
     def teardown(self):
         self._is_setup = False
-        self._frame = None
-        self._traffic_history_service = None
-        self.replaced_vehicle_ids = set()
+        if self._histories_db:
+            self._histories_db.close()
+            self._histories_db = None
+        self._replaced_vehicle_ids = set()
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -65,65 +75,71 @@ class TrafficHistoryProvider(Provider):
         # Ignore other sim state
         pass
 
+    class _HistoryRow(NamedTuple):
+        vehicle_id: int
+        vehicle_type: int
+        vehicle_length: float
+        vehicle_width: float
+        position_x: float
+        position_y: float
+        heading_rad: float
+        speed: float
+
+    @staticmethod
+    def _decode_vehicle_type(vehicle_type):
+        # Options from NGSIM and INTERACTION currently include:
+        #  1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
+        # But we don't yet have glb models for 1 and 4.
+        if vehicle_type == 3:
+            return "truck"
+        return "passenger"
+
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
-        timestamp = min(
-            (
-                float(ts)
-                for ts in self._traffic_history_service.all_timesteps
-                if float(ts) >= elapsed_sim_time
-            ),
-            default=None,
-        )
-        if not self._traffic_history_service or timestamp is None:
+        if not self._histories_db:
             return ProviderState(vehicles=[])
-
-        time_with_offset = str(round(timestamp + self.start_time_offset, 1))
-        if not self._traffic_history_service.fetch_history_at_timestep(
-            time_with_offset
-        ):
-            return ProviderState(vehicles=[])
-
-        vehicle_type = "passenger"
-        states = ProviderState(
-            vehicles=[
+        history_time = self._start_time_offset + elapsed_sim_time
+        query = """SELECT V.id, V.type, V.length, V.width,
+                          T.position_x, T.position_y, T.heading_rad, T.speed
+                   FROM Vehicle AS V INNER JOIN Trajectory AS T ON V.id = T.vehicle_id
+                   WHERE T.sim_time > ? AND T.sim_time <= ?
+                   ORDER BY T.sim_time DESC"""
+        query_args = (history_time - dt, history_time)
+        vehicles = []
+        vehicle_ids = set()
+        cur = self._histories_db.cursor()
+        for row in cur.execute(query, query_args):
+            hr = TrafficHistoryProvider._HistoryRow(*row)
+            v_id = str(hr.vehicle_id)
+            if v_id in vehicle_ids or v_id in self._replaced_vehicle_ids:
+                continue
+            vehicle_ids.add(v_id)
+            vehicle_type = TrafficHistoryProvider._decode_vehicle_type(hr.vehicle_type)
+            default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+            vehicles.append(
                 VehicleState(
                     vehicle_id=v_id,
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center(
                         [
-                            *Traffic_history_service.apply_map_location_offset(
-                                vehicle_state["position"], self._map_location_offset
-                            ),
+                            hr.position_x + self._map_location_offset[0],
+                            hr.position_y + self._map_location_offset[1],
                             0,
                         ],
-                        Heading(vehicle_state["heading"]),
+                        Heading(hr.heading_rad),
                     ),
                     dimensions=BoundingBox(
-                        length=vehicle_state.get(
-                            "vehicle_length",
-                            VEHICLE_CONFIGS[vehicle_type].dimensions.length,
-                        ),
-                        width=vehicle_state.get(
-                            "vehicle_width",
-                            VEHICLE_CONFIGS[vehicle_type].dimensions.width,
-                        ),
-                        # Note: Neither NGSIM nor INTERACTION provide
-                        #       the height of the vehicles.
-                        height=vehicle_state.get(
-                            "vehicle_height",
-                            VEHICLE_CONFIGS[vehicle_type].dimensions.height,
-                        ),
+                        length=hr.vehicle_length
+                        if hr.vehicle_length is not None
+                        else default_dims.length,
+                        width=hr.vehicle_width
+                        if hr.vehicle_width is not None
+                        else default_dims.width,
+                        # Note: Neither NGSIM nor INTERACTION provide the vehicle height
+                        height=default_dims.height,
                     ),
-                    speed=vehicle_state["speed"],
+                    speed=hr.speed,
                     source="HISTORY",
                 )
-                for v_id, vehicle_state in self._traffic_history_service.fetch_history_at_timestep(
-                    time_with_offset
-                ).items()
-                if v_id not in self.replaced_vehicle_ids
-            ],
-        )
-        return states
-
-    def create_vehicle(self, provider_vehicle: VehicleState):
-        pass
+            )
+        cur.close()
+        return ProviderState(vehicles=vehicles)
