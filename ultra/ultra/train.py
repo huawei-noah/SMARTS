@@ -185,12 +185,8 @@ def train(
             total_step += 1
             observations = next_observations
 
-        episode.record_episode(old_episode, eval_info["eval_rate"])
-        old_episode = episode
-
-        if (episode.index + 1) % eval_info["eval_rate"] == 0:
-            episode.record_tensorboard()
-            old_episode = None
+        episode.record_episode()
+        episode.record_tensorboard()
 
         if finished:
             break
