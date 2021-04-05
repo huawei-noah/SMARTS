@@ -124,7 +124,7 @@ class ScenarioDataHandler:
 
     def plot_densities_data(self, filepath=None):
         total_density_data = self.densities_data
-        print(total_density_data)
+        # print(total_density_data)
         header = NUM_DENSITIES
         header.insert(0, "")
 

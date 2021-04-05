@@ -7,7 +7,7 @@
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditionst
+# furnished to do so, subject to the following conditions
 #
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
@@ -30,7 +30,6 @@ import time
 from pydoc import locate
 
 import gym
-import random
 import numpy as np
 import ray
 import torch
@@ -52,7 +51,6 @@ def evaluation_check(
     eval_rate,
     eval_episodes,
     max_episode_steps,
-    episode_count,
     scenario_info,
     timestep_sec,
     headless,
@@ -106,7 +104,7 @@ def evaluation_check(
             )[0]
         )
         episode.eval_count += 1
-        episode.last_eval_iterations[agent_id] = episode_count
+        episode.last_eval_iterations[agent_id] = episode.get_itr(agent_id)
 
     episode.eval_mode()
     episode.info[episode.active_tag] = evaluation_data
@@ -138,6 +136,8 @@ def evaluation_check(
                         headless=headless,
                         timestep_sec=timestep_sec,
                         log_dir=log_dir,
+                        grade_mode=grade_mode,
+                        agent_coordinator=agent_coordinator,
                         eval_mode=False,
                     )
                 ]
@@ -199,7 +199,6 @@ def evaluate(
         timestep_sec=timestep_sec,
         seed=seed,
         grade_mode=grade_mode,
-        eval_mode=True,
         eval_mode=eval_mode,
     )
 
@@ -241,7 +240,7 @@ def evaluate(
         while not dones["__all__"]:
             # Get and perform the available agents' actions.
             actions = {
-                agent_id: agents[agent_id].act(observation, explore=True)
+                agent_id: agents[agent_id].act(observation, explore=False)
                 for agent_id, observation in observations.items()
             }
             observations, rewards, dones, infos = env.step(actions)
@@ -250,6 +249,8 @@ def evaluate(
             episode.record_step(
                 agent_ids_to_record=infos.keys(), infos=infos, rewards=rewards
             )
+
+        episode.record_episode()
 
         if grade_mode:
             density_counter = scenario_data_handler_eval.record_density_data(
@@ -275,7 +276,7 @@ def evaluate(
         filepath = os.path.join(checkpoint_dirs["000"], "Test.csv")
         scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
         scenario_data_handler_eval.save_grade_density(num_episodes)
-        scenario_data_handler_eval.plot_densities_data(num_episodes, filepath)
+        scenario_data_handler_eval.plot_densities_data(filepath)
 
     return summary_log
 

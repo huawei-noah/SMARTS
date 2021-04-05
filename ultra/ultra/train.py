@@ -121,7 +121,6 @@ def train(
         grade_mode=grade_mode,
     )
 
-    episode_count = 0
     old_episode = None
 
     average_scenarios_passed = 0.0
@@ -185,7 +184,6 @@ def train(
                 episode=episode,
                 log_dir=log_dir,
                 max_episode_steps=max_episode_steps,
-                episode_count=episode_count,
                 grade_mode=grade_mode,
                 agent_coordinator=agent_coordinator,
                 **eval_info,
@@ -233,9 +231,8 @@ def train(
             total_step += 1
             observations = next_observations
 
-        episode.record_episode(
-            eval_info["eval_rate"]
-        )  # Add scenario in loginfo
+        episode.record_episode()
+        episode.record_tensorboard()
 
         if grade_mode:
             episode.record_density_tensorboard(scenario)
