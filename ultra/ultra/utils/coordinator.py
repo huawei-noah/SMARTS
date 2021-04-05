@@ -20,13 +20,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os, sys
-import yaml
+import yaml, csv
 from itertools import cycle
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from ultra.scenarios.generate_scenarios import build_scenarios
+
+NUM_DENSITIES = ["no-traffic", "low", "mid", "high"]
 
 
 class CurriculumInfo:
@@ -68,28 +71,8 @@ class CurriculumInfo:
     #     cls.pass_based_sampling_offset -= 1
 
 
-class Coordinator:
-    def __init__(self, gb_curriculum_dir, num_episodes):
-        self.mode = False
-
-        root_dir = gb_curriculum_dir  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
-        base_dir = os.path.join(os.path.dirname(__file__), root_dir)
-        grades_dir = os.path.join(base_dir, "config.yaml")
-
-        with open(grades_dir, "r") as task_file:
-            self.curriculum = yaml.safe_load(task_file)["curriculum"]
-
-        self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
-
-        self.cycle_completed = False
-        self.grade_completed = False
-        self.rotation_counter = 0
-        self.plot_arr = []
-        self.grade_checkpoints = []
-        self.num_episodes = num_episodes
-        self.grade_size = 0
-        self.densities_data = []
-
+class ScenarioDataHandler:
+    def __init__(self, tag):
         self.overall_densities_counter = {
             "no-traffic": 0,
             "low-density": 0,
@@ -102,6 +85,74 @@ class Coordinator:
             "mid-density": 0,
             "high-density": 0,
         }
+        self.densities_data = []
+        self.tag = tag
+
+    def record_density_data(self, scenario_density):
+        self.overall_densities_counter[scenario_density] += 1
+        self.grade_densities_counter[scenario_density] += 1
+        return self.overall_densities_counter[scenario_density]
+
+    def save_grade_density(self, grade_size):
+        temp = []
+        for density in self.grade_densities_counter:
+            if grade_size != 0:
+                temp.append(
+                    round(self.grade_densities_counter[density] / grade_size, 2)
+                )
+            else:
+                pass
+        self.densities_data.append(temp)
+        self.grade_densities_counter = {
+            "no-traffic": 0,
+            "low-density": 0,
+            "mid-density": 0,
+            "high-density": 0,
+        }
+
+    def display_grade_scenario_distribution(self, grade_size):
+        print("----------------------------------------------------")
+        print(f"({self.tag}) Traffic density distribution for previous grade:")
+        for density in self.grade_densities_counter:
+            if grade_size != 0:
+                print(
+                    f"{density}: {round(self.grade_densities_counter[density] / grade_size, 2)}"
+                )
+            else:
+                print(f"{density}: 0.0")
+        print("----------------------------------------------------\n")
+
+    def plot_densities_data(self, filepath=None):
+        total_density_data = self.densities_data
+        print(total_density_data)
+        header = NUM_DENSITIES
+        header.insert(0, "")
+
+        with open(filepath, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(header)
+            counter = 0
+            for i in range(len(total_density_data)):
+                total_density_data[i].insert(0, f"grade-{i}")
+                writer.writerow(total_density_data[i])
+
+
+class Coordinator:
+    def __init__(self, gb_curriculum_dir, num_episodes):
+        self.mode = False
+
+        root_dir = gb_curriculum_dir  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
+        base_dir = os.path.join(os.path.dirname(__file__), root_dir)
+        grades_dir = os.path.join(base_dir, "config.yaml")
+
+        with open(grades_dir, "r") as task_file:
+            self.curriculum = yaml.safe_load(task_file)["curriculum"]
+
+        self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
+        self.grade_checkpoints = []
+        self.num_episodes = num_episodes
+        self.grade_counter = 0
+        self.episode_per_grade = 0
 
         CurriculumInfo.initialize(self.curriculum)
 
@@ -128,132 +179,69 @@ class Coordinator:
     def get_grade(self):
         return self.grade
 
+    def get_grade_size(self):
+        if CurriculumInfo.episode_based_toggle:
+            return int(self.num_episodes / self.get_num_of_grades())
+        else:
+            grade_size = self.episode_per_grade
+            return grade_size
+
+    def check_cycle_condition(self, index):
+        if (CurriculumInfo.episode_based_cycle == False) and (
+            CurriculumInfo.episode_based_toggle == True
+        ):
+            if index + 1 > int(self.get_num_of_grades() * self.get_grade_size()):
+                return True
+        elif (CurriculumInfo.pass_based_toggle == True) and (
+            self.grade_counter > self.get_num_of_grades()
+        ):
+            return True
+        return False
+
     def get_checkpoints(self):
         return f"Episode intervals: {self.grade_checkpoints}"
 
-    def display_grade_scenario_distribution(self):
-        print("Traffic density distribution for previous grade:")
-        for density in self.grade_densities_counter:
-            if self.grade_size != 0:
-                print(
-                    f"{density}: {round(self.grade_densities_counter[density] / self.grade_size, 2)}"
-                )
-            else:
-                print(f"{density}: 0.0")
-
-    def record_density_data(self, scenario_density):
-        self.overall_densities_counter[scenario_density] += 1
-        self.grade_densities_counter[scenario_density] += 1
-        return self.overall_densities_counter[scenario_density]
-
-    def reset_grade_densities_counter(self):
-        self.densities_data.append(self.grade_densities_counter)
-        self.grade_densities_counter = {
-            "no-traffic": 0,
-            "low-density": 0,
-            "mid-density": 0,
-            "high-density": 0,
-        }
-
-    def plot_densities_data(self, file):
-        data = []
-        print(self.densities_data)
-        for grade in self.densities_data:
-            temp1 = []
-            temp2 = []
-            for key, val in grade.items():
-                temp2.append(key)
-                print("GRADE SIZE:,", self.grade_size)
-                temp1.append(round(val / self.grade_size, 2))
-            data.append(temp1)
-
-        print("DATA:>>>>>>>>>>>>>>>>>>>:", data)
-        X = np.arange(self.get_num_of_grades())
-        fig = plt.figure()
-        ax = fig.add_axes([0.1, 0.1, 0.75, 0.75])
-
-        colors = ["g", "m", "b", "r"]
-        inc = 0.0
-        counter = 0
-        if len(data) == 1:
-            ax.bar(X + inc, data[counter], color="blue", width=0.25)
-        else:
-            for color in colors:
-                ax.bar(X + inc, data[counter], color=color, width=0.25)
-                inc += 0.25
-                counter += 1
-
-        ax.set_ylabel("Probability of scenarios in grade")
-        ax.set_title("Probability (%)")
-        ax.set_xticks(X)
-
-        plt.savefig(file)
-
-    def get_pass_based_sample_rate(self):
-        return self.curriculum["conditions"]["pass_based"]["sample_rate"]
-
-    def graduate(self, index, num_episodes, average_scenarios_passed=None):
+    def graduate(self, index, average_scenarios_passed=None):
         """ Conditions on when to graduate """
         if CurriculumInfo.episode_based_toggle:
-            return self.episode_based(index, num_episodes)
+            return self.episode_based(index)
         elif CurriculumInfo.pass_based_toggle:
-            return self.pass_based(index, num_episodes, average_scenarios_passed)
+            return self.pass_based(index, average_scenarios_passed)
 
-    def episode_based(self, index, num_episodes):
+    def episode_based(self, index):
         # Switch to next grade based on number of episodes completed
-        self.grade_size = int(num_episodes / self.get_num_of_grades())
         if index == 0:
             self.display()
             self.grade_checkpoints.append(index)
-            self.rotation_counter += 1 if CurriculumInfo.episode_based_cycle else 0
-        elif (index % int(num_episodes / self.get_num_of_grades())) == 0 and index != 0:
+        elif (
+            index % int(self.num_episodes / self.get_num_of_grades())
+        ) == 0 and index != 0:
             # Switch grade
             self.next_grade()
             self.display()
-            self.reset_grade_densities_counter()
-            self.grade_completed = True
             self.grade_checkpoints.append(index)
-            self.rotation_counter += 1 if CurriculumInfo.episode_based_cycle else 0
+            return True
         else:
-            self.grade_completed = False
+            return False
 
-        if self.rotation_counter > self.get_num_of_grades():
-            self.cycle_completed = True
-
-        return (self.grade_completed, self.cycle_completed)
-
-    def pass_based(self, index, num_episodes, average_scenarios_passed):
+    def pass_based(self, index, average_scenarios_passed):
         # Switch to next grade on the basis of certain percentage of completed scenarios
+        self.episode_per_grade += 1
         if index != 0:
-            if (
-                average_scenarios_passed > CurriculumInfo.pass_based_pass_rate
-                and self.rotation_counter <= self.get_num_of_grades()
-            ):
-                # print(f"({index}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
-                # print("pass_based_sampling_offset: ", CurriculumInfo.pass_based_sampling_offset)
-                # if CurriculumInfo.pass_based_sampling_offset <= 0:
+            if average_scenarios_passed > CurriculumInfo.pass_based_pass_rate:
+                print(f"({index}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
                 self.next_grade()
-                self.grade_size += 1
+                self.grade_counter += 1
+                # self.episode_per_grade = 0
                 self.display()
-                self.reset_grade_densities_counter()
-                self.grade_size = 0
-                self.grade_completed = True
-                self.rotation_counter += 1
                 self.grade_checkpoints.append(index)
-            #     CurriculumInfo.reset_pass_based_sampling_offset()
-            # CurriculumInfo.decrement_sampling_offset(self.curriculum)
+                return True
             else:
-                self.grade_completed = False
-                self.grade_size += 1
+                return False
         else:
+            self.grade_counter += 1
             self.display()
-            self.rotation_counter += 1
             self.grade_checkpoints.append(index)
-
-        if self.rotation_counter > self.get_num_of_grades():
-            self.cycle_completed = True
-
-        return (self.grade_completed, self.cycle_completed)
 
     def calculate_average_scenario_passed(
         self, episode, total_scenarios_passed, agents, asp
@@ -267,7 +255,7 @@ class Coordinator:
             #     total_scenarios_passed,
             # )
             average_scenarios_passed = (
-                total_scenarios_passed / self.get_pass_based_sample_rate()
+                total_scenarios_passed / CurriculumInfo.pass_based_sample_rate
             )
             print(
                 f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
@@ -287,10 +275,9 @@ class Coordinator:
     def display(self):
         try:
             print("\n----------------------------------------------------")
-            self.display_grade_scenario_distribution()
-            print("\nGRADE SIZE :", self.grade_size)
+            print("Grade counter :", self.grade_counter)
             print(f"\nCurrent grade: {self.grade}")
-            print("----------------------------------------------------\n")
+            print("----------------------------------------------------")
         except Exception as e:
             print(e)
             pass

@@ -154,6 +154,7 @@ class Episode:
         self.tb_writer = tb_writer
         self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
+        # self.scenario = None
 
     @property
     def sim2wall_ratio(self):
@@ -272,20 +273,29 @@ class Episode:
             self.make_dir(self.log_dir)
             self.make_dir(self.model_dir)
 
-    def record_density_tensorboard(self, scenario_density, density_counter):
-        self.initialize_tb_writer()
+    def record_density_tensorboard(self, scenario):
+        if self.tb_writer is None:
+            self.tb_writer = SummaryWriter(
+                "{}/{}".format(self.log_dir, self.experiment_name)
+            )
 
         for agent_id, agent_info in self.info[self.active_tag].items():
             for key, value in agent_info.data.items():
                 if not isinstance(value, (list, tuple, np.ndarray)):
-                    if key is "episode_reward" or key is "reached_goal":
+                    if (
+                        key is "episode_reward"
+                        or key is "reached_goal"
+                        or key is "collision"
+                    ):
                         # print(f"Recording {key} for {scenario_density}; counter = {density_counter}")
                         self.tb_writer.add_scalar(
                             "{}/{}/{}".format(
-                                f"{self.active_tag}-{scenario_density}", agent_id, key
+                                f"{self.active_tag}-{scenario['scenario_density']}",
+                                agent_id,
+                                key,
                             ),
                             value,
-                            density_counter,
+                            scenario["density_counter"],
                         )
 
     def record_tensorboard(
@@ -293,8 +303,6 @@ class Episode:
         save_codes=None,
         record_by_episode=False,
         draw_grade_line=False,
-        scenario_density=None,
-        density_counter=None,
     ):
         # Only create tensorboard once from training process.
         self.initialize_tb_writer()

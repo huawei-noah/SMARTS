@@ -7,7 +7,7 @@
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+# furnished to do so, subject to the following conditionst
 #
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
@@ -27,10 +27,10 @@ os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
 import glob
 import time
-import copy
 from pydoc import locate
 
 import gym
+import random
 import numpy as np
 import ray
 import torch
@@ -38,6 +38,7 @@ import torch
 from smarts.zoo.registry import make
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
+from ultra.utils.coordinator import ScenarioDataHandler
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -72,9 +73,6 @@ def evaluation_check(
     if len(agent_ids_to_evaluate) < 1:
         return
 
-    agent_coordinator_eval = copy.deepcopy(agent_coordinator)
-    # agent_coordinator.grade_size = eval_episodes
-
     episode.eval_mode()
     evaluation_data = {}
 
@@ -102,7 +100,7 @@ def evaluation_check(
                         timestep_sec=timestep_sec,
                         log_dir=log_dir,
                         grade_mode=grade_mode,
-                        agent_coordinator=agent_coordinator_eval,
+                        agent_coordinator=agent_coordinator,
                     )
                 ]
             )[0]
@@ -112,13 +110,10 @@ def evaluation_check(
 
     # Put the evaluation data for all agents into the episode and record the TensorBoard.
     episode.info[episode.active_tag] = evaluation_data
-    episode.record_tensorboard(record_by_episode=True)
+    episode.record_tensorboard()
     episode.gap_mode()
     episode.calculate_gap()
-    episode.record_tensorboard(record_by_episode=True)
-    if grade_mode:
-        agent_coordinator_eval.reset_grade_densities_counter()
-        agent_coordinator_eval.plot_densities_data("test_data.png")
+    episode.record_tensorboard()
     episode.train_mode()
 
 
@@ -155,7 +150,6 @@ def evaluate(
     }
 
     # Create the environment with the specified agents.
-    print("GRADE MODE:", grade_mode)
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs=agent_specs,
@@ -183,16 +177,18 @@ def evaluate(
 
     initial_grade_switch = False
 
+    if grade_mode:
+        scenario_data_handler_eval = ScenarioDataHandler("Evaluation")
+
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
         if grade_mode != False:
             if initial_grade_switch == False:
-                observations, scenario_type = env.reset(
-                    True, agent_coordinator.get_grade()
-                )
+                observations, scenario = env.reset(True, agent_coordinator.get_grade())
                 initial_grade_switch = True
             else:
-                observations, scenario_type = env.reset()
+                observations, scenario = env.reset()
+            # print(scenario["root"])
         else:
             observations = env.reset()
 
@@ -214,12 +210,11 @@ def evaluate(
             )
 
         if grade_mode:
-            density_counter = agent_coordinator.record_density_data(
-                scenario_type["scenario_density"]
+            density_counter = scenario_data_handler_eval.record_density_data(
+                scenario["scenario_density"]
             )
-            episode.record_density_tensorboard(
-                scenario_type["scenario_density"], density_counter
-            )
+            scenario["density_counter"] = density_counter
+            episode.record_density_tensorboard(scenario)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
@@ -233,6 +228,11 @@ def evaluate(
                 summary_log[agent_id].data[key] /= num_episodes
 
     env.close()
+
+    filepath = os.path.join(checkpoint_dirs["000"], "Test.csv")
+    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+    scenario_data_handler_eval.save_grade_density(num_episodes)
+    scenario_data_handler_eval.plot_densities_data(num_episodes, filepath)
 
     return summary_log
 
