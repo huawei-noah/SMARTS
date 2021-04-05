@@ -40,7 +40,7 @@ of the steps is shown below
 
   An example to show the how to run rllib training
   ```sh
-  $ python ultra/rllib_train.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/ --episodes 5 --max-samples 200
+  $ python ultra/rllib_train.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/ --episodes 5 --train-batch-size 200
   ```
   > This will produce another experiment directory under `logs/` containing the results of the training/testing
   
