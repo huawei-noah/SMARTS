@@ -23,7 +23,7 @@ copyright = "2020, Huawei Technologies."
 author = "Huawei Noah's Ark Lab."
 
 # The full version, including alpha/beta/rc tags
-release = "0.3.6"
+release = "0.4.15"
 
 
 # -- General configuration ---------------------------------------------------
