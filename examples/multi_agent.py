@@ -31,6 +31,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         agent_specs=agent_specs,
         sim_name=sim_name,
         headless=headless,
+        sumo_headless=False,
         seed=seed,
     )
 

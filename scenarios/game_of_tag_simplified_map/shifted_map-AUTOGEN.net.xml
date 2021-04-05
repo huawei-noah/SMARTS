@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on Sun Apr  4 00:51:20 2021 by Eclipse SUMO netconvert Version 1.8.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="/home/kyber/work/SMARTS/scenarios/game_of_tag_simplified_map/map.net.xml"/>
+    </input>
+
+    <output>
+        <output-file value="/home/kyber/work/SMARTS/scenarios/game_of_tag_simplified_map/shifted_map-AUTOGEN.net.xml"/>
+    </output>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="false"/>
+        <lefthand value="false"/>
+    </processing>
+
+    <junctions>
+        <no-internal-links value="true"/>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="5.5"/>
+        <rectangular-lane-cut value="false"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="false"/>
+    </pedestrian>
+
+    <report>
+        <aggregate-warnings value="5"/>
+    </report>
+
+</configuration>
+-->
+
+<net version="1.6" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="32.58,-69.39" convBoundary="0.00,0.00,42.79,0.13" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
+
+    <edge id="bottom" from="gneJ11" to="gneJ12" priority="-1">
+        <lane id="bottom_0" index="0" speed="13.89" length="42.79" shape="0.04,-14.40 42.83,-14.27"/>
+        <lane id="bottom_1" index="1" speed="13.89" length="42.79" shape="0.03,-11.20 42.82,-11.07"/>
+        <lane id="bottom_2" index="2" speed="13.89" length="42.79" shape="0.02,-8.00 42.81,-7.87"/>
+        <lane id="bottom_3" index="3" speed="13.89" length="42.79" shape="0.01,-4.80 42.80,-4.67"/>
+        <lane id="bottom_4" index="4" speed="13.89" length="42.79" shape="0.00,-1.60 42.79,-1.47"/>
+    </edge>
+    <edge id="top" from="gneJ12" to="gneJ11" priority="-1">
+        <lane id="top_0" index="0" speed="13.89" length="42.79" shape="42.75,14.53 -0.04,14.40"/>
+        <lane id="top_1" index="1" speed="13.89" length="42.79" shape="42.76,11.33 -0.03,11.20"/>
+        <lane id="top_2" index="2" speed="13.89" length="42.79" shape="42.77,8.13 -0.02,8.00"/>
+        <lane id="top_3" index="3" speed="13.89" length="42.79" shape="42.78,4.93 -0.01,4.80"/>
+        <lane id="top_4" index="4" speed="13.89" length="42.79" shape="42.79,1.73 -0.00,1.60"/>
+    </edge>
+
+    <junction id="gneJ11" type="dead_end" x="0.00" y="0.00" incLanes="top_0 top_1 top_2 top_3 top_4" intLanes="" shape="-0.00,-0.00 -0.05,16.00 -0.00,-0.00"/>
+    <junction id="gneJ12" type="dead_end" x="42.79" y="0.13" incLanes="bottom_0 bottom_1 bottom_2 bottom_3 bottom_4" intLanes="" shape="42.79,0.13 42.84,-15.87 42.79,0.13"/>
+
+</net>

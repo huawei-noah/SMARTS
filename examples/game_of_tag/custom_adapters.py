@@ -7,7 +7,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Rewards:
-    base_reward: float = 0
+    prey_base_reward: float = 1
+    pred_base_reward: float = 1
     collesion_with_target: float = 10.0
     game_ended: float = 10
     collesion_with_other_deduction: float = -12.0
@@ -191,7 +192,7 @@ def predator_reward_adapter(observations, env_reward_signal):
     ## small negative reward for drivable_grid_map have on_drivable blocks
 
     collided_with_prey = False
-    rew = global_rewards.base_reward
+    rew = global_rewards.pred_base_reward
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
     # )  # encourage predator to drive
@@ -239,7 +240,7 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if off road
     """
     collided_with_pred = False
-    rew = -1*global_rewards.base_reward
+    rew = -1*global_rewards.prey_base_reward
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
     # )  # encourages driving

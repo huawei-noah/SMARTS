@@ -136,9 +136,9 @@ def main(args):
             "clip_param": lambda: random.uniform(0.01, 0.5),
             "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
             "num_sgd_iter": lambda: random.randint(1, 30),
-            # "sgd_minibatch_size": lambda: random.randint(128, 16384),
+            "sgd_minibatch_size": lambda: 128, #random.randint(128, 16384),
             # "train_batch_size": lambda: random.randint(2000, 160000),
-            "train_batch_size": lambda: 2000,
+            "train_batch_size": lambda: 200,
         },
         custom_explore_fn=explore,
     )
