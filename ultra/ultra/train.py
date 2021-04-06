@@ -132,17 +132,16 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
-        if eval_info["eval_episodes"] != 0:
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                **eval_info,
-                **env.info,
-            )
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            **eval_info,
+            **env.info,
+        )
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
