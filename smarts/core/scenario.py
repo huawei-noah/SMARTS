@@ -28,6 +28,7 @@ import sqlite3
 import uuid
 from dataclasses import dataclass, field
 from functools import lru_cache
+from cached_property import cached_property
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
@@ -192,7 +193,7 @@ class Scenario:
 
         self._traffic_history = traffic_history
         default_lane_width = (
-            self._lane_width_for_traffic_history() if traffic_history else None
+            self.traffic_history_lane_width if traffic_history else None
         )
         net_file = os.path.join(self._root, "map.net.xml")
         self._road_network = SumoRoadNetwork.from_file(net_file, default_lane_width)
@@ -516,10 +517,21 @@ class Scenario:
     def set_ego_missions(self, ego_mission):
         self._missions.update(ego_mission)
 
-    def _lane_width_for_traffic_history(self):
+    @cached_property
+    def traffic_history_lane_width(self):
         histories_db = sqlite3.connect(self._traffic_history)
         cur = histories_db.cursor()
         cur.execute("SELECT value FROM Spec where key='map_net.lane_width'")
+        row = cur.fetchone()
+        cur.close()
+        histories_db.close()
+        return float(row[0]) if row else None
+
+    @cached_property
+    def traffic_history_target_speed(self):
+        histories_db = sqlite3.connect(self._traffic_history)
+        cur = histories_db.cursor()
+        cur.execute("SELECT value FROM Spec where key='speed_limit_mps'")
         row = cur.fetchone()
         cur.close()
         histories_db.close()

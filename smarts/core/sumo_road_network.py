@@ -24,7 +24,7 @@ import random
 import re
 from dataclasses import dataclass
 from functools import lru_cache
-from subprocess import check_call
+from subprocess import check_output
 from tempfile import NamedTemporaryFile
 from typing import Sequence, Tuple, Union
 from cached_property import cached_property
@@ -111,7 +111,7 @@ class SumoRoadNetwork:
         ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
         ## for netconvert options description.
         try:
-            check_call(
+            stdout = check_output(
                 [
                     "netconvert",
                     "--offset.disable-normalization=FALSE",
@@ -121,6 +121,7 @@ class SumoRoadNetwork:
                     out_path,
                 ]
             )
+            logger.debug(f"netconvert output: {stdout}")
             return out_path
         except Exception as e:
             logger.warning(

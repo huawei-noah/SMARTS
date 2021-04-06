@@ -1,5 +1,6 @@
 import argparse
 import csv
+import ijson
 import logging
 import math
 import os
@@ -21,7 +22,9 @@ class _TrajectoryDataset:
         self._output = output
         self._path = dataset_spec["input_path"]
         real_lane_width_m = dataset_spec.get("real_lane_width_m", 3.7)
-        lane_width = dataset_spec["map_net"].get("lane_width", 24)
+        lane_width = dataset_spec.get("map_net", {}).get(
+            "lane_width", real_lane_width_m
+        )
         self._scale = lane_width / real_lane_width_m
         self._flip_y = dataset_spec.get("flip_y", False)
         self._swap_xy = dataset_spec.get("swap_xy", False)
@@ -41,13 +44,11 @@ class _TrajectoryDataset:
         errmsg = None
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
-        elif "map_net" not in dataset_spec:
-            errmsg = "'map_net' dict is required in dataset yaml."
         elif dataset_spec.get("flip_y"):
             if dataset_spec.get("source") != "NGSIM":
                 errmsg = "'flip_y' option only supported for NGSIM datasets."
-            elif not dataset_spec["map_net"].get("height"):
-                errmsg = "'map_net:height' is required if 'flip_y' option used."
+            elif not dataset_spec.get("map_net", {}).get("max_y"):
+                errmsg = "'map_net:max_y' is required if 'flip_y' option used."
         if errmsg:
             self._log.error(errmsg)
             raise ValueError(errmsg)
@@ -61,7 +62,7 @@ class _TrajectoryDataset:
             else:
                 cursor.execute(insert_sql, (newkey, str(value)))
 
-    def _write_dataset_spec(self, dbconxn):
+    def _create_tables(self, dbconxn):
         ccur = dbconxn.cursor()
         ccur.execute(
             """CREATE TABLE Spec (
@@ -69,18 +70,6 @@ class _TrajectoryDataset:
                    value TEXT
                ) WITHOUT ROWID"""
         )
-        dbconxn.commit()
-        insert_kv_sql = "INSERT INTO Spec VALUES (?, ?)"
-        self._write_dict(self._dataset_spec, insert_kv_sql, ccur)
-        dbconxn.commit()
-        ccur.close()
-        return
-
-    def create_output(self):
-        self._log.debug("creating tables")
-        dbconxn = sqlite3.connect(self._output)
-        self._write_dataset_spec(dbconxn)
-        ccur = dbconxn.cursor()
         ccur.execute(
             """CREATE TABLE Vehicle (
                    id INTEGER PRIMARY KEY,
@@ -103,7 +92,22 @@ class _TrajectoryDataset:
                ) WITHOUT ROWID"""
         )
         dbconxn.commit()
-        self._log.debug("inserting data")
+        ccur.close()
+
+    def create_output(self):
+        dbconxn = sqlite3.connect(self._output)
+
+        self._log.debug("creating tables...")
+        self._create_tables(dbconxn)
+
+        self._log.debug("inserting data...")
+
+        iscur = dbconxn.cursor()
+        insert_kv_sql = "INSERT INTO Spec VALUES (?, ?)"
+        self._write_dict(self._dataset_spec, insert_kv_sql, iscur)
+        dbconxn.commit()
+        iscur.close()
+
         # TAI:  can use executemany() and batch insert rows together if this turns out to be too slow...
         insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?)"
         insert_traj_sql = "INSERT INTO Trajectory VALUES (?, ?, ?, ?, ?, ?, ?)"
@@ -137,11 +141,14 @@ class _TrajectoryDataset:
                 itcur.execute(insert_traj_sql, traj_args)
         itcur.close()
         dbconxn.commit()
-        self._log.debug("creating indices")
-        ccur.execute("CREATE INDEX Trajectory_Time ON Trajectory (sim_time)")
-        ccur.execute("CREATE INDEX Trajectory_Vehicle ON Trajectory (vehicle_id)")
+
+        self._log.debug("creating indices..")
+        icur = dbconxn.cursor()
+        icur.execute("CREATE INDEX Trajectory_Time ON Trajectory (sim_time)")
+        icur.execute("CREATE INDEX Trajectory_Vehicle ON Trajectory (vehicle_id)")
         dbconxn.commit()
-        ccur.close()
+        icur.close()
+
         dbconxn.close()
         self._log.debug("output done")
 
@@ -205,11 +212,11 @@ class NGSIM(_TrajectoryDataset):
         badc = any(np.isnan(c))
         d1 = np.linalg.norm(c - p)
         d2 = np.linalg.norm(n - c)
-        # rounding the norms gets rid of some wiggle that's introduced
-        # due to imprecise position measurements at very low speeds...
-        # TODO: need to do more here (e.g., use a bigger window, take speed into account, etc.
-        no_v1 = any(np.isnan(p)) or badc or round(d1, 2) == 0
-        no_v2 = any(np.isnan(n)) or badc or round(d2, 2) == 0
+        # .22 is a magic number corresponding to roughly 5mph.
+        # If the car is going very slowly, heading results
+        # get a bit wacky due to precision problems.
+        no_v1 = any(np.isnan(p)) or badc or abs(d1) < 0.22
+        no_v2 = any(np.isnan(n)) or badc or abs(d2) < 0.22
         if no_v1 and no_v2:
             return self._prev_heading
         elif no_v1:
@@ -273,8 +280,8 @@ class NGSIM(_TrajectoryDataset):
             df = df[valid_x]
 
         if self._flip_y:
-            map_height = self._dataset_spec["map_net"]["height"]
-            df["position_y"] = (map_height / self.scale) - df["position_y"]
+            max_y = self._dataset_spec["map_net"]["max_y"]
+            df["position_y"] = (max_y / self.scale) - df["position_y"]
 
         # Use moving average to smooth positions...
         df.sort_values("sim_time", inplace=True)  # just in case it wasn't already...
@@ -295,7 +302,7 @@ class NGSIM(_TrajectoryDataset):
                 .shift(1 - k)
                 .values
             )
-            # and compute heading too..
+            # and compute heading with (smaller) rolling window (=3) too..
             v = df.loc[same_car, ["position_x", "position_y"]].shift(1).values
             d0, d1 = v.shape
             s0, s1 = v.strides
@@ -316,6 +323,56 @@ class NGSIM(_TrajectoryDataset):
         return getattr(row, col_name, None)
 
 
+class OldJSON(_TrajectoryDataset):
+    """This exists because SMARTS used to use JSON files for traffic histories.
+    We provide this to help people convert these previously-created .json
+    history files to the new .shf format."""
+
+    @property
+    def rows(self):
+        with open(self._dataset_spec["input_path"], "rb") as inf:
+            for t, states in ijson.kvitems(inf, "", use_float=True):
+                for state in states.values():
+                    yield (t, state)
+
+    @staticmethod
+    def _lookup_agent_type(agent_type):
+        if isinstance(agent_type, int):
+            return agent_type
+        # Try to match the NGSIM types...
+        if agent_type == "car":
+            return 2
+        elif agent_type == "truck":
+            return 3
+        elif agent_type == "pedestrian/bicycle":
+            return 4
+        self._log.warn(f"unknown agent_type:  {agent_type}.")
+        return 0
+
+    def column_val_in_row(self, row, col_name):
+        assert len(row) == 2
+        if col_name == "sim_time":
+            return float(row[0]) * 1000
+        state = row[1]
+        if col_name in state:
+            return state[col_name]
+        if col_name == "id":
+            return state["vehicle_id"]
+        if col_name == "type":
+            return OldJSON._lookup_agent_type(state["vehicle_type"])
+        if col_name == "length":
+            return state["vehicle_length"]
+        if col_name == "width":
+            return state["vehicle_width"]
+        if col_name.startswith("position_x"):
+            return state["position"][0]
+        if col_name.startswith("position_y"):
+            return state["position"][1]
+        if col_name == "heading_rad":
+            return state["heading"]
+        return None
+
+
 def _check_args(args):
     if not args.force and os.path.exists(args.output):
         print("output file already exists\n")
@@ -332,9 +389,16 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
-        "dataset_yaml",
+        "--old",
+        "--json",
+        help="Input is an old SMARTS traffic history in JSON format as opposed to a YAML dataset spec.",
+        action="store_true",
+    )
+    parser.add_argument(
+        "dataset",
         type=str,
-        help="Path to YAML file describing original trajectories dataset. See SMARTS Issue #732 for YAML file options",
+        help="""Path to YAML file describing original trajectories dataset. See SMARTS Issue #732 for YAML file options.
+                Note: if --old is used, this path is expected to point to an old JSON traffic history to be converted.""",
     )
     parser.add_argument(
         "output", type=str, help="SMARTS traffic history file to create"
@@ -344,13 +408,19 @@ if __name__ == "__main__":
     if not _check_args(args):
         parser.print_usage()
         sys.exit(-1)
-    with open(args.dataset_yaml, "r") as yf:
-        dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
-    source = dataset_spec.get("source", "NGSIM")
 
-    dataset = (
-        NGSIM(dataset_spec, args.output)
-        if source == "NGSIM"
-        else Interaction(dataset_spec, args.output)
-    )
+    if args.old:
+        dataset_spec = {"source": "OldJSON", "input_path": args.dataset}
+    else:
+        with open(args.dataset, "r") as yf:
+            dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
+
+    source = dataset_spec.get("source", "NGSIM")
+    if source == "NGSIM":
+        dataset = NGSIM(dataset_spec, args.output)
+    elif source == "OldJSON":
+        dataset = OldJSON(dataset_spec, args.output)
+    else:
+        dataset = Interaction(dataset_spec, args.output)
+
     dataset.create_output()

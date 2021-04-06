@@ -417,10 +417,20 @@ def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
         hds = os.path.join(scenario, hdsr)
         if not os.path.exists(hds):
             raise ValueError(f"Traffic history dataset file missing: {hds}")
-        base = os.path.splitext(os.path.basename(hds))[0]
+        cmd = [sys.executable, genhistories_py, hdsr]
+        base, ext = os.path.splitext(os.path.basename(hds))
+        if ext == ".json":
+            logger.warn(
+                """
+                Converting old smarts JSON format history file.
+                scenario.py should be updated with new YAML dataset spec.
+                See SMARTS Issue #732."""
+            )
+            cmd += ["--old"]
         th_file = f"{base}.shf"
-        if os.path.exists(os.path.join(scenario, th_file)) and not overwrite:
+        if overwrite:
+            cmd += ["-f"]
+        elif os.path.exists(os.path.join(scenario, th_file)):
             continue
-        subprocess.check_call(
-            [sys.executable, genhistories_py, hdsr, "-f", th_file], cwd=scenario
-        )
+        cmd += [th_file]
+        subprocess.check_call(cmd, cwd=scenario)
