@@ -51,9 +51,7 @@ class TrainTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
-        if os.path.exists(log_dir):
-            self.assertTrue(True)
-        else:
+        if not os.path.exists(log_dir):
             self.assertTrue(False)
 
     def test_train_cli_multiagent(self):
@@ -66,9 +64,7 @@ class TrainTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
-        if os.path.exists(log_dir):
-            self.assertTrue(True)
-        else:
+        if not os.path.exists(log_dir):
             self.assertTrue(False)
 
     def test_train_single_agent(self):

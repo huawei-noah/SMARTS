@@ -74,10 +74,14 @@ class AnalysisTest(unittest.TestCase):
         if os.path.exists(save_dir):
             self.assertTrue(True)
             shutil.rmtree(save_dir)
+        else:
+            self.assertTrue(False)
 
         if os.path.exists(output):
             self.assertTrue(True)
             shutil.rmtree(output)
+        else:
+            self.assertTrue(False)
 
     def test_analyze_scenario(self):
         save_dir = os.path.join(AnalysisTest.OUTPUT_DIRECTORY, "scenarios/")
@@ -133,10 +137,15 @@ class AnalysisTest(unittest.TestCase):
         if os.path.exists(save_dir):
             self.assertTrue(True)
             shutil.rmtree(save_dir)
+        else:
+            self.assertTrue(False)
+
 
         if os.path.exists(output):
             self.assertTrue(True)
             shutil.rmtree(output)
+        else:
+            self.assertTrue(False)
 
     def test_save_histogram(self):
         try:
