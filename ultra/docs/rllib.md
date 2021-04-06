@@ -25,6 +25,9 @@ of the steps is shown below
   - `--task`: The task number to run (default is 1).
   - `--level`: The level of the task (default is easy).
   - `--episodes`: The number of training episodes to run (default is 100).
+  - `--max-episode-steps`: The option to limit the number of steps per epsiodes (default is 200).
+  - `--rollout-fragment-length`: The number of steps rolled out before training (default is 200).
+  - `--episodes`: The number of training episodes to run (default is 100).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
   - `--headless`: Whether to run training without Envision (default is True).
   - `--eval-episodes`: The number of evaluation episodes (default is 200).
@@ -32,11 +35,12 @@ of the steps is shown below
   - `--seed`: The environment seed (default is 2).
   - `--policy`: The policy (agent) to train (default is ppo). Only PPO is supported for now.
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
-  - `--training-batch-samples` : The number of trainig samples per iteration (default is 4000).
+  - `--train-batch-size` : The number of training samples per epoch (default is 4000).
+  - `--sgd-minibatch-size` : The training samples per gradient descent step (default is 128).
 
   An example to show the how to run rllib training
   ```sh
-  $ python ultra/rllib_train.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/ --episodes 5 --max-samples 200
+  $ python ultra/rllib_train.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/ --episodes 5 --train-batch-size 200
   ```
   > This will produce another experiment directory under `logs/` containing the results of the training/testing
   

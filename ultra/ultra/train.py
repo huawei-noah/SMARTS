@@ -44,7 +44,7 @@ from ultra.utils.episode import episodes
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-# @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
+#@ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 def train(
     scenario_info,
     num_episodes,
@@ -108,7 +108,9 @@ def train(
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
+    old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
+
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
         dones = {"__all__": False}
@@ -131,25 +133,25 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            evaluation_task_ids=evaluation_task_ids,
+            **eval_info,
+            **env.info,
+        )
+
+        collect_evaluations(evaluation_task_ids=evaluation_task_ids)
+
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
             if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
                 finished = True
                 break
-
-            # Perform the evaluation check.
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                evaluation_task_ids=evaluation_task_ids,
-                **eval_info,
-                **env.info,
-            )
-            collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
             # Request and perform actions on each agent that received an observation.
             actions = {
@@ -186,7 +188,6 @@ def train(
             total_step += 1
             observations = next_observations
 
-        # Normalize the data and record this episode on tensorboard.
         episode.record_episode()
         episode.record_tensorboard()
 
@@ -224,7 +225,7 @@ if __name__ == "__main__":
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=10000,
+        default=200,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
@@ -237,9 +238,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--eval-rate",
-        help="Evaluation rate based on number of observations",
+        help="Evaluation rate based on number of episodes",
         type=int,
-        default=10000,
+        default=100,
     )
     parser.add_argument(
         "--seed",

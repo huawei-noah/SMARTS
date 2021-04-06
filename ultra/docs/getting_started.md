@@ -51,6 +51,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--task`: The task number to run (default is 1).
   - `--level`: The level of the task (default is easy).
   - `--episodes`: The number of training episodes to run (default is 1000000).
+  - `--max-episode-steps`: The option to limit the number of steps per epsiodes (default is 200).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
   - `--headless`: Whether to run training without Envision (default is True).
   - `--eval-episodes`: The number of evaluation episodes (default is 200).
@@ -58,7 +59,6 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--seed`: The environment seed (default is 2).
   - `--policy`: The policy (agent) to train (default is sac).
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
-  - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
 
   Run the following command to train our DQN agent with a quick training session (if you started Envision in the previous section, refresh your browser to observe the training):
   ```sh
@@ -81,11 +81,11 @@ After training your agent, your models should be saved under `logs/<timestamped_
   - `--policy`: A string tag on the evaluation experiment directory (default is TD3).
   - `--models`: The path to the saved model (default is models/).
   - `--episodes`: The number of evaluation episodes (default is 200).
+  - `--max-episode-steps`: The option to limit the number of steps per epsiodes (default is 200).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
   - `--headless`: Whether to run evaluation without Envision (default is True).
   - `--experiment-dir`: The path to the spec file that includes adapters and policy parameters.
   - `--policy`: The policy (agent) to evaluate (default is sac).
-  - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
 
   For example, let's re-run our DQN's evaluation with the following command:
   ```sh
