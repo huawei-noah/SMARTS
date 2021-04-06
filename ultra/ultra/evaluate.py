@@ -77,7 +77,7 @@ def evaluation_check(
         try:
             agents[agent_id].save(checkpoint_directory)
         except AttributeError:
-            print(f"Unable to save agent '{agent_id}'. It does not have a 'save' method.")
+            print(f"Unable to save agent '{agent_id}'. A 'save' method does not exist.")
 
         # Perform the evaluation on this agent and save the data.
         evaluation_data.update(
@@ -231,7 +231,7 @@ if __name__ == "__main__":
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="Run without envision", type=bool, default=False
+        "--headless", help="Run without envision", type=bool, default=True
     )
     parser.add_argument(
         "--experiment-dir",

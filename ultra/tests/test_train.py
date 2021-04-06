@@ -153,6 +153,8 @@ class TrainTest(unittest.TestCase):
                 policy_path = data["agents"][policy]["path"]
                 policy_locator = data["agents"][policy]["locator"]
                 policy_class = str(policy_path) + ":" + str(policy_locator)
+                if "baselines" not in policy_class:
+                    continue
                 try:
                     spec = make(locator=policy_class)
                     agent = spec.build_agent()
