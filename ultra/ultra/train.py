@@ -44,8 +44,7 @@ from ultra.utils.episode import episodes
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-# @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-@ray.remote(num_gpus=num_gpus / 2)
+@ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 def train(
     scenario_info,
     num_episodes,
@@ -218,7 +217,7 @@ if __name__ == "__main__":
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=10000,
+        default=200,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1

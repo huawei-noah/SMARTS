@@ -66,6 +66,9 @@ def evaluation_check(
     if len(agent_ids_to_evaluate) < 1:
         return
 
+    if eval_episodes < 1:
+        return
+
     episode.eval_mode()
     evaluation_data = {}
 
@@ -150,7 +153,7 @@ def evaluation_check(
 
 
 # Number of GPUs should be split between remote functions.
-@ray.remote(num_gpus=num_gpus / 2)
+@ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 def evaluate(
     experiment_dir,
     seed,
