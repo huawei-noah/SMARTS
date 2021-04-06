@@ -53,6 +53,8 @@ class TrainTest(unittest.TestCase):
 
         if os.path.exists(log_dir):
             self.assertTrue(True)
+        else:
+            self.assertTrue(False)
 
     def test_train_cli_multiagent(self):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
@@ -66,6 +68,8 @@ class TrainTest(unittest.TestCase):
 
         if os.path.exists(log_dir):
             self.assertTrue(True)
+        else:
+            self.assertTrue(False)
 
     def test_train_single_agent(self):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
