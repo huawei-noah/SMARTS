@@ -74,7 +74,10 @@ def evaluation_check(
         checkpoint_directory = episode.checkpoint_dir(
             agent_id, episode.get_itr(agent_id)
         )
-        agents[agent_id].save(checkpoint_directory)
+        try:
+            agents[agent_id].save(checkpoint_directory)
+        except AttributeError:
+            print(f"Unable to save agent '{agent_id}'. It does not have a 'save' method.")
 
         # Perform the evaluation on this agent and save the data.
         evaluation_data.update(
@@ -168,10 +171,12 @@ def evaluate(
 
         while not dones["__all__"]:
             # Get and perform the available agents' actions.
-            actions = {
-                agent_id: agents[agent_id].act(observation)
-                for agent_id, observation in observations.items()
-            }
+            actions = {}
+            for agent_id, observation in observations.items():
+                try:
+                    actions[agent_id] = agents[agent_id].act(observation, explore=False)
+                except TypeError:
+                    actions[agent_id] = agents[agent_id].act(observation)
             observations, rewards, dones, infos = env.step(actions)
 
             # Record the data from this episode.

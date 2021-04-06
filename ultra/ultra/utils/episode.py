@@ -198,6 +198,9 @@ class Episode:
             os.makedirs(dir_name)
 
     def log_loss(self, step, agent_id, loss_output):
+        if not loss_output:
+            return
+
         self.initialize_tb_writer()
         for key, data in loss_output.items():
             if step % data["freq"]:
