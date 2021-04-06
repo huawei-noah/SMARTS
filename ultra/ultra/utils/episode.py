@@ -257,7 +257,6 @@ class Episode:
         for _, agent_info in self.info[self.active_tag].items():
             agent_info.normalize()
 
-
     def initialize_tb_writer(self):
         if self.tb_writer is None:
             self.tb_writer = SummaryWriter(
