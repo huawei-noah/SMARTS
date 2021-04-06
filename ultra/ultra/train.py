@@ -107,7 +107,9 @@ def train(
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
+    old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
+
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
         dones = {"__all__": False}
@@ -130,24 +132,22 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            **eval_info,
+            **env.info,
+        )
+
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
             if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
                 finished = True
                 break
-
-            # Perform the evaluation check.
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                **eval_info,
-                **env.info,
-            )
-
             # Request and perform actions on each agent that received an observation.
             actions = {
                 agent_id: agents[agent_id].act(observation, explore=True)
@@ -183,7 +183,6 @@ def train(
             total_step += 1
             observations = next_observations
 
-        # Normalize the data and record this episode on tensorboard.
         episode.record_episode()
         episode.record_tensorboard()
 
@@ -230,9 +229,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--eval-rate",
-        help="Evaluation rate based on number of observations",
+        help="Evaluation rate based on number of episodes",
         type=int,
-        default=10000,
+        default=100,
     )
     parser.add_argument(
         "--seed",
@@ -282,7 +281,7 @@ if __name__ == "__main__":
                 num_episodes=int(args.episodes),
                 max_episode_steps=int(args.max_episode_steps),
                 eval_info={
-                    "eval_rate": float(args.eval_rate),
+                    "eval_rate": int(args.eval_rate),
                     "eval_episodes": int(args.eval_episodes),
                 },
                 timestep_sec=float(args.timestep),
