@@ -97,7 +97,7 @@ def main(scenario, headless, resume_training, result_dir, seed):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("game-of-tag-example")
     parser.add_argument(
-        "--scenario",
+        "scenario",
         default="scenarios/demo",
         type=str,
         help="Scenario to run (see scenarios/ for some samples you can use)",

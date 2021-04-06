@@ -138,7 +138,8 @@ def main(args):
             "num_sgd_iter": lambda: random.randint(1, 30),
             "sgd_minibatch_size": lambda: 128, #random.randint(128, 16384),
             # "train_batch_size": lambda: random.randint(2000, 160000),
-            "train_batch_size": lambda: 200,
+            "train_batch_size": lambda: 4000,
+            'num_sgd_iter': lambda: 30,
         },
         custom_explore_fn=explore,
     )
@@ -158,10 +159,10 @@ def main(args):
         "env": RLlibHiWayEnv,
         "log_level": "WARN",
         "num_workers": 2,
-        # 'sample_batch_size': 1,  # XXX: 200
-        # 'train_batch_size': 1,
-        # 'sgd_minibatch_size': 1,
-        # 'num_sgd_iter': 1,
+        # 'sample_batch_size': 200,  # XXX: 200
+        # 'train_batch_size': 4000,
+        # 'sgd_minibatch_size': 128,
+        # 'num_sgd_iter': 30,
         "horizon": 10000,
         "env_config": {
             "seed": 42,

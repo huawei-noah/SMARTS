@@ -35,11 +35,18 @@ ego_missions = [
         route=t.Route(begin=("gneE71", 2, 0), end=("gneE72", 0, 'max')), # pred 2
     ),
     t.Mission(
+        route=t.Route(begin=("gneE72", 2, 10), end=("gneE72", 2, 'max')), # pred 3
+    ),
+    t.Mission(
+        route=t.Route(begin=("-gneE71",1, 5), end=("-gneE71",1, 'max')), # pred 4
+    ),
+    t.Mission(
         route=t.Route(begin=("-gneE72", 1, 10), end=("gneE72", 0, 'max')), # prey 1
     ),
     t.Mission(
         route=t.Route(begin=("gneE71", 0, 10), end=("gneE72", 0, 'max')), # prey 2
     ),
+    
 ]
 
 scenario = t.Scenario(

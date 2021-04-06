@@ -8,7 +8,7 @@ from dataclasses import dataclass
 @dataclass
 class Rewards:
     prey_base_reward: float = 1
-    pred_base_reward: float = 1
+    pred_base_reward: float = 0
     collesion_with_target: float = 10.0
     game_ended: float = 10
     collesion_with_other_deduction: float = -12.0
@@ -17,7 +17,7 @@ class Rewards:
 
 global_rewards = Rewards()
 
-PREDATOR_IDS = ["PRED1", "PRED2"]
+PREDATOR_IDS = ["PRED1", "PRED2", "PRED3", "PRED4"]
 PREY_IDS = ["PREY1", "PREY2"]
 
 ACTION_SPACE = gym.spaces.Box(
@@ -50,7 +50,7 @@ OBSERVATION_SPACE = gym.spaces.Dict(
         "min_distance_to_prey": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
         "min_distance_to_predator": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
         "drivable_area_grid_map": gym.spaces.Box(
-            low=0, high=1, shape=(6, 4)
+            low=0, high=1, shape=(16, 16)
         ),  # bitmap, change to a python integer/bitmap(binary number with 0 or 1)
         "predator_vehicles": gym.spaces.Tuple(
             tuple([NEIGHBORHOOD_VEHICLE_STATES] * len(PREDATOR_IDS))
@@ -110,7 +110,7 @@ def get_specfic_vehicle_states(nv_states, wanted_ids: List[str]):
 
 
 def congregate_map(grid_map):
-    block_size = 5
+    block_size = 16
     drivable_area = 1
     non_drivable_area = 0
     scaled_width = int(grid_map.shape[0] / block_size)
@@ -130,13 +130,13 @@ def congregate_map(grid_map):
     return congregated_map
 
 
-def resize_grid_map(grid_map):
-    grid_map = grid_map[
-        100:130, 120:140
-    ]  # vertical take 100->130, horizontal take 120->140,
-    # grid_map is 30x20, 6x4 2d array
-    map_6x4 = congregate_map(grid_map)
-    return map_6x4
+# def resize_grid_map(grid_map):
+#     grid_map = grid_map[
+#         100:130, 120:140
+#     ]  # vertical take 100->130, horizontal take 120->140,
+#     # grid_map is 30x20, 6x4 2d array
+#     map_6x4 = congregate_map(grid_map)
+#     return map_6x4
 
 
 def min_distance_to_rival(ego_position, rival_ids, neighbour_states):
@@ -158,27 +158,29 @@ def observation_adapter(observations):
     drivable_area_grid_map = (
         np.zeros((6, 4))
         if observations.drivable_area_grid_map is None
-        else resize_grid_map(observations.drivable_area_grid_map.data)
+        else congregate_map(observations.drivable_area_grid_map.data)
     )
 
     predator_states = get_specfic_vehicle_states(nv_states, PREDATOR_IDS)
     prey_states = get_specfic_vehicle_states(nv_states, PREY_IDS)
 
     ego = observations.ego_vehicle_state
+    min_distance_to_prey = min_distance_to_rival(
+        observations.ego_vehicle_state.position,
+        PREY_IDS,
+        observations.neighborhood_vehicle_states,
+    )
+    min_distance_to_predator = min_distance_to_rival(
+        observations.ego_vehicle_state.position,
+        PREDATOR_IDS,
+        observations.neighborhood_vehicle_states,
+    )
     return {
         "steering": np.array([ego.steering]),
         "speed": np.array([ego.speed]),
         "position": np.array(ego.position[:2]),
-        "min_distance_to_prey": np.array([min_distance_to_rival(
-            observations.ego_vehicle_state.position,
-            PREY_IDS,
-            observations.neighborhood_vehicle_states,
-        )]),
-        "min_distance_to_predator": np.array([min_distance_to_rival(
-            observations.ego_vehicle_state.position,
-            PREDATOR_IDS,
-            observations.neighborhood_vehicle_states,
-        )]),
+        "min_distance_to_prey": np.array([min_distance_to_prey]),
+        "min_distance_to_predator": np.array([min_distance_to_predator]),
         "predator_vehicles": tuple(predator_states),
         "prey_vehicles": tuple(prey_states),
         "drivable_area_grid_map": drivable_area_grid_map,
@@ -242,7 +244,7 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if off road
     """
     collided_with_pred = False
-    rew = -1*global_rewards.prey_base_reward
+    rew = global_rewards.prey_base_reward
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
     # )  # encourages driving
