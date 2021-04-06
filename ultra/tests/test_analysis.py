@@ -140,7 +140,6 @@ class AnalysisTest(unittest.TestCase):
         else:
             self.assertTrue(False)
 
-
         if os.path.exists(output):
             self.assertTrue(True)
             shutil.rmtree(output)
