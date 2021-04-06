@@ -125,38 +125,6 @@ class SumoRoadNetwork:
             )
         return None
 
-    @staticmethod
-    def _check_net_origin(bbox):
-        assert len(bbox) == 4
-        return bbox[0] <= 0.0 and bbox[1] <= 0.0 and bbox[2] >= 0.0 and bbox[3] >= 0.0
-
-    @classmethod
-    @lru_cache(maxsize=1)
-    def _shift_coordinates(cls, net_file):
-        logger = logging.getLogger(cls.__name__)
-        logger.info("normalizing net coordinates...")
-        with NamedTemporaryFile() as tf:
-            ## Translate the map's origin to remove huge (imprecise) offsets.
-            ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
-            ## for netconvert options description.
-            try:
-                check_call(
-                    [
-                        "netconvert",
-                        "--offset.disable-normalization=FALSE",
-                        "-s",
-                        net_file,
-                        "-o",
-                        tf.name,
-                    ]
-                )
-                return sumolib.net.readNet(tf.name, withInternal=True)
-            except Exception as e:
-                logger.warning(
-                    f"unable to use netconvert tool to normalize coordinates: {e}"
-                )
-        return None
-
     @classmethod
     def from_file(cls, net_file):
         # Connections to internal lanes are implicit. If `withInternal=True` is
