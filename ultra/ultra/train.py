@@ -38,13 +38,12 @@ import ray
 import torch
 
 from smarts.zoo.registry import make
-from ultra.evaluate import evaluation_check
+from ultra.evaluate import evaluation_check, collect_evaluations
 from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-@ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 def train(
     scenario_info,
     num_episodes,
@@ -60,6 +59,7 @@ def train(
     torch.set_num_threads(1)
     total_step = 0
     finished = False
+    evaluation_task_ids = dict()
 
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
@@ -139,9 +139,12 @@ def train(
             episode=episode,
             log_dir=log_dir,
             max_episode_steps=max_episode_steps,
+            evaluation_task_ids=evaluation_task_ids,
             **eval_info,
             **env.info,
         )
+
+        collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
@@ -188,6 +191,10 @@ def train(
 
         if finished:
             break
+
+    # Wait on the remaining evaluations to finish.
+    while collect_evaluations(evaluation_task_ids):
+        time.sleep(0.1)
 
     env.close()
 
@@ -274,22 +281,18 @@ if __name__ == "__main__":
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
     ray.init()
-    ray.wait(
-        [
-            train.remote(
-                scenario_info=(args.task, args.level),
-                num_episodes=int(args.episodes),
-                max_episode_steps=int(args.max_episode_steps),
-                eval_info={
-                    "eval_rate": int(args.eval_rate),
-                    "eval_episodes": int(args.eval_episodes),
-                },
-                timestep_sec=float(args.timestep),
-                headless=args.headless,
-                policy_classes=policy_classes,
-                seed=args.seed,
-                log_dir=args.log_dir,
-                policy_ids=policy_ids,
-            )
-        ]
+    train(
+        scenario_info=(args.task, args.level),
+        num_episodes=int(args.episodes),
+        max_episode_steps=int(args.max_episode_steps),
+        eval_info={
+            "eval_rate": float(args.eval_rate),
+            "eval_episodes": int(args.eval_episodes),
+        },
+        timestep_sec=float(args.timestep),
+        headless=args.headless,
+        policy_classes=policy_classes,
+        seed=args.seed,
+        log_dir=args.log_dir,
+        policy_ids=policy_ids,
     )

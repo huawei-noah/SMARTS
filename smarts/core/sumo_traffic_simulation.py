@@ -35,14 +35,14 @@ from traci.exceptions import FatalTraCIError, TraCIException
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import ProviderState
+from smarts.core.provider import Provider, ProviderState
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_stdout
 from smarts.core.utils.sumo import SUMO_PATH, traci
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class SumoTrafficSimulation:
+class SumoTrafficSimulation(Provider):
     """
     Args:
         net_file:
