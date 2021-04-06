@@ -190,15 +190,12 @@ class Scenario:
         self._log_dir = self._resolve_log_dir(log_dir)
 
         self._validate_assets_exist()
-        self._road_network = SumoRoadNetwork.from_file(self.net_filepath)
-        self._net_file_hash = file_md5_hash(self.net_filepath)
+        net_file = os.path.join(self._root, "map.net.xml")
+        self._road_network = SumoRoadNetwork.from_file(net_file)
+        self._net_file_hash = file_md5_hash(self._road_network.net_file)
         self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
         self._traffic_history_service = Traffic_history_service(traffic_history)
-
-    @property
-    def mapLocationOffset(self):
-        return self._road_network.netOffset
 
     def __repr__(self):
         return f"""Scenario(
@@ -284,7 +281,7 @@ class Scenario:
                 concrete_route,
                 concrete_agent_missions,
                 concrete_social_agents,
-                conrete_traffic_history,
+                concrete_traffic_history,
             ) in product(
                 np.roll(routes, roll_routes, 0),
                 np.roll(agent_missions, roll_agent_missions, 0),
@@ -315,7 +312,7 @@ class Scenario:
                     },
                     social_agents=concrete_social_agents,
                     surface_patches=surface_patches,
-                    traffic_history=conrete_traffic_history,
+                    traffic_history=concrete_traffic_history,
                 )
 
     @staticmethod
@@ -520,7 +517,7 @@ class Scenario:
         return Traffic_history_service.fetch_agent_missions(
             self._traffic_history_service.history_file_path,
             self._root,
-            self.mapLocationOffset,
+            self._road_network.net_offset,
         )
 
     @staticmethod
@@ -530,8 +527,8 @@ class Scenario:
             return []
 
         traffic_histories = []
-        with open(path, "rb") as f:
-            files = pickle.load(f)
+        with open(path, "rb") as inf:
+            files = pickle.load(inf)
             traffic_histories = [os.path.join(scenario_root, f) for f in files]
 
         return traffic_histories
@@ -716,10 +713,6 @@ class Scenario:
     @property
     def surface_patches(self):
         return self._surface_patches
-
-    @property
-    def net_filepath(self):
-        return os.path.join(self._root, "map.net.xml")
 
     @property
     def net_file_hash(self):
