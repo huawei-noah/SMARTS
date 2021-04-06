@@ -129,9 +129,7 @@ def evaluation_check(
 
 
 def collect_evaluations(evaluation_task_ids: dict):
-    ready_evaluation_task_ids, _ = ray.wait(
-        [task_id for task_id in evaluation_task_ids.keys()], timeout=0
-    )
+    ready_evaluation_task_ids, _ = ray.wait(list(evaluation_task_ids.keys()), timeout=0)
 
     # For each ready evaluation result, put it in the episode's
     # evaluation info so that it can be recorded to tensorboard.
