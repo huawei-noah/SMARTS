@@ -22,6 +22,9 @@ process
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed sumo road network offset bug for shifted maps.  See issue #716.
 
+### Fixed
+- Update `ego_open_agent` to use the package instead of the zoo directory version.
+
 ## [0.4.15] - 2021-03-18
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
