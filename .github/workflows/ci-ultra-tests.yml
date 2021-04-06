@@ -78,7 +78,8 @@ jobs:
           ./tests/ \
           --ignore=./tests/test_ultra_package.py \
           --ignore=./tests/test_train.py \
-          --ignore=./tests/test_evaluate.py \
+          --ignore=./tests/test_evaluate_single.py \
+          --ignore=./tests/test_evaluate_multi.py \
           --ignore=./tests/test_analysis.py \
 
   test-package-via-setup:
