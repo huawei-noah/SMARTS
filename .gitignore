@@ -106,6 +106,7 @@ bubbles.pkl
 missions.pkl
 traffic_histories.pkl
 **/social_agents/*
+shifted_map-AUTOGEN.net.xml
 
 # Manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml
