@@ -21,7 +21,7 @@ $ python run_test.py scenarios/4lane_left_turn
 ```
 
 
-# Run train example 
+## Run train example 
 To train an agent:
 ```bash
 # cd zoo/policies/cross-rl-agent/cross_rl_agent/train
