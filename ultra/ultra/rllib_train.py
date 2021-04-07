@@ -154,7 +154,6 @@ def train(
 
     # Iteration value in trainer.py (self._iterations) is the technically the number of episodes
     for i in range(num_episodes):
-        print("i ASDASD", i)
         results = agent.train()
         agent.log_evaluation_metrics(
             results
