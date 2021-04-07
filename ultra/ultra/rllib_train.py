@@ -203,9 +203,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--eval-rate",
-        help="run evaluation every 'n' number of iterations",
+        help="The number of training episodes to wait before running the evaluation",
         type=int,
-        default=100,
+        default=200,
     )
     parser.add_argument(
         "--seed",

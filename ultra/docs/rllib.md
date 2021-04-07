@@ -31,7 +31,7 @@ of the steps is shown below
   - `--timestep`: The environment timestep in seconds (default is 0.1).
   - `--headless`: Whether to run training without Envision (default is True).
   - `--eval-episodes`: The number of evaluation episodes (default is 200).
-  - `--eval-rate`: The rate at which evaluation occurs based on the number of episodes (default is 10000).
+  - `--eval-rate`: The number of training episodes to wait before running the evaluation (default is 200).
   - `--seed`: The environment seed (default is 2).
   - `--policy`: The policy (agent) to train (default is ppo). Only PPO is supported for now.
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
