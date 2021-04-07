@@ -49,6 +49,16 @@ from .scenario import Scenario
 from .coordinates import Pose
 
 
+class RendererException(Exception):
+    """An exception raised if a renderer is required but not available."""
+
+    @classmethod
+    def required_to(cls, thing):
+        return cls(
+            "A renderer is required to {thing}.  Ensure that `renderer_optional=False` is set when creating SMARTS instance."
+        )
+
+
 class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
@@ -89,7 +99,7 @@ class _ShowBaseInstance(ShowBase):
 
         except Exception as e:
             # Known reasons for this failing:
-            raise Exception(
+            raise RendererException(
                 f"Error in initializing framework for opening graphical display and creating scene graph. "
                 "A typical reason is display not found. Try running with different configurations of "
                 "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "
@@ -139,13 +149,13 @@ class Renderer:
         self._log = logging.getLogger(self.__class__.__name__)
         self._is_setup = False
         self._simid = simid
-        # Note: Each instance of the SMARTS simulation will have its own Renderer,
-        # but all Renderer objects share the same ShowBaseInstance.
-        self._showbase_instance = _ShowBaseInstance()
         self._root_np = None
         self._vehicles_np = None
         self._road_network_np = None
         self._vehicle_nodes = {}
+        # Note: Each instance of the SMARTS simulation will have its own Renderer,
+        # but all Renderer objects share the same ShowBaseInstance.
+        self._showbase_instance = _ShowBaseInstance()
 
     @property
     def id(self):
@@ -210,6 +220,7 @@ class Renderer:
         if not vehicle_path:
             self._log.warn(f"Renderer ignoring invalid vehicle id {vid}")
             return
+        # TAI: consider reparenting hijacked vehicles too?
         vehicle_path.reparentTo(self._vehicles_np if is_agent else self._root_np)
 
     def update_vehicle_node(self, vid: str, pose: Pose):

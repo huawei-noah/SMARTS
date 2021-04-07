@@ -82,7 +82,6 @@ def vehicle(bullet_client, vehicle_controller_file, timestep_sec=time_step):
     vehicle1 = Vehicle(
         id="vehicle",
         pose=pose,
-        renderer=mock.MagicMock(),
         chassis=AckermannChassis(
             pose=pose,
             bullet_client=bullet_client,

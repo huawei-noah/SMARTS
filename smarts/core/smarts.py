@@ -78,7 +78,7 @@ class SMARTS:
         self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._scenario: Scenario = None
-        self._renderer = Renderer(self._sim_id)
+        self._renderer = None
         self._envision: EnvisionClient = envision
         self._visdom: VisdomClient = visdom
         self._timestep_sec = timestep_sec
@@ -199,10 +199,11 @@ class SMARTS:
         # Agents
         self._agent_manager.step_sensors(self)
 
-        # runs through the render pipeline
-        # MUST perform this after step_sensors() above, and before observe() below,
-        # so that all updates are ready before rendering happens per frame
-        self._renderer.render()
+        if self._renderer:
+            # runs through the render pipeline (for camera-based sensors)
+            # MUST perform this after step_sensors() above, and before observe() below,
+            # so that all updates are ready before rendering happens per frame
+            self._renderer.render()
 
         observations, rewards, scores, dones = self._agent_manager.observe(self)
 
@@ -276,7 +277,8 @@ class SMARTS:
                 scenario.road_network, scenario.waypoints, scenario.missions
             )
             self._agent_manager.init_ego_agents(self)
-            self._sync_vehicles_to_renderer()
+            if self._renderer:
+                self._sync_vehicles_to_renderer()
         else:
             self.teardown()
             self.setup(scenario)
@@ -306,7 +308,8 @@ class SMARTS:
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_network)
         self._trap_manager = TrapManager(scenario)
 
-        self._renderer.setup(scenario)
+        if self._renderer:
+            self._renderer.setup(scenario)
         self._setup_bullet_client(self._bullet_client)
         provider_state = self._setup_providers(self._scenario)
         self._agent_manager.setup_agents(self)
@@ -425,7 +428,16 @@ class SMARTS:
 
     @property
     def renderer(self):
+        if not self._renderer:
+            self._renderer = Renderer(self._sim_id)
+            if self._scenario:
+                self._renderer.setup(self._scenario)
+                self._vehicle_index.begin_rendering_vehicles(self._renderer)
         return self._renderer
+
+    @property
+    def is_rendering(self):
+        return self._renderer is not None
 
     @property
     def road_stiffness(self):
@@ -611,7 +623,8 @@ class SMARTS:
         for provider in self.providers:
             provider.sync(provider_state)
         self._pybullet_provider_sync(provider_state)
-        self._sync_vehicles_to_renderer()
+        if self._renderer:
+            self._sync_vehicles_to_renderer()
 
     def _reset_providers(self):
         for provider in self.providers:
@@ -711,16 +724,10 @@ class SMARTS:
         return [other_states[i] for i in indices]
 
     def vehicle_did_collide(self, vehicle_id):
-        return (
-            len(
-                [
-                    c
-                    for c in self._vehicle_collisions[vehicle_id]
-                    if c.collidee_id != self._ground_bullet_id
-                ]
-            )
-            > 0
-        )
+        for c in self._vehicle_collisions[vehicle_id]:
+            if c.collidee_id != self._ground_bullet_id:
+                return True
+        return False
 
     def vehicle_collisions(self, vehicle_id):
         return [
@@ -768,6 +775,7 @@ class SMARTS:
                     )
 
     def _sync_vehicles_to_renderer(self):
+        assert self._renderer
         for vehicle in self._vehicle_index.vehicles:
             vehicle.sync_to_renderer()
 

@@ -323,22 +323,10 @@ class Sensors:
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
-        collided = (
-            sim.vehicle_did_collide(vehicle.id) if done_criteria.collision else False
-        )
-        is_off_road = (
-            cls._vehicle_is_off_road(sim, vehicle) if done_criteria.off_road else False
-        )
-        is_on_shoulder = (
-            cls._vehicle_is_on_shoulder(sim, vehicle)
-            if done_criteria.on_shoulder
-            else False
-        )
-        is_not_moving = (
-            cls._vehicle_is_not_moving(sim, vehicle)
-            if done_criteria.not_moving
-            else False
-        )
+        collided = sim.vehicle_did_collide(vehicle.id)
+        is_off_road = cls._vehicle_is_off_road(sim, vehicle)
+        is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
+        is_not_moving = cls._vehicle_is_not_moving(sim, vehicle)
         reached_goal = cls._agent_reached_goal(sim, vehicle)
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
@@ -346,12 +334,12 @@ class Sensors:
         )
 
         done = (
-            is_off_road
+            (is_off_road and done_criteria.off_road)
             or reached_goal
             or reached_max_episode_steps
-            or is_on_shoulder
-            or collided
-            or is_not_moving
+            or (is_on_shoulder and done_criteria.on_shoulder)
+            or (collided and done_criteria.collision)
+            or (is_not_moving and done_criteria.not_moving)
             or (is_off_route and done_criteria.off_route)
             or (is_wrong_way and done_criteria.wrong_way)
         )
@@ -590,6 +578,7 @@ class CameraSensor(Sensor):
         height: int,
         resolution: float,
     ):
+        assert renderer
         self._log = logging.getLogger(self.__class__.__name__)
         self._vehicle = vehicle
         self._camera = renderer.build_offscreen_camera(

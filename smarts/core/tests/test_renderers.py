@@ -24,10 +24,34 @@ import threading
 
 import pytest
 
+from smarts.core.agent_interface import (
+    ActionSpaceType,
+    AgentInterface,
+    NeighborhoodVehicles,
+)
 from smarts.core.renderer import Renderer
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Pose, Heading
 from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
+from smarts.core.smarts import SMARTS
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
+
+@pytest.fixture
+def smarts():
+    buddha = AgentInterface(
+        max_episode_steps=1000,
+        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
+        action=ActionSpaceType.Lane,
+    )
+    agents = {"Agent-007": buddha}
+    smarts = SMARTS(
+        agents,
+        traffic_sim=SumoTrafficSimulation(headless=True),
+        envision=None,
+    )
+    yield smarts
+    smarts.destroy()
 
 
 @pytest.fixture
@@ -78,3 +102,14 @@ def test_multiple_renderers(scenario):
         rt.start()
     for rt in rts:
         rt.join()
+
+
+def test_optional_renderer(smarts, scenario):
+    smarts.reset(scenario)
+    assert not smarts.is_rendering
+    for _ in range(10):
+        smarts.step({})
+    renderer = smarts.renderer
+    assert smarts.is_rendering
+    for _ in range(10):
+        smarts.step({})
