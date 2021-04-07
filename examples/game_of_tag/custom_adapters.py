@@ -9,6 +9,9 @@ from dataclasses import dataclass
 # how to train not driving offroad
 # how to train it to catch other vehicles and keep moving
 # need to have 0 sum game?
+# use state in reward adaptor? have negative reward based on previous states
+# use the same model on a different map?
+# training procedures
 
 
 @dataclass
@@ -23,11 +26,11 @@ class Rewards:
 
 global_rewards = Rewards()
 
-# PREDATOR_IDS = ["PRED1", "PRED2", "PRED3", "PRED4"]
-# PREY_IDS = ["PREY1", "PREY2"]
+PREDATOR_IDS = ["PRED1", "PRED2", "PRED3", "PRED4"]
+PREY_IDS = ["PREY1", "PREY2"]
 
-PREDATOR_IDS = ["PRED1"]
-PREY_IDS = ["PREY1"]
+# PREDATOR_IDS = ["PRED1"]
+# PREY_IDS = ["PREY1"]
 
 ACTION_SPACE = gym.spaces.Box(
     low=np.array([0.0, 0.0, -1.0]), # throttle can be negative?
