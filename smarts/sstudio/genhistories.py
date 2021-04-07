@@ -204,7 +204,7 @@ class Interaction(_TrajectoryDataset):
             return 3
         elif agent_type == "pedestrian/bicycle":
             return 4
-        self._log.warn(f"unknown agent_type:  {agent_type}.")
+        self._log.warning(f"unknown agent_type:  {agent_type}.")
         return 0
 
     def column_val_in_row(self, row, col_name):
@@ -366,7 +366,7 @@ class OldJSON(_TrajectoryDataset):
             return 3
         elif agent_type == "pedestrian/bicycle":
             return 4
-        self._log.warn(f"unknown agent_type:  {agent_type}.")
+        self._log.warning(f"unknown agent_type:  {agent_type}.")
         return 0
 
     def column_val_in_row(self, row, col_name):

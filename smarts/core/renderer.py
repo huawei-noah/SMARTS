@@ -209,14 +209,14 @@ class Renderer:
         """ adds the vehicle node to the scene graph """
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
-            self._log.warn(f"Renderer ignoring invalid vehicle id {vid}")
+            self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
             return
         vehicle_path.reparentTo(self._vehicles_np if is_agent else self._root_np)
 
     def update_vehicle_node(self, vid: str, pose: Pose):
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
-            self._log.warn(f"Renderer ignoring invalid vehicle id {vid}")
+            self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
             return
         pos, heading = pose.as_panda3d()
         vehicle_path.setPosHpr(*pos, heading, 0, 0)
@@ -224,7 +224,7 @@ class Renderer:
     def remove_vehicle_node(self, vid: str):
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
-            self._log.warn(f"Renderer ignoring invalid vehicle id {vid}")
+            self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
             return
         vehicle_path.removeNode()
 
