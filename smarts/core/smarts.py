@@ -21,6 +21,7 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import warnings
+import time
 from collections import defaultdict
 from typing import List, Sequence
 
@@ -97,6 +98,7 @@ class SMARTS:
         self._imitation_learning_mode = False
 
         self._elapsed_sim_time = 0
+        self._use_realtime_clock = False
 
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
@@ -225,6 +227,11 @@ class SMARTS:
 
         # 8. Advance the simulation clock.
         self._elapsed_sim_time = round(self._elapsed_sim_time + dt, 3)
+        if self._use_realtime_clock:
+            real_dt = time.time() - self._step_realtime
+            if real_dt < dt:
+                time.sleep(dt - real_dt)
+            self._step_realtime = time.time()
 
         return observations, rewards, dones, extras
 
@@ -302,6 +309,11 @@ class SMARTS:
 
     def setup(self, scenario: Scenario):
         self._scenario = scenario
+
+        self._use_realtime_clock = scenario.traffic_history and (
+            not self._traffic_sim.headless or not self._envision.headless
+        )
+        self._step_realtime = time.time()
 
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_network)
         self._trap_manager = TrapManager(scenario)
