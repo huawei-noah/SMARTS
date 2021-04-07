@@ -19,7 +19,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import argparse
 import math
 import os
 import random
@@ -36,18 +35,6 @@ from skimage.transform import resize
 import ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
 import math, datetime
-
-
-def str_to_bool(str_value):
-    # Used to parse boolean flags. Idea taken from:
-    # https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
-    if isinstance(str_value, bool):
-        return str_value
-    if str_value.lower() in ["yes", "true", "t", "y", "1"]:
-        return True
-    if str_value.lower() in ["no", "false", "f", "n", "0"]:
-        return False
-    raise argparse.ArgumentTypeError("Boolean value expected")
 
 
 def gen_experiment_name():
