@@ -11,26 +11,6 @@ from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 logging.basicConfig(level=logging.INFO)
 
 
-def make_smarts():
-    try:
-        smarts = SMARTS(
-            agent_interfaces={},
-            traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
-            envision=Envision(),
-        )
-        smarts2 = SMARTS(
-            agent_interfaces={},
-            traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
-            envision=Envision(),
-        )
-        yield smarts
-    except Exception as e:
-        raise e
-    finally:
-        smarts.destroy()
-        smarts2.destroy()
-
-
 def main(scenarios, headless, seed):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
@@ -38,9 +18,15 @@ def main(scenarios, headless, seed):
         observation_adapter=None,
     )
 
-    stage_smarts = make_smarts()
+    smarts = SMARTS(
+        agent_interfaces={},
+        traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
+    )
+    smarts2 = SMARTS(
+        agent_interfaces={},
+        traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
+    )
 
-    smarts = next(stage_smarts)
     scenarios_iterator = Scenario.scenario_variations(
         scenarios,
         list([]),
@@ -55,7 +41,8 @@ def main(scenarios, headless, seed):
         )
         obs, _, _, _ = smarts.observe_from(smarts.vehicle_index.social_vehicle_ids())
 
-    next(stage_smarts)
+    smarts.destroy()
+    smarts2.destroy()
 
     print("success")
 
