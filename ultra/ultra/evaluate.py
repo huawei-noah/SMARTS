@@ -71,13 +71,16 @@ def evaluation_check(
 
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
+        # TODO: Change this to an attr check so that a checkpoint directory isn't
+        #       created if it is not needed.
         checkpoint_directory = episode.checkpoint_dir(
             agent_id, episode.get_itr(agent_id)
         )
         try:
             agents[agent_id].save(checkpoint_directory)
         except AttributeError:
-            print(f"Unable to save agent '{agent_id}'. A 'save' method does not exist.")
+            print(f"No 'save' method for '{agent_id}'. Skipping its evaluation.")
+            continue
 
         # Perform the evaluation on this agent and save the data.
         evaluation_data.update(
