@@ -5,6 +5,12 @@ from typing import List
 import time
 from dataclasses import dataclass
 
+# questions:
+# how to train not driving offroad
+# how to train it to catch other vehicles and keep moving
+# need to have 0 sum game?
+
+
 @dataclass
 class Rewards:
     prey_base_reward: float = 1
@@ -12,13 +18,16 @@ class Rewards:
     collesion_with_target: float = 10.0
     game_ended: float = 10
     collesion_with_other_deduction: float = -12.0
-    off_road_deduction: float = -12
+    off_road_deduction: float = -18
     on_shoulder_deduction: float = -2
 
 global_rewards = Rewards()
 
-PREDATOR_IDS = ["PRED1", "PRED2", "PRED3", "PRED4"]
-PREY_IDS = ["PREY1", "PREY2"]
+# PREDATOR_IDS = ["PRED1", "PRED2", "PRED3", "PRED4"]
+# PREY_IDS = ["PREY1", "PREY2"]
+
+PREDATOR_IDS = ["PRED1"]
+PREY_IDS = ["PREY1"]
 
 ACTION_SPACE = gym.spaces.Box(
     low=np.array([0.0, 0.0, -1.0]), # throttle can be negative?
@@ -193,7 +202,7 @@ def predator_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
-    ## small negative reward for drivable_grid_map have on_drivable blocks
+    ## small negative reward for drivable_grid_map have on_drivable blocks?
 
     collided_with_prey = False
     rew = global_rewards.pred_base_reward
@@ -221,11 +230,11 @@ def predator_reward_adapter(observations, env_reward_signal):
 
     # Decreased reward for increased distance away from prey
     # ! check if the penalty is reasonable, staying alive should be sizable enough to keep agent on road or reduce this penalty
-    # rew -= 0.1 * min_distance_to_rival(
-    #     observations.ego_vehicle_state.position,
-    #     PREY_IDS,
-    #     observations.neighborhood_vehicle_states,
-    # )
+    rew -= (0.005) * min_distance_to_rival(
+        observations.ego_vehicle_state.position,
+        PREY_IDS,
+        observations.neighborhood_vehicle_states,
+    )
     if not collided_with_prey and events.reached_max_episode_steps:
         # predator failed to catch the prey
         rew -= global_rewards.game_ended
@@ -243,6 +252,7 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
+
     collided_with_pred = False
     rew = global_rewards.prey_base_reward
     # rew = 0.2 * np.sum(
@@ -265,11 +275,11 @@ def prey_reward_adapter(observations, env_reward_signal):
         rew += global_rewards.on_shoulder_deduction
 
     # Increased reward for increased distance away from predators
-    # rew += 0.1 * min_distance_to_rival(
-    #     observations.ego_vehicle_state.position,
-    #     PREDATOR_IDS,
-    #     observations.neighborhood_vehicle_states,
-    # )
+    rew += (0.005) * min_distance_to_rival(
+        observations.ego_vehicle_state.position,
+        PREDATOR_IDS,
+        observations.neighborhood_vehicle_states,
+    )
 
     if not collided_with_pred and events.reached_max_episode_steps:
         # prey survived

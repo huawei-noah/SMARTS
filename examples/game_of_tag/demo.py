@@ -36,7 +36,7 @@ class PredatorAgent(Agent):
 
 class PreyAgent(Agent):
     def act(self, obs):
-        return [0.5, 0, 0]  # throttle: 0->1, brake: 0->1, steering -1-> 1
+        return [0.1, 0, 0]  # throttle: 0->1, brake: 0->1, steering -1-> 1
 
 
 def main(scenario, headless, resume_training, result_dir, seed):
@@ -69,7 +69,8 @@ def main(scenario, headless, resume_training, result_dir, seed):
         scenarios=[scenario],
         agent_specs=agent_specs,
         sim_name="demo",
-        headless=headless,
+        headless=True,
+        sumo_headless=False,
         seed=seed,
     )
 

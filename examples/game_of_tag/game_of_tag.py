@@ -135,7 +135,7 @@ def main(args):
             "lambda": lambda: random.uniform(0.9, 1.0),
             "clip_param": lambda: random.uniform(0.01, 0.5),
             "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
-            "num_sgd_iter": lambda: random.randint(1, 30),
+            #"num_sgd_iter": lambda: random.randint(1, 30),
             "sgd_minibatch_size": lambda: 128, #random.randint(128, 16384),
             # "train_batch_size": lambda: random.randint(2000, 160000),
             "train_batch_size": lambda: 4000,
@@ -199,7 +199,7 @@ def main(args):
         # XXX: Beware, resuming after changing tune params will not pick up
         #      the new arguments as they are stored alongside the checkpoint.
         resume=args.resume_training,
-        # restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_d21f4_00000_0_2021-03-29_18-12-16/checkpoint_115/checkpoint-115",
+        #restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_77a55_00000_0_2021-04-06_12-59-36/checkpoint_133/checkpoint-133",
         local_dir=local_dir,
         reuse_actors=True,
         max_failures=1,
