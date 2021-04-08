@@ -59,7 +59,7 @@ class _ShowBaseInstance(ShowBase):
             loadPrcFileData("", "sync-video false")
             loadPrcFileData("", "model-path %s" % os.getcwd())
             # TODO: the following speeds up rendering a bit... might consider it.
-            #loadPrcFileData("", "model-cache-dir %s/.panda3d_cache" % os.getcwd())
+            # loadPrcFileData("", "model-cache-dir %s/.panda3d_cache" % os.getcwd())
             loadPrcFileData("", "audio-library-name null")
             loadPrcFileData("", "gl-version 3 3")
             loadPrcFileData("", "notify-level error")
