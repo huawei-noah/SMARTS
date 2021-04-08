@@ -28,23 +28,11 @@ seed(42)
 # )
 
 ego_missions = [
-    t.Mission(
-        route=t.Route(begin=("top", 2, 5), end=("top", 2, 'max')), # pred 1
+    t.EndlessMission(
+        begin=("bot", 2, 5) # prey
     ),
-    t.Mission(
-        route=t.Route(begin=("bottom", 2, 5), end=("bottom", 2, 'max')), # pred 2
-    ),
-    t.Mission(
-        route=t.Route(begin=("top", 2, 15), end=("top", 2, 'max')), # pred 3
-    ),
-    t.Mission(
-        route=t.Route(begin=("bottom", 2, 15), end=("bottom", 2, 'max')), # pred 4
-    ),
-    t.Mission(
-        route=t.Route(begin=("top", 4, 5), end=("top", 4, 'max')), # prey 1
-    ),
-    t.Mission(
-        route=t.Route(begin=("bottom", 4, 5), end=("bottom", 4, 'max')), # prey 2
+    t.EndlessMission(
+        begin=("bot", 2, 15) # pred
     ),
 ]
 

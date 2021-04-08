@@ -27,25 +27,34 @@ from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec, Agent
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.utils.episodes import episodes
+from smarts.core.controllers import ActionSpaceType
+
 
 
 class PredatorAgent(Agent):
     def act(self, obs):
-        return [0.5, 0, 0]
+        return [2, 0] # speed_type=1, lanechange = 0
 
 
 class PreyAgent(Agent):
     def act(self, obs):
-        return [0.1, 0, 0]  # throttle: 0->1, brake: 0->1, steering -1-> 1
+        return [1, 0]  # speed_type=1, lanechange = 0
 
 
 def main(scenario, headless, resume_training, result_dir, seed):
     agent_specs = {}
 
-    shared_interface = AgentInterface.from_type(
-        AgentType.Full, max_episode_steps=300
-    )  # 100s
-    shared_interface.done_criteria = DoneCriteria(off_route=False)
+    shared_interface = AgentInterface(
+        max_episode_steps=1000,
+        neighborhood_vehicles=True,
+        waypoints=True,
+        action=ActionSpaceType.LaneWithContinuousSpeed,
+    )
+    shared_interface.done_criteria = DoneCriteria(
+        off_route=False,
+        wrong_way=False,
+        collision=False,
+    )
     for agent_id in PREDATOR_IDS:
         agent_specs[agent_id] = AgentSpec(
             interface=shared_interface,

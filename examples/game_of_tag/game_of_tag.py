@@ -22,6 +22,7 @@ from ray.tune.schedulers import PopulationBasedTraining
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec
+from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 
 from examples.game_of_tag.custom_adapters import *
@@ -36,15 +37,21 @@ rllib_agents = {}
 # add custom done criteria - maybe not
 # map offset difference between sumo-gui and envision
 
-shared_interface = AgentInterface.from_type(
-    AgentType.Full, max_episode_steps=300
-)  # 100s
+shared_interface = AgentInterface(
+    max_episode_steps=1000,
+    neighborhood_vehicles=True,
+    waypoints=True,
+    action=ActionSpaceType.LaneWithContinuousSpeed,
+)
 shared_interface.done_criteria = DoneCriteria(
-    off_route=False
+    off_route=False,
+    wrong_way=False,
+    collision=False,
 )  # off_road=False? Try to still have off_road event but off_road=False in done creteria
 # shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
 
 # predator_neighborhood_vehicles=NeighborhoodVehicles(radius=30)
+print(f'model location: {os.path.join(os.path.dirname(os.path.realpath(__file__)), "model")}')
 for agent_id in PREDATOR_IDS:
     rllib_agents[agent_id] = {
         "agent_spec": AgentSpec(
@@ -85,25 +92,23 @@ for agent_id in PREY_IDS:
 def on_episode_start(info):
     episode = info["episode"]
     print("episode {} started".format(episode.episode_id))
-    episode.user_data["ego_speed"] = []
+    TrainingState.reset()
 
 
 def on_episode_step(info):
     episode = info["episode"]
     single_agent_id = list(episode._agent_to_last_obs)[0]
     obs = episode.last_raw_obs_for(single_agent_id)
-    episode.user_data["ego_speed"].append(obs["speed"])
+    TrainingState.step()
 
 
 def on_episode_end(info):
     episode = info["episode"]
-    mean_ego_speed = np.mean(episode.user_data["ego_speed"])
     print(
-        "episode {} ended with length {} and mean ego speed {:.2f}".format(
-            episode.episode_id, episode.length, mean_ego_speed
+        "episode {} ended with length {} and, number of timesteps {}".format(
+            episode.episode_id, episode.length, TrainingState.timestamp
         )
     )
-    episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
 
 
 def explore(config):
@@ -154,7 +159,6 @@ def main(args):
         )
         for agent_id, rllib_agent in rllib_agents.items()
     }
-    print(f"arg headless: {args.headless}")
     tune_config = {
         "env": RLlibHiWayEnv,
         "log_level": "WARN",

@@ -75,6 +75,11 @@ class LaneFollowingController:
         lane_change=0,
     ):
         assert isinstance(vehicle.chassis, AckermannChassis)
+        assert isinstance(lane_change, int) or isinstance(lane_change, np.integer), 'lane_change action should be an integer'
+        assert lane_change == 1 or lane_change == 0 or lane_change == -1, """lane_change action should be any of the following:
+-1: change to right right
+0: stay on same lane,
+1: change to left lane"""
         state = controller_state
         # This lookahead value is coupled with a few calculations below, changing it
         # may affect stability of the controller.
