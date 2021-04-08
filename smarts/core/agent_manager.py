@@ -224,6 +224,9 @@ class AgentManager:
         return tuple(map(self._filter_for_active_ego, response_tuple))
 
     def fetch_agent_actions(self, sim, ego_agent_actions):
+
+        # put social agent received action proto to python conversion here <------------------------------------------------
+
         try:
             social_agent_actions = {
                 agent_id: (
