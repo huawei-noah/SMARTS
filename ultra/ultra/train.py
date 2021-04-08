@@ -39,16 +39,14 @@ import torch
 import matplotlib.pyplot as plt
 
 from smarts.zoo.registry import make
-from ultra.evaluate import evaluation_check
 from ultra.utils.common import str_to_bool
+from ultra.evaluate import evaluation_check, collect_evaluations
 from ultra.utils.episode import episodes
 from ultra.utils.coordinator import Coordinator, CurriculumInfo, ScenarioDataHandler
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-# @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-@ray.remote(num_gpus=num_gpus / 2)
 def train(
     scenario_info,
     num_episodes,
@@ -66,6 +64,7 @@ def train(
     torch.set_num_threads(1)
     total_step = 0
     finished = False
+    evaluation_task_ids = dict()
 
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
@@ -189,20 +188,21 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
-        if (eval_info["eval_episodes"] != 0):
-            # Perform the evaluation check.
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                grade_mode=grade_mode,
-                agent_coordinator=agent_coordinator,
-                **eval_info,
-                **env.info,
-            )
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            grade_mode=grade_mode,
+            agent_coordinator=agent_coordinator,
+            max_episode_steps=max_episode_steps,
+            evaluation_task_ids=evaluation_task_ids,
+            **eval_info,
+            **env.info,
+        )
+
+        collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
@@ -244,7 +244,7 @@ def train(
             total_step += 1
             observations = next_observations
 
-        episode.record_episode() # record_by_episode option available as well
+        episode.record_episode()
         episode.record_tensorboard()
 
         if (grade_mode == True) and (agent_coordinator.end_warmup == True):
@@ -292,6 +292,10 @@ def train(
     print("(one) Average scenarios passed list:", asp_list)
     print("(two) Average scenarios passed list:", asp_list_two)
     
+    # Wait on the remaining evaluations to finish.
+    while collect_evaluations(evaluation_task_ids):
+        time.sleep(0.1)
+
     env.close()
 
 def gb_setup(gb_info, num_episodes):
@@ -334,7 +338,7 @@ if __name__ == "__main__":
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=10000,
+        default=200,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
@@ -347,9 +351,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--eval-rate",
-        help="Evaluation rate based on number of episodes",
+        help="The number of training episodes to wait before running the evaluation",
         type=int,
-        default=100,
+        default=200,
     )
     parser.add_argument(
         "--seed",
@@ -422,29 +426,26 @@ if __name__ == "__main__":
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
     ray.init()
-    ray.wait(
-        [
-            train.remote(
-                scenario_info=(args.task, args.level),
-                num_episodes=int(args.episodes),
-                max_episode_steps=int(args.max_episode_steps),
-                eval_info={
-                    "eval_rate": int(args.eval_rate),
-                    "eval_episodes": int(args.eval_episodes),
-                },
-                timestep_sec=float(args.timestep),
-                headless=args.headless,
-                policy_classes=policy_classes,
-                seed=args.seed,
-                log_dir=args.log_dir,
-                grade_mode=args.gb_mode,
-                gb_info={
-                    "gb_curriculum_dir": args.gb_curriculum_dir,
-                    "gb_build_scenarios": args.gb_build_scenarios,
-                    "gb_scenarios_root_dir": args.gb_scenarios_root_dir,
-                    "gb_scenarios_save_dir": args.gb_scenarios_save_dir,
-                },
-                policy_ids=policy_ids,
-            )
-        ]
+    train(
+        scenario_info=(args.task, args.level),
+        num_episodes=int(args.episodes),
+        max_episode_steps=int(args.max_episode_steps),
+        eval_info={
+            "eval_rate": int(args.eval_rate),
+            "eval_episodes": int(args.eval_episodes),
+        },
+        timestep_sec=float(args.timestep),
+        headless=args.headless,
+        policy_classes=policy_classes,
+        seed=args.seed,
+        log_dir=args.log_dir,
+        grade_mode=args.gb_mode,
+        gb_info={
+            "gb_curriculum_dir": args.gb_curriculum_dir,
+            "gb_build_scenarios": args.gb_build_scenarios,
+            "gb_scenarios_root_dir": args.gb_scenarios_root_dir,
+            "gb_scenarios_save_dir": args.gb_scenarios_save_dir,
+        },
+        policy_ids=policy_ids,
     )
+    

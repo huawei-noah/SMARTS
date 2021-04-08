@@ -12,7 +12,12 @@ import gym
 
 from smarts.core.utils.episodes import episodes
 
-open_agent = importlib.import_module("zoo.policies.open-agent.open_agent")
+try:
+    open_agent = importlib.import_module("open_agent")
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        f"Ensure that the open-agent has been installed with `pip install open-agent"
+    )
 
 from examples import default_argument_parser
 

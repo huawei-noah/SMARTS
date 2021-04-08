@@ -302,20 +302,24 @@ class Episode:
                             scenario["density_counter"],
                         )
 
-    def record_tensorboard(
-        self,
-        save_codes=None,
-        record_by_episode=False,
-        draw_grade_line=False,
-    ):
+    def record_tensorboard(self, save_codes=None, recording_step=None):
+        # Due to performing evaluation asynchronously, this may record evaluation
+        # results out of order. For example, if Evaluation 1 began at t = 100 s
+        # and recorded at t = 150 s, but Evaluation 2 began at t = 120 s and
+        # recorded at t = 140 s, the plot of the data will appear to go backwards,
+        # and also only have a data point for Evaluation 2. This seems to be a
+        # known tensorboardX and tensorboard issue that has not yet been resolved:
+        # https://github.com/tensorflow/tensorboard/issues/3570,
+        # https://github.com/lanpa/tensorboardX/milestone/1.
+        # Combat this issue by increasing eval_rate so that overlapping
+        # evaluations are less likely.
+
         # Only create tensorboard once from training process.
         self.initialize_tb_writer()
 
         for agent_id, agent_info in self.info[self.active_tag].items():
-            agent_itr = self.get_itr(agent_id)
+            agent_itr = recording_step if recording_step else self.get_itr(agent_id)
             data = {}
-
-            manipulated_var = self.index if record_by_episode else agent_itr
 
             for key, value in agent_info.data.items():
                 if not isinstance(value, (list, tuple, np.ndarray)):
@@ -323,7 +327,7 @@ class Episode:
                     self.tb_writer.add_scalar(
                         "{}/{}/{}".format(self.active_tag, agent_id, key),
                         value,
-                        manipulated_var,
+                        agent_itr,
                     )
                     data[key] = value
             self.all_data[self.active_tag][agent_id][manipulated_var] = data
