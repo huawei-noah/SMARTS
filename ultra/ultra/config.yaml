@@ -49,6 +49,9 @@ tasks:
     hard:
       train: "scenarios/task1/train_hard*"
       test:  "scenarios/task1/test_hard*"
+    random:
+      train: "scenarios/task1/train_random*"
+      test:  "scenarios/task1/test_random*"
   task2:
     lo-hi:
       train: "scenarios/task2/train_lo-hi*"
@@ -56,17 +59,17 @@ tasks:
     hi-lo:
       train: "scenarios/task2/train_hi-lo*"
       test:  "scenarios/task2/test_hi-lo*"
-  task3:
+  taskgb:
     grade1:
-      train: "scenarios/task3/train_grade1*"
-      test: "scenarios/task3/test_grade1*"
+      train: "scenarios/taskgb/train_grade1*"
+      test: "scenarios/taskgb/test_grade1*"
     grade2:
-      train: "scenarios/task3/train_grade2*"
-      test: "scenarios/task3/test_grade2*"
+      train: "scenarios/taskgb/train_grade2*"
+      test: "scenarios/taskgb/test_grade2*"
     grade3:
-      train: "scenarios/task3/train_grade3*"
-      test: "scenarios/task3/test_grade3*"
+      train: "scenarios/taskgb/train_grade3*"
+      test: "scenarios/taskgb/test_grade3*"
     grade4:
-      train: "scenarios/task3/train_grade4*"
-      test: "scenarios/task3/test_grade4*"
+      train: "scenarios/taskgb/train_grade4*"
+      test: "scenarios/taskgb/test_grade4*"
 

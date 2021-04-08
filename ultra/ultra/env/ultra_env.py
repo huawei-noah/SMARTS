@@ -187,8 +187,6 @@ class UltraEnv(HiWayEnv):
         # Switch scenario handler into next grade
         if switch:
             _scenarios = self.get_scenarios(grade)
-            # print(_scenarios)
-
             self._scenarios_iterator = Scenario.scenario_variations(
                 _scenarios,
                 list(self.agent_specs.keys()),
@@ -196,19 +194,16 @@ class UltraEnv(HiWayEnv):
             )
 
         scenario = next(self._scenarios_iterator)
+        # print(scenario)
 
-        if self.grade_mode:
-            # print(str(scenario._root))
-            root = str(scenario._root).split("/")[-1]
-            for i in ["no-traffic", "low-density", "mid-density", "high-density"]:
-                if i in root:
-                    # print(f"Route: {root}")
-                    # print(f"Scenario density: {i}")
-                    scenario_density = i
-                else:
-                    continue
+        root = str(scenario._root).split("/")[-1]
+        for density in ["no-traffic", "low-density", "mid-density", "high-density", "p-test"]:
+            if density in root:
+                scenario_density = density
+            else:
+                continue
 
-            scenario_info = {"root": root, "scenario_density": scenario_density}
+        scenario_info = {"root": root, "scenario_density": scenario_density}
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
@@ -218,10 +213,7 @@ class UltraEnv(HiWayEnv):
             for agent_id, obs in env_observations.items()
         }
 
-        if self.grade_mode:
-            return observations, scenario_info
-        else:
-            return observations
+        return observations, scenario_info
 
     def get_scenarios(self, grade):
         """only for grade based structure"""

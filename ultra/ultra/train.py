@@ -103,12 +103,18 @@ def train(
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
+    CurriculumInfo.initialize(gb_info["gb_curriculum_dir"]) # Applicable to both non-gb and gb cases
+
     if grade_mode:
         agent_coordinator, scenario_info = gb_setup(gb_info, num_episodes)
         scenario_data_handler = ScenarioDataHandler("Train")
+        if (num_episodes % agent_coordinator.get_num_of_grades() == 0):
+            num_episodes += 1
+            print("New max episodes (due to end case):", num_episodes)
     else:
         print("\n------------ GRADE MODE : Disabled ------------\n")
         agent_coordinator = None
+        scenario_data_handler = ScenarioDataHandler("Train")
 
     # Create the environment.
     env = gym.make(
@@ -125,8 +131,11 @@ def train(
 
     average_scenarios_passed = 0.0
     total_scenarios_passed = 0.0
+    # CurriculumInfo.initialize()
 
     old_episode = None
+    asp_list = []
+    asp_list_two = []
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if grade_mode:
             graduate = agent_coordinator.graduate(
@@ -139,21 +148,26 @@ def train(
                 scenario_data_handler.display_grade_scenario_distribution(grade_size)
                 scenario_data_handler.save_grade_density(grade_size)
                 agent_coordinator.episode_per_grade = 0
+                agent_coordinator.end_warmup = False
             else:
                 observations, scenario = env.reset()
 
             if agent_coordinator.check_cycle_condition(episode.index):
                 print("No cycling of grades -> run completed")
                 break
-            density_counter = scenario_data_handler.record_density_data(
-                scenario["scenario_density"]
-            )
-            scenario["density_counter"] = density_counter
+
+            if agent_coordinator.end_warmup == True:
+                density_counter = scenario_data_handler.record_density_data(
+                    scenario["scenario_density"]
+                )
+                scenario["density_counter"] = density_counter
             # print("agent_coordinator.episode_per_grade:", agent_coordinator.episode_per_grade)
         else:
             # Reset the environment and retrieve the initial observations.
-            observations = env.reset()
-            scenario = None
+            observations, scenario = env.reset()
+            density_counter = scenario_data_handler.record_density_data(
+                    scenario["scenario_density"]
+            )
 
         dones = {"__all__": False}
         infos = None
@@ -175,7 +189,7 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
-        if eval_info["eval_episodes"] != 0:
+        if (eval_info["eval_episodes"] != 0):
             # Perform the evaluation check.
             evaluation_check(
                 agents=agents,
@@ -230,32 +244,58 @@ def train(
             total_step += 1
             observations = next_observations
 
-        episode.record_episode()
+        episode.record_episode() # record_by_episode option available as well
         episode.record_tensorboard()
 
-        if grade_mode:
+        if (grade_mode == True) and (agent_coordinator.end_warmup == True):
             episode.record_density_tensorboard(scenario)
+
+        if grade_mode == True:
+            if agent_coordinator.end_warmup == True:
+                (
+                    average_scenarios_passed,
+                    total_scenarios_passed,
+                ) = Coordinator.calculate_average_scenario_passed(
+                    episode, total_scenarios_passed, agents, average_scenarios_passed
+                )
+                if ((episode.index + 1) % CurriculumInfo.pass_based_sample_rate == 0): # Set sample rate as in gb curriculum config
+                    print(
+                        f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
+                    )
+                    asp_list_two.append(tuple((episode.index + 1, average_scenarios_passed)))
+        else:
             (
                 average_scenarios_passed,
                 total_scenarios_passed,
-            ) = agent_coordinator.calculate_average_scenario_passed(
+            ) = Coordinator.calculate_average_scenario_passed(
                 episode, total_scenarios_passed, agents, average_scenarios_passed
             )
-
+            if ((episode.index + 1) % 30 == 0): # Set sample rate as in gb curriculum config
+                print(
+                    f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
+                )
+                asp_list.append(tuple((episode.index + 1, average_scenarios_passed)))
+        
         if finished:
             break
 
     # print(agent_coordinator.get_checkpoints())
 
-    if grade_mode:
-        filepath = os.path.join(episode.experiment_dir, "Train.csv")
-        scenario_data_handler.plot_densities_data(filepath)
+    if not grade_mode:
+        scenario_data_handler.display_grade_scenario_distribution(num_episodes)
+        scenario_data_handler.save_grade_density(num_episodes)
+    
+    filepath = os.path.join(episode.experiment_dir, "Train.csv")
+    scenario_data_handler.plot_densities_data(filepath)
+    print(scenario_data_handler.overall_densities_counter)
 
+    print("(one) Average scenarios passed list:", asp_list)
+    print("(two) Average scenarios passed list:", asp_list_two)
+    
     env.close()
 
-
 def gb_setup(gb_info, num_episodes):
-    agent_coordinator = Coordinator(gb_info["gb_curriculum_dir"], num_episodes)
+    agent_coordinator = Coordinator(num_episodes)
     # To build all scenarios from all grades
     if gb_info["gb_build_scenarios"]:
         agent_coordinator.build_all_scenarios(
@@ -332,8 +372,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--gb-mode",
         help="Toggle grade based mode",
-        default=False,
-        type=bool,
+        default="False",
+        type=str_to_bool,
     )
     parser.add_argument(
         "--gb-curriculum-dir",
@@ -344,8 +384,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--gb-build-scenarios",
         help="Build all scenarios from curriculum",
-        default=False,
-        type=bool,
+        default="False",
+        type=str_to_bool,
     )
     parser.add_argument(
         "--gb-scenarios-root-dir",

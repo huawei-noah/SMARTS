@@ -29,29 +29,38 @@ import matplotlib.pyplot as plt
 
 from ultra.scenarios.generate_scenarios import build_scenarios
 
-NUM_DENSITIES = ["no-traffic", "low", "mid", "high"]
-
-
 class CurriculumInfo:
     def __init__(self):
         pass
 
     @classmethod
-    def initialize(cls, curriculum):
+    def initialize(cls, gb_curriculum_dir):
+        root_dir = gb_curriculum_dir  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
+        base_dir = os.path.join(os.path.dirname(__file__), root_dir)
+        grades_dir = os.path.join(base_dir, "config.yaml")
+
+        with open(grades_dir, "r") as task_file:
+            cls.curriculum = yaml.safe_load(task_file)["curriculum"]
+
         cls.episode_based_toggle = bool(
-            curriculum["conditions"]["episode_based"]["toggle"]
+            cls.curriculum["conditions"]["episode_based"]["toggle"]
         )
         cls.episode_based_cycle = bool(
-            curriculum["conditions"]["episode_based"]["cycle"]
+            cls.curriculum["conditions"]["episode_based"]["cycle"]
         )
-        cls.pass_based_toggle = bool(curriculum["conditions"]["pass_based"]["toggle"])
+        cls.pass_based_toggle = bool(cls.curriculum["conditions"]["pass_based"]["toggle"])
         cls.pass_based_pass_rate = float(
-            curriculum["conditions"]["pass_based"]["pass_rate"]
+            cls.curriculum["conditions"]["pass_based"]["pass_rate"]
         )
-        cls.pass_based_sample_rate = curriculum["conditions"]["pass_based"][
+        cls.pass_based_sample_rate = cls.curriculum["conditions"]["pass_based"][
             "sample_rate"
         ]
-        # cls.pass_based_sampling_offset = curriculum["conditions"]["pass_based"]["sampling_offset"]
+        cls.pass_based_warmup_episodes = int(cls.curriculum["conditions"]["pass_based"][
+            "warmup_episodes"
+        ])
+        cls.pass_based_eval_at_end = int(cls.curriculum["conditions"]["pass_based"][
+            "eval_at_end"
+        ])
 
         if cls.episode_based_toggle == cls.pass_based_toggle == True:
             raise Exception(
@@ -62,15 +71,6 @@ class CurriculumInfo:
                 "Both condition toggles are set to False. Please choose one condition"
             )
 
-    # @classmethod
-    # def reset_pass_based_sampling_offset(cls, curriculum):
-    #     cls.pass_based_sampling_offset = curriculum["conditions"]["pass_based"]["sampling_offset"]
-
-    # @classmethod
-    # def decrement_sampling_offset(cls):
-    #     cls.pass_based_sampling_offset -= 1
-
-
 class ScenarioDataHandler:
     def __init__(self, tag):
         self.overall_densities_counter = {
@@ -79,22 +79,20 @@ class ScenarioDataHandler:
             "mid-density": 0,
             "high-density": 0,
         }
-        self.grade_densities_counter = {
-            "no-traffic": 0,
-            "low-density": 0,
-            "mid-density": 0,
-            "high-density": 0,
-        }
+        self.grade_densities_counter = copy.deepcopy(self.overall_densities_counter)
         self.densities_data = []
         self.tag = tag
 
     def record_density_data(self, scenario_density):
-        self.overall_densities_counter[scenario_density] += 1
-        self.grade_densities_counter[scenario_density] += 1
-        return self.overall_densities_counter[scenario_density]
+        if scenario_density != "p-test":
+            self.overall_densities_counter[scenario_density] += 1
+            self.grade_densities_counter[scenario_density] += 1
+            return self.overall_densities_counter[scenario_density]
+        return
 
     def save_grade_density(self, grade_size):
         temp = []
+        print("Grade size:", grade_size)
         for density in self.grade_densities_counter:
             if grade_size != 0:
                 temp.append(
@@ -112,7 +110,7 @@ class ScenarioDataHandler:
 
     def display_grade_scenario_distribution(self, grade_size):
         print("----------------------------------------------------")
-        print(f"({self.tag}) Traffic density distribution for previous grade:")
+        print(f"Traffic density distribution for previous grade (or {self.tag} run):")
         for density in self.grade_densities_counter:
             if grade_size != 0:
                 print(
@@ -125,7 +123,7 @@ class ScenarioDataHandler:
     def plot_densities_data(self, filepath=None):
         total_density_data = self.densities_data
         # print(total_density_data)
-        header = NUM_DENSITIES
+        header = ["no-traffic", "low", "mid", "high"]
         header.insert(0, "")
 
         with open(filepath, "w", newline="") as file:
@@ -135,30 +133,22 @@ class ScenarioDataHandler:
             for i in range(len(total_density_data)):
                 total_density_data[i].insert(0, f"grade-{i}")
                 writer.writerow(total_density_data[i])
-
+        header = []
 
 class Coordinator:
-    def __init__(self, gb_curriculum_dir, num_episodes):
+    def __init__(self, num_episodes):
         self.mode = False
-
-        root_dir = gb_curriculum_dir  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
-        base_dir = os.path.join(os.path.dirname(__file__), root_dir)
-        grades_dir = os.path.join(base_dir, "config.yaml")
-
-        with open(grades_dir, "r") as task_file:
-            self.curriculum = yaml.safe_load(task_file)["curriculum"]
-
         self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
         self.grade_checkpoints = []
         self.num_episodes = num_episodes
         self.grade_counter = 0
         self.episode_per_grade = 0
-
-        CurriculumInfo.initialize(self.curriculum)
+        self.warmup_episodes = 1
+        self.end_warmup = False
 
     def build_all_scenarios(self, root_path, save_dir):
-        for key in self.curriculum["grades"]:
-            for task, level in self.curriculum["grades"][key]:
+        for key in CurriculumInfo.curriculum["grades"]:
+            for task, level in CurriculumInfo.curriculum["grades"][key]:
                 build_scenarios(
                     task=f"task{task}",
                     level_name=level,
@@ -171,10 +161,10 @@ class Coordinator:
     def next_grade(self):
         # Get task and level information
         counter = next(self.counter) + 1
-        self.grade = self.curriculum["grades"][counter]
+        self.grade = CurriculumInfo.curriculum["grades"][counter]
 
     def get_num_of_grades(self):
-        return len(self.curriculum["grades"])
+        return len(CurriculumInfo.curriculum["grades"])
 
     def get_grade(self):
         return self.grade
@@ -193,7 +183,7 @@ class Coordinator:
             if index + 1 > int(self.get_num_of_grades() * self.get_grade_size()):
                 return True
         elif (CurriculumInfo.pass_based_toggle == True) and (
-            self.grade_counter > self.get_num_of_grades()
+            self.grade_counter >= self.get_num_of_grades()
         ):
             return True
         return False
@@ -203,10 +193,22 @@ class Coordinator:
 
     def graduate(self, index, average_scenarios_passed=None):
         """ Conditions on when to graduate """
-        if CurriculumInfo.episode_based_toggle:
-            return self.episode_based(index)
-        elif CurriculumInfo.pass_based_toggle:
-            return self.pass_based(index, average_scenarios_passed)
+        if (CurriculumInfo.pass_based_warmup_episodes != 0):
+            if ((self.warmup_episodes % CurriculumInfo.pass_based_warmup_episodes == 0) and (self.end_warmup == False)):
+                print("***WARM-UP episode:", self.warmup_episodes)
+                self.warmup_episodes = 1
+                self.end_warmup = True
+                return False
+            elif self.end_warmup == False:
+                print("***WARM-UP episode:", self.warmup_episodes)
+                self.warmup_episodes += 1
+                return False
+        
+        if self.end_warmup == True or CurriculumInfo.pass_based_warmup_episodes == 0:
+            if CurriculumInfo.episode_based_toggle:
+                return self.episode_based(index)
+            elif CurriculumInfo.pass_based_toggle:
+                return self.pass_based(index, average_scenarios_passed)
 
     def episode_based(self, index):
         # Switch to next grade based on number of episodes completed
@@ -227,8 +229,9 @@ class Coordinator:
     def pass_based(self, index, average_scenarios_passed):
         # Switch to next grade on the basis of certain percentage of completed scenarios
         self.episode_per_grade += 1
+        print("GRADE size counter:", self.episode_per_grade)
         if index != 0:
-            if average_scenarios_passed > CurriculumInfo.pass_based_pass_rate:
+            if average_scenarios_passed >= CurriculumInfo.pass_based_pass_rate:
                 print(f"({index}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
                 self.next_grade()
                 self.grade_counter += 1
@@ -242,9 +245,10 @@ class Coordinator:
             self.grade_counter += 1
             self.display()
             self.grade_checkpoints.append(index)
-
+    
+    @staticmethod
     def calculate_average_scenario_passed(
-        self, episode, total_scenarios_passed, agents, asp
+        episode, total_scenarios_passed, agents, asp
     ):
         if (episode.index + 1) % CurriculumInfo.pass_based_sample_rate == 0:
             total_scenarios_passed += episode.info[episode.active_tag][
@@ -257,9 +261,9 @@ class Coordinator:
             average_scenarios_passed = (
                 total_scenarios_passed / CurriculumInfo.pass_based_sample_rate
             )
-            print(
-                f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
-            )
+            # print(
+            #     f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
+            # )
             total_scenarios_passed = 0.0
             return average_scenarios_passed, total_scenarios_passed
         else:

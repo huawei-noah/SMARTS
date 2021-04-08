@@ -1,16 +1,18 @@
 curriculum: 
   grades:
-    1: [[3,grade1]] #[[<task>,<level>]]
-    2: [[3,grade2]]
-    3: [[3,grade3]]
-    4: [[3,grade4]]
+    1: [[gb,grade1]] #[[<task>,<level>]]
+    2: [[gb,grade2]]
+    3: [[gb,grade3]]
+    4: [[gb,grade4]]
   conditions:
     episode_based:
       toggle: False
       cycle: False
     pass_based:
       toggle: True
-      pass_rate: 0.40
-      sample_rate: 15
+      pass_rate: 0.75
+      sample_rate: 30
+      warmup_episodes: 100
+      eval_at_end: False
 
 

@@ -121,6 +121,7 @@ class SingleAgentEvaluateTest(unittest.TestCase):
             os.path.join(SingleAgentEvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
         )[0]
         models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", models)
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00 --level eval_test --models {models} --experiment-dir {experiment_dir} "
@@ -234,7 +235,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
     finished = False
 
     for episode in episodes(1, etag=etag, log_dir=log_dir):
-        observations = env.reset()
+        observations, scenario = env.reset()
         dones = {"__all__": False}
         infos = None
         episode.reset()

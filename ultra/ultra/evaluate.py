@@ -38,7 +38,7 @@ from smarts.zoo.registry import make
 from ultra.utils.common import str_to_bool
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
-from ultra.utils.coordinator import ScenarioDataHandler
+from ultra.utils.coordinator import ScenarioDataHandler, CurriculumInfo
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -62,7 +62,7 @@ def evaluation_check(
     agent_ids_to_evaluate = [
         agent_id
         for agent_id in agent_ids
-        if episode.index % eval_rate == 0
+        if (episode.index + 1) % eval_rate == 0
         and episode.last_eval_iterations[agent_id] != episode.index
     ]
 
@@ -218,8 +218,7 @@ def evaluate(
 
     initial_grade_switch = False
 
-    if grade_mode:
-        scenario_data_handler_eval = ScenarioDataHandler("Evaluation")
+    scenario_data_handler_eval = ScenarioDataHandler("Evaluation")
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
@@ -229,9 +228,8 @@ def evaluate(
                 initial_grade_switch = True
             else:
                 observations, scenario = env.reset()
-            # print(scenario["root"])
         else:
-            observations = env.reset()
+            observations, scenario = env.reset()
 
         dones = {"__all__": False}
         infos = None
@@ -252,12 +250,11 @@ def evaluate(
 
         episode.record_episode()
 
-        if grade_mode:
-            density_counter = scenario_data_handler_eval.record_density_data(
-                scenario["scenario_density"]
-            )
-            scenario["density_counter"] = density_counter
-            episode.record_density_tensorboard(scenario)
+        density_counter = scenario_data_handler_eval.record_density_data(
+            scenario["scenario_density"]
+        )
+        scenario["density_counter"] = density_counter
+        episode.record_density_tensorboard(scenario)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
@@ -272,11 +269,14 @@ def evaluate(
 
     env.close()
 
-    if grade_mode:
-        filepath = os.path.join(checkpoint_dirs["000"], "Test.csv")
-        scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
-        scenario_data_handler_eval.save_grade_density(num_episodes)
-        scenario_data_handler_eval.plot_densities_data(filepath)
+    if eval_mode:
+        filepath = os.path.join(checkpoint_dirs["000"], "Evaluate-test-scenarios.csv")
+    else:
+        filepath = os.path.join(checkpoint_dirs["000"], "Evaluate-train-scenarios.csv")
+        
+    scenario_data_handler_eval.save_grade_density(num_episodes)
+    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+    scenario_data_handler_eval.plot_densities_data(filepath)
 
     return summary_log
 
