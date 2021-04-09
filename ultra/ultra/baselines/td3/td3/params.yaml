@@ -27,3 +27,9 @@ social_vehicles:
     social_capacity: 10
     num_social_features: 4
     seed: 2
+# Uncomment to use RGB + low_dim_states as observation.
+# rgb:
+#     stack_size: 3
+#     width: 64
+#     height: 64
+#     resolution: 0.78125  # = 50 / 64

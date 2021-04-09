@@ -33,6 +33,7 @@ from smarts.core.agent_interface import (
 
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
+from smarts.core.agent_interface import RGB
 from ultra.baselines.adapter import BaselineAdapter
 
 
@@ -96,12 +97,23 @@ class BaselineAgentSpec(AgentSpec):
             assert agent_name != None
 
             adapter = BaselineAdapter(agent_name)
+
+            if "rgb" in adapter.policy_params:
+                rgb_info = adapter.policy_params["rgb"]
+                rgb = RGB(
+                    width=rgb_info["width"],
+                    height=rgb_info["height"],
+                    resolution=rgb_info["resolution"],
+                )
+            else:
+                rgb = False
+
             spec = AgentSpec(
                 interface=AgentInterface(
                     waypoints=Waypoints(lookahead=20),
                     neighborhood_vehicles=NeighborhoodVehicles(200),
                     action=action_type,
-                    rgb=False,
+                    rgb=rgb,
                     max_episode_steps=max_episode_steps,
                     debug=True,
                 ),

@@ -30,10 +30,10 @@ import random
 import numpy as np
 import torch.optim as optim
 
-from ultra.baselines.td3.td3.fc_model import (
-    ActorNetwork,
-    CriticNetwork,
-)
+from ultra.baselines.td3.td3.fc_model import ActorNetwork as FCActorNetwork
+from ultra.baselines.td3.td3.fc_model import CriticNetwork as FCCriticNetwork
+from ultra.baselines.td3.td3.cnn_models import ActorNetwork as CNNActorNetwork
+from ultra.baselines.td3.td3.cnn_models import CriticNetwork as CNNCriticNetwork
 from smarts.core.agent import Agent
 from ultra.baselines.td3.td3.noise import (
     OrnsteinUhlenbeckProcess,
@@ -97,10 +97,12 @@ class TD3Policy(Agent):
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
+        self.rgb_info = policy_params["rgb"] if "rgb" in policy_params else None
         self.state_description = BaselineStatePreprocessor.get_state_description(
             policy_params["social_vehicles"],
             policy_params["observation_num_lookahead"],
             self.action_size,
+            self.rgb_info,
         )
 
         self.social_feature_encoder_class = self.social_vehicle_encoder[
@@ -125,7 +127,7 @@ class TD3Policy(Agent):
         self.num_actor_updates = 0
         self.current_iteration = 0
         self.step_count = 0
-        self.init_networks()
+        self.init_networks(self.rgb_info)
         if checkpoint_dir:
             self.load(checkpoint_dir)
 
@@ -143,7 +145,38 @@ class TD3Policy(Agent):
         size += self.action_size
         return size
 
-    def init_networks(self):
+    def init_networks(self, rgb_info=None):
+        if rgb_info:
+            # RGB images in observation, initialize CNNs.
+            network_params = {
+                "input_channels": rgb_info["stack_size"],
+                "input_dimension": (rgb_info["height"], rgb_info["width"]),
+                # TODO: Make this part of the state_size calculation.
+                "low_dim_state_size": sum(
+                    self.state_description["low_dim_states"].values()
+                )
+                + self.action_size,
+                "action_space": self.action_size,
+                "seed": self.seed,
+                "hidden_dim": 512,
+            }
+            actor_network = CNNActorNetwork
+            critic_network = CNNCriticNetwork
+        else:
+            # Use social vehicles, initialize fully-connected networks.
+            network_params = {
+                "state_space": self.state_size,
+                "action_space": self.action_size,
+                "seed": self.seed,
+                "social_feature_encoder": self.social_feature_encoder_class(
+                    **self.social_feature_encoder_params
+                )
+                if self.social_feature_encoder_class
+                else None,
+            }
+            actor_network = FCActorNetwork
+            critic_network = FCCriticNetwork
+
         self.noise = [
             OrnsteinUhlenbeckProcess(
                 size=(1,), theta=0.01, std=LinearSchedule(0.25), mu=0.0, x0=0.0, dt=1.0
@@ -152,74 +185,21 @@ class TD3Policy(Agent):
                 size=(1,), theta=0.1, std=LinearSchedule(0.05), mu=0.0, x0=0.0, dt=1.0
             ),  # steering
         ]
-        self.actor = ActorNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
-        self.actor_target = ActorNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
+
+        self.actor = actor_network(**network_params).to(self.device)
+        self.actor_target = actor_network(**network_params).to(self.device)
         self.actor_target.load_state_dict(self.actor.state_dict())
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.actor_lr)
 
-        self.critic_1 = CriticNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
-        self.critic_1_target = CriticNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
+        self.critic_1 = critic_network(**network_params).to(self.device)
+        self.critic_1_target = critic_network(**network_params).to(self.device)
         self.critic_1_target.load_state_dict(self.critic_1.state_dict())
         self.critic_1_optimizer = optim.Adam(
             self.critic_1.parameters(), lr=self.critic_lr
         )
 
-        self.critic_2 = CriticNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
-        self.critic_2_target = CriticNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
+        self.critic_2 = critic_network(**network_params).to(self.device)
+        self.critic_2_target = critic_network(**network_params).to(self.device)
         self.critic_2_target.load_state_dict(self.critic_2.state_dict())
         self.critic_2_optimizer = optim.Adam(
             self.critic_2.parameters(), lr=self.critic_lr
@@ -236,6 +216,7 @@ class TD3Policy(Agent):
         state["low_dim_states"] = (
             torch.from_numpy(state["low_dim_states"]).unsqueeze(0).to(self.device)
         )
+        state["images"] = torch.from_numpy(state["images"]).unsqueeze(0).to(self.device)
 
         self.actor.eval()
 

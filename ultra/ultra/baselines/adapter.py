@@ -70,10 +70,15 @@ class BaselineAdapter:
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
 
+        self.rgb_info = (
+            self.policy_params["rgb"] if "rgb" in self.policy_params else None
+        )
+
         self.state_preprocessor = BaselineStatePreprocessor(
             social_vehicle_config=self.social_vehicle_config,
             observation_waypoints_lookahead=self.observation_num_lookahead,
             action_size=2,
+            rgb_info=self.rgb_info,
         )
 
         self.social_feature_encoder_class = self.social_vehicle_encoder[
@@ -112,6 +117,13 @@ class BaselineAdapter:
                     low=-1e10,
                     high=1e10,
                     shape=(self.social_capacity, self.num_social_features),
+                    dtype=torch.Tensor,
+                ),
+                # ULTRA RLlib does not support image observations now.
+                "images": gym.spaces.Box(
+                    low=0,
+                    high=255,
+                    shape=(1,),
                     dtype=torch.Tensor,
                 ),
             }

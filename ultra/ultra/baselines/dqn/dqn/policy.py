@@ -26,6 +26,7 @@ from ultra.baselines.dqn.dqn.network import *
 from smarts.core.agent import Agent
 from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
 import pathlib, os, copy
+from ultra.baselines.dqn.dqn.network import DQNCNN
 from ultra.baselines.dqn.dqn.network import DQNWithSocialEncoder
 from ultra.baselines.dqn.dqn.explore import EpsilonExplore
 from ultra.baselines.common.replay_buffer import ReplayBuffer
@@ -43,7 +44,6 @@ class DQNPolicy(Agent):
         checkpoint_dir=None,
     ):
         self.policy_params = policy_params
-        network_class = DQNWithSocialEncoder
         self.epsilon_obj = EpsilonExplore(1.0, 0.05, 100000)
         action_space_type = policy_params["action_space_type"]
         if action_space_type == "continuous":
@@ -129,10 +129,12 @@ class DQNPolicy(Agent):
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
+        self.rgb_info = policy_params["rgb"] if "rgb" in policy_params else None
         self.state_description = BaselineStatePreprocessor.get_state_description(
             policy_params["social_vehicles"],
             policy_params["observation_num_lookahead"],
             prev_action_size,
+            self.rgb_info,
         )
         self.social_feature_encoder_class = self.social_vehicle_encoder[
             "social_feature_encoder_class"
@@ -145,26 +147,7 @@ class DQNPolicy(Agent):
         self.reset()
 
         torch.manual_seed(seed)
-        network_params = {
-            "state_size": self.state_size,
-            "social_feature_encoder_class": self.social_feature_encoder_class,
-            "social_feature_encoder_params": self.social_feature_encoder_params,
-        }
-        self.online_q_network = network_class(
-            num_actions=self.num_actions,
-            **(network_params if network_params else {}),
-        ).to(self.device)
-        self.target_q_network = network_class(
-            num_actions=self.num_actions,
-            **(network_params if network_params else {}),
-        ).to(self.device)
-        self.update_target_network()
-
-        self.optimizers = torch.optim.Adam(
-            params=self.online_q_network.parameters(), lr=lr
-        )
-        self.loss_func = nn.MSELoss(reduction="none")
-
+        self.init_networks(lr, self.rgb_info)
         if self.checkpoint_dir:
             self.load(self.checkpoint_dir)
 
@@ -176,6 +159,37 @@ class DQNPolicy(Agent):
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
             device_name=self.device_name,
         )
+
+    def init_networks(self, lr, rgb_info=None):
+        if rgb_info:
+            # RGB images in observation, initialize CNNs.
+            network_params = {
+                "n_in_channels": rgb_info["stack_size"],
+                "image_dim": (rgb_info["height"], rgb_info["width"]),
+                # TODO: Make this part of the state_size calculation.
+                "state_size": sum(self.state_description["low_dim_states"].values())
+                + self.action_size,
+                "num_actions": self.num_actions,
+            }
+            network_class = DQNCNN
+        else:
+            # Use social vehicles, initialize fully-connected networks.
+            network_params = {
+                "num_actions": self.num_actions,
+                "state_size": self.state_size,
+                "social_feature_encoder_class": self.social_feature_encoder_class,
+                "social_feature_encoder_params": self.social_feature_encoder_params,
+            }
+            network_class = DQNWithSocialEncoder
+
+        self.online_q_network = network_class(**network_params).to(self.device)
+        self.target_q_network = network_class(**network_params).to(self.device)
+        self.update_target_network()
+
+        self.optimizers = torch.optim.Adam(
+            params=self.online_q_network.parameters(), lr=lr
+        )
+        self.loss_func = nn.MSELoss(reduction="none")
 
     def lane_action_to_index(self, state):
         state = state.copy()
@@ -225,7 +239,8 @@ class DQNPolicy(Agent):
 
     def _act(self, state, explore=True):
         epsilon = self.epsilon_obj.get_epsilon()
-        if not explore or np.random.rand() > epsilon:
+        # if not explore or np.random.rand() > epsilon:
+        if True:
             state = copy.deepcopy(state)
             state["low_dim_states"] = np.float32(
                 np.append(state["low_dim_states"], self.prev_action)
@@ -235,6 +250,9 @@ class DQNPolicy(Agent):
             )
             state["low_dim_states"] = (
                 torch.from_numpy(state["low_dim_states"]).unsqueeze(0).to(self.device)
+            )
+            state["images"] = (
+                torch.from_numpy(state["images"]).unsqueeze(0).to(self.device)
             )
             self.online_q_network.eval()
             with torch.no_grad():

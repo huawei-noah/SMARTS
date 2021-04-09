@@ -69,9 +69,12 @@ class DQNCNN(nn.Module):
             # nn.init.normal_(q_out[-1].weight.data, 0.0, 1e-2)
             nn.init.constant_(q_out[-1].bias.data, 0.0)
 
-    def forward(self, image, state_size):
-        im_feature = self.im_feature(image)
-        x = torch.cat([im_feature, state_size], dim=-1)
+    def forward(self, state):
+        image = state["images"]
+        low_dim_states = state["low_dim_states"]
+
+        image_features = self.im_feature(image)
+        x = torch.cat([image_features, low_dim_states], dim=-1)
         x = [e(x) for e in self.q_outs]
         return x
 

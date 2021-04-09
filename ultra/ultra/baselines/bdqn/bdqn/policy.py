@@ -42,7 +42,6 @@ class BehavioralDQNPolicy(DQNPolicy):
         checkpoint_dir=None,
     ):
         self.policy_params = policy_params
-        network_class = DQNWithSocialEncoder
         self.epsilon_obj = EpsilonExplore(1.0, 0.05, 100000)
 
         discrete_action_spaces = [[0], [1]]
@@ -106,10 +105,12 @@ class BehavioralDQNPolicy(DQNPolicy):
         )
 
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
+        self.rgb_info = policy_params["rgb"] if "rgb" in policy_params else None
         self.state_description = BaselineStatePreprocessor.get_state_description(
             policy_params["social_vehicles"],
             policy_params["observation_num_lookahead"],
             prev_action_size,
+            self.rgb_info,
         )
         self.social_feature_encoder_class = self.social_vehicle_encoder[
             "social_feature_encoder_class"
@@ -122,26 +123,9 @@ class BehavioralDQNPolicy(DQNPolicy):
         self.reset()
 
         torch.manual_seed(seed)
-        network_params = {
-            "state_size": self.state_size,
-            "social_feature_encoder_class": self.social_feature_encoder_class,
-            "social_feature_encoder_params": self.social_feature_encoder_params,
-        }
-        self.online_q_network = network_class(
-            num_actions=self.num_actions,
-            **(network_params if network_params else {}),
-        ).to(self.device)
-        self.target_q_network = network_class(
-            num_actions=self.num_actions,
-            **(network_params if network_params else {}),
-        ).to(self.device)
-        self.update_target_network()
-
-        self.optimizers = torch.optim.Adam(
-            params=self.online_q_network.parameters(), lr=lr
-        )
-        self.loss_func = nn.MSELoss(reduction="none")
-
+        # TODO: BDQN network.py might not be needed anymore. bdqn/network.py and
+        #       dqn/network.py are the same.
+        self.init_networks(lr, self.rgb_info)
         if self.checkpoint_dir:
             self.load(self.checkpoint_dir)
 

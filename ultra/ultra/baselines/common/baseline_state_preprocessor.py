@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import collections
 import collections.abc
 import numpy as np
 import torch
@@ -46,14 +47,35 @@ class BaselineStatePreprocessor(StatePreprocessor):
         social_vehicle_config,
         observation_waypoints_lookahead,
         action_size,
+        rgb_info,
     ):
         self._state_description = self.get_state_description(
-            social_vehicle_config, observation_waypoints_lookahead, action_size
+            social_vehicle_config,
+            observation_waypoints_lookahead,
+            action_size,
+            rgb_info,
         )
+        if rgb_info:
+            self.images = collections.deque(
+                [
+                    np.zeros(
+                        (1, rgb_info["height"], rgb_info["width"]), dtype=np.float32
+                    )
+                    for _ in range(rgb_info["stack_size"])
+                ],
+                rgb_info["stack_size"],
+            )
+        else:
+            # TODO: This is here so that RLlib obs. space doesn't complain. Figure out
+            #       a better way to do this.
+            self.images = collections.deque([np.zeros((1,), dtype=np.float32)], 1)
 
     @staticmethod
     def get_state_description(
-        social_vehicle_config, observation_waypoints_lookahead, action_size
+        social_vehicle_config,
+        observation_waypoints_lookahead,
+        action_size,
+        rgb_info=None,
     ):
         return {
             "low_dim_states": {
@@ -69,6 +91,7 @@ class BaselineStatePreprocessor(StatePreprocessor):
             "social_vehicles": int(social_vehicle_config["num_social_features"])
             if int(social_vehicle_config["social_capacity"]) > 0
             else 0,
+            "images": 1 if rgb_info else 0,
         }
 
     @property
@@ -130,9 +153,32 @@ class BaselineStatePreprocessor(StatePreprocessor):
             ).float()
             social_vehicles = social_vehicles.reshape((-1, social_vehicle_dimension))
 
+        # Obtain the images. The RGB image is given with the shape
+        # (rows, columns, channels). Simply reshaping to a size of
+        # (channels, rows, columns) will not put the elements in the correct place. We
+        # have to do this manually. First, swap the column and the channel axes to go
+        # from shape (rows, columns, channels) to (rows, channels, columns), then swap
+        # the row and channel axes to go from shape (rows, channels, columns) to
+        # (channels, rows, columns). Then convert to grayscale with a weighted average
+        # of the RGB channels, and normalize the image.
+        if state["rgb"] is not None:
+            image = state["rgb"]
+            image = np.swapaxes(image, axis1=1, axis2=2)
+            image = np.swapaxes(image, axis1=0, axis2=1)
+            image = np.average(image, axis=0, weights=(0.2125, 0.7154, 0.0721))
+            image = np.expand_dims(image, axis=0)  # Expand to Rank 3 tensor.
+            image /= 255.0
+            self.images.appendleft(image.astype(np.float32))
+        stacked_images = (
+            np.concatenate(self.images, axis=0)
+            if len(self.images) > 0
+            else np.array([], dtype=np.float32)
+        )
+
         out = {
             "low_dim_states": low_dim_states.numpy(),
             "social_vehicles": social_vehicles.numpy(),
+            "images": stacked_images,
         }
         return out
 
@@ -174,6 +220,8 @@ class BaselineStatePreprocessor(StatePreprocessor):
             -ego_heading,
         )
 
+        rgb = state.top_down_rgb.data if state.top_down_rgb else None
+
         basic_state = dict(
             speed=ego_speed,
             relative_goal_position=ego_relative_rotated_goal_position,
@@ -189,6 +237,7 @@ class BaselineStatePreprocessor(StatePreprocessor):
             ego_position=ego_position,
             waypoint_paths=ego_waypoints,
             events=state.events,
+            rgb=rgb,
         )
         return basic_state
 
