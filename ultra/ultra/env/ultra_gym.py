@@ -100,11 +100,12 @@ class ActionAdapter:
 class UltraGym(UltraEnv):
     def __init__(
         self,
+        *args,
         max_episode_steps=200,
         action_type="discrete",
         obs_type="image",
-        image_size=image_dim,
-        framestack=2,
+        image_dim=84,
+        framestack=3,
         scenario_info=("1", "easy"),
         agent_id="007",
         headless=True,
@@ -112,6 +113,7 @@ class UltraGym(UltraEnv):
         seed=1,
         eval_mode=False,
         ordered_scenarios=False,
+        **kwargs,
     ):
         self.timestep_sec = timestep_sec
         self.headless = headless
@@ -120,7 +122,7 @@ class UltraGym(UltraEnv):
         self.agent_id = agent_id
         self.image_dim = image_dim
         self.framestack = framestack
-        self.last_obs = [0 for i in range(self.framestack - 1)]
+        self.last_state = None
 
         adapter = GymAdapter()
 
@@ -129,11 +131,11 @@ class UltraGym(UltraEnv):
         elif action_type == "continuous":
             action_type = ActionSpaceType.Continuous
 
-        self.action_space = ActionSpace(action_type)
+        self.action_space = ActionSpace.from_type(action_type)
 
         if obs_type == "image":
             self.observation_space = gym.spaces.Box(
-                low=0, high=1, shape=(256, 256, 1), dtype=np.float32
+                low=0, high=1, shape=(image_dim, image_dim, framestack), dtype=np.float32
             )
         elif obs_type == "low_dim":
             pass  # TODO
@@ -169,10 +171,10 @@ class UltraGym(UltraEnv):
             cv2.resize(
                 gray,
                 (self.image_dim, self.image_dim),
-                interpolation=cv2.INTER_CUBIC,
             )
             / 255.0
         )
+        return np.expand_dims(gray_scale, axis = 2)
 
     def step(self, agent_action):
         if agent_action not in self.action_space:
@@ -180,19 +182,23 @@ class UltraGym(UltraEnv):
 
         results = super().step({self.agent_id: agent_action})
         results = [result[self.agent_id] for result in results]
-        obs = np.concatenate((self.last_obs[1:], results[0]))
-        self.last_obs = obs
-        return obs, results[1], results[2], results[3]
+        obs = self.convert_to_greyscale(results[0])
+        state = np.concatenate((self.last_state[:,:,1:], obs), axis = 2)
+        self.last_state = state
+        return state, results[1], results[2], results[3]
 
     def reset(self):
-        obs = super().reset()
+        obs = self.convert_to_greyscale(super().reset()[self.agent_id])
+        initial_frames = [obs]
         for i in range(self.framestack - 1):
-            self.old_frames = super().step({self.agent_id: self.action_space.sample()})[
+            frame = super().step({self.agent_id: self.action_space.sample()})[
                 0
             ][self.agent_id]
-
-        self.last_obs = obs
-        return obs[self.agent_id]
+            grey_frame = self.convert_to_greyscale(frame)
+            initial_frames.append(grey_frame)
+        state = np.concatenate(initial_frames, axis = 2)
+        self.last_state = state
+        return state
 
 
 class GymAdapter:
