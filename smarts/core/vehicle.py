@@ -415,6 +415,7 @@ class Vehicle:
                     sim=sim,
                     vehicle=vehicle,
                     mission_planner=mission_planner,
+                    agent_behavior=agent_interface.agent_behavior,
                     lookahead=agent_interface.waypoints.lookahead,
                 )
             )

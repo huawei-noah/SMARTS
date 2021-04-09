@@ -1,8 +1,9 @@
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentBehavior, AgentInterface
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import register
 
+from .agent_behavior import AgentBehaviour
 
 def entrypoint(
     gains={
