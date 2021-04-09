@@ -135,7 +135,10 @@ class UltraGym(UltraEnv):
 
         if obs_type == "image":
             self.observation_space = gym.spaces.Box(
-                low=0, high=1, shape=(image_dim, image_dim, framestack), dtype=np.float32
+                low=0,
+                high=1,
+                shape=(image_dim, image_dim, framestack),
+                dtype=np.float32,
             )
         elif obs_type == "low_dim":
             pass  # TODO
@@ -174,7 +177,7 @@ class UltraGym(UltraEnv):
             )
             / 255.0
         )
-        return np.expand_dims(gray_scale, axis = 2)
+        return np.expand_dims(gray_scale, axis=2)
 
     def step(self, agent_action):
         if agent_action not in self.action_space:
@@ -183,7 +186,7 @@ class UltraGym(UltraEnv):
         results = super().step({self.agent_id: agent_action})
         results = [result[self.agent_id] for result in results]
         obs = self.convert_to_greyscale(results[0])
-        state = np.concatenate((self.last_state[:,:,1:], obs), axis = 2)
+        state = np.concatenate((self.last_state[:, :, 1:], obs), axis=2)
         self.last_state = state
         return state, results[1], results[2], results[3]
 
@@ -191,12 +194,12 @@ class UltraGym(UltraEnv):
         obs = self.convert_to_greyscale(super().reset()[self.agent_id])
         initial_frames = [obs]
         for i in range(self.framestack - 1):
-            frame = super().step({self.agent_id: self.action_space.sample()})[
-                0
-            ][self.agent_id]
+            frame = super().step({self.agent_id: self.action_space.sample()})[0][
+                self.agent_id
+            ]
             grey_frame = self.convert_to_greyscale(frame)
             initial_frames.append(grey_frame)
-        state = np.concatenate(initial_frames, axis = 2)
+        state = np.concatenate(initial_frames, axis=2)
         self.last_state = state
         return state
 
