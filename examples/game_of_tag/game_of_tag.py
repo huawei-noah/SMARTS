@@ -18,20 +18,56 @@ import numpy as np
 from typing import List
 from ray import tune
 from ray.rllib.utils import try_import_tf
+from ray.rllib.models import ModelCatalog
+from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.tune.schedulers import PopulationBasedTraining
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-from smarts.core.agent import AgentSpec
+from smarts.core.agent import AgentSpec, Agent
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 
 from examples.game_of_tag.custom_adapters import *
-from examples.rllib_agent import RLLibTFSavedModelAgent, TrainingModel
 
 tf = try_import_tf()
 
 
 # NUM_SOCIAL_VEHICLES = 10 ######### Why we have to define how many social vehicles?
+
+# to make this network smaller, neural network accept bits?
+class TrainingModel(FullyConnectedNetwork):
+    NAME = "FullyConnectedNetwork"
+
+
+ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
+
+class TagModelAgent(Agent):
+    def __init__(self, path_to_model, observation_space):
+        path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
+        print(f"model path: {path_to_model}")
+        self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
+        self._sess = tf.compat.v1.Session(graph=tf.Graph())
+        tf.compat.v1.saved_model.load(  # model should be already trained
+            self._sess, export_dir=path_to_model, tags=["serve"]
+        )
+        self._output_node = self._sess.graph.get_tensor_by_name("default_policy/add:0")
+        self._input_node = self._sess.graph.get_tensor_by_name(
+            "default_policy/observation:0"
+        )
+
+    def __del__(self):
+        self._sess.close()
+
+    def act(self, obs):
+        obs = self._prep.transform(obs)
+        # These tensor names were found by inspecting the trained model
+        res = self._sess.run(self._output_node, feed_dict={self._input_node: [obs]})
+        action = res[0]
+        print(obs.ego_vehicle_state.id)
+        print("Got here!!!!!!!!!!")
+        print(f"output action: {action}")
+        return action
+
 
 rllib_agents = {}
 # add custom done criteria - maybe not
@@ -51,12 +87,12 @@ shared_interface.done_criteria = DoneCriteria(
 # shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
 
 # predator_neighborhood_vehicles=NeighborhoodVehicles(radius=30)
-print(f'model location: {os.path.join(os.path.dirname(os.path.realpath(__file__)), "model")}')
+# print(f'model location: {os.path.join(os.path.dirname(os.path.realpath(__file__)), "model")}')
 for agent_id in PREDATOR_IDS:
     rllib_agents[agent_id] = {
         "agent_spec": AgentSpec(
             interface=shared_interface,
-            agent_builder=lambda: RLLibTFSavedModelAgent(  ## maybe fine since it might understand which mode it is in. Try 2 models at first
+            agent_builder=lambda: TagModelAgent(  ## maybe fine since it might understand which mode it is in. Try 2 models at first
                 os.path.join(os.path.dirname(os.path.realpath(__file__)), "model"),
                 OBSERVATION_SPACE,
             ),
@@ -72,7 +108,7 @@ for agent_id in PREY_IDS:
     rllib_agents[agent_id] = {
         "agent_spec": AgentSpec(
             interface=shared_interface,
-            agent_builder=lambda: RLLibTFSavedModelAgent(
+            agent_builder=lambda: TagModelAgent(
                 os.path.join(
                     os.path.dirname(os.path.realpath(__file__)), "model"
                 ),  # assume model exists
@@ -163,6 +199,7 @@ def main(args):
         "env": RLlibHiWayEnv,
         "log_level": "WARN",
         "num_workers": 2,
+        "explore": True,
         # 'sample_batch_size': 200,  # XXX: 200
         # 'train_batch_size': 4000,
         # 'sgd_minibatch_size': 128,
@@ -194,12 +231,12 @@ def main(args):
 
     # 
     analysis = tune.run(
-        "PPO",
+        "PPO", # uses PPO algorithm
         name="lets_play_tag",
         # stop={'time_total_s': 60 * 60 * 24},  # 24 hours
         # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
         #      different than _exporting_ a TF/PT checkpoint).
-        checkpoint_freq=1,
+        checkpoint_freq=5,
         checkpoint_at_end=True,
         # XXX: Beware, resuming after changing tune params will not pick up
         #      the new arguments as they are stored alongside the checkpoint.

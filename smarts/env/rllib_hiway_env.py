@@ -96,7 +96,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
 
     def step(self, agent_actions):
         agent_actions = {
-            agent_id: self._agent_specs[agent_id].action_adapter(action)
+            agent_id: self._agent_specs[agent_id].action_adapter(action,agent_id)
             for agent_id, action in agent_actions.items()
         }
 

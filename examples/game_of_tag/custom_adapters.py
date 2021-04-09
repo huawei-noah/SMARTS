@@ -20,11 +20,18 @@ from dataclasses import dataclass
 
 ## messaging channel between agents? sending and receiving actions
 
-# add a reward if prey in front of predator and predator have higher speed than prey
+
+PREDATOR_IDS = ["PRED1", "PRED2", "PRED3", "PRED4"]
+PREY_IDS = ["PREY1", "PREY2"]
+
+# PREDATOR_IDS = ["PRED1"]
+# PREY_IDS = ["PREY1"]
 
 class TrainingState:
     """a class to keep track of training states"""
     timestamp = 0
+    """ agent_id: [action_1, action_2]"""
+    last_two_actions_of_agent = {}
 
     @classmethod
     def step(cls):
@@ -33,8 +40,33 @@ class TrainingState:
     @classmethod
     def reset(cls):
         cls.timestamp = 0
+        cls.last_two_actions_of_agent = {}
+        for agent_id in PREY_IDS+PREDATOR_IDS:
+            cls.last_two_actions_of_agent[agent_id] = []
 
-    # implement storage for each vehicle's last action, give deduction if action changes
+    @classmethod
+    def update_agent_actions(cls, agent_id, action) -> float:
+        """ stores each vehicle's last action, give deduction if action changes
+        """
+        assert len(action) == 2
+        actions_queue = cls.last_two_actions_of_agent[agent_id]
+        if len(actions_queue) == 2:
+            actions_queue.pop(0)
+            actions_queue.append(action)
+        else:
+            actions_queue.append(action)
+
+    @classmethod
+    def punish_if_action_changed(cls, agent_id):
+        actions_queue = cls.last_two_actions_of_agent[agent_id]
+        if len(actions_queue) < 2:
+            return 0
+        
+        if actions_queue[0][0] != actions_queue[1][0] or actions_queue[0][1] != actions_queue[1][1]:
+            return global_rewards.making_change_deduction
+
+        return 0
+
 
 @dataclass
 class Rewards:
@@ -45,14 +77,11 @@ class Rewards:
     collesion_with_other_deduction: float = -1.5
     off_road_deduction: float = -1.5
     on_shoulder_deduction: float = -0.2
+    following_prey_reward: float = 0.05
+    making_change_deduction: float = -0.01
+    discount_factor: float = 0.999
 
 global_rewards = Rewards()
-
-PREDATOR_IDS = ["PRED1", "PRED2", "PRED3", "PRED4"]
-PREY_IDS = ["PREY1", "PREY2"]
-
-# PREDATOR_IDS = ["PRED1"]
-# PREY_IDS = ["PREY1"]
 
 # ACTION_SPACE = gym.spaces.Box(
 #     low=np.array([0.0, 0.0, -1.0]), # throttle can be negative?
@@ -97,10 +126,12 @@ OBSERVATION_SPACE = gym.spaces.Dict(
 )
 
 
-def action_adapter(model_action):
+def action_adapter(model_action, agent_id):
     speed, laneChange = model_action
     speeds = [0, 3, 6, 9, 12]
-    return [speeds[speed], laneChange-1]
+    adapted_action = [speeds[speed], laneChange-1]
+    TrainingState.update_agent_actions(agent_id, adapted_action)
+    return adapted_action
 
 def _is_vehicle_wanted(id, wanted_ids: List[str]):
     for wanted_id in wanted_ids:
@@ -199,6 +230,9 @@ def observation_adapter(observations):
         # "drivable_area_grid_map": drivable_area_grid_map,
     }
 
+def apply_discount(reward):
+    return math.pow(global_rewards.discount_factor, TrainingState.timestamp) * reward
+
 def predator_reward_adapter(observations, env_reward_signal):
     """+ if collides with prey
     - if collides with social vehicle
@@ -212,21 +246,21 @@ def predator_reward_adapter(observations, env_reward_signal):
     events = observations.events
     for c in observations.events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREY_IDS):
-            rew += global_rewards.collesion_with_target
+            rew += apply_discount(global_rewards.collesion_with_target)
             collided_with_prey = True
             print(f"predator {observations.ego_vehicle_state.id} collided with prey {c.collidee_id}")
         else:
             # Collided with something other than the prey
-            rew += global_rewards.collesion_with_other_deduction
+            rew += apply_discount(global_rewards.collesion_with_other_deduction)
             print(f"predator {observations.ego_vehicle_state.id} collided with others {c.collidee_id}")
 
     if events.off_road:
         # if both prey or both predator went off_road, the other agent will receive 0 rewards onwards.
         print("predator offroad")
         # have a time limit for
-        rew += global_rewards.off_road_deduction 
+        rew += apply_discount(global_rewards.off_road_deduction)
     elif events.on_shoulder:
-        rew -= global_rewards.on_shoulder_deduction
+        rew += apply_discount(global_rewards.on_shoulder_deduction)
 
     # give 0.05 reward for following prey, give 0.1 reward for following and having higher speed than prey
     ego_pos = observations.ego_vehicle_state.position[:2]
@@ -252,11 +286,9 @@ def predator_reward_adapter(observations, env_reward_signal):
         # checks if calculated direction from ego to prey is close to ego_heading
         if cal_heading - 0.05 <= ego_heading and ego_heading <= cal_heading + 0.05 and math.sqrt(x*x+y*y) <= 20:
             # if two vehicle distance <= 20 meters, add 
-            rew += 0.05
-            print(f"{observations.ego_vehicle_state.id} following {v.id}")
+            rew += apply_discount(global_rewards.following_prey_reward)
             if ego_speed > v.speed:
-                rew += 0.05
-                print(f"{observations.ego_vehicle_state.id} following {v.id} and have higher speed")
+                rew += apply_discount(global_rewards.following_prey_reward)
 
     # Decreased reward for increased distance away from prey
     # rew -= (0.005) * min_distance_to_rival(
@@ -266,7 +298,9 @@ def predator_reward_adapter(observations, env_reward_signal):
     # )
     if not collided_with_prey and events.reached_max_episode_steps:
         # predator failed to catch the prey
-        rew -= global_rewards.game_ended
+        rew -= apply_discount(global_rewards.game_ended)
+    
+    rew += apply_discount(TrainingState.punish_if_action_changed(observations.ego_vehicle_state.id.split('-')[0]))
 
     # if no prey vehicle avaliable, have 0 reward instead
     prey_vehicles = list(filter(
@@ -290,18 +324,18 @@ def prey_reward_adapter(observations, env_reward_signal):
     events = observations.events
     for c in events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREDATOR_IDS):
-            rew -= global_rewards.collesion_with_target
+            rew -= apply_discount(global_rewards.collesion_with_target)
             collided_with_pred = True
             print(f"prey {observations.ego_vehicle_state.id} collided with Predator {c.collidee_id}")
         else:
             # Collided with something other than the prey
-            rew += global_rewards.collesion_with_other_deduction 
+            rew += apply_discount(global_rewards.collesion_with_other_deduction)
             print(f"prey {observations.ego_vehicle_state.id} collided with other vehicle {c.collidee_id}")
     if events.off_road:
         print("prey offroad")
-        rew += global_rewards.off_road_deduction
+        rew += apply_discount(global_rewards.off_road_deduction)
     elif events.on_shoulder:
-        rew += global_rewards.on_shoulder_deduction
+        rew += apply_discount(global_rewards.on_shoulder_deduction)
 
     # # Increased reward for increased distance away from predators
     # rew += (0.005) * min_distance_to_rival(
@@ -309,10 +343,11 @@ def prey_reward_adapter(observations, env_reward_signal):
     #     PREDATOR_IDS,
     #     observations.neighborhood_vehicle_states,
     # )
+    rew += apply_discount(TrainingState.punish_if_action_changed(observations.ego_vehicle_state.id.split('-')[0]))
 
     if not collided_with_pred and events.reached_max_episode_steps:
         # prey survived
-        rew += global_rewards.game_ended
+        rew += apply_discount(global_rewards.game_ended)
 
     # if no predator vehicle avaliable, have 0 reward instead
     predator_vehicles = list(filter(

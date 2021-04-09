@@ -1,0 +1,396 @@
+Checkpointing at /home/kyber/ray_results
+== Status ==
+Memory usage on this node: 23.6/31.3 GiB
+PopulationBasedTraining: 0 checkpoints, 0 perturbs
+Resources requested: 10/16 CPUs, 0/0 GPUs, 0.0/5.76 GiB heap, 0.0/2.0 GiB objects
+Result logdir: /home/kyber/ray_results/rllib_example_multi
+Number of trials: 1/1 (1 RUNNING)
++------------------------------+----------+-------+-------------------+--------+---------------------------+--------------------+
+| Trial name                   | status   | loc   |   env_config/seed |     lr |   rollout_fragment_length |   train_batch_size |
+|------------------------------+----------+-------+-------------------+--------+---------------------------+--------------------|
+| PG_RLlibHiWayEnv_543ea_00000 | RUNNING  |       |               125 | 0.0005 |                       200 |               2000 |
++------------------------------+----------+-------+-------------------+--------+---------------------------+--------------------+
+
+
+[2m[36m(pid=13414)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13416)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13414)[0m Could not connect to TraCI server at localhost:36475 [Errno 111] Connection refused
+[2m[36m(pid=13414)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13410)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13416)[0m Could not connect to TraCI server at localhost:53895 [Errno 111] Connection refused
+[2m[36m(pid=13416)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13414)[0m Could not connect to TraCI server at localhost:36475 [Errno 111] Connection refused
+[2m[36m(pid=13414)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13410)[0m Could not connect to TraCI server at localhost:46321 [Errno 111] Connection refused
+[2m[36m(pid=13410)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13416)[0m Could not connect to TraCI server at localhost:53895 [Errno 111] Connection refused
+[2m[36m(pid=13416)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13414)[0m Could not connect to TraCI server at localhost:36475 [Errno 111] Connection refused
+[2m[36m(pid=13414)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13410)[0m Could not connect to TraCI server at localhost:46321 [Errno 111] Connection refused
+[2m[36m(pid=13410)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13418)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13416)[0m Could not connect to TraCI server at localhost:53895 [Errno 111] Connection refused
+[2m[36m(pid=13416)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13410)[0m Could not connect to TraCI server at localhost:46321 [Errno 111] Connection refused
+[2m[36m(pid=13410)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13418)[0m Could not connect to TraCI server at localhost:54571 [Errno 111] Connection refused
+[2m[36m(pid=13418)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13418)[0m Could not connect to TraCI server at localhost:54571 [Errno 111] Connection refused
+[2m[36m(pid=13418)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13416)[0m Could not connect to TraCI server at localhost:53895 [Errno 111] Connection refused
+[2m[36m(pid=13416)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13410)[0m Could not connect to TraCI server at localhost:46321 [Errno 111] Connection refused
+[2m[36m(pid=13410)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13418)[0m Could not connect to TraCI server at localhost:54571 [Errno 111] Connection refused
+[2m[36m(pid=13418)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13416)[0m Could not connect to TraCI server at localhost:53895 [Errno 111] Connection refused
+[2m[36m(pid=13416)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13410)[0m Could not connect to TraCI server at localhost:46321 [Errno 111] Connection refused
+[2m[36m(pid=13410)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13416)[0m Could not connect to TraCI server at localhost:53895 [Errno 111] Connection refused
+[2m[36m(pid=13416)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13410)[0m Could not connect to TraCI server at localhost:46321 [Errno 111] Connection refused
+[2m[36m(pid=13410)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m 
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13417)[0m Could not connect to TraCI server at localhost:39493 [Errno 111] Connection refused
+[2m[36m(pid=13417)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13423)[0m Could not connect to TraCI server at localhost:52539 [Errno 111] Connection refused
+[2m[36m(pid=13423)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13413)[0m Could not connect to TraCI server at localhost:53409 [Errno 111] Connection refused
+[2m[36m(pid=13413)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13408)[0m Could not connect to TraCI server at localhost:37845 [Errno 111] Connection refused
+[2m[36m(pid=13408)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13421)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13421)[0m Could not connect to TraCI server at localhost:53561 [Errno 111] Connection refused
+[2m[36m(pid=13421)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13421)[0m Could not connect to TraCI server at localhost:53561 [Errno 111] Connection refused
+[2m[36m(pid=13421)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13421)[0m Could not connect to TraCI server at localhost:53561 [Errno 111] Connection refused
+[2m[36m(pid=13421)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13421)[0m Could not connect to TraCI server at localhost:53561 [Errno 111] Connection refused
+[2m[36m(pid=13421)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13421)[0m Could not connect to TraCI server at localhost:53561 [Errno 111] Connection refused
+[2m[36m(pid=13421)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13421)[0m Could not connect to TraCI server at localhost:53561 [Errno 111] Connection refused
+[2m[36m(pid=13421)[0m  Retrying in 0.05 seconds
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m ep. 440111444    ended; length=8      mean_ego_speed=15.17
+[2m[36m(pid=13423)[0m ep. 458356437    ended; length=11     mean_ego_speed=21.15
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m ep. 956394393    ended; length=12     mean_ego_speed=17.60
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m ep. 197759420    ended; length=15     mean_ego_speed=15.73
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m ep. 1541822584   ended; length=11     mean_ego_speed=16.56
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m ep. 1023469362   ended; length=28     mean_ego_speed=18.00
+[2m[36m(pid=13417)[0m ep. 142284349    ended; length=1      mean_ego_speed=15.03
+[2m[36m(pid=13414)[0m ep. 938794450    ended; length=9      mean_ego_speed=17.90
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m ep. 899424835    ended; length=14     mean_ego_speed=18.36
+[2m[36m(pid=13423)[0m ep. 1028396855   ended; length=18     mean_ego_speed=17.11
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m ep. 307473090    ended; length=22     mean_ego_speed=14.79
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m ep. 711800157    ended; length=17     mean_ego_speed=16.63
+[2m[36m(pid=13416)[0m ep. 1119344350   ended; length=33     mean_ego_speed=16.36
+[2m[36m(pid=13417)[0m ep. 15975306     ended; length=13     mean_ego_speed=19.03
+[2m[36m(pid=13410)[0m ep. 1808523245   ended; length=10     mean_ego_speed=16.70
+[2m[36m(pid=13421)[0m ep. 1712210138   ended; length=16     mean_ego_speed=15.55
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m ep. 1678588805   ended; length=13     mean_ego_speed=16.98
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m ep. 1063220738   ended; length=10     mean_ego_speed=17.17
+[2m[36m(pid=13413)[0m ep. 1388217457   ended; length=7      mean_ego_speed=17.36
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m ep. 1044993670   ended; length=15     mean_ego_speed=18.29
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m ep. 1022846582   ended; length=7      mean_ego_speed=18.24
+[2m[36m(pid=13410)[0m ep. 218872656    ended; length=13     mean_ego_speed=17.09
+[2m[36m(pid=13417)[0m ep. 1692997828   ended; length=13     mean_ego_speed=16.06
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m ep. 1651054332   ended; length=19     mean_ego_speed=16.00
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m ep. 1925581317   ended; length=11     mean_ego_speed=17.76
+[2m[36m(pid=13408)[0m ep. 354903235    ended; length=21     mean_ego_speed=16.01
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m ep. 673051904    ended; length=17     mean_ego_speed=17.37
+[2m[36m(pid=13414)[0m ep. 1114212357   ended; length=23     mean_ego_speed=16.19
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m ep. 411103326    ended; length=17     mean_ego_speed=15.35
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m ep. 1170287915   ended; length=8      mean_ego_speed=16.81
+[2m[36m(pid=13417)[0m ep. 1396889865   ended; length=11     mean_ego_speed=18.14
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m ep. 191619429    ended; length=11     mean_ego_speed=16.30
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m ep. 1480025415   ended; length=17     mean_ego_speed=16.07
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m ep. 537596301    ended; length=11     mean_ego_speed=14.30
+[2m[36m(pid=13413)[0m ep. 1629236710   ended; length=12     mean_ego_speed=16.73
+[2m[36m(pid=13416)[0m ep. 1882283047   ended; length=7      mean_ego_speed=16.89
+[2m[36m(pid=13408)[0m ep. 224877796    ended; length=15     mean_ego_speed=17.17
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m ep. 1504144286   ended; length=11     mean_ego_speed=14.65
+[2m[36m(pid=13414)[0m ep. 890007959    ended; length=26     mean_ego_speed=12.91
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m ep. 1631625286   ended; length=26     mean_ego_speed=15.27
+[2m[36m(pid=13421)[0m ep. 80571542     ended; length=15     mean_ego_speed=18.16
+[2m[36m(pid=13410)[0m ep. 840063603    ended; length=16     mean_ego_speed=16.39
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m ep. 974284055    ended; length=15     mean_ego_speed=18.05
+[2m[36m(pid=13414)[0m ep. 1131370024   ended; length=8      mean_ego_speed=16.29
+[2m[36m(pid=13414)[0m 
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m ep. 276602309    ended; length=14     mean_ego_speed=21.22
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m ep. 1218150221   ended; length=10     mean_ego_speed=17.38
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m ep. 827733093    ended; length=17     mean_ego_speed=14.69
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m ep. 249125879    ended; length=7      mean_ego_speed=17.00
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m ep. 887152021    ended; length=9      mean_ego_speed=17.32
+[2m[36m(pid=13408)[0m ep. 301455616    ended; length=27     mean_ego_speed=16.81
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m ep. 991953683    ended; length=15     mean_ego_speed=17.52
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m ep. 318542826    ended; length=8      mean_ego_speed=16.98
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m ep. 1554392866   ended; length=10     mean_ego_speed=15.78
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m ep. 12764692     ended; length=9      mean_ego_speed=17.35
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m ep. 1454899337   ended; length=19     mean_ego_speed=17.35
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m ep. 1772099663   ended; length=13     mean_ego_speed=16.14
+[2m[36m(pid=13410)[0m ep. 1735194975   ended; length=16     mean_ego_speed=15.92
+[2m[36m(pid=13408)[0m ep. 1479402246   ended; length=13     mean_ego_speed=15.53
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m ep. 1299320650   ended; length=14     mean_ego_speed=17.39
+[2m[36m(pid=13423)[0m ep. 1005141128   ended; length=35     mean_ego_speed=11.56
+[2m[36m(pid=13414)[0m ep. 888607652    ended; length=16     mean_ego_speed=16.24
+[2m[36m(pid=13418)[0m ep. 1063405119   ended; length=19     mean_ego_speed=17.14
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m ep. 309213227    ended; length=9      mean_ego_speed=17.13
+[2m[36m(pid=13416)[0m ep. 1246946638   ended; length=18     mean_ego_speed=18.47
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m ep. 361384320    ended; length=9      mean_ego_speed=16.99
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m ep. 1965941454   ended; length=9      mean_ego_speed=17.43
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m ep. 175352670    ended; length=6      mean_ego_speed=18.51
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m ep. 484098651    ended; length=19     mean_ego_speed=16.71
+[2m[36m(pid=13418)[0m ep. 1167612590   ended; length=12     mean_ego_speed=17.86
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m ep. 329800417    ended; length=19     mean_ego_speed=18.79
+[2m[36m(pid=13423)[0m ep. 394215495    ended; length=21     mean_ego_speed=16.58
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m ep. 1389425542   ended; length=16     mean_ego_speed=15.19
+[2m[36m(pid=13417)[0m ep. 881326337    ended; length=23     mean_ego_speed=18.43
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m ep. 376298827    ended; length=14     mean_ego_speed=17.19
+[2m[36m(pid=13421)[0m ep. 1899546756   ended; length=8      mean_ego_speed=16.99
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m ep. 269783226    ended; length=46     mean_ego_speed=17.27
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m ep. 1093868489   ended; length=25     mean_ego_speed=16.84
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m ep. 1292584430   ended; length=12     mean_ego_speed=13.72
+[2m[36m(pid=13414)[0m ep. 859641235    ended; length=14     mean_ego_speed=16.42
+[2m[36m(pid=13423)[0m ep. 1325413798   ended; length=17     mean_ego_speed=16.58
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m ep. 1877018270   ended; length=8      mean_ego_speed=17.75
+[2m[36m(pid=13421)[0m ep. 1100945313   ended; length=9      mean_ego_speed=16.28
+[2m[36m(pid=13417)[0m ep. 708463967    ended; length=18     mean_ego_speed=16.70
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m ep. 1534836219   ended; length=16     mean_ego_speed=15.63
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m ep. 1775730894   ended; length=21     mean_ego_speed=17.79
+[2m[36m(pid=13414)[0m ep. 1640676674   ended; length=6      mean_ego_speed=16.34
+[2m[36m(pid=13410)[0m ep. 616983514    ended; length=16     mean_ego_speed=17.71
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m ep. 168088908    ended; length=17     mean_ego_speed=17.80
+[2m[36m(pid=13423)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m ep. 1262903872   ended; length=16     mean_ego_speed=13.71
+[2m[36m(pid=13421)[0m ep. 373796881    ended; length=12     mean_ego_speed=18.05
+[2m[36m(pid=13408)[0m ep. 625956921    ended; length=12     mean_ego_speed=19.86
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13417)[0m ep. 579420547    ended; length=15     mean_ego_speed=16.53
+[2m[36m(pid=13416)[0m ep. 729247993    ended; length=17     mean_ego_speed=18.78
+[2m[36m(pid=13417)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m ep. 1411666687   ended; length=9      mean_ego_speed=16.95
+[2m[36m(pid=13413)[0m ep. 1673565335   ended; length=13     mean_ego_speed=16.47
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13416)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13410)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13413)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13414)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13421)[0m ep. 1363328080   ended; length=8      mean_ego_speed=16.17
+[2m[36m(pid=13414)[0m ep. 155381463    ended; length=28     mean_ego_speed=17.81
+[2m[36m(pid=13418)[0m ep. 747386018    ended; length=12     mean_ego_speed=18.25
+[2m[36m(pid=13421)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13418)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m ep. 1113272828   ended; length=13     mean_ego_speed=15.54
+pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13408)[0m pybullet build time: Oct  8 2020 00:10:46
+[2m[36m(pid=13423)[0m ep. 878863916    ended; length=16     mean_ego_speed=15.81

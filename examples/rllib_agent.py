@@ -9,6 +9,7 @@ from ray.rllib.utils import try_import_tf
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.custom_observations import lane_ttc_observation_adapter
+from examples.game_of_tag.custom_adapters import TrainingState
 import tensorflow as tf
 
 # This action space should match the input to the action_adapter(..) function below.
@@ -43,7 +44,6 @@ def action_adapter(model_action):
     return np.array([throttle, brake, steering * np.pi * 0.25])
 
 
-# to make this network smaller, neural network accept bits?
 class TrainingModel(FullyConnectedNetwork):
     NAME = "FullyConnectedNetwork"
 
@@ -54,6 +54,7 @@ ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
 class RLLibTFSavedModelAgent(Agent):
     def __init__(self, path_to_model, observation_space):
         path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
+        print(f"model path: {path_to_model}")
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._sess = tf.compat.v1.Session(graph=tf.Graph())
         tf.compat.v1.saved_model.load(  # model should be already trained
@@ -72,6 +73,8 @@ class RLLibTFSavedModelAgent(Agent):
         # These tensor names were found by inspecting the trained model
         res = self._sess.run(self._output_node, feed_dict={self._input_node: [obs]})
         action = res[0]
+        print(obs.ego_vehicle_state.id)
+        print("Got here!!!!!!!!!!")
         print(f"output action: {action}")
         return action
 
