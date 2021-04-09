@@ -877,7 +877,14 @@ class NeighborhoodVehiclesSensor(Sensor):
 
 
 class WaypointsSensor(Sensor):
-    def __init__(self, sim, vehicle, mission_planner: MissionPlanner, agent_behavior, lookahead=32):
+    def __init__(
+        self,
+        sim,
+        vehicle,
+        mission_planner: MissionPlanner,
+        agent_behavior,
+        lookahead=32,
+    ):
         self._sim = sim
         self._vehicle = vehicle
         self._mission_planner = mission_planner
@@ -885,7 +892,9 @@ class WaypointsSensor(Sensor):
 
     def __call__(self):
         if self._mission_planner.mission.task is not None:
-            return agent_behavior.apply_custom_behaviour(self.sim, self._vehicle, self._mission_planner.mission)
+            return agent_behavior.apply_custom_behaviour(
+                self.sim, self._vehicle, self._mission_planner.mission
+            )
 
         return self._mission_planner.waypoint_paths_at(
             sim=self._sim,

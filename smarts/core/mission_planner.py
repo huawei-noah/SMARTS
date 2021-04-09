@@ -202,7 +202,6 @@ class MissionPlanner:
 
         return edge_ids
 
-
     def paths_of_lane_at(self, lane, offset, lookahead=30):
         wp_start = self._road_network.world_coord_from_offset(lane, offset)
 

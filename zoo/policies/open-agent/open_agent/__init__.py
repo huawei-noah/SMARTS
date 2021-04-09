@@ -5,6 +5,7 @@ from smarts.zoo.registry import register
 
 from .agent_behavior import AgentBehaviour
 
+
 def entrypoint(
     gains={
         "theta": 3.0,

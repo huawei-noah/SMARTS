@@ -20,21 +20,18 @@ class AgentBehaviour:
         self._prev_kyber_x_position = None
         self._prev_kyber_y_position = None
         self._first_uturn = True
-    
+
     def apply_custom_behaviour(self, sim, vehicle, mission):
         if isinstance(mission.task, UTurn):
-            return self.uturn_waypoints(
-                sim, vehicle.pose, vehicle
-            )
+            return self.uturn_waypoints(sim, vehicle.pose, vehicle)
         elif isinstance(mission.task, CutIn):
-            return self.cut_in_waypoints(
-                sim, vehicle.pose, vehicle
-            )
-    
+            return self.cut_in_waypoints(sim, vehicle.pose, vehicle)
+
     """Needs:
     self._road_network
     self._waypoints
     """
+
     def uturn_waypoints(self, sim, pose: Pose, vehicle):
         # TODO: 1. Need to revisit the approach to calculate the U-Turn trajectory.
         #       2. Wrap this method in a helper.
