@@ -21,6 +21,7 @@ from ray.rllib.utils import try_import_tf
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.tune.schedulers import PopulationBasedTraining
+from ray.rllib.agents.ppo import PPOTrainer
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec, Agent
@@ -66,6 +67,7 @@ class TagModelAgent(Agent):
         print(obs.ego_vehicle_state.id)
         print("Got here!!!!!!!!!!")
         print(f"output action: {action}")
+        #TrainingState.update_agent_actions(obs.ego_vehicle_state.id.split('-')[0], action)
         return action
 
 
@@ -231,9 +233,9 @@ def main(args):
 
     # 
     analysis = tune.run(
-        "PPO", # uses PPO algorithm
+        PPOTrainer, # uses PPO algorithm
         name="lets_play_tag",
-        # stop={'time_total_s': 60 * 60 * 24},  # 24 hours
+        #stop={'time_total_s': 60 * 60 * 12},  # 12 hours
         # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
         #      different than _exporting_ a TF/PT checkpoint).
         checkpoint_freq=5,

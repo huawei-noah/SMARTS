@@ -78,7 +78,7 @@ class Rewards:
     off_road_deduction: float = -1.5
     on_shoulder_deduction: float = -0.2
     following_prey_reward: float = 0.05
-    making_change_deduction: float = -0.01
+    making_change_deduction: float = -0.002
     discount_factor: float = 0.999
 
 global_rewards = Rewards()
@@ -109,7 +109,7 @@ OBSERVATION_SPACE = gym.spaces.Dict(
     {
         "heading": gym.spaces.Box(low=-1 * np.pi, high=np.pi, shape=(1,)),
         #"speed": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
-        #"position": gym.spaces.Box(low=-1e3, high=1e3, shape=(2,)),
+        "position": gym.spaces.Box(low=-1e3, high=1e3, shape=(2,)),
         # add distance between prey and predator
         "min_distance_to_prey": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
         "min_distance_to_predator": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
@@ -222,7 +222,7 @@ def observation_adapter(observations):
     return {
         "heading": np.array([ego.heading]),
         #"speed": np.array([ego.speed]),
-        #"position": np.array(ego.position[:2]),
+        "position": np.array(ego.position[:2]),
         "min_distance_to_prey": np.array([min_distance_to_prey]),
         "min_distance_to_predator": np.array([min_distance_to_predator]),
         "predator_vehicles": tuple(predator_states),
