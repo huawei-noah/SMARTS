@@ -98,7 +98,6 @@ class TrainTest(unittest.TestCase):
                 },
                 log_dir=log_dir,
             )
-            )
             ray.shutdown()
             self.assertTrue(True)
         except ray.exceptions.WorkerCrashedError as err:
@@ -141,7 +140,6 @@ class TrainTest(unittest.TestCase):
                     "gb_scenarios_save_dir": None,
                 },
                 log_dir=log_dir,
-            )
             )
             ray.shutdown()
             self.assertTrue(True)

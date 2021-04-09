@@ -102,10 +102,9 @@ def train(
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
-    CurriculumInfo.initialize(gb_info["gb_curriculum_dir"]) # Applicable to both non-gb and gb cases
-
     if grade_mode:
         agent_coordinator, scenario_info = gb_setup(gb_info, num_episodes)
+        CurriculumInfo.initialize(gb_info["gb_curriculum_dir"]) # Applicable to both non-gb and gb cases
         scenario_data_handler = ScenarioDataHandler("Train")
         if (num_episodes % agent_coordinator.get_num_of_grades() == 0):
             num_episodes += 1
@@ -155,7 +154,7 @@ def train(
                 print("No cycling of grades -> run completed")
                 break
 
-            if agent_coordinator.end_warmup == True:
+            if agent_coordinator.end_warmup == True or CurriculumInfo.episode_based_toggle == True:
                 density_counter = scenario_data_handler.record_density_data(
                     scenario["scenario_density"]
                 )
@@ -251,26 +250,27 @@ def train(
             episode.record_density_tensorboard(scenario)
 
         if grade_mode == True:
-            if agent_coordinator.end_warmup == True:
+            if agent_coordinator.end_warmup == True or CurriculumInfo.episode_based_toggle == True:
                 (
                     average_scenarios_passed,
                     total_scenarios_passed,
                 ) = Coordinator.calculate_average_scenario_passed(
                     episode, total_scenarios_passed, agents, average_scenarios_passed
                 )
-                if ((episode.index + 1) % CurriculumInfo.pass_based_sample_rate == 0): # Set sample rate as in gb curriculum config
+                if ((episode.index + 1) % 30 == 0): # Set sample rate (flag needs to be set)
                     print(
                         f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
                     )
                     asp_list_two.append(tuple((episode.index + 1, average_scenarios_passed)))
         else:
+            rate = 30
             (
                 average_scenarios_passed,
                 total_scenarios_passed,
             ) = Coordinator.calculate_average_scenario_passed(
-                episode, total_scenarios_passed, agents, average_scenarios_passed
+                episode, total_scenarios_passed, agents, average_scenarios_passed, rate
             )
-            if ((episode.index + 1) % 30 == 0): # Set sample rate as in gb curriculum config
+            if ((episode.index + 1) % rate == 0): # Set sample rate as in gb curriculum config
                 print(
                     f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
                 )
@@ -286,7 +286,13 @@ def train(
         scenario_data_handler.save_grade_density(num_episodes)
     
     filepath = os.path.join(episode.experiment_dir, "Train.csv")
-    scenario_data_handler.plot_densities_data(filepath)
+    try:
+        scenario_data_handler.plot_densities_data(filepath)
+    except FileNotFoundError as e:
+        base_dir = os.path.join(os.path.dirname(__file__), "../")
+        path = os.path.join(base_dir, filepath)
+        scenario_data_handler.plot_densities_data(path)
+
     print(scenario_data_handler.overall_densities_counter)
 
     print("(one) Average scenarios passed list:", asp_list)
@@ -299,7 +305,7 @@ def train(
     env.close()
 
 def gb_setup(gb_info, num_episodes):
-    agent_coordinator = Coordinator(num_episodes)
+    agent_coordinator = Coordinator(gb_info["gb_curriculum_dir"], num_episodes)
     # To build all scenarios from all grades
     if gb_info["gb_build_scenarios"]:
         agent_coordinator.build_all_scenarios(

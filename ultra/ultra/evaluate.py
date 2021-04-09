@@ -7,7 +7,7 @@
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions
+# furnished to do so, subject to the following conditions:
 #
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
@@ -38,7 +38,7 @@ from smarts.zoo.registry import make
 from ultra.utils.common import str_to_bool
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
-from ultra.utils.coordinator import ScenarioDataHandler, CurriculumInfo
+from ultra.utils.coordinator import ScenarioDataHandler
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -55,9 +55,9 @@ def evaluation_check(
     timestep_sec,
     headless,
     log_dir,
-    grade_mode,
-    agent_coordinator=None,
     evaluation_task_ids,
+    grade_mode=False,
+    agent_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
     agent_ids_to_evaluate = [
@@ -122,6 +122,8 @@ def evaluation_check(
             headless=headless,
             timestep_sec=timestep_sec,
             log_dir=log_dir,
+            grade_mode=grade_mode,
+            agent_coordinator=agent_coordinator,
             eval_mode=True,
         )
         evaluation_task_ids[evaluation_train_task_id] = (
@@ -133,55 +135,6 @@ def evaluation_check(
         episode.eval_count += 1
         episode.last_eval_iterations[agent_id] = episode.get_itr(agent_id)
 
-    episode.eval_mode()
-    episode.info[episode.active_tag] = evaluation_data
-    episode.record_tensorboard()
-
-    episode.eval_train_mode()
-    evaluation_train_data = {}
-
-    for agent_id in agent_ids_to_evaluate:
-        # Get the checkpoint directory for the current agent and save its model.
-        checkpoint_directory = episode.checkpoint_dir(
-            agent_id, episode.get_itr(agent_id)
-        )
-        agents[agent_id].save(checkpoint_directory)
-
-        # Perform the evaluation on this agent and save the data.
-        evaluation_train_data.update(
-            ray.get(
-                [
-                    evaluate.remote(
-                        seed=episode.eval_count,
-                        experiment_dir=episode.experiment_dir,
-                        agent_ids=[agent_id],
-                        policy_classes={agent_id: policy_classes[agent_id]},
-                        checkpoint_dirs={agent_id: checkpoint_directory},
-                        scenario_info=scenario_info,
-                        num_episodes=eval_episodes,
-                        max_episode_steps=max_episode_steps,
-                        headless=headless,
-                        timestep_sec=timestep_sec,
-                        log_dir=log_dir,
-                        grade_mode=grade_mode,
-                        agent_coordinator=agent_coordinator,
-                        eval_mode=False,
-                    )
-                ]
-            )[0]
-        )
-        episode.eval_count += 1
-    #
-    # Put the evaluation data for all agents into the episode and record the TensorBoard.
-
-    episode.info[episode.active_tag] = evaluation_train_data
-    episode.record_tensorboard()
-
-    episode.gap_mode()
-    episode.calculate_gap()
-    episode.record_tensorboard()
-
-    episode.train_mode()
 
 def collect_evaluations(evaluation_task_ids: dict):
     ready_evaluation_task_ids, _ = ray.wait(list(evaluation_task_ids.keys()), timeout=0)
@@ -219,7 +172,7 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
-    grade_mode,
+    grade_mode=False,
     agent_coordinator=None,
     explore=False,
     eval_mode=True,
@@ -317,14 +270,17 @@ def evaluate(
 
     env.close()
 
-    if eval_mode:
-        filepath = os.path.join(checkpoint_dirs["000"], "Evaluate-test-scenarios.csv")
-    else:
-        filepath = os.path.join(checkpoint_dirs["000"], "Evaluate-train-scenarios.csv")
-        
     scenario_data_handler_eval.save_grade_density(num_episodes)
     scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
-    scenario_data_handler_eval.plot_densities_data(filepath)
+
+    try:
+        if eval_mode:
+            filepath = os.path.join(checkpoint_dirs["000"], "Evaluate-test-scenarios.csv")
+        else:
+            filepath = os.path.join(checkpoint_dirs["000"], "Evaluate-train-scenarios.csv")
+        scenario_data_handler_eval.plot_densities_data(filepath)
+    except KeyError as e:
+        pass
 
     return summary_log
 

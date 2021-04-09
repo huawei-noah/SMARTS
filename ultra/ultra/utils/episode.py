@@ -330,7 +330,7 @@ class Episode:
                         agent_itr,
                     )
                     data[key] = value
-            self.all_data[self.active_tag][agent_id][manipulated_var] = data
+            self.all_data[self.active_tag][agent_id][agent_itr] = data
 
         pkls_dir = f"{self.pkls}/{self.active_tag}"
         if not os.path.exists(pkls_dir):

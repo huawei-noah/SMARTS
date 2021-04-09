@@ -136,7 +136,9 @@ class ScenarioDataHandler:
         header = []
 
 class Coordinator:
-    def __init__(self, num_episodes):
+    def __init__(self, gb_curriculum_dir, num_episodes):
+        CurriculumInfo.initialize(gb_curriculum_dir)
+
         self.mode = False
         self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
         self.grade_checkpoints = []
@@ -193,22 +195,24 @@ class Coordinator:
 
     def graduate(self, index, average_scenarios_passed=None):
         """ Conditions on when to graduate """
-        if (CurriculumInfo.pass_based_warmup_episodes != 0):
-            if ((self.warmup_episodes % CurriculumInfo.pass_based_warmup_episodes == 0) and (self.end_warmup == False)):
-                print("***WARM-UP episode:", self.warmup_episodes)
-                self.warmup_episodes = 1
-                self.end_warmup = True
-                return False
-            elif self.end_warmup == False:
-                print("***WARM-UP episode:", self.warmup_episodes)
-                self.warmup_episodes += 1
-                return False
-        
-        if self.end_warmup == True or CurriculumInfo.pass_based_warmup_episodes == 0:
-            if CurriculumInfo.episode_based_toggle:
+        if (CurriculumInfo.pass_based_toggle == True):
+            if (CurriculumInfo.pass_based_warmup_episodes != 0):
+                if ((self.warmup_episodes % CurriculumInfo.pass_based_warmup_episodes == 0) and (self.end_warmup == False)):
+                    print("***WARM-UP episode:", self.warmup_episodes)
+                    self.warmup_episodes = 1
+                    self.end_warmup = True
+                    return False
+                elif self.end_warmup == False:
+                    print("***WARM-UP episode:", self.warmup_episodes)
+                    self.warmup_episodes += 1
+                    return False
+
+            if self.end_warmup == True or CurriculumInfo.pass_based_warmup_episodes == 0:
+                if CurriculumInfo.pass_based_toggle:
+                    return self.pass_based(index, average_scenarios_passed)
+
+        if CurriculumInfo.episode_based_toggle:
                 return self.episode_based(index)
-            elif CurriculumInfo.pass_based_toggle:
-                return self.pass_based(index, average_scenarios_passed)
 
     def episode_based(self, index):
         # Switch to next grade based on number of episodes completed
@@ -248,9 +252,14 @@ class Coordinator:
     
     @staticmethod
     def calculate_average_scenario_passed(
-        episode, total_scenarios_passed, agents, asp
+        episode, total_scenarios_passed, agents, asp, rate=None
     ):
-        if (episode.index + 1) % CurriculumInfo.pass_based_sample_rate == 0:
+        try:
+            sample_rate = CurriculumInfo.pass_based_sample_rate
+        except AttributeError as e:
+            sample_rate = rate
+
+        if (episode.index + 1) % sample_rate == 0:
             total_scenarios_passed += episode.info[episode.active_tag][
                 list(agents.keys())[0]
             ].data["reached_goal"]
@@ -259,7 +268,7 @@ class Coordinator:
             #     total_scenarios_passed,
             # )
             average_scenarios_passed = (
-                total_scenarios_passed / CurriculumInfo.pass_based_sample_rate
+                total_scenarios_passed / sample_rate
             )
             # print(
             #     f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"

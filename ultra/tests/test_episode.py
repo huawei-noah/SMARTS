@@ -60,7 +60,7 @@ class EpisodeTest(unittest.TestCase):
                 "reached_goal": 0,
             }
             for episode in episodes(1, etag="Train", log_dir=log_dir):
-                observations = env.reset()
+                observations, scenario = env.reset()
                 total_step = 0
                 episode.reset()
                 dones, infos = {"__all__": False}, None
@@ -122,7 +122,7 @@ class EpisodeTest(unittest.TestCase):
             agent, env = prepare_test_env_agent()
             log_dir = os.path.join(EpisodeTest.OUTPUT_DIRECTORY, "logs/")
             for episode in episodes(2, etag="Train", log_dir=log_dir):
-                observations = env.reset()
+                observations, scenario = env.reset()
                 total_step = 0
                 episode.reset()
                 dones, infos = {"__all__": False}, None

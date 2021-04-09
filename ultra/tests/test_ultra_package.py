@@ -78,7 +78,6 @@ class UltraPackageTest(unittest.TestCase):
                     "gb_scenarios_save_dir": None,
                 },
             )
-            )
             ray.shutdown()
             self.assertTrue(True)
         except ray.exceptions.WorkerCrashedError as err:
