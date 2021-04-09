@@ -19,10 +19,15 @@
 # THE SOFTWARE.
 import logging
 import math
+import os
 import random
 import re
 from dataclasses import dataclass
+from functools import lru_cache
+from subprocess import check_call
+from tempfile import NamedTemporaryFile
 from typing import Sequence, Tuple, Union
+from cached_property import cached_property
 
 import numpy as np
 import trimesh
@@ -81,9 +86,44 @@ class GLBData:
 
 
 class SumoRoadNetwork:
-    def __init__(self, graph):
+    def __init__(self, graph, net_file):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
+        self._net_file = net_file
+
+    @staticmethod
+    def _check_net_origin(bbox):
+        assert len(bbox) == 4
+        return bbox[0] <= 0.0 and bbox[1] <= 0.0 and bbox[2] >= 0.0 and bbox[3] >= 0.0
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def _shift_coordinates(cls, net_file_path):
+        net_file_folder = os.path.dirname(net_file_path)
+        out_path = os.path.join(net_file_folder, f"shifted_map-AUTOGEN.net.xml")
+        assert out_path != net_file_path
+        logger = logging.getLogger(cls.__name__)
+        logger.info(f"normalizing net coordinates into {out_path}...")
+        ## Translate the map's origin to remove huge (imprecise) offsets.
+        ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
+        ## for netconvert options description.
+        try:
+            check_call(
+                [
+                    "netconvert",
+                    "--offset.disable-normalization=FALSE",
+                    "-s",
+                    net_file_path,
+                    "-o",
+                    out_path,
+                ]
+            )
+            return out_path
+        except Exception as e:
+            logger.warning(
+                f"unable to use netconvert tool to normalize coordinates: {e}"
+            )
+        return None
 
     @classmethod
     def from_file(cls, net_file):
@@ -91,11 +131,49 @@ class SumoRoadNetwork:
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
         G = sumolib.net.readNet(net_file, withInternal=True)
-        return cls(G)
+
+        # check to see if we need to shift the map...
+        # if it already has an offset, it's probably been shifted
+        # correctly already, so we don't need to do it.  if not,
+        # then we check to see if the graph's bounding box includes
+        # the origin, and then shift it ourselves if not.
+        original_offset = G.getLocationOffset()
+        if (
+            original_offset[0] == 0
+            and original_offset[1] == 0
+            and not cls._check_net_origin(G.getBoundary())
+        ):
+            shifted_net_file = cls._shift_coordinates(net_file)
+            if shifted_net_file:
+                G = sumolib.net.readNet(shifted_net_file, withInternal=True)
+                assert cls._check_net_origin(G.getBoundary())
+                net_file = shifted_net_file
+                # keep track of having shifted the graph by
+                # injecting state into the network graph.
+                # this is needed because some maps have been pre-shifted,
+                # and will already have a locationOffset, but for those
+                # the offset should not be used (because all their other
+                # coordinates are relative to the origin).
+                G._shifted_by_smarts = True
+        return cls(G, net_file)
 
     @property
     def graph(self):
         return self._graph
+
+    @property
+    def net_file(self):
+        """ This is the net file (*.net.xml) that corresponds with our possibly-offset coordinates. """
+        return self._net_file
+
+    @cached_property
+    def net_offset(self):
+        """ This is our offset from what's in the original net file. """
+        return (
+            self.graph.getLocationOffset()
+            if self.graph and getattr(self.graph, "_shifted_by_smarts", False)
+            else [0, 0]
+        )
 
     def _compute_road_polygons(self):
         lane_to_poly = {}

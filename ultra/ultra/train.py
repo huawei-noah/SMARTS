@@ -224,7 +224,7 @@ if __name__ == "__main__":
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="Run without envision", type=bool, default=False
+        "--headless", help="Run without envision", type=bool, default=True
     )
     parser.add_argument(
         "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
@@ -274,6 +274,8 @@ if __name__ == "__main__":
 
     # Obtain the policy class IDs from the arguments.
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
+    print(policy_classes)
+    print(policy_ids)
 
     ray.init()
     ray.wait(

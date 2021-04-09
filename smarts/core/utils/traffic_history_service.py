@@ -18,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import os
+import pickle
 from dataclasses import dataclass
 from multiprocessing import Pipe, Process, Queue
 
@@ -162,7 +164,27 @@ class Traffic_history_service:
         return {}
 
     @staticmethod
-    def fetch_agent_missions(history_file_path):
+    def apply_map_location_offset(position, map_offset):
+        return [pos + map_offset[i] for i, pos in enumerate(position[:2])]
+
+    @staticmethod
+    def fetch_agent_missions(
+        history_file_path: str, scenario_root_path: str, map_offset
+    ):
+        assert os.path.isdir(scenario_root_path)
+        history_mission_filepath = os.path.join(
+            scenario_root_path, "history_mission.pkl"
+        )
+
+        if not os.path.exists(history_mission_filepath):
+            history_mission = {}
+        else:
+            with open(history_mission_filepath, "rb") as f:
+                history_mission = pickle.load(f)
+
+        if history_file_path in history_mission:
+            return history_mission[history_file_path]
+
         vehicle_missions = {}
         with open(history_file_path, "rb") as f:
             for t, vehicles_state in ijson.kvitems(f, "", use_float=True):
@@ -171,11 +193,19 @@ class Traffic_history_service:
                         continue
                     vehicle_missions[vehicle_id] = scenario.Mission(
                         start=scenario.Start(
-                            vehicles_state[vehicle_id]["position"][:2],
+                            Traffic_history_service.apply_map_location_offset(
+                                vehicles_state[vehicle_id]["position"],
+                                map_offset,
+                            ),
                             scenario.Heading(vehicles_state[vehicle_id]["heading"]),
                         ),
                         goal=scenario.EndlessGoal(),
                         start_time=float(t),
                     )
+        history_mission[history_file_path] = vehicle_missions
+
+        # update cached history_mission_file
+        with open(history_mission_filepath, "wb") as f:
+            pickle.dump(history_mission, f)
 
         return vehicle_missions

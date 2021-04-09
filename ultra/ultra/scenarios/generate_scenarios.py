@@ -55,6 +55,47 @@ from ultra.scenarios.common.social_vehicle_definitions import (
 LANE_LENGTH = 137.85
 
 
+def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
+    if stopwatcher_behavior:  # Put the ego vehicle(s) on the side road.
+        mission_start = "edge-south-side"
+        mission_end = "edge-dead-end"
+        mission_start_lane_index = 0
+        mission_end_lane_index = 0
+        mission_start_offset = 100
+        mission_end_offset = 5
+    else:
+        mission_start = "edge-{}".format(ego_mission["start"])
+        mission_end = "edge-{}".format(ego_mission["end"])
+        mission_start_lane_index = route_lanes[ego_mission["start"]] - 1
+        mission_end_lane_index = route_lanes[ego_mission["end"]] - 1
+        mission_start_offset = (
+            random.randint(
+                ego_mission["start_offset"][0], ego_mission["start_offset"][1]
+            )
+            if "start_offset" in ego_mission
+            else random.randint(50, 120)  # The default range of the offset.
+        )
+        mission_end_offset = (
+            random.randint(ego_mission["end_offset"][0], ego_mission["end_offset"][1])
+            if "end_offset" in ego_mission
+            else random.randint(50, 120)  # The default range of the offset.
+        )
+
+    route = Route(
+        begin=(
+            mission_start,
+            mission_start_lane_index,
+            mission_start_offset,
+        ),
+        end=(
+            mission_end,
+            mission_end_lane_index,
+            mission_end_offset,
+        ),
+    )
+    return route
+
+
 def copy_map_files(scenario, map_dir, speed):
     if not os.path.exists(scenario):
         os.makedirs(scenario)
@@ -149,37 +190,14 @@ def generate_left_turn_missions(
     for route_key, route_info in route_distributions["routes"].items():
         # to skip None
         if route_info:
-            if stopwatcher_behavior:  # put the ego on the side road
-                ego_routes = [
-                    Route(
-                        begin=(
-                            "edge-south-side",  # Edge
-                            0,  # Lane index
-                            100,  # Offset
-                        ),
-                        end=(
-                            "edge-dead-end",
-                            0,
-                            5,
-                        ),  # Edge  # Lane index  # Offset
-                    )
-                ]
-            else:
-                ego_routes = [
-                    Route(
-                        begin=(
-                            "edge-{}".format(mission["start"]),  # Edge
-                            route_lanes[mission["start"]] - 1,  # Lane index
-                            random.randint(50, 120),  # Offset
-                        ),
-                        end=(
-                            "edge-{}".format(mission["end"]),  # Edge
-                            route_lanes[mission["end"]] - 1,  # Lane index
-                            random.randint(50, 120),  # Offset
-                        ),
-                    )
-                    for mission in missions
-                ]
+            ego_routes = [
+                ego_mission_to_route(
+                    ego_mission=ego_mission,
+                    route_lanes=route_lanes,
+                    stopwatcher_behavior=stopwatcher_behavior,
+                )
+                for ego_mission in missions
+            ]
 
             flows, vehicles_log_info = generate_social_vehicles(
                 route_distribution=route_info["distribution"],
@@ -529,9 +547,9 @@ def build_scenarios(
                 temp_seeds = seeds[inner_prev_split:inner_cur_split]
                 seed_count += len(temp_seeds)
                 if save_dir is None:
-                    temp_save_dir = task_dir + "/" + "_".join(name_additions)
+                    temp_save_dir = os.path.join(task_dir, "_".join(name_additions))
                 else:
-                    temp_save_dir = save_dir
+                    temp_save_dir = os.path.join(save_dir, "_".join(name_additions))
 
                 sub_proc = Process(
                     target=scenario_worker,

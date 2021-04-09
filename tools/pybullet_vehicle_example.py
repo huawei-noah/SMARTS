@@ -95,9 +95,6 @@ if __name__ == "__main__":
     # https://turtlemonvh.github.io/python-multiprocessing-and-corefoundation-libraries.html
     # mp.set_start_method('spawn', force=True)
 
-    # showbase = ShowBase(windowType="onscreen")
-    showbase = mock.MagicMock()
-
     client = bc.BulletClient(pybullet.GUI)
     # client = BulletClient(pybullet.GUI)
     # client.configureDebugVisualizer(pybullet.COV_ENABLE_GUI, 0)
@@ -141,7 +138,6 @@ if __name__ == "__main__":
         vehicle = Vehicle(
             id="vehicle",
             pose=pose,
-            showbase=showbase,
             chassis=AckermannChassis(
                 pose=pose,
                 bullet_client=client,
