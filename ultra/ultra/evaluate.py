@@ -249,23 +249,22 @@ def evaluate(
                 agent_ids_to_record=infos.keys(), infos=infos, rewards=rewards
             )
 
-        episode.record_episode()
-
         density_counter = scenario_data_handler_eval.record_density_data(
             scenario["scenario_density"]
         )
         scenario["density_counter"] = density_counter
-        episode.record_density_tensorboard(scenario)
+        episode.record_scenario_info(agents, scenario)
+        episode.record_episode()
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
-                if not isinstance(value, (list, tuple, np.ndarray)):
+                if not isinstance(value, (list, tuple, dict, np.ndarray)):
                     summary_log[agent_id].data[key] += value
 
     # Normalize by the number of evaluation episodes.
     for agent_id, agent_data in summary_log.items():
         for key, value in agent_data.data.items():
-            if not isinstance(value, (list, tuple, np.ndarray)):
+            if not isinstance(value, (list, tuple, dict, np.ndarray)):
                 summary_log[agent_id].data[key] /= num_episodes
 
     env.close()
@@ -275,9 +274,13 @@ def evaluate(
 
     try:
         if eval_mode:
-            filepath = os.path.join(checkpoint_dirs["000"], "Evaluate-test-scenarios.csv")
+            filepath = os.path.join(
+                checkpoint_dirs["000"], "Evaluate-test-scenarios.csv"
+            )
         else:
-            filepath = os.path.join(checkpoint_dirs["000"], "Evaluate-train-scenarios.csv")
+            filepath = os.path.join(
+                checkpoint_dirs["000"], "Evaluate-train-scenarios.csv"
+            )
         scenario_data_handler_eval.plot_densities_data(filepath)
     except KeyError as e:
         pass

@@ -197,7 +197,13 @@ class UltraEnv(HiWayEnv):
         # print(scenario)
 
         root = str(scenario._root).split("/")[-1]
-        for density in ["no-traffic", "low-density", "mid-density", "high-density", "p-test"]:
+        for density in [
+            "no-traffic",
+            "low-density",
+            "mid-density",
+            "high-density",
+            "p-test",
+        ]:
             if density in root:
                 scenario_density = density
             else:

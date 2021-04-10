@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 
 from ultra.scenarios.generate_scenarios import build_scenarios
 
+
 class CurriculumInfo:
     def __init__(self):
         pass
@@ -48,19 +49,21 @@ class CurriculumInfo:
         cls.episode_based_cycle = bool(
             cls.curriculum["conditions"]["episode_based"]["cycle"]
         )
-        cls.pass_based_toggle = bool(cls.curriculum["conditions"]["pass_based"]["toggle"])
+        cls.pass_based_toggle = bool(
+            cls.curriculum["conditions"]["pass_based"]["toggle"]
+        )
         cls.pass_based_pass_rate = float(
             cls.curriculum["conditions"]["pass_based"]["pass_rate"]
         )
         cls.pass_based_sample_rate = cls.curriculum["conditions"]["pass_based"][
             "sample_rate"
         ]
-        cls.pass_based_warmup_episodes = int(cls.curriculum["conditions"]["pass_based"][
-            "warmup_episodes"
-        ])
-        cls.pass_based_eval_at_end = int(cls.curriculum["conditions"]["pass_based"][
-            "eval_at_end"
-        ])
+        cls.pass_based_warmup_episodes = int(
+            cls.curriculum["conditions"]["pass_based"]["warmup_episodes"]
+        )
+        cls.pass_based_eval_at_end = int(
+            cls.curriculum["conditions"]["pass_based"]["eval_at_end"]
+        )
 
         if cls.episode_based_toggle == cls.pass_based_toggle == True:
             raise Exception(
@@ -70,6 +73,7 @@ class CurriculumInfo:
             raise Exception(
                 "Both condition toggles are set to False. Please choose one condition"
             )
+
 
 class ScenarioDataHandler:
     def __init__(self, tag):
@@ -135,6 +139,7 @@ class ScenarioDataHandler:
                 writer.writerow(total_density_data[i])
         header = []
 
+
 class Coordinator:
     def __init__(self, gb_curriculum_dir, num_episodes):
         CurriculumInfo.initialize(gb_curriculum_dir)
@@ -144,7 +149,7 @@ class Coordinator:
         self.grade_checkpoints = []
         self.num_episodes = num_episodes
         self.grade_counter = 0
-        self.episode_per_grade = 0
+        self.episode_per_grade = 1
         self.warmup_episodes = 1
         self.end_warmup = False
 
@@ -195,9 +200,14 @@ class Coordinator:
 
     def graduate(self, index, average_scenarios_passed=None):
         """ Conditions on when to graduate """
-        if (CurriculumInfo.pass_based_toggle == True):
-            if (CurriculumInfo.pass_based_warmup_episodes != 0):
-                if ((self.warmup_episodes % CurriculumInfo.pass_based_warmup_episodes == 0) and (self.end_warmup == False)):
+        print("GRADE size counter:", self.episode_per_grade)
+        self.episode_per_grade += 1
+        if CurriculumInfo.pass_based_toggle == True:
+            if CurriculumInfo.pass_based_warmup_episodes != 0:
+                if (
+                    self.warmup_episodes % CurriculumInfo.pass_based_warmup_episodes
+                    == 0
+                ) and (self.end_warmup == False):
                     print("***WARM-UP episode:", self.warmup_episodes)
                     self.warmup_episodes = 1
                     self.end_warmup = True
@@ -207,12 +217,15 @@ class Coordinator:
                     self.warmup_episodes += 1
                     return False
 
-            if self.end_warmup == True or CurriculumInfo.pass_based_warmup_episodes == 0:
+            if (
+                self.end_warmup == True
+                or CurriculumInfo.pass_based_warmup_episodes == 0
+            ):
                 if CurriculumInfo.pass_based_toggle:
                     return self.pass_based(index, average_scenarios_passed)
 
         if CurriculumInfo.episode_based_toggle:
-                return self.episode_based(index)
+            return self.episode_based(index)
 
     def episode_based(self, index):
         # Switch to next grade based on number of episodes completed
@@ -232,8 +245,6 @@ class Coordinator:
 
     def pass_based(self, index, average_scenarios_passed):
         # Switch to next grade on the basis of certain percentage of completed scenarios
-        self.episode_per_grade += 1
-        print("GRADE size counter:", self.episode_per_grade)
         if index != 0:
             if average_scenarios_passed >= CurriculumInfo.pass_based_pass_rate:
                 print(f"({index}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}")
@@ -249,7 +260,7 @@ class Coordinator:
             self.grade_counter += 1
             self.display()
             self.grade_checkpoints.append(index)
-    
+
     @staticmethod
     def calculate_average_scenario_passed(
         episode, total_scenarios_passed, agents, asp, rate=None
@@ -267,9 +278,7 @@ class Coordinator:
             #     f"({episode.index + 1}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
             #     total_scenarios_passed,
             # )
-            average_scenarios_passed = (
-                total_scenarios_passed / sample_rate
-            )
+            average_scenarios_passed = total_scenarios_passed / sample_rate
             # print(
             #     f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
             # )

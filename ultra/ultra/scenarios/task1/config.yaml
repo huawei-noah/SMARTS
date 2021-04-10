@@ -139,19 +139,19 @@ levels:
   # FOR GB TO NON-GB comparison
   random:
     train:
-      total: 500
+      total: 2000
       ego_missions:
       - start: south-SN
         end:   west-EW
       intersection_types:
         2lane_t:
            percent: 1
-           specs: [[50kmh,no-traffic,0.11],[70kmh,no-traffic,0.11],[100kmh,no-traffic,0.11], #22%
-                   [50kmh,low-density,0.10],[70kmh,low-density,0.10],[100kmh,low-density,0.09], #29%,
-                   [50kmh,mid-density,0.10],[70kmh,mid-density,0.09],[100kmh,mid-density,0.09], #28%
-                   [50kmh,high-density,0.07],[70kmh,high-density,0.07],[100kmh,high-density,0.07]] #21%
+           specs: [[50kmh,no-traffic,0.08],[70kmh,no-traffic,0.09],[100kmh,no-traffic,0.08], #25%
+                   [50kmh,low-density,0.08],[70kmh,low-density,0.09],[100kmh,low-density,0.08], #25%,
+                   [50kmh,mid-density,0.08],[70kmh,mid-density,0.09],[100kmh,mid-density,0.08], #25%
+                   [50kmh,high-density,0.08],[70kmh,high-density,0.09],[100kmh,high-density,0.08]] #25%
     test:
-      total: 150
+      total: 1
       ego_missions:
       - start: south-SN
         end:   west-EW

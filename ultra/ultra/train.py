@@ -104,9 +104,11 @@ def train(
 
     if grade_mode:
         agent_coordinator, scenario_info = gb_setup(gb_info, num_episodes)
-        CurriculumInfo.initialize(gb_info["gb_curriculum_dir"]) # Applicable to both non-gb and gb cases
+        CurriculumInfo.initialize(
+            gb_info["gb_curriculum_dir"]
+        )  # Applicable to both non-gb and gb cases
         scenario_data_handler = ScenarioDataHandler("Train")
-        if (num_episodes % agent_coordinator.get_num_of_grades() == 0):
+        if num_episodes % agent_coordinator.get_num_of_grades() == 0:
             num_episodes += 1
             print("New max episodes (due to end case):", num_episodes)
     else:
@@ -154,18 +156,15 @@ def train(
                 print("No cycling of grades -> run completed")
                 break
 
-            if agent_coordinator.end_warmup == True or CurriculumInfo.episode_based_toggle == True:
-                density_counter = scenario_data_handler.record_density_data(
-                    scenario["scenario_density"]
-                )
-                scenario["density_counter"] = density_counter
             # print("agent_coordinator.episode_per_grade:", agent_coordinator.episode_per_grade)
         else:
             # Reset the environment and retrieve the initial observations.
             observations, scenario = env.reset()
-            density_counter = scenario_data_handler.record_density_data(
-                    scenario["scenario_density"]
-            )
+
+        density_counter = scenario_data_handler.record_density_data(
+            scenario["scenario_density"]
+        )
+        scenario["density_counter"] = density_counter
 
         dones = {"__all__": False}
         infos = None
@@ -243,25 +242,30 @@ def train(
             total_step += 1
             observations = next_observations
 
+        episode.record_scenario_info(agents, scenario)
         episode.record_episode()
         episode.record_tensorboard()
 
-        if (grade_mode == True) and (agent_coordinator.end_warmup == True):
-            episode.record_density_tensorboard(scenario)
-
         if grade_mode == True:
-            if agent_coordinator.end_warmup == True or CurriculumInfo.episode_based_toggle == True:
+            if (
+                agent_coordinator.end_warmup == True
+                or CurriculumInfo.episode_based_toggle == True
+            ):
                 (
                     average_scenarios_passed,
                     total_scenarios_passed,
                 ) = Coordinator.calculate_average_scenario_passed(
                     episode, total_scenarios_passed, agents, average_scenarios_passed
                 )
-                if ((episode.index + 1) % 30 == 0): # Set sample rate (flag needs to be set)
+                if (
+                    episode.index + 1
+                ) % 30 == 0:  # Set sample rate (flag needs to be set)
                     print(
                         f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
                     )
-                    asp_list_two.append(tuple((episode.index + 1, average_scenarios_passed)))
+                    asp_list_two.append(
+                        tuple((episode.index + 1, average_scenarios_passed))
+                    )
         else:
             rate = 30
             (
@@ -270,12 +274,14 @@ def train(
             ) = Coordinator.calculate_average_scenario_passed(
                 episode, total_scenarios_passed, agents, average_scenarios_passed, rate
             )
-            if ((episode.index + 1) % rate == 0): # Set sample rate as in gb curriculum config
+            if (
+                episode.index + 1
+            ) % rate == 0:  # Set sample rate as in gb curriculum config
                 print(
                     f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
                 )
                 asp_list.append(tuple((episode.index + 1, average_scenarios_passed)))
-        
+
         if finished:
             break
 
@@ -284,7 +290,7 @@ def train(
     if not grade_mode:
         scenario_data_handler.display_grade_scenario_distribution(num_episodes)
         scenario_data_handler.save_grade_density(num_episodes)
-    
+
     filepath = os.path.join(episode.experiment_dir, "Train.csv")
     try:
         scenario_data_handler.plot_densities_data(filepath)
@@ -297,12 +303,13 @@ def train(
 
     print("(one) Average scenarios passed list:", asp_list)
     print("(two) Average scenarios passed list:", asp_list_two)
-    
+
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):
         time.sleep(0.1)
 
     env.close()
+
 
 def gb_setup(gb_info, num_episodes):
     agent_coordinator = Coordinator(gb_info["gb_curriculum_dir"], num_episodes)
@@ -454,4 +461,3 @@ if __name__ == "__main__":
         },
         policy_ids=policy_ids,
     )
-    

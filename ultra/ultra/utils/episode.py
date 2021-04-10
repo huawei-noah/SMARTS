@@ -63,6 +63,7 @@ class LogInfo:
             "reached_goal": 0,
             "timed_out": 0,
             "episode_length": 1,
+            "scenario": dict(),
         }
 
     def add(self, infos, rewards):
@@ -254,20 +255,13 @@ class Episode:
         # Increment this episode's step count.
         self.steps += 1
 
-    def record_episode(self, old_episode=None, num_episodes_to_average=None):
+    def record_episode(self):
         for _, agent_info in self.info[self.active_tag].items():
             agent_info.normalize()
 
-        if (old_episode is not None) and (num_episodes_to_average is not None):
-            count = self.index % num_episodes_to_average
-            for agent_id, agent_info in self.info[self.active_tag].items():
-                for key in agent_info.data:
-                    if np.isscalar(agent_info.data[key]):
-                        agent_info.data[key] = (
-                            agent_info.data[key]
-                            + old_episode.info[self.active_tag][agent_id].data[key]
-                            * count
-                        ) / (count + 1)
+    def record_scenario_info(self, agents, scenario):
+        for agent_id in agents:
+            self.info[self.active_tag][agent_id].data["scenario"] = scenario
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
@@ -276,31 +270,6 @@ class Episode:
             )
             self.make_dir(self.log_dir)
             self.make_dir(self.model_dir)
-
-    def record_density_tensorboard(self, scenario):
-        if self.tb_writer is None:
-            self.tb_writer = SummaryWriter(
-                "{}/{}".format(self.log_dir, self.experiment_name)
-            )
-
-        for agent_id, agent_info in self.info[self.active_tag].items():
-            for key, value in agent_info.data.items():
-                if not isinstance(value, (list, tuple, np.ndarray)):
-                    if (
-                        key is "episode_return"
-                        or key is "reached_goal"
-                        or key is "collision"
-                    ):
-                        # print(f"Recording {key} for {scenario_density}; counter = {density_counter}")
-                        self.tb_writer.add_scalar(
-                            "{}/{}/{}".format(
-                                f"{self.active_tag}-{scenario['scenario_density']}",
-                                agent_id,
-                                key,
-                            ),
-                            value,
-                            scenario["density_counter"],
-                        )
 
     def record_tensorboard(self, save_codes=None, recording_step=None):
         # Due to performing evaluation asynchronously, this may record evaluation
@@ -316,19 +285,37 @@ class Episode:
 
         # Only create tensorboard once from training process.
         self.initialize_tb_writer()
+        # print(self.experiment_name)
 
         for agent_id, agent_info in self.info[self.active_tag].items():
             agent_itr = recording_step if recording_step else self.get_itr(agent_id)
             data = {}
 
+            scenario = agent_info.data["scenario"]
+            # print("Scenario_info:", scenario)
+
             for key, value in agent_info.data.items():
-                if not isinstance(value, (list, tuple, np.ndarray)):
-                    # vt_line = 1 if (draw_grade_line == True) and (self.index != 0) else 0
+                if not isinstance(value, (list, tuple, dict, np.ndarray)):
                     self.tb_writer.add_scalar(
                         "{}/{}/{}".format(self.active_tag, agent_id, key),
                         value,
                         agent_itr,
                     )
+                    if (
+                        key is "episode_return"
+                        or key is "reached_goal"
+                        or key is "collision"
+                    ):
+                        # print(f"Recording {key} for {scenario['scenario_density']}; counter = {scenario['density_counter']}")
+                        self.tb_writer.add_scalar(
+                            "{}/{}/{}".format(
+                                f"{self.active_tag}-{scenario['scenario_density']}",
+                                agent_id,
+                                key,
+                            ),
+                            value,
+                            scenario["density_counter"],
+                        )
                     data[key] = value
             self.all_data[self.active_tag][agent_id][agent_itr] = data
 

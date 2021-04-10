@@ -5,9 +5,11 @@ curriculum:
     3: [["00-gb",test_grade3]]
   conditions:
     episode_based:
-      toggle: True 
-      cycle: False 
+      toggle: True
+      cycle: False
     pass_based:
       toggle: False
-      pass_rate: 0.50
-      sample_rate: 5
+      pass_rate: 0.75
+      sample_rate: 30
+      warmup_episodes: 5
+      eval_at_end: False

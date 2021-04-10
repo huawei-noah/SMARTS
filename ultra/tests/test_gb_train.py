@@ -126,7 +126,7 @@ class GBTrainTest(unittest.TestCase):
         etag = "sac-v0"
 
         agent_coordinator = Coordinator(gb_curriculum_dir, num_episodes)
-        
+
         grade_iterator = iter(
             cycle(
                 [
