@@ -111,6 +111,7 @@ def train(
         if num_episodes % agent_coordinator.get_num_of_grades() == 0:
             num_episodes += 1
             print("New max episodes (due to end case):", num_episodes)
+        print("Num of episodes:", num_episodes)
     else:
         print("\n------------ GRADE MODE : Disabled ------------\n")
         agent_coordinator = None
@@ -295,8 +296,9 @@ def train(
     try:
         scenario_data_handler.plot_densities_data(filepath)
     except FileNotFoundError as e:
-        base_dir = os.path.join(os.path.dirname(__file__), "../")
-        path = os.path.join(base_dir, filepath)
+        # For storing testing data
+        utils_dir = os.path.join(os.path.dirname(__file__), "utils/../../")
+        path = os.path.join(utils_dir, filepath)
         scenario_data_handler.plot_densities_data(path)
 
     print(scenario_data_handler.overall_densities_counter)

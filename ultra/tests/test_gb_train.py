@@ -80,7 +80,7 @@ class GBTrainTest(unittest.TestCase):
             self.assertTrue(True)
 
     def test_gb_train_single_agent(self):
-        log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs/")
+        log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs")
         gb_curriculum_dir = "../../tests/scenarios/grade_based_test_curriculum"
         save_dir = "tests/scenarios/"
         if os.path.exists(log_dir):
@@ -91,10 +91,11 @@ class GBTrainTest(unittest.TestCase):
 
         ray.shutdown()
         try:
+            ray.init(ignore_reinit_error=True)
             train(
                 scenario_info=("00-gb", "test_grade1"),
                 policy_classes=policy_classes,
-                num_episodes=1,
+                num_episodes=6,
                 max_episode_steps=2,
                 eval_info={
                     "eval_rate": 50,
