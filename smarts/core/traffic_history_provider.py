@@ -29,11 +29,11 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 class TrafficHistoryProvider(Provider):
     def __init__(self):
+        self._histories_db = None
         self._is_setup = False
         self._map_location_offset = None
         self._replaced_vehicle_ids = set()
         self._start_time_offset = 0
-        self._histories_db = None
 
     @property
     def start_time(self):

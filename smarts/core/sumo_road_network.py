@@ -86,16 +86,18 @@ class GLBData:
 
 
 class SumoRoadNetwork:
+    # 3.2 is the default Sumo road network lane width if it's not specified
+    # explicitly in Sumo's NetEdit or the map.net.xml file.
+    # This corresponds on a 1:1 scale to lanes 3.2m wide, which is typical
+    # in North America (although US highway lanes are wider at ~3.7m).
+    DEFAULT_LANE_WIDTH = 3.2
+
     def __init__(self, graph, net_file, default_lane_width=None):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
         self._net_file = net_file
-        # 3.2 is the default Sumo road network lane width if it's not specified
-        # explicitly in Sumo's NetEdit or the map.net.xml file.
-        # This corresponds on a 1:1 scale to lanes 3.2m wide, which is typical
-        # in North America (although US highway lanes are wider at ~3.7m).
         self._default_lane_width = (
-            default_lane_width if default_lane_width is not None else 3.2
+            default_lane_width if default_lane_width is not None else SumoRoadNetwork.DEFAULT_LANE_WIDTH
         )
 
     @staticmethod

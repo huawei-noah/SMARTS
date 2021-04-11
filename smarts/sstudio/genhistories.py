@@ -157,6 +157,8 @@ class _TrajectoryDataset:
                 float(self.column_val_in_row(row, "speed")) * self.scale,
                 self.column_val_in_row(row, "lane_id"),
             )
+            # Ignore datapoints with NaNs because the rolling window code used by
+            # NGSIM can leave about a kernel-window's-worth of NaNs at the end.
             if not any(a is not None and np.isnan(a) for a in traj_args):
                 itcur.execute(insert_traj_sql, traj_args)
         itcur.close()
@@ -360,7 +362,9 @@ class OldJSON(_TrajectoryDataset):
         if isinstance(agent_type, int):
             return agent_type
         # Try to match the NGSIM types...
-        if agent_type == "car":
+        if agent_type == "motorcycle":
+            return 1
+        elif agent_type == "car":
             return 2
         elif agent_type == "truck":
             return 3

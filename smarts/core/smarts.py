@@ -25,6 +25,7 @@ import time
 from collections import defaultdict
 from typing import List, Sequence
 
+import math
 import numpy
 
 from envision import types as envision_types
@@ -226,7 +227,8 @@ class SMARTS:
         extras = dict(scores=scores)
 
         # 8. Advance the simulation clock.
-        self._elapsed_sim_time = round(self._elapsed_sim_time + dt, 3)
+        dec_digits = int(1 - math.log10(dt % 1))  # round due to FP precision issues, but need to allow arbitrarily-small dt's
+        self._elapsed_sim_time = round(self._elapsed_sim_time + dt, dec_digits)
         if self._use_realtime_clock:
             real_dt = time.time() - self._step_realtime
             if real_dt < dt:
