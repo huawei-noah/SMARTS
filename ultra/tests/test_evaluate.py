@@ -121,6 +121,7 @@ class EvaluateTest(unittest.TestCase):
         if len(os.listdir(path)) <= 2:
             self.assertTrue(False)
 
+    @unittest.skip
     def test_evaluation_check(self):
         log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_check_logs/")
         # ray.init(ignore_reinit_error=True)
@@ -141,6 +142,7 @@ class EvaluateTest(unittest.TestCase):
         else:
             shutil.rmtree(log_dir)
 
+    @unittest.skip
     def test_evaluation_check_multiagent(self):
         log_dir = os.path.join(
             EvaluateTest.OUTPUT_DIRECTORY, "output_eval_check_multiagent_logs/"
