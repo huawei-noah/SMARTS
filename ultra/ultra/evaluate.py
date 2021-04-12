@@ -35,8 +35,10 @@ import ray
 import torch
 
 from smarts.zoo.registry import make
+from ultra.utils.common import str_to_bool
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
+from ultra.utils.coordinator import ScenarioDataHandler
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -49,30 +51,28 @@ def evaluation_check(
     eval_rate,
     eval_episodes,
     max_episode_steps,
-    episode_count,
     scenario_info,
     timestep_sec,
     headless,
     log_dir,
-    grade_mode,
+    evaluation_task_ids,
+    grade_mode=False,
     agent_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
     agent_ids_to_evaluate = [
         agent_id
         for agent_id in agent_ids
-        # if (episode.get_itr(agent_id) + 1) % eval_rate == 0
-        # and episode.last_eval_iterations[agent_id] != episode.get_itr(agent_id)
-        if (episode_count + 1) % eval_rate == 0
-        and episode.last_eval_iterations[agent_id] != episode_count
+        if (episode.index + 1) % eval_rate == 0
+        and episode.last_eval_iterations[agent_id] != episode.index
     ]
 
     # Skip evaluation if there are no agents needing an evaluation.
     if len(agent_ids_to_evaluate) < 1:
         return
 
-    episode.eval_mode()
-    evaluation_data = {}
+    if eval_episodes < 1:
+        return
 
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
@@ -81,42 +81,85 @@ def evaluation_check(
         )
         agents[agent_id].save(checkpoint_directory)
 
-        # Perform the evaluation on this agent and save the data.
-        evaluation_data.update(
-            ray.get(
-                [
-                    evaluate.remote(
-                        seed=episode.eval_count,
-                        experiment_dir=episode.experiment_dir,
-                        agent_ids=[agent_id],
-                        policy_classes={agent_id: policy_classes[agent_id]},
-                        checkpoint_dirs={agent_id: checkpoint_directory},
-                        scenario_info=scenario_info,
-                        num_episodes=eval_episodes,
-                        max_episode_steps=max_episode_steps,
-                        headless=headless,
-                        timestep_sec=timestep_sec,
-                        log_dir=log_dir,
-                        grade_mode=grade_mode,
-                        agent_coordinator=agent_coordinator,
-                    )
-                ]
-            )[0]
+        evaluation_task_id = evaluate.remote(
+            seed=episode.eval_count,
+            experiment_dir=episode.experiment_dir,
+            agent_ids=[agent_id],
+            policy_classes={agent_id: policy_classes[agent_id]},
+            checkpoint_dirs={agent_id: checkpoint_directory},
+            scenario_info=scenario_info,
+            num_episodes=eval_episodes,
+            max_episode_steps=max_episode_steps,
+            headless=headless,
+            timestep_sec=timestep_sec,
+            log_dir=log_dir,
+            grade_mode=grade_mode,
+            agent_coordinator=agent_coordinator,
+            eval_mode=False,
         )
-        episode.eval_count += 1
-        episode.last_eval_iterations[agent_id] = episode_count
+        evaluation_task_ids[evaluation_task_id] = (
+            episode.get_itr(agent_id),
+            episode,
+            "eval_train",
+        )
 
-    # Put the evaluation data for all agents into the episode and record the TensorBoard.
-    episode.info[episode.active_tag] = evaluation_data
-    episode.record_tensorboard()
-    episode.gap_mode()
-    episode.calculate_gap()
-    episode.record_tensorboard()
-    episode.train_mode()
+    for agent_id in agent_ids_to_evaluate:
+        # Get the checkpoint directory for the current agent and save its model.
+        checkpoint_directory = episode.checkpoint_dir(
+            agent_id, episode.get_itr(agent_id)
+        )
+        agents[agent_id].save(checkpoint_directory)
+
+        evaluation_train_task_id = evaluate.remote(
+            seed=episode.eval_count,
+            experiment_dir=episode.experiment_dir,
+            agent_ids=[agent_id],
+            policy_classes={agent_id: policy_classes[agent_id]},
+            checkpoint_dirs={agent_id: checkpoint_directory},
+            scenario_info=scenario_info,
+            num_episodes=eval_episodes,
+            max_episode_steps=max_episode_steps,
+            headless=headless,
+            timestep_sec=timestep_sec,
+            log_dir=log_dir,
+            grade_mode=grade_mode,
+            agent_coordinator=agent_coordinator,
+            eval_mode=True,
+        )
+        evaluation_task_ids[evaluation_train_task_id] = (
+            episode.get_itr(agent_id),
+            episode,
+            "eval",
+        )
+
+        episode.eval_count += 1
+        episode.last_eval_iterations[agent_id] = episode.get_itr(agent_id)
+
+
+def collect_evaluations(evaluation_task_ids: dict):
+    ready_evaluation_task_ids, _ = ray.wait(list(evaluation_task_ids.keys()), timeout=0)
+
+    # For each ready evaluation result, put it in the episode's
+    # evaluation info so that it can be recorded to tensorboard.
+    for ready_evaluation_task_id in ready_evaluation_task_ids:
+        agent_iteration, episode, mode = evaluation_task_ids.pop(
+            ready_evaluation_task_id
+        )
+
+        if mode == "eval":
+            episode.eval_mode()
+        elif mode == "eval_train":
+            episode.eval_train_mode()
+
+        episode.info[episode.active_tag] = ray.get(ready_evaluation_task_id)
+        episode.record_tensorboard(recording_step=agent_iteration)
+        episode.train_mode()
+
+    return len(evaluation_task_ids) > 0
 
 
 # Number of GPUs should be split between remote functions.
-@ray.remote(num_gpus=num_gpus / 2)
+@ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 def evaluate(
     experiment_dir,
     seed,
@@ -129,9 +172,10 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
-    grade_mode,
+    grade_mode=False,
     agent_coordinator=None,
     explore=False,
+    eval_mode=True,
 ):
     torch.set_num_threads(1)
 
@@ -156,7 +200,7 @@ def evaluate(
         timestep_sec=timestep_sec,
         seed=seed,
         grade_mode=grade_mode,
-        eval_mode=True,
+        eval_mode=eval_mode,
     )
 
     # Build each agent from its specification.
@@ -175,13 +219,19 @@ def evaluate(
 
     initial_grade_switch = False
 
+    scenario_data_handler_eval = ScenarioDataHandler("Evaluation")
+
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        if (grade_mode == True) and (initial_grade_switch == False):
-            observations = env.reset(True, agent_coordinator.get_grade())
-            initial_grade_switch = True
+        if grade_mode != False:
+            if initial_grade_switch == False:
+                observations, scenario = env.reset(True, agent_coordinator.get_grade())
+                initial_grade_switch = True
+            else:
+                observations, scenario = env.reset()
         else:
-            observations = env.reset()
+            observations, scenario = env.reset()
+
         dones = {"__all__": False}
         infos = None
         episode.reset(mode="Evaluation")
@@ -189,7 +239,7 @@ def evaluate(
         while not dones["__all__"]:
             # Get and perform the available agents' actions.
             actions = {
-                agent_id: agents[agent_id].act(observation, explore=True)
+                agent_id: agents[agent_id].act(observation, explore=False)
                 for agent_id, observation in observations.items()
             }
             observations, rewards, dones, infos = env.step(actions)
@@ -199,20 +249,41 @@ def evaluate(
                 agent_ids_to_record=infos.keys(), infos=infos, rewards=rewards
             )
 
+        density_counter = scenario_data_handler_eval.record_density_data(
+            scenario["scenario_density"]
+        )
+        scenario["density_counter"] = density_counter
+        episode.record_scenario_info(agents, scenario)
         episode.record_episode()
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
-                if not isinstance(value, (list, tuple, np.ndarray)):
+                if not isinstance(value, (list, tuple, dict, np.ndarray)):
                     summary_log[agent_id].data[key] += value
 
     # Normalize by the number of evaluation episodes.
     for agent_id, agent_data in summary_log.items():
         for key, value in agent_data.data.items():
-            if not isinstance(value, (list, tuple, np.ndarray)):
+            if not isinstance(value, (list, tuple, dict, np.ndarray)):
                 summary_log[agent_id].data[key] /= num_episodes
 
     env.close()
+
+    scenario_data_handler_eval.save_grade_density(num_episodes)
+    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+
+    try:
+        if eval_mode:
+            filepath = os.path.join(
+                checkpoint_dirs["000"], "Evaluate-test-scenarios.csv"
+            )
+        else:
+            filepath = os.path.join(
+                checkpoint_dirs["000"], "Evaluate-train-scenarios.csv"
+            )
+        scenario_data_handler_eval.plot_densities_data(filepath)
+    except KeyError as e:
+        pass
 
     return summary_log
 
@@ -240,13 +311,13 @@ if __name__ == "__main__":
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=10000,
+        default=200,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="Run without envision", type=bool, default=True
+        "--headless", help="Run without envision", type=str_to_bool, default="True"
     )
     parser.add_argument(
         "--experiment-dir",

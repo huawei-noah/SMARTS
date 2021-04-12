@@ -39,15 +39,14 @@ import torch
 import matplotlib.pyplot as plt
 
 from smarts.zoo.registry import make
-from ultra.evaluate import evaluation_check
+from ultra.utils.common import str_to_bool
+from ultra.evaluate import evaluation_check, collect_evaluations
 from ultra.utils.episode import episodes
-from ultra.utils.coordinator import coordinator
+from ultra.utils.coordinator import Coordinator, CurriculumInfo, ScenarioDataHandler
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-# @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-@ray.remote(num_gpus=num_gpus / 2)
 def train(
     scenario_info,
     num_episodes,
@@ -65,6 +64,7 @@ def train(
     torch.set_num_threads(1)
     total_step = 0
     finished = False
+    evaluation_task_ids = dict()
 
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
@@ -103,10 +103,19 @@ def train(
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
     if grade_mode:
-        agent_coordinator, scenario_info = gb_setup(gb_info)
+        agent_coordinator, scenario_info = gb_setup(gb_info, num_episodes)
+        CurriculumInfo.initialize(
+            gb_info["gb_curriculum_dir"]
+        )  # Applicable to both non-gb and gb cases
+        scenario_data_handler = ScenarioDataHandler("Train")
+        if num_episodes % agent_coordinator.get_num_of_grades() == 0:
+            num_episodes += 1
+            print("New max episodes (due to end case):", num_episodes)
+        print("Num of episodes:", num_episodes)
     else:
         print("\n------------ GRADE MODE : Disabled ------------\n")
         agent_coordinator = None
+        scenario_data_handler = ScenarioDataHandler("Train")
 
     # Create the environment.
     env = gym.make(
@@ -119,31 +128,44 @@ def train(
         grade_mode=grade_mode,
     )
 
-    episode_count = 0
     old_episode = None
 
     average_scenarios_passed = 0.0
     total_scenarios_passed = 0.0
+    # CurriculumInfo.initialize()
 
+    old_episode = None
+    asp_list = []
+    asp_list_two = []
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if grade_mode:
-            graduate_agent = agent_coordinator.graduate(
-                episode.index, num_episodes, average_scenarios_passed
+            graduate = agent_coordinator.graduate(
+                episode.index, average_scenarios_passed
             )
-            if (
-                graduate_agent[1] == True
-            ):  # If agent has completed all levels (no cycle through levels again)
-                finished = True
-                break
-            elif graduate_agent[0] == True:  # If agent switches to new grade
-                observations = env.reset(True, agent_coordinator.get_grade())
-                agent_coordinator.display()
+            if graduate == True:
+                observations, scenario = env.reset(True, agent_coordinator.get_grade())
                 average_scenarios_passed = 0.0
+                grade_size = agent_coordinator.get_grade_size()
+                scenario_data_handler.display_grade_scenario_distribution(grade_size)
+                scenario_data_handler.save_grade_density(grade_size)
+                agent_coordinator.episode_per_grade = 0
+                agent_coordinator.end_warmup = False
             else:
-                observations = env.reset()
+                observations, scenario = env.reset()
+
+            if agent_coordinator.check_cycle_condition(episode.index):
+                print("No cycling of grades -> run completed")
+                break
+
+            # print("agent_coordinator.episode_per_grade:", agent_coordinator.episode_per_grade)
         else:
             # Reset the environment and retrieve the initial observations.
-            observations = env.reset()
+            observations, scenario = env.reset()
+
+        density_counter = scenario_data_handler.record_density_data(
+            scenario["scenario_density"]
+        )
+        scenario["density_counter"] = density_counter
 
         dones = {"__all__": False}
         infos = None
@@ -165,12 +187,27 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            grade_mode=grade_mode,
+            agent_coordinator=agent_coordinator,
+            max_episode_steps=max_episode_steps,
+            evaluation_task_ids=evaluation_task_ids,
+            **eval_info,
+            **env.info,
+        )
+
+        collect_evaluations(evaluation_task_ids=evaluation_task_ids)
+
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
             if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
                 finished = True
                 break
-
             # Request and perform actions on each agent that received an observation.
             actions = {
                 agent_id: agents[agent_id].act(observation, explore=True)
@@ -206,47 +243,78 @@ def train(
             total_step += 1
             observations = next_observations
 
-        episode.record_episode(old_episode, eval_info["eval_rate"])
-        old_episode = episode
+        episode.record_scenario_info(agents, scenario)
+        episode.record_episode()
+        episode.record_tensorboard()
 
-        # print("Reached goal: ", episode.info[episode.active_tag]["000"].data["reached_goal"])
-        if (episode_count + 1) % eval_info["eval_rate"] == 0:
-            episode.record_tensorboard(record_by_episode=True)
-            old_episode = None
-
-        if grade_mode:
+        if grade_mode == True:
+            if (
+                agent_coordinator.end_warmup == True
+                or CurriculumInfo.episode_based_toggle == True
+            ):
+                (
+                    average_scenarios_passed,
+                    total_scenarios_passed,
+                ) = Coordinator.calculate_average_scenario_passed(
+                    episode, total_scenarios_passed, agents, average_scenarios_passed
+                )
+                if (
+                    episode.index + 1
+                ) % 30 == 0:  # Set sample rate (flag needs to be set)
+                    print(
+                        f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
+                    )
+                    asp_list_two.append(
+                        tuple((episode.index + 1, average_scenarios_passed))
+                    )
+        else:
+            rate = 30
             (
                 average_scenarios_passed,
                 total_scenarios_passed,
-            ) = agent_coordinator.calculate_average_scenario_passed(
-                episode, total_scenarios_passed, agents, average_scenarios_passed
+            ) = Coordinator.calculate_average_scenario_passed(
+                episode, total_scenarios_passed, agents, average_scenarios_passed, rate
             )
-
-        if eval_info["eval_episodes"] != 0:
-            # Perform the evaluation check.
-            evaluation_check(
-                agents=agents,
-                agent_ids=agent_ids,
-                policy_classes=agent_classes,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                episode_count=episode_count,
-                grade_mode=grade_mode,
-                agent_coordinator=agent_coordinator,
-                **eval_info,
-                **env.info,
-            )
-        episode_count += 1
+            if (
+                episode.index + 1
+            ) % rate == 0:  # Set sample rate as in gb curriculum config
+                print(
+                    f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
+                )
+                asp_list.append(tuple((episode.index + 1, average_scenarios_passed)))
 
         if finished:
             break
 
+    # print(agent_coordinator.get_checkpoints())
+
+    if not grade_mode:
+        scenario_data_handler.display_grade_scenario_distribution(num_episodes)
+        scenario_data_handler.save_grade_density(num_episodes)
+
+    filepath = os.path.join(episode.experiment_dir, "Train.csv")
+    try:
+        scenario_data_handler.plot_densities_data(filepath)
+    except FileNotFoundError as e:
+        # For storing testing data
+        utils_dir = os.path.join(os.path.dirname(__file__), "utils/../../")
+        path = os.path.join(utils_dir, filepath)
+        scenario_data_handler.plot_densities_data(path)
+
+    print(scenario_data_handler.overall_densities_counter)
+
+    print("(one) Average scenarios passed list:", asp_list)
+    print("(two) Average scenarios passed list:", asp_list_two)
+
+    # Wait on the remaining evaluations to finish.
+    while collect_evaluations(evaluation_task_ids):
+        time.sleep(0.1)
+
     env.close()
 
 
-def gb_setup(gb_info):
-    agent_coordinator = coordinator(gb_info["gb_curriculum_dir"])
+def gb_setup(gb_info, num_episodes):
+    agent_coordinator = Coordinator(gb_info["gb_curriculum_dir"], num_episodes)
     # To build all scenarios from all grades
     if gb_info["gb_build_scenarios"]:
         agent_coordinator.build_all_scenarios(
@@ -285,22 +353,22 @@ if __name__ == "__main__":
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=10000,
+        default=200,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="Run without envision", type=bool, default=True
+        "--headless", help="Run without envision", type=str_to_bool, default="True"
     )
     parser.add_argument(
         "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
     )
     parser.add_argument(
         "--eval-rate",
-        help="Evaluation rate based on number of episodes",
+        help="The number of training episodes to wait before running the evaluation",
         type=int,
-        default=100,
+        default=200,
     )
     parser.add_argument(
         "--seed",
@@ -323,8 +391,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--gb-mode",
         help="Toggle grade based mode",
-        default=False,
-        type=bool,
+        default="False",
+        type=str_to_bool,
     )
     parser.add_argument(
         "--gb-curriculum-dir",
@@ -335,8 +403,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--gb-build-scenarios",
         help="Build all scenarios from curriculum",
-        default=False,
-        type=bool,
+        default="False",
+        type=str_to_bool,
     )
     parser.add_argument(
         "--gb-scenarios-root-dir",
@@ -373,29 +441,25 @@ if __name__ == "__main__":
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
     ray.init()
-    ray.wait(
-        [
-            train.remote(
-                scenario_info=(args.task, args.level),
-                num_episodes=int(args.episodes),
-                max_episode_steps=int(args.max_episode_steps),
-                eval_info={
-                    "eval_rate": int(args.eval_rate),
-                    "eval_episodes": int(args.eval_episodes),
-                },
-                timestep_sec=float(args.timestep),
-                headless=args.headless,
-                policy_classes=policy_classes,
-                seed=args.seed,
-                log_dir=args.log_dir,
-                grade_mode=args.gb_mode,
-                gb_info={
-                    "gb_curriculum_dir": args.gb_curriculum_dir,
-                    "gb_build_scenarios": args.gb_build_scenarios,
-                    "gb_scenarios_root_dir": args.gb_scenarios_root_dir,
-                    "gb_scenarios_save_dir": args.gb_scenarios_save_dir,
-                },
-                policy_ids=policy_ids,
-            )
-        ]
+    train(
+        scenario_info=(args.task, args.level),
+        num_episodes=int(args.episodes),
+        max_episode_steps=int(args.max_episode_steps),
+        eval_info={
+            "eval_rate": int(args.eval_rate),
+            "eval_episodes": int(args.eval_episodes),
+        },
+        timestep_sec=float(args.timestep),
+        headless=args.headless,
+        policy_classes=policy_classes,
+        seed=args.seed,
+        log_dir=args.log_dir,
+        grade_mode=args.gb_mode,
+        gb_info={
+            "gb_curriculum_dir": args.gb_curriculum_dir,
+            "gb_build_scenarios": args.gb_build_scenarios,
+            "gb_scenarios_root_dir": args.gb_scenarios_root_dir,
+            "gb_scenarios_save_dir": args.gb_scenarios_save_dir,
+        },
+        policy_ids=policy_ids,
     )

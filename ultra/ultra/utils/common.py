@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import argparse
 import math
 import os
 import random
@@ -37,9 +38,34 @@ from scipy.spatial.distance import euclidean
 import math, datetime
 
 
+def str_to_bool(str_value):
+    # Used to parse boolean flags. Idea taken from:
+    # https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+    if isinstance(str_value, bool):
+        return str_value
+    if str_value.lower() in ["yes", "true", "t", "y", "1"]:
+        return True
+    if str_value.lower() in ["no", "false", "f", "n", "0"]:
+        return False
+    raise argparse.ArgumentTypeError("Boolean value expected")
+
+
 def gen_experiment_name():
     dt = datetime.datetime.today()
     return f"experiment-{dt.year}.{dt.month}.{dt.day}-{dt.hour}:{dt.minute}:{dt.second}"
+
+
+# Exponential moving average function (https://stackoverflow.com/questions/42281844/what-is-the-mathematics-behind-the-smoothing-parameter-in-tensorboards-scalar)
+def smooth(scalars, weight):  # Weight between 0 and 1
+    last = scalars[0][1]  # First value in the plot (first timestep)
+    smoothed = list()
+    for point in scalars:  # point is tuple (x,y)
+        smoothed_val = last * weight + (1 - weight) * point[1]
+        p = (point[0], smoothed_val)
+        smoothed.append(p)
+        last = smoothed_val
+
+    return smoothed
 
 
 def rotate2d_vector(vectors, angle):

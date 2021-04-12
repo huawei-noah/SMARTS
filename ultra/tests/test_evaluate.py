@@ -24,7 +24,7 @@ import os
 import pickle
 import re
 import shutil
-import sys
+import time
 import unittest
 
 import dill
@@ -34,7 +34,7 @@ import ray
 from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.sac.sac.policy import SACPolicy
-from ultra.evaluate import evaluate, evaluation_check
+from ultra.evaluate import evaluate, evaluation_check, collect_evaluations
 from ultra.utils.episode import episodes
 
 seed = 2
@@ -170,6 +170,7 @@ class EvaluateTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
         )[0]
+        print(experiment_dir)
         models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
         evaluate_command = (
             f"python ultra/evaluate.py "
@@ -198,7 +199,9 @@ class EvaluateTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*")
         )[0]
+        print(experiment_dir)
         models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
+        print(models)
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00-multiagent --level eval_test --models {models} --experiment-dir {experiment_dir} "
@@ -256,7 +259,6 @@ class EvaluateTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 log_dir=log_dir,
-                grade_mode=False,
             )
             self.assertTrue(True)
         except Exception as err:
@@ -308,12 +310,34 @@ class EvaluateTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 log_dir=log_dir,
-                grade_mode=False,
             )
             self.assertTrue(True)
         except Exception as err:
             print(err)
             self.assertTrue(False)
+
+    def test_extract_policy_from_path(self):
+        paths = [
+            "from.ultra.baselines.sac:sac-v0",
+            "hello.ultra.ppo:ppo-v1",
+            "ultra.custom:custom",
+            "a.sb.ultra.c.d.e.sac:sac-v99",
+            "a.b.c.d.e.ultra.custom_agent.policy:MBPO-v2",
+        ]
+
+        def extract(path):
+            m = re.search(
+                "ultra(.)*([a-zA-Z0-9_]*.)+([a-zA-Z0-9_])+:[a-zA-Z0-9_]+((-)*[a-zA-Z0-9_]*)*",
+                path,
+            )
+
+            try:
+                policy_class = m.group(0)
+            except AttributeError as e:
+                self.assertTrue(False)
+
+        for path in paths:
+            extract(path)
 
     # @classmethod
     # def tearDownClass(cls):
@@ -356,19 +380,16 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
     }
 
     total_step = 0
-    episode_count = 0
-    old_episode = None
     etag = ":".join([policy_class.split(":")[-1] for policy_class in agent_classes])
-    finished = False
+    evaluation_task_ids = dict()
 
     for episode in episodes(1, etag=etag, log_dir=log_dir):
-        observations = env.reset()
+        observations, scenarios = env.reset()
         dones = {"__all__": False}
         infos = None
         episode.reset()
         experiment_dir = episode.experiment_dir
 
-        # Save relevant agent metadata.
         if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
             if not os.path.exists(experiment_dir):
                 os.makedirs(experiment_dir)
@@ -384,20 +405,28 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                 )
 
         while not dones["__all__"]:
-            # Break if any of the agent's step counts is 1000000 or greater.
-            if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
-                finished = True
-                break
+            evaluation_check(
+                agents=agents,
+                agent_ids=agent_ids,
+                episode=episode,
+                eval_rate=10,
+                eval_episodes=1,
+                max_episode_steps=2,
+                policy_classes=agent_classes,
+                scenario_info=scenario_info,
+                evaluation_task_ids=evaluation_task_ids,
+                timestep_sec=0.1,
+                headless=True,
+                log_dir=log_dir,
+            )
+            collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
-            # Request and perform actions on each agent that received an observation.
             actions = {
                 agent_id: agents[agent_id].act(observation, explore=True)
                 for agent_id, observation in observations.items()
             }
             next_observations, rewards, dones, infos = env.step(actions)
 
-            # Active agents are those that receive observations in this step and the next
-            # step. Step each active agent (obtaining their network loss if applicable).
             active_agent_ids = observations.keys() & next_observations.keys()
             loss_outputs = {
                 agent_id: agents[agent_id].step(
@@ -411,7 +440,6 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                 for agent_id in active_agent_ids
             }
 
-            # Record the data from this episode.
             episode.record_step(
                 agent_ids_to_record=active_agent_ids,
                 infos=infos,
@@ -420,38 +448,11 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                 loss_outputs=loss_outputs,
             )
 
-            # Update variables for the next step.
             total_step += 1
             observations = next_observations
 
-        episode.record_episode(old_episode, 1)
-        old_episode = episode
-
-        if (episode_count + 1) % 1 == 0:
-            episode.record_tensorboard()
-            old_episode = None
-
-        # Perform the evaluation check.
-        evaluation_check(
-            agents=agents,
-            agent_ids=agent_ids,
-            episode=episode,
-            eval_rate=1,
-            eval_episodes=1,
-            max_episode_steps=2,
-            policy_classes=agent_classes,
-            scenario_info=scenario_info,
-            timestep_sec=0.1,
-            headless=True,
-            log_dir=log_dir,
-            episode_count=episode_count,
-            grade_mode=False,
-            agent_coordinator=None,
-        )
-
-        episode_count += 1
-
-        if finished:
-            break
+    # Wait on the remaining evaluations to finish.
+    while collect_evaluations(evaluation_task_ids):
+        time.sleep(0.1)
 
     env.close()

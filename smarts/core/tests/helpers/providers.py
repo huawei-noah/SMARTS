@@ -20,11 +20,11 @@
 from typing import Sequence, Set
 
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.provider import ProviderState
+from smarts.core.provider import Provider, ProviderState
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class MockProvider:
+class MockProvider(Provider):
     def __init__(self):
         self._next_provider_state = None
 

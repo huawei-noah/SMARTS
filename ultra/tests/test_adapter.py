@@ -39,12 +39,12 @@ class AdapterTest(unittest.TestCase):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
         def run_experiment():
             agent, env = prepare_test_env_agent()
-            observations = env.reset()
+            observations, scenario = env.reset()
             env.close()
-            return observations
+            return observations, scenario
 
         ray.init(ignore_reinit_error=True)
-        observations = ray.get(run_experiment.remote())
+        observations, scenario = ray.get(run_experiment.remote())
         ray.shutdown()
         self.assertTrue("low_dim_states" in observations[AGENT_ID])
         self.assertTrue("social_vehicles" in observations[AGENT_ID])
@@ -56,7 +56,7 @@ class AdapterTest(unittest.TestCase):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
         def run_experiment():
             agent, env = prepare_test_env_agent()
-            observations = env.reset()
+            observations, scenario = env.reset()
             state = observations[AGENT_ID]
             action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({AGENT_ID: action})
@@ -73,7 +73,7 @@ class AdapterTest(unittest.TestCase):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
         def run_experiment():
             agent, env = prepare_test_env_agent()
-            observations = env.reset()
+            observations, scenario = env.reset()
             state = observations[AGENT_ID]
             action = agent.act(state, explore=True)
             observations, rewards, dones, infos = env.step({AGENT_ID: action})

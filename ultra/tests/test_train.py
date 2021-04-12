@@ -44,27 +44,27 @@ class TrainTest(unittest.TestCase):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         try:
             os.system(
-                f"python ultra/train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --log-dir {log_dir}"
+                f"python ultra/train.py --task 00 --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir}"
             )
         except Exception as err:
             print(err)
             self.assertTrue(False)
 
-        if os.path.exists(log_dir):
-            self.assertTrue(True)
+        if not os.path.exists(log_dir):
+            self.assertTrue(False)
 
     def test_train_cli_multiagent(self):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         try:
             os.system(
-                f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --max-episode-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
+                f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
             )
         except Exception as err:
             print(err)
             self.assertTrue(False)
 
-        if os.path.exists(log_dir):
-            self.assertTrue(True)
+        if not os.path.exists(log_dir):
+            self.assertTrue(False)
 
     def test_train_single_agent(self):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
@@ -77,30 +77,26 @@ class TrainTest(unittest.TestCase):
         ray.shutdown()
         try:
             ray.init(ignore_reinit_error=True)
-            ray.wait(
-                [
-                    train.remote(
-                        scenario_info=("00", "easy"),
-                        policy_classes=policy_classes,
-                        num_episodes=1,
-                        max_episode_steps=2,
-                        eval_info={
-                            "eval_rate": 1000,
-                            "eval_episodes": 2,
-                        },
-                        timestep_sec=0.1,
-                        headless=True,
-                        seed=2,
-                        grade_mode=False,
-                        gb_info={
-                            "gb_curriculum_dir": "",
-                            "gb_build_scenarios": False,
-                            "gb_scenarios_root_dir": None,
-                            "gb_scenarios_save_dir": None,
-                        },
-                        log_dir=log_dir,
-                    )
-                ]
+            train(
+                scenario_info=("00", "easy"),
+                policy_classes=policy_classes,
+                num_episodes=1,
+                max_episode_steps=2,
+                eval_info={
+                    "eval_rate": 1000,
+                    "eval_episodes": 2,
+                },
+                timestep_sec=0.1,
+                headless=True,
+                seed=2,
+                grade_mode=False,
+                gb_info={
+                    "gb_curriculum_dir": "",
+                    "gb_build_scenarios": False,
+                    "gb_scenarios_root_dir": None,
+                    "gb_scenarios_save_dir": None,
+                },
+                log_dir=log_dir,
             )
             ray.shutdown()
             self.assertTrue(True)
@@ -116,7 +112,7 @@ class TrainTest(unittest.TestCase):
 
         seed = 2
         policy_classes = [
-            "ultra.baslines.sac:sac-v0",
+            "ultra.baselines.sac:sac-v0",
             "ultra.baselines.ppo:ppo-v0",
             "ultra.baselines.td3:td3-v0",
         ]
@@ -124,30 +120,26 @@ class TrainTest(unittest.TestCase):
         ray.shutdown()
         try:
             ray.init(ignore_reinit_error=True)
-            ray.wait(
-                [
-                    train.remote(
-                        scenario_info=("00-multiagent", "easy"),
-                        policy_classes=policy_classes,
-                        num_episodes=1,
-                        max_episode_steps=2,
-                        eval_info={
-                            "eval_rate": 1000,
-                            "eval_episodes": 2,
-                        },
-                        timestep_sec=0.1,
-                        headless=True,
-                        seed=2,
-                        grade_mode=False,
-                        gb_info={
-                            "gb_curriculum_dir": "",
-                            "gb_build_scenarios": False,
-                            "gb_scenarios_root_dir": None,
-                            "gb_scenarios_save_dir": None,
-                        },
-                        log_dir=log_dir,
-                    )
-                ]
+            train(
+                scenario_info=("00-multiagent", "easy"),
+                policy_classes=policy_classes,
+                num_episodes=1,
+                max_episode_steps=2,
+                eval_info={
+                    "eval_rate": 1000,
+                    "eval_episodes": 2,
+                },
+                timestep_sec=0.1,
+                headless=True,
+                seed=2,
+                grade_mode=False,
+                gb_info={
+                    "gb_curriculum_dir": "",
+                    "gb_build_scenarios": False,
+                    "gb_scenarios_root_dir": None,
+                    "gb_scenarios_save_dir": None,
+                },
+                log_dir=log_dir,
             )
             ray.shutdown()
             self.assertTrue(True)

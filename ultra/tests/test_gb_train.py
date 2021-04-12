@@ -32,7 +32,7 @@ from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.train import train
-from ultra.utils.coordinator import coordinator
+from ultra.utils.coordinator import Coordinator, CurriculumInfo
 from ultra.utils.episode import episodes
 from itertools import cycle
 
@@ -52,7 +52,7 @@ class GBTrainTest(unittest.TestCase):
             os.system(
                 f"python ultra/train.py --gb-mode True --gb-curriculum-dir {curriculum_dir} --task 00 --level easy \
                 --headless True --episodes 6 --max-episode-steps 2 --gb-scenarios-root-dir tests/scenarios \
-                --gb-scenarios-save-dir {save_dir} --log-dir {log_dir} --gb-build-scenarios True"
+                --eval-episodes 0 --gb-scenarios-save-dir {save_dir} --log-dir {log_dir} --gb-build-scenarios True"
             )
         except Exception as err:
             print(err)
@@ -80,7 +80,8 @@ class GBTrainTest(unittest.TestCase):
             self.assertTrue(True)
 
     def test_gb_train_single_agent(self):
-        log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs/")
+        log_dir = os.path.join(GBTrainTest.OUTPUT_DIRECTORY, "logs")
+        gb_curriculum_dir = "../../tests/scenarios/grade_based_test_curriculum"
         save_dir = "tests/scenarios/"
         if os.path.exists(log_dir):
             shutil.rmtree(log_dir)
@@ -91,30 +92,26 @@ class GBTrainTest(unittest.TestCase):
         ray.shutdown()
         try:
             ray.init(ignore_reinit_error=True)
-            ray.wait(
-                [
-                    train.remote(
-                        scenario_info=("00-gb", "test_grade1"),
-                        policy_classes=policy_classes,
-                        num_episodes=1,
-                        max_episode_steps=2,
-                        eval_info={
-                            "eval_rate": 50,
-                            "eval_episodes": 2,
-                        },
-                        timestep_sec=0.1,
-                        headless=True,
-                        seed=2,
-                        grade_mode=True,
-                        gb_info={
-                            "gb_curriculum_dir": "../tests/scenarios/grade_based_test_curriculum",
-                            "gb_build_scenarios": True,
-                            "gb_scenarios_root_dir": True,
-                            "gb_scenarios_save_dir": "../",
-                        },
-                        log_dir=log_dir,
-                    )
-                ]
+            train(
+                scenario_info=("00-gb", "test_grade1"),
+                policy_classes=policy_classes,
+                num_episodes=6,
+                max_episode_steps=2,
+                eval_info={
+                    "eval_rate": 50,
+                    "eval_episodes": 2,
+                },
+                timestep_sec=0.1,
+                headless=True,
+                seed=2,
+                grade_mode=True,
+                gb_info={
+                    "gb_curriculum_dir": "../../tests/scenarios/grade_based_test_curriculum",
+                    "gb_build_scenarios": True,
+                    "gb_scenarios_root_dir": save_dir,
+                    "gb_scenarios_save_dir": save_dir,
+                },
+                log_dir=log_dir,
             )
             ray.shutdown()
             self.assertTrue(True)
@@ -129,7 +126,7 @@ class GBTrainTest(unittest.TestCase):
         num_episodes = 8
         etag = "sac-v0"
 
-        agent_coordinator = coordinator(gb_curriculum_dir)
+        agent_coordinator = Coordinator(gb_curriculum_dir, num_episodes)
 
         grade_iterator = iter(
             cycle(
@@ -142,16 +139,16 @@ class GBTrainTest(unittest.TestCase):
         )
 
         for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
-            switch_grade = agent_coordinator.graduate(episode.index, num_episodes)
+            graduate = agent_coordinator.graduate(episode.index, num_episodes)
             # If agent switches to new grade
-            if switch_grade[0] == True:
-                agent_coordinator.display()
+            if graduate == True:
                 self.assertEqual(next(grade_iterator), agent_coordinator.get_grade()[0])
+                print(agent_coordinator.get_grade()[0])
 
             # If agent has completed all levels (no cycle through levels again)
-            if switch_grade[1] == True:
-                finished = True
-                self.assertTrue(finished)
+            if agent_coordinator.check_cycle_condition(episode.index):
+                print("No cycling of grades -> run completed")
+                break
 
     @classmethod
     def tearDownClass(cls):

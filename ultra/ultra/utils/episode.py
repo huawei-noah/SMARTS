@@ -45,7 +45,7 @@ class LogInfo:
     def __init__(self):
         self.data = {
             "env_score": 0.0,
-            "episode_reward": 0.0,
+            "episode_return": 0.0,
             "dist_center": 0,
             "goal_dist": 0,
             "speed": 0,
@@ -63,6 +63,7 @@ class LogInfo:
             "reached_goal": 0,
             "timed_out": 0,
             "episode_length": 1,
+            "scenario": dict(),
         }
 
     def add(self, infos, rewards):
@@ -79,7 +80,7 @@ class LogInfo:
         self.data["goal_dist"] = infos["logs"]["goal_dist"]
         self.data["ego_linear_jerk"] += infos["logs"]["linear_jerk"]
         self.data["ego_angular_jerk"] += infos["logs"]["angular_jerk"]
-        self.data["episode_reward"] += rewards
+        self.data["episode_return"] += rewards
         self.data["final_pos"] = infos["logs"]["position"][:2]
         self.data["start_pos"] = infos["logs"]["start"].position
         self.data["dist_travelled"] = math.sqrt(
@@ -154,6 +155,7 @@ class Episode:
         self.tb_writer = tb_writer
         self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
+        # self.scenario = None
 
     @property
     def sim2wall_ratio(self):
@@ -182,6 +184,9 @@ class Episode:
     def train_mode(self):
         self.active_tag = "Train"
 
+    def eval_train_mode(self):
+        self.active_tag = "Evaluation_Training"
+
     def eval_mode(self):
         self.active_tag = "Evaluation"
 
@@ -190,11 +195,11 @@ class Episode:
 
     def calculate_gap(self):
         gap_info = self.info["Gap"]
-        for agent_id, agent_info in self.info["Train"].items():
+        for agent_id, agent_info in self.info["Evaluation"].items():
             for key in agent_info.data:
-                if np.isscalar(agent_info.data[key]):
+                if np.isscalar(gap_info[agent_id].data[key]):
                     gap_info[agent_id].data[key] = (
-                        self.info["Train"][agent_id].data[key]
+                        self.info["Evaluation_Training"][agent_id].data[key]
                         - self.info["Evaluation"][agent_id].data[key]
                     )
 
@@ -250,19 +255,13 @@ class Episode:
         # Increment this episode's step count.
         self.steps += 1
 
-    def record_episode(self, old_episode=None, eval_rate=None):
+    def record_episode(self):
         for _, agent_info in self.info[self.active_tag].items():
             agent_info.normalize()
 
-        if (old_episode is not None) and (eval_rate is not None):
-            for agent_id, agent_info in self.info[self.active_tag].items():
-                for key in agent_info.data:
-                    if np.isscalar(agent_info.data[key]):
-                        agent_info.data[key] = (
-                            agent_info.data[key] * eval_rate
-                            + old_episode.info[self.active_tag][agent_id].data[key]
-                        ) / eval_rate
-                    # print(f"key: {key}, value: {agent_info.data[key]}")
+    def record_scenario_info(self, agents, scenario):
+        for agent_id in agents:
+            self.info[self.active_tag][agent_id].data["scenario"] = scenario
 
     def initialize_tb_writer(self):
         if self.tb_writer is None:
@@ -272,26 +271,51 @@ class Episode:
             self.make_dir(self.log_dir)
             self.make_dir(self.model_dir)
 
-    def record_tensorboard(
-        self, save_codes=None, record_by_episode=False, draw_grade_line=False
-    ):
+    def record_tensorboard(self, save_codes=None, recording_step=None):
+        # Due to performing evaluation asynchronously, this may record evaluation
+        # results out of order. For example, if Evaluation 1 began at t = 100 s
+        # and recorded at t = 150 s, but Evaluation 2 began at t = 120 s and
+        # recorded at t = 140 s, the plot of the data will appear to go backwards,
+        # and also only have a data point for Evaluation 2. This seems to be a
+        # known tensorboardX and tensorboard issue that has not yet been resolved:
+        # https://github.com/tensorflow/tensorboard/issues/3570,
+        # https://github.com/lanpa/tensorboardX/milestone/1.
+        # Combat this issue by increasing eval_rate so that overlapping
+        # evaluations are less likely.
+
         # Only create tensorboard once from training process.
         self.initialize_tb_writer()
+        # print(self.experiment_name)
 
         for agent_id, agent_info in self.info[self.active_tag].items():
-            agent_itr = self.get_itr(agent_id)
+            agent_itr = recording_step if recording_step else self.get_itr(agent_id)
             data = {}
 
-            manipulated_var = self.index if record_by_episode else agent_itr
+            scenario = agent_info.data["scenario"]
+            # print("Scenario_info:", scenario)
 
             for key, value in agent_info.data.items():
-                if not isinstance(value, (list, tuple, np.ndarray)):
-                    # vt_line = 1 if (draw_grade_line == True) and (self.index != 0) else 0
+                if not isinstance(value, (list, tuple, dict, np.ndarray)):
                     self.tb_writer.add_scalar(
                         "{}/{}/{}".format(self.active_tag, agent_id, key),
                         value,
-                        manipulated_var,
+                        agent_itr,
                     )
+                    if (
+                        key is "episode_return"
+                        or key is "reached_goal"
+                        or key is "collision"
+                    ):
+                        # print(f"Recording {key} for {scenario['scenario_density']}; counter = {scenario['density_counter']}")
+                        self.tb_writer.add_scalar(
+                            "{}/{}/{}".format(
+                                f"{self.active_tag}-{scenario['scenario_density']}",
+                                agent_id,
+                                key,
+                            ),
+                            value,
+                            scenario["density_counter"],
+                        )
                     data[key] = value
             self.all_data[self.active_tag][agent_id][agent_itr] = data
 
@@ -355,7 +379,7 @@ def episodes(n, etag=None, log_dir=None):
                 agent_rewards_strings = [
                     "{}: {:.4f}".format(
                         agent_id,
-                        agent_info.data["episode_reward"],
+                        agent_info.data["episode_return"],
                     )
                     for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
