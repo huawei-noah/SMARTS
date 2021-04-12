@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 from enum import Enum
 from functools import partial
 
@@ -71,31 +74,6 @@ class Controllers:
                 brake=np.clip(action[1], 0.0, 1.0),
                 steering=np.clip(action[2], -1, 1),
             )
-        elif action_space == ActionSpaceType.ActuatorDynamic:
-            ActuatorDynamicController.perform_action(
-                vehicle, action, controller_state, dt_sec=sim.timestep_sec
-            )
-        elif action_space == ActionSpaceType.Trajectory:
-            TrajectoryTrackingController.perform_trajectory_tracking_PD(
-                action,
-                vehicle,
-                controller_state,
-                dt_sec=sim.timestep_sec,
-            )
-        elif action_space == ActionSpaceType.MPC:
-            TrajectoryTrackingController.perform_trajectory_tracking_MPC(
-                action, vehicle, controller_state, sim.timestep_sec
-            )
-        elif action_space == ActionSpaceType.LaneWithContinuousSpeed:
-            LaneFollowingController.perform_lane_following(
-                sim,
-                agent_id,
-                vehicle,
-                controller_state,
-                sensor_state,
-                action[0],
-                action[1],
-            )
         elif action_space == ActionSpaceType.Lane:
             perform_lane_following = partial(
                 LaneFollowingController.perform_lane_following,
@@ -116,6 +94,31 @@ class Controllers:
                 perform_lane_following(target_speed=12.5, lane_change=1)
             elif action == "change_lane_right":
                 perform_lane_following(target_speed=12.5, lane_change=-1)
+        elif action_space == ActionSpaceType.ActuatorDynamic:
+            ActuatorDynamicController.perform_action(
+                vehicle, action, controller_state, dt_sec=sim.timestep_sec
+            )
+        elif action_space == ActionSpaceType.LaneWithContinuousSpeed:
+            LaneFollowingController.perform_lane_following(
+                sim,
+                agent_id,
+                vehicle,
+                controller_state,
+                sensor_state,
+                action[0],
+                action[1],
+            )
+        elif action_space == ActionSpaceType.Trajectory:
+            TrajectoryTrackingController.perform_trajectory_tracking_PD(
+                action,
+                vehicle,
+                controller_state,
+                dt_sec=sim.timestep_sec,
+            )
+        elif action_space == ActionSpaceType.MPC:
+            TrajectoryTrackingController.perform_trajectory_tracking_MPC(
+                action, vehicle, controller_state, sim.timestep_sec
+            )
         else:
             raise ValueError(
                 f"perform_action(action_space={action_space}, ...) has failed "

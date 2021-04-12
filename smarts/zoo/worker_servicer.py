@@ -27,8 +27,7 @@ import time
 import cloudpickle
 import grpc
 
-from smarts.core import remote_agent
-from smarts.zoo import worker as zoo_worker
+from smarts.core import remote_agent, rpc
 from smarts.zoo import worker_pb2, worker_pb2_grpc
 
 logging.basicConfig(level=logging.INFO)
@@ -66,4 +65,9 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
         adapted_obs = self._agent_spec.observation_adapter(obs)
         action = self._agent.act(adapted_obs)
         adapted_action = self._agent_spec.action_adapter(action)
-        return worker_pb2.Action(action=cloudpickle.dumps(adapted_action))
+
+        return worker_pb2.Action(
+            vehicles=rpc.remote_action_to_proto(
+                self._agent_spec.interface.action, adapted_action
+            )
+        )

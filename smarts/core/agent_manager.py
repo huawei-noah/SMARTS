@@ -1,15 +1,17 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#
+# MIT License
+
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,12 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import logging
 from typing import Set
 
 import cloudpickle
 
 from envision.types import format_actor_id
+from smarts.core import rpc
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import MissionPlanner
@@ -225,19 +229,18 @@ class AgentManager:
 
     def fetch_agent_actions(self, sim, ego_agent_actions):
 
-        # put social agent received action proto to python conversion here <------------------------------------------------
-
         try:
             social_agent_actions = {
                 agent_id: (
-                    cloudpickle.loads(
-                        self._remote_social_agents_action[agent_id].result().action
+                    rpc.remote_proto_to_action(
+                        self._remote_social_agents_action[agent_id].result()
                     )
                     if self._remote_social_agents_action.get(agent_id, None)
                     else None
                 )
-                for agent_id, remote_agent in self._remote_social_agents.items()
+                for agent_id in self._remote_social_agents.keys()
             }
+
         except Exception as e:
             self._log.error(
                 "Resolving the remote agent's action (a Future object) generated exception."

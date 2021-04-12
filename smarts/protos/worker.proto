@@ -48,11 +48,6 @@ message Observation {
     map<string, VehicleState> vehicles=1;
 }
 
-// Agent's action in response to the observation
-message Action {
-    bytes action = 1;
-}
-
 // Collision events
 message Collision{
     string collidee_id=1;
@@ -154,7 +149,7 @@ message Matrix{
     // The 2D array is reshaped into shape (rows*cols,) for serialization by proto.
     // To access data, use data[i*cols+j]. Here, i is row number and j is column number.
     // Alternative storage method for 2D numpy array is to encode it into base64 string or into bytes.
-    repeated float data = 1 [packed=true];
+    repeated float data = 1;
     uint32 rows = 2;
     uint32 cols = 3;
 }
@@ -208,4 +203,60 @@ message VehicleState{
     GridMap top_down_rgb=9;
     RoadWaypoints road_waypoints=10;
     Vias via_data=11;
+}
+
+// Agent's action in response to the observation
+message Action {
+    map<string, VehicleAction> vehicles=1;
+}
+
+message VehicleAction {
+    oneof action {
+        Continuous continuous=1; 
+        Lane lane=2;
+        ActuatorDynamic actuator_dynamic=3;
+        LaneWithContinuousSpeed lane_with_continuous_speed=4;
+        TargetPose target_pose=5;
+        Trajectory trajectory=6;
+        MultiTargetPose multi_target_pose=7;
+        MPC mpc=8;
+    } 
+}
+
+message Continuous {
+    repeated float action=1; // Represents List[throttle, brake, steering] of type List[float, float, float]
+}
+
+message Lane {
+    string action=1;
+}
+
+message ActuatorDynamic {
+    repeated float action=1; // Represents List[throttle, brake, steering] of type List[float, float, float]
+}
+
+message LaneWithContinuousSpeed {
+    repeated float action=1; // Represents List[target_speed, lane_change] of type List[float, float]
+}
+
+message TargetPose {
+    repeated float action=1; // Represents List[float, float, float, float]
+}
+
+message Trajectory {
+    repeated float action_1=1;
+    repeated float action_2=2;
+    repeated float action_3=3;
+    repeated float action_4=4;
+}
+
+message MultiTargetPose {
+
+}
+
+message MPC {
+    repeated float action_1=1;
+    repeated float action_2=2;
+    repeated float action_3=3;
+    repeated float action_4=4;
 }
