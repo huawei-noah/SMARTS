@@ -168,6 +168,7 @@ class _TrajectoryDataset:
         icur = dbconxn.cursor()
         icur.execute("CREATE INDEX Trajectory_Time ON Trajectory (sim_time)")
         icur.execute("CREATE INDEX Trajectory_Vehicle ON Trajectory (vehicle_id)")
+        icur.execute("CREATE INDEX Vehicle_Type ON Vehicle (type)")
         dbconxn.commit()
         icur.close()
 
@@ -181,11 +182,10 @@ class Interaction(_TrajectoryDataset):
         assert not self._flip_y
         # See: https://interaction-dataset.com/details-and-format
         # position and length/width are in meters.
+        # Note: track_id will be like "P12" for pedestrian tracks.  (TODO)
         self._col_map = {
             "vehicle_id": "track_id",
             "sim_time": "timestamp_ms",
-            "length": "length",
-            "width": "width",
             "position_x": "y" if self._swap_xy else "x",
             "position_y": "x" if self._swap_xy else "y",
         }
@@ -200,7 +200,9 @@ class Interaction(_TrajectoryDataset):
     @staticmethod
     def _lookup_agent_type(agent_type):
         # Try to match the NGSIM types...
-        if agent_type == "car":
+        if agent_type == "motorcycle":
+            return 1
+        elif agent_type == "car":
             return 2
         elif agent_type == "truck":
             return 3
@@ -213,12 +215,17 @@ class Interaction(_TrajectoryDataset):
         row_name = self._col_map.get(col_name)
         if row_name:
             return row[row_name]
+        if col_name == "length":
+            return row.get("length", 0.0)
+        if col_name == "width":
+            return row.get("width", 0.0)
         if col_name == "type":
             return Interaction._lookup_agent_type(row["agent_type"])
         if col_name == "speed":
             return np.linalg.norm([float(row["vx"]), float(row["vy"])])
         if col_name == "heading_rad":
-            return float(row["psi_rad"]) - math.pi / 2
+            # Note: pedestrian track files won't have this
+            return float(row.get("psi_rad", 0.0)) - math.pi / 2
         return None
 
 
@@ -385,15 +392,15 @@ class OldJSON(_TrajectoryDataset):
         if col_name == "type":
             return OldJSON._lookup_agent_type(state["vehicle_type"])
         if col_name == "length":
-            return state["vehicle_length"]
+            return state.get("vehicle_length", 0.0)
         if col_name == "width":
-            return state["vehicle_width"]
+            return state.get("vehicle_width", 0.0)
         if col_name.startswith("position_x"):
             return state["position"][0]
         if col_name.startswith("position_y"):
             return state["position"][1]
         if col_name == "heading_rad":
-            return state["heading"]
+            return state.get("heading", -math.pi / 2)
         return None
 
 

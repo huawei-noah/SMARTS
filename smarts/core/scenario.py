@@ -539,9 +539,11 @@ class Scenario:
 
     def discover_missions_of_traffic_histories(self, vehicle_missions={}):
         histories_db = sqlite3.connect(self._traffic_history)
-        st_query = (
-            "SELECT vehicle_id, min(sim_time) FROM Trajectory GROUP BY vehicle_id"
-        )
+        # For now, limit agent missions to just cars (V.type = 2)
+        st_query = """SELECT T.vehicle_id, min(T.sim_time)
+            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
+            WHERE V.type = 2
+            GROUP BY vehicle_id"""
         p_query = "SELECT position_x, position_y, heading_rad FROM Trajectory WHERE vehicle_id = ? and sim_time = ?"
         map_offset = self._road_network.net_offset
         st_cur = histories_db.cursor()

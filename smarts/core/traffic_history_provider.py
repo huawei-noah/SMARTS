@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from itertools import cycle
+import logging
 from typing import Set, NamedTuple
 import sqlite3
 
@@ -31,6 +32,7 @@ class TrafficHistoryProvider(Provider):
     def __init__(self):
         self._histories_db = None
         self._is_setup = False
+        self._log = logging.getLogger(self.__class__.__name__)
         self._map_location_offset = None
         self._replaced_vehicle_ids = set()
         self._start_time_offset = 0
@@ -85,13 +87,16 @@ class TrafficHistoryProvider(Provider):
         heading_rad: float
         speed: float
 
-    @staticmethod
-    def _decode_vehicle_type(vehicle_type):
+    def _decode_vehicle_type(self, vehicle_type):
         # Options from NGSIM and INTERACTION currently include:
         #  1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
         # But we don't yet have glb models for 1 and 4.
         if vehicle_type == 3:
             return "truck"
+        if vehicle_type == 1 or vehicle_type == 4:
+            self._log.warning(
+                f"unsupported vehicle_type ({vehicle_type}) in history data."
+            )
         return "passenger"
 
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
@@ -113,7 +118,7 @@ class TrafficHistoryProvider(Provider):
             if v_id in vehicle_ids or v_id in self._replaced_vehicle_ids:
                 continue
             vehicle_ids.add(v_id)
-            vehicle_type = TrafficHistoryProvider._decode_vehicle_type(hr.vehicle_type)
+            vehicle_type = self._decode_vehicle_type(hr.vehicle_type)
             default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
             vehicles.append(
                 VehicleState(

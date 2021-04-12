@@ -97,7 +97,9 @@ class SumoRoadNetwork:
         self._graph = graph
         self._net_file = net_file
         self._default_lane_width = (
-            default_lane_width if default_lane_width is not None else SumoRoadNetwork.DEFAULT_LANE_WIDTH
+            default_lane_width
+            if default_lane_width is not None
+            else SumoRoadNetwork.DEFAULT_LANE_WIDTH
         )
 
     @staticmethod

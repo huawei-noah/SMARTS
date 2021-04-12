@@ -227,7 +227,8 @@ class SMARTS:
         extras = dict(scores=scores)
 
         # 8. Advance the simulation clock.
-        dec_digits = int(1 - math.log10(dt % 1))  # round due to FP precision issues, but need to allow arbitrarily-small dt's
+        # round due to FP precision issues, but need to allow arbitrarily-small dt's
+        dec_digits = int(1 - math.log10(dt % 1))
         self._elapsed_sim_time = round(self._elapsed_sim_time + dt, dec_digits)
         if self._use_realtime_clock:
             real_dt = time.time() - self._step_realtime
