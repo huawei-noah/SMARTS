@@ -239,8 +239,7 @@ class DQNPolicy(Agent):
 
     def _act(self, state, explore=True):
         epsilon = self.epsilon_obj.get_epsilon()
-        # if not explore or np.random.rand() > epsilon:
-        if True:
+        if not explore or np.random.rand() > epsilon:
             state = copy.deepcopy(state)
             state["low_dim_states"] = np.float32(
                 np.append(state["low_dim_states"], self.prev_action)
