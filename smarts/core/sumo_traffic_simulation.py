@@ -35,14 +35,14 @@ from traci.exceptions import FatalTraCIError, TraCIException
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, HeadingMethods, Pose
-from smarts.core.provider import ProviderState
+from smarts.core.provider import Provider, ProviderState
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_stdout
 from smarts.core.utils.sumo import SUMO_PATH, traci
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class SumoTrafficSimulation:
+class SumoTrafficSimulation(Provider):
     """
     Args:
         net_file:
@@ -206,7 +206,7 @@ class SumoTrafficSimulation:
     def _base_sumo_load_params(self):
         load_params = [
             "--num-clients=%d" % self._num_clients,
-            "--net-file=%s" % self._scenario.net_filepath,
+            "--net-file=%s" % self._scenario.road_network.net_file,
             "--quit-on-end",
             "--log=%s" % self._log_file,
             "--error-log=%s" % self._log_file,
@@ -593,10 +593,11 @@ class SumoTrafficSimulation:
             speed = sumo_vehicle[tc.VAR_SPEED]
             vehicle_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
             dimensions = VEHICLE_CONFIGS[vehicle_type].dimensions
-            # adjust sumo vehicle location with map location offset
-            assert len(self._scenario.mapLocationOffset) == 2
-            front_bumper_pos[0] += self._scenario.mapLocationOffset[0]
-            front_bumper_pos[1] += self._scenario.mapLocationOffset[1]
+            # adjust sumo vehicle location if we shifted the map
+            map_offset = self._scenario.road_network.net_offset
+            assert len(map_offset) == 2
+            front_bumper_pos[0] += map_offset[0]
+            front_bumper_pos[1] += map_offset[1]
             provider_vehicles.append(
                 VehicleState(
                     # XXX: In the case of the SUMO traffic provider, the vehicle ID is

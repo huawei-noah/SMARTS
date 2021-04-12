@@ -28,10 +28,7 @@ import yaml
 from collections import defaultdict
 from typing import List, Sequence
 
-import gltf
 import numpy
-from direct.showbase.ShowBase import ShowBase
-from panda3d.core import ClockObject, NodePath, Shader, loadPrcFileData
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
@@ -41,23 +38,24 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
     from sklearn.metrics.pairwise import euclidean_distances
 
-from smarts.core.chassis import AckermannChassis, BoxChassis
-
-from smarts.core import glsl, models, sensors
+from smarts.core import models, sensors
 from smarts.core.agent_manager import AgentManager
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.colors import SceneColors
 from smarts.core.controllers import ActionSpaceType, Controllers
+from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.events import Collision
 from smarts.core.masks import RenderMasks
 from smarts.core.motion_planner_provider import MotionPlannerProvider
-from smarts.core.provider import ProviderState
+from smarts.core.provider import Provider, ProviderState
+from smarts.core.renderer import Renderer
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.trap_manager import TrapManager
 from smarts.core.utils import pybullet
+from smarts.core.utils.id import Id
 from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.utils.visdom_client import VisdomClient
 from smarts.core.vehicle import VehicleState
@@ -65,26 +63,11 @@ from smarts.core.vehicle_index import VehicleIndex
 from smarts.core.waypoints import Waypoints
 
 
-# disable vsync otherwise we are limited to refresh-rate of screen
-loadPrcFileData("", "sync-video false")
-loadPrcFileData("", "model-path %s" % os.getcwd())
-loadPrcFileData("", "audio-library-name null")
-loadPrcFileData("", "gl-version 3 3")
-loadPrcFileData("", "notify-level error")
-loadPrcFileData("", "print-pipe-types false")
-
-# https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
-# loadPrcFileData('', 'threading-model Cull/Draw')
-
-# have makeTextureBuffer create a visible window
-# loadPrcFileData('', 'show-buffers true')
-
-
 class SMARTSNotSetupError(Exception):
     pass
 
 
-class SMARTS(ShowBase):
+class SMARTS:
     def __init__(
         self,
         agent_interfaces,
@@ -96,23 +79,11 @@ class SMARTS(ShowBase):
         obs_config=None,
         zoo_addrs=None,
     ):
-        try:
-            super().__init__(self, windowType="offscreen")
-        except Exception as e:
-            # Known reasons for this failing:
-            raise Exception(
-                "SMARTS: Error in initializing framework for opening graphical display and creating scene graph. "
-                "A typical reason is display not found. Try running with different configurations of "
-                "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "
-                "the documentation."
-            ) from e
-
-        gltf.patch_loader(self.loader)
-
         self._log = logging.getLogger(self.__class__.__name__)
-
+        self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._scenario: Scenario = None
+        self._renderer = None
         self._envision: EnvisionClient = envision
         self._visdom: VisdomClient = visdom
         self._timestep_sec = timestep_sec
@@ -137,15 +108,7 @@ class SMARTS(ShowBase):
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
         self._imitation_learning_mode = False
 
-        # Global clock always proceeds by a fixed dt on each tick
-        self.taskMgr.clock.setMode(ClockObject.M_non_real_time)
-        self.taskMgr.clock.setDt(timestep_sec)
         self._elapsed_sim_time = 0
-
-        self.setBackgroundColor(0, 0, 0, 1)
-
-        # Displayed framerate is misleading since we are not using a realtime clock
-        self.setFrameRateMeter(False)
 
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
@@ -171,10 +134,6 @@ class SMARTS(ShowBase):
         self._bubble_manager = None
         self._trap_manager: TrapManager = None
 
-        # SceneGraph-related setup
-        self._root_np = None
-        self._vehicles_np = None
-        self._road_network_np = None
         self._ground_bullet_id = None
 
     def step(self, agent_actions):
@@ -221,12 +180,15 @@ class SMARTS(ShowBase):
         # 6. Clear done agents
         # 7. Perform visualization
         # 8. Truncate or pad dynamic observations to fixed length
+        # 9. Advance the simulation clock
         #
         # In this way, observations and reward are computed with data that is
         # consistently with one step of latencey and the agent will observe consistent
         # data.
-        dt = self.taskMgr.clock.get_dt()
-        self._elapsed_sim_time = self.taskMgr.clock.get_frame_time()
+
+        # The following is simultated to happen in dt seconds.
+        # This isn't a realtime simulation though.
+        dt = self._timestep_sec
 
         # 1. Fetch agent actions
         all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
@@ -250,11 +212,11 @@ class SMARTS(ShowBase):
         # Agents
         self._agent_manager.step_sensors(self)
 
-        # Panda3D
-        # runs through the render pipeline
-        # MUST perform this after step_sensors() above, and before observe() below,
-        # so that all updates are ready before rendering happens per frame
-        self.taskMgr.mgr.poll()
+        if self._renderer:
+            # runs through the render pipeline (for camera-based sensors)
+            # MUST perform this after step_sensors() above, and before observe() below,
+            # so that all updates are ready before rendering happens per frame
+            self._renderer.render()
 
         # TODO: Unify format of `observations` for boid and non-boid agents.
         # Currently, for boids: {<agent_id>: {<vehicle_id>: Sensors.Observation()}}.
@@ -286,8 +248,12 @@ class SMARTS(ShowBase):
         # 8. Truncate or pad dynamic observations to fixed length
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
+
         if self.obs_config:
             observations = sensors.fix_observation_size(self.obs_config, observations)
+
+        # 9. Advance the simulation clock.
+        self._elapsed_sim_time += dt
 
         return observations, rewards, dones, extras
 
@@ -339,7 +305,8 @@ class SMARTS(ShowBase):
                 scenario.road_network, scenario.waypoints, scenario.missions
             )
             self._agent_manager.init_ego_agents(self)
-            self._sync_panda3d()
+            if self._renderer:
+                self._sync_vehicles_to_renderer()
         else:
             self.teardown()
             self.setup(scenario)
@@ -347,7 +314,6 @@ class SMARTS(ShowBase):
         # Tell history provide to ignore vehicles if we have assigned mission to them
         self._traffic_history_provider.set_replaced_ids(scenario.missions.keys())
 
-        self.taskMgr.clock.reset()
         self._elapsed_sim_time = 0
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
@@ -367,26 +333,11 @@ class SMARTS(ShowBase):
     def setup(self, scenario: Scenario):
         self._scenario = scenario
 
-        self._root_np = NodePath("sim")
-        self._root_np.reparentTo(self.render)
-
-        with pkg_resources.path(
-            glsl, "unlit_shader.vert"
-        ) as vshader_path, pkg_resources.path(
-            glsl, "unlit_shader.frag"
-        ) as fshader_path:
-            unlit_shader = Shader.load(
-                Shader.SL_GLSL,
-                vertex=str(vshader_path.absolute()),
-                fragment=str(fshader_path.absolute()),
-            )
-        self._root_np.setShader(unlit_shader)
-        self._setup_road_network()
-        self._vehicles_np = self._root_np.attachNewNode("vehicles")
-
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_network)
         self._trap_manager = TrapManager(scenario)
 
+        if self._renderer:
+            self._renderer.setup(scenario)
         self._setup_bullet_client(self._bullet_client)
         provider_state = self._setup_providers(self._scenario)
         self._agent_manager.setup_agents(self)
@@ -397,26 +348,12 @@ class SMARTS(ShowBase):
         self._is_setup = True
 
     def add_provider(self, provider):
+        assert isinstance(provider, Provider)
         self._providers.append(provider)
 
     def switch_ego_agent(self, agent_interface):
         self._agent_manager.switch_initial_agent(agent_interface)
         self._is_setup = False
-
-    def _setup_road_network(self):
-        glb_path = self.scenario.map_glb_filepath
-        if self._road_network_np:
-            self._log.debug(
-                "road_network={} already exists. Removing and adding a new "
-                "one from glb_path={}".format(self._road_network_np, glb_path)
-            )
-        model_np = self.loader.loadModel(glb_path, noCache=True)
-
-        np = self._root_np.attachNewNode("road_network")
-        model_np.reparent_to(np)
-        np.hide(RenderMasks.OCCUPANCY_HIDE)
-        np.setColor(SceneColors.Road.value)
-        self._road_network_np = np
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
@@ -464,14 +401,12 @@ class SMARTS(ShowBase):
 
         if self._bullet_client is not None:
             self._bullet_client.resetSimulation()
+        if self._renderer is not None:
+            self._renderer.teardown()
         if self._traffic_sim is not None:
             self._traffic_sim.teardown()
         self._teardown_providers()
 
-        if self._root_np is not None:
-            self._root_np.clearLight()
-            self._root_np.removeNode()
-            self._root_np = None
         if self._bubble_manager is not None:
             self._bubble_manager.teardown()
             self._bubble_manager = None
@@ -479,9 +414,7 @@ class SMARTS(ShowBase):
             self._trap_manager.teardown()
             self._trap_manager = None
 
-        self._vehicles_np = None
         self._ground_bullet_id = None
-        self._road_network_np = None
         self._is_setup = False
 
     def destroy(self):
@@ -499,11 +432,12 @@ class SMARTS(ShowBase):
         if self._traffic_sim is not None:
             self._traffic_sim.destroy()
             self._traffic_sim = None
+        if self._renderer is not None:
+            self._renderer.destroy()
+            self._renderer = None
         if self._bullet_client is not None:
             self._bullet_client.disconnect()
             self._bullet_client = None
-
-        super().destroy()
 
     def __del__(self):
         self.destroy()
@@ -519,6 +453,19 @@ class SMARTS(ShowBase):
 
     def observe_from(self, vehicle_ids):
         return self._agent_manager.observe_from(self, vehicle_ids)
+
+    @property
+    def renderer(self):
+        if not self._renderer:
+            self._renderer = Renderer(self._sim_id)
+            if self._scenario:
+                self._renderer.setup(self._scenario)
+                self._vehicle_index.begin_rendering_vehicles(self._renderer)
+        return self._renderer
+
+    @property
+    def is_rendering(self):
+        return self._renderer is not None
 
     @property
     def road_stiffness(self):
@@ -539,14 +486,6 @@ class SMARTS(ShowBase):
     @property
     def road_network(self) -> SumoRoadNetwork:
         return self.scenario.road_network
-
-    @property
-    def np(self):
-        return self._root_np
-
-    @property
-    def vehicles_np(self):
-        return self._vehicles_np
 
     @property
     def bc(self):
@@ -701,21 +640,19 @@ class SMARTS(ShowBase):
         provider_state = ProviderState()
         for provider in self.providers:
             provider_state.merge(provider.setup(scenario))
-
         return provider_state
 
     def _teardown_providers(self):
         for provider in self.providers:
             provider.teardown()
-
         self._last_provider_state = None
 
     def _harmonize_providers(self, provider_state: ProviderState):
         for provider in self.providers:
             provider.sync(provider_state)
-
         self._pybullet_provider_sync(provider_state)
-        self._sync_panda3d()
+        if self._renderer:
+            self._sync_vehicles_to_renderer()
 
     def _reset_providers(self):
         for provider in self.providers:
@@ -742,9 +679,7 @@ class SMARTS(ShowBase):
         accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions))
 
         for provider in self.providers:
-            provider_state = self._step_provider(
-                provider, actions, dt, self._elapsed_sim_time
-            )
+            provider_state = self._step_provider(provider, actions, dt)
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
                 provider_state.filter(self._vehicle_index.agent_vehicle_ids())
@@ -754,7 +689,7 @@ class SMARTS(ShowBase):
         self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
 
-    def _step_provider(self, provider, actions, dt, elapsed_sim_time):
+    def _step_provider(self, provider, actions, dt):
         def agent_controls_vehicles(agent_id):
             vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
             return len(vehicles) > 0
@@ -782,7 +717,7 @@ class SMARTS(ShowBase):
                     assert len(vehicle_ids) == 1
                     provider_actions[vehicle_ids[0]] = action
 
-        provider_state = provider.step(provider_actions, dt, elapsed_sim_time)
+        provider_state = provider.step(provider_actions, dt, self._elapsed_sim_time)
         return provider_state
 
     @property
@@ -792,10 +727,6 @@ class SMARTS(ShowBase):
     @property
     def traffic_sim(self):
         return self._traffic_sim
-
-    @property
-    def np(self):
-        return self._root_np
 
     @property
     def timestep_sec(self):
@@ -821,7 +752,10 @@ class SMARTS(ShowBase):
         return [other_states[i] for i in indices]
 
     def vehicle_did_collide(self, vehicle_id):
-        return len(self.vehicle_collisions(vehicle_id)) > 0
+        for c in self._vehicle_collisions[vehicle_id]:
+            if c.collidee_id != self._ground_bullet_id:
+                return True
+        return False
 
     def vehicle_collisions(self, vehicle_id):
         return [
@@ -868,9 +802,10 @@ class SMARTS(ShowBase):
                         agent_interface.vehicle_type,
                     )
 
-    def _sync_panda3d(self):
+    def _sync_vehicles_to_renderer(self):
+        assert self._renderer
         for vehicle in self._vehicle_index.vehicles:
-            vehicle.sync_to_panda3d()
+            vehicle.sync_to_renderer()
 
     def _process_collisions(self):
         self._vehicle_collisions = defaultdict(list)  # list of `Collision` instances
@@ -888,24 +823,16 @@ class SMARTS(ShowBase):
 
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
-                collision = self._node_to_collision(collidee.np.node())
+                actor_id = self._vehicle_index.actor_id_from_vehicle_id(collidee.id)
+                # TODO: Should we specify the collidee as the vehicle ID instead of
+                #       the agent/social ID?
+                collision = Collision(collidee_id=actor_id)
                 self._vehicle_collisions[vehicle_id].append(collision)
 
     def _bullet_id_to_vehicle(self, bullet_id):
         for vehicle in self._vehicle_index.vehicles:
             if bullet_id == vehicle.chassis.bullet_id:
                 return vehicle
-
-        assert False, "Only collisions with agent or social vehicles is supported"
-
-    def _node_to_collision(self, node):
-        for vehicle in self._vehicle_index.vehicles:
-            if node == vehicle.np.node():
-                actor_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle.id)
-                # TODO: Should we specify the collidee as the vehicle ID instead of
-                #       the agent/social ID?
-                return Collision(collidee_id=actor_id)
-
         assert False, "Only collisions with agent or social vehicles is supported"
 
     def _try_emit_envision_state(self, provider_state, obs, scores):
@@ -1009,5 +936,4 @@ class SMARTS(ShowBase):
     def _try_emit_visdom_obs(self, obs):
         if not self._visdom:
             return
-
         self._visdom.send(obs)

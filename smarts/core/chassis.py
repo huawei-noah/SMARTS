@@ -670,7 +670,9 @@ class AckermannChassis(Chassis):
         exists and the vehicle is located in the defined regions
         in scenario file.
         """
-        pos = Point(self.pose.as_panda3d()[0])
+        pos = Point(
+            self.pose.as_panda3d()[0]
+        )  # TODO: does this need to be "as_panda3d"?
         # A check to see if we are in a surface patch.
         for surface_patch in self._friction_map:
             if pos.within(surface_patch["zone"].to_geometry()) and (

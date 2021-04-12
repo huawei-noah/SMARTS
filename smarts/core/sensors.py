@@ -29,16 +29,6 @@ from functools import lru_cache
 from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 
 import numpy as np
-from direct.showbase.ShowBase import ShowBase
-from panda3d.core import (
-    FrameBufferProperties,
-    GraphicsOutput,
-    GraphicsPipe,
-    NodePath,
-    OrthographicLens,
-    Texture,
-    WindowProperties,
-)
 
 from smarts.core import coordinates
 from smarts.core import scenario
@@ -49,12 +39,14 @@ from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.masks import RenderMasks
+from smarts.core.renderer import Renderer
 from smarts.core.scenario import MissionData, Via
 from smarts.core.utils import sequence
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.core.waypoints import Waypoint
 from smarts.sstudio.types import CutIn, UTurn, ZoneData
 from smarts.zoo import worker_pb2
+
 
 logger = logging.getLogger(__name__)
 
@@ -544,22 +536,10 @@ class Sensors:
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
-        collided = (
-            sim.vehicle_did_collide(vehicle.id) if done_criteria.collision else False
-        )
-        is_off_road = (
-            cls._vehicle_is_off_road(sim, vehicle) if done_criteria.off_road else False
-        )
-        is_on_shoulder = (
-            cls._vehicle_is_on_shoulder(sim, vehicle)
-            if done_criteria.on_shoulder
-            else False
-        )
-        is_not_moving = (
-            cls._vehicle_is_not_moving(sim, vehicle)
-            if done_criteria.not_moving
-            else False
-        )
+        collided = sim.vehicle_did_collide(vehicle.id)
+        is_off_road = cls._vehicle_is_off_road(sim, vehicle)
+        is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
+        is_not_moving = cls._vehicle_is_not_moving(sim, vehicle)
         reached_goal = cls._agent_reached_goal(sim, vehicle)
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
@@ -567,12 +547,12 @@ class Sensors:
         )
 
         done = (
-            is_off_road
+            (is_off_road and done_criteria.off_road)
             or reached_goal
             or reached_max_episode_steps
-            or is_on_shoulder
-            or collided
-            or is_not_moving
+            or (is_on_shoulder and done_criteria.on_shoulder)
+            or (collided and done_criteria.collision)
+            or (is_not_moving and done_criteria.not_moving)
             or (is_off_route and done_criteria.off_route)
             or (is_wrong_way and done_criteria.wrong_way)
         )
@@ -805,104 +785,36 @@ class SensorState:
 
 
 class CameraSensor(Sensor):
-    def __init__(self, vehicle, scene_np: NodePath, showbase: ShowBase):
-        self._log = logging.getLogger(self.__class__.__name__)
-        self._vehicle = vehicle
-        self._scene_np = scene_np
-        self._showbase = showbase
-
-    def _build_offscreen_camera(
+    def __init__(
         self,
+        vehicle,
+        renderer: Renderer,
         name: str,
         mask: int,
         width: int,
         height: int,
         resolution: float,
     ):
-        # setup buffer
-        win_props = WindowProperties.size(width, height)
-        fb_props = FrameBufferProperties()
-        fb_props.setRgbColor(True)
-        fb_props.setRgbaBits(8, 8, 8, 1)
-        # XXX: Though we don't need the depth buffer returned, setting this to 0
-        #      causes undefined behaviour where the ordering of meshes is random.
-        fb_props.setDepthBits(8)
-
-        buffer = self._showbase.win.engine.makeOutput(
-            self._showbase.pipe,
-            "{}-buffer".format(name),
-            -100,
-            fb_props,
-            win_props,
-            GraphicsPipe.BFRefuseWindow,
-            self._showbase.win.getGsg(),
-            self._showbase.win,
-        )
-        buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
-
-        # setup texture
-        tex = Texture()
-        region = buffer.getDisplayRegion(0)
-        region.window.addRenderTexture(
-            tex, GraphicsOutput.RTM_copy_ram, GraphicsOutput.RTP_color
+        assert renderer
+        self._log = logging.getLogger(self.__class__.__name__)
+        self._vehicle = vehicle
+        self._camera = renderer.build_offscreen_camera(
+            name,
+            mask,
+            width,
+            height,
+            resolution,
         )
 
-        # setup camera
-        lens = OrthographicLens()
-        lens.setFilmSize(width * resolution, height * resolution)
+    def teardown(self):
+        self._camera.teardown()
 
-        camera_np = self._showbase.makeCamera(
-            buffer, camName=name, scene=self._scene_np, lens=lens
-        )
-        camera_np.reparentTo(self._scene_np)
-
-        # mask is set to make undesireable objects invisible to this camera
-        camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
-
-        return OffscreenCamera(camera_np, buffer, tex)
-
-    def _follow_vehicle(self, camera_np):
-        center = self._vehicle.position
-        largest_dim = max(self._vehicle._chassis.dimensions)
-        camera_np.setPos(center[0], center[1], 20 * largest_dim)
-        camera_np.lookAt(*center)
-        camera_np.setH(self._vehicle._np.getH())
-
-    def _wait_for_ram_image(self, format, retries=100):
-        # Rarely, we see dropped frames where an image is not available
-        # for our observation calculations.
-        #
-        # We've seen this happen fairly reliable when we are initializing
-        # a multi-agent + multi-instance simulation.
-        #
-        # To deal with this, we can try to force a render and block until
-        # we are fairly certain we have an image in ram to return to the user
-        for i in range(retries):
-            if self._camera.tex.mightHaveRamImage():
-                break
-            self._log.debug(
-                f"No image available (attempt {i}/{retries}), forcing a render"
-            )
-            region = self._camera.buffer.getDisplayRegion(0)
-            region.window.engine.renderFrame()
-
-        assert self._camera.tex.mightHaveRamImage()
-        ram_image = self._camera.tex.getRamImageAs(format)
-        assert ram_image is not None
-        return ram_image
-
-
-class OffscreenCamera(NamedTuple):
-    camera_np: NodePath
-    buffer: GraphicsOutput
-    tex: Texture
-
-    def teardown(self, showbase: ShowBase):
-        self.camera_np.removeNode()
-        region = self.buffer.getDisplayRegion(0)
-        region.window.clearRenderTextures()
-        self.buffer.removeAllDisplayRegions()
-        showbase.graphicsEngine.removeWindow(self.buffer)
+    def step(self):
+        self._follow_vehicle()
+ 
+    def _follow_vehicle(self):
+        largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
+        self._camera.update(self._vehicle.pose, 20 * largest_dim)
 
 
 class DrivableAreaGridMapSensor(CameraSensor):
@@ -912,29 +824,25 @@ class DrivableAreaGridMapSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        scene_np: NodePath,
-        showbase: ShowBase,
+        renderer: Renderer,
     ):
-        super().__init__(vehicle, scene_np, showbase)
-        self._camera = self._build_offscreen_camera(
+        super().__init__(
+            vehicle,
+            renderer,
             "drivable_area_grid_map",
             RenderMasks.DRIVABLE_AREA_HIDE,
             width,
             height,
             resolution,
         )
-
         self._resolution = resolution
-
-    def step(self):
-        self._follow_vehicle(camera_np=self._camera.camera_np)
 
     def __call__(self) -> DrivableAreaGridMap:
         assert (
             self._camera is not None
         ), "Drivable area grid map has not been initialized"
 
-        ram_image = self._wait_for_ram_image(format="A")
+        ram_image = self._camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
         image = np.frombuffer(mem_view, np.uint8)
         image.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
@@ -950,9 +858,6 @@ class DrivableAreaGridMapSensor(CameraSensor):
         )
         return DrivableAreaGridMap(data=image, metadata=metadata)
 
-    def teardown(self):
-        self._camera.teardown(self._showbase)
-
 
 class OGMSensor(CameraSensor):
     def __init__(
@@ -961,23 +866,23 @@ class OGMSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        scene_np: NodePath,
-        showbase: ShowBase,
+        renderer: Renderer,
     ):
-        super().__init__(vehicle, scene_np, showbase)
-        self._camera = self._build_offscreen_camera(
-            "ogm", RenderMasks.OCCUPANCY_HIDE, width, height, resolution
+        super().__init__(
+            vehicle,
+            renderer,
+            "ogm",
+            RenderMasks.OCCUPANCY_HIDE,
+            width,
+            height,
+            resolution,
         )
-
         self._resolution = resolution
-
-    def step(self):
-        self._follow_vehicle(camera_np=self._camera.camera_np)
 
     def __call__(self) -> OccupancyGridMap:
         assert self._camera is not None, "OGM has not been initialized"
 
-        ram_image = self._wait_for_ram_image(format="A")
+        ram_image = self._camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
         grid = np.frombuffer(mem_view, np.uint8)
         grid.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
@@ -995,9 +900,6 @@ class OGMSensor(CameraSensor):
         )
         return OccupancyGridMap(data=grid, metadata=metadata)
 
-    def teardown(self):
-        self._camera.teardown(self._showbase)
-
 
 class RGBSensor(CameraSensor):
     def __init__(
@@ -1006,23 +908,17 @@ class RGBSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        scene_np: NodePath,
-        showbase: ShowBase,
+        renderer: Renderer,
     ):
-        super().__init__(vehicle, scene_np, showbase)
-        self._camera = self._build_offscreen_camera(
-            "rgb", RenderMasks.RGB_HIDE, width, height, resolution
+        super().__init__(
+            vehicle, renderer, "rgb", RenderMasks.RGB_HIDE, width, height, resolution
         )
-
         self._resolution = resolution
-
-    def step(self):
-        self._follow_vehicle(camera_np=self._camera.camera_np)
 
     def __call__(self) -> TopDownRGB:
         assert self._camera is not None, "RGB has not been initialized"
 
-        ram_image = self._wait_for_ram_image(format="RGB")
+        ram_image = self._camera.wait_for_ram_image(img_format="RGB")
         mem_view = memoryview(ram_image)
         image = np.frombuffer(mem_view, np.uint8)
         image.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 3)
@@ -1038,23 +934,18 @@ class RGBSensor(CameraSensor):
         )
         return TopDownRGB(data=image, metadata=metadata)
 
-    def teardown(self):
-        self._camera.teardown(self._showbase)
-
 
 class LidarSensor(Sensor):
     def __init__(
         self,
         vehicle,
         bullet_client,
-        showbase: ShowBase,
         sensor_params: SensorParams = None,
         lidar_offset=(0, 0, 1),
     ):
         self._vehicle = vehicle
         self._bullet_client = bullet_client
         self._lidar_offset = np.array(lidar_offset)
-        self._showbase = showbase
 
         self._lidar = Lidar(
             self._vehicle.position + self._lidar_offset,

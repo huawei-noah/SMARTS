@@ -97,6 +97,7 @@ venv
 *.rou.alt.xml
 *.rou.xml
 *.trips.xml
+shifted_map-AUTOGEN.net.xml
 *.egg
 *.glb
 *flamegraph-perf.log

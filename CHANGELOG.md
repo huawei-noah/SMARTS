@@ -13,18 +13,26 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
 process
 - Added `on_shoulder` as part of events in observation returned from each step of simulation
-### Changed 
+- Added description of map creation and how to modify the map to allow users to create their own traffic routes in docs
+- Added reference to SMARTS paper in front page of docs
+- Only create `Renderer` on demand if vehicles are using camera-based sensors. See issue #725.
+### Changed
+- Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 - A complete proto schema is implemented for parsing and serializing the observations sent to the remote agent.
+### Fixed
+- Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
+- Fixed sumo road network offset bug for shifted maps.  See issue #716.
+- Update `ego_open_agent` to use the package instead of the zoo directory version.
 
 
 ## [0.4.15] - 2021-03-18
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
 - Hosted Documentation on `readthedocs` and pointed to the smarts paper and useful parts of the documentation in the README.
-- Running imitation learning will now create a cached history_mission.pkl file in scenario folder that stores 
+- Running imitation learning will now create a cached `history_mission.pkl` file in scenario folder that stores 
 the missions for all agents.
 - Added ijson as a dependency. 
-- Added cached_property as a dependency.
+- Added `cached_property` as a dependency.
 ### Changed
 - Lowered CPU cost of waypoint generation. This will result in a small increase in memory usage.
 - Set the number of processes used in `make test` to ignore 2 CPUs if possible.
@@ -37,6 +45,7 @@ we now initially shift road networks (maps) that are offset back to the origin
 using [netconvert](https://sumo.dlr.de/docs/netconvert.html).
 We adapt Sumo vehicle positions to take this into account to allow Sumo to continue
 using the original coordinate system.  See Issue #325.
+    - This fix will require all Scenarios to be rebuilt (`scl scenario build-all --clean ./scenarios`).
 - Cleanly close down the traffic history provider thread. See PR #665.
 - Improved the disposal of a SMARTS instance. See issue #378.
 - Envision now resumes from current frame after un-pausing.
