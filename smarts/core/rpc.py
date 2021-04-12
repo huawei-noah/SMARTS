@@ -24,7 +24,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.zoo import worker_pb2
 
 
-def actions_to_proto(action_space_type, action):
+def actions_to_proto(action_space_type, action) -> worker_pb2.Actions:
     # if action is non_boid_agent
     if not isinstance(action, dict):
         vehicle_action = action_to_proto(action_space_type, action)
@@ -41,7 +41,7 @@ def actions_to_proto(action_space_type, action):
     return proto
 
 
-def action_to_proto(action_space_type, action):
+def action_to_proto(action_space_type, action) -> worker_pb2.Action:
 
     proto = worker_pb2.Action()
 
@@ -85,25 +85,21 @@ def action_to_proto(action_space_type, action):
     return proto
 
 
-def remote_proto_to_action(proto):
+def proto_to_actions(proto: worker_pb2.Actions):
     vehicles = proto.vehicles
 
-    # if action is non_boid_agent
     if "NON_BOID" in vehicles.keys():
-        action = vehicle_proto_to_action(vehicles["NON_BOID"])
-
-    # if action is empty, i.e., action=={}, or
-    # if action is boid_agent, i.e., action={<vehicle_id>: <ActionSpace>}
+        action = proto_to_action(vehicles["NON_BOID"])
     else:
         action = {
-            vehicle_id: vehicle_proto_to_action(vehicle_proto)
+            vehicle_id: proto_to_action(vehicle_proto)
             for vehicle_id, vehicle_proto in vehicles.items()
         }
 
     return action
 
 
-def vehicle_proto_to_action(proto):
+def proto_to_action(proto: worker_pb2.Action):
 
     if proto.HasField("continuous"):
         return list(proto.continous.action)

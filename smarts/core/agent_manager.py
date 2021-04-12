@@ -232,7 +232,7 @@ class AgentManager:
         try:
             social_agent_actions = {
                 agent_id: (
-                    rpc.remote_proto_to_action(
+                    rpc.proto_to_actions(
                         self._remote_social_agents_action[agent_id].result()
                     )
                     if self._remote_social_agents_action.get(agent_id, None)

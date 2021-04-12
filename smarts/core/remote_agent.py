@@ -65,8 +65,8 @@ class RemoteAgent:
     def act(self, obs):
         # Run task asynchronously and return a Future.
         self._act_future = self._worker_stub.act.future(
-            worker_pb2.Observation(
-                vehicles=obs_to_proto(obs),
+            worker_pb2.Observations(
+                vehicles=observations_to_proto(obs),
             )
         )
 
@@ -96,24 +96,24 @@ class RemoteAgent:
         self._manager_channel.close()
 
 
-def obs_to_proto(obs):
+def observations_to_proto(obs):
     # if obs is non_boid_agent, i.e., obs=Sensors.Observation()
     if isinstance(obs, tuple):
-        vehicle_obs = vehicle_obs_to_proto(obs)
+        vehicle_obs = observation_to_proto(obs)
         proto = {"NON_BOID": vehicle_obs}
 
     # if obs is empty, i.e., obs=={}, or
     # if obs is boid_agent, i.e., obs={<vehicle_id>: Sensors.Observation()}
     else:
         proto = {
-            vehicle_id: vehicle_obs_to_proto(vehicle_obs)
+            vehicle_id: observation_to_proto(vehicle_obs)
             for vehicle_id, vehicle_obs in obs.items()
         }
 
     return proto
 
 
-def vehicle_obs_to_proto(obs):
+def observation_to_proto(obs):
     # obs.waypoint_paths
     waypoint_paths = [
         worker_pb2.ListWaypoint(
@@ -144,7 +144,7 @@ def vehicle_obs_to_proto(obs):
         ],
     )
 
-    vehicle_state = worker_pb2.VehicleState(
+    return worker_pb2.Observation(
         events=events.events_to_proto(obs.events),
         ego_vehicle_state=sensors.ego_vehicle_observation_to_proto(
             obs.ego_vehicle_state
@@ -163,22 +163,22 @@ def vehicle_obs_to_proto(obs):
         via_data=sensors.vias_to_proto(obs.via_data),
     )
 
-    return vehicle_state
 
+def proto_to_observations(proto):
+    vehicles = proto.vehicles
 
-def proto_to_obs(proto):
-    if "NON_BOID" in proto.keys():
-        obs = vehicle_proto_to_obs(proto["NON_BOID"])
+    if "NON_BOID" in vehicles.keys():
+        obs = proto_to_observation(vehicles["NON_BOID"])
     else:
         obs = {
-            vehicle_id: vehicle_proto_to_obs(vehicle_proto)
-            for vehicle_id, vehicle_proto in proto.items()
+            vehicle_id: proto_to_observation(vehicle_proto)
+            for vehicle_id, vehicle_proto in vehicles.items()
         }
 
     return obs
 
 
-def vehicle_proto_to_obs(proto: worker_pb2.VehicleState) -> sensors.Observation:
+def proto_to_observation(proto: worker_pb2.Observation) -> sensors.Observation:
     # proto.waypoint_paths
     waypoint_paths = [
         [waypoints.proto_to_waypoint(elem) for elem in list_elem.waypoints]

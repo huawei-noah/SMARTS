@@ -61,7 +61,7 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
             context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
             return worker_pb2.Actions()
 
-        obs = remote_agent.proto_to_obs(request.vehicles)
+        obs = remote_agent.proto_to_observations(request)
         adapted_obs = self._agent_spec.observation_adapter(obs)
         action = self._agent.act(adapted_obs)
         adapted_action = self._agent_spec.action_adapter(action)

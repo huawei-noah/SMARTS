@@ -21,7 +21,7 @@ class WorkerStub(object):
         )
         self.act = channel.unary_unary(
             "/worker.Worker/act",
-            request_serializer=worker__pb2.Observation.SerializeToString,
+            request_serializer=worker__pb2.Observations.SerializeToString,
             response_deserializer=worker__pb2.Actions.FromString,
         )
 
@@ -51,7 +51,7 @@ def add_WorkerServicer_to_server(servicer, server):
         ),
         "act": grpc.unary_unary_rpc_method_handler(
             servicer.act,
-            request_deserializer=worker__pb2.Observation.FromString,
+            request_deserializer=worker__pb2.Observations.FromString,
             response_serializer=worker__pb2.Actions.SerializeToString,
         ),
     }
@@ -108,7 +108,7 @@ class Worker(object):
             request,
             target,
             "/worker.Worker/act",
-            worker__pb2.Observation.SerializeToString,
+            worker__pb2.Observations.SerializeToString,
             worker__pb2.Actions.FromString,
             options,
             channel_credentials,

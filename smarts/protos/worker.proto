@@ -31,7 +31,7 @@ service Worker {
     rpc build(Specification) returns (Status) {}
 
     // Agent processes observations and returns action.
-    rpc act(Observation) returns (Actions) {}
+    rpc act(Observations) returns (Actions) {}
 }
 
 // Agent specification
@@ -44,8 +44,8 @@ message Status {
 }
 
 // Observation received by the agent
-message Observation {
-    map<string, VehicleState> vehicles=1;
+message Observations {
+    map<string, Observation> vehicles=1;
 }
 
 // Collision events
@@ -191,7 +191,7 @@ message Vias{
     repeated ViaPoint hit_via_points=2;
 }
 
-message VehicleState{
+message Observation{
     Events events=1;
     EgoVehicleObservation ego_vehicle_state=2;
     repeated VehicleObservation neighborhood_vehicle_states=3;
