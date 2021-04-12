@@ -14,19 +14,24 @@ import os
 import random
 import multiprocessing
 
+
 import numpy as np
 from typing import List
 from ray import tune
 from ray.rllib.utils import try_import_tf
 from ray.rllib.models import ModelCatalog
+from ray.tune import Stopper
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.tune.schedulers import PopulationBasedTraining
 from ray.rllib.agents.ppo import PPOTrainer
+from pathlib import Path
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec, Agent
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
+from smarts.core.utils.file import copy_tree
+
 
 from examples.game_of_tag.custom_adapters import *
 
@@ -38,6 +43,12 @@ tf = try_import_tf()
 # to make this network smaller, neural network accept bits?
 class TrainingModel(FullyConnectedNetwork):
     NAME = "FullyConnectedNetwork"
+
+    # def act(self, obs):
+    #     action = FullyConnectedNetwork.act(obs)
+    #     print(f"got action {action} {obs.ego_vehicle_state.id.split('-')[0]}")
+    #     #TrainingState.update_agent_actions()
+    #     return action
 
 
 ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
@@ -166,6 +177,17 @@ def policy_mapper(agent_id):
         return "prey_policy"
 
 
+class TimeStopper(Stopper):
+    def __init__(self):
+        self._start = time.time()
+        self._deadline = 60 * 60 # 1 hour
+
+    def __call__(self, trial_id, result):
+        return False
+
+    def stop_all(self):
+        return time.time() - self._start > self._deadline
+
 def main(args):
     pbt = PopulationBasedTraining(
         time_attr="time_total_s",
@@ -181,7 +203,7 @@ def main(args):
             #"num_sgd_iter": lambda: random.randint(1, 30),
             "sgd_minibatch_size": lambda: 128, #random.randint(128, 16384),
             # "train_batch_size": lambda: random.randint(2000, 160000),
-            "train_batch_size": lambda: 4000,
+            "train_batch_size": lambda: 2000,
             'num_sgd_iter': lambda: 30,
         },
         custom_explore_fn=explore,
@@ -200,7 +222,7 @@ def main(args):
     tune_config = {
         "env": RLlibHiWayEnv,
         "log_level": "WARN",
-        "num_workers": 2,
+        "num_workers": 1, # if use 2 workers, is TrainingState global to both workers? if so, there can only be 1 worker
         "explore": True,
         # 'sample_batch_size': 200,  # XXX: 200
         # 'train_batch_size': 4000,
@@ -235,7 +257,8 @@ def main(args):
     analysis = tune.run(
         PPOTrainer, # uses PPO algorithm
         name="lets_play_tag",
-        #stop={'time_total_s': 60 * 60 * 12},  # 12 hours
+        #stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
+        stop=TimeStopper(),
         # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
         #      different than _exporting_ a TF/PT checkpoint).
         checkpoint_freq=5,
@@ -253,6 +276,14 @@ def main(args):
     )
 
     print(analysis.dataframe().head())
+
+    best_logdir = Path(analysis.get_best_logdir("episode_reward_max", mode="max"))
+    model_path = best_logdir / "model"
+    print(f'best reward directory model {model_path}')
+
+    save_model_path = str(Path(__file__).expanduser().resolve().parent / "model")
+    copy_tree(str(model_path), save_model_path, overwrite=True)
+    print(f"Wrote model to: {save_model_path}")
 
 
 if __name__ == "__main__":

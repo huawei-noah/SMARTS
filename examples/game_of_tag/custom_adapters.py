@@ -306,7 +306,9 @@ def predator_reward_adapter(observations, env_reward_signal):
     prey_vehicles = list(filter(
         lambda v: _is_vehicle_wanted(v.id, PREY_IDS), observations.neighborhood_vehicle_states,
     ))
-    return rew if len(prey_vehicles) > 0 else 0
+    rew = rew if len(prey_vehicles) > 0 else 0
+    print(f"predator {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
+    return rew
 
 
 def prey_reward_adapter(observations, env_reward_signal):
@@ -353,4 +355,6 @@ def prey_reward_adapter(observations, env_reward_signal):
     predator_vehicles = list(filter(
         lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS), observations.neighborhood_vehicle_states,
     ))
-    return rew if len(predator_vehicles) > 0 else 0
+    rew = rew if len(predator_vehicles) > 0 else 0
+    print(f"prey {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
+    return rew
