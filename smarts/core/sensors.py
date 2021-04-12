@@ -811,7 +811,7 @@ class CameraSensor(Sensor):
 
     def step(self):
         self._follow_vehicle()
- 
+
     def _follow_vehicle(self):
         largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
         self._camera.update(self._vehicle.pose, 20 * largest_dim)
