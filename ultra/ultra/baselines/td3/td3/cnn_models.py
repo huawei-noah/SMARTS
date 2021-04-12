@@ -121,7 +121,13 @@ class ActorNetwork(torch.nn.Module):
         output = output.view(output.size(0), -1)
         output = torch.cat((output, low_dim_state), dim=1)
         output = F.relu(self.fc1(output))
-        return self.fc2(output)  # remove torch.tanh
+        output = self.fc2(output)
+
+        if training:
+            aux_losses = {}
+            return output, aux_losses
+        else:
+            return output
 
 
 class CriticNetwork(torch.nn.Module):
@@ -167,7 +173,9 @@ class CriticNetwork(torch.nn.Module):
             CriticNetwork.CONV_KERNEL_SIZES,
             CriticNetwork.CONV_STRIDE_SIZES,
         )
-        self.fc1 = torch.nn.Linear(conv_output_size + low_dim_state_size, hidden_dim)
+        self.fc1 = torch.nn.Linear(
+            conv_output_size + low_dim_state_size + action_space, hidden_dim
+        )
         self.fc2 = torch.nn.Linear(hidden_dim, 1)
 
     def reset_parameters(self):
@@ -180,10 +188,7 @@ class CriticNetwork(torch.nn.Module):
     # def forward(self, image, low_dim_state, action):
     def forward(self, state, action, training=False):
         image = state["images"]
-        low_dim_state = state["low_dim_state"]
-
-        print("image:", image)
-        print("low_dim_state:", low_dim_state)
+        low_dim_state = state["low_dim_states"]
 
         output = F.relu(self.conv1(image))
         output = F.relu(self.conv2(output))
@@ -191,4 +196,10 @@ class CriticNetwork(torch.nn.Module):
         output = output.view(output.size(0), -1)
         output = torch.cat((output, low_dim_state, action), dim=1)
         output = F.relu(self.fc1(output))
-        return self.fc2(output)
+        output = self.fc2(output)
+
+        if training:
+            aux_losses = {}
+            return output, aux_losses
+        else:
+            return output

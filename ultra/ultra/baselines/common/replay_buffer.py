@@ -85,6 +85,7 @@ class ReplayBufferDataset(Dataset):
         state["social_vehicles"] = torch.from_numpy(state["social_vehicles"]).to(
             self.device
         )
+        state["images"] = torch.from_numpy(state["images"]).to(self.device)
 
         next_state["low_dim_states"] = np.float32(
             np.append(next_state["low_dim_states"], action)
@@ -95,6 +96,7 @@ class ReplayBufferDataset(Dataset):
         next_state["low_dim_states"] = torch.from_numpy(
             next_state["low_dim_states"]
         ).to(self.device)
+        next_state["images"] = torch.from_numpy(next_state["images"]).to(self.device)
 
         action = np.asarray([action]) if not isinstance(action, Iterable) else action
         action = torch.from_numpy(action).float()
@@ -142,12 +144,6 @@ class ReplayBuffer:
         return self.replay_buffer_dataset[idx]
 
     def make_state_from_dict(self, states, device):
-        # image_keys = states[0]["images"].keys()
-        # images = {}
-        # for k in image_keys:
-        #     _images = torch.cat([e[k] for e in states], dim=0).float().to(device)
-        #     _images = normalize_im(_images)
-        #     images[k] = _images
         low_dim_states = (
             torch.cat([e["low_dim_states"] for e in states], dim=0).float().to(device)
         )
@@ -157,10 +153,13 @@ class ReplayBuffer:
             ]
         else:
             social_vehicles = False
+        images = (
+            torch.cat([state["images"] for state in states], dim=0).float().to(device)
+        )
         out = {
-            # "images": images,
             "low_dim_states": low_dim_states,
             "social_vehicles": social_vehicles,
+            "images": images,
         }
         return out
 
