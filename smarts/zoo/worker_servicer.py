@@ -59,15 +59,15 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
         if self._agent == None or self._agent_spec == None:
             context.set_details(f"Remote agent not built yet.")
             context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
-            return worker_pb2.Action()
+            return worker_pb2.Actions()
 
         obs = remote_agent.proto_to_obs(request.vehicles)
         adapted_obs = self._agent_spec.observation_adapter(obs)
         action = self._agent.act(adapted_obs)
         adapted_action = self._agent_spec.action_adapter(action)
 
-        return worker_pb2.Action(
-            vehicles=rpc.remote_action_to_proto(
+        return worker_pb2.Actions(
+            vehicles=rpc.actions_to_proto(
                 self._agent_spec.interface.action, adapted_action
             )
         )

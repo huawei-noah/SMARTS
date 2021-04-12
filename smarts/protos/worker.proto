@@ -31,7 +31,7 @@ service Worker {
     rpc build(Specification) returns (Status) {}
 
     // Agent processes observations and returns action.
-    rpc act(Observation) returns (Action) {}
+    rpc act(Observation) returns (Actions) {}
 }
 
 // Agent specification
@@ -206,11 +206,11 @@ message VehicleState{
 }
 
 // Agent's action in response to the observation
-message Action {
-    map<string, VehicleAction> vehicles=1;
+message Actions {
+    map<string, Action> vehicles=1;
 }
 
-message VehicleAction {
+message Action {
     oneof action {
         Continuous continuous=1; 
         Lane lane=2;

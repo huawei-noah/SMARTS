@@ -24,32 +24,32 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.zoo import worker_pb2
 
 
-def remote_action_to_proto(action_space_type, action):
+def actions_to_proto(action_space_type, action):
     # if action is non_boid_agent
     if not isinstance(action, dict):
-        vehicle_action = vehicle_action_to_proto(action_space_type, action)
+        vehicle_action = action_to_proto(action_space_type, action)
         proto = {"NON_BOID": vehicle_action}
 
     # if action is empty, i.e., action=={}, or
     # if action is boid_agent, i.e., action={<vehicle_id>: <ActionSpace>}
     else:
         proto = {
-            vehicle_id: vehicle_action_to_proto(action_space_type, vehicle_action)
+            vehicle_id: action_to_proto(action_space_type, vehicle_action)
             for vehicle_id, vehicle_action in action.items()
         }
 
     return proto
 
 
-def vehicle_action_to_proto(action_space_type, action):
+def action_to_proto(action_space_type, action):
 
-    proto = worker_pb2.VehicleAction()
+    proto = worker_pb2.Action()
 
     if action_space_type == ActionSpaceType.Continuous:
         proto.continous.action.extend(action)
 
     elif action_space_type == ActionSpaceType.Lane:
-        proto.lane.action.extend(action)
+        proto.lane.action = action
 
     elif action_space_type == ActionSpaceType.ActuatorDynamic:
         proto.actuator_dynamic.action.extend(action)
