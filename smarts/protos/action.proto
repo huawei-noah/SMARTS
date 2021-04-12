@@ -1,0 +1,81 @@
+// MIT License
+
+// Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+syntax = "proto3";
+
+package action;
+
+// Agent's actions in response to the observation
+message Actions {
+    map<string, Action> vehicles=1;
+}
+
+message Action {
+    oneof action {
+        Continuous continuous=1; 
+        Lane lane=2;
+        ActuatorDynamic actuator_dynamic=3;
+        LaneWithContinuousSpeed lane_with_continuous_speed=4;
+        TargetPose target_pose=5;
+        Trajectory trajectory=6;
+        MultiTargetPose multi_target_pose=7;
+        MPC mpc=8;
+    } 
+}
+
+message Continuous {
+    repeated float action=1; // Represents List[throttle, brake, steering] of type List[float, float, float]
+}
+
+message Lane {
+    string action=1;
+}
+
+message ActuatorDynamic {
+    repeated float action=1; // Represents List[throttle, brake, steering] of type List[float, float, float]
+}
+
+message LaneWithContinuousSpeed {
+    repeated float action=1; // Represents List[target_speed, lane_change] of type List[float, float]
+}
+
+message TargetPose {
+    repeated float action=1; // Represents List[float, float, float, float]
+}
+
+message Trajectory {
+    repeated float action_1=1;
+    repeated float action_2=2;
+    repeated float action_3=3;
+    repeated float action_4=4;
+}
+
+message MultiTargetPose {
+
+}
+
+message MPC {
+    repeated float action_1=1;
+    repeated float action_2=2;
+    repeated float action_3=3;
+    repeated float action_4=4;
+}

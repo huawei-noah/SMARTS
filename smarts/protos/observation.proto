@@ -1,0 +1,187 @@
+// MIT License
+
+// Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+syntax = "proto3";
+
+package observation;
+
+// Observations received by the agent
+message Observations {
+    map<string, Observation> vehicles=1;
+}
+
+message Observation{
+    Events events=1;
+    EgoVehicleObservation ego_vehicle_state=2;
+    repeated VehicleObservation neighborhood_vehicle_states=3;
+    repeated ListWaypoint waypoint_paths=4;
+    float distance_travelled=5;
+    Lidar lidar_point_cloud=6;
+    GridMap drivable_area_grid_map=7; 
+    GridMap occupancy_grid_map=8;
+    GridMap top_down_rgb=9;
+    RoadWaypoints road_waypoints=10;
+    Vias via_data=11;
+}
+
+// Collision events
+message Collision{
+    string collidee_id=1;
+}
+
+message Events {
+    repeated Collision collisions=1;
+    bool not_moving=2;
+    bool off_road=3;
+    bool off_route=4;
+    bool on_shoulder=5;
+    bool reached_goal=6;
+    bool reached_max_episode_steps=7;
+    bool wrong_way=8;
+}
+
+message BoundingBox{
+    float length=1;
+    float width=2;
+    float height=3;
+}
+
+message Start{
+    repeated float position=1; // Represents Tuple[float, float]
+    float heading=2;
+}
+
+message Goal{
+    repeated float position=1; // Represents Tuple[float, float]
+    float radius=2;
+}
+
+message Via{
+    string lane_id=1;
+    string edge_id=2;
+    int32 lane_idx=3;
+    repeated float position=4; // Represents Tuple[float, float]
+    float hit_distance=5;
+    float required_speed=6;
+}   
+
+message Mission{
+    Start start=1;
+    Goal goal=2;
+    repeated string route_vias=3;
+    float start_time=4;
+    repeated Via via=5;
+    float route_length=6;
+    int32 num_laps=7;
+}
+
+message EgoVehicleObservation{
+    string id=1;
+    repeated float position=2; // Represents Tuple[float, float, float]
+    BoundingBox bounding_box=3; 
+    float heading=4;
+    float speed=5;
+    float steering=6;
+    repeated float yaw_rate=7; // Represents np.ndarray((3,), dtype=np.float32)
+    string edge_id=8;
+    string lane_id=9;
+    int32 lane_index=10;
+    Mission mission=11;
+    repeated float linear_velocity=12; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float angular_velocity=13; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float linear_acceleration=14; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float angular_acceleration=15; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float linear_jerk=16; // Represents np.ndarray((3,), dtype=np.float32)
+    repeated float angular_jerk=17; // Represents np.ndarray((3,), dtype=np.float32)
+}
+
+message VehicleObservation{
+    string id=1;
+    repeated float position=2; // Represents Tuple[float, float, float]
+    BoundingBox bounding_box=3;
+    float heading=4;
+    float speed=5;
+    string edge_id=6;
+    string lane_id=7;
+    int32 lane_index=8;
+}
+
+message Waypoint{
+    repeated float pos=1; // Represents np.ndarray((2,), dtype=np.float32)
+    float heading=2;
+    float lane_width=3;
+    float speed_limit=4;
+    string lane_id=5;
+    int32 lane_index=6;
+}
+
+message ListWaypoint{
+    repeated Waypoint waypoints=1;
+}
+
+// Represents a matrix of np.ndarray((x,y), dtype=np.float32)
+message Matrix{
+    // The data is a 2D numpy array representing an image or a list of arrays.
+    // The 2D array is reshaped into shape (rows*cols,) for serialization by proto.
+    // To access data, use data[i*cols+j]. Here, i is row number and j is column number.
+    // Alternative storage method for 2D numpy array is to encode it into base64 string or into bytes.
+    repeated float data = 1;
+    uint32 rows = 2;
+    uint32 cols = 3;
+}
+
+message Lidar{
+    Matrix points = 1; // Represents List[np.ndarray(3,)],
+    Matrix hits = 2; // Represents List[np.ndarray(3,)],
+    repeated Matrix ray=3; // Represents List[(origin,direction), ... ] of shape List[np.ndarray((2,3), dtype=np.float32)] 
+}
+
+message GridMapMetadata{
+    int32 created_at=1;
+    float resolution=2;
+    int32 width=3;
+    int32 height=4;
+    repeated float camera_pos=5; // Represents Tuple[float, float, float]
+    float camera_heading_in_degrees=6;
+}
+
+message GridMap{
+    GridMapMetadata metadata=1;
+    Matrix data=2;
+}
+
+message RoadWaypoints{
+    map<string, ListWaypoint> lanes=1;
+    repeated Waypoint route_waypoints=2;
+}
+
+message ViaPoint{
+    repeated float position=1;
+    float lane_index=2;
+    string edge_id=3;
+    float required_speed=4;
+}
+
+message Vias{
+    repeated ViaPoint near_via_points=1;
+    repeated ViaPoint hit_via_points=2;
+}
