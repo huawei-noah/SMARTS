@@ -298,7 +298,7 @@ def predator_reward_adapter(observations, env_reward_signal):
     # )
     if not collided_with_prey and events.reached_max_episode_steps:
         # predator failed to catch the prey
-        rew -= apply_discount(global_rewards.game_ended)
+        rew -= global_rewards.game_ended
     
     rew += apply_discount(TrainingState.punish_if_action_changed(observations.ego_vehicle_state.id.split('-')[0]))
 
@@ -307,7 +307,7 @@ def predator_reward_adapter(observations, env_reward_signal):
         lambda v: _is_vehicle_wanted(v.id, PREY_IDS), observations.neighborhood_vehicle_states,
     ))
     rew = rew if len(prey_vehicles) > 0 else 0
-    print(f"predator {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
+    #print(f"predator {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
     return rew
 
 
@@ -349,12 +349,12 @@ def prey_reward_adapter(observations, env_reward_signal):
 
     if not collided_with_pred and events.reached_max_episode_steps:
         # prey survived
-        rew += apply_discount(global_rewards.game_ended)
+        rew += global_rewards.game_ended
 
     # if no predator vehicle avaliable, have 0 reward instead
     predator_vehicles = list(filter(
         lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS), observations.neighborhood_vehicle_states,
     ))
     rew = rew if len(predator_vehicles) > 0 else 0
-    print(f"prey {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
+    #print(f"prey {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
     return rew

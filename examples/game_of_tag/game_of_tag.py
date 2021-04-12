@@ -210,7 +210,7 @@ def main(args):
     )
 
     rllib_policies = {
-        policy_mapper(agent_id): (
+        f"{agent_id}_policy": (
             None,
             rllib_agent["observation_space"],
             rllib_agent["action_space"],
@@ -241,8 +241,8 @@ def main(args):
         },
         "multiagent": {
             "policies": rllib_policies,
-            "policies_to_train": ["predator_policy", "prey_policy"],
-            "policy_mapping_fn": policy_mapper,
+            #"policies_to_train": ["predator_policy", "prey_policy"],
+            "policy_mapping_fn":  lambda agent_id: f"{agent_id}_policy",
         },
         "callbacks": {
             "on_episode_start": on_episode_start,
@@ -258,7 +258,7 @@ def main(args):
         PPOTrainer, # uses PPO algorithm
         name="lets_play_tag",
         #stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
-        stop=TimeStopper(),
+        #stop=TimeStopper(),
         # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
         #      different than _exporting_ a TF/PT checkpoint).
         checkpoint_freq=5,
