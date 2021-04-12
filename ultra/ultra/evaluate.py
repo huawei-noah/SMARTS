@@ -60,12 +60,19 @@ def evaluation_check(
     agent_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
-    agent_ids_to_evaluate = [
-        agent_id
-        for agent_id in agent_ids
-        if (episode.index + 1) % eval_rate == 0
-        and episode.last_eval_iterations[agent_id] != episode.index
-    ]
+    if (agent_coordinator != None and agent_coordinator.eval_per_grade == True):
+        agent_ids_to_evaluate = [
+            agent_id
+            for agent_id in agent_ids
+            if agent_coordinator.get_eval_check_condition() == True
+        ]
+    else:
+        agent_ids_to_evaluate = [
+            agent_id
+            for agent_id in agent_ids
+            if (episode.index + 1) % eval_rate == 0
+            and episode.last_eval_iterations[agent_id] != episode.index
+        ]
 
     # Skip evaluation if there are no agents needing an evaluation.
     if len(agent_ids_to_evaluate) < 1:
@@ -269,8 +276,8 @@ def evaluate(
 
     env.close()
 
-    scenario_data_handler_eval.save_grade_density(num_episodes)
     scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+    scenario_data_handler_eval.save_grade_density(num_episodes)
 
     try:
         if eval_mode:
