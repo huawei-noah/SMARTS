@@ -61,9 +61,7 @@ class CurriculumInfo:
         cls.pass_based_warmup_episodes = int(
             cls.curriculum["conditions"]["pass_based"]["warmup_episodes"]
         )
-        cls.eval_per_grade = bool(
-            cls.curriculum["conditions"]["eval_per_grade"]
-        )
+        cls.eval_per_grade = bool(cls.curriculum["conditions"]["eval_per_grade"])
 
         if cls.episode_based_toggle == cls.pass_based_toggle == True:
             raise Exception(

@@ -60,7 +60,7 @@ def evaluation_check(
     agent_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
-    if (agent_coordinator != None and agent_coordinator.eval_per_grade == True):
+    if agent_coordinator != None and agent_coordinator.eval_per_grade == True:
         agent_ids_to_evaluate = [
             agent_id
             for agent_id in agent_ids

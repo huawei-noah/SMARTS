@@ -187,6 +187,10 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
+        if (grade_mode == True) and (
+            graduate == True and CurriculumInfo.eval_per_grade == True
+        ):
+            agent_coordinator.set_eval_check_condition(True)
         evaluation_check(
             agents=agents,
             agent_ids=agent_ids,
@@ -200,8 +204,10 @@ def train(
             **eval_info,
             **env.info,
         )
-
         collect_evaluations(evaluation_task_ids=evaluation_task_ids)
+
+        if grade_mode == True:
+            agent_coordinator.set_eval_check_condition(False)
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
@@ -260,7 +266,7 @@ def train(
                 )
                 if (
                     episode.index + 1
-                ) % 30 == 0:  # Set sample rate (flag needs to be set)
+                ) % CurriculumInfo.pass_based_sample_rate == 0:  # Set sample rate (flag needs to be set)
                     print(
                         f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
                     )
