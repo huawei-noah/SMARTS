@@ -45,7 +45,7 @@ from smarts.core.utils import sequence
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.core.waypoints import Waypoint
 from smarts.sstudio.types import CutIn, UTurn, ZoneData
-from smarts.zoo import worker_pb2
+from smarts.proto import observation_pb2
 
 
 logger = logging.getLogger(__name__)
@@ -64,8 +64,8 @@ class VehicleObservation(NamedTuple):
 
 def vehicle_observation_to_proto(
     vehicle_observation: VehicleObservation,
-) -> worker_pb2.VehicleObservation:
-    return worker_pb2.VehicleObservation(
+) -> observation_pb2.VehicleObservation:
+    return observation_pb2.VehicleObservation(
         id=vehicle_observation.id,
         position=vehicle_observation.position,
         bounding_box=coordinates.bounding_box_to_proto(
@@ -80,7 +80,7 @@ def vehicle_observation_to_proto(
 
 
 def proto_to_vehicle_observation(
-    proto: worker_pb2.VehicleObservation,
+    proto: observation_pb2.VehicleObservation,
 ) -> VehicleObservation:
     return VehicleObservation(
         id=proto.id,
@@ -116,8 +116,8 @@ class EgoVehicleObservation(NamedTuple):
 
 def ego_vehicle_observation_to_proto(
     ego: EgoVehicleObservation,
-) -> worker_pb2.EgoVehicleObservation:
-    return worker_pb2.EgoVehicleObservation(
+) -> observation_pb2.EgoVehicleObservation:
+    return observation_pb2.EgoVehicleObservation(
         id=ego.id,
         position=ego.position,
         bounding_box=coordinates.bounding_box_to_proto(ego.bounding_box),
@@ -139,7 +139,7 @@ def ego_vehicle_observation_to_proto(
 
 
 def proto_to_ego_vehicle_observation(
-    proto: worker_pb2.EgoVehicleObservation,
+    proto: observation_pb2.EgoVehicleObservation,
 ) -> EgoVehicleObservation:
     return EgoVehicleObservation(
         id=proto.id,
@@ -167,10 +167,12 @@ class RoadWaypoints(NamedTuple):
     route_waypoints: List[Waypoint] = []
 
 
-def road_waypoints_to_proto(road_waypoints: RoadWaypoints) -> worker_pb2.RoadWaypoints:
-    return worker_pb2.RoadWaypoints(
+def road_waypoints_to_proto(
+    road_waypoints: RoadWaypoints,
+) -> observation_pb2.RoadWaypoints:
+    return observation_pb2.RoadWaypoints(
         lanes={
-            k: worker_pb2.ListWaypoint(
+            k: observation_pb2.ListWaypoint(
                 waypoints=[waypoints.waypoint_to_proto(elem) for elem in list_elem]
             )
             for k, list_elem in road_waypoints.lanes
@@ -181,7 +183,7 @@ def road_waypoints_to_proto(road_waypoints: RoadWaypoints) -> worker_pb2.RoadWay
     )
 
 
-def proto_to_road_waypoints(proto: worker_pb2.RoadWaypoints) -> RoadWaypoints:
+def proto_to_road_waypoints(proto: observation_pb2.RoadWaypoints) -> RoadWaypoints:
     return RoadWaypoints(
         lanes={
             k: [waypoints.proto_to_waypoint(elem) for elem in list_elem]
@@ -210,8 +212,8 @@ class GridMapMetadata(NamedTuple):
 
 def grid_map_metadata_to_proto(
     grid_map_metadata: GridMapMetadata,
-) -> worker_pb2.GridMapMetadata:
-    return worker_pb2.GridMapMetadata(
+) -> observation_pb2.GridMapMetadata:
+    return observation_pb2.GridMapMetadata(
         created_at=grid_map_metadata.created_at,
         resolution=grid_map_metadata.resolution,
         width=grid_map_metadata.width,
@@ -221,7 +223,9 @@ def grid_map_metadata_to_proto(
     )
 
 
-def proto_to_grid_map_metadata(proto: worker_pb2.GridMapMetadata) -> GridMapMetadata:
+def proto_to_grid_map_metadata(
+    proto: observation_pb2.GridMapMetadata,
+) -> GridMapMetadata:
     return GridMapMetadata(
         created_at=proto.created_at,
         resolution=proto.resolution,
@@ -247,10 +251,10 @@ class DrivableAreaGridMap(NamedTuple):
     data: np.ndarray = np.empty(shape=(0, 0), dtype=np.float32)
 
 
-def grid_map_to_proto(grid_map) -> worker_pb2.GridMap:
-    return worker_pb2.GridMap(
+def grid_map_to_proto(grid_map) -> observation_pb2.GridMap:
+    return observation_pb2.GridMap(
         metadata=grid_map_metadata_to_proto(grid_map.metadata),
-        data=worker_pb2.Matrix(
+        data=observation_pb2.Matrix(
             data=np.ravel(grid_map.data),
             rows=(grid_map.data).shape[0],
             cols=(grid_map.data).shape[1],
@@ -258,14 +262,14 @@ def grid_map_to_proto(grid_map) -> worker_pb2.GridMap:
     )
 
 
-def proto_to_grid_map(proto: worker_pb2.GridMap, class_type):
+def proto_to_grid_map(proto: observation_pb2.GridMap, class_type):
     return class_type(
         metadata=proto_to_grid_map_metadata(proto.metadata),
         data=proto_matrix_to_obs(proto.data),
     )
 
 
-def proto_matrix_to_obs(proto: worker_pb2.Matrix) -> np.ndarray:
+def proto_matrix_to_obs(proto: observation_pb2.Matrix) -> np.ndarray:
     return np.array(proto.data).reshape((proto.rows, proto.cols))
 
 
@@ -276,8 +280,8 @@ class ViaPoint(NamedTuple):
     required_speed: float = None
 
 
-def via_point_to_proto(via_point: ViaPoint) -> worker_pb2.ViaPoint:
-    return worker_pb2.ViaPoint(
+def via_point_to_proto(via_point: ViaPoint) -> observation_pb2.ViaPoint:
+    return observation_pb2.ViaPoint(
         position=via_point.position,
         lane_index=via_point.lane_index,
         edge_id=via_point.edge_id,
@@ -285,7 +289,7 @@ def via_point_to_proto(via_point: ViaPoint) -> worker_pb2.ViaPoint:
     )
 
 
-def proto_to_via_point(proto: worker_pb2.ViaPoint) -> ViaPoint:
+def proto_to_via_point(proto: observation_pb2.ViaPoint) -> ViaPoint:
     return ViaPoint(
         position=tuple(proto.position),
         lane_index=proto.lane_index,
@@ -301,14 +305,14 @@ class Vias(NamedTuple):
     """List of points that were hit in the previous step"""
 
 
-def vias_to_proto(vias: Vias) -> worker_pb2.Vias:
-    return worker_pb2.Vias(
+def vias_to_proto(vias: Vias) -> observation_pb2.Vias:
+    return observation_pb2.Vias(
         near_via_points=[via_point_to_proto(elem) for elem in vias.near_via_points],
         hit_via_points=[via_point_to_proto(elem) for elem in vias.hit_via_points],
     )
 
 
-def proto_to_vias(proto: worker_pb2.Vias) -> Vias:
+def proto_to_vias(proto: observation_pb2.Vias) -> Vias:
     return Vias(
         near_via_points=[proto_to_via_point(elem) for elem in proto.near_via_points],
         hit_via_points=[proto_to_via_point(elem) for elem in proto.hit_via_points],

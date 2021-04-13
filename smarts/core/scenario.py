@@ -47,7 +47,7 @@ from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
-from smarts.zoo import worker_pb2
+from smarts.proto import observation_pb2
 
 
 class Start(NamedTuple):
@@ -55,14 +55,14 @@ class Start(NamedTuple):
     heading: Heading
 
 
-def start_to_proto(start: Start) -> worker_pb2.Start:
-    return worker_pb2.Start(
+def start_to_proto(start: Start) -> observation_pb2.Start:
+    return observation_pb2.Start(
         position=start.position,
         heading=start.heading,
     )
 
 
-def proto_to_start(proto: worker_pb2.Start) -> Start:
+def proto_to_start(proto: observation_pb2.Start) -> Start:
     return Start(
         position=np.array(proto.position),
         heading=proto.heading,
@@ -75,14 +75,14 @@ class GoalData(NamedTuple):
     radius: float = None
 
 
-def goal_to_proto(goal: GoalData) -> worker_pb2.Goal:
-    return worker_pb2.Goal(
+def goal_to_proto(goal: GoalData) -> observation_pb2.Goal:
+    return observation_pb2.Goal(
         position=goal.position,
         radius=goal.radius,
     )
 
 
-def proto_to_goal(proto: worker_pb2.Goal) -> GoalData:
+def proto_to_goal(proto: observation_pb2.Goal) -> GoalData:
     return GoalData(
         position=np.array(proto.position),
         radius=proto.radius,
@@ -150,8 +150,8 @@ class Via(NamedTuple):
     required_speed: float = None
 
 
-def via_to_proto(via: Via) -> worker_pb2.Via:
-    return worker_pb2.Via(
+def via_to_proto(via: Via) -> observation_pb2.Via:
+    return observation_pb2.Via(
         lane_id=via.lane_id,
         edge_id=via.edge_id,
         lane_index=via.lane_index,
@@ -161,7 +161,7 @@ def via_to_proto(via: Via) -> worker_pb2.Via:
     )
 
 
-def proto_to_via(proto: worker_pb2.Via) -> Via:
+def proto_to_via(proto: observation_pb2.Via) -> Via:
     return Via(
         lane_id=proto.lane_id,
         edge_id=proto.edge_id,
@@ -186,8 +186,8 @@ class MissionData(NamedTuple):
     num_laps: int = None  # None means infinite # of laps
 
 
-def mission_to_proto(mission: MissionData) -> worker_pb2.Mission:
-    return worker_pb2.Mission(
+def mission_to_proto(mission: MissionData) -> observation_pb2.Mission:
+    return observation_pb2.Mission(
         start=start_to_proto(mission.start),
         goal=goal_to_proto(mission.goal),
         route_vias=mission.route_vias,
@@ -198,7 +198,7 @@ def mission_to_proto(mission: MissionData) -> worker_pb2.Mission:
     )
 
 
-def proto_to_mission(proto: worker_pb2.Mission) -> MissionData:
+def proto_to_mission(proto: observation_pb2.Mission) -> MissionData:
     return MissionData(
         start=proto_to_start(proto.start),
         goal=proto_to_goal(proto.goal),

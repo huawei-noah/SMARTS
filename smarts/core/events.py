@@ -22,7 +22,7 @@
 
 from typing import List, NamedTuple, Tuple
 
-from smarts.zoo import worker_pb2
+from smarts.proto import observation_pb2
 
 
 class Events(NamedTuple):
@@ -36,8 +36,8 @@ class Events(NamedTuple):
     wrong_way: bool
 
 
-def events_to_proto(events: Events) -> worker_pb2.Events:
-    return worker_pb2.Events(
+def events_to_proto(events: Events) -> observation_pb2.Events:
+    return observation_pb2.Events(
         collisions=[collision_to_proto(collision) for collision in events.collisions],
         off_route=events.off_route,
         on_shoulder=events.on_shoulder,
@@ -49,7 +49,7 @@ def events_to_proto(events: Events) -> worker_pb2.Events:
     )
 
 
-def proto_to_events(proto: worker_pb2.Events) -> Events:
+def proto_to_events(proto: observation_pb2.Events) -> Events:
     return Events(
         collisions=[proto_to_collision(collision) for collision in proto.collisions],
         off_route=proto.off_route,
@@ -66,9 +66,9 @@ class Collision(NamedTuple):
     collidee_id: str = None
 
 
-def collision_to_proto(collision: Collision) -> worker_pb2.Collision:
-    return worker_pb2.Collision(collidee_id=collision.collidee_id)
+def collision_to_proto(collision: Collision) -> observation_pb2.Collision:
+    return observation_pb2.Collision(collidee_id=collision.collidee_id)
 
 
-def proto_to_collision(proto: worker_pb2.Collision) -> Collision:
+def proto_to_collision(proto: observation_pb2.Collision) -> Collision:
     return Collision(collidee_id=proto.collidee_id)

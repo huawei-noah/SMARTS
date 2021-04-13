@@ -53,7 +53,7 @@ from smarts.core.utils.math import (
     vec_2d,
     vec_to_radians,
 )
-from smarts.zoo import worker_pb2
+from smarts.proto import observation_pb2
 
 
 class Waypoint(NamedTuple):
@@ -91,8 +91,8 @@ class Waypoint(NamedTuple):
         )
 
 
-def waypoint_to_proto(waypoint: Waypoint) -> worker_pb2.Waypoint:
-    return worker_pb2.Waypoint(
+def waypoint_to_proto(waypoint: Waypoint) -> observation_pb2.Waypoint:
+    return observation_pb2.Waypoint(
         pos=waypoint.pos,
         heading=waypoint.heading,
         lane_width=waypoint.lane_width,
@@ -102,7 +102,7 @@ def waypoint_to_proto(waypoint: Waypoint) -> worker_pb2.Waypoint:
     )
 
 
-def proto_to_waypoint(proto: worker_pb2.Waypoint) -> Waypoint:
+def proto_to_waypoint(proto: observation_pb2.Waypoint) -> Waypoint:
     return Waypoint(
         pos=np.array(proto.pos),
         heading=proto.heading,

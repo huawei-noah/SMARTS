@@ -2,11 +2,11 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import smarts.zoo.worker_pb2 as worker__pb2
+import smarts.proto.manager_pb2 as manager__pb2
 
 
-class WorkerStub(object):
-    """Interface exported by the worker server."""
+class ManagerStub(object):
+    """Interface exported by the manager."""
 
     def __init__(self, channel):
         """Constructor.
@@ -14,59 +14,61 @@ class WorkerStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.build = channel.unary_unary(
-            "/worker.Worker/build",
-            request_serializer=worker__pb2.Specification.SerializeToString,
-            response_deserializer=worker__pb2.Status.FromString,
+        self.spawn_worker = channel.unary_unary(
+            "/manager.Manager/spawn_worker",
+            request_serializer=manager__pb2.Machine.SerializeToString,
+            response_deserializer=manager__pb2.Port.FromString,
         )
-        self.act = channel.unary_unary(
-            "/worker.Worker/act",
-            request_serializer=worker__pb2.Observations.SerializeToString,
-            response_deserializer=worker__pb2.Actions.FromString,
+        self.stop_worker = channel.unary_unary(
+            "/manager.Manager/stop_worker",
+            request_serializer=manager__pb2.Port.SerializeToString,
+            response_deserializer=manager__pb2.Status.FromString,
         )
 
 
-class WorkerServicer(object):
-    """Interface exported by the worker server."""
+class ManagerServicer(object):
+    """Interface exported by the manager."""
 
-    def build(self, request, context):
-        """Builds Agent according the AgentSpec."""
+    def spawn_worker(self, request, context):
+        """Spawn worker processes.
+        Returns the address (ip, port) of new worker process.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
-    def act(self, request, context):
-        """Agent processes observations and returns action."""
+    def stop_worker(self, request, context):
+        """Stop worker process."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
 
-def add_WorkerServicer_to_server(servicer, server):
+def add_ManagerServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "build": grpc.unary_unary_rpc_method_handler(
-            servicer.build,
-            request_deserializer=worker__pb2.Specification.FromString,
-            response_serializer=worker__pb2.Status.SerializeToString,
+        "spawn_worker": grpc.unary_unary_rpc_method_handler(
+            servicer.spawn_worker,
+            request_deserializer=manager__pb2.Machine.FromString,
+            response_serializer=manager__pb2.Port.SerializeToString,
         ),
-        "act": grpc.unary_unary_rpc_method_handler(
-            servicer.act,
-            request_deserializer=worker__pb2.Observations.FromString,
-            response_serializer=worker__pb2.Actions.SerializeToString,
+        "stop_worker": grpc.unary_unary_rpc_method_handler(
+            servicer.stop_worker,
+            request_deserializer=manager__pb2.Port.FromString,
+            response_serializer=manager__pb2.Status.SerializeToString,
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "worker.Worker", rpc_method_handlers
+        "manager.Manager", rpc_method_handlers
     )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
 # This class is part of an EXPERIMENTAL API.
-class Worker(object):
-    """Interface exported by the worker server."""
+class Manager(object):
+    """Interface exported by the manager."""
 
     @staticmethod
-    def build(
+    def spawn_worker(
         request,
         target,
         options=(),
@@ -80,9 +82,9 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/worker.Worker/build",
-            worker__pb2.Specification.SerializeToString,
-            worker__pb2.Status.FromString,
+            "/manager.Manager/spawn_worker",
+            manager__pb2.Machine.SerializeToString,
+            manager__pb2.Port.FromString,
             options,
             channel_credentials,
             call_credentials,
@@ -93,7 +95,7 @@ class Worker(object):
         )
 
     @staticmethod
-    def act(
+    def stop_worker(
         request,
         target,
         options=(),
@@ -107,9 +109,9 @@ class Worker(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/worker.Worker/act",
-            worker__pb2.Observations.SerializeToString,
-            worker__pb2.Actions.FromString,
+            "/manager.Manager/stop_worker",
+            manager__pb2.Port.SerializeToString,
+            manager__pb2.Status.FromString,
             options,
             channel_credentials,
             call_credentials,

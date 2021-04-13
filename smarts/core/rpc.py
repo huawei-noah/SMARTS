@@ -21,10 +21,10 @@
 # THE SOFTWARE.
 
 from smarts.core.controllers import ActionSpaceType
-from smarts.zoo import worker_pb2
+from smarts.proto import action_pb2
 
 
-def actions_to_proto(action_space_type, action) -> worker_pb2.Actions:
+def actions_to_proto(action_space_type, action) -> action_pb2.Actions:
     # if action is non_boid_agent
     if not isinstance(action, dict):
         vehicle_action = action_to_proto(action_space_type, action)
@@ -41,9 +41,9 @@ def actions_to_proto(action_space_type, action) -> worker_pb2.Actions:
     return proto
 
 
-def action_to_proto(action_space_type, action) -> worker_pb2.Action:
+def action_to_proto(action_space_type, action) -> action_pb2.Action:
 
-    proto = worker_pb2.Action()
+    proto = action_pb2.Action()
 
     if action_space_type == ActionSpaceType.Continuous:
         proto.continous.action.extend(action)
@@ -85,7 +85,7 @@ def action_to_proto(action_space_type, action) -> worker_pb2.Action:
     return proto
 
 
-def proto_to_actions(proto: worker_pb2.Actions):
+def proto_to_actions(proto: action_pb2.Actions):
     vehicles = proto.vehicles
 
     if "NON_BOID" in vehicles.keys():
@@ -99,7 +99,7 @@ def proto_to_actions(proto: worker_pb2.Actions):
     return action
 
 
-def proto_to_action(proto: worker_pb2.Action):
+def proto_to_action(proto: action_pb2.Action):
 
     if proto.HasField("continuous"):
         return list(proto.continous.action)

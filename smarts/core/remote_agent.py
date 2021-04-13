@@ -30,7 +30,13 @@ import grpc
 
 from smarts.core import events, scenario, sensors, waypoints
 from smarts.core.agent import AgentSpec
-from smarts.zoo import manager_pb2, manager_pb2_grpc, worker_pb2, worker_pb2_grpc
+from smarts.proto import (
+    manager_pb2,
+    manager_pb2_grpc,
+    observation_pb2,
+    worker_pb2,
+    worker_pb2_grpc,
+)
 
 
 class RemoteAgentException(Exception):
@@ -65,7 +71,7 @@ class RemoteAgent:
     def act(self, obs):
         # Run task asynchronously and return a Future.
         self._act_future = self._worker_stub.act.future(
-            worker_pb2.Observations(
+            observation_pb2.Observations(
                 vehicles=observations_to_proto(obs),
             )
         )
@@ -116,26 +122,26 @@ def observations_to_proto(obs):
 def observation_to_proto(obs):
     # obs.waypoint_paths
     waypoint_paths = [
-        worker_pb2.ListWaypoint(
+        observation_pb2.ListWaypoint(
             waypoints=[waypoints.waypoint_to_proto(elem) for elem in list_elem]
         )
         for list_elem in obs.waypoint_paths
     ]
 
     # obs.lidar_point_cloud
-    lidar_point_cloud = worker_pb2.Lidar(
-        points=worker_pb2.Matrix(
+    lidar_point_cloud = observation_pb2.Lidar(
+        points=observation_pb2.Matrix(
             data=np.ravel(obs.lidar_point_cloud[0]),
             rows=len(obs.lidar_point_cloud[0]),
             cols=3,
         ),
-        hits=worker_pb2.Matrix(
+        hits=observation_pb2.Matrix(
             data=np.ravel(obs.lidar_point_cloud[1]),
             rows=len(obs.lidar_point_cloud[1]),
             cols=3,
         ),
         ray=[
-            worker_pb2.Matrix(
+            observation_pb2.Matrix(
                 data=np.ravel(elem),
                 rows=2,
                 cols=3,
@@ -144,7 +150,7 @@ def observation_to_proto(obs):
         ],
     )
 
-    return worker_pb2.Observation(
+    return observation_pb2.Observation(
         events=events.events_to_proto(obs.events),
         ego_vehicle_state=sensors.ego_vehicle_observation_to_proto(
             obs.ego_vehicle_state
@@ -178,7 +184,7 @@ def proto_to_observations(proto):
     return obs
 
 
-def proto_to_observation(proto: worker_pb2.Observation) -> sensors.Observation:
+def proto_to_observation(proto: observation_pb2.Observation) -> sensors.Observation:
     # proto.waypoint_paths
     waypoint_paths = [
         [waypoints.proto_to_waypoint(elem) for elem in list_elem.waypoints]

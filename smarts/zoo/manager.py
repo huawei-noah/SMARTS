@@ -28,7 +28,8 @@ from concurrent import futures
 
 import grpc
 
-from smarts.zoo import manager_pb2_grpc, manager_servicer
+from smarts.proto import manager_pb2_grpc
+from smarts.zoo import manager_servicer
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"manager.py - pid({os.getpid()})")
