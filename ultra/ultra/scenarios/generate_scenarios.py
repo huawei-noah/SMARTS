@@ -32,10 +32,10 @@ from collections import Counter, defaultdict
 from dataclasses import replace
 from multiprocessing import Manager, Process
 from shutil import copyfile
-import sumolib
 import numpy as np
 import yaml
 
+from smarts.core.utils.sumo import sumolib
 from smarts.sstudio import gen_missions, gen_traffic
 from smarts.sstudio.types import (
     Distribution,
@@ -283,51 +283,64 @@ def generate_left_turn_missions(
 
     traffic = Traffic(flows=all_flows)
     try:
-        add_stops = True
         gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
         if stops:
-            route_file = f"{scenario}/traffic/all.rou.xml"
-            output_file = f"{scenario}/traffic/all2.rou.xml"
-            net_file = f"{scenario}/map.net.xml"
-            net = sumolib.net.readNet(net_file)
-            print('------------------')
-            with open(output_file, 'a') as output:
-                sumolib.writeXMLHeader(output,"routes")  # noqa
-                output.write('<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">\n')
-                for veh_type in sumolib.output.parse(route_file, 'vType'):
-                    output.write(veh_type.toXML(' '*4))
+            route_file_path = f"{scenario}/traffic/all.rou.xml"
+            map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
+            vehicle_types = list(sumolib.output.parse(route_file_path, "vType"))
+            vehicles = list()
 
-                vehicles = []
-                for veh in sumolib.output.parse(route_file, 'vehicle'):
-                    edgesList = veh.route[0].edges.split()
-                    lastEdge = net.getEdge(edgesList[0])
-                    lanes = lastEdge.getLanes()
-                    for lane in lanes:
-                        if stops:
-                            stop_route, stop_lane, stop_pos = stops[0]
-                            if lane.getID() == f'edge-{stop_route}_{stop_lane}':
-                                start_position = stop_pos
-                                stopAttrs = {"lane": lane.getID()}
-                                stopAttrs["endPos"] = stop_pos
-                                stopAttrs["duration"] = "1000" # for a long time
-                                veh.setAttribute('departPos', stop_pos)
-                                veh.setAttribute('depart', 0)
-                                veh.setAttribute('departLane', stop_lane)
-                                veh.addChild("stop", attrs=stopAttrs)
-                                stops.pop(0)
-                                break
-                    vehicles.append([float(veh.depart), veh.id, veh])
-                vehicles.sort(key=lambda x: (x[0], x[1]))
-                for veh_depart, veh_id, veh in vehicles:
-                    print(veh_id, veh_depart)
-                    output.write(veh.toXML(' '*4))
-                output.write('</routes>\n')
-            output.close()
+            # Add stops (if applicable) to vehicles in the existing all.rou.xml file.
+            for vehicle in sumolib.output.parse(route_file_path, "vehicle"):
+                if stops:
+                    vehicle_edges = vehicle.route[0].edges.split()
+                    start_edge = map_file.getEdge(vehicle_edges[0])
 
+                    for lane in start_edge.getLanes():
+                        stop_route, stop_lane, stop_position = stops[0]
+                        if lane.getID() == f"edge-{stop_route}_{stop_lane}":
+                            # Add stop information to this vehicle.
+                            stop_attributes = {
+                                "lane": lane.getID(),
+                                "endPos": stop_position,
+                                "duration": "1000",
+                            }
+                            vehicle.setAttribute("departPos", stop_position)
+                            vehicle.setAttribute("depart", 0)
+                            vehicle.setAttribute("departLane", stop_lane)
+                            vehicle.addChild("stop", attrs=stop_attributes)
+                            stops.pop(0)
+                            break
+                vehicles.append([float(vehicle.depart), vehicle.id, vehicle])
+            vehicles.sort(key=lambda x: (x[0], x[1]))
 
+            # Ensure all stops were added to the traffic.
+            if len(stops) != 0:
+                print(
+                    f"There are still {len(stops)} more stops "
+                    f"to place in scenario {scenario}."
+                )
 
-    except Exception as arr:
-        print(arr)
+            # Overwrite the all.rou.xml file with the new vehicles.
+            with open(route_file_path, "w") as route_file:
+                sumolib.writeXMLHeader(route_file, "routes")
+
+                route_file.write(
+                    "<routes xmlns:xsi="
+                    "\"http://www.w3.org/2001/XMLSchema-instance\" "
+                    "xsi:noNamespaceSchemaLocation="
+                    "\"http://sumo.dlr.de/xsd/routes_file.xsd\">\n"
+                )
+
+                for vehicle_type in vehicle_types:
+                    route_file.write(vehicle_type.toXML(" " * 4))
+
+                for _, _, vehicle in vehicles:
+                    route_file.write(vehicle.toXML(" " * 4))
+
+                route_file.write("</routes>\n")
+    except Exception as exception:
+        print(exception)
     # patch: remove route files from traffic folder to make intersection empty
     if traffic_density == "no-traffic":
         os.remove(f"{scenario}/traffic/all.rou.xml")
@@ -501,7 +514,7 @@ def scenario_worker(
             stopwatcher_behavior=stopwatcher_behavior,
             stopwatcher_route=stopwatcher_route,
             seed=seed,
-            stops=stops,
+            stops=stops.copy(),  # We modify stops, copy so it can be used in parallel.
             traffic_density=traffic_density,
             intersection_name=intersection_type,
         )
