@@ -637,8 +637,11 @@ class Sensors:
         )
         # Check that center of vehicle is still close to route
         # Most lanes are around 3.2 meters wide
+        radius = vehicle_minimum_radius_bounds + max(
+            5, sim.scenario.road_network.default_lane_width
+        )
         nearest_lanes = sim.scenario.road_network.nearest_lanes(
-            vehicle_pos, radius=vehicle_minimum_radius_bounds + 5
+            vehicle_pos, radius=radius
         )
 
         # No road nearby.

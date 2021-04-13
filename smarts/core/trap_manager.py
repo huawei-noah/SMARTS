@@ -150,7 +150,7 @@ class TrapManager:
             )
             for v_id in sorted_vehicle_ids:
                 # Skip the capturing process if history traffic is used
-                if sim.scenario.traffic_history_service.is_in_use:
+                if sim.scenario.traffic_history is not None:
                     break
 
                 vehicle = vehicles[v_id]
@@ -315,7 +315,7 @@ class TrapManager:
         n_lane = None
 
         if default_entry_speed is None:
-            n_lane = n_lane or road_network.nearest_lane(mission.data.start.position)
+            n_lane = road_network.nearest_lane(mission.data.start.position)
             default_entry_speed = n_lane.getSpeed()
 
         if zone is None:

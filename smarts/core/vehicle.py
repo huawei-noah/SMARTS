@@ -78,6 +78,7 @@ class VehicleConfig:
 # A mapping between SUMO's vehicle types and our internal vehicle config.
 # TODO: Don't leak SUMO's types here.
 # XXX: The GLB's dimensions must match the specified dimensions here.
+# TODO: for traffic histories, vehicle (and road) dimensions are set by the dataset
 VEHICLE_CONFIGS = {
     "passenger": VehicleConfig(
         vehicle_type="car",

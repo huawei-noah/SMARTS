@@ -18,10 +18,16 @@ process
 - Only create `Renderer` on demand if vehicles are using camera-based sensors. See issue #725.
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
-- A complete proto schema is implemented for parsing and serializing the observations sent to the remote agent.
+
+- The `Observation` class and all related classes are properly type formatted. 
+- Observation returned by SMARTS only consists of data and does not include any corresponding class methods.
+- Variable-length observations are truncated or padded (with default values) to a fixed length when the desired lengths are specified in an observation configuration yaml file.
+- A complete proto schema is implemented for parsing and serializing the observations/actions sent/received to/from the remote agent.
+
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed sumo road network offset bug for shifted maps.  See issue #716.
+- Fixed bugs in traffic history and changed interface to it.  See issue #732.
 - Update `ego_open_agent` to use the package instead of the zoo directory version.
 
 
