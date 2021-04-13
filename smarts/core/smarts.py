@@ -39,6 +39,7 @@ with warnings.catch_warnings():
     from sklearn.metrics.pairwise import euclidean_distances
 
 from smarts.core import models, sensors
+from smarts.core import observation as obs_util
 from smarts.core.agent_manager import AgentManager
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.colors import SceneColors
@@ -250,7 +251,7 @@ class SMARTS:
         extras = dict(scores=scores)
 
         if self.obs_config:
-            observations = sensors.fix_observation_size(self.obs_config, observations)
+            observations = obs_util.fix_observation_size(self.obs_config, observations)
 
         # 9. Advance the simulation clock.
         self._elapsed_sim_time += dt

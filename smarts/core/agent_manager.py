@@ -26,7 +26,7 @@ from typing import Set
 import cloudpickle
 
 from envision.types import format_actor_id
-from smarts.core import rpc
+from smarts.core import action as act_util
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import MissionPlanner
@@ -232,7 +232,7 @@ class AgentManager:
         try:
             social_agent_actions = {
                 agent_id: (
-                    rpc.proto_to_actions(
+                    act_util.proto_to_actions(
                         self._remote_social_agents_action[agent_id].result()
                     )
                     if self._remote_social_agents_action.get(agent_id, None)

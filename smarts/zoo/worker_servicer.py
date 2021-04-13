@@ -27,7 +27,8 @@ import time
 import cloudpickle
 import grpc
 
-from smarts.core import remote_agent, rpc
+from smarts.core import action as act_util
+from smarts.core import observation as obs_util
 from smarts.proto import action_pb2, worker_pb2, worker_pb2_grpc
 
 logging.basicConfig(level=logging.INFO)
@@ -61,13 +62,13 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
             context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
             return action_pb2.Actions()
 
-        obs = remote_agent.proto_to_observations(request)
+        obs = obs_util.proto_to_observations(request)
         adapted_obs = self._agent_spec.observation_adapter(obs)
         action = self._agent.act(adapted_obs)
         adapted_action = self._agent_spec.action_adapter(action)
 
         return action_pb2.Actions(
-            vehicles=rpc.actions_to_proto(
+            vehicles=act_util.actions_to_proto(
                 self._agent_spec.interface.action, adapted_action
             )
         )

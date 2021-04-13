@@ -29,6 +29,7 @@ import numpy as np
 import grpc
 
 from smarts.core import events, scenario, sensors, waypoints
+from smarts.core import observation as obs_util
 from smarts.core.agent import AgentSpec
 from smarts.proto import (
     manager_pb2,
@@ -72,7 +73,7 @@ class RemoteAgent:
         # Run task asynchronously and return a Future.
         self._act_future = self._worker_stub.act.future(
             observation_pb2.Observations(
-                vehicles=observations_to_proto(obs),
+                vehicles=obs_util.observations_to_proto(obs),
             )
         )
 
@@ -100,128 +101,3 @@ class RemoteAgent:
 
         # Close manager channel
         self._manager_channel.close()
-
-
-def observations_to_proto(obs):
-    # if obs is non_boid_agent, i.e., obs=Sensors.Observation()
-    if isinstance(obs, tuple):
-        vehicle_obs = observation_to_proto(obs)
-        proto = {"NON_BOID": vehicle_obs}
-
-    # if obs is empty, i.e., obs=={}, or
-    # if obs is boid_agent, i.e., obs={<vehicle_id>: Sensors.Observation()}
-    else:
-        proto = {
-            vehicle_id: observation_to_proto(vehicle_obs)
-            for vehicle_id, vehicle_obs in obs.items()
-        }
-
-    return proto
-
-
-def observation_to_proto(obs):
-    # obs.waypoint_paths
-    waypoint_paths = [
-        observation_pb2.ListWaypoint(
-            waypoints=[waypoints.waypoint_to_proto(elem) for elem in list_elem]
-        )
-        for list_elem in obs.waypoint_paths
-    ]
-
-    # obs.lidar_point_cloud
-    lidar_point_cloud = observation_pb2.Lidar(
-        points=observation_pb2.Matrix(
-            data=np.ravel(obs.lidar_point_cloud[0]),
-            rows=len(obs.lidar_point_cloud[0]),
-            cols=3,
-        ),
-        hits=observation_pb2.Matrix(
-            data=np.ravel(obs.lidar_point_cloud[1]),
-            rows=len(obs.lidar_point_cloud[1]),
-            cols=3,
-        ),
-        ray=[
-            observation_pb2.Matrix(
-                data=np.ravel(elem),
-                rows=2,
-                cols=3,
-            )
-            for elem in obs.lidar_point_cloud[2]
-        ],
-    )
-
-    return observation_pb2.Observation(
-        events=events.events_to_proto(obs.events),
-        ego_vehicle_state=sensors.ego_vehicle_observation_to_proto(
-            obs.ego_vehicle_state
-        ),
-        neighborhood_vehicle_states=[
-            sensors.vehicle_observation_to_proto(elem)
-            for elem in obs.neighborhood_vehicle_states
-        ],
-        waypoint_paths=waypoint_paths,
-        distance_travelled=obs.distance_travelled,
-        lidar_point_cloud=lidar_point_cloud,
-        drivable_area_grid_map=sensors.grid_map_to_proto(obs.drivable_area_grid_map),
-        occupancy_grid_map=sensors.grid_map_to_proto(obs.occupancy_grid_map),
-        top_down_rgb=sensors.grid_map_to_proto(obs.top_down_rgb),
-        road_waypoints=sensors.road_waypoints_to_proto(obs.road_waypoints),
-        via_data=sensors.vias_to_proto(obs.via_data),
-    )
-
-
-def proto_to_observations(proto):
-    vehicles = proto.vehicles
-
-    if "NON_BOID" in vehicles.keys():
-        obs = proto_to_observation(vehicles["NON_BOID"])
-    else:
-        obs = {
-            vehicle_id: proto_to_observation(vehicle_proto)
-            for vehicle_id, vehicle_proto in vehicles.items()
-        }
-
-    return obs
-
-
-def proto_to_observation(proto: observation_pb2.Observation) -> sensors.Observation:
-    # proto.waypoint_paths
-    waypoint_paths = [
-        [waypoints.proto_to_waypoint(elem) for elem in list_elem.waypoints]
-        for list_elem in proto.waypoint_paths
-    ]
-
-    # proto.lidar_point_cloud
-    lidar_point_cloud = (
-        list(sensors.proto_matrix_to_obs(proto.lidar_point_cloud.points)),
-        list(sensors.proto_matrix_to_obs(proto.lidar_point_cloud.hits)),
-        [
-            tuple(sensors.proto_matrix_to_obs(elem))
-            for elem in proto.lidar_point_cloud.ray
-        ],
-    )
-
-    obs = sensors.Observation(
-        events=events.proto_to_events(proto.events),
-        ego_vehicle_state=sensors.proto_to_ego_vehicle_observation(
-            proto.ego_vehicle_state
-        ),
-        neighborhood_vehicle_states=[
-            sensors.proto_to_vehicle_observation(elem)
-            for elem in proto.neighborhood_vehicle_states
-        ],
-        waypoint_paths=waypoint_paths,
-        distance_travelled=proto.distance_travelled,
-        lidar_point_cloud=lidar_point_cloud,
-        drivable_area_grid_map=sensors.proto_to_grid_map(
-            proto.drivable_area_grid_map, sensors.DrivableAreaGridMap
-        ),
-        occupancy_grid_map=sensors.proto_to_grid_map(
-            proto.occupancy_grid_map, sensors.OccupancyGridMap
-        ),
-        top_down_rgb=sensors.proto_to_grid_map(proto.top_down_rgb, sensors.TopDownRGB),
-        road_waypoints=sensors.proto_to_road_waypoints(proto.road_waypoints),
-        via_data=sensors.proto_to_vias(proto.via_data),
-    )
-
-    return obs
