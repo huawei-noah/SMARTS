@@ -19,11 +19,12 @@
 # THE SOFTWARE.
 import logging
 import math
+import os
 import random
 import re
 from dataclasses import dataclass
 from functools import lru_cache
-from subprocess import check_call
+from subprocess import check_output
 from tempfile import NamedTemporaryFile
 from typing import Sequence, Tuple, Union
 from cached_property import cached_property
@@ -85,9 +86,21 @@ class GLBData:
 
 
 class SumoRoadNetwork:
-    def __init__(self, graph):
+    # 3.2 is the default Sumo road network lane width if it's not specified
+    # explicitly in Sumo's NetEdit or the map.net.xml file.
+    # This corresponds on a 1:1 scale to lanes 3.2m wide, which is typical
+    # in North America (although US highway lanes are wider at ~3.7m).
+    DEFAULT_LANE_WIDTH = 3.2
+
+    def __init__(self, graph, net_file, default_lane_width=None):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
+        self._net_file = net_file
+        self._default_lane_width = (
+            default_lane_width
+            if default_lane_width is not None
+            else SumoRoadNetwork.DEFAULT_LANE_WIDTH
+        )
 
     @staticmethod
     def _check_net_origin(bbox):
@@ -96,33 +109,36 @@ class SumoRoadNetwork:
 
     @classmethod
     @lru_cache(maxsize=1)
-    def _shift_coordinates(cls, net_file):
+    def _shift_coordinates(cls, net_file_path):
+        net_file_folder = os.path.dirname(net_file_path)
+        out_path = os.path.join(net_file_folder, f"shifted_map-AUTOGEN.net.xml")
+        assert out_path != net_file_path
         logger = logging.getLogger(cls.__name__)
-        logger.info("normalizing net coordinates...")
-        with NamedTemporaryFile() as tf:
-            ## Translate the map's origin to remove huge (imprecise) offsets.
-            ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
-            ## for netconvert options description.
-            try:
-                check_call(
-                    [
-                        "netconvert",
-                        "--offset.disable-normalization=FALSE",
-                        "-s",
-                        net_file,
-                        "-o",
-                        tf.name,
-                    ]
-                )
-                return sumolib.net.readNet(tf.name, withInternal=True)
-            except Exception as e:
-                logger.warning(
-                    f"unable to use netconvert tool to normalize coordinates: {e}"
-                )
+        logger.info(f"normalizing net coordinates into {out_path}...")
+        ## Translate the map's origin to remove huge (imprecise) offsets.
+        ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
+        ## for netconvert options description.
+        try:
+            stdout = check_output(
+                [
+                    "netconvert",
+                    "--offset.disable-normalization=FALSE",
+                    "-s",
+                    net_file_path,
+                    "-o",
+                    out_path,
+                ]
+            )
+            logger.debug(f"netconvert output: {stdout}")
+            return out_path
+        except Exception as e:
+            logger.warning(
+                f"unable to use netconvert tool to normalize coordinates: {e}"
+            )
         return None
 
     @classmethod
-    def from_file(cls, net_file):
+    def from_file(cls, net_file, default_lane_width=None):
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
@@ -133,16 +149,17 @@ class SumoRoadNetwork:
         # correctly already, so we don't need to do it.  if not,
         # then we check to see if the graph's bounding box includes
         # the origin, and then shift it ourselves if not.
-        origOffset = G.getLocationOffset()
+        original_offset = G.getLocationOffset()
         if (
-            origOffset[0] == 0
-            and origOffset[1] == 0
+            original_offset[0] == 0
+            and original_offset[1] == 0
             and not cls._check_net_origin(G.getBoundary())
         ):
-            shifted_G = cls._shift_coordinates(net_file)
-            if shifted_G:
-                assert cls._check_net_origin(shifted_G.getBoundary())
-                G = shifted_G
+            shifted_net_file = cls._shift_coordinates(net_file)
+            if shifted_net_file:
+                G = sumolib.net.readNet(shifted_net_file, withInternal=True)
+                assert cls._check_net_origin(G.getBoundary())
+                net_file = shifted_net_file
                 # keep track of having shifted the graph by
                 # injecting state into the network graph.
                 # this is needed because some maps have been pre-shifted,
@@ -150,19 +167,33 @@ class SumoRoadNetwork:
                 # the offset should not be used (because all their other
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
-        return cls(G)
+        return cls(G, net_file, default_lane_width)
 
     @property
     def graph(self):
         return self._graph
 
+    @property
+    def net_file(self):
+        """ This is the net file (*.net.xml) that corresponds with our possibly-offset coordinates. """
+        return self._net_file
+
     @cached_property
-    def netOffset(self):
+    def net_offset(self):
+        """ This is our offset from what's in the original net file. """
         return (
             self.graph.getLocationOffset()
             if self.graph and getattr(self.graph, "_shifted_by_smarts", False)
             else [0, 0]
         )
+
+    @property
+    def default_lane_width(self):
+        return self._default_lane_width
+
+    @default_lane_width.setter
+    def default_lane_width(self, default_lane_width):
+        self._default_lane_width = default_lane_width
 
     def _compute_road_polygons(self):
         lane_to_poly = {}
@@ -363,7 +394,7 @@ class SumoRoadNetwork:
         return LaneData(sumo_lane=lane, lane_speed=lane_speed)
 
     def nearest_lanes(
-        self, point, radius=10, include_junctions=True, include_special=True
+        self, point, radius=None, include_junctions=True, include_special=True
     ) -> Sequence[Tuple[Lane, float]]:
         """The closest lanes to the given point
 
@@ -374,6 +405,8 @@ class SumoRoadNetwork:
             include_special: Whether to include lanes who are on "special" edges (for example 'internal' edges)
         """
 
+        if radius is None:
+            radius = max(10, 2 * self._default_lane_width)
         x, y = point
         candidate_lanes = self._graph.getNeighboringLanes(
             x, y, r=radius, includeJunctions=include_junctions, allowFallback=False
@@ -389,7 +422,7 @@ class SumoRoadNetwork:
         return candidate_lanes
 
     def nearest_lane(
-        self, point, radius=10, include_junctions=True, include_special=True
+        self, point, radius=None, include_junctions=True, include_special=True
     ) -> Lane:
         """Find the nearest lane to the given point
 
@@ -399,6 +432,8 @@ class SumoRoadNetwork:
             include_junctions: Whether the shape of a junction should be considered when computing distance to lane
             include_special: Whether to include lanes who are on "special" edges (for example 'internal' edges)
         """
+        if radius is None:
+            radius = max(10, 2 * self._default_lane_width)
         nearest_lanes = self.nearest_lanes(
             point, radius, include_junctions, include_special
         )
@@ -511,7 +546,8 @@ class SumoRoadNetwork:
         #
         # return False
 
-        nearest_lanes = self.nearest_lanes(point[:2], radius=5)
+        radius = max(5, 2 * self._default_lane_width)
+        nearest_lanes = self.nearest_lanes(point[:2], radius=radius)
         return any(0.5 * nl.getWidth() + 1e-1 > dist for nl, dist in nearest_lanes)
 
     def road_nodes_with_triggers(self):
