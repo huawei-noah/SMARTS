@@ -58,7 +58,7 @@ setup(
         "matplotlib",
         "scikit-image",
         # The following are for /smarts/zoo
-        "grpcio==1.30.0",
+        "grpcio==1.37.0",
         "PyYAML",
         "twisted",
         # The following are used for imitation learning
@@ -82,7 +82,7 @@ setup(
         ],
         "dev": [
             "black==20.8b1",
-            "grpcio-tools==1.30.0",
+            "grpcio-tools==1.37.0",
             "isort==5.7.0",
             "sphinx",
             "sphinx-rtd-theme",

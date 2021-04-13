@@ -24,6 +24,7 @@ import warnings
 from collections import defaultdict
 from typing import List, Sequence
 
+import math
 import numpy
 
 from envision import types as envision_types
@@ -225,7 +226,9 @@ class SMARTS:
         extras = dict(scores=scores)
 
         # 8. Advance the simulation clock.
-        self._elapsed_sim_time += dt
+        # round due to FP precision issues, but need to allow arbitrarily-small dt's
+        dec_digits = int(1 - math.log10(dt % 1))
+        self._elapsed_sim_time = round(self._elapsed_sim_time + dt, dec_digits)
 
         return observations, rewards, dones, extras
 
