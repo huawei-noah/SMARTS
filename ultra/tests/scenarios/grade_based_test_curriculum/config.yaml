@@ -4,6 +4,7 @@ curriculum:
     2: [["00-gb",test_grade2]]
     3: [["00-gb",test_grade3]]
   conditions:
+    eval_per_grade: False
     episode_based:
       toggle: True
       cycle: False
