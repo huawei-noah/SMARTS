@@ -504,6 +504,10 @@ def scenario_worker(
     for i, seed in enumerate(seeds):
         if not dynamic_pattern_func is None:
             route_distributions = dynamic_pattern_func(route_distributions, i)
+        if stops is not None:
+            # Stops is modified during generation. Copy stops so parallel processes
+            # don't pop elements from the same list reference.
+            stops = stops.copy()
         generate_left_turn_missions(
             missions=ego_missions,
             route_lanes=route_lanes,
@@ -515,7 +519,7 @@ def scenario_worker(
             stopwatcher_behavior=stopwatcher_behavior,
             stopwatcher_route=stopwatcher_route,
             seed=seed,
-            stops=stops.copy(),  # We modify stops, copy so it can be used in parallel.
+            stops=stops,
             traffic_density=traffic_density,
             intersection_name=intersection_type,
         )
