@@ -76,9 +76,10 @@ pip install --upgrade pip
 # install [train] version of python package with the rllib dependencies
 pip install -e .[train]
 
-# make sure you can run tests (and verify they are passing)
+# make sure you can run sanity-test (and verify they are passing)
+# if tests fail, check './sanity_test_result.xml' for test report. 
 pip install -e .[test]
-make test
+make sanity-test
 
 # then you can run a scenario, see following section for more details
 ```

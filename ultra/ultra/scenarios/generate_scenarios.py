@@ -613,9 +613,9 @@ def build_scenarios(
                 temp_seeds = seeds[inner_prev_split:inner_cur_split]
                 seed_count += len(temp_seeds)
                 if save_dir is None:
-                    temp_save_dir = task_dir + "/" + "_".join(name_additions)
+                    temp_save_dir = os.path.join(task_dir, "_".join(name_additions))
                 else:
-                    temp_save_dir = save_dir
+                    temp_save_dir = os.path.join(save_dir, "_".join(name_additions))
 
                 sub_proc = Process(
                     target=scenario_worker,

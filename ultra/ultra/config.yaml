@@ -4,8 +4,8 @@ tasks:
       train: "../tests/task/train_mock*"
       test:  "../tests/task/test_mock*"
     eval_test:
-      train: "../tests/task/eval_test/eval*"
-      test:  "../tests/task/eval_test/eval*"
+      train: "../tests/task/eval_test/train_*"
+      test:  "../tests/task/eval_test/test_*"
   task00-multiagent: # unittest
     easy:
       train: "../tests/task/train_multiagent_mock*"
