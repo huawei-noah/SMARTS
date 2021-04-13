@@ -32,6 +32,7 @@ from collections import Counter, defaultdict
 from dataclasses import replace
 from multiprocessing import Manager, Process
 from shutil import copyfile
+
 import numpy as np
 import yaml
 
@@ -327,9 +328,9 @@ def generate_left_turn_missions(
 
                 route_file.write(
                     "<routes xmlns:xsi="
-                    "\"http://www.w3.org/2001/XMLSchema-instance\" "
+                    '"http://www.w3.org/2001/XMLSchema-instance" '
                     "xsi:noNamespaceSchemaLocation="
-                    "\"http://sumo.dlr.de/xsd/routes_file.xsd\">\n"
+                    '"http://sumo.dlr.de/xsd/routes_file.xsd">\n'
                 )
 
                 for vehicle_type in vehicle_types:
@@ -573,7 +574,11 @@ def build_scenarios(
         intersection_types = level_config[mode]["intersection_types"]
         intersections = sorted(
             [
-                [_type, intersection_types[_type]["percent"], intersection_types[_type]["stops"]]
+                [
+                    _type,
+                    intersection_types[_type]["percent"],
+                    intersection_types[_type]["stops"],
+                ]
                 for _type in intersection_types
             ],
             key=lambda x: x[1],
@@ -611,7 +616,6 @@ def build_scenarios(
                     temp_save_dir = task_dir + "/" + "_".join(name_additions)
                 else:
                     temp_save_dir = save_dir
-
 
                 sub_proc = Process(
                     target=scenario_worker,

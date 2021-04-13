@@ -111,7 +111,7 @@ t_patterns = {
                 "has_turn": True,
                 "deadlock_optimization": True,
             },
-            "east-south": None
+            "east-south": None,
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
@@ -500,7 +500,7 @@ cross_patterns = {
             "east-south": None,
             "north-east": None,
             "north-west": None,
-            "north-south": None
+            "north-south": None,
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
