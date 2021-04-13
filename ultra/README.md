@@ -35,7 +35,7 @@ If you use ULTRA in your research, you can use the following citation.
   author          = {Elsayed, Mohamed and Hassanzadeh, Kimia and Nguyen, Nhat M,
                   and Alban, Montgomery and Zhu, Xiru and Graves, Daniel and
                   Luo, Jun},
-  journal         = {Machine Learning for Autonomous Driving Workshoo, Neural
+  journal         = {Machine Learning for Autonomous Driving Workshop, Neural
                   Information Processing Systems},
   title           = {ULTRA: A reinforcement learning generalization benchmark
                   for autonomous driving},
