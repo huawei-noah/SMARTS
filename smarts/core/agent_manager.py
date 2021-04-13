@@ -23,8 +23,6 @@
 import logging
 from typing import Set
 
-import cloudpickle
-
 from envision.types import format_actor_id
 from smarts.core import action as act_util
 from smarts.core.bubble_manager import BubbleManager

@@ -27,7 +27,6 @@ import subprocess
 import sys
 import time
 
-import cloudpickle
 import grpc
 
 from smarts.core.utils.networking import find_free_port
