@@ -106,6 +106,18 @@ VEHICLE_CONFIGS = {
         dimensions=BoundingBox(length=10, width=2.5, height=4),
         glb_model="trailer.glb",
     ),
+    "pedestrian": VehicleConfig(
+        vehicle_type="pedestrian",
+        color=SceneColors.SocialVehicle.value,
+        dimensions=BoundingBox(length=0.5, width=0.5, height=1.6),
+        glb_model="pedestrian.glb"
+    ),
+    "motorbike": VehicleConfig(
+        vehicle_type="motorbike",
+        color=SceneColors.SocialVehicle.value,
+        dimensions=BoundingBox(length=2.5, width=1, height=1.4),
+        glb_model="motorbike.glb"
+    ),
 }
 
 # TODO: Replace VehicleConfigs w/ the VehicleGeometry class
