@@ -206,7 +206,7 @@ class Coordinator:
 
     def graduate(self, index, average_scenarios_passed=None):
         """ Conditions on when to graduate """
-        print("GRADE size counter:", self.episode_per_grade)
+        # print("GRADE size counter:", self.episode_per_grade)
         self.episode_per_grade += 1
         if CurriculumInfo.pass_based_toggle == True:
             if CurriculumInfo.pass_based_warmup_episodes != 0:
@@ -222,6 +222,8 @@ class Coordinator:
                     print("***WARM-UP episode:", self.warmup_episodes)
                     self.warmup_episodes += 1
                     return False
+            else:
+                self.end_warmup = True
 
             if (
                 self.end_warmup == True
@@ -265,7 +267,6 @@ class Coordinator:
             else:
                 return False
         else:
-            self.grade_counter += 1
             self.display()
             self.grade_checkpoints.append(index)
 
