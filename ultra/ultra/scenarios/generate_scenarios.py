@@ -306,8 +306,9 @@ def generate_left_turn_missions(
                                 "endPos": stop_position,
                                 "duration": "1000",
                             }
-                            vehicle.setAttribute("departPos", stop_position)
                             vehicle.setAttribute("depart", 0)
+                            vehicle.setAttribute("departPos", stop_position)
+                            vehicle.setAttribute("departSpeed", 0)
                             vehicle.setAttribute("departLane", stop_lane)
                             vehicle.addChild("stop", attrs=stop_attributes)
                             stops.pop(0)
