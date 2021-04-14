@@ -179,7 +179,9 @@ if __name__ == "__main__":
         "--timestep", help="environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="run without envision", type=bool, default=True
+        "--headless",
+        help="Run without envision",
+        action="store_true",
     )
     parser.add_argument(
         "--eval-episodes", help="number of evaluation episodes", type=int, default=100

@@ -63,12 +63,12 @@ class EvaluateTest(unittest.TestCase):
         )
         train_command = (
             "python ultra/train.py "
-            "--task 00 --level eval_test --policy sac --headless True --episodes 1 "
+            "--task 00 --level eval_test --policy sac --headless --episodes 1 "
             f"--eval-rate 1 --eval-episodes 1 --max-episode-steps 2 --log-dir {path}"
         )
         multiagent_train_command = (
             "python ultra/train.py "
-            "--task 00-multiagent --level eval_test --policy sac,dqn,ppo --headless True --episodes 1 "
+            "--task 00-multiagent --level eval_test --policy sac,dqn,ppo --headless --episodes 1 "
             f"--eval-rate 1 --eval-episodes 1 --max-episode-steps 2 --log-dir {multiagent_path}"
         )
 
@@ -174,7 +174,7 @@ class EvaluateTest(unittest.TestCase):
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00 --level eval_test --models {models} --experiment-dir {experiment_dir} "
-            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless True"
+            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
 
         ray.shutdown()
@@ -202,7 +202,7 @@ class EvaluateTest(unittest.TestCase):
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00-multiagent --level eval_test --models {models} --experiment-dir {experiment_dir} "
-            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless True"
+            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
 
         ray.shutdown()
