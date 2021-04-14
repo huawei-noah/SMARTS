@@ -130,6 +130,10 @@ class SumoTrafficSimulation(Provider):
         self._sumo_proc.terminate()
         self._sumo_proc.wait()
 
+    @property
+    def headless(self):
+        return self._headless
+
     def _initialize_traci_conn(self, num_retries=5):
         # TODO: inline sumo or process pool
         # the retries are to deal with port collisions
