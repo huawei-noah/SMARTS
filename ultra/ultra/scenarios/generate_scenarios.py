@@ -244,44 +244,8 @@ def generate_left_turn_missions(
         scenario += f"-stopwatcher-{stopwatcher_info['behavior']}"
 
     copy_map_files(scenario, map_dir, speed)
-    if stopwatcher_behavior or "ego_hijacking_params" not in route_distributions:
-        mission_objects = [Mission(ego_route) for ego_route in ego_routes]
-    else:
-        speed_m_per_s = float("".join(filter(str.isdigit, speed))) * 5.0 / 18.0
-        hijacking_params = route_distributions["ego_hijacking_params"]
-        zone_range = hijacking_params["zone_range"]
-        waiting_time = hijacking_params["wait_to_hijack_limit_s"]
-        start_time = (
-            hijacking_params["start_time"]
-            if hijacking_params["start_time"] != "default"
-            else random.randint((LANE_LENGTH // speed_m_per_s), 60)
-        )
-        mission_objects = [
-            Mission(
-                ego_route,
-                # Optional: control hijacking time, place, and emission.
-                start_time=start_time,  # When to start hijacking (might start later).
-                entry_tactic=TrapEntryTactic(
-                    wait_to_hijack_limit_s=waiting_time,  # When to give up on hijacking and start emitting a social vehicle instead.
-                    zone=MapZone(
-                        start=(
-                            ego_route.begin[0],
-                            0,
-                            ego_route.begin[2] + zone_range[0],
-                        ),
-                        length=zone_range[1],
-                        n_lanes=(ego_route.begin[1] + 1),
-                    ),  # Area to hijack.
-                    exclusion_prefixes=tuple(),  # Vehicles to be excluded (check vehicle IDs).
-                ),
-            )
-            for ego_route in ego_routes
-        ]
-    random.shuffle(
-        mission_objects
-    )  # Shuffle the missions so agents don't do the same route all the time.
-    gen_missions(scenario, mission_objects)
 
+    vehicles_to_not_hijack = []
     traffic = Traffic(flows=all_flows)
     try:
         gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
@@ -311,6 +275,7 @@ def generate_left_turn_missions(
                             vehicle.setAttribute("departSpeed", 0)
                             vehicle.setAttribute("departLane", stop_lane)
                             vehicle.addChild("stop", attrs=stop_attributes)
+                            vehicles_to_not_hijack.append(vehicle.id)
                             stops.pop(0)
                             break
                 vehicles.append([float(vehicle.depart), vehicle.id, vehicle])
@@ -346,6 +311,44 @@ def generate_left_turn_missions(
     # patch: remove route files from traffic folder to make intersection empty
     if traffic_density == "no-traffic":
         os.remove(f"{scenario}/traffic/all.rou.xml")
+
+    if stopwatcher_behavior or "ego_hijacking_params" not in route_distributions:
+        mission_objects = [Mission(ego_route) for ego_route in ego_routes]
+    else:
+        speed_m_per_s = float("".join(filter(str.isdigit, speed))) * 5.0 / 18.0
+        hijacking_params = route_distributions["ego_hijacking_params"]
+        zone_range = hijacking_params["zone_range"]
+        waiting_time = hijacking_params["wait_to_hijack_limit_s"]
+        start_time = (
+            hijacking_params["start_time"]
+            if hijacking_params["start_time"] != "default"
+            else random.randint((LANE_LENGTH // speed_m_per_s), 60)
+        )
+        mission_objects = [
+            Mission(
+                ego_route,
+                # Optional: control hijacking time, place, and emission.
+                start_time=start_time,  # When to start hijacking (might start later).
+                entry_tactic=TrapEntryTactic(
+                    wait_to_hijack_limit_s=waiting_time,  # When to give up hijacking.
+                    zone=MapZone(
+                        start=(
+                            ego_route.begin[0],
+                            0,
+                            ego_route.begin[2] + zone_range[0],
+                        ),
+                        length=zone_range[1],
+                        n_lanes=(ego_route.begin[1] + 1),
+                    ),  # Area to hijack.
+                    exclusion_prefixes=vehicles_to_not_hijack,  # Don't hijack these.
+                ),
+            )
+            for ego_route in ego_routes
+        ]
+    # Shuffle the missions so agents don't do the same route all the time.
+    random.shuffle(mission_objects)
+    gen_missions(scenario, mission_objects)
+
     if stopwatcher_behavior:
         metadata["stopwatcher"] = {
             "direction": stopwatcher_info["direction"],
