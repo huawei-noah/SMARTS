@@ -10,11 +10,11 @@ levels:
         3lane_t:
            percent: 0.5
            specs: [[50kmh,blocks,0.34],[70kmh,blocks,0.33],[100kmh,blocks,0.33]]
-           stops: [[south-SN,1,80],[south-SN,0,120]]
+           stops: [[south-SN,0,120]]
         4lane_t:
            percent: 0.5
            specs: [[50kmh,blocks,0.34],[70kmh,blocks,0.33],[100kmh,blocks,0.33]]
-           stops: [[south-SN,1,70],[south-SN,0,120]]
+           stops: [[south-SN,1,120],[south-SN,0,120]]
     test:
       total: 10
       ego_missions:
@@ -25,8 +25,8 @@ levels:
         3lane_c:
            percent: 0.5
            specs: [[50kmh,blocks,0.34],[70kmh,blocks,0.33],[100kmh,blocks,0.33]]
-           stops: [[south-SN,0,80]]
+           stops: [[south-SN,0,120]]
         4lane_c:
            percent: 0.5
            specs: [[50kmh,blocks,0.34],[70kmh,blocks,0.33],[100kmh,blocks,0.33]]
-           stops: [[south-SN,1,80]]
+           stops: [[south-SN,1,120],[south-SN,0,120]]
