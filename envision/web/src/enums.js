@@ -30,5 +30,5 @@ export const VehicleTypes = Object.freeze({
   TRAILER: "trailer",
   CAR: "car",
   PEDESTRIAN: "pedestrian",
-  MOTORBIKE: "motorcycle",
+  MOTORCYCLE: "motorcycle",
 });
