@@ -110,13 +110,13 @@ VEHICLE_CONFIGS = {
         vehicle_type="pedestrian",
         color=SceneColors.SocialVehicle.value,
         dimensions=BoundingBox(length=0.5, width=0.5, height=1.6),
-        glb_model="pedestrian.glb"
+        glb_model="pedestrian.glb",
     ),
-    "motorbike": VehicleConfig(
-        vehicle_type="motorbike",
+    "motorcycle": VehicleConfig(
+        vehicle_type="motorcycle",
         color=SceneColors.SocialVehicle.value,
         dimensions=BoundingBox(length=2.5, width=1, height=1.4),
-        glb_model="motorbike.glb"
+        glb_model="motorcycle.glb",
     ),
 }
 

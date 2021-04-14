@@ -13,7 +13,7 @@ traffic = t.Traffic(
                 t.TrafficActor(
                     name="car",
                     vehicle_type=random.choice(
-                        ["passenger", "bus", "coach", "truck", "trailer"]
+                        ["pedestrian", "motorcycle"]
                     ),
                 ): 1
             },

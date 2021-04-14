@@ -44,6 +44,14 @@ export function vehicleMeshFilename(actorType, vehicleType) {
     return "trailer.glb";
   }
 
+  if (vehicleType == VehicleTypes.PEDESTRIAN) {
+    return 'pedestrian.glb'
+  }
+
+  if (vehicleType == VehicleTypes.MOTORBIKE) {
+    return 'motorcycle.glb'
+  }
+
   if (vehicleType == VehicleTypes.CAR) {
     if (actorType == ActorTypes.SOCIAL_AGENT) {
       return "muscle_car_social_agent.glb";
