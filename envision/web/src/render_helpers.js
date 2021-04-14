@@ -45,11 +45,11 @@ export function vehicleMeshFilename(actorType, vehicleType) {
   }
 
   if (vehicleType == VehicleTypes.PEDESTRIAN) {
-    return 'pedestrian.glb'
+    return "pedestrian.glb";
   }
 
   if (vehicleType == VehicleTypes.MOTORCYCLE) {
-    return 'motorcycle.glb'
+    return "motorcycle.glb";
   }
 
   if (vehicleType == VehicleTypes.CAR) {
