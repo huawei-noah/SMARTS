@@ -293,7 +293,7 @@ def generate_left_turn_missions(
 
             # Add stops (if applicable) to vehicles in the existing all.rou.xml file.
             for vehicle in sumolib.output.parse(route_file_path, "vehicle"):
-                if stops:
+                if len(stops) > 0:
                     vehicle_edges = vehicle.route[0].edges.split()
                     start_edge = map_file.getEdge(vehicle_edges[0])
 
@@ -504,10 +504,11 @@ def scenario_worker(
     for i, seed in enumerate(seeds):
         if not dynamic_pattern_func is None:
             route_distributions = dynamic_pattern_func(route_distributions, i)
-        if stops is not None:
-            # Stops is modified during generation. Copy stops so parallel processes
-            # don't pop elements from the same list reference.
-            stops = stops.copy()
+
+        # Stops is modified during generation. Copy stops so parallel processes don't
+        # pop elements from the same list reference.
+        stops_copy = None if stops is None else stops.copy()
+
         generate_left_turn_missions(
             missions=ego_missions,
             route_lanes=route_lanes,
@@ -519,7 +520,7 @@ def scenario_worker(
             stopwatcher_behavior=stopwatcher_behavior,
             stopwatcher_route=stopwatcher_route,
             seed=seed,
-            stops=stops,
+            stops=stops_copy,
             traffic_density=traffic_density,
             intersection_name=intersection_type,
         )
