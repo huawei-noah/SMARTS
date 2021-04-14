@@ -167,7 +167,9 @@ class _TrajectoryDataset:
         # ensure that sim_time always starts at 0:
         self._log.debug("shifting sim_times..")
         mcur = dbconxn.cursor()
-        mcur.execute("UPDATE Trajectory SET sim_time = sim_time - (SELECT min(sim_time) FROM Trajectory)")
+        mcur.execute(
+            "UPDATE Trajectory SET sim_time = sim_time - (SELECT min(sim_time) FROM Trajectory)"
+        )
         mcur.close()
         dbconxn.commit()
 
