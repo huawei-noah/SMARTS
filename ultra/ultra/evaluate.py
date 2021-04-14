@@ -77,7 +77,7 @@ def evaluation_check(
         )
         agents[agent_id].save(checkpoint_directory)
 
-        evaluation_task_id = evaluate.remote(
+        evaluation_train_task_id = evaluate.remote(
             seed=episode.eval_count,
             experiment_dir=episode.experiment_dir,
             agent_ids=[agent_id],
@@ -91,20 +91,7 @@ def evaluation_check(
             log_dir=log_dir,
             eval_mode=False,
         )
-        evaluation_task_ids[evaluation_task_id] = (
-            episode.get_itr(agent_id),
-            episode,
-            "eval_train",
-        )
-
-    for agent_id in agent_ids_to_evaluate:
-        # Get the checkpoint directory for the current agent and save its model.
-        checkpoint_directory = episode.checkpoint_dir(
-            agent_id, episode.get_itr(agent_id)
-        )
-        agents[agent_id].save(checkpoint_directory)
-
-        evaluation_train_task_id = evaluate.remote(
+        evaluation_task_id = evaluate.remote(
             seed=episode.eval_count,
             experiment_dir=episode.experiment_dir,
             agent_ids=[agent_id],
@@ -118,7 +105,13 @@ def evaluation_check(
             log_dir=log_dir,
             eval_mode=True,
         )
+
         evaluation_task_ids[evaluation_train_task_id] = (
+            episode.get_itr(agent_id),
+            episode,
+            "eval_train",
+        )
+        evaluation_task_ids[evaluation_task_id] = (
             episode.get_itr(agent_id),
             episode,
             "eval",
