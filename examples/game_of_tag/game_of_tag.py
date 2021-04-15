@@ -13,6 +13,7 @@ import argparse
 import os
 import random
 import multiprocessing
+import ray
 
 
 import numpy as np
@@ -253,37 +254,46 @@ def main(args):
 
     local_dir = os.path.expanduser(args.result_dir)
 
-    # 
-    analysis = tune.run(
-        PPOTrainer, # uses PPO algorithm
-        name="lets_play_tag",
-        #stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
-        #stop=TimeStopper(),
-        # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
-        #      different than _exporting_ a TF/PT checkpoint).
-        checkpoint_freq=5,
-        checkpoint_at_end=True,
-        # XXX: Beware, resuming after changing tune params will not pick up
-        #      the new arguments as they are stored alongside the checkpoint.
-        resume=args.resume_training,
-        #restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_77a55_00000_0_2021-04-06_12-59-36/checkpoint_133/checkpoint-133",
-        local_dir=local_dir,
-        reuse_actors=True,
-        max_failures=1,
-        export_formats=["model", "checkpoint"],
-        config=tune_config,
-        scheduler=pbt,
-    )
+    
+    # analysis = tune.run(
+    #     PPOTrainer, # uses PPO algorithm
+    #     name="lets_play_tag",
+    #     #stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
+    #     #stop=TimeStopper(),
+    #     # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
+    #     #      different than _exporting_ a TF/PT checkpoint).
+    #     checkpoint_freq=5,
+    #     checkpoint_at_end=True,
+    #     # XXX: Beware, resuming after changing tune params will not pick up
+    #     #      the new arguments as they are stored alongside the checkpoint.
+    #     resume=args.resume_training,
+    #     #restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_77a55_00000_0_2021-04-06_12-59-36/checkpoint_133/checkpoint-133",
+    #     local_dir=local_dir,
+    #     reuse_actors=True,
+    #     max_failures=1,
+    #     export_formats=["model", "checkpoint"],
+    #     config=tune_config,
+    #     scheduler=pbt,
+    # )
 
-    print(analysis.dataframe().head())
+    # print(analysis.dataframe().head())
 
-    best_logdir = Path(analysis.get_best_logdir("episode_reward_max", mode="max"))
-    model_path = best_logdir / "model"
-    print(f'best reward directory model {model_path}')
+    # best_logdir = Path(analysis.get_best_logdir("episode_reward_max", mode="max"))
+    # model_path = best_logdir / "model"
+    # print(f'best reward directory model {model_path}')
 
-    save_model_path = str(Path(__file__).expanduser().resolve().parent / "model")
-    copy_tree(str(model_path), save_model_path, overwrite=True)
-    print(f"Wrote model to: {save_model_path}")
+    # save_model_path = str(Path(__file__).expanduser().resolve().parent / "model")
+    # copy_tree(str(model_path), save_model_path, overwrite=True)
+    # print(f"Wrote model to: {save_model_path}")
+    
+    # supposed to output a model
+    ray.init(num_cpus=10)
+    training_agent = PPOTrainer(env=RLlibHiWayEnv,config=tune_config)
+    training_agent.restore('/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_d3723_00000_0_2021-04-12_03-15-14/checkpoint_1265/checkpoint-1265')
+    prefix = "model.ckpt"
+    model_dir = os.path.join("model_export_dir")
+    training_agent.export_policy_checkpoint('model', filename_prefix=prefix)
+    training_agent.export_policy_model(model_dir)
 
 
 if __name__ == "__main__":
