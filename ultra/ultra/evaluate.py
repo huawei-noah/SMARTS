@@ -60,7 +60,7 @@ def evaluation_check(
     agent_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
-    if agent_coordinator != None and agent_coordinator.eval_per_grade == True:
+    if grade_mode == True and agent_coordinator.eval_per_grade == True:
         agent_ids_to_evaluate = [
             agent_id
             for agent_id in agent_ids
@@ -262,7 +262,7 @@ def evaluate(
         scenario["density_counter"] = density_counter
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        if eval_mode == True:
+        if grade_mode == True and eval_mode == True:
             episode.record_tensorboard()
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():

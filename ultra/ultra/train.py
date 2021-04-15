@@ -153,10 +153,6 @@ def train(
             else:
                 observations, scenario = env.reset()
 
-            if agent_coordinator.check_cycle_condition(episode.index):
-                print("No cycling of grades -> run completed")
-                break
-
             # print("agent_coordinator.episode_per_grade:", agent_coordinator.episode_per_grade)
         else:
             # Reset the environment and retrieve the initial observations.
@@ -208,6 +204,9 @@ def train(
 
         if grade_mode == True:
             agent_coordinator.set_eval_check_condition(False)
+            if agent_coordinator.check_cycle_condition(episode.index):
+                print("No cycling of grades -> run completed")
+                break
 
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
