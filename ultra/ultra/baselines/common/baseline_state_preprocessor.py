@@ -56,7 +56,7 @@ class BaselineStatePreprocessor(StatePreprocessor):
             rgb_info,
         )
         if rgb_info:
-            self.images = collections.deque(
+            self._images_stack = collections.deque(
                 [
                     np.zeros(
                         (1, rgb_info["height"], rgb_info["width"]), dtype=np.float32
@@ -68,7 +68,9 @@ class BaselineStatePreprocessor(StatePreprocessor):
         else:
             # TODO: This is here so that RLlib obs. space doesn't complain. Figure out
             #       a better way to do this.
-            self.images = collections.deque([np.zeros((1,), dtype=np.float32)], 1)
+            self._images_stack = collections.deque(
+                [np.zeros((1,), dtype=np.float32)], 1
+            )
 
     @staticmethod
     def get_state_description(
@@ -153,25 +155,16 @@ class BaselineStatePreprocessor(StatePreprocessor):
             ).float()
             social_vehicles = social_vehicles.reshape((-1, social_vehicle_dimension))
 
-        # Obtain the images. The RGB image is given with the shape
-        # (rows, columns, channels). Simply reshaping to a size of
-        # (channels, rows, columns) will not put the elements in the correct place. We
-        # have to do this manually. First, swap the column and the channel axes to go
-        # from shape (rows, columns, channels) to (rows, channels, columns), then swap
-        # the row and channel axes to go from shape (rows, channels, columns) to
-        # (channels, rows, columns). Then convert to grayscale with a weighted average
-        # of the RGB channels, and normalize the image.
+        # Obtain the images.
         if state["rgb"] is not None:
             image = state["rgb"]
-            image = np.swapaxes(image, axis1=1, axis2=2)
-            image = np.swapaxes(image, axis1=0, axis2=1)
-            image = np.average(image, axis=0, weights=(0.2125, 0.7154, 0.0721))
+            image = np.dot(image, (0.2125, 0.7154, 0.0721))  # Convert to grayscale.
+            image = np.divide(image, 255.0)  # Normalize.
             image = np.expand_dims(image, axis=0)  # Expand to Rank 3 tensor.
-            image /= 255.0
-            self.images.appendleft(image.astype(np.float32))
+            self._images_stack.appendleft(image.astype(np.float32))
         stacked_images = (
-            np.concatenate(self.images, axis=0)
-            if len(self.images) > 0
+            np.concatenate(self._images_stack, axis=0)
+            if len(self._images_stack) > 0
             else np.array([], dtype=np.float32)
         )
 
