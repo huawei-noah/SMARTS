@@ -47,8 +47,11 @@ from concurrent import futures
 
 import grpc
 
-from smarts.proto import worker_pb2_grpc
-from smarts.zoo import worker_servicer
+from multiprocessing import Process
+from smarts.proto import agent_pb2_grpc
+from smarts.rpc import agent_servicer
+from typing import NamedTuple, Tuple
+
 
 # Front-load some expensive imports as to not block the simulation
 modules = [
@@ -74,23 +77,30 @@ for mod in modules:
 # End front-loaded imports
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"worker.py - pid({os.getpid()})")
+log = logging.getLogger(f"server.py - pid({os.getpid()})")
 
+class Connection(NamedTuple):
+    """ Provides connection info for a grpc server."""
+
+    address: Tuple[str, int] = None
+    process = None
+    channel = None
+    stub = None
 
 def serve(port):
     ip = "[::]"
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
-    worker_pb2_grpc.add_WorkerServicer_to_server(
-        worker_servicer.WorkerServicer(), server
+    agent_pb2_grpc.add_AgentServicer_to_server(
+        agent_servicer.AgentServicer(), server
     )
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
-    log.debug(f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Started serving.")
+    log.debug(f"RPC-Server - ip({ip}), port({port}), pid({os.getpid()}): Started serving.")
 
     def stop_server(unused_signum, unused_frame):
         server.stop(0)
         log.debug(
-            f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal."
+            f"RPC-Server - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal."
         )
 
     # Catch keyboard interrupt and terminate signal
@@ -99,7 +109,34 @@ def serve(port):
 
     # Wait to receive server termination signal
     server.wait_for_termination()
-    log.debug(f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Server exited")
+    log.debug(f"RPC-Server - ip({ip}), port({port}), pid({os.getpid()}): Server exited")
+
+def spawn(target, port:int)
+    """Spawn a grpc server in localhost:port ."""
+
+    server = Process(target=target, args=(port,))
+    server.start()
+
+    addr = ("localhost", port)
+    channel = get_channel(addr)
+    stub = agent_pb2_grpc.AgentStub(channel)
+
+    return Connection(
+        address=addr,
+        process=server,
+        channel=channel,
+        stub=stub
+    )
+
+def get_channel(addr):
+    channel = grpc.insecure_channel(f"{addr[0]}:{addr[1]}")
+    try:
+        # Wait until the grpc server is ready or timeout after 30 seconds
+        grpc.channel_ready_future(channel).result(timeout=30)
+    except grpc.FutureTimeoutError:
+        raise Exception("Timeout in connecting to grpc server.")
+    return channel
+
 
 
 if __name__ == "__main__":
@@ -111,5 +148,5 @@ if __name__ == "__main__":
         help="Port to listen for remote client connections.",
     )
 
-    args = parser.parse_args()
-    serve(args.port)
+    config = parser.parse_args()
+    serve(config.port)

@@ -164,7 +164,7 @@ class SMARTS:
                     f"Attempted to perform actions on non-existing agent, {agent_id} "
                 )
 
-    def _step(self, agent_actions):
+    def _step(self, ego_agent_actions):
         """Steps through the simulation while applying the given agent actions.
         Returns the observations, rewards, and done signals.
         """
@@ -193,11 +193,11 @@ class SMARTS:
         dt = self._timestep_sec
 
         # 1. Fetch agent actions
-        all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
+        all_agent_actions = self._agent_manager.fetch_agent_actions(self, ego_agent_actions)
 
         # 2. Step all providers and harmonize state
         provider_state = self._step_providers(all_agent_actions, dt)
-        self._check_if_acting_on_active_agents(agent_actions)
+        self._check_if_acting_on_active_agents(ego_agent_actions)
 
         # 3. Step bubble manager and trap manager
         self._vehicle_index.sync()
