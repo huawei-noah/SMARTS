@@ -5,14 +5,15 @@ curriculum:
     3: [[gb,grade3]]
     4: [[gb,grade4]]
   conditions:
+    eval_per_grade: True
     episode_based:
-      toggle: False
+      toggle: True
       cycle: False
     pass_based:
-      toggle: True
+      toggle: False
       pass_rate: 0.75
       sample_rate: 30
       warmup_episodes: 100
-      eval_at_end: False
+      
 
 

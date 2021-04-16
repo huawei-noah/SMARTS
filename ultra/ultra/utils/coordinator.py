@@ -61,9 +61,7 @@ class CurriculumInfo:
         cls.pass_based_warmup_episodes = int(
             cls.curriculum["conditions"]["pass_based"]["warmup_episodes"]
         )
-        cls.pass_based_eval_at_end = int(
-            cls.curriculum["conditions"]["pass_based"]["eval_at_end"]
-        )
+        cls.eval_per_grade = bool(cls.curriculum["conditions"]["eval_per_grade"])
 
         if cls.episode_based_toggle == cls.pass_based_toggle == True:
             raise Exception(
@@ -96,7 +94,7 @@ class ScenarioDataHandler:
 
     def save_grade_density(self, grade_size):
         temp = []
-        print("Grade size:", grade_size)
+        print(f"({self.tag}) Grade size: {grade_size}")
         for density in self.grade_densities_counter:
             if grade_size != 0:
                 temp.append(
@@ -152,6 +150,8 @@ class Coordinator:
         self.episode_per_grade = 1
         self.warmup_episodes = 1
         self.end_warmup = False
+        self.eval_check = False
+        self.eval_per_grade = CurriculumInfo.eval_per_grade
 
     def build_all_scenarios(self, root_path, save_dir):
         for key in CurriculumInfo.curriculum["grades"]:
@@ -198,9 +198,15 @@ class Coordinator:
     def get_checkpoints(self):
         return f"Episode intervals: {self.grade_checkpoints}"
 
+    def set_eval_check_condition(self, condition: bool):
+        self.eval_check = condition
+
+    def get_eval_check_condition(self):
+        return self.eval_check
+
     def graduate(self, index, average_scenarios_passed=None):
         """ Conditions on when to graduate """
-        print("GRADE size counter:", self.episode_per_grade)
+        # print("GRADE size counter:", self.episode_per_grade)
         self.episode_per_grade += 1
         if CurriculumInfo.pass_based_toggle == True:
             if CurriculumInfo.pass_based_warmup_episodes != 0:
@@ -216,6 +222,8 @@ class Coordinator:
                     print("***WARM-UP episode:", self.warmup_episodes)
                     self.warmup_episodes += 1
                     return False
+            else:
+                self.end_warmup = True
 
             if (
                 self.end_warmup == True
@@ -230,6 +238,7 @@ class Coordinator:
     def episode_based(self, index):
         # Switch to next grade based on number of episodes completed
         if index == 0:
+            self.grade_counter += 1
             self.display()
             self.grade_checkpoints.append(index)
         elif (
@@ -237,6 +246,7 @@ class Coordinator:
         ) == 0 and index != 0:
             # Switch grade
             self.next_grade()
+            self.grade_counter += 1
             self.display()
             self.grade_checkpoints.append(index)
             return True
@@ -257,7 +267,6 @@ class Coordinator:
             else:
                 return False
         else:
-            self.grade_counter += 1
             self.display()
             self.grade_checkpoints.append(index)
 
