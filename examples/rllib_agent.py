@@ -9,7 +9,6 @@ from ray.rllib.utils import try_import_tf
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.custom_observations import lane_ttc_observation_adapter
-from examples.game_of_tag.custom_adapters import TrainingState
 import tensorflow as tf
 
 # This action space should match the input to the action_adapter(..) function below.

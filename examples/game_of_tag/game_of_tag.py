@@ -54,35 +54,6 @@ class TrainingModel(FullyConnectedNetwork):
 
 ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
 
-class TagModelAgent(Agent):
-    def __init__(self, path_to_model, observation_space):
-        path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
-        print(f"model path: {path_to_model}")
-        self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
-        self._sess = tf.compat.v1.Session(graph=tf.Graph())
-        tf.compat.v1.saved_model.load(  # model should be already trained
-            self._sess, export_dir=path_to_model, tags=["serve"]
-        )
-        self._output_node = self._sess.graph.get_tensor_by_name("default_policy/add:0")
-        self._input_node = self._sess.graph.get_tensor_by_name(
-            "default_policy/observation:0"
-        )
-
-    def __del__(self):
-        self._sess.close()
-
-    def act(self, obs):
-        obs = self._prep.transform(obs)
-        # These tensor names were found by inspecting the trained model
-        res = self._sess.run(self._output_node, feed_dict={self._input_node: [obs]})
-        action = res[0]
-        print(obs.ego_vehicle_state.id)
-        print("Got here!!!!!!!!!!")
-        print(f"output action: {action}")
-        #TrainingState.update_agent_actions(obs.ego_vehicle_state.id.split('-')[0], action)
-        return action
-
-
 rllib_agents = {}
 # add custom done criteria - maybe not
 # map offset difference between sumo-gui and envision
@@ -181,7 +152,7 @@ def policy_mapper(agent_id):
 class TimeStopper(Stopper):
     def __init__(self):
         self._start = time.time()
-        self._deadline = 4 * 60 * 60 # 4 hours
+        self._deadline = 9 * 60 * 60 # 9 hours
 
     def __call__(self, trial_id, result):
         return False
@@ -256,26 +227,26 @@ def main(args):
     local_dir = os.path.expanduser(args.result_dir)
 
     
-    # analysis = tune.run(
-    #     PPOTrainer, # uses PPO algorithm
-    #     name="lets_play_tag",
-    #     #stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
-    #     stop=TimeStopper(),
-    #     # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
-    #     #      different than _exporting_ a TF/PT checkpoint).
-    #     checkpoint_freq=5,
-    #     checkpoint_at_end=True,
-    #     # XXX: Beware, resuming after changing tune params will not pick up
-    #     #      the new arguments as they are stored alongside the checkpoint.
-    #     resume=args.resume_training,
-    #     #restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_77a55_00000_0_2021-04-06_12-59-36/checkpoint_133/checkpoint-133",
-    #     local_dir=local_dir,
-    #     reuse_actors=True,
-    #     max_failures=1,
-    #     export_formats=["model", "checkpoint"],
-    #     config=tune_config,
-    #     scheduler=pbt,
-    # )
+    analysis = tune.run(
+        PPOTrainer, # uses PPO algorithm
+        name="lets_play_tag",
+        #stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
+        stop=TimeStopper(),
+        # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
+        #      different than _exporting_ a TF/PT checkpoint).
+        checkpoint_freq=5,
+        checkpoint_at_end=True,
+        # XXX: Beware, resuming after changing tune params will not pick up
+        #      the new arguments as they are stored alongside the checkpoint.
+        resume=args.resume_training,
+        #restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_77a55_00000_0_2021-04-06_12-59-36/checkpoint_133/checkpoint-133",
+        local_dir=local_dir,
+        reuse_actors=True,
+        max_failures=1,
+        export_formats=["model", "checkpoint"],
+        config=tune_config,
+        scheduler=pbt,
+    )
 
     # print(analysis.dataframe().head())
 
@@ -288,15 +259,15 @@ def main(args):
     # print(f"Wrote model to: {save_model_path}")
     
     # supposed to output a model
-    checkpoint_path = '/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_da6b4_00000_0_2021-04-15_19-25-23/checkpoint_50/checkpoint-50'
-    ray.init(num_cpus=2)
-    training_agent = PPOTrainer(env=RLlibHiWayEnv,config=tune_config)
-    training_agent.restore(checkpoint_path)
-    prefix = "model.ckpt"
-    model_dir = os.path.join(os.getcwd(), "model_export_dir")
-    print(f'model path: {model_dir}')
-    #training_agent.export_policy_checkpoint('model', filename_prefix=prefix)
-    training_agent.export_policy_model(model_dir)
+    # checkpoint_path = '/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_da6b4_00000_0_2021-04-15_19-25-23/checkpoint_50/checkpoint-50'
+    # ray.init(num_cpus=2)
+    # training_agent = PPOTrainer(env=RLlibHiWayEnv,config=tune_config)
+    # training_agent.restore(checkpoint_path)
+    # prefix = "model.ckpt"
+    # model_dir = os.path.join(os.getcwd(), "model_export_dir")
+    # print(f'model path: {model_dir}')
+    # #training_agent.export_policy_checkpoint('model', filename_prefix=prefix)
+    # training_agent.export_policy_model(model_dir)
 
 
 if __name__ == "__main__":

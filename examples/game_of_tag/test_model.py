@@ -20,7 +20,6 @@ from ray import tune
 from ray.rllib.utils import try_import_tf
 from ray.tune.schedulers import PopulationBasedTraining
 
-from examples.rllib_agent import RLLibTFSavedModelAgent, TrainingModel
 from examples.game_of_tag.tag_adapters import *
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
@@ -30,6 +29,33 @@ from smarts.core.utils.episodes import episodes
 from smarts.core.controllers import ActionSpaceType
 
 
+class TagModelAgent(Agent):
+    def __init__(self, path_to_model, observation_space):
+        path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
+        print(f"model path: {path_to_model}")
+        self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
+        self._sess = tf.compat.v1.Session(graph=tf.Graph())
+        tf.compat.v1.saved_model.load(  # model should be already trained
+            self._sess, export_dir=path_to_model, tags=["serve"]
+        )
+        self._output_node = self._sess.graph.get_tensor_by_name("default_policy/add:0")
+        self._input_node = self._sess.graph.get_tensor_by_name(
+            "default_policy/observation:0"
+        )
+
+    def __del__(self):
+        self._sess.close()
+
+    def act(self, obs):
+        obs = self._prep.transform(obs)
+        # These tensor names were found by inspecting the trained model
+        res = self._sess.run(self._output_node, feed_dict={self._input_node: [obs]})
+        action = res[0]
+        print(obs.ego_vehicle_state.id)
+        print("Got here!!!!!!!!!!")
+        print(f"output action: {action}")
+        #TrainingState.update_agent_actions(obs.ego_vehicle_state.id.split('-')[0], action)
+        return action
 
 class PredatorAgent(Agent):
     def act(self, obs):
@@ -108,7 +134,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("game-of-tag-example")
     parser.add_argument(
         "scenario",
-        default="scenarios/demo",
         type=str,
         help="Scenario to run (see scenarios/ for some samples you can use)",
     )
