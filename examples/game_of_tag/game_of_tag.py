@@ -34,7 +34,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.utils.file import copy_tree
 
 
-from examples.game_of_tag.custom_adapters import *
+from examples.game_of_tag.tag_adapters import *
 
 tf = try_import_tf()
 
@@ -88,7 +88,7 @@ rllib_agents = {}
 # map offset difference between sumo-gui and envision
 
 shared_interface = AgentInterface(
-    max_episode_steps=1000,
+    max_episode_steps=1500,
     neighborhood_vehicles=True,
     waypoints=True,
     action=ActionSpaceType.LaneWithContinuousSpeed,
@@ -181,7 +181,7 @@ def policy_mapper(agent_id):
 class TimeStopper(Stopper):
     def __init__(self):
         self._start = time.time()
-        self._deadline = 60 * 60 # 1 hour
+        self._deadline = 4 * 60 * 60 # 4 hours
 
     def __call__(self, trial_id, result):
         return False
@@ -204,14 +204,14 @@ def main(args):
             #"num_sgd_iter": lambda: random.randint(1, 30),
             "sgd_minibatch_size": lambda: 128, #random.randint(128, 16384),
             # "train_batch_size": lambda: random.randint(2000, 160000),
-            "train_batch_size": lambda: 2000,
+            "train_batch_size": lambda: 4000,
             'num_sgd_iter': lambda: 30,
         },
         custom_explore_fn=explore,
     )
 
     rllib_policies = {
-        f"{agent_id}_policy": (
+        policy_mapper(agent_id): (
             None,
             rllib_agent["observation_space"],
             rllib_agent["action_space"],
@@ -242,8 +242,9 @@ def main(args):
         },
         "multiagent": {
             "policies": rllib_policies,
-            #"policies_to_train": ["predator_policy", "prey_policy"],
-            "policy_mapping_fn":  lambda agent_id: f"{agent_id}_policy",
+            "policies_to_train": ["predator_policy", "prey_policy"],
+            #"policy_mapping_fn":  lambda agent_id: f"{agent_id}_policy",
+            "policy_mapping_fn": policy_mapper,
         },
         "callbacks": {
             "on_episode_start": on_episode_start,
@@ -259,7 +260,7 @@ def main(args):
     #     PPOTrainer, # uses PPO algorithm
     #     name="lets_play_tag",
     #     #stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
-    #     #stop=TimeStopper(),
+    #     stop=TimeStopper(),
     #     # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
     #     #      different than _exporting_ a TF/PT checkpoint).
     #     checkpoint_freq=5,
@@ -287,12 +288,14 @@ def main(args):
     # print(f"Wrote model to: {save_model_path}")
     
     # supposed to output a model
-    ray.init(num_cpus=10)
+    checkpoint_path = '/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_da6b4_00000_0_2021-04-15_19-25-23/checkpoint_50/checkpoint-50'
+    ray.init(num_cpus=2)
     training_agent = PPOTrainer(env=RLlibHiWayEnv,config=tune_config)
-    training_agent.restore('/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_d3723_00000_0_2021-04-12_03-15-14/checkpoint_1265/checkpoint-1265')
+    training_agent.restore(checkpoint_path)
     prefix = "model.ckpt"
-    model_dir = os.path.join("model_export_dir")
-    training_agent.export_policy_checkpoint('model', filename_prefix=prefix)
+    model_dir = os.path.join(os.getcwd(), "model_export_dir")
+    print(f'model path: {model_dir}')
+    #training_agent.export_policy_checkpoint('model', filename_prefix=prefix)
     training_agent.export_policy_model(model_dir)
 
 
