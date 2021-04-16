@@ -81,6 +81,9 @@ def evaluation_check(
     if eval_episodes < 1:
         return
 
+    if grade_mode == True:
+        agent_coordinator.next_eval_grade()
+
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
         checkpoint_directory = episode.checkpoint_dir(
@@ -102,7 +105,7 @@ def evaluation_check(
             log_dir=log_dir,
             grade_mode=grade_mode,
             agent_coordinator=agent_coordinator,
-            eval_mode=False,
+            eval_mode=True,
         )
         evaluation_task_ids[evaluation_task_id] = (
             episode.get_itr(agent_id),
@@ -131,7 +134,7 @@ def evaluation_check(
             log_dir=log_dir,
             grade_mode=grade_mode,
             agent_coordinator=agent_coordinator,
-            eval_mode=True,
+            eval_mode=False,
         )
         evaluation_task_ids[evaluation_train_task_id] = (
             episode.get_itr(agent_id),
@@ -232,7 +235,7 @@ def evaluate(
         # Reset the environment and retrieve the initial observations.
         if grade_mode != False:
             if initial_grade_switch == False:
-                observations, scenario = env.reset(True, agent_coordinator.get_grade())
+                observations, scenario = env.reset(True, agent_coordinator.get_eval_grade())
                 initial_grade_switch = True
             else:
                 observations, scenario = env.reset()
@@ -278,7 +281,7 @@ def evaluate(
 
     env.close()
 
-    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes, agent_coordinator.get_eval_grade())
     scenario_data_handler_eval.save_grade_density(num_episodes)
 
     try:

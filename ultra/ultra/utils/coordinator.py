@@ -110,9 +110,11 @@ class ScenarioDataHandler:
             "high-density": 0,
         }
 
-    def display_grade_scenario_distribution(self, grade_size):
+    def display_grade_scenario_distribution(self, grade_size, grade=None):
+        if grade == None:
+            grade = ">>> No grades <<<"
         print("----------------------------------------------------")
-        print(f"Traffic density distribution for previous grade (or {self.tag} run):")
+        print(f"Traffic density distribution for {grade} (or {self.tag} run):")
         for density in self.grade_densities_counter:
             if grade_size != 0:
                 print(
@@ -144,6 +146,7 @@ class Coordinator:
 
         self.mode = False
         self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
+        self.eval_counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
         self.grade_checkpoints = []
         self.num_episodes = num_episodes
         self.grade_counter = 0
@@ -169,12 +172,20 @@ class Coordinator:
         # Get task and level information
         counter = next(self.counter) + 1
         self.grade = CurriculumInfo.curriculum["grades"][counter]
+    
+    def next_eval_grade(self):
+        # Get task and level information
+        counter = next(self.eval_counter) + 1
+        self.eval_grade = CurriculumInfo.curriculum["grades"][counter]
 
     def get_num_of_grades(self):
         return len(CurriculumInfo.curriculum["grades"])
 
     def get_grade(self):
         return self.grade
+
+    def get_eval_grade(self):
+        return self.eval_grade
 
     def get_grade_size(self):
         if CurriculumInfo.episode_based_toggle:

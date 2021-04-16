@@ -146,7 +146,7 @@ def train(
                 observations, scenario = env.reset(True, agent_coordinator.get_grade())
                 average_scenarios_passed = 0.0
                 grade_size = agent_coordinator.get_grade_size()
-                scenario_data_handler.display_grade_scenario_distribution(grade_size)
+                scenario_data_handler.display_grade_scenario_distribution(grade_size, agent_coordinator.get_grade())
                 scenario_data_handler.save_grade_density(grade_size)
                 agent_coordinator.episode_per_grade = 0
                 agent_coordinator.end_warmup = False

@@ -78,7 +78,7 @@ levels:
            specs: [[50kmh,no-traffic,0.035],[70kmh,no-traffic,0.035],[100kmh,no-traffic,0.03], #10%
                    [50kmh,low-density,0.07],[70kmh,low-density,0.07],[100kmh,low-density,0.06], #20%,
                    [50kmh,mid-density,0.15],[70kmh,mid-density,0.15],[100kmh,mid-density,0.15], #45%
-                   [50kmh,high-density,0.085],[70kmh,high-density,0.085],[100kmh,high-density,0.08]] #25%
+                   [50kmh,high-density,0.08],[70kmh,high-density,0.08],[100kmh,high-density,0.09]] #25%
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade4:
     train:
@@ -103,5 +103,5 @@ levels:
            percent: 1
            specs: [[50kmh,no-traffic,0.035],[70kmh,no-traffic,0.035],[100kmh,no-traffic,0.03], #10%
                    [50kmh,low-density,0.07],[70kmh,low-density,0.07],[100kmh,low-density,0.06], #20%,
-                   [50kmh,high-density,0.085],[70kmh,high-density,0.085],[100kmh,high-density,0.05], #25%
-                   [50kmh,mid-density,0.15],[70kmh,mid-density,0.15],[100kmh,mid-density,0.15]] #45%
+                   [50kmh,mid-density,0.08],[70kmh,mid-density,0.08],[100kmh,mid-density,0.09], #25%
+                   [50kmh,high-density,0.15],[70kmh,high-density,0.15],[100kmh,high-density,0.15]] #45%
