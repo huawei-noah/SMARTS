@@ -49,7 +49,7 @@ from ultra.utils.episode import episodes
 
 _AVAILABLE_TUNE_METRICS = [
     "episode_length",
-    "episode_reward",
+    "episode_return",
     "env_score",
 ]
 _AVAILABLE_TUNE_MODES = [

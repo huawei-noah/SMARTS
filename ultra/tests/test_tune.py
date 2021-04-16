@@ -45,7 +45,7 @@ class TuneTest(unittest.TestCase):
         SEED = 2
         LOG_DIR = os.path.join(TuneTest.OUTPUT_DIRECTORY, "tune_logs/")
         CONFIG_MODULE = "tests.tune.ppo_config"
-        METRIC = "episode_reward"
+        METRIC = "episode_return"
         MODE = "max"
         SCOPE = "last"
         GRACE_PERIOD = 1

@@ -27,9 +27,9 @@ ULTRA's tune is based off of [Ray Tune](https://docs.ray.io/en/latest/tune/index
 
 Tune your agent (e.g. the PPO baseline) on the train scenarios of your task (e.g. Task 1's easy level):
 ```sh
-$ python ultra/tune.py --task 1 --level easy --policy ppo --config-module ultra.baselines.ppo.ppo.tune_params --metric episode_reward --mode max
+$ python ultra/tune.py --task 1 --level easy --policy ppo --config-module ultra.baselines.ppo.ppo.tune_params --metric episode_return --mode max
 ```
-> This will tune the PPO baseline agent on Task 1's easy scenarios by sampling configurations from the PPO's tune hyperparameters. It will output the best performing combination of hyperparameters in YAML format determined by which hyperparameter combination maximizes episode reward the most. Additionally, evaluation will be performed on the saved models trained with these best hyperparameters.
+> This will tune the PPO baseline agent on Task 1's easy scenarios by sampling configurations from the PPO's tune hyperparameters. It will output the best performing combination of hyperparameters in YAML format determined by which hyperparameter combination maximizes episode return the most. Additionally, evaluation will be performed on the saved models trained with these best hyperparameters.
 
 Available `ultra/tune.py` arguments:
 - `--task`: The task to tune on (default is 1).
@@ -44,7 +44,7 @@ Available `ultra/tune.py` arguments:
 - `--seed`: The environment seed (default is 2).
 - `--log-dir`: The directory to put the tune experiment's data (default is tune_logs/).
 - `--config-module`: The module containing a dictionary variable, 'config', that defines the config to tune (default is ultra.baselines.ppo.ppo.tune_params).
-- `--metric`: The metric to optimize for; either episode_length, episode_reward, or env_score (default is episode_reward).
+- `--metric`: The metric to optimize for; either episode_length, episode_return, or env_score (default is episode_return).
 - `--mode`: How to optimize the metric; either max or min (default is max).
 - `--scope`: How to compare amongst the metrics; either all, last, avg, last-5-avg, or last-10-avg (default is last). More information can be found [here](https://docs.ray.io/en/latest/tune/api_docs/analysis.html#ray.tune.ExperimentAnalysis).
 - `--grace-period`: Used by the [ASHA Scheduler](https://docs.ray.io/en/master/tune/api_docs/schedulers.html#asha-tune-schedulers-ashascheduler), will not terminate trials that are less than this old (default is episodes / 10).

@@ -57,23 +57,19 @@ class UltraPackageTest(unittest.TestCase):
         ray.shutdown()
         try:
             ray.init(ignore_reinit_error=True)
-            ray.wait(
-                [
-                    train.remote(
-                        scenario_info=("00", "eval_test"),
-                        policy_classes=[policy_class],
-                        num_episodes=1,
-                        max_episode_steps=2,
-                        eval_info={
-                            "eval_rate": 1000,
-                            "eval_episodes": 2,
-                        },
-                        timestep_sec=0.1,
-                        headless=True,
-                        seed=2,
-                        log_dir=log_dir,
-                    )
-                ]
+            train(
+                scenario_info=("00", "eval_test"),
+                policy_classes=[policy_class],
+                num_episodes=1,
+                max_episode_steps=2,
+                eval_info={
+                    "eval_rate": 1000,
+                    "eval_episodes": 2,
+                },
+                timestep_sec=0.1,
+                headless=True,
+                seed=2,
+                log_dir=log_dir,
             )
             ray.shutdown()
             self.assertTrue(True)
