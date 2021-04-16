@@ -105,3 +105,91 @@ levels:
                    [50kmh,low-density,0.07],[70kmh,low-density,0.07],[100kmh,low-density,0.06], #20%,
                    [50kmh,mid-density,0.08],[70kmh,mid-density,0.08],[100kmh,mid-density,0.09], #25%
                    [50kmh,high-density,0.15],[70kmh,high-density,0.15],[100kmh,high-density,0.15]] #45%
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  no-traffic:
+    train:
+      total: null
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
+
+    test:
+      total: null
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+           percent: 1
+           specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
+  
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  low-density:
+    train:
+      total: null
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[50kmh,low-density,0.33],[70kmh,low-density,0.34],[100kmh,low-density,0.33]]
+
+    test:
+      total: null
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+           percent: 1
+           specs: [[50kmh,low-density,0.33],[70kmh,low-density,0.34],[100kmh,low-density,0.33]]
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  mid-density:
+    train:
+      total: null
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[50kmh,mid-density,0.33],[70kmh,mid-density,0.34],[100kmh,mid-density,0.33]]
+
+    test:
+      total: null
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+           percent: 1
+           specs: [[50kmh,mid-density,0.33],[70kmh,mid-density,0.34],[100kmh,mid-density,0.33]]
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  high-density:
+    train:
+      total: null
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 1
+           specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
+
+    test:
+      total: null
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+           percent: 1
+           specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]

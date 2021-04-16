@@ -72,4 +72,15 @@ tasks:
     grade4:
       train: "scenarios/taskgb/train_grade4*"
       test: "scenarios/taskgb/test_grade4*"
-
+    no-traffic:
+      train: "scenarios/taskgb/train_no-traffic*"
+      test: "scenarios/taskgb/test_no-traffic*"
+    low-density:
+      train: "scenarios/taskgb/train_low-density*"
+      test: "scenarios/taskgb/test_low-density*"
+    mid-density:
+      train: "scenarios/taskgb/train_mid-density*"
+      test: "scenarios/taskgb/test_mid-density*"
+    high-density:
+      train: "scenarios/taskgb/train_high-density*"
+      test: "scenarios/taskgb/test_high-density*"
