@@ -41,13 +41,14 @@ jobs:
         run: |
           . .venv/bin/activate
           make build-all-scenarios
-          PYTHONHASHSEED=42 pytest -v \
-            --doctest-modules \
-            --forked \
-            --dist=no \
-            -n auto \
-            ${{matrix.tests}} \
-            --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
-            --ignore=./smarts/env/tests/test_benchmark.py \
-            --ignore=./smarts/env/tests/test_learning.py \
-            -k 'not test_long_determinism'
+          PYTHONHASHSEED=42 pytest -v ./smarts/core/tests/test_notebook.py
+          # PYTHONHASHSEED=42 pytest -v \
+          #   --doctest-modules \
+          #   --forked \
+          #   --dist=no \
+          #   -n auto \
+          #   ${{matrix.tests}} \
+          #   --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+          #   --ignore=./smarts/env/tests/test_benchmark.py \
+          #   --ignore=./smarts/env/tests/test_learning.py \
+          #   -k 'not test_long_determinism'

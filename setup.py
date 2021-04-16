@@ -70,6 +70,7 @@ setup(
             "pytest",
             "pytest-benchmark",
             "pytest-cov",
+            "ipykernel",
             "pytest-notebook",
             "pytest-xdist",
         ],
@@ -83,7 +84,6 @@ setup(
         "dev": [
             "black==20.8b1",
             "grpcio-tools==1.37.0",
-            "ipykernel",
             "isort==5.7.0",
             "sphinx",
             "sphinx-rtd-theme",
