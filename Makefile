@@ -2,18 +2,17 @@
 test: build-all-scenarios
 	# sstudio uses hash(...) as part of some of its type IDs. To make the tests
 	# repeatable we fix the seed.
-	PYTHONHASHSEED=42 pytest -v ./smarts/core/tests/test_notebook.py
-	# PYTHONHASHSEED=42 pytest -v \
-		# --cov=smarts \
-		# --doctest-modules \
-		# --forked \
-		# --dist=loadscope \
-		# -n `nproc --ignore 2` \
-		# ./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests \
-		# --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
-		# --ignore=./smarts/env/tests/test_benchmark.py \
-		# --ignore=./smarts/env/tests/test_learning.py \
-		# -k 'not test_long_determinism'
+	PYTHONHASHSEED=42 pytest -v \
+		--cov=smarts \
+		--doctest-modules \
+		--forked \
+		--dist=loadscope \
+		-n `nproc --ignore 2` \
+		./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests \
+		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+		--ignore=./smarts/env/tests/test_benchmark.py \
+		--ignore=./smarts/env/tests/test_learning.py \
+		-k 'not test_long_determinism'
 
 .PHONY: sanity-test
 sanity-test: build-all-scenarios
