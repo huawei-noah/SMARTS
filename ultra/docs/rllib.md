@@ -29,7 +29,7 @@ of the steps is shown below
   - `--rollout-fragment-length`: The number of steps rolled out before training (default is 200).
   - `--episodes`: The number of training episodes to run (default is 100).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
-  - `--headless`: Whether to run training without Envision (default is True).
+  - `--headless`: Provide this flag to run training without Envision.
   - `--eval-episodes`: The number of evaluation episodes (default is 200).
   - `--eval-rate`: The number of training episodes to wait before running the evaluation (default is 200).
   - `--seed`: The environment seed (default is 2).
