@@ -1,6 +1,12 @@
 name: SMARTS CI Base Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - ultra[-_/]**
+  pull_request:
+    branches-ignore:
+      - ultra[-_/]**
 
 jobs:
   test:
