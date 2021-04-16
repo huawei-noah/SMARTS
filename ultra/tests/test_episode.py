@@ -120,7 +120,6 @@ class EpisodeTest(unittest.TestCase):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
         def run_experiment():
             agent, env = prepare_test_env_agent()
-            episode_count = 0
             log_dir = os.path.join(EpisodeTest.OUTPUT_DIRECTORY, "logs/")
             for episode in episodes(2, etag="Train", log_dir=log_dir):
                 observations = env.reset()
@@ -150,9 +149,8 @@ class EpisodeTest(unittest.TestCase):
                     )
                     state = next_state
                     total_step += 1
-                episode_count += 1
             env.close()
-            return episode_count
+            return episode.index
 
         ray.init(ignore_reinit_error=True)
         episode_count = ray.get(run_experiment.remote())
