@@ -138,7 +138,7 @@ def sample_vehicle_pos(lens, rgb, ogm, drivable_area, vehicle_pos):
 
     # Check if vehicles are rendered at the expected position
     # RGB
-    tolerance = 1
+    tolerance = 3
     assert np.count_nonzero(rgb.data[rgb_x, rgb_y, :]) and np.count_nonzero(
         apply_tolerance(rgb.data, rgb_x, rgb_y, tolerance) != ROAD_COLOR
     )
