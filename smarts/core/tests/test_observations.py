@@ -138,7 +138,7 @@ def sample_vehicle_pos(lens, rgb, ogm, drivable_area, vehicle_pos):
 
     # Check if vehicles are rendered at the expected position
     # RGB
-    tolerance = 3
+    tolerance = 2
     assert np.count_nonzero(rgb.data[rgb_x, rgb_y, :]) and np.count_nonzero(
         apply_tolerance(rgb.data, rgb_x, rgb_y, tolerance) != ROAD_COLOR
     )
@@ -148,7 +148,9 @@ def sample_vehicle_pos(lens, rgb, ogm, drivable_area, vehicle_pos):
 
     # Check if vehicles are within drivable area
     # Drivable area grid map
-    assert np.count_nonzero(drivable_area.data[drivable_area_x, drivable_area_y, :])
+    assert np.count_nonzero(
+        apply_tolerance(drivable_area.data, drivable_area_x, drivable_area_y, tolerance)
+    )
 
 
 def test_observations(env, agent_spec):
