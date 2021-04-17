@@ -124,8 +124,10 @@ def project_2d(lens, img_metadata, pos):
 
     return x, y
 
+
 def apply_tolerance(arr, x, y, tolerance):
-    return arr[x-tolerance:x+tolerance, y-tolerance:y+tolerance, :]
+    return arr[x - tolerance : x + tolerance, y - tolerance : y + tolerance, :]
+
 
 def sample_vehicle_pos(lens, rgb, ogm, drivable_area, vehicle_pos):
     rgb_x, rgb_y = project_2d(lens, rgb.metadata, vehicle_pos)
