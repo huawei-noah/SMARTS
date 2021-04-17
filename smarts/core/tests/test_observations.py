@@ -125,6 +125,10 @@ def project_2d(lens, img_metadata, pos):
     return x, y
 
 
+def apply_tolerance(arr, x, y, tolerance):
+    return arr[x - tolerance : x + tolerance, y - tolerance : y + tolerance, :]
+
+
 def sample_vehicle_pos(lens, rgb, ogm, drivable_area, vehicle_pos):
     rgb_x, rgb_y = project_2d(lens, rgb.metadata, vehicle_pos)
     ogm_x, ogm_y = project_2d(lens, ogm.metadata, vehicle_pos)
@@ -134,16 +138,19 @@ def sample_vehicle_pos(lens, rgb, ogm, drivable_area, vehicle_pos):
 
     # Check if vehicles are rendered at the expected position
     # RGB
+    tolerance = 2
     assert np.count_nonzero(rgb.data[rgb_x, rgb_y, :]) and np.count_nonzero(
-        rgb.data[rgb_x, rgb_y, :] != ROAD_COLOR
+        apply_tolerance(rgb.data, rgb_x, rgb_y, tolerance) != ROAD_COLOR
     )
 
     # OGM
-    assert np.count_nonzero(ogm.data[ogm_x, ogm_y, :])
+    assert np.count_nonzero(apply_tolerance(ogm.data, ogm_x, ogm_y, tolerance))
 
     # Check if vehicles are within drivable area
     # Drivable area grid map
-    assert np.count_nonzero(drivable_area.data[drivable_area_x, drivable_area_y, :])
+    assert np.count_nonzero(
+        apply_tolerance(drivable_area.data, drivable_area_x, drivable_area_y, tolerance)
+    )
 
 
 def test_observations(env, agent_spec):
