@@ -33,6 +33,7 @@ from numpy.lib.stride_tricks import as_strided as stride
 
 
 METERS_PER_FOOT = 0.3048
+DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
 
 
 class _TrajectoryDataset:
@@ -41,7 +42,7 @@ class _TrajectoryDataset:
         self.check_dataset_spec(dataset_spec)
         self._output = output
         self._path = dataset_spec["input_path"]
-        real_lane_width_m = dataset_spec.get("real_lane_width_m", 3.7)
+        real_lane_width_m = dataset_spec.get("real_lane_width_m", DEFAULT_LANE_WIDTH)
         lane_width = dataset_spec.get("map_net", {}).get(
             "lane_width", real_lane_width_m
         )
@@ -114,7 +115,8 @@ class _TrajectoryDataset:
         dbconxn.commit()
         ccur.close()
 
-    def create_output(self):
+    def create_output(self, time_precision=3):
+        """ time_precision is limit for digits after decimal for sim_time (3 is milisecond precision) """
         dbconxn = sqlite3.connect(self._output)
 
         self._log.debug("creating tables...")
@@ -150,7 +152,10 @@ class _TrajectoryDataset:
             traj_args = (
                 vid,
                 # time units are in milliseconds for both NGSIM and Interaction datasets, convert to secs
-                round(float(self.column_val_in_row(row, "sim_time")) / 1000, 3),
+                round(
+                    float(self.column_val_in_row(row, "sim_time")) / 1000,
+                    time_precision,
+                ),
                 float(self.column_val_in_row(row, "position_x")) * self.scale,
                 float(self.column_val_in_row(row, "position_y")) * self.scale,
                 float(self.column_val_in_row(row, "heading_rad")),
@@ -168,7 +173,7 @@ class _TrajectoryDataset:
         self._log.debug("shifting sim_times..")
         mcur = dbconxn.cursor()
         mcur.execute(
-            "UPDATE Trajectory SET sim_time = round(sim_time - (SELECT min(sim_time) FROM Trajectory), 3)"
+            f"UPDATE Trajectory SET sim_time = round(sim_time - (SELECT min(sim_time) FROM Trajectory), {time_precision})"
         )
         mcur.close()
         dbconxn.commit()
