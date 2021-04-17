@@ -122,7 +122,7 @@ class TrafficHistoryProvider(Provider):
             default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
             vehicles.append(
                 VehicleState(
-                    vehicle_id=v_id,
+                    vehicle_id=f"social-agent-history-{v_id}",
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center(
                         [
