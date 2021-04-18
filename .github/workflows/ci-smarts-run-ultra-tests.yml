@@ -8,6 +8,8 @@ on:
       # Runs at  6.00pm, UTC-4, every Wednesday
   workflow_dispatch:
 
+
+# Should be the same as ci-ultra-tests
 jobs:
   test-base:
     runs-on: ubuntu-18.04
