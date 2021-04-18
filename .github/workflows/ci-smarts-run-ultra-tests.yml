@@ -2,7 +2,7 @@ name: SMARTS scheduled run of ULTRA tests
 
 on:
   schedule:
-    - cron: '25 6 * * 7'
+    - cron: '40 6 * * 6'
       # Time is in UTC
       # Runs at 11.00pm, UTC  , every Wednesday
       # Runs at  6.00pm, UTC-4, every Wednesday
