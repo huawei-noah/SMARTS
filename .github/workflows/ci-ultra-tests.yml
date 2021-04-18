@@ -3,7 +3,7 @@ name: ULTRA CI Base Tests
 on: 
   push:
     branches:
-     - 'ultra[-_/]**'
+      - 'ultra[-_/]**'
   pull_request:
     branches:
       - 'ultra[-_/]**'
