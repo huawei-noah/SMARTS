@@ -2,7 +2,7 @@ name: SMARTS CI Learning
 
 on:
   schedule:
-    - cron: '0 23 * * 2'
+    - cron: '0 23 * * 1'
       # Time is in UTC
       # Runs at 11.00pm, UTC  , every Tuesday
       # Runs at  6.00pm, UTC-4, every Tuesday
