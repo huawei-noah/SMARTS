@@ -2,16 +2,15 @@ name: SMARTS scheduled run of ULTRA tests
 
 on:
   schedule:
-    - cron: '0 23 * * 3'
+    - cron: '25 6 * * 7'
       # Time is in UTC
       # Runs at 11.00pm, UTC  , every Wednesday
-      # Runs at  6.00pm, UTC-5, every Wednesday
+      # Runs at  6.00pm, UTC-4, every Wednesday
   workflow_dispatch:
 
 jobs:
   test-base:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
