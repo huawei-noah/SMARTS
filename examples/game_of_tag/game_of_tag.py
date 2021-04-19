@@ -45,12 +45,6 @@ tf = try_import_tf()
 class TrainingModel(FullyConnectedNetwork):
     NAME = "FullyConnectedNetwork"
 
-    # def act(self, obs):
-    #     action = FullyConnectedNetwork.act(obs)
-    #     print(f"got action {action} {obs.ego_vehicle_state.id.split('-')[0]}")
-    #     #TrainingState.update_agent_actions()
-    #     return action
-
 
 ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
 
@@ -152,7 +146,7 @@ def policy_mapper(agent_id):
 class TimeStopper(Stopper):
     def __init__(self):
         self._start = time.time()
-        self._deadline = 9 * 60 * 60 # 9 hours
+        self._deadline = 48 * 60 * 60 # 9 hours
 
     def __call__(self, trial_id, result):
         return False

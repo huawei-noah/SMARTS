@@ -208,6 +208,8 @@ def min_distance_to_rival(ego_position, rival_ids, neighbour_states):
 
 
 def observation_adapter(observations):
+    # pos_data = [[p.pos for p in points] for points in observations.waypoint_paths]
+    # print(f"{observations.ego_vehicle_state.id} {observations.ego_vehicle_state.position[:2]} waypoints: {pos_data}")
     nv_states = observations.neighborhood_vehicle_states
     # if observations.drivable_area_grid_map:
     #     np.save("grid_map", observations.drivable_area_grid_map.data)

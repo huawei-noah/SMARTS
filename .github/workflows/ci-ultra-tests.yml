@@ -1,6 +1,12 @@
 name: ULTRA CI Base Tests
 
-on: [push, pull_request]
+on: 
+  push:
+    branches:
+      - ultra[-_/]**
+  pull_request:
+    branches:
+      - ultra[-_/]**
 
 jobs:
   test-base:
