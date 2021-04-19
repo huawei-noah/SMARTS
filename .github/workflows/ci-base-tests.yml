@@ -3,10 +3,14 @@ name: SMARTS CI Base Tests
 on:
   push:
     branches-ignore:
-      - ultra[-_/]**
+      - ultra-**
+      - ultra_**
+      - ultra/**
   pull_request:
     branches-ignore:
-      - ultra[-_/]**
+      - ultra-**
+      - ultra_**
+      - ultra/**
 
 jobs:
   test:
