@@ -72,3 +72,6 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
                 self._agent_spec.interface.action, adapted_action
             )
         )
+
+    def destroy(self):
+        log.debug(f"worker_servicer - pid({os.getpid()}), shutting down rpc-worker process.")

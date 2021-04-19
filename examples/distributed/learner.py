@@ -16,9 +16,9 @@ def learner_loop(addr, agent_specs):
     conn.stub.build(worker_pb2.Specification(payload=cloudpickle.dumps(agent_specs)))
 
     def stop_learner(unused_signum, unused_frame):
-        print(f"learner.py - pid({os.getpid()}): Learner stopped.")
+        log.debug(f"learner.py - pid({os.getpid()}): Learner stopped.")
 
-    # Catch keyboard interrupt and terminate signal
+    # Catch keyboard interrupt signal
     signal.signal(signal.SIGINT, stop_learner)
 
 
@@ -44,14 +44,14 @@ if __name__ == "__main__":
         help="Learner agent policies to use. In multi-agent simulation, agents may have different policies.",
         type=str,
         nargs="+",
-        default=["keep_lane", "keep_lane"],
+        default=["keep_lane", "keep_lane", "keep_lane", "keep_lane"],
     )
     parser.add_argument(
         "--agent_ids",
         help="List of string, representing agent names. Length of `agent_ids` should match that of `agent_policies`.",
         type=str,
         nargs="+",
-        default=["Agent_007", "Agent_008"],
+        default=["Agent_001", "Agent_002", "Agent_003", "Agent_004"],
     )
     parser.add_argument(
         "--learner_address",
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         "--learner_port",
         help="Server port at which the learner (i.e., RL ego agent) runs.",
         type=int,
-        default=7221,
+        default=6001,
     )
     parser.add_argument(
         "--max_episode_steps",

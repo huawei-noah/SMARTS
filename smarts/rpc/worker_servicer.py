@@ -42,9 +42,6 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
         self._agent_specs = None
         self._agent_action_spaces = None
 
-    def __del__(self):
-        self.destroy()
-
     def build(self, request, context):
         self._agent_specs = cloudpickle.loads(request.payload)
         self._agents = {

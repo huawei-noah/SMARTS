@@ -31,7 +31,6 @@ import grpc
 
 from smarts.core.utils.networking import find_free_port
 from smarts.proto import manager_pb2, manager_pb2_grpc
-from smarts.zoo import worker as zoo_worker
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"manager_servicer.py - pid({os.getpid()})")
