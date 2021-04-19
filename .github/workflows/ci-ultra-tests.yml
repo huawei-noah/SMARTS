@@ -5,10 +5,12 @@ on:
     branches:
       - ultra-**
       - ultra_**
+      - ultra/**
   pull_request:
     branches:
       - ultra-**
       - ultra_**
+      - ultra/**
 
 jobs:
   test-base:
