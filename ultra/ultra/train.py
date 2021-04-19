@@ -41,6 +41,7 @@ import matplotlib.pyplot as plt
 from smarts.zoo.registry import make
 from ultra.utils.common import str_to_bool
 from ultra.evaluate import evaluation_check, collect_evaluations
+from ultra.utils.common import agent_pool_value
 from ultra.utils.episode import episodes
 from ultra.utils.curriculum.coordinator import Coordinator
 from ultra.utils.curriculum.curriculum_info import CurriculumInfo
@@ -445,18 +446,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Obtain the policy class strings for each specified policy.
-    policy_classes = []
-    with open(pool_path, "r") as f:
-        data = json.load(f)
-        for policy in args.policy.split(","):
-            if policy in data["agents"].keys():
-                policy_classes.append(
-                    data["agents"][policy]["path"]
-                    + ":"
-                    + data["agents"][policy]["locator"]
-                )
-            else:
-                raise ImportError("Invalid policy name. Please try again")
+    policy_classes = [
+        agent_pool_value(agent_name, "policy_class")
+        for agent_name in args.policy.split(",")
+    ]
 
     # Obtain the policy class IDs from the arguments.
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
