@@ -59,7 +59,7 @@ def evaluation_check(
     agent_ids_to_evaluate = [
         agent_id
         for agent_id in agent_ids
-        if episode.index % eval_rate == 0
+        if (episode.index + 1) % eval_rate == 0
         and episode.last_eval_iterations[agent_id] != episode.index
     ]
 

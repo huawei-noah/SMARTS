@@ -247,8 +247,8 @@ t_patterns = {
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": poisson_init,
+                    "params": {},
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
@@ -599,7 +599,7 @@ cross_patterns = {
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
+                    "func": burst_begin_time_init_func,
                     "params": {"probability": prob_heavy},
                 },
                 "has_turn": True,
