@@ -40,12 +40,11 @@ The protocal is as follows:
 
 import argparse
 import importlib
+import grpc
 import logging
 import os
 import signal
 from concurrent import futures
-
-import grpc
 
 from smarts.proto import worker_pb2_grpc
 from smarts.zoo import worker_servicer

@@ -20,51 +20,43 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import cloudpickle
+import grpc
 import logging
 import os
 import time
 
-import cloudpickle
-import grpc
-
 from smarts.core import action as act_util
 from smarts.core import observation as obs_util
-from smarts.proto import action_pb2, ego_pb2, ego_pb2_grpc
+from smarts.proto import action_pb2, worker_pb2, worker_pb2_grpc
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(f"servicer.py - pid({os.getpid()})")
+log = logging.getLogger(f"worker_servicer.py - pid({os.getpid()})")
 
 
-class AgentServicer(Agent_pb2_grpc.AgentServicer):
-    """Provides methods that implement functionality of Agent Servicer."""
+class WorkerServicer(worker_pb2_grpc.WorkerServicer):
+    """Provides methods that implement functionality of Worker Servicer."""
 
     def __init__(self):
         self._agents = None
         self._agent_specs = None
         self._agent_action_spaces = None
 
+    def __del__(self):
+        self.destroy()
+
     def build(self, request, context):
-        time_start = time.time()
         self._agent_specs = cloudpickle.loads(request.payload)
-        pickle_load_time = time.time()
         self._agents = {
             agent_id: agent_spec.build_agent()
             for agent_id, agent_spec in self._agent_specs.items()
-            }
-        agent_build_time = time.time()
-        log.debug(
-            "Build agent timings:\n"
-            f"  total ={agent_build_time - time_start:.2}\n"
-            f"  pickle={pickle_load_time - time_start:.2}\n"
-            f"  build ={agent_build_time - pickle_load_time:.2}\n"
-        )
-
+        }
         self._agent_action_spaces = {
             agent_id: agent_spec.interface.action
             for agent_id, agent_spec in self._agent_specs.items()
         }
 
-        return ego_pb2.Status()
+        return worker_pb2.Status()
 
     def act(self, request, context):
         if self._agents == None or self._agent_specs == None:
@@ -74,21 +66,31 @@ class AgentServicer(Agent_pb2_grpc.AgentServicer):
 
         obs = obs_util.proto_to_observations(request)
         adapted_action = {
-            agent_id: obs_to_act(self.agents[agent_id], self._agent_specs[agent_id], agent_obs)
+            agent_id: obs_to_act(
+                self._agents[agent_id], self._agent_specs[agent_id], agent_obs
+            )
             for agent_id, agent_obs, in obs.items()
         }
 
         return action_pb2.Actions(
-            vehicles=act_util.actions_to_proto(
-                self._agent_action_spaces, adapted_action
-            )
+            vehicles={
+                vehicle_id: act_util.action_to_proto(
+                    self._agent_action_spaces[vehicle_id], vehicle_action
+                )
+                for vehicle_id, vehicle_action in adapted_action.items()
+            }
         )
+
+    def destroy(self):
+        log.debug(f"rpc-worker - pid({os.getpid()}), shutting down rpc-worker process.")
+
 
 def obs_to_act(agent, agent_spec, obs):
     adapted_obs = agent_spec.observation_adapter(obs)
     action = agent.act(adapted_obs)
     adapted_action = agent_spec.action_adapter(action)
     return adapted_action
+
 
 def batch():
     raise NotImplementedError

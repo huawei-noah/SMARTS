@@ -193,7 +193,9 @@ class SMARTS:
         dt = self._timestep_sec
 
         # 1. Fetch agent actions
-        all_agent_actions = self._agent_manager.fetch_agent_actions(self, ego_agent_actions)
+        all_agent_actions = self._agent_manager.fetch_agent_actions(
+            self, ego_agent_actions
+        )
 
         # 2. Step all providers and harmonize state
         provider_state = self._step_providers(all_agent_actions, dt)
