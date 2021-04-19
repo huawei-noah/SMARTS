@@ -29,6 +29,7 @@ import glob
 import time
 from pydoc import locate
 
+import dill
 import gym
 import numpy as np
 import ray
@@ -76,11 +77,12 @@ def evaluation_check(
         checkpoint_directory = episode.checkpoint_dir(
             agent_id, episode.get_itr(agent_id)
         )
-        try:
-            agents[agent_id].save(checkpoint_directory)
-        except AttributeError:
-            print(f"No 'save' method for '{agent_id}'. Skipping its evaluation.")
-            continue
+        agents[agent_id].save(checkpoint_directory)
+        # try:
+        #     agents[agent_id].save(checkpoint_directory)
+        # except AttributeError:
+        #     print(f"No 'save' method for '{agent_id}'. Skipping its evaluation.")
+        #     # continue
 
         # Perform the evaluation on this agent and save the data.
         evaluation_data.update(
@@ -128,17 +130,25 @@ def evaluate(
 ):
     torch.set_num_threads(1)
 
-    # Create the agent specifications matched with their associated ID.
-    agent_specs = {
-        agent_id: make(
-            locator=policy_classes[agent_id],
-            checkpoint_dir=checkpoint_dirs[agent_id],
-            experiment_dir=experiment_dir,
-            max_episode_steps=max_episode_steps,
-            agent_id=agent_id,
-        )
-        for agent_id in agent_ids
-    }
+    # # Create the agent specifications matched with their associated ID.
+    # agent_specs = {
+    #     agent_id: make(
+    #         locator=policy_classes[agent_id],
+    #         checkpoint_dir=checkpoint_dirs[agent_id],
+    #         experiment_dir=experiment_dir,
+    #         max_episode_steps=max_episode_steps,
+    #         agent_id=agent_id,
+    #     )
+    #     for agent_id in agent_ids
+    # }
+    with open(f"{experiment_dir}/agent_metadata.pkl", "rb") as agent_metadata_file:
+        agent_metadata = dill.load(agent_metadata_file)
+        agent_specs = {
+            agent_id: agent_metadata["agent_specs"][agent_id] for agent_id in agent_ids
+        }
+    # Perhaps add agent_evaluation_params so that they can be appended or changed
+    # to or from the params used for training (like changing explore from True to
+    # False).
 
     # Create the environment with the specified agents.
     env = gym.make(
@@ -151,11 +161,13 @@ def evaluate(
         eval_mode=True,
     )
 
-    # Build each agent from its specification.
+    # Build each agent from its specification, and load from the given checkpoint path.
     agents = {
         agent_id: agent_spec.build_agent()
         for agent_id, agent_spec in agent_specs.items()
     }
+    for agent_id, agent in agents.items():
+        agent.load(checkpoint_dirs[agent_id])
 
     # A dictionary to hold the evaluation data for each agent.
     summary_log = {agent_id: LogInfo() for agent_id in agent_ids}

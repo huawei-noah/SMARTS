@@ -161,7 +161,7 @@ def train(
                 try:
                     actions[agent_id] = agents[agent_id].act(observation, explore=True)
                 except TypeError:
-                    actions[agent_id] = agents[agent_id].act(observations)
+                    actions[agent_id] = agents[agent_id].act(observation)
             next_observations, rewards, dones, infos = env.step(actions)
 
             # Active agents are those that receive observations in this step and the next
