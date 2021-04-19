@@ -301,21 +301,16 @@ class Episode:
                         value,
                         agent_itr,
                     )
-                    if (
-                        key is "episode_return"
-                        or key is "reached_goal"
-                        or key is "collision"
-                    ):
-                        # print(f"Recording {key} for {scenario['scenario_density']}; counter = {scenario['density_counter']}")
-                        self.tb_writer.add_scalar(
-                            "{}/{}/{}".format(
-                                f"{self.active_tag}-{scenario['scenario_density']}",
-                                agent_id,
-                                key,
-                            ),
-                            value,
-                            scenario["density_counter"],
-                        )
+                    # print(f"Recording {key} for {scenario['scenario_density']}; counter = {scenario['density_counter']}")
+                    self.tb_writer.add_scalar(
+                        "{}/{}/{}".format(
+                            f"{self.active_tag}-{scenario['scenario_density']}",
+                            agent_id,
+                            key,
+                        ),
+                        value,
+                        scenario["density_counter"],
+                    )
                     data[key] = value
             self.all_data[self.active_tag][agent_id][agent_itr] = data
 

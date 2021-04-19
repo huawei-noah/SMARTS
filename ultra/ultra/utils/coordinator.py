@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os, sys
-import yaml, csv
+import yaml, csv, glob, shutil
 from itertools import cycle
 import copy
 
@@ -323,3 +323,85 @@ class Coordinator:
         except Exception as e:
             print(e)
             pass
+
+class DynamicScenarios():
+    def __init__(self, root_dir, save_dir, rate=None):
+        self.distribution = {
+            "no-traffic": 1,
+            "low-density": 0,
+            "mid-density": 0,
+            "high-density": 0,
+        }
+        self.root_dir = root_dir
+        self.save_dir = save_dir
+        self.rate = rate
+
+    def change_distribution(self, increment_mode=True):
+        if level == "grade1":
+            control_density = "no-traffic"
+        elif level == "grade2":
+            control_density = "low-density"
+        elif level == "grade3":
+            control_density = "mid-density"
+        elif level == "grade4":
+            control_density = "high-density"
+
+        print("Old distrbution:", self.distribution)
+
+        if increment_mode:
+            for key, value in self.distribution.items():
+                if control_density == key:
+                    self.distribution[key] -= 0.02
+                else:
+                    self.distribution[key] += 0.02
+        
+        print("New distrbution:", self.distribution)
+    
+    def reset_scenario_pool(self):
+        base_dir = os.path.join(self.root_dir, "taskgb/t*")
+        print(base_dir)
+        for f in glob.glob(base_dir):
+            shutil.rmtree(f)
+
+        for key, val in self.distribution.items():
+            num_scenarios = (self.rate * val)
+            print(f"Num of {key} : {num_scenarios}")
+            if num_scenarios != 0:
+                build_scenarios(
+                    task=f"taskgb",
+                    level_name=key,
+                    totals={"train": num_scenarios, "test": 1},
+                    root_path=self.root_dir,
+                    stopwatcher_behavior=None,
+                    stopwatcher_route=None,
+                    save_dir=self.save_dir,
+                )
+
+    def sampler(episode, total_scenarios_passed, average_scenarios_passed):
+        if self.rate is not None:
+            sample_rate = self.rate
+        else:
+            sample_rate = CurriculumInfo.pass_based_sample_rate
+
+        asp_list = []
+
+        (
+            average_scenarios_passed,
+            total_scenarios_passed,
+        ) = Coordinator.calculate_average_scenario_passed(
+            episode, total_scenarios_passed, agents, average_scenarios_passed
+        )
+
+        if (
+            episode.index + 1
+        ) % sample_rate == 0:  # Set sample rate (flag needs to be set)
+            print(
+                f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
+            )
+            asp_list.append(
+                tuple((episode.index + 1, average_scenarios_passed))
+            )
+            self.change_distribution()
+            self.reset_scenario_pool()
+
+        return asp_list

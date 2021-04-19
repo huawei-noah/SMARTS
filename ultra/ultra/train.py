@@ -42,7 +42,7 @@ from smarts.zoo.registry import make
 from ultra.utils.common import str_to_bool
 from ultra.evaluate import evaluation_check, collect_evaluations
 from ultra.utils.episode import episodes
-from ultra.utils.coordinator import Coordinator, CurriculumInfo, ScenarioDataHandler
+from ultra.utils.coordinator import Coordinator, CurriculumInfo, ScenarioDataHandler, DynamicScenarios
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -108,14 +108,17 @@ def train(
             gb_info["gb_curriculum_dir"]
         )  # Applicable to both non-gb and gb cases
         scenario_data_handler = ScenarioDataHandler("Train")
+        ds_handler = DynamicScenarios(gb_info["gb_scenarios_root_dir"], gb_info["gb_scenarios_save_dir"], 10)
+        ds_handler.reset_scenario_pool()
         if num_episodes % agent_coordinator.get_num_of_grades() == 0:
             num_episodes += 1
             print("New max episodes (due to end case):", num_episodes)
         print("Num of episodes:", num_episodes)
     else:
-        print("\n------------ GRADE MODE : Disabled ------------\n")
+        print("\n------------ GRADE MODE : Disaled ------------\n")
         agent_coordinator = None
         scenario_data_handler = ScenarioDataHandler("Train")
+        # ds_handler = DynamicScenarios()
 
     # Create the environment.
     env = gym.make(
@@ -257,36 +260,10 @@ def train(
                 agent_coordinator.end_warmup == True
                 or CurriculumInfo.episode_based_toggle == True
             ):
-                (
-                    average_scenarios_passed,
-                    total_scenarios_passed,
-                ) = Coordinator.calculate_average_scenario_passed(
-                    episode, total_scenarios_passed, agents, average_scenarios_passed
-                )
-                if (
-                    episode.index + 1
-                ) % CurriculumInfo.pass_based_sample_rate == 0:  # Set sample rate (flag needs to be set)
-                    print(
-                        f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
-                    )
-                    asp_list_two.append(
-                        tuple((episode.index + 1, average_scenarios_passed))
-                    )
-        else:
-            rate = 30
-            (
-                average_scenarios_passed,
-                total_scenarios_passed,
-            ) = Coordinator.calculate_average_scenario_passed(
-                episode, total_scenarios_passed, agents, average_scenarios_passed, rate
-            )
-            if (
-                episode.index + 1
-            ) % rate == 0:  # Set sample rate as in gb curriculum config
-                print(
-                    f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
-                )
-                asp_list.append(tuple((episode.index + 1, average_scenarios_passed)))
+                asp_list = ds_handler.sampler(episode, total_scenarios_passed, average_scenarios_passed)
+
+        # else:
+        #     asp_list = ds_handler.sampler(episode, total_scenarios_passed, average_scenarios_passed, 30) 
 
         if finished:
             break
@@ -308,8 +285,7 @@ def train(
 
     print(scenario_data_handler.overall_densities_counter)
 
-    print("(one) Average scenarios passed list:", asp_list)
-    print("(two) Average scenarios passed list:", asp_list_two)
+    print("Average scenarios passed list:", asp_list)
 
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):
