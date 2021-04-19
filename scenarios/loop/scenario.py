@@ -17,7 +17,6 @@ traffic = t.Traffic(
             "coach",
             "truck",
             "trailer",
-            "motorcycle",
         ]
     ]
 )
