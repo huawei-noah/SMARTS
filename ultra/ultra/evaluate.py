@@ -235,7 +235,9 @@ def evaluate(
         # Reset the environment and retrieve the initial observations.
         if grade_mode != False:
             if initial_grade_switch == False:
-                observations, scenario = env.reset(True, agent_coordinator.get_eval_grade())
+                observations, scenario = env.reset(
+                    True, agent_coordinator.get_eval_grade()
+                )
                 initial_grade_switch = True
             else:
                 observations, scenario = env.reset()
@@ -281,7 +283,7 @@ def evaluate(
 
     env.close()
 
-    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes, agent_coordinator.get_eval_grade())
+    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
     scenario_data_handler_eval.save_grade_density(num_episodes)
 
     try:

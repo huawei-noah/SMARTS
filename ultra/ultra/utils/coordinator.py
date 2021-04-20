@@ -146,7 +146,9 @@ class Coordinator:
 
         self.mode = False
         self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
-        self.eval_counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
+        self.eval_counter = cycle(
+            tuple([i * 1 for i in range(self.get_num_of_grades())])
+        )
         self.grade_checkpoints = []
         self.num_episodes = num_episodes
         self.grade_counter = 0
@@ -172,7 +174,7 @@ class Coordinator:
         # Get task and level information
         counter = next(self.counter) + 1
         self.grade = CurriculumInfo.curriculum["grades"][counter]
-    
+
     def next_eval_grade(self):
         # Get task and level information
         counter = next(self.eval_counter) + 1
