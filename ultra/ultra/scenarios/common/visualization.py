@@ -147,13 +147,13 @@ def draw_intersection(
                 pos_x,
                 pos_y,
             ),
-            radius=1,
-            color=(10, 10, 30),
+            radius=2,
+            color=behavior_color,
             thickness=2,
         )
-        canvas = cv2.putText(
-            canvas, str(state.id), (pos_x + 4, pos_y + 4), font, 0.3, behavior_color, 1,
-        )
+        # canvas = cv2.putText(
+        #     canvas, str(state.id), (pos_x + 4, pos_y + 4), font, 0.3, behavior_color, 1,
+        # )
         colors_legend.add((behavior_key, behavior_color))
     # print(ego)
     # if ego:

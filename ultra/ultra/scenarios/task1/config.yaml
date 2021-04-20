@@ -140,28 +140,22 @@ levels:
   
   high-density:
     train:
-      total: 20
+      total: 1
       ego_missions:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
       intersection_types:
-        # 2lane_t:
-        #    percent: 0
-        #    specs: [[50kmh,high-density,0.34],[70kmh,high-density,0.33],[100kmh,high-density,0.33]]
         4lane_t:
-           percent: 1
-           specs: [[50kmh,high-density,0.34],[70kmh,high-density,0.33],[100kmh,high-density,0.33]]
+           percent: 1.0
+           specs: [[50kmh,high-density,1]]
     test:
-      total: 10
+      total: 5
       ego_missions:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
       intersection_types:
-        2lane_c:
-           percent: 0.5
-           specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
-        3lane_c:
-           percent: 0.5
-           specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
+        4lane_c:
+           percent: 1
+           specs: [[50kmh,high-density,0.5], [100kmh,high-density,0.5]]
