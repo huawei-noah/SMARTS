@@ -166,9 +166,7 @@ class DQNPolicy(Agent):
             network_params = {
                 "n_in_channels": rgb_info["stack_size"],
                 "image_dim": (rgb_info["height"], rgb_info["width"]),
-                # TODO: Make this part of the state_size calculation.
-                "state_size": sum(self.state_description["low_dim_states"].values())
-                + self.action_size,
+                "state_size": self.state_size,
                 "num_actions": self.num_actions,
             }
             network_class = DQNCNN
@@ -204,15 +202,16 @@ class DQNPolicy(Agent):
 
     @property
     def state_size(self):
-        # Adjusting state_size based on number of features (ego+social)
+        # Adjusting state_size based on type of features (ego + social or ego).
         size = sum(self.state_description["low_dim_states"].values())
-        if self.social_feature_encoder_class:
-            size += self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            ).output_dim
-        else:
-            size += self.social_capacity * self.num_social_features
-        # adding the previous action
+        if self.rgb_info is None:
+            if self.social_feature_encoder_class:
+                size += self.social_feature_encoder_class(
+                    **self.social_feature_encoder_params
+                ).output_dim
+            else:
+                size += self.social_capacity * self.num_social_features
+        # Add the previous action size.
         size += self.action_size
         return size
 
