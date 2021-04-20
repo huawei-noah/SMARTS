@@ -1,7 +1,7 @@
 import gym
 import importlib
 
-from examples import default_argument_parser, policies
+from examples import default_argument_parser
 from smarts.core import action as act_util
 from smarts.core import observation as obs_util
 from smarts.core.utils.episodes import episodes
@@ -54,7 +54,7 @@ def main(config: dict):
 
     agent_specs = {
         agent_id: importlib.import_module(
-            "examples.policies." + agent_policy + ".agent"
+            "zoo.policies." + agent_policy + ".agent"
         ).create_agent_spec()
         for agent_id, agent_policy in zip(config["agent_ids"], config["agent_policies"])
     }

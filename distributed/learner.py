@@ -1,13 +1,15 @@
 import argparse
 import cloudpickle
 import importlib
+import logging
 import os
 import signal
 
-from examples import policies
 from smarts.proto import worker_pb2
 from smarts.rpc import worker as learner_agent
 
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(f"learner.py - pid({os.getpid()})")
 
 def learner_loop(addr, agent_specs):
 
@@ -29,7 +31,7 @@ def main(config: dict):
 
     agent_specs = {
         agent_id: importlib.import_module(
-            "examples.policies." + agent_policy + ".agent"
+            "zoo.policies." + agent_policy + ".agent"
         ).create_agent_spec()
         for agent_id, agent_policy in zip(config["agent_ids"], config["agent_policies"])
     }
