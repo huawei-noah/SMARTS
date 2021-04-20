@@ -72,8 +72,8 @@ class RemoteAgent:
     def act(self, obs):
         # Run task asynchronously and return a Future.
         self._act_future = self._worker_stub.act.future(
-            observation_pb2.Observations(
-                vehicles=obs_util.observations_to_proto(obs),
+            observation_pb2.ObservationsBoid(
+                boids=obs_util.observations_to_proto(obs),
             )
         )
 

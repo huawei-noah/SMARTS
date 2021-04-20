@@ -230,9 +230,11 @@ class AgentManager:
         try:
             social_agent_actions = {
                 agent_id: (
-                    act_util.proto_to_actions(
-                        self._remote_social_agents_action[agent_id].result()
-                    )
+                    list(
+                        act_util.proto_to_actions(
+                            self._remote_social_agents_action[agent_id].result()
+                        ).values()
+                    )[0]
                     if self._remote_social_agents_action.get(agent_id, None)
                     else None
                 )
@@ -305,7 +307,9 @@ class AgentManager:
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
+            self._remote_social_agents_action[agent_id] = remote_agent.act(
+                {agent_id: obs}
+            )
 
     def switch_initial_agent(self, agent_interface):
         self._initial_interfaces = agent_interface
@@ -342,7 +346,9 @@ class AgentManager:
             self._social_agent_ids.add(agent_id)
 
         for social_agent_id, remote_social_agent in self._remote_social_agents.items():
-            remote_social_agent.start(social_agents[social_agent_id][0])
+            remote_social_agent.start(
+                {social_agent_id: social_agents[social_agent_id][0]}
+            )
 
     def start_keep_alive_boid_agents(self, sim):
         for bubble in filter(
@@ -439,7 +445,7 @@ class AgentManager:
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
         remote_agent = self._remote_agent_buffer.acquire_remote_agent()
-        remote_agent.start(social_agent)
+        remote_agent.start({agent_id: social_agent})
         self._remote_social_agents[agent_id] = remote_agent
         self._agent_interfaces[agent_id] = social_agent.interface
         self._social_agent_ids.add(agent_id)
@@ -478,7 +484,9 @@ class AgentManager:
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
+            self._remote_social_agents_action[agent_id] = remote_agent.act(
+                {agent_id: obs}
+            )
 
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)

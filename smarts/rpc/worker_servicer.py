@@ -69,13 +69,8 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
             for agent_id, agent_obs, in obs.items()
         }
 
-        return action_pb2.Actions(
-            vehicles={
-                vehicle_id: act_util.action_to_proto(
-                    self._agent_action_spaces[vehicle_id], vehicle_action
-                )
-                for vehicle_id, vehicle_action in adapted_action.items()
-            }
+        return action_pb2.ActionsBoid(
+            boids=act_util.actions_to_proto(self._agent_action_spaces, adapted_action)
         )
 
     def destroy(self):

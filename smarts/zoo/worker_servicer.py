@@ -20,12 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import cloudpickle
+import grpc
 import logging
 import os
 import time
-
-import cloudpickle
-import grpc
 
 from smarts.core import action as act_util
 from smarts.core import observation as obs_util
@@ -39,39 +38,49 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
     """Provides methods that implement functionality of Worker Servicer."""
 
     def __init__(self):
-        self._agent = None
-        self._agent_spec = None
+        self._agents = None
+        self._agent_specs = None
+        self._agent_action_spaces = None
 
     def build(self, request, context):
-        time_start = time.time()
-        self._agent_spec = cloudpickle.loads(request.payload)
-        pickle_load_time = time.time()
-        self._agent = self._agent_spec.build_agent()
-        agent_build_time = time.time()
-        log.debug(
-            "Build agent timings:\n"
-            f"  total ={agent_build_time - time_start:.2}\n"
-            f"  pickle={pickle_load_time - time_start:.2}\n"
-            f"  build ={agent_build_time - pickle_load_time:.2}\n"
-        )
+        self._agent_specs = cloudpickle.loads(request.payload)
+        self._agents = {
+            agent_id: agent_spec.build_agent()
+            for agent_id, agent_spec in self._agent_specs.items()
+        }
+        self._agent_action_spaces = {
+            agent_id: agent_spec.interface.action
+            for agent_id, agent_spec in self._agent_specs.items()
+        }
+
         return worker_pb2.Status()
 
     def act(self, request, context):
-        if self._agent == None or self._agent_spec == None:
+        if self._agents == None or self._agent_specs == None:
             context.set_details(f"Remote agent not built yet.")
             context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
             return action_pb2.Actions()
 
         obs = obs_util.proto_to_observations(request)
-        adapted_obs = self._agent_spec.observation_adapter(obs)
-        action = self._agent.act(adapted_obs)
-        adapted_action = self._agent_spec.action_adapter(action)
-
-        return action_pb2.Actions(
-            vehicles=act_util.actions_to_proto(
-                self._agent_spec.interface.action, adapted_action
+        adapted_action = {
+            agent_id: obs_to_act(
+                self._agents[agent_id], self._agent_specs[agent_id], agent_obs
             )
+            for agent_id, agent_obs, in obs.items()
+        }
+
+        return action_pb2.ActionsBoid(
+            boids=act_util.actions_to_proto(self._agent_action_spaces, adapted_action)
         )
 
     def destroy(self):
-        log.debug(f"worker_servicer - pid({os.getpid()}), shutting down rpc-worker process.")
+        log.debug(
+            f"worker_servicer - pid({os.getpid()}), shutting down rpc-worker process."
+        )
+
+
+def obs_to_act(agent, agent_spec, obs):
+    adapted_obs = agent_spec.observation_adapter(obs)
+    action = agent.act(adapted_obs)
+    adapted_action = agent_spec.action_adapter(action)
+    return adapted_action

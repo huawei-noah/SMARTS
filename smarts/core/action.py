@@ -22,20 +22,40 @@
 
 from smarts.core.controllers import ActionSpaceType
 from smarts.proto import action_pb2
+from typing import Dict
 
 
-def actions_to_proto(action_space_type, action) -> action_pb2.Actions:
-    # if action is non_boid_agent
-    if not isinstance(action, dict):
-        vehicle_action = action_to_proto(action_space_type, action)
-        proto = {"NON_BOID": vehicle_action}
+def actions_to_proto(action_space_type: Dict, actions) -> action_pb2.ActionsBoid:
+    keys = list(actions.keys())
 
-    # if action is empty, i.e., action=={}, or
-    # if action is boid_agent, i.e., action={<vehicle_id>: <ActionSpace>}
+    # if actions is boid agent, i.e., actions={<*-boid-*>: {<vehicle_id>: <ActionSpace>} }
+    if "boid" in keys[0]:
+        assert len(keys) == 1, "Incorrect boid dictionary structure in action."
+        boid_key = keys[0]
+        actions = actions[boid_key]
+        proto = {
+            boid_key: action_pb2.Actions(
+                vehicles={
+                    vehicle_id: action_to_proto(
+                        action_space_type[boid_key], vehicle_action
+                    )
+                    for vehicle_id, vehicle_action in actions.items()
+                }
+            )
+        }
+
+    # if actions is empty, i.e., actions=={}, or
+    # if actions is non boid agent, i.e., actions={<vehicle_id>: <ActionSpace>}
     else:
         proto = {
-            vehicle_id: action_to_proto(action_space_type, vehicle_action)
-            for vehicle_id, vehicle_action in action.items()
+            "unused": action_pb2.Actions(
+                vehicles={
+                    vehicle_id: action_to_proto(
+                        action_space_type[vehicle_id], vehicle_action
+                    )
+                    for vehicle_id, vehicle_action in actions.items()
+                }
+            )
         }
 
     return proto
@@ -85,16 +105,27 @@ def action_to_proto(action_space_type, action) -> action_pb2.Action:
     return proto
 
 
-def proto_to_actions(proto: action_pb2.Actions):
-    vehicles = proto.vehicles
+def proto_to_actions(proto: action_pb2.ActionsBoid):
+    boids = proto.boids
+    keys = list(boids.keys())
+    assert len(keys) == 1, "Incorrect action proto structure."
+    boid_key = keys[0]
+    vehicles = boids[boid_key].vehicles
 
-    if "NON_BOID" in vehicles.keys():
-        action = proto_to_action(vehicles["NON_BOID"])
-    else:
+    if "boid" in boid_key:
+        action = {
+            boid_key: {
+                vehicle_id: proto_to_action(vehicle_proto)
+                for vehicle_id, vehicle_proto in vehicles.items()
+            }
+        }
+    elif "unused" in boid_key:
         action = {
             vehicle_id: proto_to_action(vehicle_proto)
             for vehicle_id, vehicle_proto in vehicles.items()
         }
+    else:
+        raise ValueError(f"Incorrect action proto structure: {proto}.")
 
     return action
 

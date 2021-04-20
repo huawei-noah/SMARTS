@@ -34,7 +34,7 @@ service Worker {
     rpc build(Specification) returns (Status) {}
 
     // Agent processes observations and returns action.
-    rpc act(observation.Observations) returns (action.Actions) {}
+    rpc act(observation.ObservationsBoid) returns (action.ActionsBoid) {}
 }
 
 // Agent specification

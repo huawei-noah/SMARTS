@@ -18,7 +18,109 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x0c\x61\x63tion.proto\x12\x06\x61\x63tion"{\n\x07\x41\x63tions\x12/\n\x08vehicles\x18\x01 \x03(\x0b\x32\x1d.action.Actions.VehiclesEntry\x1a?\n\rVehiclesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1d\n\x05value\x18\x02 \x01(\x0b\x32\x0e.action.Action:\x02\x38\x01"\xfd\x02\n\x06\x41\x63tion\x12(\n\ncontinuous\x18\x01 \x01(\x0b\x32\x12.action.ContinuousH\x00\x12\x1c\n\x04lane\x18\x02 \x01(\x0b\x32\x0c.action.LaneH\x00\x12\x33\n\x10\x61\x63tuator_dynamic\x18\x03 \x01(\x0b\x32\x17.action.ActuatorDynamicH\x00\x12\x45\n\x1alane_with_continuous_speed\x18\x04 \x01(\x0b\x32\x1f.action.LaneWithContinuousSpeedH\x00\x12)\n\x0btarget_pose\x18\x05 \x01(\x0b\x32\x12.action.TargetPoseH\x00\x12(\n\ntrajectory\x18\x06 \x01(\x0b\x32\x12.action.TrajectoryH\x00\x12\x34\n\x11multi_target_pose\x18\x07 \x01(\x0b\x32\x17.action.MultiTargetPoseH\x00\x12\x1a\n\x03mpc\x18\x08 \x01(\x0b\x32\x0b.action.MPCH\x00\x42\x08\n\x06\x61\x63tion"\x1c\n\nContinuous\x12\x0e\n\x06\x61\x63tion\x18\x01 \x03(\x02"\x16\n\x04Lane\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t"!\n\x0f\x41\x63tuatorDynamic\x12\x0e\n\x06\x61\x63tion\x18\x01 \x03(\x02")\n\x17LaneWithContinuousSpeed\x12\x0e\n\x06\x61\x63tion\x18\x01 \x03(\x02"\x1c\n\nTargetPose\x12\x0e\n\x06\x61\x63tion\x18\x01 \x03(\x02"T\n\nTrajectory\x12\x10\n\x08\x61\x63tion_1\x18\x01 \x03(\x02\x12\x10\n\x08\x61\x63tion_2\x18\x02 \x03(\x02\x12\x10\n\x08\x61\x63tion_3\x18\x03 \x03(\x02\x12\x10\n\x08\x61\x63tion_4\x18\x04 \x03(\x02"\x11\n\x0fMultiTargetPose"M\n\x03MPC\x12\x10\n\x08\x61\x63tion_1\x18\x01 \x03(\x02\x12\x10\n\x08\x61\x63tion_2\x18\x02 \x03(\x02\x12\x10\n\x08\x61\x63tion_3\x18\x03 \x03(\x02\x12\x10\n\x08\x61\x63tion_4\x18\x04 \x03(\x02\x62\x06proto3',
+    serialized_pb=b'\n\x0c\x61\x63tion.proto\x12\x06\x61\x63tion"{\n\x0b\x41\x63tionsBoid\x12-\n\x05\x62oids\x18\x01 \x03(\x0b\x32\x1e.action.ActionsBoid.BoidsEntry\x1a=\n\nBoidsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1e\n\x05value\x18\x02 \x01(\x0b\x32\x0f.action.Actions:\x02\x38\x01"{\n\x07\x41\x63tions\x12/\n\x08vehicles\x18\x01 \x03(\x0b\x32\x1d.action.Actions.VehiclesEntry\x1a?\n\rVehiclesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1d\n\x05value\x18\x02 \x01(\x0b\x32\x0e.action.Action:\x02\x38\x01"\xfd\x02\n\x06\x41\x63tion\x12(\n\ncontinuous\x18\x01 \x01(\x0b\x32\x12.action.ContinuousH\x00\x12\x1c\n\x04lane\x18\x02 \x01(\x0b\x32\x0c.action.LaneH\x00\x12\x33\n\x10\x61\x63tuator_dynamic\x18\x03 \x01(\x0b\x32\x17.action.ActuatorDynamicH\x00\x12\x45\n\x1alane_with_continuous_speed\x18\x04 \x01(\x0b\x32\x1f.action.LaneWithContinuousSpeedH\x00\x12)\n\x0btarget_pose\x18\x05 \x01(\x0b\x32\x12.action.TargetPoseH\x00\x12(\n\ntrajectory\x18\x06 \x01(\x0b\x32\x12.action.TrajectoryH\x00\x12\x34\n\x11multi_target_pose\x18\x07 \x01(\x0b\x32\x17.action.MultiTargetPoseH\x00\x12\x1a\n\x03mpc\x18\x08 \x01(\x0b\x32\x0b.action.MPCH\x00\x42\x08\n\x06\x61\x63tion"\x1c\n\nContinuous\x12\x0e\n\x06\x61\x63tion\x18\x01 \x03(\x02"\x16\n\x04Lane\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t"!\n\x0f\x41\x63tuatorDynamic\x12\x0e\n\x06\x61\x63tion\x18\x01 \x03(\x02")\n\x17LaneWithContinuousSpeed\x12\x0e\n\x06\x61\x63tion\x18\x01 \x03(\x02"\x1c\n\nTargetPose\x12\x0e\n\x06\x61\x63tion\x18\x01 \x03(\x02"T\n\nTrajectory\x12\x10\n\x08\x61\x63tion_1\x18\x01 \x03(\x02\x12\x10\n\x08\x61\x63tion_2\x18\x02 \x03(\x02\x12\x10\n\x08\x61\x63tion_3\x18\x03 \x03(\x02\x12\x10\n\x08\x61\x63tion_4\x18\x04 \x03(\x02"\x11\n\x0fMultiTargetPose"M\n\x03MPC\x12\x10\n\x08\x61\x63tion_1\x18\x01 \x03(\x02\x12\x10\n\x08\x61\x63tion_2\x18\x02 \x03(\x02\x12\x10\n\x08\x61\x63tion_3\x18\x03 \x03(\x02\x12\x10\n\x08\x61\x63tion_4\x18\x04 \x03(\x02\x62\x06proto3',
+)
+
+
+_ACTIONSBOID_BOIDSENTRY = _descriptor.Descriptor(
+    name="BoidsEntry",
+    full_name="action.ActionsBoid.BoidsEntry",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="key",
+            full_name="action.ActionsBoid.BoidsEntry.key",
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="value",
+            full_name="action.ActionsBoid.BoidsEntry.value",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=b"8\001",
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=86,
+    serialized_end=147,
+)
+
+_ACTIONSBOID = _descriptor.Descriptor(
+    name="ActionsBoid",
+    full_name="action.ActionsBoid",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="boids",
+            full_name="action.ActionsBoid.boids",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[
+        _ACTIONSBOID_BOIDSENTRY,
+    ],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=24,
+    serialized_end=147,
 )
 
 
@@ -77,8 +179,8 @@ _ACTIONS_VEHICLESENTRY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=84,
-    serialized_end=147,
+    serialized_start=209,
+    serialized_end=272,
 )
 
 _ACTIONS = _descriptor.Descriptor(
@@ -119,8 +221,8 @@ _ACTIONS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=24,
-    serialized_end=147,
+    serialized_start=149,
+    serialized_end=272,
 )
 
 
@@ -302,8 +404,8 @@ _ACTION = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=150,
-    serialized_end=531,
+    serialized_start=275,
+    serialized_end=656,
 )
 
 
@@ -343,8 +445,8 @@ _CONTINUOUS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=533,
-    serialized_end=561,
+    serialized_start=658,
+    serialized_end=686,
 )
 
 
@@ -384,8 +486,8 @@ _LANE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=563,
-    serialized_end=585,
+    serialized_start=688,
+    serialized_end=710,
 )
 
 
@@ -425,8 +527,8 @@ _ACTUATORDYNAMIC = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=587,
-    serialized_end=620,
+    serialized_start=712,
+    serialized_end=745,
 )
 
 
@@ -466,8 +568,8 @@ _LANEWITHCONTINUOUSSPEED = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=622,
-    serialized_end=663,
+    serialized_start=747,
+    serialized_end=788,
 )
 
 
@@ -507,8 +609,8 @@ _TARGETPOSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=665,
-    serialized_end=693,
+    serialized_start=790,
+    serialized_end=818,
 )
 
 
@@ -605,8 +707,8 @@ _TRAJECTORY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=695,
-    serialized_end=779,
+    serialized_start=820,
+    serialized_end=904,
 )
 
 
@@ -626,8 +728,8 @@ _MULTITARGETPOSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=781,
-    serialized_end=798,
+    serialized_start=906,
+    serialized_end=923,
 )
 
 
@@ -724,10 +826,13 @@ _MPC = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=800,
-    serialized_end=877,
+    serialized_start=925,
+    serialized_end=1002,
 )
 
+_ACTIONSBOID_BOIDSENTRY.fields_by_name["value"].message_type = _ACTIONS
+_ACTIONSBOID_BOIDSENTRY.containing_type = _ACTIONSBOID
+_ACTIONSBOID.fields_by_name["boids"].message_type = _ACTIONSBOID_BOIDSENTRY
 _ACTIONS_VEHICLESENTRY.fields_by_name["value"].message_type = _ACTION
 _ACTIONS_VEHICLESENTRY.containing_type = _ACTIONS
 _ACTIONS.fields_by_name["vehicles"].message_type = _ACTIONS_VEHICLESENTRY
@@ -771,6 +876,7 @@ _ACTION.fields_by_name["multi_target_pose"].containing_oneof = _ACTION.oneofs_by
 ]
 _ACTION.oneofs_by_name["action"].fields.append(_ACTION.fields_by_name["mpc"])
 _ACTION.fields_by_name["mpc"].containing_oneof = _ACTION.oneofs_by_name["action"]
+DESCRIPTOR.message_types_by_name["ActionsBoid"] = _ACTIONSBOID
 DESCRIPTOR.message_types_by_name["Actions"] = _ACTIONS
 DESCRIPTOR.message_types_by_name["Action"] = _ACTION
 DESCRIPTOR.message_types_by_name["Continuous"] = _CONTINUOUS
@@ -782,6 +888,27 @@ DESCRIPTOR.message_types_by_name["Trajectory"] = _TRAJECTORY
 DESCRIPTOR.message_types_by_name["MultiTargetPose"] = _MULTITARGETPOSE
 DESCRIPTOR.message_types_by_name["MPC"] = _MPC
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+ActionsBoid = _reflection.GeneratedProtocolMessageType(
+    "ActionsBoid",
+    (_message.Message,),
+    {
+        "BoidsEntry": _reflection.GeneratedProtocolMessageType(
+            "BoidsEntry",
+            (_message.Message,),
+            {
+                "DESCRIPTOR": _ACTIONSBOID_BOIDSENTRY,
+                "__module__": "action_pb2"
+                # @@protoc_insertion_point(class_scope:action.ActionsBoid.BoidsEntry)
+            },
+        ),
+        "DESCRIPTOR": _ACTIONSBOID,
+        "__module__": "action_pb2"
+        # @@protoc_insertion_point(class_scope:action.ActionsBoid)
+    },
+)
+_sym_db.RegisterMessage(ActionsBoid)
+_sym_db.RegisterMessage(ActionsBoid.BoidsEntry)
 
 Actions = _reflection.GeneratedProtocolMessageType(
     "Actions",
@@ -904,5 +1031,6 @@ MPC = _reflection.GeneratedProtocolMessageType(
 _sym_db.RegisterMessage(MPC)
 
 
+_ACTIONSBOID_BOIDSENTRY._options = None
 _ACTIONS_VEHICLESENTRY._options = None
 # @@protoc_insertion_point(module_scope)

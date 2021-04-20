@@ -180,18 +180,33 @@ def fix_agent_observation_size(
     return fixed_obs
 
 
-def observations_to_proto(obs):
-    # if obs is non_boid_agent, i.e., obs=Sensors.Observation()
-    if isinstance(obs, tuple):
-        vehicle_obs = observation_to_proto(obs)
-        proto = {"NON_BOID": vehicle_obs}
+def observations_to_proto(obs) -> observation_pb2.ObservationsBoid:
+    keys = list(obs.keys())
+
+    # if obs is boid agent, i.e., obs={<*-boid-*>: {<vehicle_id>: Sensors.Observation()} }
+    if "boid" in keys[0]:
+        assert len(keys) == 1, "Incorrect boid dictionary structure in observation."
+        boid_key = keys[0]
+        obs = obs[boid_key]
+        proto = {
+            boid_key: observation_pb2.Observations(
+                vehicles={
+                    vehicle_id: observation_to_proto(vehicle_obs)
+                    for vehicle_id, vehicle_obs in obs.items()
+                }
+            )
+        }
 
     # if obs is empty, i.e., obs=={}, or
-    # if obs is boid_agent, i.e., obs={<vehicle_id>: Sensors.Observation()}
+    # if obs is non boid agent, i.e., obs={<vehicle_id>: Sensors.Observation()}
     else:
         proto = {
-            vehicle_id: observation_to_proto(vehicle_obs)
-            for vehicle_id, vehicle_obs in obs.items()
+            "unused": observation_pb2.Observations(
+                vehicles={
+                    vehicle_id: observation_to_proto(vehicle_obs)
+                    for vehicle_id, vehicle_obs in obs.items()
+                }
+            )
         }
 
     return proto
@@ -248,16 +263,27 @@ def observation_to_proto(obs):
     )
 
 
-def proto_to_observations(proto):
-    vehicles = proto.vehicles
+def proto_to_observations(proto: observation_pb2.ObservationsBoid):
+    boids = proto.boids
+    keys = list(boids.keys())
+    assert len(keys) == 1, "Incorrect observation proto structure."
+    boid_key = keys[0]
+    vehicles = boids[boid_key].vehicles
 
-    if "NON_BOID" in vehicles.keys():
-        obs = proto_to_observation(vehicles["NON_BOID"])
-    else:
+    if "boid" in boid_key:
+        obs = {
+            boid_key: {
+                vehicle_id: proto_to_observation(vehicle_proto)
+                for vehicle_id, vehicle_proto in vehicles.items()
+            }
+        }
+    elif "unused" in boid_key:
         obs = {
             vehicle_id: proto_to_observation(vehicle_proto)
             for vehicle_id, vehicle_proto in vehicles.items()
         }
+    else:
+        raise ValueError(f"Incorrect observation proto structure: {proto}.")
 
     return obs
 

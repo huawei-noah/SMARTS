@@ -23,8 +23,8 @@ class WorkerStub(object):
         )
         self.act = channel.unary_unary(
             "/worker.Worker/act",
-            request_serializer=observation__pb2.Observations.SerializeToString,
-            response_deserializer=action__pb2.Actions.FromString,
+            request_serializer=observation__pb2.ObservationsBoid.SerializeToString,
+            response_deserializer=action__pb2.ActionsBoid.FromString,
         )
 
 
@@ -53,8 +53,8 @@ def add_WorkerServicer_to_server(servicer, server):
         ),
         "act": grpc.unary_unary_rpc_method_handler(
             servicer.act,
-            request_deserializer=observation__pb2.Observations.FromString,
-            response_serializer=action__pb2.Actions.SerializeToString,
+            request_deserializer=observation__pb2.ObservationsBoid.FromString,
+            response_serializer=action__pb2.ActionsBoid.SerializeToString,
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -110,8 +110,8 @@ class Worker(object):
             request,
             target,
             "/worker.Worker/act",
-            observation__pb2.Observations.SerializeToString,
-            action__pb2.Actions.FromString,
+            observation__pb2.ObservationsBoid.SerializeToString,
+            action__pb2.ActionsBoid.FromString,
             options,
             channel_credentials,
             call_credentials,

@@ -24,6 +24,11 @@ syntax = "proto3";
 
 package action;
 
+// Boid agent's actions in response to the observation
+message ActionsBoid {
+    map<string, Actions> boids=1;
+}
+
 // Agent's actions in response to the observation
 message Actions {
     map<string, Action> vehicles=1;

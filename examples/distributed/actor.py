@@ -36,23 +36,13 @@ def actor_loop(env, addr, num_episodes):
 
             # Send observations and receive actions for all agents
             learner_actions_proto = learner_stub.act(
-                observation_pb2.Observations(
-                    vehicles=obs_util.observations_to_proto(obs),
+                observation_pb2.ObservationsBoid(
+                    boids=obs_util.observations_to_proto(obs),
                 )
             )
             learner_actions = act_util.proto_to_actions(learner_actions_proto)
-
-            # print("-----------------------------------------------")
-            # print("obs before = ", obs.keys())
-            # print("learner_actions_proto = ", learner_actions_proto)
-            # print("learner_actions = ", learner_actions)
-
             obs, rewards, dones, infos = env.step(learner_actions)
             episode.record_step(obs, rewards, dones, infos)
-
-            # print("dones = ", dones)
-            # print("obs after= ", obs.keys())
-            # print("==============================================")
 
     env.close()
 

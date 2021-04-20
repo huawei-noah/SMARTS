@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x0cworker.proto\x12\x06worker\x1a\x0c\x61\x63tion.proto\x1a\x11observation.proto" \n\rSpecification\x12\x0f\n\x07payload\x18\x01 \x01(\x0c"\x08\n\x06Status2o\n\x06Worker\x12\x30\n\x05\x62uild\x12\x15.worker.Specification\x1a\x0e.worker.Status"\x00\x12\x33\n\x03\x61\x63t\x12\x19.observation.Observations\x1a\x0f.action.Actions"\x00\x62\x06proto3',
+    serialized_pb=b'\n\x0cworker.proto\x12\x06worker\x1a\x0c\x61\x63tion.proto\x1a\x11observation.proto" \n\rSpecification\x12\x0f\n\x07payload\x18\x01 \x01(\x0c"\x08\n\x06Status2w\n\x06Worker\x12\x30\n\x05\x62uild\x12\x15.worker.Specification\x1a\x0e.worker.Status"\x00\x12;\n\x03\x61\x63t\x12\x1d.observation.ObservationsBoid\x1a\x13.action.ActionsBoid"\x00\x62\x06proto3',
     dependencies=[
         action__pb2.DESCRIPTOR,
         observation__pb2.DESCRIPTOR,
@@ -126,7 +126,7 @@ _WORKER = _descriptor.ServiceDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_start=101,
-    serialized_end=212,
+    serialized_end=220,
     methods=[
         _descriptor.MethodDescriptor(
             name="build",
@@ -143,8 +143,8 @@ _WORKER = _descriptor.ServiceDescriptor(
             full_name="worker.Worker.act",
             index=1,
             containing_service=None,
-            input_type=observation__pb2._OBSERVATIONS,
-            output_type=action__pb2._ACTIONS,
+            input_type=observation__pb2._OBSERVATIONSBOID,
+            output_type=action__pb2._ACTIONSBOID,
             serialized_options=None,
             create_key=_descriptor._internal_create_key,
         ),
