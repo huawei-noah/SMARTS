@@ -138,9 +138,7 @@ def draw_intersection(
     font = cv2.FONT_HERSHEY_DUPLEX
 
     for state in social_vehicle_states:  # .items():
-        # print(state['behavior'])
-        # if v_id not in finished_vehicles:
-        # behavior_key, behavior_color = get_social_vehicle_color(state["behavior"])
+        behavior_key, behavior_color = get_social_vehicle_color(state.id)
         pos_x = fig_offset_x + int(state.position[0] * fig_mul)
         pos_y = fig_offset_y - int(state.position[1] * fig_mul)
         canvas = cv2.circle(
@@ -154,7 +152,7 @@ def draw_intersection(
             thickness=2,
         )
         canvas = cv2.putText(
-            canvas, str(v_id), (pos_x + 4, pos_y + 4), font, 0.3, behavior_color, 1,
+            canvas, str(state.id), (pos_x + 4, pos_y + 4), font, 0.3, behavior_color, 1,
         )
         colors_legend.add((behavior_key, behavior_color))
     # print(ego)
