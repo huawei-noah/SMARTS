@@ -48,9 +48,9 @@ def basic_begin_time_init_func(num_lanes, num_vehicle, **params):
 def burst_begin_time_init_func(
     num_lanes,
     num_vehicle,
-    vehicle_cluster_size=(10, 12),
-    time_between_cluster=(12, 15),
-    time_for_each_cluster=10,
+    vehicle_cluster_size=(4,5),
+    time_between_cluster=(20, 30),
+    time_for_each_cluster=3,
 ):
     print("BURST MODE")
     begin_times = []
