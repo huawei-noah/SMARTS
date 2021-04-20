@@ -23,7 +23,14 @@ from ray.tune.schedulers import PopulationBasedTraining
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 
 from examples.game_of_tag.game_of_tag import shared_interface, TrainingModel
-from examples.game_of_tag.tag_adapters import OBSERVATION_SPACE, PREDATOR_IDS, PREY_IDS, observation_adapter
+from examples.game_of_tag.tag_adapters import (
+    OBSERVATION_SPACE,
+    PREDATOR_IDS,
+    PREY_IDS,
+    observation_adapter,
+    predator_reward_adapter,
+    prey_reward_adapter,
+)
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec, Agent
@@ -31,35 +38,50 @@ from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.utils.episodes import episodes
 from smarts.core.controllers import ActionSpaceType
 
-tf = try_import_tf()[0]
+tf = try_import_tf()[1]
 
 ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
+
+def action_adapter(model_action):
+    speed, laneChange = model_action
+    speeds = [0, 3, 6, 9, 12]
+    adapted_action = [speeds[speed], laneChange-1]
+    return adapted_action
 
 class TagModelAgent(Agent):
     def __init__(self, path_to_model, observation_space, policy_name):
         path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
+        print(f"path {path_to_model}")
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._sess = tf.compat.v1.Session(graph=tf.Graph())
         self._policy_name = policy_name
+        #self._model = tf.saved_model.load(path_to_model)
         tf.compat.v1.saved_model.load(  # model should be already trained
             self._sess, export_dir=path_to_model, tags=["serve"]
         )
-        self._output_node = self._sess.graph.get_tensor_by_name(f"{policy_name}/add:0") # how to know the name
+        self._output_node = self._sess.graph.get_tensor_by_name(f"{policy_name}/add:0") # how to know the name action
         self._input_node = self._sess.graph.get_tensor_by_name(
             f"{policy_name}/observation:0"
         )
+        print("herere")
+        x = [n.name for n in tf.compat.v1.get_default_graph().as_graph_def().node]
+        print(x)
+        print(tf.compat.v1.global_variables())
+        print(self._sess.graph.get_operations() )
+        # pass
 
-    def __del__(self):
-        self._sess.close()
+    # def __del__(self):
+    #     self._sess.close()
 
     def act(self, obs):
-        # obs = self._prep.transform(obs)
-        # # These tensor names were found by inspecting the trained model
-        # res = self._sess.run(self._output_node, feed_dict={self._input_node: [obs]})
-        # action = res
-        # print(f"output action: {action}")
-        # return action
-        return [1, 0]
+        obs = self._prep.transform(obs)
+        # These tensor names were found by inspecting the trained model
+        res = self._sess.run(self._output_node, feed_dict={self._input_node: [obs]})
+        action = res
+        print(f"output action: {action}")
+        return action
+        # return [4, 0]
+
 
 # modelcreation = TagModelAgent(
 #     os.path.join(os.path.dirname(os.path.realpath(__file__)), "models/predator_model"), # assume model exists
@@ -84,22 +106,30 @@ def main(scenario, headless, resume_training, result_dir, seed):
         agent_specs[agent_id] = AgentSpec(
             interface=shared_interface,
             agent_builder=lambda: TagModelAgent(
-                os.path.join(os.path.dirname(os.path.realpath(__file__)), "models/predator_model"), # assume model exists
+                os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)), "models/predator_model"
+                ),  # assume model exists
                 OBSERVATION_SPACE,
-                'predator_policy'
+                "predator_policy",
             ),
             observation_adapter=observation_adapter,
+            reward_adapter=predator_reward_adapter,
+            action_adapter=action_adapter,
         )
 
     for agent_id in PREY_IDS:
         agent_specs[agent_id] = AgentSpec(
             interface=shared_interface,
             agent_builder=lambda: TagModelAgent(
-                os.path.join(os.path.dirname(os.path.realpath(__file__)), "models/prey_model"), # assume model exists
+                os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)), "models/prey_model"
+                ),  # assume model exists
                 OBSERVATION_SPACE,
-                'prey_policy'
+                "prey_policy",
             ),
             observation_adapter=observation_adapter,
+            reward_adapter=prey_reward_adapter,
+            action_adapter=action_adapter,
         )
 
     env = gym.make(

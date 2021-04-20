@@ -6,26 +6,11 @@ from typing import List
 import time
 from dataclasses import dataclass
 
-# questions:
-# use state in reward adaptor? have negative reward based on previous states
-# use the same model on a different map?
-# training procedures
+# PREDATOR_IDS = ["PRED1", "PRED2", "PRED3", "PRED4"]
+# PREY_IDS = ["PREY1", "PREY2"]
 
-#  predator agent interface 
-
-# start with mininum - just collision reward
-## Prey with caught: -1*(0.1)^(timesteps), more deduction 
-
-## continuous agentinterface on figure 8 map?
-
-## messaging channel between agents? sending and receiving actions
-
-
-PREDATOR_IDS = ["PRED1", "PRED2", "PRED3", "PRED4"]
-PREY_IDS = ["PREY1", "PREY2"]
-
-# PREDATOR_IDS = ["PRED1"]
-# PREY_IDS = ["PREY1"]
+PREDATOR_IDS = ["PRED1"]
+PREY_IDS = ["PREY1"]
 
 class TrainingState:
     """a class to keep track of training states"""
@@ -58,6 +43,7 @@ class TrainingState:
 
     @classmethod
     def punish_if_action_changed(cls, agent_id):
+        return 0
         actions_queue = cls.last_two_actions_of_agent[agent_id]
         if len(actions_queue) < 2:
             return 0
@@ -117,6 +103,7 @@ OBSERVATION_SPACE = gym.spaces.Dict(
         #"heading": gym.spaces.Box(low=-1 * np.pi, high=np.pi, shape=(1,)),
         #"speed": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
         "position": gym.spaces.Box(low=-1e3, high=1e3, shape=(2,)),
+        "distance_to_curb": gym.spaces.Box(low=-1e2, high=1e2, shape=(1,)),
         # add distance between prey and predator
         #"min_distance_to_prey": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
         #"min_distance_to_predator": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
@@ -206,10 +193,74 @@ def min_distance_to_rival(ego_position, rival_ids, neighbour_states):
         default=0,
     )
 
+def calculate_x_y_of_angle(tangent,angle):
+    return tangent * math.cos(angle), tangent * math.sin(angle)
+
+def new_axis_position(pos1, pos2, axis, value):
+    # since the lane width portion should always make the distance between 2 points longer
+    if abs(pos1[axis] + value - pos2[axis]) > abs(pos1[axis] - pos2[axis]):
+        return pos1[axis] + value
+    
+    return pos1[axis] - value
+
+def calculate_distance_to_road_curb(observations):
+    ego = observations.ego_vehicle_state
+    pos_data = [[points[0].pos, points[0].lane_width] for points in observations.waypoint_paths]
+    if len(pos_data) > 1 and np.any(pos_data[0][0] != pos_data[-1][0]):
+        first_pos = pos_data[0][0]
+        last_pos = pos_data[-1][0]
+        first_width = pos_data[0][1]/2 
+        last_width = pos_data[-1][1]/2
+
+        # find slope
+        slope = (first_pos[1]-last_pos[1]) / (first_pos[0]-last_pos[0])
+
+        # find angle
+        angle = math.atan(slope)
+
+        # find 2 edge points
+        x, y  = calculate_x_y_of_angle(first_width, angle)
+        y = new_axis_position(first_pos, last_pos, 1, y)
+        x = new_axis_position(first_pos, last_pos, 0, x)
+        first_pos_edge_ptr = [x, y]
+
+        x, y = calculate_x_y_of_angle(last_width, angle)
+        y = new_axis_position(last_pos, first_pos, 1, y)
+        x = new_axis_position(last_pos, first_pos, 0, x)
+        last_pos_edge_ptr = [x, y]
+
+        # find distance to the edge points
+        distance =  min(
+            np.linalg.norm(ego.position[:2] - np.array(first_pos_edge_ptr)),
+            np.linalg.norm(ego.position[:2] - np.array(last_pos_edge_ptr)),
+        )
+        print(f"ego id: {ego.id} distance: {distance}")
+        return distance
+    else:
+        pos_data = [[[p.pos, p.lane_width] for p in points] for points in observations.waypoint_paths]
+        first_pos = pos_data[0][0][0]
+        last_pos = pos_data[0][2][0] # assume at least 3 waypoints
+        first_width = pos_data[0][0][1]/2 
+
+        slope = (first_pos[1]-last_pos[1]) / (first_pos[0]-last_pos[0])
+        # perpendicular slope
+        slope = -1 * 1/slope
+        angle = math.atan(slope)
+        # find 2 edge points
+        x, y  = calculate_x_y_of_angle(first_width, angle)
+        p1 = [first_pos[0] + x, first_pos[1] + y]
+        p2 = [first_pos[0] - x, first_pos[1] - y]
+        distance =  min(
+            np.linalg.norm(ego.position[:2] - np.array(p1)),
+            np.linalg.norm(ego.position[:2] - np.array(p2)),
+        )
+        print(f"ego id: {ego.id} distance: {distance}")
+        return distance
+
 
 def observation_adapter(observations):
-    # pos_data = [[p.pos for p in points] for points in observations.waypoint_paths]
-    # print(f"{observations.ego_vehicle_state.id} {observations.ego_vehicle_state.position[:2]} waypoints: {pos_data}")
+    distance = calculate_distance_to_road_curb(observations)
+
     nv_states = observations.neighborhood_vehicle_states
     # if observations.drivable_area_grid_map:
     #     np.save("grid_map", observations.drivable_area_grid_map.data)
@@ -222,7 +273,6 @@ def observation_adapter(observations):
     predator_states = get_specfic_vehicle_states(nv_states, PREDATOR_IDS, observations.ego_vehicle_state)
     prey_states = get_specfic_vehicle_states(nv_states, PREY_IDS, observations.ego_vehicle_state)
 
-    ego = observations.ego_vehicle_state
     # min_distance_to_prey = min_distance_to_rival(
     #     observations.ego_vehicle_state.position,
     #     PREY_IDS,
@@ -236,7 +286,8 @@ def observation_adapter(observations):
     return {
         #"heading": np.array([ego.heading]),
         #"speed": np.array([ego.speed]),
-        "position": np.array(ego.position[:2]),
+        "position": np.array(observations.ego_vehicle_state.position[:2]),
+        "distance_to_curb":np.array([distance]),
         #"min_distance_to_prey": np.array([min_distance_to_prey]),
         #"min_distance_to_predator": np.array([min_distance_to_predator]),
         "predator_vehicles": tuple(predator_states),
@@ -246,6 +297,12 @@ def observation_adapter(observations):
 
 def apply_discount(reward):
     return math.pow(global_rewards.discount_factor, TrainingState.timestamp) * reward
+
+def distance_to_curb_reward(observations):
+    # 3 log(distance) - 0.5
+    distance = calculate_distance_to_road_curb(observations)
+    return 3 * math.log10(calculate_distance_to_road_curb(observations)) - 1.5
+
 
 def range_within(val, target, range):
     return val - range <= target and target <= val + range
@@ -257,6 +314,7 @@ def predator_reward_adapter(observations, env_reward_signal):
     """
     collided_with_prey = False
     rew = global_rewards.pred_base_reward
+    rew += distance_to_curb_reward(observations)
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
     # )  # encourage predator to drive
@@ -343,6 +401,7 @@ def prey_reward_adapter(observations, env_reward_signal):
 
     collided_with_pred = False
     rew = global_rewards.prey_base_reward
+    rew += distance_to_curb_reward(observations)
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
     # )  # encourages driving

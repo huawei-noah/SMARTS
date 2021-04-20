@@ -35,18 +35,19 @@ from smarts.core.utils.file import copy_tree
 
 
 from examples.game_of_tag.tag_adapters import *
+from examples.game_of_tag.model import CustomFCModel
 
 tf = try_import_tf()
 
 
 # NUM_SOCIAL_VEHICLES = 10 ######### Why we have to define how many social vehicles?
 
-# to make this network smaller, neural network accept bits?
-class TrainingModel(FullyConnectedNetwork):
-    NAME = "FullyConnectedNetwork"
+# # to make this network smaller, neural network accept bits?
+# class TrainingModel(FullyConnectedNetwork):
+#     NAME = "FullyConnectedNetwork"
 
 
-ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
+ModelCatalog.register_custom_model('CustomFCModel', CustomFCModel)
 
 rllib_agents = {}
 # add custom done criteria - maybe not
@@ -181,12 +182,13 @@ def main(args):
             rllib_agent["observation_space"],
             rllib_agent["action_space"],
             # TrainingModel is a FullyConnectedNetwork, which is the default in rllib
-            {"model": {"custom_model": TrainingModel.NAME}},
+            {"model": {"custom_model": 'CustomFCModel'}},
         )
         for agent_id, rllib_agent in rllib_agents.items()
     }
     tune_config = {
         "env": RLlibHiWayEnv,
+        #"framework": "tf2", # Can't export model
         "log_level": "WARN",
         "num_workers": 1, # if use 2 workers, is TrainingState global to both workers? if so, there can only be 1 worker
         "explore": True,
@@ -228,7 +230,7 @@ def main(args):
         stop=TimeStopper(),
         # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
         #      different than _exporting_ a TF/PT checkpoint).
-        checkpoint_freq=5,
+        checkpoint_freq=2,
         checkpoint_at_end=True,
         # XXX: Beware, resuming after changing tune params will not pick up
         #      the new arguments as they are stored alongside the checkpoint.
@@ -236,7 +238,7 @@ def main(args):
         #restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_77a55_00000_0_2021-04-06_12-59-36/checkpoint_133/checkpoint-133",
         local_dir=local_dir,
         reuse_actors=True,
-        max_failures=1,
+        max_failures=0,
         export_formats=["model", "checkpoint"],
         config=tune_config,
         scheduler=pbt,
@@ -252,16 +254,17 @@ def main(args):
     # copy_tree(str(model_path), save_model_path, overwrite=True)
     # print(f"Wrote model to: {save_model_path}")
     
-    # supposed to output a model
-    # checkpoint_path = '/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_da6b4_00000_0_2021-04-15_19-25-23/checkpoint_50/checkpoint-50'
+    # #supposed to output a model
+    # checkpoint_path = '/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_0e3cb_00000_0_2021-04-20_13-44-28/checkpoint_2/checkpoint-2'
     # ray.init(num_cpus=2)
     # training_agent = PPOTrainer(env=RLlibHiWayEnv,config=tune_config)
     # training_agent.restore(checkpoint_path)
     # prefix = "model.ckpt"
-    # model_dir = os.path.join(os.getcwd(), "model_export_dir")
+    # model_dir = os.path.join(os.getcwd(), "prey_model_dir")
     # print(f'model path: {model_dir}')
     # #training_agent.export_policy_checkpoint('model', filename_prefix=prefix)
     # training_agent.export_policy_model(model_dir)
+    # print('works')
 
 
 if __name__ == "__main__":
