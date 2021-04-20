@@ -50,7 +50,11 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
 
         cmd = [
             sys.executable,  # Path to the current Python binary.
-            str((pathlib.Path(__file__).parent / "worker.py").absolute().resolve()),
+            str(
+                (pathlib.Path(__file__).parent.parent / "rpc" / "worker.py")
+                .absolute()
+                .resolve()
+            ),
             "--port",
             str(port),
         ]

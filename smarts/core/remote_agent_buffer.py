@@ -33,6 +33,7 @@ import grpc
 from smarts.core.remote_agent import RemoteAgent, RemoteAgentException
 from smarts.core.utils.networking import find_free_port
 from smarts.proto import manager_pb2, manager_pb2_grpc
+from smarts.rpc import worker
 from smarts.zoo import manager as zoo_manager
 
 
@@ -84,7 +85,8 @@ class RemoteAgentBuffer:
 
         # Populate zoo manager connection with channel and stub details.
         for conn in self._zoo_manager_conns:
-            conn["channel"], conn["stub"] = get_manager_channel_stub(conn["address"])
+            conn["channel"] = worker.get_channel(conn["address"])
+            conn["stub"] = manager_pb2_grpc.ManagerStub(conn["channel"])
 
         self._buffer_size = buffer_size
         self._replenish_threadpool = futures.ThreadPoolExecutor()
@@ -190,14 +192,3 @@ def spawn_local_zoo_manager(port):
     manager = Process(target=zoo_manager.serve, args=(port,))
     manager.start()
     return manager
-
-
-def get_manager_channel_stub(addr):
-    channel = grpc.insecure_channel(f"{addr[0]}:{addr[1]}")
-    try:
-        # Wait until the grpc server is ready or timeout after 30 seconds
-        grpc.channel_ready_future(channel).result(timeout=30)
-    except grpc.FutureTimeoutError:
-        raise RemoteAgentException("Timeout in connecting to remote zoo manager.")
-    stub = manager_pb2_grpc.ManagerStub(channel)
-    return channel, stub

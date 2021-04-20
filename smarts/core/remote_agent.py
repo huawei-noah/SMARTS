@@ -38,6 +38,8 @@ from smarts.proto import (
     worker_pb2,
     worker_pb2_grpc,
 )
+from smarts.rpc import worker
+from typing import Tuple
 
 
 class RemoteAgentException(Exception):
@@ -45,27 +47,16 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, manager_address, worker_address):
+    def __init__(self, manager_address: Tuple, worker_address: Tuple):
         self._log = logging.getLogger(self.__class__.__name__)
 
         # Track the last action future.
         self._act_future = None
 
-        self._manager_channel = grpc.insecure_channel(
-            f"{manager_address[0]}:{manager_address[1]}"
-        )
+        self._manager_channel = worker.get_channel(manager_address)
         self._worker_address = worker_address
-        self._worker_channel = grpc.insecure_channel(
-            f"{worker_address[0]}:{worker_address[1]}"
-        )
-        try:
-            # Wait until the grpc server is ready or timeout after 30 seconds.
-            grpc.channel_ready_future(self._manager_channel).result(timeout=30)
-            grpc.channel_ready_future(self._worker_channel).result(timeout=30)
-        except grpc.FutureTimeoutError as e:
-            raise RemoteAgentException(
-                "Timeout while connecting to remote worker process."
-            ) from e
+        self._worker_channel = worker.get_channel(worker_address)
+
         self._manager_stub = manager_pb2_grpc.ManagerStub(self._manager_channel)
         self._worker_stub = worker_pb2_grpc.WorkerStub(self._worker_channel)
 

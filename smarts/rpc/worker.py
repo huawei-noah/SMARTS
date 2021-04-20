@@ -122,6 +122,8 @@ def spawn(target, port: int):
 
 
 def get_channel(addr):
+    """Create a channel to grpc server running at addr."""
+
     channel = grpc.insecure_channel(f"{addr[0]}:{addr[1]}")
     try:
         # Wait until the grpc server is ready or timeout after 30 seconds
