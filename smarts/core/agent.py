@@ -58,6 +58,15 @@ class Agent:
 
         raise NotImplementedError
 
+    def step(self, state, action, reward, next_state, done, info):
+        return {}
+
+    def save(self, path):
+        pass
+
+    def load(self, path):
+        pass
+
 
 # Remain backwards compatible with existing Agent's
 class AgentPolicy(Agent):
