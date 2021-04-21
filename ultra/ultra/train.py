@@ -252,7 +252,7 @@ def train(
 
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        episode.record_tensorboard()
+        episode.record_tensorboard(recording_step=episode.index)
 
         if grade_mode == True:
             if (

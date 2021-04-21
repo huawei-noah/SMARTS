@@ -113,37 +113,38 @@ def evaluation_check(
             "eval_train",
         )
 
-    for agent_id in agent_ids_to_evaluate:
-        # Get the checkpoint directory for the current agent and save its model.
-        checkpoint_directory = episode.checkpoint_dir(
-            agent_id, episode.get_itr(agent_id)
-        )
-        agents[agent_id].save(checkpoint_directory)
+    ''' For ultra-gb, evaluating on train episode is not necessary'''
+    # for agent_id in agent_ids_to_evaluate:
+    #     # Get the checkpoint directory for the current agent and save its model.
+    #     checkpoint_directory = episode.checkpoint_dir(
+    #         agent_id, episode.get_itr(agent_id)
+    #     )
+    #     agents[agent_id].save(checkpoint_directory)
 
-        evaluation_train_task_id = evaluate.remote(
-            seed=episode.eval_count,
-            experiment_dir=episode.experiment_dir,
-            agent_ids=[agent_id],
-            policy_classes={agent_id: policy_classes[agent_id]},
-            checkpoint_dirs={agent_id: checkpoint_directory},
-            scenario_info=scenario_info,
-            num_episodes=eval_episodes,
-            max_episode_steps=max_episode_steps,
-            headless=headless,
-            timestep_sec=timestep_sec,
-            log_dir=log_dir,
-            grade_mode=grade_mode,
-            agent_coordinator=agent_coordinator,
-            eval_mode=False,
-        )
-        evaluation_task_ids[evaluation_train_task_id] = (
-            episode.get_itr(agent_id),
-            episode,
-            "eval",
-        )
+    #     evaluation_train_task_id = evaluate.remote(
+    #         seed=episode.eval_count,
+    #         experiment_dir=episode.experiment_dir,
+    #         agent_ids=[agent_id],
+    #         policy_classes={agent_id: policy_classes[agent_id]},
+    #         checkpoint_dirs={agent_id: checkpoint_directory},
+    #         scenario_info=scenario_info,
+    #         num_episodes=eval_episodes,
+    #         max_episode_steps=max_episode_steps,
+    #         headless=headless,
+    #         timestep_sec=timestep_sec,
+    #         log_dir=log_dir,
+    #         grade_mode=grade_mode,
+    #         agent_coordinator=agent_coordinator,
+    #         eval_mode=False,
+    #     )
+    #     evaluation_task_ids[evaluation_train_task_id] = (
+    #         episode.get_itr(agent_id),
+    #         episode,
+    #         "eval",
+    #     )
 
-        episode.eval_count += 1
-        episode.last_eval_iterations[agent_id] = episode.get_itr(agent_id)
+    #     episode.eval_count += 1
+    #     episode.last_eval_iterations[agent_id] = episode.get_itr(agent_id)
 
 
 def collect_evaluations(evaluation_task_ids: dict):
@@ -267,8 +268,8 @@ def evaluate(
         scenario["density_counter"] = density_counter
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        if grade_mode == True and eval_mode == True:
-            episode.record_tensorboard()
+        if eval_mode == True:
+            episode.record_tensorboard(recording_step=episode.index)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
