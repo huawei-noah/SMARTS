@@ -66,6 +66,7 @@ class State(NamedTuple):
     lane_ids: Dict[str, str]
     frame_time: float
 
+
 def format_actor_id(actor_id: str, vehicle_id: str, is_multi: bool):
     if is_multi:
         return f"{actor_id}-{{{vehicle_id[:4]}}}"

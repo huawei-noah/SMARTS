@@ -67,7 +67,7 @@ class AllowCORSMixin:
 
 class Frame:
     def __init__(self, data: State, next_=None):
-        self._timestamp = data['frame_time']
+        self._timestamp = data["frame_time"]
         self._data = data
         self._size = sys.getsizeof(data)
         self.next_ = next_
