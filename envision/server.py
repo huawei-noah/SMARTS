@@ -263,8 +263,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         del FRAMES[self._simulation_id]
 
     async def on_message(self, message):
-        frame = Frame(data=json.loads(message))
-        self._frames.append(frame)
+        self._frames.append(Frame(data=json.loads(message)))
 
 
 class StateWebSocket(tornado.websocket.WebSocketHandler):
