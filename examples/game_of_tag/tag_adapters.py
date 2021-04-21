@@ -23,6 +23,7 @@ class Rewards:
     blocking_prey_reward: float  = 0.03
 
 global_rewards = Rewards()
+COLLIDE_DISTANCE = 3.8
 
 # ACTION_SPACE = gym.spaces.Box(
 #     low=np.array([0.0, 0.0, -1.0]), # throttle can be negative?
@@ -193,7 +194,7 @@ def calculate_distance_to_road_curb(observations):
 
 
 def observation_adapter(observations):
-    distance = calculate_distance_to_road_curb(observations)
+    # distance = calculate_distance_to_road_curb(observations)
 
     nv_states = observations.neighborhood_vehicle_states
     # if observations.drivable_area_grid_map:
@@ -244,8 +245,12 @@ def distance_to_curb_reward(observations):
 def range_within(val, target, range):
     return val - range <= target and target <= val + range
 
+# collide at 3.8918972164801677 if from behind
+# colldie at 2.11 if from side
+
 def dominant_reward(distance):
-    return 5*(1/(distance*distance))
+    assert distance != COLLIDE_DISTANCE
+    return min(0.5/((distance-COLLIDE_DISTANCE)**2), 10)
 
 def predator_reward_adapter(observations, env_reward_signal):
     """+ if collides with prey
@@ -259,7 +264,10 @@ def predator_reward_adapter(observations, env_reward_signal):
         PREY_IDS,
         observations.neighborhood_vehicle_states,
     )
-    rew += max(dominant_reward(distance_to_target), 10)
+    if distance_to_target == COLLIDE_DISTANCE:
+        rew += 10
+    else:
+        rew += dominant_reward(distance_to_target)
 
     # rew += distance_to_curb_reward(observations)
     # rew = 0.2 * np.sum(
@@ -269,7 +277,7 @@ def predator_reward_adapter(observations, env_reward_signal):
     for c in observations.events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREY_IDS):
             rew += global_rewards.collesion_with_target
-            print(f"predator {observations.ego_vehicle_state.id} collided with prey {c.collidee_id}")
+            print(f"predator {observations.ego_vehicle_state.id} collided with prey {c.collidee_id} distance {distance_to_target}")
         # else:
         #     # Collided with something other than the prey
         #     rew += global_rewards.collesion_with_other_deduction
@@ -330,7 +338,7 @@ def predator_reward_adapter(observations, env_reward_signal):
         lambda v: _is_vehicle_wanted(v.id, PREY_IDS), observations.neighborhood_vehicle_states,
     ))
     rew = rew if len(prey_vehicles) > 0 else 0
-    print(f"predator {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
+    #print(f"predator {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew} distance {distance_to_target}")
     return rew
 
 
@@ -352,13 +360,16 @@ def prey_reward_adapter(observations, env_reward_signal):
         observations.neighborhood_vehicle_states,
     )
     # set min on the reward
-    rew -= min(dominant_reward(distance_to_target, -10),
+    if distance_to_target == COLLIDE_DISTANCE:
+        rew -= 10
+    else:
+        rew -= dominant_reward(distance_to_target)
 
     events = observations.events
     for c in events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREDATOR_IDS):
             rew -= global_rewards.collesion_with_target
-            print(f"prey {observations.ego_vehicle_state.id} collided with Predator {c.collidee_id}")
+            print(f"prey {observations.ego_vehicle_state.id} collided with Predator {c.collidee_id} distance {distance_to_target}")
         # else:
         #     # Collided with something other than the prey
         #     rew += global_rewards.collesion_with_other_deduction
@@ -380,5 +391,5 @@ def prey_reward_adapter(observations, env_reward_signal):
         lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS), observations.neighborhood_vehicle_states,
     ))
     rew = rew if len(predator_vehicles) > 0 else 0
-    print(f"prey {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
+    #print(f"prey {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew} distance {distance_to_target}")
     return rew

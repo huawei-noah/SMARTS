@@ -185,7 +185,7 @@ def main(args):
         #"framework": "tf2", # Can't export model
         "framework": "torch",
         "log_level": "WARN",
-        "num_workers": 2,
+        "num_workers": 3,
         "explore": True,
         # 'sample_batch_size': 200,  # XXX: 200
         # 'train_batch_size': 4000,
@@ -225,7 +225,7 @@ def main(args):
         stop=TimeStopper(),
         # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
         #      different than _exporting_ a TF/PT checkpoint).
-        checkpoint_freq=2,
+        checkpoint_freq=5,
         checkpoint_at_end=True,
         # XXX: Beware, resuming after changing tune params will not pick up
         #      the new arguments as they are stored alongside the checkpoint.
