@@ -16,13 +16,16 @@ import multiprocessing
 
 import gym
 import numpy as np
+import ray
 from ray import tune
 from ray.rllib.models import ModelCatalog
 from ray.rllib.utils import try_import_tf
 from ray.tune.schedulers import PopulationBasedTraining
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
+from ray.rllib.agents.ppo import PPOTrainer
 
-from examples.game_of_tag.game_of_tag import shared_interface, TrainingModel
+from examples.game_of_tag.game_of_tag import shared_interface, build_tune_config
+from examples.game_of_tag.model import CustomFCModel
 from examples.game_of_tag.tag_adapters import (
     OBSERVATION_SPACE,
     PREDATOR_IDS,
@@ -40,7 +43,11 @@ from smarts.core.controllers import ActionSpaceType
 
 tf = try_import_tf()[1]
 
-ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
+# must use >3 cpus since training used 3 workers
+ray.init(num_cpus=4)
+
+
+ModelCatalog.register_custom_model('CustomFCModel', CustomFCModel)
 
 def action_adapter(model_action):
     speed, laneChange = model_action
@@ -49,38 +56,23 @@ def action_adapter(model_action):
     return adapted_action
 
 class TagModelAgent(Agent):
-    def __init__(self, path_to_model, observation_space, policy_name):
-        path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
-        print(f"path {path_to_model}")
-        self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
-        self._sess = tf.compat.v1.Session(graph=tf.Graph())
+    def __init__(self, path_to_checkpoint, scenario, headless, policy_name):
+        path_to_checkpoint = str(path_to_checkpoint)  # might be a str or a Path, normalize to str
+        path_to_checkpoint = '/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_27d5a_00000_0_2021-04-21_00-15-07/checkpoint_920/checkpoint-920'
+        tune_config = build_tune_config(scenario, headless)
+        self.agent = PPOTrainer(env=RLlibHiWayEnv,config=tune_config)
+        self.agent.restore(path_to_checkpoint)
         self._policy_name = policy_name
-        #self._model = tf.saved_model.load(path_to_model)
-        tf.compat.v1.saved_model.load(  # model should be already trained
-            self._sess, export_dir=path_to_model, tags=["serve"]
-        )
-        self._output_node = self._sess.graph.get_tensor_by_name(f"{policy_name}/add:0") # how to know the name action
-        self._input_node = self._sess.graph.get_tensor_by_name(
-            f"{policy_name}/observation:0"
-        )
-        print("herere")
-        x = [n.name for n in tf.compat.v1.get_default_graph().as_graph_def().node]
-        print(x)
-        print(tf.compat.v1.global_variables())
-        print(self._sess.graph.get_operations() )
-        # pass
+        self._prep = ModelCatalog.get_preprocessor_for_space(OBSERVATION_SPACE)
 
-    # def __del__(self):
-    #     self._sess.close()
 
     def act(self, obs):
+        print(obs)
         obs = self._prep.transform(obs)
-        # These tensor names were found by inspecting the trained model
-        res = self._sess.run(self._output_node, feed_dict={self._input_node: [obs]})
-        action = res
-        print(f"output action: {action}")
+        print(obs)
+        action = self.agent.get_policy(self._policy_name).compute_actions(obs)
+        print(f"computed action: {action}")
         return action
-        # return [4, 0]
 
 
 # modelcreation = TagModelAgent(
@@ -109,7 +101,8 @@ def main(scenario, headless, resume_training, result_dir, seed):
                 os.path.join(
                     os.path.dirname(os.path.realpath(__file__)), "models/predator_model"
                 ),  # assume model exists
-                OBSERVATION_SPACE,
+                scenario,
+                headless,
                 "predator_policy",
             ),
             observation_adapter=observation_adapter,
@@ -124,7 +117,8 @@ def main(scenario, headless, resume_training, result_dir, seed):
                 os.path.join(
                     os.path.dirname(os.path.realpath(__file__)), "models/prey_model"
                 ),  # assume model exists
-                OBSERVATION_SPACE,
+                scenario,
+                headless,                
                 "prey_policy",
             ),
             observation_adapter=observation_adapter,

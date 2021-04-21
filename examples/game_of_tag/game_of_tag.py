@@ -37,6 +37,53 @@ from smarts.core.utils.file import copy_tree
 from examples.game_of_tag.tag_adapters import *
 from examples.game_of_tag.model import CustomFCModel
 
+
+# Add custom metrics to your tensorboard using these callbacks
+# see: https://ray.readthedocs.io/en/latest/rllib-training.html#callbacks-and-custom-metrics
+def on_episode_start(info):
+    episode = info["episode"]
+    print("episode {} started".format(episode.episode_id))
+
+
+def on_episode_step(info):
+    episode = info["episode"]
+    single_agent_id = list(episode._agent_to_last_obs)[0]
+    obs = episode.last_raw_obs_for(single_agent_id)
+
+
+def on_episode_end(info):
+    episode = info["episode"]
+
+
+def explore(config):
+    # ensure we collect enough timesteps to do sgd
+    if config["train_batch_size"] < config["sgd_minibatch_size"] * 2:
+        config["train_batch_size"] = config["sgd_minibatch_size"] * 2
+    # ensure we run at least one sgd iter
+    if config["num_sgd_iter"] < 1:
+        config["num_sgd_iter"] = 1
+    return config
+
+
+def policy_mapper(agent_id):
+    if agent_id in PREDATOR_IDS:
+        return "predator_policy"
+    elif agent_id in PREY_IDS:
+        return "prey_policy"
+
+
+class TimeStopper(Stopper):
+    def __init__(self):
+        self._start = time.time()
+        self._deadline = 48 * 60 * 60 # 9 hours
+
+    def __call__(self, trial_id, result):
+        return False
+
+    def stop_all(self):
+        return time.time() - self._start > self._deadline
+
+
 tf = try_import_tf()
 
 
@@ -102,51 +149,53 @@ for agent_id in PREY_IDS:
         "action_space": ACTION_SPACE,
     }
 
+def build_tune_config(scenario, headless):
+    rllib_policies = {
+        policy_mapper(agent_id): (
+            None,
+            rllib_agent["observation_space"],
+            rllib_agent["action_space"],
+            # TrainingModel is a FullyConnectedNetwork, which is the default in rllib
+            {"model": {"custom_model": 'CustomFCModel'}},
+        )
+        for agent_id, rllib_agent in rllib_agents.items()
+    }
 
-# Add custom metrics to your tensorboard using these callbacks
-# see: https://ray.readthedocs.io/en/latest/rllib-training.html#callbacks-and-custom-metrics
-def on_episode_start(info):
-    episode = info["episode"]
-    print("episode {} started".format(episode.episode_id))
-
-
-def on_episode_step(info):
-    episode = info["episode"]
-    single_agent_id = list(episode._agent_to_last_obs)[0]
-    obs = episode.last_raw_obs_for(single_agent_id)
-
-
-def on_episode_end(info):
-    episode = info["episode"]
-
-
-def explore(config):
-    # ensure we collect enough timesteps to do sgd
-    if config["train_batch_size"] < config["sgd_minibatch_size"] * 2:
-        config["train_batch_size"] = config["sgd_minibatch_size"] * 2
-    # ensure we run at least one sgd iter
-    if config["num_sgd_iter"] < 1:
-        config["num_sgd_iter"] = 1
-    return config
-
-
-def policy_mapper(agent_id):
-    if agent_id in PREDATOR_IDS:
-        return "predator_policy"
-    elif agent_id in PREY_IDS:
-        return "prey_policy"
-
-
-class TimeStopper(Stopper):
-    def __init__(self):
-        self._start = time.time()
-        self._deadline = 48 * 60 * 60 # 9 hours
-
-    def __call__(self, trial_id, result):
-        return False
-
-    def stop_all(self):
-        return time.time() - self._start > self._deadline
+    tune_config = {
+        "env": RLlibHiWayEnv,
+        #"framework": "tf2", # Can't export model
+        "framework": "torch",
+        "log_level": "WARN",
+        "num_workers": 3,
+        "explore": True,
+        # 'sample_batch_size': 200,  # XXX: 200
+        # 'train_batch_size': 4000,
+        # 'sgd_minibatch_size': 128,
+        # 'num_sgd_iter': 30,
+        "horizon": 10000,
+        "env_config": {
+            "seed": 42,
+            "sim_name": "game_of_tag_works?",
+            "scenarios": [os.path.abspath(scenario)],
+            "headless": headless,
+            "agent_specs": {
+                agent_id: rllib_agent["agent_spec"]
+                for agent_id, rllib_agent in rllib_agents.items()
+            },
+        },
+        "multiagent": {
+            "policies": rllib_policies,
+            "policies_to_train": ["predator_policy", "prey_policy"],
+            #"policy_mapping_fn":  lambda agent_id: f"{agent_id}_policy",
+            "policy_mapping_fn": policy_mapper,
+        },
+        "callbacks": {
+            "on_episode_start": on_episode_start,
+            "on_episode_step": on_episode_step,
+            "on_episode_end": on_episode_end,
+        },
+    }
+    return tune_config
 
 def main(args):
     pbt = PopulationBasedTraining(
@@ -169,54 +218,9 @@ def main(args):
         },
         custom_explore_fn=explore,
     )
-
-    rllib_policies = {
-        policy_mapper(agent_id): (
-            None,
-            rllib_agent["observation_space"],
-            rllib_agent["action_space"],
-            # TrainingModel is a FullyConnectedNetwork, which is the default in rllib
-            {"model": {"custom_model": 'CustomFCModel'}},
-        )
-        for agent_id, rllib_agent in rllib_agents.items()
-    }
-    tune_config = {
-        "env": RLlibHiWayEnv,
-        #"framework": "tf2", # Can't export model
-        "framework": "torch",
-        "log_level": "WARN",
-        "num_workers": 3,
-        "explore": True,
-        # 'sample_batch_size': 200,  # XXX: 200
-        # 'train_batch_size': 4000,
-        # 'sgd_minibatch_size': 128,
-        # 'num_sgd_iter': 30,
-        "horizon": 10000,
-        "env_config": {
-            "seed": 42,
-            "sim_name": "game_of_tag_works?",
-            "scenarios": [os.path.abspath(args.scenario)],
-            "headless": args.headless,
-            "agent_specs": {
-                agent_id: rllib_agent["agent_spec"]
-                for agent_id, rllib_agent in rllib_agents.items()
-            },
-        },
-        "multiagent": {
-            "policies": rllib_policies,
-            "policies_to_train": ["predator_policy", "prey_policy"],
-            #"policy_mapping_fn":  lambda agent_id: f"{agent_id}_policy",
-            "policy_mapping_fn": policy_mapper,
-        },
-        "callbacks": {
-            "on_episode_start": on_episode_start,
-            "on_episode_step": on_episode_step,
-            "on_episode_end": on_episode_end,
-        },
-    }
-
     local_dir = os.path.expanduser(args.result_dir)
 
+    tune_config = build_tune_config(args.scenario, args.headless)
     
     analysis = tune.run(
         PPOTrainer, # uses PPO algorithm
