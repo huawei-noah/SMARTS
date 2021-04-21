@@ -23,6 +23,7 @@ import os
 import warnings
 from collections import defaultdict
 from typing import List, Sequence
+from time import time
 
 import math
 import numpy
@@ -905,6 +906,7 @@ class SMARTS:
             speed=speed,
             heading=heading,
             lane_ids=lane_ids,
+            frame_time=time(),
         )
         self._envision.send(state)
 

@@ -40,6 +40,7 @@ from tornado.websocket import WebSocketClosedError
 
 import smarts.core.models
 from envision.web import dist as web_dist
+from envision.types import State
 from smarts.core.utils.file import path2hash
 
 logging.basicConfig(level=logging.WARNING)
@@ -65,9 +66,8 @@ class AllowCORSMixin:
 
 
 class Frame:
-    def __init__(self, data: str, timestamp: int, next_=None):
-        # Time since epoch in seconds
-        self._timestamp = timestamp
+    def __init__(self, data: State, next_=None):
+        self._timestamp = data['frame_time']
         self._data = data
         self._size = sys.getsizeof(data)
         self.next_ = next_
@@ -263,8 +263,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         del FRAMES[self._simulation_id]
 
     async def on_message(self, message):
-        time_since_epoch = time.time()
-        frame = Frame(timestamp=time_since_epoch, data=message)
+        frame = Frame(data=json.loads(message))
         self._frames.append(frame)
 
 

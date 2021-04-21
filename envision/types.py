@@ -64,7 +64,7 @@ class State(NamedTuple):
     speed: Dict[str, float]
     heading: Dict[str, float]
     lane_ids: Dict[str, str]
-
+    frame_time: float
 
 def format_actor_id(actor_id: str, vehicle_id: str, is_multi: bool):
     if is_multi:
