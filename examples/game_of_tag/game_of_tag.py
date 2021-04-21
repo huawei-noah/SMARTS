@@ -62,7 +62,7 @@ shared_interface = AgentInterface(
 shared_interface.done_criteria = DoneCriteria(
     off_route=False,
     wrong_way=False,
-    collision=False,
+    collision=True,
 )  # off_road=False? Try to still have off_road event but off_road=False in done creteria
 # shared_interface.neighborhood_vehicles = NeighborhoodVehicles(radius=50) # To-do have different radius for prey vs predator
 
@@ -108,23 +108,16 @@ for agent_id in PREY_IDS:
 def on_episode_start(info):
     episode = info["episode"]
     print("episode {} started".format(episode.episode_id))
-    TrainingState.reset()
 
 
 def on_episode_step(info):
     episode = info["episode"]
     single_agent_id = list(episode._agent_to_last_obs)[0]
     obs = episode.last_raw_obs_for(single_agent_id)
-    TrainingState.step()
 
 
 def on_episode_end(info):
     episode = info["episode"]
-    print(
-        "episode {} ended with length {} and, number of timesteps {}".format(
-            episode.episode_id, episode.length, TrainingState.timestamp
-        )
-    )
 
 
 def explore(config):
@@ -166,7 +159,8 @@ def main(args):
         hyperparam_mutations={
             "lambda": lambda: random.uniform(0.9, 1.0),
             "clip_param": lambda: random.uniform(0.01, 0.5),
-            "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
+            "kl_coeff": lambda: 0.3,
+            "lr": [1e-3], # test to see if it works
             #"num_sgd_iter": lambda: random.randint(1, 30),
             "sgd_minibatch_size": lambda: 128, #random.randint(128, 16384),
             # "train_batch_size": lambda: random.randint(2000, 160000),
@@ -189,8 +183,9 @@ def main(args):
     tune_config = {
         "env": RLlibHiWayEnv,
         #"framework": "tf2", # Can't export model
+        "framework": "torch",
         "log_level": "WARN",
-        "num_workers": 1, # if use 2 workers, is TrainingState global to both workers? if so, there can only be 1 worker
+        "num_workers": 2,
         "explore": True,
         # 'sample_batch_size': 200,  # XXX: 200
         # 'train_batch_size': 4000,
@@ -255,12 +250,12 @@ def main(args):
     # print(f"Wrote model to: {save_model_path}")
     
     # #supposed to output a model
-    # checkpoint_path = '/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_0e3cb_00000_0_2021-04-20_13-44-28/checkpoint_2/checkpoint-2'
+    # checkpoint_path = '/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_66f3c_00000_0_2021-04-20_17-21-42/checkpoint_6/checkpoint-6'
     # ray.init(num_cpus=2)
     # training_agent = PPOTrainer(env=RLlibHiWayEnv,config=tune_config)
     # training_agent.restore(checkpoint_path)
     # prefix = "model.ckpt"
-    # model_dir = os.path.join(os.getcwd(), "prey_model_dir")
+    # model_dir = os.path.join(os.getcwd(), "prey_model")
     # print(f'model path: {model_dir}')
     # #training_agent.export_policy_checkpoint('model', filename_prefix=prefix)
     # training_agent.export_policy_model(model_dir)

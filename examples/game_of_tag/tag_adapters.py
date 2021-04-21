@@ -12,61 +12,15 @@ from dataclasses import dataclass
 PREDATOR_IDS = ["PRED1"]
 PREY_IDS = ["PREY1"]
 
-class TrainingState:
-    """a class to keep track of training states"""
-    timestamp = 0
-    """ agent_id: [action_1, action_2]"""
-    last_two_actions_of_agent = {}
-
-    @classmethod
-    def step(cls):
-        cls.timestamp += 1
-    
-    @classmethod
-    def reset(cls):
-        cls.timestamp = 0
-        cls.last_two_actions_of_agent = {}
-        for agent_id in PREY_IDS+PREDATOR_IDS:
-            cls.last_two_actions_of_agent[agent_id] = []
-
-    @classmethod
-    def update_agent_actions(cls, agent_id, action) -> float:
-        """ stores each vehicle's last action, give deduction if action changes
-        """
-        assert len(action) == 2
-        actions_queue = cls.last_two_actions_of_agent[agent_id]
-        if len(actions_queue) == 2:
-            actions_queue.pop(0)
-            actions_queue.append(action)
-        else:
-            actions_queue.append(action)
-
-    @classmethod
-    def punish_if_action_changed(cls, agent_id):
-        return 0
-        actions_queue = cls.last_two_actions_of_agent[agent_id]
-        if len(actions_queue) < 2:
-            return 0
-        
-        if actions_queue[0][0] != actions_queue[1][0] or actions_queue[0][1] != actions_queue[1][1]:
-            return global_rewards.making_change_deduction
-
-        return 0
-
-
 @dataclass
 class Rewards:
-    prey_base_reward: float = 0
-    pred_base_reward: float = 0
-    collesion_with_target: float = 1
+    collesion_with_target: float = 10
     game_ended: float = 1
     collesion_with_other_deduction: float = -1.5
     off_road_deduction: float = -1.5
     on_shoulder_deduction: float = -0.2
     following_prey_reward: float = 0.05
     blocking_prey_reward: float  = 0.03
-    making_change_deduction: float = -0.002
-    discount_factor: float = 0.999
 
 global_rewards = Rewards()
 
@@ -86,7 +40,7 @@ ACTION_SPACE = gym.spaces.Tuple((
 NEIGHBORHOOD_VEHICLE_STATES = gym.spaces.Dict(
     {
         #"rel_heading": gym.spaces.Box(low=-2 * np.pi, high=2*np.pi, shape=(1,)),
-        "rel_speed": gym.spaces.Box(low=-2e2, high=2e2, shape=(1,)),
+        "speed": gym.spaces.Box(low=-2e2, high=2e2, shape=(1,)),
         "position": gym.spaces.Box(low=-1e4, high=1e4, shape=(2,)),
         "distance": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
         # rel_lane_index can be -4, -3, -2, -1, 0, 1, 2, 3, 4
@@ -101,21 +55,23 @@ NEIGHBORHOOD_VEHICLE_STATES = gym.spaces.Dict(
 OBSERVATION_SPACE = gym.spaces.Dict(
     {
         #"heading": gym.spaces.Box(low=-1 * np.pi, high=np.pi, shape=(1,)),
-        #"speed": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
+        "speed": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
         "position": gym.spaces.Box(low=-1e3, high=1e3, shape=(2,)),
-        "distance_to_curb": gym.spaces.Box(low=-1e2, high=1e2, shape=(1,)),
+        #"distance_to_curb": gym.spaces.Box(low=-1e2, high=1e2, shape=(1,)),
+        # Prey or predator
+
         # add distance between prey and predator
         #"min_distance_to_prey": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
         #"min_distance_to_predator": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
         # "drivable_area_grid_map": gym.spaces.Box(
         #     low=0, high=1, shape=(16, 16)
         # ),  # bitmap, change to a python integer/bitmap(binary number with 0 or 1)
-        "predator_vehicles": gym.spaces.Tuple(
+        "target_vehicles": gym.spaces.Tuple(
             tuple([NEIGHBORHOOD_VEHICLE_STATES] * len(PREDATOR_IDS))
         ),
-        "prey_vehicles": gym.spaces.Tuple(
-            tuple([NEIGHBORHOOD_VEHICLE_STATES] * len(PREY_IDS))
-        ),
+        # "prey_vehicles": gym.spaces.Tuple(
+        #     tuple([NEIGHBORHOOD_VEHICLE_STATES] * len(PREY_IDS))
+        # ),
     }
 )
 
@@ -124,7 +80,6 @@ def action_adapter(model_action, agent_id):
     speed, laneChange = model_action
     speeds = [0, 3, 6, 9, 12]
     adapted_action = [speeds[speed], laneChange-1]
-    TrainingState.update_agent_actions(agent_id, adapted_action)
     return adapted_action
 
 def _is_vehicle_wanted(id, wanted_ids: List[str]):
@@ -141,7 +96,7 @@ def get_specfic_vehicle_states(nv_states, wanted_ids: List[str], ego_state):
     states = [
         {
             #"rel_heading": np.array([v.heading-ego_state.heading]),
-            "rel_speed": np.array([v.speed-ego_state.speed]),
+            "speed": np.array([v.speed]),
             "position": np.array(v.position[:2]), 
             "rel_lane_index": rel_lane_index_mapping.index(v.lane_index - ego_state.lane_index),
             "distance": np.array([np.linalg.norm(v.position[:2] - ego_state.position[:2])]),
@@ -152,34 +107,13 @@ def get_specfic_vehicle_states(nv_states, wanted_ids: List[str], ego_state):
     states += [
         {
             #"rel_heading": np.array([0]),
-            "rel_speed": np.array([2e2]),
+            "speed": np.array([2e2]),
             "position": np.array([10000, 10000]),
             "rel_lane_index": 0,
             "distance":np.array([1e3])
         }
     ] * (len(wanted_ids) - len(states))
     return states
-
-# only used for drivable_grid_map
-# def congregate_map(grid_map):
-#     block_size = 16
-#     drivable_area = 1
-#     non_drivable_area = 0
-#     scaled_width = int(grid_map.shape[0] / block_size)
-#     scaled_height = int(grid_map.shape[1] / block_size)
-#     congregated_map = np.zeros((scaled_width, scaled_height))
-#     for vertical in range(0, grid_map.shape[0], block_size):
-#         for horizontal in range(0, grid_map.shape[1], block_size):
-#             portion = grid_map[
-#                 vertical : vertical + block_size, horizontal : horizontal + block_size
-#             ]
-#             drivable = np.count_nonzero(portion > non_drivable_area) > int(
-#                 block_size * block_size / 2
-#             )  # 12
-#             congregated_map[
-#                 int(vertical / block_size), int(horizontal / block_size)
-#             ] = (drivable_area if drivable else non_drivable_area)
-#     return congregated_map
 
 
 def min_distance_to_rival(ego_position, rival_ids, neighbour_states):
@@ -269,9 +203,14 @@ def observation_adapter(observations):
     #     if observations.drivable_area_grid_map is None
     #     else congregate_map(observations.drivable_area_grid_map.data)
     # )
+    target_vehicles = None
+    if _is_vehicle_wanted(observations.ego_vehicle_state.id, PREY_IDS):
+        target_vehicles = get_specfic_vehicle_states(nv_states, PREDATOR_IDS, observations.ego_vehicle_state)
+    elif _is_vehicle_wanted(observations.ego_vehicle_state.id, PREDATOR_IDS):
+        target_vehicles = get_specfic_vehicle_states(nv_states, PREY_IDS, observations.ego_vehicle_state)
 
-    predator_states = get_specfic_vehicle_states(nv_states, PREDATOR_IDS, observations.ego_vehicle_state)
-    prey_states = get_specfic_vehicle_states(nv_states, PREY_IDS, observations.ego_vehicle_state)
+    # predator_states = get_specfic_vehicle_states(nv_states, PREDATOR_IDS, observations.ego_vehicle_state)
+    # prey_states = get_specfic_vehicle_states(nv_states, PREY_IDS, observations.ego_vehicle_state)
 
     # min_distance_to_prey = min_distance_to_rival(
     #     observations.ego_vehicle_state.position,
@@ -285,18 +224,16 @@ def observation_adapter(observations):
     # )
     return {
         #"heading": np.array([ego.heading]),
-        #"speed": np.array([ego.speed]),
+        "speed": np.array([observations.ego_vehicle_state.speed]),
         "position": np.array(observations.ego_vehicle_state.position[:2]),
-        "distance_to_curb":np.array([distance]),
+        "target_vehicles": tuple(target_vehicles)
+        #"distance_to_curb":np.array([distance]),
         #"min_distance_to_prey": np.array([min_distance_to_prey]),
         #"min_distance_to_predator": np.array([min_distance_to_predator]),
-        "predator_vehicles": tuple(predator_states),
-        "prey_vehicles": tuple(prey_states),
+        # "predator_vehicles": tuple(predator_states),
+        # "prey_vehicles": tuple(prey_states),
         # "drivable_area_grid_map": drivable_area_grid_map,
     }
-
-def apply_discount(reward):
-    return math.pow(global_rewards.discount_factor, TrainingState.timestamp) * reward
 
 def distance_to_curb_reward(observations):
     # 3 log(distance) - 0.5
@@ -307,68 +244,75 @@ def distance_to_curb_reward(observations):
 def range_within(val, target, range):
     return val - range <= target and target <= val + range
 
+def dominant_reward(distance):
+    return 5*(1/(distance*distance))
+
 def predator_reward_adapter(observations, env_reward_signal):
     """+ if collides with prey
     - if collides with social vehicle
     - if off road
     """
-    collided_with_prey = False
-    rew = global_rewards.pred_base_reward
-    rew += distance_to_curb_reward(observations)
+    rew = 0
+
+    distance_to_target = min_distance_to_rival(
+        observations.ego_vehicle_state.position,
+        PREY_IDS,
+        observations.neighborhood_vehicle_states,
+    )
+    rew += max(dominant_reward(distance_to_target), 10)
+
+    # rew += distance_to_curb_reward(observations)
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
     # )  # encourage predator to drive
     events = observations.events
     for c in observations.events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREY_IDS):
-            rew += apply_discount(global_rewards.collesion_with_target)
-            collided_with_prey = True
+            rew += global_rewards.collesion_with_target
             print(f"predator {observations.ego_vehicle_state.id} collided with prey {c.collidee_id}")
-        else:
-            # Collided with something other than the prey
-            rew += apply_discount(global_rewards.collesion_with_other_deduction)
-            print(f"predator {observations.ego_vehicle_state.id} collided with others {c.collidee_id}")
+        # else:
+        #     # Collided with something other than the prey
+        #     rew += global_rewards.collesion_with_other_deduction
+        #     print(f"predator {observations.ego_vehicle_state.id} collided with others {c.collidee_id}")
 
-    if events.off_road:
-        # if both prey or both predator went off_road, the other agent will receive 0 rewards onwards.
-        print("predator offroad")
-        # have a time limit for
-        rew += apply_discount(global_rewards.off_road_deduction)
-    elif events.on_shoulder:
-        rew += apply_discount(global_rewards.on_shoulder_deduction)
+    # if events.off_road:
+    #     # if both prey or both predator went off_road, the other agent will receive 0 rewards onwards.
+    #     print("predator offroad")
+    #     # have a time limit for
+    #     rew += global_rewards.off_road_deduction
 
     # give 0.05 reward for following prey, give 0.1 reward for following and having higher speed than prey
-    ego_pos = observations.ego_vehicle_state.position[:2]
-    ego_heading = observations.ego_vehicle_state.heading
-    ego_speed = observations.ego_vehicle_state.speed
-    for v in observations.neighborhood_vehicle_states:
-        if not _is_vehicle_wanted(v.id, PREY_IDS):
-            continue
-        prey_heading = v.heading
-        prey_pos = v.position[:2]
-        x = abs(ego_pos[0]-prey_pos[0])
-        y = abs(ego_pos[1]-prey_pos[1])
-        # prey at top left
-        cal_heading = math.atan(x/y)
-        if prey_pos[0] > ego_pos[0] and prey_pos[1] < ego_pos[1]:
-            # prey at bottom right
-            cal_heading = -1*math.pi+cal_heading
-        elif prey_pos[0] > ego_pos[0] and prey_pos[1] >= ego_pos[1]:
-            # prey at top right
-            cal_heading = -1 * cal_heading 
-        elif prey_pos[0] < ego_pos[0] and prey_pos[1] < ego_pos[1]:
-            cal_heading = math.pi - cal_heading
-        # checks if predator is chasing after the prey within 20 meters
-        distance_to_target = math.sqrt(x*x+y*y)
-        if range_within(cal_heading, ego_heading, 0.05) and distance_to_target <= 20:
-            # if two vehicle distance <= 20 meters, add 
-            rew += apply_discount(global_rewards.following_prey_reward)
-            if ego_speed > v.speed:
-                rew += apply_discount(global_rewards.following_prey_reward)
-                #print(f"predator {observations.ego_vehicle_state.id} chasing prey: {v.id} cal heading {cal_heading} ego_heading {ego_heading}")
-        elif range_within(abs(cal_heading) + abs(ego_heading), np.pi, 0.05) and distance_to_target < 10 and ego_speed < v.speed:
-            rew += apply_discount(global_rewards.blocking_prey_reward)
-            #print(f"predator {observations.ego_vehicle_state.id} blocking prey: {v.id}")
+    # ego_pos = observations.ego_vehicle_state.position[:2]
+    # ego_heading = observations.ego_vehicle_state.heading
+    # ego_speed = observations.ego_vehicle_state.speed
+    # for v in observations.neighborhood_vehicle_states:
+    #     if not _is_vehicle_wanted(v.id, PREY_IDS):
+    #         continue
+    #     prey_heading = v.heading
+    #     prey_pos = v.position[:2]
+    #     x = abs(ego_pos[0]-prey_pos[0])
+    #     y = abs(ego_pos[1]-prey_pos[1])
+    #     # prey at top left
+    #     cal_heading = math.atan(x/y)
+    #     if prey_pos[0] > ego_pos[0] and prey_pos[1] < ego_pos[1]:
+    #         # prey at bottom right
+    #         cal_heading = -1*math.pi+cal_heading
+    #     elif prey_pos[0] > ego_pos[0] and prey_pos[1] >= ego_pos[1]:
+    #         # prey at top right
+    #         cal_heading = -1 * cal_heading 
+    #     elif prey_pos[0] < ego_pos[0] and prey_pos[1] < ego_pos[1]:
+    #         cal_heading = math.pi - cal_heading
+    #     # checks if predator is chasing after the prey within 20 meters
+    #     distance_to_target = math.sqrt(x*x+y*y)
+    #     if range_within(cal_heading, ego_heading, 0.05) and distance_to_target <= 20:
+    #         # if two vehicle distance <= 20 meters, add 
+    #         rew += global_rewards.following_prey_reward
+    #         if ego_speed > v.speed:
+    #             rew += global_rewards.following_prey_reward
+    #             #print(f"predator {observations.ego_vehicle_state.id} chasing prey: {v.id} cal heading {cal_heading} ego_heading {ego_heading}")
+    #     elif range_within(abs(cal_heading) + abs(ego_heading), np.pi, 0.05) and distance_to_target < 10 and ego_speed < v.speed:
+    #         rew += global_rewards.blocking_prey_reward
+    #         #print(f"predator {observations.ego_vehicle_state.id} blocking prey: {v.id}")
             
 
     # Decreased reward for increased distance away from prey
@@ -377,18 +321,16 @@ def predator_reward_adapter(observations, env_reward_signal):
     #     PREY_IDS,
     #     observations.neighborhood_vehicle_states,
     # )
-    if not collided_with_prey and events.reached_max_episode_steps:
-        # predator failed to catch the prey
-        rew -= global_rewards.game_ended
+    # if not collided_with_prey and events.reached_max_episode_steps:
+    #     # predator failed to catch the prey
+    #     rew -= global_rewards.game_ended
     
-    rew += apply_discount(TrainingState.punish_if_action_changed(observations.ego_vehicle_state.id.split('-')[0]))
-
     # if no prey vehicle avaliable, have 0 reward instead
     prey_vehicles = list(filter(
         lambda v: _is_vehicle_wanted(v.id, PREY_IDS), observations.neighborhood_vehicle_states,
     ))
     rew = rew if len(prey_vehicles) > 0 else 0
-    #print(f"predator {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
+    print(f"predator {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
     return rew
 
 
@@ -399,44 +341,44 @@ def prey_reward_adapter(observations, env_reward_signal):
     - if off road
     """
 
-    collided_with_pred = False
-    rew = global_rewards.prey_base_reward
-    rew += distance_to_curb_reward(observations)
+    rew = 0
+    #rew += distance_to_curb_reward(observations)
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
     # )  # encourages driving
-    events = observations.events
-    for c in events.collisions:
-        if _is_vehicle_wanted(c.collidee_id, PREDATOR_IDS):
-            rew -= apply_discount(global_rewards.collesion_with_target)
-            collided_with_pred = True
-            print(f"prey {observations.ego_vehicle_state.id} collided with Predator {c.collidee_id}")
-        else:
-            # Collided with something other than the prey
-            rew += apply_discount(global_rewards.collesion_with_other_deduction)
-            print(f"prey {observations.ego_vehicle_state.id} collided with other vehicle {c.collidee_id}")
-    if events.off_road:
-        print("prey offroad")
-        rew += apply_discount(global_rewards.off_road_deduction)
-    elif events.on_shoulder:
-        rew += apply_discount(global_rewards.on_shoulder_deduction)
-
-    # # Increased reward for increased distance away from predators
-    rew += (0.005) * min_distance_to_rival(
+    distance_to_target = min_distance_to_rival(
         observations.ego_vehicle_state.position,
         PREDATOR_IDS,
         observations.neighborhood_vehicle_states,
     )
-    rew += apply_discount(TrainingState.punish_if_action_changed(observations.ego_vehicle_state.id.split('-')[0]))
+    # set min on the reward
+    rew -= min(dominant_reward(distance_to_target, -10),
 
-    if not collided_with_pred and events.reached_max_episode_steps:
-        # prey survived
-        rew += global_rewards.game_ended
+    events = observations.events
+    for c in events.collisions:
+        if _is_vehicle_wanted(c.collidee_id, PREDATOR_IDS):
+            rew -= global_rewards.collesion_with_target
+            print(f"prey {observations.ego_vehicle_state.id} collided with Predator {c.collidee_id}")
+        # else:
+        #     # Collided with something other than the prey
+        #     rew += global_rewards.collesion_with_other_deduction
+        #     print(f"prey {observations.ego_vehicle_state.id} collided with other vehicle {c.collidee_id}")
+    # if events.off_road:
+    #     print("prey offroad")
+    #     rew += global_rewards.off_road_deduction
+
+
+    # # Increased reward for increased distance away from predators
+    # rew += (0.005) * min_distance_to_rival(
+    #     observations.ego_vehicle_state.position,
+    #     PREDATOR_IDS,
+    #     observations.neighborhood_vehicle_states,
+    # )
 
     # if no predator vehicle avaliable, have 0 reward instead
     predator_vehicles = list(filter(
         lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS), observations.neighborhood_vehicle_states,
     ))
     rew = rew if len(predator_vehicles) > 0 else 0
-    #print(f"prey {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
+    print(f"prey {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew}")
     return rew

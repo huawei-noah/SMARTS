@@ -30,14 +30,14 @@ seed(42)
 # training missions
 ego_missions = [
     t.EndlessMission(
-        begin=("top_left", 0, 15) # pred 1
+        begin=("top_left", 2, 15) # pred
+    ),
+    t.EndlessMission(
+        begin=("top_left", 0, 15) # prey
     ),
     # t.EndlessMission(
     #     begin=("top", 1, 5) # pred 2
     # ),
-    t.EndlessMission(
-        begin=("top_left", 1, 15) # pred 3
-    ),
     # t.EndlessMission(
     #     begin=("top", 3, 30) # pred 4
     # ),
