@@ -23,6 +23,7 @@ process
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed sumo road network offset bug for shifted maps.  See issue #716.
 - Fixed bugs in traffic history and changed interface to it.  See issue #732.
+- Changed Envision Frame timestamp from when it arrived in Envision server to when it was generated in SMARTS
 
 ### Fixed
 - Update `ego_open_agent` to use the package instead of the zoo directory version.
