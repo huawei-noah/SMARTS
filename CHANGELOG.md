@@ -24,6 +24,7 @@ process
 - Observation returned by SMARTS only consists of data and does not include any corresponding class methods.
 - Variable-length observations are truncated or padded (with default values) to a fixed length when the desired lengths are specified in an observation configuration yaml file.
 - A complete proto schema is implemented for parsing and serializing the observations/actions sent/received to/from the remote agent.
+- Implemented distributed simulation of multiple-actors (i.e., SMARTS environment) and learner (i.e., RL model training and inference).
 
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
