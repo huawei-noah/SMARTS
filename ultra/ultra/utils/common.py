@@ -189,6 +189,11 @@ def ego_social_safety(
     # so this is just standard coordinate shifted by pi/2 radian counterclockwise
     # add pi/2 radian to every heading to obtain the heading in standard coordinate
 
+    # TODO: If it will not calculate ego_num_violations or social_num_violations maybe
+    #       output a warning?
+    if agent_obs.neighborhood_vehicle_states is None:
+        return 0, 0
+
     def get_relative_position_vector_angle(v1, v2):
         x = v2.position[0] - v1.position[0]
         y = v2.position[1] - v1.position[1]
