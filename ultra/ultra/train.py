@@ -65,6 +65,9 @@ def train(
     total_step = 0
     finished = False
     evaluation_task_ids = dict()
+    
+    # TODO : This can be moved to some config file, for now we will keep it here
+    dynamic_scenarios_def = [["gb","no-traffic"],["gb","low-density"],["gb","mid-density"],["gb","high-density"]]
 
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
@@ -108,8 +111,6 @@ def train(
             gb_info["gb_curriculum_dir"]
         )  # Applicable to both non-gb and gb cases
         scenario_data_handler = ScenarioDataHandler("Train")
-        ds_handler = DynamicScenarios(gb_info["gb_scenarios_root_dir"], gb_info["gb_scenarios_save_dir"], 10)
-        ds_handler.reset_scenario_pool()
         if num_episodes % agent_coordinator.get_num_of_grades() == 0:
             num_episodes += 1
             print("New max episodes (due to end case):", num_episodes)
@@ -119,6 +120,12 @@ def train(
         agent_coordinator = None
         scenario_data_handler = ScenarioDataHandler("Train")
         # ds_handler = DynamicScenarios()
+    
+    CurriculumInfo.initialize(gb_info["gb_curriculum_dir"])
+    if CurriculumInfo.add_scenarios_dynamically is True:
+        ds_handler = DynamicScenarios(rate=5)
+        ds_handler.reset_scenario_pool()
+        scenario_info = dynamic_scenarios_def
 
     # Create the environment.
     env = gym.make(
@@ -129,6 +136,7 @@ def train(
         timestep_sec=timestep_sec,
         seed=seed,
         grade_mode=grade_mode,
+        dynamic_scenarios=True,
     )
 
     old_episode = None
@@ -155,11 +163,13 @@ def train(
                 agent_coordinator.end_warmup = False
             else:
                 observations, scenario = env.reset()
-
             # print("agent_coordinator.episode_per_grade:", agent_coordinator.episode_per_grade)
         else:
             # Reset the environment and retrieve the initial observations.
-            observations, scenario = env.reset()
+            if CurriculumInfo.add_scenarios_dynamically is True and (episode.index + 1) % 5 == 0:
+                observations, scenario = env.reset(switch=True, grade=dynamic_scenarios_def)
+            else:
+                observations, scenario = env.reset()
 
         density_counter = scenario_data_handler.record_density_data(
             scenario["scenario_density"]
@@ -260,10 +270,9 @@ def train(
                 agent_coordinator.end_warmup == True
                 or CurriculumInfo.episode_based_toggle == True
             ):
-                asp_list = ds_handler.sampler(episode, total_scenarios_passed, average_scenarios_passed)
-
-        # else:
-        #     asp_list = ds_handler.sampler(episode, total_scenarios_passed, average_scenarios_passed, 30) 
+                asp_list = ds_handler.sampler(episode, agents, total_scenarios_passed, average_scenarios_passed)
+        else:
+            asp_list = ds_handler.sampler(episode, agents, total_scenarios_passed, average_scenarios_passed) 
 
         if finished:
             break

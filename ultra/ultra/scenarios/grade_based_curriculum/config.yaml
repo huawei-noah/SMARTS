@@ -5,6 +5,7 @@ curriculum:
     3: [[gb,grade3]]
     4: [[gb,grade4]]
   conditions:
+    add_scenarios_dynamically: True
     eval_per_grade: True
     episode_based:
       toggle: True

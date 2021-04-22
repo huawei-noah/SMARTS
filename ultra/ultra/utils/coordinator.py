@@ -23,6 +23,7 @@ import os, sys
 import yaml, csv, glob, shutil
 from itertools import cycle
 import copy
+import math
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -62,6 +63,7 @@ class CurriculumInfo:
             cls.curriculum["conditions"]["pass_based"]["warmup_episodes"]
         )
         cls.eval_per_grade = bool(cls.curriculum["conditions"]["eval_per_grade"])
+        cls.add_scenarios_dynamically = bool(cls.curriculum["conditions"]["add_scenarios_dynamically"])
 
         if cls.episode_based_toggle == cls.pass_based_toggle == True:
             raise Exception(
@@ -325,35 +327,26 @@ class Coordinator:
             pass
 
 class DynamicScenarios():
-    def __init__(self, root_dir, save_dir, rate=None):
+    def __init__(self, rate=None):
         self.distribution = {
             "no-traffic": 1,
             "low-density": 0,
             "mid-density": 0,
             "high-density": 0,
         }
-        self.root_dir = root_dir
-        self.save_dir = save_dir
+        self.root_dir = "ultra/scenarios"
+        self.save_dir = "ultra/scenarios/taskgb/"
         self.rate = rate
 
     def change_distribution(self, increment_mode=True):
-        if level == "grade1":
-            control_density = "no-traffic"
-        elif level == "grade2":
-            control_density = "low-density"
-        elif level == "grade3":
-            control_density = "mid-density"
-        elif level == "grade4":
-            control_density = "high-density"
-
         print("Old distrbution:", self.distribution)
 
         if increment_mode:
             for key, value in self.distribution.items():
-                if control_density == key:
-                    self.distribution[key] -= 0.02
+                if key == "no-traffic":
+                    self.distribution["no-traffic"] -= 0.1
                 else:
-                    self.distribution[key] += 0.02
+                    self.distribution[key] += 0.1
         
         print("New distrbution:", self.distribution)
     
@@ -364,7 +357,8 @@ class DynamicScenarios():
             shutil.rmtree(f)
 
         for key, val in self.distribution.items():
-            num_scenarios = (self.rate * val)
+            print
+            num_scenarios = math.ceil(self.rate * val)
             print(f"Num of {key} : {num_scenarios}")
             if num_scenarios != 0:
                 build_scenarios(
@@ -376,8 +370,10 @@ class DynamicScenarios():
                     stopwatcher_route=None,
                     save_dir=self.save_dir,
                 )
+        
+        os.system("ls ultra/scenarios/taskgb/")
 
-    def sampler(episode, total_scenarios_passed, average_scenarios_passed):
+    def sampler(self, episode, agents, total_scenarios_passed, average_scenarios_passed):
         if self.rate is not None:
             sample_rate = self.rate
         else:
@@ -401,7 +397,9 @@ class DynamicScenarios():
             asp_list.append(
                 tuple((episode.index + 1, average_scenarios_passed))
             )
+            print("Changing distribution ...")
             self.change_distribution()
+            print("Resetting scenario pool ...")
             self.reset_scenario_pool()
 
         return asp_list

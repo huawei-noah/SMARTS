@@ -47,6 +47,7 @@ class UltraEnv(HiWayEnv):
         timestep_sec,
         seed,
         grade_mode=False,
+        dynamic_scenarios=False,
         eval_mode=False,
         ordered_scenarios=False,
     ):
@@ -55,8 +56,9 @@ class UltraEnv(HiWayEnv):
         self.agent_specs = agent_specs
         self.eval_mode = eval_mode
         self.grade_mode = grade_mode
+        self.dynamic_scenarios = dynamic_scenarios
 
-        if not self.grade_mode:
+        if (self.grade_mode is False) and (self.dynamic_scenarios is False):
             self.scenario_info = scenario_info
             self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
             if not self.eval_mode:
@@ -242,6 +244,7 @@ class UltraEnv(HiWayEnv):
 
         with open(config_path, "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
+            print(scenarios)
             task = scenarios[f"task{task_id}"][task_level]
 
         task["train"] = os.path.join(base_dir, task["train"])
