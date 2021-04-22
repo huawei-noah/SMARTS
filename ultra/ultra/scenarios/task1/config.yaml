@@ -140,7 +140,7 @@ levels:
   
   high-density:
     train:
-      total: 500
+      total: 20
       ego_missions:
         # left turn from south to west
       - start: south-SN
@@ -153,7 +153,7 @@ levels:
            percent: 0.5
            specs: [[50kmh,high-density,0.33], [70kmh,high-density,0.34], [100kmh,high-density,0.33]]
     test:
-      total: 500
+      total: 20
       ego_missions:
         # left turn from south to west
       - start: south-SN
