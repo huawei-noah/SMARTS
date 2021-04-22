@@ -50,9 +50,36 @@ ray.init(num_cpus=4)
 ModelCatalog.register_custom_model('CustomFCModel', CustomFCModel)
 
 def action_adapter(model_action):
-    speed, laneChange = model_action
+    """Take in the action calculated by the model, and transform it to something that
+    SMARTS can understand.
+
+    The model returns a batched action (since it received a batched input). That is, the
+    action consists of actions for however many observations were passed to it in the
+    batch of observations it was given. We only gave it a batch of 1 observation in the
+    act(...) method of TagModelAgent.
+
+    The model outputs an action in the form of:
+        (
+            (
+                array([...]),  # The speed.
+                array([...]),  # The lane change.
+            ),
+            [],
+            {
+                '...': array([...]),
+                '...': array([[...]]),
+                '...': array([...]),
+                '...': array([...])
+            }
+        )
+
+    The action we care about is the first element of this tuple, get it with
+    model_action[0], so that speed = array([...]) and laneChange = array([...]). Convert
+    these arrays to scalars to index into speeds or subtract from it.
+    """
+    speed, laneChange = model_action[0]
     speeds = [0, 3, 6, 9, 12]
-    adapted_action = [speeds[speed], laneChange-1]
+    adapted_action = [speeds[np.asscalar(speed)], np.asscalar(laneChange)-1]
     return adapted_action
 
 class TagModelAgent(Agent):
@@ -67,9 +94,17 @@ class TagModelAgent(Agent):
 
 
     def act(self, obs):
+        """Receive an observation from the environment, and compute the agent's action.
+
+        The observation is a dictionary of an observation for a single agent. However,
+        the model expects a batched observation, that is, a list of observations. To fix
+        this, expand the dimensions of the observation from (n,) to (1, n) so that the
+        observation fits into the model's expected input size.
+        """
         print(obs)
         obs = self._prep.transform(obs)
         print(obs)
+        obs = np.expand_dims(obs, 0)
         action = self.agent.get_policy(self._policy_name).compute_actions(obs)
         print(f"computed action: {action}")
         return action
