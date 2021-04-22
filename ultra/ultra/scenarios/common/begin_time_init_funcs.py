@@ -52,7 +52,6 @@ def burst_begin_time_init_func(
     time_between_cluster=(20, 30),
     time_for_each_cluster=3,
 ):
-    print("BURST MODE")
     begin_times = []
     for j in range(num_lanes):
         vehicle_left = num_vehicle
