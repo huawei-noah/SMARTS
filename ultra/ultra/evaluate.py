@@ -38,7 +38,7 @@ from smarts.zoo.registry import make
 from ultra.utils.common import str_to_bool
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
-from ultra.utils.coordinator import ScenarioDataHandler
+from ultra.utils.curriculum.scenario_data_handler import ScenarioDataHandler
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 

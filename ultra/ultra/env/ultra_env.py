@@ -196,7 +196,7 @@ class UltraEnv(HiWayEnv):
             )
 
         scenario = next(self._scenarios_iterator)
-        print(scenario)
+        # print(scenario)
 
         root = str(scenario._root).split("/")[-1]
         for density in [
@@ -244,7 +244,6 @@ class UltraEnv(HiWayEnv):
 
         with open(config_path, "r") as task_file:
             scenarios = yaml.safe_load(task_file)["tasks"]
-            print(scenarios)
             task = scenarios[f"task{task_id}"][task_level]
 
         task["train"] = os.path.join(base_dir, task["train"])

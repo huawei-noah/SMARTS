@@ -42,7 +42,10 @@ from smarts.zoo.registry import make
 from ultra.utils.common import str_to_bool
 from ultra.evaluate import evaluation_check, collect_evaluations
 from ultra.utils.episode import episodes
-from ultra.utils.coordinator import Coordinator, CurriculumInfo, ScenarioDataHandler, DynamicScenarios
+from ultra.utils.curriculum.coordinator import Coordinator
+from ultra.utils.curriculum.curriculum_info import CurriculumInfo 
+from ultra.utils.curriculum.scenario_data_handler import ScenarioDataHandler
+from ultra.utils.curriculum.dynamic_scenarios import DynamicScenarios
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -65,9 +68,6 @@ def train(
     total_step = 0
     finished = False
     evaluation_task_ids = dict()
-    
-    # TODO : This can be moved to some config file, for now we will keep it here
-    dynamic_scenarios_def = [["gb","no-traffic"],["gb","low-density"],["gb","mid-density"],["gb","high-density"]]
 
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
@@ -107,9 +107,8 @@ def train(
 
     if grade_mode:
         agent_coordinator, scenario_info = gb_setup(gb_info, num_episodes)
-        CurriculumInfo.initialize(
-            gb_info["gb_curriculum_dir"]
-        )  # Applicable to both non-gb and gb cases
+        # Applicable to both non-gb and gb cases
+        CurriculumInfo.initialize(gb_info["gb_curriculum_dir"])  
         scenario_data_handler = ScenarioDataHandler("Train")
         if num_episodes % agent_coordinator.get_num_of_grades() == 0:
             num_episodes += 1
@@ -122,10 +121,11 @@ def train(
         # ds_handler = DynamicScenarios()
     
     CurriculumInfo.initialize(gb_info["gb_curriculum_dir"])
-    if CurriculumInfo.add_scenarios_dynamically is True:
-        ds_handler = DynamicScenarios(rate=5)
+    sampling_rate = CurriculumInfo.sampling_rate
+    if CurriculumInfo.dynamic_curriculum_toggle is True:
+        ds_handler = DynamicScenarios(rate=sampling_rate)
         ds_handler.reset_scenario_pool()
-        scenario_info = dynamic_scenarios_def
+        scenario_info = CurriculumInfo.tasks_levels_used
 
     # Create the environment.
     env = gym.make(
@@ -166,8 +166,8 @@ def train(
             # print("agent_coordinator.episode_per_grade:", agent_coordinator.episode_per_grade)
         else:
             # Reset the environment and retrieve the initial observations.
-            if CurriculumInfo.add_scenarios_dynamically is True and (episode.index + 1) % 5 == 0:
-                observations, scenario = env.reset(switch=True, grade=dynamic_scenarios_def)
+            if CurriculumInfo.dynamic_curriculum_toggle is True and episode.index % sampling_rate == 0:
+                observations, scenario = env.reset(switch=True, grade=CurriculumInfo.tasks_levels_used)
             else:
                 observations, scenario = env.reset()
 
@@ -265,36 +265,41 @@ def train(
         episode.record_episode()
         episode.record_tensorboard()
 
-        if grade_mode == True:
+        if CurriculumInfo.static_curriculum_toggle is True:
+            agent_coordinator.sampler(episode, agents, total_scenarios_passed, average_scenarios_passed, asp_list)
+        elif CurriculumInfo.dynamic_curriculum_toggle is True:
             if (
-                agent_coordinator.end_warmup == True
-                or CurriculumInfo.episode_based_toggle == True
-            ):
-                asp_list = ds_handler.sampler(episode, agents, total_scenarios_passed, average_scenarios_passed)
-        else:
-            asp_list = ds_handler.sampler(episode, agents, total_scenarios_passed, average_scenarios_passed) 
+                episode.index + 1
+            ) % sampling_rate == 0:  # Set sample rate (flag needs to be set)
+                scenario_data_handler.display_grade_scenario_distribution(sampling_rate)
+                scenario_data_handler.save_grade_density(sampling_rate)
+                print("Changing distribution ...")
+                ds_handler.change_distribution()
+                print("Resetting scenario pool ...")
+                ds_handler.reset_scenario_pool()
 
         if finished:
             break
 
     # print(agent_coordinator.get_checkpoints())
 
-    if not grade_mode:
+    if grade_mode is False and CurriculumInfo.tasks_levels_used is False:
         scenario_data_handler.display_grade_scenario_distribution(num_episodes)
         scenario_data_handler.save_grade_density(num_episodes)
 
     filepath = os.path.join(episode.experiment_dir, "Train.csv")
     try:
-        scenario_data_handler.plot_densities_data(filepath)
+        scenario_data_handler.plot_densities_data(filepath, grade_mode)
     except FileNotFoundError as e:
         # For storing testing data
         utils_dir = os.path.join(os.path.dirname(__file__), "utils/../../")
         path = os.path.join(utils_dir, filepath)
-        scenario_data_handler.plot_densities_data(path)
+        scenario_data_handler.plot_densities_data(path, grade_mode)
 
     print(scenario_data_handler.overall_densities_counter)
 
-    print("Average scenarios passed list:", asp_list)
+    if grade_mode:
+        print("Average scenarios passed list:", asp_list)
 
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):
@@ -388,7 +393,7 @@ if __name__ == "__main__":
         "--gb-curriculum-dir",
         help="local path to grade based (GB) curriculum dir. Local path is path from ultra/",
         type=str,
-        default="../scenarios/grade_based_curriculum/",
+        default="../../scenarios/grade_based_curriculum/",
     )
     parser.add_argument(
         "--gb-build-scenarios",

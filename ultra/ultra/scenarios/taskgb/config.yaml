@@ -4,7 +4,7 @@
 levels:
   grade1:
     train:
-      total: 500
+      total: 10
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -16,7 +16,7 @@ levels:
                    [50kmh,mid-density,0.05],[70kmh,mid-density,0.05],[100kmh,mid-density,0.05], #15%
                    [50kmh,high-density,0.02],[70kmh,high-density,0.02],[100kmh,high-density,0.01]] #5%
     test:
-      total: 150
+      total: 10
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -30,7 +30,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade2:
     train:
-      total: 500
+      total: 10
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -42,7 +42,7 @@ levels:
                    [50kmh,mid-density,0.07],[70kmh,mid-density,0.07],[100kmh,mid-density,0.06], #20%
                    [50kmh,high-density,0.02],[70kmh,high-density,0.02],[100kmh,high-density,0.01]] #5%
     test:
-      total: 150
+      total: 10
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -56,7 +56,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade3:
     train:
-      total: 500
+      total: 10
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -68,7 +68,7 @@ levels:
                    [50kmh,mid-density,0.20],[70kmh,mid-density,0.20],[100kmh,mid-density,0.20], #60%
                    [50kmh,high-density,0.07],[70kmh,high-density,0.07],[100kmh,high-density,0.06]] #20%
     test:
-      total: 150
+      total: 10
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -82,7 +82,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade4:
     train:
-      total: 500
+      total: 10
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -94,7 +94,7 @@ levels:
                    [50kmh,mid-density,0.07],[70kmh,mid-density,0.07],[100kmh,mid-density,0.06], #20%
                    [50kmh,high-density,0.20],[70kmh,high-density,0.20],[100kmh,high-density,0.20]] #60%
     test:
-      total: 150
+      total: 10
       ego_missions:
       - start: south-SN
         end:   west-EW

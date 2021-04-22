@@ -1,20 +1,26 @@
 curriculum: 
-  grades:
-    1: [[gb,grade1]] #[[<task>,<level>]]
-    2: [[gb,grade2]]
-    3: [[gb,grade3]]
-    4: [[gb,grade4]]
-  conditions:
-    add_scenarios_dynamically: True
-    eval_per_grade: True
-    episode_based:
-      toggle: True
-      cycle: False
-    pass_based:
-      toggle: False
-      pass_rate: 0.75
-      sample_rate: 30
-      warmup_episodes: 100
+  static:
+    toggle: True
+    grades:
+      1: [[gb,grade1]] #[[<task>,<level>]]
+      2: [[gb,grade2]]
+      3: [[gb,grade3]]
+      4: [[gb,grade4]]
+    conditions:
+      eval_per_grade: False
+      episode_based:
+        toggle: True
+        cycle: False
+      pass_based:
+        toggle: False
+        pass_rate: 0.75
+        sample_rate: 30
+        warmup_episodes: 100
+  dynamic:
+    toggle: False
+    tasks_levels_used: [["gb","no-traffic"], ["gb","low-density"], ["gb","mid-density"], ["gb","high-density"]]
+    sampling_rate: 30
+    
       
 
 

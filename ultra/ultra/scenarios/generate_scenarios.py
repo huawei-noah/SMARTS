@@ -500,7 +500,7 @@ def build_scenarios(
         except Exception as e:
             print(e)
     else:
-        train_total = level_config["train"]["test"]
+        test_total = level_config["test"]["total"]
 
     splitted_seeds = {
         "train": [i for i in range(train_total)],
