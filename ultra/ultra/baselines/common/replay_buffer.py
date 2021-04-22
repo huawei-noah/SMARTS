@@ -96,7 +96,9 @@ class ReplayBufferDataset(Dataset):
         next_state["low_dim_states"] = torch.from_numpy(
             next_state["low_dim_states"]
         ).to(self.device)
-        next_state["images"] = torch.from_numpy(next_state["images"]).to(self.device)
+        # Only save the newest image in the next state. We can reconstruct the next
+        # state's images from the images in the current state.
+        next_state["images"] = torch.from_numpy(next_state["images"][0]).to(self.device)
 
         action = np.asarray([action]) if not isinstance(action, Iterable) else action
         action = torch.from_numpy(action).float()
@@ -112,6 +114,13 @@ class ReplayBufferDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         state, action, reward, next_state, done, others = tuple(self.memory[idx])
+
+        # Reconstruct the next state's image from the images of the current state.
+        next_state = copy.deepcopy(next_state)
+        next_state["images"] = torch.stack(
+            [next_state["images"]] + [image for image in state["images"][:-1]], dim=0
+        )
+
         return state, action, reward, next_state, done, others
 
 

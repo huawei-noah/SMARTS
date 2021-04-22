@@ -59,7 +59,7 @@ class BaselineStatePreprocessor(StatePreprocessor):
             self._images_stack = collections.deque(
                 [
                     np.zeros(
-                        (1, rgb_info["height"], rgb_info["width"]), dtype=np.float32
+                        (rgb_info["height"], rgb_info["width"]), dtype=np.float32
                     )
                     for _ in range(rgb_info["stack_size"])
                 ],
@@ -160,10 +160,9 @@ class BaselineStatePreprocessor(StatePreprocessor):
             image = state["rgb"]
             image = np.dot(image, (0.2125, 0.7154, 0.0721))  # Convert to grayscale.
             image = np.divide(image, 255.0)  # Normalize.
-            image = np.expand_dims(image, axis=0)  # Expand to Rank 3 tensor.
             self._images_stack.appendleft(image.astype(np.float32))
         stacked_images = (
-            np.concatenate(self._images_stack, axis=0)
+            np.stack(self._images_stack, axis=0)
             if len(self._images_stack) > 0
             else np.array([], dtype=np.float32)
         )
