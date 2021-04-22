@@ -39,6 +39,16 @@
             "path" : "rl_agent",
             "name" : "rl_agent",
             "locator" : "rl-agent-v0"
+        },
+        "keep_lane_agent" : {
+            "path" : "policies.keep_lane_agent",
+            "name" : "keep_lane_agent",
+            "locator" : "keep-lane-agent-v0"
+        },
+        "non_interactive_agent" : {
+            "path" : "policies.non_interactive_agent",
+            "name" : "non_interactive_agent",
+            "locator" : "non-interactive-agent-v0"
         }
     }
 }
