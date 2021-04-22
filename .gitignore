@@ -114,6 +114,7 @@ traffic_histories.pkl
 
 # but keep model assets
 !**/models/*.glb
+*.blend1
 
 # run logs
 _run_logs

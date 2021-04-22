@@ -16,6 +16,7 @@ process
 - Added description of map creation and how to modify the map to allow users to create their own traffic routes in docs
 - Added reference to SMARTS paper in front page of docs
 - Only create `Renderer` on demand if vehicles are using camera-based sensors. See issue #725.
+- Added glb models for pedestrians and motorcycles
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 

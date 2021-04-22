@@ -90,10 +90,15 @@ class TrafficHistoryProvider(Provider):
     def _decode_vehicle_type(self, vehicle_type):
         # Options from NGSIM and INTERACTION currently include:
         #  1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
-        # But we don't yet have glb models for 1 and 4.
-        if vehicle_type == 3:
+        if vehicle_type == 1:
+            return "motorcycle"
+        elif vehicle_type == 2:
+            return "passenger"
+        elif vehicle_type == 3:
             return "truck"
-        if vehicle_type == 1 or vehicle_type == 4:
+        elif vehicle_type == 4:
+            return "pedestrian"
+        else:
             self._log.warning(
                 f"unsupported vehicle_type ({vehicle_type}) in history data."
             )
@@ -122,7 +127,7 @@ class TrafficHistoryProvider(Provider):
             default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
             vehicles.append(
                 VehicleState(
-                    vehicle_id=v_id,
+                    vehicle_id=f"social-agent-history-{v_id}",
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center(
                         [

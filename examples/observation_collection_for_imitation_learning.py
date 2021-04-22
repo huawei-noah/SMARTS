@@ -20,8 +20,8 @@ def main(scenarios, headless, seed):
 
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sim=SumoTrafficSimulation(headless=True, auto_start=True),
-        envision=Envision(),
+        traffic_sim=SumoTrafficSimulation(headless=headless, auto_start=True),
+        envision=None if headless else Envision(),
     )
     scenarios_iterator = Scenario.scenario_variations(
         scenarios,
@@ -30,12 +30,27 @@ def main(scenarios, headless, seed):
 
     smarts.reset(next(scenarios_iterator))
 
+    prev_vehicles = set()
+    done_vehicles = set()
     for _ in range(5000):
         smarts.step({})
-        smarts.attach_sensors_to_vehicles(
-            agent_spec, smarts.vehicle_index.social_vehicle_ids()
-        )
-        obs, _, _, _ = smarts.observe_from(smarts.vehicle_index.social_vehicle_ids())
+
+        current_vehicles = smarts.vehicle_index.social_vehicle_ids()
+        # We explicitly watch for which agent/vehicles left the simulation here
+        # since we don't have a "done criteria" that detects when a vehicle's
+        # traffic history has played itself out.
+        done_vehicles = prev_vehicles - current_vehicles
+        prev_vehicles = current_vehicles
+
+        smarts.attach_sensors_to_vehicles(agent_spec, current_vehicles)
+        obs, _, _, dones = smarts.observe_from(current_vehicles)
+        # The `dones` returned above should be empty for traffic histories
+        # where all vehicles are assumed to stay on the road and not collide.
+        # TODO:  add the following assert once the maps are accurate enough that
+        # we don't have any agents accidentally go off-road.
+        # assert not done
+        for v in done_vehicles:
+            dones[f"Agent-{v}"] = True
         # TODO: save observations for imitation learning
 
     smarts.destroy()

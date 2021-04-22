@@ -70,6 +70,7 @@ setup(
             "pytest",
             "pytest-benchmark",
             "pytest-cov",
+            "ipykernel",
             "pytest-notebook",
             "pytest-xdist",
         ],
