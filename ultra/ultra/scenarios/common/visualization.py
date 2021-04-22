@@ -195,7 +195,7 @@ def draw_intersection(
 
     color_offset = 20
     legend_position = (30, 50)
-    
+
     for color_key, color in colors_legend:
         canvas = cv2.putText(
             canvas,

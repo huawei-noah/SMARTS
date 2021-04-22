@@ -48,7 +48,7 @@ def basic_begin_time_init_func(num_lanes, num_vehicle, **params):
 def burst_begin_time_init_func(
     num_lanes,
     num_vehicle,
-    vehicle_cluster_size=(4,5),
+    vehicle_cluster_size=(4, 5),
     time_between_cluster=(20, 30),
     time_for_each_cluster=3,
 ):
@@ -82,11 +82,11 @@ def burst_begin_time_init_func(
 
 
 def poisson_init(num_lanes, num_vehicle, temperature=6):
-    #print("using poisson distribution ...")
+    # print("using poisson distribution ...")
     vehicle_spawn_time = np.random.exponential(
         temperature, size=(num_lanes, num_vehicle)
     )
     vehicle_spawn_time = list(vehicle_spawn_time)
     vehicle_spawn_time = [np.cumsum(e) for e in vehicle_spawn_time]
-    #print(vehicle_spawn_time)
+    # print(vehicle_spawn_time)
     return vehicle_spawn_time
