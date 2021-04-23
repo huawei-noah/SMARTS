@@ -24,6 +24,7 @@ import pickle
 import shutil
 import unittest
 
+from smarts.core.utils.sumo import sumolib
 from ultra.scenarios.generate_scenarios import *
 
 
@@ -124,6 +125,11 @@ class ScenariosTest(unittest.TestCase):
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
 
+        # Values for begin and end offset ranges are extracted from
+        # tests/scenarios/task00/config.yaml.
+        BEGIN_OFFSET_RANGE = {78, 79, 80, 81}
+        END_OFFSET_RANGE = {40, 41, 42, 43, 44}
+
         build_scenarios(
             task="task00",
             level_name="offset_test",
@@ -139,12 +145,75 @@ class ScenariosTest(unittest.TestCase):
                 # Get the first mission's route's begin and end offset.
                 begin_offset = missions[0].mission.route.begin[2]
                 end_offset = missions[0].mission.route.end[2]
-                self.assertTrue(
-                    begin_offset in {78, 79, 80, 81}
-                )  # Values from start_offset range in tests/scenarios/task00/config.yaml.
-                self.assertTrue(
-                    end_offset in {40, 41, 42, 43, 44}
-                )  # Values from end_offset range in tests/scenarios/task00/config.yaml.
+                self.assertTrue(begin_offset in BEGIN_OFFSET_RANGE)
+                self.assertTrue(end_offset in END_OFFSET_RANGE)
+
+    def test_generate_scenarios_with_stops(self):
+        save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/stops_test/")
+        if os.path.exists(save_dir):
+            shutil.rmtree(save_dir)
+
+        # Values for these constants are extracted from
+        # tests/scenarios/task00/config.yaml.
+        STOPPED_VEHICLES_PER_SCENARIO = 3
+        STOPPED_VEHICLE_POSITIONS = {80, 100, 120}
+        STOPPED_VEHICLE_LANES = {0, 1}
+        STOPPED_VEHICLE_LANE_IDS = {"edge-south-SN_0", "edge-south-SN_1"}
+
+        # Values for these constants are extracted from
+        # ultra/scenarios/generate_scenarios.py
+        STOPPED_VEHICLE_DEPART_TIME = 0
+        STOPPED_VEHICLE_SPEED = 0
+        STOPPED_VEHICLE_DURATION = 1000
+
+        build_scenarios(
+            task="task00",
+            level_name="stops_test",
+            stopwatcher_behavior=None,
+            stopwatcher_route=None,
+            root_path="tests/scenarios",
+            save_dir=save_dir,
+        )
+        for dirpath, dirnames, files in os.walk(save_dir):
+            if "all.rou.xml" in files:
+                total_stopped_vehicles = 0
+                traffic_file_path = os.path.join(dirpath, "all.rou.xml")
+
+                for vehicle in sumolib.output.parse(traffic_file_path, "vehicle"):
+                    if vehicle.hasChild("stop"):
+                        total_stopped_vehicles += 1
+                        stop_information = vehicle.getChild("stop")[0]
+
+                        self.assertTrue(
+                            int(vehicle.getAttribute("depart"))
+                            == STOPPED_VEHICLE_DEPART_TIME
+                        )
+                        self.assertTrue(
+                            int(vehicle.getAttribute("departPos"))
+                            in STOPPED_VEHICLE_POSITIONS
+                        )
+                        self.assertTrue(
+                            int(vehicle.getAttribute("departSpeed"))
+                            == STOPPED_VEHICLE_SPEED
+                        )
+                        self.assertTrue(
+                            int(vehicle.getAttribute("departLane"))
+                            in STOPPED_VEHICLE_LANES
+                        )
+                        self.assertTrue(
+                            stop_information.getAttribute("lane")
+                            in STOPPED_VEHICLE_LANE_IDS
+                        )
+                        self.assertTrue(
+                            int(stop_information.getAttribute("endPos"))
+                            in STOPPED_VEHICLE_POSITIONS
+                        )
+                        self.assertTrue(
+                            int(stop_information.getAttribute("duration"))
+                            == STOPPED_VEHICLE_DURATION
+                        )
+
+                self.assertTrue(total_stopped_vehicles == STOPPED_VEHICLES_PER_SCENARIO)
 
     @classmethod
     def tearDownClass(cls):

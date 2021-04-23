@@ -132,3 +132,26 @@ levels:
            specs: [[70kmh,p-test,1]]
            stops: null
            bubbles: null
+  stops_test:
+    train:
+      total: 10
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        4lane_t:
+          percent: 1
+          specs: [[70kmh,p-test,1]]
+          stops: [[south-SN,1,120],[south-SN,0,100],[south-SN,1,80]]
+          bubbles: null
+    test:
+      total: 10
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        4lane_t:
+          percent: 1
+          specs: [[70kmh,p-test,1]]
+          stops: [[south-SN,0,120],[south-SN,1,100],[south-SN,0,80]]
+          bubbles: null
