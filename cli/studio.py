@@ -45,7 +45,9 @@ def scenario_cli():
     "--allow-offset-map",
     is_flag=True,
     default=False,
-    help="Allows Sumo's road network (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(SumoRoadNetwork.shifted_net_file_name()),
+    help="Allows Sumo's road network (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
+        SumoRoadNetwork.shifted_net_file_name()
+    ),
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def build_scenario(clean, allow_offset_map, scenario):
@@ -66,7 +68,11 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     if not allow_offset_map:
         SumoRoadNetwork.from_file(map_net, shift_to_origin=True)
     elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
-        click.echo("WARNING: {} already exists.  Remove it if you want to use unshifted/offset map.net.xml instead.".format(SumoRoadNetwork.shifted_net_file_name()))
+        click.echo(
+            "WARNING: {} already exists.  Remove it if you want to use unshifted/offset map.net.xml instead.".format(
+                SumoRoadNetwork.shifted_net_file_name()
+            )
+        )
     map_glb = scenario_root / "map.glb"
     generate_glb_from_sumo_network(map_net, str(map_glb))
 
@@ -122,7 +128,9 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     "--allow-offset-maps",
     is_flag=True,
     default=False,
-    help="Allows Sumo's road networks (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(SumoRoadNetwork.shifted_net_file_name()),
+    help="Allows Sumo's road networks (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
+        SumoRoadNetwork.shifted_net_file_name()
+    ),
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
 def build_all_scenarios(clean, allow_offset_maps, scenarios):

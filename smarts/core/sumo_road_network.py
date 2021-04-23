@@ -153,7 +153,9 @@ class SumoRoadNetwork:
 
         if not cls._check_net_origin(G.getBoundary()):
             shifted_net_file = cls.shifted_net_file_path(net_file)
-            if os.path.isfile(shifted_net_file) or (shift_to_origin and cls._shift_coordinates(net_file, shifted_net_file)):
+            if os.path.isfile(shifted_net_file) or (
+                shift_to_origin and cls._shift_coordinates(net_file, shifted_net_file)
+            ):
                 G = sumolib.net.readNet(shifted_net_file, withInternal=True)
                 assert cls._check_net_origin(G.getBoundary())
                 net_file = shifted_net_file
