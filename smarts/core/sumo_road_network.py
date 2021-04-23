@@ -107,14 +107,21 @@ class SumoRoadNetwork:
         assert len(bbox) == 4
         return bbox[0] <= 0.0 and bbox[1] <= 0.0 and bbox[2] >= 0.0 and bbox[3] >= 0.0
 
+    @staticmethod
+    def shifted_net_file_name():
+        return f"shifted_map-AUTOGEN.net.xml"
+
+    @classmethod
+    def shifted_net_file_path(cls, net_file_path):
+        net_file_folder = os.path.dirname(net_file_path)
+        return os.path.join(net_file_folder, cls.shifted_net_file_name())
+
     @classmethod
     @lru_cache(maxsize=1)
-    def _shift_coordinates(cls, net_file_path):
-        net_file_folder = os.path.dirname(net_file_path)
-        out_path = os.path.join(net_file_folder, f"shifted_map-AUTOGEN.net.xml")
-        assert out_path != net_file_path
+    def _shift_coordinates(cls, net_file_path, shifted_path):
+        assert shifted_path != net_file_path
         logger = logging.getLogger(cls.__name__)
-        logger.info(f"normalizing net coordinates into {out_path}...")
+        logger.info(f"normalizing net coordinates into {shifted_path}...")
         ## Translate the map's origin to remove huge (imprecise) offsets.
         ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
         ## for netconvert options description.
@@ -126,37 +133,27 @@ class SumoRoadNetwork:
                     "-s",
                     net_file_path,
                     "-o",
-                    out_path,
+                    shifted_path,
                 ]
             )
             logger.debug(f"netconvert output: {stdout}")
-            return out_path
+            return True
         except Exception as e:
             logger.warning(
                 f"unable to use netconvert tool to normalize coordinates: {e}"
             )
-        return None
+        return False
 
     @classmethod
-    def from_file(cls, net_file, default_lane_width=None):
+    def from_file(cls, net_file, shift_to_origin=False, default_lane_width=None):
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
         G = sumolib.net.readNet(net_file, withInternal=True)
 
-        # check to see if we need to shift the map...
-        # if it already has an offset, it's probably been shifted
-        # correctly already, so we don't need to do it.  if not,
-        # then we check to see if the graph's bounding box includes
-        # the origin, and then shift it ourselves if not.
-        original_offset = G.getLocationOffset()
-        if (
-            original_offset[0] == 0
-            and original_offset[1] == 0
-            and not cls._check_net_origin(G.getBoundary())
-        ):
-            shifted_net_file = cls._shift_coordinates(net_file)
-            if shifted_net_file:
+        if not cls._check_net_origin(G.getBoundary()):
+            shifted_net_file = cls.shifted_net_file_path(net_file)
+            if os.path.isfile(shifted_net_file) or (shift_to_origin and cls._shift_coordinates(net_file, shifted_net_file)):
                 G = sumolib.net.readNet(shifted_net_file, withInternal=True)
                 assert cls._check_net_origin(G.getBoundary())
                 net_file = shifted_net_file
@@ -167,6 +164,7 @@ class SumoRoadNetwork:
                 # the offset should not be used (because all their other
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
+
         return cls(G, net_file, default_lane_width)
 
     @property

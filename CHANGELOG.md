@@ -16,11 +16,12 @@ process
 - Added description of map creation and how to modify the map to allow users to create their own traffic routes in docs
 - Added reference to SMARTS paper in front page of docs
 - Only create `Renderer` on demand if vehicles are using camera-based sensors. See issue #725.
+- Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks.
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
-- Fixed sumo road network offset bug for shifted maps.  See issue #716.
+- Fixed Sumo road network offset bug for shifted maps.  See issue #716.
 - Fixed traffic generation offset bug for shifted maps.  See issue #790.
 - Fixed bugs in traffic history and changed interface to it.  See issue #732.
 
