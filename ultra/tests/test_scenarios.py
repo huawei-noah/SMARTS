@@ -19,12 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import glob
 import os
 import pickle
 import shutil
 import unittest
 
 from smarts.core.utils.sumo import sumolib
+from smarts.sstudio.types import MapZone, PositionalZone
 from ultra.scenarios.generate_scenarios import *
 
 
@@ -63,9 +65,10 @@ class ScenariosTest(unittest.TestCase):
             level_name="easy",
             stopwatcher_behavior="aggressive",
             stopwatcher_route="south-west",
-            root_path="tests/scenarios",
+            root_path="tests/scenarios/",
             save_dir=save_dir,
         )
+
         for dirpath, dirnames, files in os.walk(save_dir):
             if "traffic" in dirpath:
                 self.assertTrue("all.rou.xml" in files)
@@ -78,14 +81,16 @@ class ScenariosTest(unittest.TestCase):
         save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/no-traffic/")
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
+
         build_scenarios(
             task="task00",
             level_name="no-traffic",
             stopwatcher_behavior="aggressive",
             stopwatcher_route="south-west",
-            root_path="tests/scenarios",
+            root_path="tests/scenarios/",
             save_dir=save_dir,
         )
+
         for dirpath, dirnames, files in os.walk(save_dir):
             if "traffic" in dirpath:
                 self.assertTrue("all.rou.xml" not in files)
@@ -126,7 +131,7 @@ class ScenariosTest(unittest.TestCase):
             shutil.rmtree(save_dir)
 
         # Values for begin and end offset ranges are extracted from
-        # tests/scenarios/task00/config.yaml.
+        # tests/scenarios/task00/config.yaml under the offset test level.
         BEGIN_OFFSET_RANGE = {78, 79, 80, 81}
         END_OFFSET_RANGE = {40, 41, 42, 43, 44}
 
@@ -135,18 +140,24 @@ class ScenariosTest(unittest.TestCase):
             level_name="offset_test",
             stopwatcher_behavior=None,
             stopwatcher_route=None,
-            root_path="tests/scenarios",
+            root_path="tests/scenarios/",
             save_dir=save_dir,
         )
-        for dirpath, dirnames, files in os.walk(save_dir):
-            if "missions.pkl" in files:
-                with open(os.path.join(dirpath, "missions.pkl"), "rb") as missions_file:
-                    missions = pickle.load(missions_file)
-                # Get the first mission's route's begin and end offset.
-                begin_offset = missions[0].mission.route.begin[2]
-                end_offset = missions[0].mission.route.end[2]
-                self.assertTrue(begin_offset in BEGIN_OFFSET_RANGE)
-                self.assertTrue(end_offset in END_OFFSET_RANGE)
+
+        for scenario_directory in glob.glob(os.path.join(save_dir, "*/")):
+            missions_file_path = os.path.join(scenario_directory, "missions.pkl")
+
+            self.assertTrue(os.path.isfile(missions_file_path))
+
+            with open(missions_file_path, "rb") as missions_file:
+                missions = pickle.load(missions_file)
+
+            # Get the first mission's route's begin and end offset.
+            begin_offset = missions[0].mission.route.begin[2]
+            end_offset = missions[0].mission.route.end[2]
+
+            self.assertTrue(begin_offset in BEGIN_OFFSET_RANGE)
+            self.assertTrue(end_offset in END_OFFSET_RANGE)
 
     def test_generate_scenarios_with_stops(self):
         save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/stops_test/")
@@ -154,7 +165,7 @@ class ScenariosTest(unittest.TestCase):
             shutil.rmtree(save_dir)
 
         # Values for these constants are extracted from
-        # tests/scenarios/task00/config.yaml.
+        # tests/scenarios/task00/config.yaml under the stops test level.
         STOPPED_VEHICLES_PER_SCENARIO = 3
         STOPPED_VEHICLE_POSITIONS = {80, 100, 120}
         STOPPED_VEHICLE_LANES = {0, 1}
@@ -171,49 +182,114 @@ class ScenariosTest(unittest.TestCase):
             level_name="stops_test",
             stopwatcher_behavior=None,
             stopwatcher_route=None,
-            root_path="tests/scenarios",
+            root_path="tests/scenarios/",
             save_dir=save_dir,
         )
-        for dirpath, dirnames, files in os.walk(save_dir):
-            if "all.rou.xml" in files:
-                total_stopped_vehicles = 0
-                traffic_file_path = os.path.join(dirpath, "all.rou.xml")
 
-                for vehicle in sumolib.output.parse(traffic_file_path, "vehicle"):
-                    if vehicle.hasChild("stop"):
-                        total_stopped_vehicles += 1
-                        stop_information = vehicle.getChild("stop")[0]
+        for scenario_directory in glob.glob(os.path.join(save_dir, "*/")):
+            traffic_file_path = os.path.join(scenario_directory, "traffic/all.rou.xml")
 
-                        self.assertTrue(
-                            int(vehicle.getAttribute("depart"))
-                            == STOPPED_VEHICLE_DEPART_TIME
-                        )
-                        self.assertTrue(
-                            int(vehicle.getAttribute("departPos"))
-                            in STOPPED_VEHICLE_POSITIONS
-                        )
-                        self.assertTrue(
-                            int(vehicle.getAttribute("departSpeed"))
-                            == STOPPED_VEHICLE_SPEED
-                        )
-                        self.assertTrue(
-                            int(vehicle.getAttribute("departLane"))
-                            in STOPPED_VEHICLE_LANES
-                        )
-                        self.assertTrue(
-                            stop_information.getAttribute("lane")
-                            in STOPPED_VEHICLE_LANE_IDS
-                        )
-                        self.assertTrue(
-                            int(stop_information.getAttribute("endPos"))
-                            in STOPPED_VEHICLE_POSITIONS
-                        )
-                        self.assertTrue(
-                            int(stop_information.getAttribute("duration"))
-                            == STOPPED_VEHICLE_DURATION
-                        )
+            self.assertTrue(os.path.isfile(traffic_file_path))
 
-                self.assertTrue(total_stopped_vehicles == STOPPED_VEHICLES_PER_SCENARIO)
+            total_stopped_vehicles = 0
+
+            for vehicle in sumolib.output.parse(traffic_file_path, "vehicle"):
+                if vehicle.hasChild("stop"):
+                    total_stopped_vehicles += 1
+                    stop_information = vehicle.getChild("stop")[0]
+
+                    self.assertTrue(
+                        int(vehicle.getAttribute("depart"))
+                        == STOPPED_VEHICLE_DEPART_TIME
+                    )
+                    self.assertTrue(
+                        int(vehicle.getAttribute("departPos"))
+                        in STOPPED_VEHICLE_POSITIONS
+                    )
+                    self.assertTrue(
+                        int(vehicle.getAttribute("departSpeed"))
+                        == STOPPED_VEHICLE_SPEED
+                    )
+                    self.assertTrue(
+                        int(vehicle.getAttribute("departLane")) in STOPPED_VEHICLE_LANES
+                    )
+                    self.assertTrue(
+                        stop_information.getAttribute("lane")
+                        in STOPPED_VEHICLE_LANE_IDS
+                    )
+                    self.assertTrue(
+                        int(stop_information.getAttribute("endPos"))
+                        in STOPPED_VEHICLE_POSITIONS
+                    )
+                    self.assertTrue(
+                        int(stop_information.getAttribute("duration"))
+                        == STOPPED_VEHICLE_DURATION
+                    )
+
+            self.assertTrue(total_stopped_vehicles == STOPPED_VEHICLES_PER_SCENARIO)
+
+    def test_generate_scenarios_with_bubbles(self):
+        save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/bubbles_test/")
+        if os.path.exists(save_dir):
+            shutil.rmtree(save_dir)
+
+        # Values for these constants are extracted from
+        # tests/scenarios/task00/config.yaml under the bubbles test level.
+        INTERSECTION_BUBBLE_SIZE = [40, 40]
+        INTERSECTION_BUBBLE_ACTOR_NAME = "intersection-actor"
+        INTERSECTION_BUBBLE_AGENT_LOCATOR = "intersection_test_agent:test-agent-v0"
+        INTERSECTION_BUBBLE_AGENT_PARAMS = {}
+        LANE_BUBBLE_LANE = "edge-south-SN"
+        LANE_BUBBLE_LANE_INDEX = 0
+        LANE_BUBBLE_OFFSET = 30
+        LANE_BUBBLE_LENGTH = 50
+        LANE_BUBBLE_NUM_LANES = 2
+        LANE_BUBBLE_ACTOR_NAME = "lane-actor"
+        LANE_BUBBLE_AGENT_LOCATOR = "lane_test_agent:test-agent-v0"
+        LANE_BUBBLE_AGENT_PARAMS = {"speed": 30}
+
+        build_scenarios(
+            task="task00",
+            level_name="bubbles_test",
+            stopwatcher_behavior=None,
+            stopwatcher_route=None,
+            root_path="tests/scenarios/",
+            save_dir=save_dir,
+        )
+
+        for scenario_directory in glob.glob(os.path.join(save_dir, "*/")):
+            bubbles_file_path = os.path.join(scenario_directory, "bubbles.pkl")
+
+            self.assertTrue(os.path.isfile(bubbles_file_path))
+
+            with open(bubbles_file_path, "rb") as bubbles_file:
+                bubbles = pickle.load(bubbles_file)
+
+            for bubble in bubbles:
+                if isinstance(bubble.zone, PositionalZone):
+                    self.assertTrue(bubble.zone.size == INTERSECTION_BUBBLE_SIZE)
+                    self.assertTrue(bubble.actor.name == INTERSECTION_BUBBLE_ACTOR_NAME)
+                    self.assertTrue(
+                        bubble.actor.agent_locator == INTERSECTION_BUBBLE_AGENT_LOCATOR
+                    )
+                    self.assertTrue(
+                        bubble.actor.policy_kwargs == INTERSECTION_BUBBLE_AGENT_PARAMS
+                    )
+                elif isinstance(bubble.zone, MapZone):
+                    self.assertTrue(bubble.zone.start[0] == LANE_BUBBLE_LANE)
+                    self.assertTrue(bubble.zone.start[1] == LANE_BUBBLE_LANE_INDEX)
+                    self.assertTrue(bubble.zone.start[2] == LANE_BUBBLE_OFFSET)
+                    self.assertTrue(bubble.zone.length == LANE_BUBBLE_LENGTH)
+                    self.assertTrue(bubble.zone.n_lanes == LANE_BUBBLE_NUM_LANES)
+                    self.assertTrue(bubble.actor.name == LANE_BUBBLE_ACTOR_NAME)
+                    self.assertTrue(
+                        bubble.actor.agent_locator == LANE_BUBBLE_AGENT_LOCATOR
+                    )
+                    self.assertTrue(
+                        bubble.actor.policy_kwargs == LANE_BUBBLE_AGENT_PARAMS
+                    )
+                else:
+                    self.assertTrue(False)
 
     @classmethod
     def tearDownClass(cls):
