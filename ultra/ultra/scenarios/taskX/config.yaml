@@ -30,3 +30,44 @@ levels:
            percent: 0.5
            specs: [[50kmh,blocks,0.34],[70kmh,blocks,0.33],[100kmh,blocks,0.33]]
            stops: [[south-SN,1,120],[south-SN,0,120]]
+  # Running the 'bubbles' level requries <path-to-SMARTS>/zoo/policies/open-agent/ and
+  # <path-to-SMARTS>/zoo/ in your PYTHONPATH.
+  bubbles:
+    train:
+      total: 1
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        4lane_t:
+          percent: 1.0
+          specs: [[50kmh,high-density,1.0]]
+          stops: [[south-SN,1,60]]
+          bubbles:
+          - location: [intersection,40,40]  # [location, length, width]
+            actor_name: "intersection-actor"
+            agent_locator: "open_agent:open_agent-v0"
+            agent_params: {}
+          - location: [south-SN,0,30,50,2]  # [lane, lane_index, offset, length, num_lanes]
+            actor_name: "lane-actor"
+            agent_locator: "policies.non_interactive_agent:non-interactive-agent-v0"
+            agent_params: {speed: 30}
+    test:
+      total: 1
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        4lane_t:
+          percent: 1.0
+          specs: [[50kmh,high-density,1.0]]
+          stops: [[south-SN,1,60]]
+          bubbles:
+          - location: [intersection,40,40]  # [location, length, width]
+            actor_name: "intersection-actor"
+            agent_locator: "open_agent:open_agent-v0"
+            agent_params: {}
+          - location: [south-SN,0,30,50,2]  # [lane, lane_index, offset, length, num_lanes]
+            actor_name: "lane-actor"
+            agent_locator: "policies.non_interactive_agent:non-interactive-agent-v0"
+            agent_params: {speed: 30}

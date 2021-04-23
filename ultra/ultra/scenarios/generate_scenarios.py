@@ -37,13 +37,16 @@ import numpy as np
 import yaml
 
 from smarts.core.utils.sumo import sumolib
-from smarts.sstudio import gen_missions, gen_traffic
+from smarts.sstudio import gen_bubbles, gen_missions, gen_traffic
 from smarts.sstudio.types import (
+    Bubble,
     Distribution,
     Flow,
     MapZone,
     Mission,
+    PositionalZone,
     Route,
+    SocialAgentActor,
     Traffic,
     TrapEntryTactic,
 )
@@ -95,6 +98,48 @@ def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
         ),
     )
     return route
+
+
+def bubble_config_to_bubble(scenario, bubble_config, vehicles_to_ignore=()) -> Bubble:
+    BUBBLE_MARGIN = 2
+    map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
+
+    location_name = bubble_config["location"][0]
+    location_data = bubble_config["location"][1:]
+    actor_name = bubble_config["actor_name"]
+    agent_locator = bubble_config["agent_locator"]
+    agent_params = bubble_config["agent_params"]
+
+    if location_name == "intersection":
+        # Create a bubble centered at the intersection.
+        assert len(location_data) == 2
+        bubble_coordinates = map_file.getNode("junction-intersection").getCoord()
+        zone = PositionalZone(pos=bubble_coordinates, size=location_data)
+    else:
+        # Create a bubble on one of the lanes.
+        assert len(location_data) == 4
+        zone = MapZone(
+            start=("edge-" + location_name, location_data[0], location_data[1]),
+            length=location_data[2],
+            n_lanes=location_data[3],
+        )
+
+    bubble = Bubble(
+        zone=zone,
+        actor=SocialAgentActor(
+            name=actor_name,
+            agent_locator=agent_locator,
+            policy_kwargs=agent_params,
+            initial_speed=None,
+        ),
+        margin=BUBBLE_MARGIN,
+        limit=None,
+        exclusion_prefixes=vehicles_to_ignore,
+        follow_actor_id=None,
+        follow_offset=None,
+        keep_alive=False,
+    )
+    return bubble
 
 
 def copy_map_files(scenario, map_dir, speed):
@@ -166,6 +211,7 @@ def generate_left_turn_missions(
     stopwatcher_route,
     seed,
     stops,
+    bubbles,
     intersection_name,
     traffic_density,
 ):
@@ -349,6 +395,13 @@ def generate_left_turn_missions(
     random.shuffle(mission_objects)
     gen_missions(scenario, mission_objects)
 
+    if bubbles:
+        bubble_objects = [
+            bubble_config_to_bubble(scenario, bubble_config, vehicles_to_not_hijack)
+            for bubble_config in bubbles
+        ]
+        gen_bubbles(scenario, bubble_objects)
+
     if stopwatcher_behavior:
         metadata["stopwatcher"] = {
             "direction": stopwatcher_info["direction"],
@@ -503,6 +556,7 @@ def scenario_worker(
     total_seeds,
     percent,
     stops,
+    bubbles,
     dynamic_pattern_func,
 ):
     for i, seed in enumerate(seeds):
@@ -525,6 +579,7 @@ def scenario_worker(
             stopwatcher_route=stopwatcher_route,
             seed=seed,
             stops=stops_copy,
+            bubbles=bubbles,
             traffic_density=traffic_density,
             intersection_name=intersection_type,
         )
@@ -587,6 +642,7 @@ def build_scenarios(
                     _type,
                     intersection_types[_type]["percent"],
                     intersection_types[_type]["stops"],
+                    intersection_types[_type]["bubbles"],
                 ]
                 for _type in intersection_types
             ],
@@ -594,7 +650,7 @@ def build_scenarios(
             reverse=True,
         )
         log_dict[mode] = {x: {"count": 0, "percent": 0} for x in intersection_types}
-        for intersection_type, intersection_percent, stops in intersections:
+        for intersection_type, intersection_percent, stops, bubbles in intersections:
             part = int(float(intersection_percent) * len(mode_seeds))
             cur_split = prev_split + part
             seeds = mode_seeds[prev_split:cur_split]
@@ -645,6 +701,7 @@ def build_scenarios(
                         seeds,
                         percent,
                         stops,
+                        bubbles,
                         dynamic_pattern_func,
                     ),
                 )

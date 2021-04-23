@@ -17,6 +17,9 @@ tasks:
     road-blocks:
       train: "scenarios/taskX/train_road-blocks*"
       test:  "scenarios/taskX/test_road-blocks*"
+    bubbles:
+      train: "scenarios/taskX/train_bubbles*"
+      test:  "scenarios/taskX/test_bubbles*"
   task0:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
