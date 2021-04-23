@@ -125,7 +125,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     help="Allows Sumo's road networks (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(SumoRoadNetwork.shifted_net_file_name()),
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all_scenarios(clean, shift_sumo_net_to_origin, scenarios):
+def build_all_scenarios(clean, allow_offset_maps, scenarios):
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
         # if scenarios is not given, set /scenarios as default
