@@ -100,7 +100,21 @@ def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
     return route
 
 
-def bubble_config_to_bubble(scenario, bubble_config, vehicles_to_ignore=()) -> Bubble:
+def bubble_config_to_bubble_object(
+    scenario, bubble_config, vehicles_to_not_hijack
+) -> Bubble:
+    """Converts a bubble config to a bubble object.
+
+    Args:
+        scenario:
+            A string representing the path to this scenario.
+        bubble_config:
+            A dictionary with 'location', 'actor_name', 'agent_locator', and
+            'agent_params' keys that is used to initialize the bubble.
+        vehicles_to_not_hijack:
+            A tuple of vehicle IDs that are passed to the bubble. The bubble will not
+            capture those vehicles that have an ID in this tuple.
+    """
     BUBBLE_MARGIN = 2
     map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
 
@@ -134,12 +148,85 @@ def bubble_config_to_bubble(scenario, bubble_config, vehicles_to_ignore=()) -> B
         ),
         margin=BUBBLE_MARGIN,
         limit=None,
-        exclusion_prefixes=vehicles_to_ignore,
+        exclusion_prefixes=vehicles_to_not_hijack,
         follow_actor_id=None,
         follow_offset=None,
         keep_alive=False,
     )
     return bubble
+
+
+def add_stops_to_traffic(scenario, stops, vehicles_to_not_hijack):
+    """Adds stopped vehicles to the traffic by overwriting all.rou.xml and replacing
+    some vehicles' attributes so that they start, and remain stopped.
+
+    Args:
+        scenario:
+            A string representing the path to this scenario.
+        stops:
+            A list of lists, where each list element contains information about where
+            to stop the vehicle. Each element of stops is a list in the form of
+            [stop_edge, stop_lane_index, stop_offset]. For stops of length n, n vehicles
+            will be chosen to be stopped in the scenario.
+        vehicles_to_not_hijack:
+            A list of vehicle IDs that is appended to. Each stopped vehicle's ID is
+            appended to this list as stopped vehicles should not be hijacked.
+    """
+    route_file_path = f"{scenario}/traffic/all.rou.xml"
+    map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
+    vehicle_types = list(sumolib.output.parse(route_file_path, "vType"))
+    vehicles = list()
+
+    # Add stops (if applicable) to vehicles in the existing all.rou.xml file.
+    for vehicle in sumolib.output.parse(route_file_path, "vehicle"):
+        if len(stops) > 0:
+            vehicle_edges = vehicle.route[0].edges.split()
+            start_edge = map_file.getEdge(vehicle_edges[0])
+
+            for lane in start_edge.getLanes():
+                stop_route, stop_lane, stop_position = stops[0]
+                if lane.getID() == f"edge-{stop_route}_{stop_lane}":
+                    # Add stop information to this vehicle.
+                    stop_attributes = {
+                        "lane": lane.getID(),
+                        "endPos": stop_position,
+                        "duration": "1000",
+                    }
+                    vehicle.setAttribute("depart", 0)
+                    vehicle.setAttribute("departPos", stop_position)
+                    vehicle.setAttribute("departSpeed", 0)
+                    vehicle.setAttribute("departLane", stop_lane)
+                    vehicle.addChild("stop", attrs=stop_attributes)
+                    vehicles_to_not_hijack.append(vehicle.id)
+                    stops.pop(0)
+                    break
+        vehicles.append([float(vehicle.depart), vehicle.id, vehicle])
+    vehicles.sort(key=lambda x: (x[0], x[1]))
+
+    # Ensure all stops were added to the traffic.
+    if len(stops) != 0:
+        print(
+            f"There are still {len(stops)} more stops to place in scenario {scenario}."
+        )
+
+    # Overwrite the all.rou.xml file with the new vehicles.
+    with open(route_file_path, "w") as route_file:
+        sumolib.writeXMLHeader(route_file, "routes")
+
+        route_file.write(
+            "<routes xmlns:xsi="
+            '"http://www.w3.org/2001/XMLSchema-instance" '
+            "xsi:noNamespaceSchemaLocation="
+            '"http://sumo.dlr.de/xsd/routes_file.xsd">\n'
+        )
+
+        for vehicle_type in vehicle_types:
+            route_file.write(vehicle_type.toXML(" " * 4))
+
+        for _, _, vehicle in vehicles:
+            route_file.write(vehicle.toXML(" " * 4))
+
+        route_file.write("</routes>\n")
 
 
 def copy_map_files(scenario, map_dir, speed):
@@ -296,65 +383,11 @@ def generate_left_turn_missions(
     try:
         gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
         if stops:
-            route_file_path = f"{scenario}/traffic/all.rou.xml"
-            map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
-            vehicle_types = list(sumolib.output.parse(route_file_path, "vType"))
-            vehicles = list()
-
-            # Add stops (if applicable) to vehicles in the existing all.rou.xml file.
-            for vehicle in sumolib.output.parse(route_file_path, "vehicle"):
-                if len(stops) > 0:
-                    vehicle_edges = vehicle.route[0].edges.split()
-                    start_edge = map_file.getEdge(vehicle_edges[0])
-
-                    for lane in start_edge.getLanes():
-                        stop_route, stop_lane, stop_position = stops[0]
-                        if lane.getID() == f"edge-{stop_route}_{stop_lane}":
-                            # Add stop information to this vehicle.
-                            stop_attributes = {
-                                "lane": lane.getID(),
-                                "endPos": stop_position,
-                                "duration": "1000",
-                            }
-                            vehicle.setAttribute("depart", 0)
-                            vehicle.setAttribute("departPos", stop_position)
-                            vehicle.setAttribute("departSpeed", 0)
-                            vehicle.setAttribute("departLane", stop_lane)
-                            vehicle.addChild("stop", attrs=stop_attributes)
-                            vehicles_to_not_hijack.append(vehicle.id)
-                            stops.pop(0)
-                            break
-                vehicles.append([float(vehicle.depart), vehicle.id, vehicle])
-            vehicles.sort(key=lambda x: (x[0], x[1]))
-
-            # Ensure all stops were added to the traffic.
-            if len(stops) != 0:
-                print(
-                    f"There are still {len(stops)} more stops "
-                    f"to place in scenario {scenario}."
-                )
-
-            # Overwrite the all.rou.xml file with the new vehicles.
-            with open(route_file_path, "w") as route_file:
-                sumolib.writeXMLHeader(route_file, "routes")
-
-                route_file.write(
-                    "<routes xmlns:xsi="
-                    '"http://www.w3.org/2001/XMLSchema-instance" '
-                    "xsi:noNamespaceSchemaLocation="
-                    '"http://sumo.dlr.de/xsd/routes_file.xsd">\n'
-                )
-
-                for vehicle_type in vehicle_types:
-                    route_file.write(vehicle_type.toXML(" " * 4))
-
-                for _, _, vehicle in vehicles:
-                    route_file.write(vehicle.toXML(" " * 4))
-
-                route_file.write("</routes>\n")
+            add_stops_to_traffic(scenario, stops, vehicles_to_not_hijack)
     except Exception as exception:
         print(exception)
-    # patch: remove route files from traffic folder to make intersection empty
+
+    # Patch: Remove route files from traffic folder to make intersection empty.
     if traffic_density == "no-traffic":
         os.remove(f"{scenario}/traffic/all.rou.xml")
 
@@ -397,7 +430,9 @@ def generate_left_turn_missions(
 
     if bubbles:
         bubble_objects = [
-            bubble_config_to_bubble(scenario, bubble_config, vehicles_to_not_hijack)
+            bubble_config_to_bubble_object(
+                scenario, bubble_config, vehicles_to_not_hijack
+            )
             for bubble_config in bubbles
         ]
         gen_bubbles(scenario, bubble_objects)
