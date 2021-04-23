@@ -24,7 +24,7 @@ from ray.rllib.models import ModelCatalog
 from ray.tune import Stopper
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.tune.schedulers import PopulationBasedTraining
-from ray.rllib.agents.ppo import PPOTrainer
+# from ray.rllib.agents.qmix import PPOTrainer
 from pathlib import Path
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
@@ -149,6 +149,14 @@ for agent_id in PREY_IDS:
         "action_space": ACTION_SPACE,
     }
 
+def get_agent_id(id):
+    if id in PREY_IDS:
+        return 0
+    elif id in PREDATOR_IDS:
+        return 1
+    else:
+        raise Exception('bug')
+
 def build_tune_config(scenario, headless):
     rllib_policies = {
         policy_mapper(agent_id): (
@@ -156,7 +164,10 @@ def build_tune_config(scenario, headless):
             rllib_agent["observation_space"],
             rllib_agent["action_space"],
             # TrainingModel is a FullyConnectedNetwork, which is the default in rllib
-            {"model": {"custom_model": 'CustomFCModel'}},
+            {
+                "model": {"custom_model": 'CustomFCModel'},
+                "agent_id": get_agent_id(agent_id),
+            },
         )
         for agent_id, rllib_agent in rllib_agents.items()
     }
@@ -223,7 +234,7 @@ def main(args):
     tune_config = build_tune_config(args.scenario, args.headless)
     
     analysis = tune.run(
-        PPOTrainer, # uses PPO algorithm
+        "contrib/MADDPG", 
         name="lets_play_tag",
         #stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
         stop=TimeStopper(),
@@ -240,7 +251,7 @@ def main(args):
         max_failures=0,
         export_formats=["model", "checkpoint"],
         config=tune_config,
-        scheduler=pbt,
+        # scheduler=pbt,
     )
 
     # print(analysis.dataframe().head())

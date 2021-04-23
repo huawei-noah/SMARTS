@@ -53,3 +53,34 @@ torch.save(self.model.state_dict(),f"{export_dir}/model.pt")
 # Self observation: check your own vehicle info
 
 # x < 1: log(-x+1)
+
+
+Do bellman 
+
+Reward for predator:
+u_predatodDesr=f(observation)
+
+
+f(observation):=
+if predator_pos>prey_pos
+use this action (speed,lane_change)
+------------------------------------
+Reward:
+control regularization of reward
+old_reward- k*(u_predator-f(observation))**2
+
+
+predator_reward(obs):
+if predeator_offset>prey_offset:
+des_predator_speed=prey_speed
+
+
+
+-k*(obs.predator_speed-des_predator_speedd)**2 k>0
+
+
+
+old_reward
+
+Prey reward:
+-k*(obs.prey_speed-des_prey_speedd)**2

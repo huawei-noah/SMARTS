@@ -101,12 +101,9 @@ class TagModelAgent(Agent):
         this, expand the dimensions of the observation from (n,) to (1, n) so that the
         observation fits into the model's expected input size.
         """
-        print(obs)
         obs = self._prep.transform(obs)
-        print(obs)
         obs = np.expand_dims(obs, 0)
         action = self.agent.get_policy(self._policy_name).compute_actions(obs)
-        print(f"computed action: {action}")
         return action
 
 
