@@ -46,7 +46,7 @@ def scenario_cli():
     is_flag=True,
     default=False,
     help="Allows Sumo's road network (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
-        SumoRoadNetwork.shifted_net_file_name()
+        SumoRoadNetwork.shifted_net_file_name
     ),
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
@@ -70,7 +70,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
         click.echo(
             "WARNING: {} already exists.  Remove it if you want to use unshifted/offset map.net.xml instead.".format(
-                SumoRoadNetwork.shifted_net_file_name()
+                SumoRoadNetwork.shifted_net_file_name
             )
         )
     map_glb = scenario_root / "map.glb"
@@ -129,7 +129,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     is_flag=True,
     default=False,
     help="Allows Sumo's road networks (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
-        SumoRoadNetwork.shifted_net_file_name()
+        SumoRoadNetwork.shifted_net_file_name
     ),
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
@@ -163,7 +163,7 @@ def clean_scenario(scenario):
 def _clean(scenario):
     to_be_removed = [
         "map.glb",
-        SumoRoadNetwork.shifted_net_file_name(),
+        SumoRoadNetwork.shifted_net_file_name,
         "bubbles.pkl",
         "missions.pkl",
         "flamegraph-perf.log",

@@ -107,14 +107,12 @@ class SumoRoadNetwork:
         assert len(bbox) == 4
         return bbox[0] <= 0.0 and bbox[1] <= 0.0 and bbox[2] >= 0.0 and bbox[3] >= 0.0
 
-    @staticmethod
-    def shifted_net_file_name():
-        return f"shifted_map-AUTOGEN.net.xml"
+    shifted_net_file_name = "shifted_map-AUTOGEN.net.xml"
 
     @classmethod
     def shifted_net_file_path(cls, net_file_path):
         net_file_folder = os.path.dirname(net_file_path)
-        return os.path.join(net_file_folder, cls.shifted_net_file_name())
+        return os.path.join(net_file_folder, cls.shifted_net_file_name)
 
     @classmethod
     @lru_cache(maxsize=1)
