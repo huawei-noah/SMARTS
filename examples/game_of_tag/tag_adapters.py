@@ -12,15 +12,17 @@ from dataclasses import dataclass
 PREDATOR_IDS = ["PRED1"]
 PREY_IDS = ["PREY1"]
 
+
 @dataclass
 class Rewards:
-    collesion_with_target: float = 2
+    collesion_with_target: float = 10
     game_ended: float = 1
     collesion_with_other_deduction: float = -1.5
     off_road_deduction: float = -1.5
     on_shoulder_deduction: float = -0.2
     following_prey_reward: float = 0.05
-    blocking_prey_reward: float  = 0.03
+    blocking_prey_reward: float = 0.03
+
 
 global_rewards = Rewards()
 COLLIDE_DISTANCE = 3.8
@@ -31,12 +33,39 @@ COLLIDE_DISTANCE = 3.8
 #     dtype=np.float32,
 # )
 
-ACTION_SPACE = gym.spaces.Tuple((
-    gym.spaces.Discrete(5), # 5 types of speed
-    gym.spaces.Discrete(3)) # -1 0 or 1 for lane change
-    # no message: 0, come_to_me: 1 received by predator vehicles, from observation
+
+def is_keeplane(action):
+    return action[0] == 0
+
+
+def is_turn_left(action):
+    return action[0] == 1
+
+
+def is_turn_right(action):
+    return action[0] == -1
+
+
+action_mapping = {
+    0: (0, 0),
+    1: (0, 1),
+    2: (0, 2),
+    3: (1, 0),
+    4: (1, 1),
+    5: (1, 2),
+    6: (-1, 0),
+    7: (-1, 1),
+    8: (-1, 2),
+}
+N_ACTIONS = 9
+
+ACTION_SPACE = gym.spaces.Tuple(
+    [
+        gym.spaces.Discrete(N_ACTIONS),  # according to action mapping above
+    ]
 )
 
+# ACTION_SPACE = gym.spaces.Discrete(8) # 3 types of speed
 
 NEIGHBORHOOD_VEHICLE_STATES = gym.spaces.Dict(
     {
@@ -48,33 +77,47 @@ NEIGHBORHOOD_VEHICLE_STATES = gym.spaces.Dict(
         # -4, -3, -2, -1: larger than current lane
         # 0: same as current lane
         # 1, 2, 3, 4: smaller than current lane
-        "rel_lane_index": gym.spaces.Discrete(9), 
+        "rel_lane_index": gym.spaces.Discrete(9),
     }
 )
 
-# Input layer: input layer can be dictionary
-OBSERVATION_SPACE = gym.spaces.Dict(
-    {
-        "heading": gym.spaces.Box(low=-1 * np.pi, high=np.pi, shape=(1,)),
-        "speed": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
-        "position": gym.spaces.Box(low=-1e3, high=1e3, shape=(2,)),
-        "target_vehicles": gym.spaces.Tuple(
-            tuple([NEIGHBORHOOD_VEHICLE_STATES] * len(PREDATOR_IDS))
-        ),
-    }
+OBSERVATION_SPACE = gym.spaces.Tuple(
+    [
+        gym.spaces.Dict(
+            {
+                "obs": gym.spaces.Dict(
+                    {
+                        "heading": gym.spaces.Box(
+                            low=-1 * np.pi, high=np.pi, shape=(1,)
+                        ),
+                        "speed": gym.spaces.Box(low=0, high=1e3, shape=(1,)),
+                        "position": gym.spaces.Box(low=-1e3, high=1e3, shape=(2,)),
+                        "target_vehicles": gym.spaces.Tuple(
+                            tuple([NEIGHBORHOOD_VEHICLE_STATES] * len(PREDATOR_IDS))
+                        ),
+                    }
+                ),
+                "action_mask": gym.spaces.Box(0, 1, (N_ACTIONS,)),
+            }
+        )
+    ]
 )
+
 
 def action_adapter(model_action, agent_id):
-    speed, laneChange = model_action
-    speeds = [0, 2, 4, 6, 8] # remove 12, place them further away, more lanes
-    adapted_action = [speeds[speed], laneChange-1]
+    laneChange, speed_index = action_mapping[model_action]
+    # 3 speed mode: 0m/s 4m/s 10m/s
+    speeds = [0, 4, 8]
+    adapted_action = [speeds[speed_index], laneChange]
     return adapted_action
+
 
 def _is_vehicle_wanted(id, wanted_ids: List[str]):
     for wanted_id in wanted_ids:
         if wanted_id in id:
             return True
     return False
+
 
 def get_specfic_vehicle_states(nv_states, wanted_ids: List[str], ego_state):
     """return vehicle states of vehicle that has id in wanted_ids
@@ -85,9 +128,13 @@ def get_specfic_vehicle_states(nv_states, wanted_ids: List[str], ego_state):
         {
             "heading": np.array([v.heading]),
             "speed": np.array([v.speed]),
-            "position": np.array(v.position[:2]), 
-            "rel_lane_index": rel_lane_index_mapping.index(v.lane_index - ego_state.lane_index),
-            "distance": np.array([np.linalg.norm(v.position[:2] - ego_state.position[:2])]),
+            "position": np.array(v.position[:2]),
+            "rel_lane_index": rel_lane_index_mapping.index(
+                v.lane_index - ego_state.lane_index
+            ),
+            "distance": np.array(
+                [np.linalg.norm(v.position[:2] - ego_state.position[:2])]
+            ),
         }
         for v in nv_states
         if _is_vehicle_wanted(v.id, wanted_ids)
@@ -99,7 +146,7 @@ def get_specfic_vehicle_states(nv_states, wanted_ids: List[str], ego_state):
             "speed": np.array([2e2]),
             "position": np.array([10000, 10000]),
             "rel_lane_index": 0,
-            "distance":np.array([1e3])
+            "distance": np.array([1e3]),
         }
     ] * (len(wanted_ids) - len(states))
     return states
@@ -116,33 +163,38 @@ def min_distance_to_rival(ego_position, rival_ids, neighbour_states):
         default=0,
     )
 
-def calculate_x_y_of_angle(tangent,angle):
+
+def calculate_x_y_of_angle(tangent, angle):
     return tangent * math.cos(angle), tangent * math.sin(angle)
+
 
 def new_axis_position(pos1, pos2, axis, value):
     # since the lane width portion should always make the distance between 2 points longer
     if abs(pos1[axis] + value - pos2[axis]) > abs(pos1[axis] - pos2[axis]):
         return pos1[axis] + value
-    
+
     return pos1[axis] - value
+
 
 def calculate_distance_to_road_curb(observations):
     ego = observations.ego_vehicle_state
-    pos_data = [[points[0].pos, points[0].lane_width] for points in observations.waypoint_paths]
+    pos_data = [
+        [points[0].pos, points[0].lane_width] for points in observations.waypoint_paths
+    ]
     if len(pos_data) > 1 and np.any(pos_data[0][0] != pos_data[-1][0]):
         first_pos = pos_data[0][0]
         last_pos = pos_data[-1][0]
-        first_width = pos_data[0][1]/2 
-        last_width = pos_data[-1][1]/2
+        first_width = pos_data[0][1] / 2
+        last_width = pos_data[-1][1] / 2
 
         # find slope
-        slope = (first_pos[1]-last_pos[1]) / (first_pos[0]-last_pos[0])
+        slope = (first_pos[1] - last_pos[1]) / (first_pos[0] - last_pos[0])
 
         # find angle
         angle = math.atan(slope)
 
         # find 2 edge points
-        x, y  = calculate_x_y_of_angle(first_width, angle)
+        x, y = calculate_x_y_of_angle(first_width, angle)
         y = new_axis_position(first_pos, last_pos, 1, y)
         x = new_axis_position(first_pos, last_pos, 0, x)
         first_pos_edge_ptr = [x, y]
@@ -153,27 +205,29 @@ def calculate_distance_to_road_curb(observations):
         last_pos_edge_ptr = [x, y]
 
         # find distance to the edge points
-        distance =  min(
+        distance = min(
             np.linalg.norm(ego.position[:2] - np.array(first_pos_edge_ptr)),
             np.linalg.norm(ego.position[:2] - np.array(last_pos_edge_ptr)),
         )
-        print(f"ego id: {ego.id} distance: {distance}")
         return distance
     else:
-        pos_data = [[[p.pos, p.lane_width] for p in points] for points in observations.waypoint_paths]
+        pos_data = [
+            [[p.pos, p.lane_width] for p in points]
+            for points in observations.waypoint_paths
+        ]
         first_pos = pos_data[0][0][0]
-        last_pos = pos_data[0][2][0] # assume at least 3 waypoints
-        first_width = pos_data[0][0][1]/2 
+        last_pos = pos_data[0][2][0]  # assume at least 3 waypoints
+        first_width = pos_data[0][0][1] / 2
 
-        slope = (first_pos[1]-last_pos[1]) / (first_pos[0]-last_pos[0])
+        slope = (first_pos[1] - last_pos[1]) / (first_pos[0] - last_pos[0])
         # perpendicular slope
-        slope = -1 * 1/slope
+        slope = -1 * 1 / slope
         angle = math.atan(slope)
         # find 2 edge points
-        x, y  = calculate_x_y_of_angle(first_width, angle)
+        x, y = calculate_x_y_of_angle(first_width, angle)
         p1 = [first_pos[0] + x, first_pos[1] + y]
         p2 = [first_pos[0] - x, first_pos[1] - y]
-        distance =  min(
+        distance = min(
             np.linalg.norm(ego.position[:2] - np.array(p1)),
             np.linalg.norm(ego.position[:2] - np.array(p2)),
         )
@@ -183,46 +237,71 @@ def calculate_distance_to_road_curb(observations):
 def observation_adapter(observations):
 
     nv_states = observations.neighborhood_vehicle_states
+    ego = observations.ego_vehicle_state
 
     target_vehicles = None
-    if _is_vehicle_wanted(observations.ego_vehicle_state.id, PREY_IDS):
-        target_vehicles = get_specfic_vehicle_states(nv_states, PREDATOR_IDS, observations.ego_vehicle_state)
-    elif _is_vehicle_wanted(observations.ego_vehicle_state.id, PREDATOR_IDS):
-        target_vehicles = get_specfic_vehicle_states(nv_states, PREY_IDS, observations.ego_vehicle_state)
+    if _is_vehicle_wanted(ego.id, PREY_IDS):
+        target_vehicles = get_specfic_vehicle_states(nv_states, PREDATOR_IDS, ego)
+    elif _is_vehicle_wanted(ego.id, PREDATOR_IDS):
+        target_vehicles = get_specfic_vehicle_states(nv_states, PREY_IDS, ego)
+
+    # mask out actions: disable left turn on lane index 4, left turn on lane index 0
+    action_mask = np.ones(N_ACTIONS)
+    if ego.lane_index == 4:
+        action_mask = [
+            0 if is_turn_left(action_mapping[i]) else 1
+            for i, act in enumerate(action_mask)
+        ]
+    elif ego.lane_index == 0:
+        action_mask = [
+            0 if is_turn_right(action_mapping[i]) else 1
+            for i, act in enumerate(action_mask)
+        ]
 
     return {
-        "heading": np.array([observations.ego_vehicle_state.heading]),
-        "speed": np.array([observations.ego_vehicle_state.speed]),
-        "position": np.array(observations.ego_vehicle_state.position[:2]),
-        "target_vehicles": tuple(target_vehicles)
-        #"distance_to_curb":np.array([distance]),
-        #"min_distance_to_prey": np.array([min_distance_to_prey]),
-        #"min_distance_to_predator": np.array([min_distance_to_predator]),
-        # "predator_vehicles": tuple(predator_states),
-        # "prey_vehicles": tuple(prey_states),
-        # "drivable_area_grid_map": drivable_area_grid_map,
+        "obs": {
+            "heading": np.array([ego.heading]),
+            "speed": np.array([ego.speed]),
+            "position": np.array(ego.position[:2]),
+            "target_vehicles": tuple(target_vehicles)
+            # "distance_to_curb":np.array([distance]),
+            # "min_distance_to_prey": np.array([min_distance_to_prey]),
+            # "min_distance_to_predator": np.array([min_distance_to_predator]),
+            # "predator_vehicles": tuple(predator_states),
+            # "prey_vehicles": tuple(prey_states),
+            # "drivable_area_grid_map": drivable_area_grid_map,
+        },
+        "action_mask": action_mask,
     }
+
 
 def distance_to_curb_reward(observations):
     distance = calculate_distance_to_road_curb(observations)
     return 3 * math.log10(calculate_distance_to_road_curb(observations)) - 1.5
 
+
 def range_within(val, target, range):
     return val - range <= target and target <= val + range
 
+
 # collide at 3.8918972164801677 if from behind
 # colldie at 2.11 if from side
+def dominant_reward(distance):
+    assert distance != COLLIDE_DISTANCE
+    return min(0.5 / ((distance - COLLIDE_DISTANCE) ** 2), 10)
 
-def dominant_reward(x):
-    """ Gets value from a normal pdf
-    """
-    sd = 0.1
-    sd2 = 3
-    mean = 3.8
-    var = sd2**2
-    denom = sd*(2*math.pi)**.5
-    num = math.exp(-((x-mean)**2)/(2*var))
-    return num/denom
+
+# def dominant_reward(x):
+#     """ Gets value from a normal pdf
+#     """
+#     sd = 0.1
+#     sd2 = 3
+#     mean = 3.8
+#     var = sd2**2
+#     denom = sd*(2*math.pi)**.5
+#     num = math.exp(-((x-mean)**2)/(2*var))
+#     return num/denom
+
 
 def predator_reward_adapter(observations, env_reward_signal):
     """+ if collides with prey
@@ -237,7 +316,10 @@ def predator_reward_adapter(observations, env_reward_signal):
         observations.neighborhood_vehicle_states,
     )
 
-    rew += dominant_reward(distance_to_target)
+    if distance_to_target == COLLIDE_DISTANCE:
+        rew += 10
+    else:
+        rew += dominant_reward(distance_to_target)
 
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
@@ -247,7 +329,9 @@ def predator_reward_adapter(observations, env_reward_signal):
         if _is_vehicle_wanted(c.collidee_id, PREY_IDS):
             # Additional reward for making a collesion
             rew += global_rewards.collesion_with_target
-            print(f"predator {observations.ego_vehicle_state.id} collided with prey {c.collidee_id} distance {distance_to_target}")
+            print(
+                f"predator {observations.ego_vehicle_state.id} collided with prey {c.collidee_id} distance {distance_to_target}"
+            )
         # else:
         #     # Collided with something other than the prey
         #     rew += global_rewards.collesion_with_other_deduction
@@ -259,7 +343,7 @@ def predator_reward_adapter(observations, env_reward_signal):
     #     # have a time limit for
     #     rew += global_rewards.off_road_deduction
 
-    #give 0.05 reward for following prey, give 0.1 reward for following and having higher speed than prey
+    # give 0.05 reward for following prey, give 0.1 reward for following and having higher speed than prey
     # ego_pos = observations.ego_vehicle_state.position[:2]
     # ego_heading = observations.ego_vehicle_state.heading
     # ego_speed = observations.ego_vehicle_state.speed
@@ -270,31 +354,30 @@ def predator_reward_adapter(observations, env_reward_signal):
     #     prey_pos = v.position[:2]
     #     prey_speed = v.speed
     #     print(f"pred: {ego_pos} {ego_heading} {ego_speed} prey: {prey_pos} {prey_heading} {prey_speed}")
-        
-        # x = abs(ego_pos[0]-prey_pos[0])
-        # y = abs(ego_pos[1]-prey_pos[1])
-        # # prey at top left
-        # cal_heading = math.atan(x/y)
-        # if prey_pos[0] > ego_pos[0] and prey_pos[1] < ego_pos[1]:
-        #     # prey at bottom right
-        #     cal_heading = -1*math.pi+cal_heading
-        # elif prey_pos[0] > ego_pos[0] and prey_pos[1] >= ego_pos[1]:
-        #     # prey at top right
-        #     cal_heading = -1 * cal_heading 
-        # elif prey_pos[0] < ego_pos[0] and prey_pos[1] < ego_pos[1]:
-        #     cal_heading = math.pi - cal_heading
-        # # checks if predator is chasing after the prey within 20 meters
-        # distance_to_target = math.sqrt(x*x+y*y)
-        # if range_within(cal_heading, ego_heading, 0.05) and distance_to_target <= 20:
-        #     # if two vehicle distance <= 20 meters, add 
-        #     rew += global_rewards.following_prey_reward
-        #     if ego_speed > v.speed:
-        #         rew += global_rewards.following_prey_reward
-        #         #print(f"predator {observations.ego_vehicle_state.id} chasing prey: {v.id} cal heading {cal_heading} ego_heading {ego_heading}")
-        # elif range_within(abs(cal_heading) + abs(ego_heading), np.pi, 0.05) and distance_to_target < 10 and ego_speed < v.speed:
-        #     rew += global_rewards.blocking_prey_reward
-            #print(f"predator {observations.ego_vehicle_state.id} blocking prey: {v.id}")
-            
+
+    # x = abs(ego_pos[0]-prey_pos[0])
+    # y = abs(ego_pos[1]-prey_pos[1])
+    # # prey at top left
+    # cal_heading = math.atan(x/y)
+    # if prey_pos[0] > ego_pos[0] and prey_pos[1] < ego_pos[1]:
+    #     # prey at bottom right
+    #     cal_heading = -1*math.pi+cal_heading
+    # elif prey_pos[0] > ego_pos[0] and prey_pos[1] >= ego_pos[1]:
+    #     # prey at top right
+    #     cal_heading = -1 * cal_heading
+    # elif prey_pos[0] < ego_pos[0] and prey_pos[1] < ego_pos[1]:
+    #     cal_heading = math.pi - cal_heading
+    # # checks if predator is chasing after the prey within 20 meters
+    # distance_to_target = math.sqrt(x*x+y*y)
+    # if range_within(cal_heading, ego_heading, 0.05) and distance_to_target <= 20:
+    #     # if two vehicle distance <= 20 meters, add
+    #     rew += global_rewards.following_prey_reward
+    #     if ego_speed > v.speed:
+    #         rew += global_rewards.following_prey_reward
+    #         #print(f"predator {observations.ego_vehicle_state.id} chasing prey: {v.id} cal heading {cal_heading} ego_heading {ego_heading}")
+    # elif range_within(abs(cal_heading) + abs(ego_heading), np.pi, 0.05) and distance_to_target < 10 and ego_speed < v.speed:
+    #     rew += global_rewards.blocking_prey_reward
+    # print(f"predator {observations.ego_vehicle_state.id} blocking prey: {v.id}")
 
     # Decreased reward for increased distance away from prey
     # rew -= (0.005) * min_distance_to_rival(
@@ -305,40 +388,39 @@ def predator_reward_adapter(observations, env_reward_signal):
     # if not collided_with_prey and events.reached_max_episode_steps:
     #     # predator failed to catch the prey
     #     rew -= global_rewards.game_ended
-    
+
     # if no prey vehicle avaliable, have 0 reward instead
-    prey_vehicles = list(filter(
-        lambda v: _is_vehicle_wanted(v.id, PREY_IDS), observations.neighborhood_vehicle_states,
-    ))
+    prey_vehicles = list(
+        filter(
+            lambda v: _is_vehicle_wanted(v.id, PREY_IDS),
+            observations.neighborhood_vehicle_states,
+        )
+    )
     rew = rew if len(prey_vehicles) > 0 else 0
     # print(f"predator {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew} distance {distance_to_target}")
     return rew
 
 
 def prey_reward_adapter(observations, env_reward_signal):
-    """+ based off the distance away from the predator (optional)
-    - if collides with prey
-    - if collides with social vehicle
-    - if off road
-    """
-
     rew = 0
-    # rew = 0.2 * np.sum(
-    #     np.absolute(observations.ego_vehicle_state.linear_velocity)
-    # )  # encourages driving
     distance_to_target = min_distance_to_rival(
         observations.ego_vehicle_state.position,
         PREDATOR_IDS,
         observations.neighborhood_vehicle_states,
     )
     # set min on the reward
-    rew -= dominant_reward(distance_to_target)
+    if distance_to_target == COLLIDE_DISTANCE:
+        rew -= 10
+    else:
+        rew -= dominant_reward(distance_to_target)
 
     events = observations.events
     for c in events.collisions:
         if _is_vehicle_wanted(c.collidee_id, PREDATOR_IDS):
             rew -= global_rewards.collesion_with_target
-            print(f"prey {observations.ego_vehicle_state.id} collided with Predator {c.collidee_id} distance {distance_to_target}")
+            print(
+                f"prey {observations.ego_vehicle_state.id} collided with Predator {c.collidee_id} distance {distance_to_target}"
+            )
         # else:
         #     # Collided with something other than the prey
         #     rew += global_rewards.collesion_with_other_deduction
@@ -346,7 +428,6 @@ def prey_reward_adapter(observations, env_reward_signal):
     # if events.off_road:
     #     print("prey offroad")
     #     rew += global_rewards.off_road_deduction
-
 
     # # Increased reward for increased distance away from predators
     # rew += (0.005) * min_distance_to_rival(
@@ -356,9 +437,12 @@ def prey_reward_adapter(observations, env_reward_signal):
     # )
 
     # if no predator vehicle avaliable, have 0 reward instead
-    predator_vehicles = list(filter(
-        lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS), observations.neighborhood_vehicle_states,
-    ))
+    predator_vehicles = list(
+        filter(
+            lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS),
+            observations.neighborhood_vehicle_states,
+        )
+    )
     rew = rew if len(predator_vehicles) > 0 else 0
     # print(f"prey {observations.ego_vehicle_state.id.split('-')[0]} reward: {rew} distance {distance_to_target}")
     return rew

@@ -17,14 +17,17 @@ import ray
 
 
 import numpy as np
+from gym.spaces import Tuple
 from typing import List
 from ray import tune
 from ray.rllib.utils import try_import_tf
 from ray.rllib.models import ModelCatalog
-from ray.tune import Stopper
+from ray.tune import Stopper, register_env, grid_search
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.tune.schedulers import PopulationBasedTraining
-# from ray.rllib.agents.qmix import PPOTrainer
+
+# from ray.rllib.agents.ppo import PPOTrainer
+from ray.rllib.agents.qmix.qmix import QMixTrainer
 from pathlib import Path
 
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
@@ -75,7 +78,7 @@ def policy_mapper(agent_id):
 class TimeStopper(Stopper):
     def __init__(self):
         self._start = time.time()
-        self._deadline = 48 * 60 * 60 # 9 hours
+        self._deadline = 48 * 60 * 60  # 9 hours
 
     def __call__(self, trial_id, result):
         return False
@@ -94,7 +97,7 @@ tf = try_import_tf()
 #     NAME = "FullyConnectedNetwork"
 
 
-ModelCatalog.register_custom_model('CustomFCModel', CustomFCModel)
+ModelCatalog.register_custom_model("CustomFCModel", CustomFCModel)
 
 rllib_agents = {}
 # add custom done criteria - maybe not
@@ -149,13 +152,29 @@ for agent_id in PREY_IDS:
         "action_space": ACTION_SPACE,
     }
 
+
 def get_agent_id(id):
     if id in PREY_IDS:
         return 0
     elif id in PREDATOR_IDS:
         return 1
     else:
-        raise Exception('bug')
+        raise Exception("Error: Wrong id")
+
+
+def env_creator(config):
+    grouping = {
+        "PREY1": PREY_IDS,
+        "PRED1": PREDATOR_IDS,
+    }
+    env = RLlibHiWayEnv(config)
+    return env.with_agent_groups(
+        grouping, obs_space=OBSERVATION_SPACE, act_space=ACTION_SPACE
+    )
+
+
+register_env("tag_env", env_creator)
+
 
 def build_tune_config(scenario, headless):
     rllib_policies = {
@@ -165,25 +184,59 @@ def build_tune_config(scenario, headless):
             rllib_agent["action_space"],
             # TrainingModel is a FullyConnectedNetwork, which is the default in rllib
             {
-                "model": {"custom_model": 'CustomFCModel'},
-                "agent_id": get_agent_id(agent_id),
+                # "model": {"custom_model": 'CustomFCModel'},
+                "agent_id": agent_id,
             },
         )
         for agent_id, rllib_agent in rllib_agents.items()
     }
 
-    tune_config = {
-        "env": RLlibHiWayEnv,
-        #"framework": "tf2", # Can't export model
-        "framework": "torch",
-        "log_level": "WARN",
-        "num_workers": 3,
-        "explore": True,
-        # 'sample_batch_size': 200,  # XXX: 200
-        # 'train_batch_size': 4000,
-        # 'sgd_minibatch_size': 128,
-        # 'num_sgd_iter': 30,
-        "horizon": 10000,
+    # tune_config = {
+    #     "env": "tag_env",
+    #     #"framework": "tf2", # Can't export model
+    #     "framework": "torch",
+    #     "log_level": "WARN",
+    #     "num_workers": 3,
+    #     "explore": True,
+    #     # 'sample_batch_size': 200,  # XXX: 200
+    #     # 'train_batch_size': 4000,
+    #     # 'sgd_minibatch_size': 128,
+    #     # 'num_sgd_iter': 30,
+    #     "horizon": 10000,
+    #     "env_config": {
+    #         "seed": 42,
+    #         "sim_name": "game_of_tag_works?",
+    #         "scenarios": [os.path.abspath(scenario)],
+    #         "headless": headless,
+    #         "agent_specs": {
+    #             agent_id: rllib_agent["agent_spec"]
+    #             for agent_id, rllib_agent in rllib_agents.items()
+    #         },
+    #     },
+    #     "multiagent": {
+    #         "policies": rllib_policies,
+    #         "policies_to_train": ["predator_policy", "prey_policy"],
+    #         #"policy_mapping_fn":  lambda agent_id: f"{agent_id}_policy",
+    #         "policy_mapping_fn": policy_mapper,
+    #     },
+    #     "callbacks": {
+    #         "on_episode_start": on_episode_start,
+    #         "on_episode_step": on_episode_step,
+    #         "on_episode_end": on_episode_end,
+    #     },
+    # }
+    # return tune_config
+
+    config = {
+        "env": "tag_env",
+        "rollout_fragment_length": 4,
+        "train_batch_size": 1500,
+        "exploration_config": {
+            "epsilon_timesteps": 5000,
+            "final_epsilon": 0.05,
+        },
+        "num_workers": 2,
+        "mixer": "qmix",
         "env_config": {
             "seed": 42,
             "sim_name": "game_of_tag_works?",
@@ -197,46 +250,45 @@ def build_tune_config(scenario, headless):
         "multiagent": {
             "policies": rllib_policies,
             "policies_to_train": ["predator_policy", "prey_policy"],
-            #"policy_mapping_fn":  lambda agent_id: f"{agent_id}_policy",
+            # "policy_mapping_fn":  lambda agent_id: f"{agent_id}_policy",
             "policy_mapping_fn": policy_mapper,
         },
-        "callbacks": {
-            "on_episode_start": on_episode_start,
-            "on_episode_step": on_episode_step,
-            "on_episode_end": on_episode_end,
-        },
+        # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
+        "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+        "framework": "torch",
     }
-    return tune_config
+    return config
+
 
 def main(args):
-    pbt = PopulationBasedTraining(
-        time_attr="time_total_s",
-        metric="episode_reward_mean",
-        mode="max",
-        perturbation_interval=300,
-        resample_probability=0.25,
-        # Specifies the mutations of these hyperparams
-        hyperparam_mutations={
-            "lambda": lambda: random.uniform(0.9, 1.0),
-            "clip_param": lambda: random.uniform(0.01, 0.5),
-            "kl_coeff": lambda: 0.3,
-            "lr": [1e-3], # test to see if it works
-            #"num_sgd_iter": lambda: random.randint(1, 30),
-            "sgd_minibatch_size": lambda: 128, #random.randint(128, 16384),
-            # "train_batch_size": lambda: random.randint(2000, 160000),
-            "train_batch_size": lambda: 4000,
-            'num_sgd_iter': lambda: 30,
-        },
-        custom_explore_fn=explore,
-    )
+    # pbt = PopulationBasedTraining(
+    #     time_attr="time_total_s",
+    #     metric="episode_reward_mean",
+    #     mode="max",
+    #     perturbation_interval=300,
+    #     resample_probability=0.25,
+    #     # Specifies the mutations of these hyperparams
+    #     hyperparam_mutations={
+    #         "lambda": lambda: random.uniform(0.9, 1.0),
+    #         "clip_param": lambda: random.uniform(0.01, 0.5),
+    #         "kl_coeff": lambda: 0.3,
+    #         "lr": [1e-3], # test to see if it works
+    #         #"num_sgd_iter": lambda: random.randint(1, 30),
+    #         "sgd_minibatch_size": lambda: 128, #random.randint(128, 16384),
+    #         # "train_batch_size": lambda: random.randint(2000, 160000),
+    #         "train_batch_size": lambda: 4000,
+    #         'num_sgd_iter': lambda: 30,
+    #     },
+    #     custom_explore_fn=explore,
+    # )
     local_dir = os.path.expanduser(args.result_dir)
 
     tune_config = build_tune_config(args.scenario, args.headless)
-    
+
     analysis = tune.run(
-        "contrib/MADDPG", 
+        QMixTrainer,
         name="lets_play_tag",
-        #stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
+        # stop={'time_total_s': 10 * 60 },#60 * 60 * 12},  # 12 hours
         stop=TimeStopper(),
         # XXX: Every X iterations perform a _ray actor_ checkpoint (this is
         #      different than _exporting_ a TF/PT checkpoint).
@@ -245,7 +297,7 @@ def main(args):
         # XXX: Beware, resuming after changing tune params will not pick up
         #      the new arguments as they are stored alongside the checkpoint.
         resume=args.resume_training,
-        #restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_77a55_00000_0_2021-04-06_12-59-36/checkpoint_133/checkpoint-133",
+        # restore="/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_77a55_00000_0_2021-04-06_12-59-36/checkpoint_133/checkpoint-133",
         local_dir=local_dir,
         reuse_actors=True,
         max_failures=0,
@@ -263,7 +315,7 @@ def main(args):
     # save_model_path = str(Path(__file__).expanduser().resolve().parent / "model")
     # copy_tree(str(model_path), save_model_path, overwrite=True)
     # print(f"Wrote model to: {save_model_path}")
-    
+
     # #supposed to output a model
     # checkpoint_path = '/home/kyber/ray_results/lets_play_tag/PPO_RLlibHiWayEnv_66f3c_00000_0_2021-04-20_17-21-42/checkpoint_6/checkpoint-6'
     # ray.init(num_cpus=2)
