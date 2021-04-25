@@ -3,10 +3,14 @@ name: ULTRA CI Base Tests
 on: 
   push:
     branches:
-      - ultra[-_/]**
+      - ultra-**
+      - ultra_**
+      - ultra/**
   pull_request:
     branches:
-      - ultra[-_/]**
+      - ultra-**
+      - ultra_**
+      - ultra/**
 
 jobs:
   test-base:

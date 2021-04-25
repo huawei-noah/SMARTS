@@ -84,3 +84,28 @@ old_reward
 
 Prey reward:
 -k*(obs.prey_speed-des_prey_speedd)**2
+
+
+
+
+
+
+April 23rd:
+Approach 1: keep using PPO with Rllib
+    - mostly already done, need to clean up files
+    - add reward regularization on whether to speed up or down based on different situation
+    benefit: stable
+
+Approach 2: keep trying to use rllib QMIX
+    Problem with Rllib:
+    - QMIX seems to be only able to have 1 action not 2 -  worked around
+    - uncertain if it works if we get it to run
+
+Approach 3: use pymarl or malib
+    - disadvantage:
+    starting over - except rewards
+    benefit: if easy to use then it might work.
+    Is there an example that uses PyMARLHiWayEnv or ListHiWayEnv?
+
+
+Need to add action_mask to disable left turn when on leftest lane, and right turn when on rightest lane

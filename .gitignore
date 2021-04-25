@@ -97,6 +97,7 @@ venv
 *.rou.alt.xml
 *.rou.xml
 *.trips.xml
+shifted_map-AUTOGEN.net.xml
 *.egg
 *.glb
 *flamegraph-perf.log
@@ -106,7 +107,6 @@ bubbles.pkl
 missions.pkl
 traffic_histories.pkl
 **/social_agents/*
-shifted_map-AUTOGEN.net.xml
 
 # Manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml
@@ -114,6 +114,7 @@ shifted_map-AUTOGEN.net.xml
 
 # but keep model assets
 !**/models/*.glb
+*.blend1
 
 # run logs
 _run_logs

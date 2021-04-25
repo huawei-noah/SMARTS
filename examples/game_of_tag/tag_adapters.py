@@ -287,7 +287,8 @@ def range_within(val, target, range):
 # collide at 3.8918972164801677 if from behind
 # colldie at 2.11 if from side
 def dominant_reward(distance):
-    assert distance != COLLIDE_DISTANCE
+    if distance == COLLIDE_DISTANCE:
+        return 10
     return min(0.5 / ((distance - COLLIDE_DISTANCE) ** 2), 10)
 
 
@@ -308,18 +309,14 @@ def predator_reward_adapter(observations, env_reward_signal):
     - if collides with social vehicle
     - if off road
     """
-    rew = 0
-
     distance_to_target = min_distance_to_rival(
         observations.ego_vehicle_state.position,
         PREY_IDS,
         observations.neighborhood_vehicle_states,
     )
 
-    if distance_to_target == COLLIDE_DISTANCE:
-        rew += 10
-    else:
-        rew += dominant_reward(distance_to_target)
+    # rew += dominant_reward(distance_to_target)
+    rew = -0.1 * distance_to_target
 
     # rew = 0.2 * np.sum(
     #     np.absolute(observations.ego_vehicle_state.linear_velocity)
@@ -402,17 +399,13 @@ def predator_reward_adapter(observations, env_reward_signal):
 
 
 def prey_reward_adapter(observations, env_reward_signal):
-    rew = 0
     distance_to_target = min_distance_to_rival(
         observations.ego_vehicle_state.position,
         PREDATOR_IDS,
         observations.neighborhood_vehicle_states,
     )
-    # set min on the reward
-    if distance_to_target == COLLIDE_DISTANCE:
-        rew -= 10
-    else:
-        rew -= dominant_reward(distance_to_target)
+    #rew -= dominant_reward(distance_to_target)
+    rew =  0.1*distance_to_target
 
     events = observations.events
     for c in events.collisions:

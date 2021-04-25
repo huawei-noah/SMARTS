@@ -115,6 +115,9 @@ def main(
         custom_explore_fn=explore,
     )
 
+    # XXX: There is a bug in Ray where we can only export a trained model if
+    #      the policy it's attached to is named 'default_policy'.
+    #      See: https://github.com/ray-project/ray/issues/5339
     rllib_policies = {
         "default_policy": (
             None,
