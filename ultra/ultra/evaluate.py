@@ -56,11 +56,11 @@ def evaluation_check(
     headless,
     log_dir,
     evaluation_task_ids,
-    grade_mode=False,
+    curriculum_mode=False,
     agent_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
-    if grade_mode == True and agent_coordinator.eval_per_grade == True:
+    if CurriculumInfo.static_curriculum_toggle is True and agent_coordinator.eval_per_grade is True:
         agent_ids_to_evaluate = [
             agent_id
             for agent_id in agent_ids
@@ -81,7 +81,7 @@ def evaluation_check(
     if eval_episodes < 1:
         return
 
-    if grade_mode == True:
+    if CurriculumInfo.static_curriculum_toggle == True:
         agent_coordinator.next_eval_grade()
 
     for agent_id in agent_ids_to_evaluate:
@@ -103,7 +103,7 @@ def evaluation_check(
             headless=headless,
             timestep_sec=timestep_sec,
             log_dir=log_dir,
-            grade_mode=grade_mode,
+            curriculum_mode=curriculum_mode,
             agent_coordinator=agent_coordinator,
             eval_mode=True,
         )
@@ -132,7 +132,7 @@ def evaluation_check(
             headless=headless,
             timestep_sec=timestep_sec,
             log_dir=log_dir,
-            grade_mode=grade_mode,
+            curriculum_mode=curriculum_mode,
             agent_coordinator=agent_coordinator,
             eval_mode=False,
         )
@@ -182,7 +182,7 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
-    grade_mode=False,
+    curriculum_mode=False,
     agent_coordinator=None,
     explore=False,
     eval_mode=True,
@@ -209,7 +209,7 @@ def evaluate(
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
-        grade_mode=grade_mode,
+        curriculum_mode=curriculum_mode,
         eval_mode=eval_mode,
     )
 
@@ -233,7 +233,7 @@ def evaluate(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        if grade_mode != False:
+        if CurriculumInfo.static_curriculum_toggle is not False:
             if initial_grade_switch == False:
                 observations, scenario = env.reset(True, agent_coordinator.get_eval_grade())
                 initial_grade_switch = True
@@ -265,7 +265,7 @@ def evaluate(
         scenario["density_counter"] = density_counter
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        if grade_mode == True and eval_mode == True:
+        if curriculum_mode is True and eval_mode is True:
             episode.record_tensorboard()
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
@@ -343,8 +343,8 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "--grade-mode",
-        help="Toggle grade mode",
+        "--curriculum-mode",
+        help="Toggle curriculum mode",
         default=False,
         type=bool,
     )
@@ -439,7 +439,7 @@ if __name__ == "__main__":
                         timestep_sec=float(args.timestep),
                         headless=args.headless,
                         log_dir=args.log_dir,
-                        grade_mode=args.grade_mode,
+                        curriculum_mode=args.curriculum_mode,
                     )
                 ]
             )[0]

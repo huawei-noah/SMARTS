@@ -60,7 +60,7 @@ def train(
     headless,
     seed,
     log_dir,
-    grade_mode,
+    curriculum_mode,
     gb_info,
     policy_ids=None,
 ):
@@ -105,7 +105,7 @@ def train(
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
-    if grade_mode:
+    if curriculum_mode:
         agent_coordinator, scenario_info = gb_setup(gb_info, num_episodes)
         # Applicable to both non-gb and gb cases
         CurriculumInfo.initialize(gb_info["gb_curriculum_dir"])  
@@ -135,8 +135,7 @@ def train(
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
-        grade_mode=grade_mode,
-        dynamic_scenarios=True,
+        curriculum_mode=curriculum_mode,
     )
 
     old_episode = None
@@ -149,7 +148,7 @@ def train(
     asp_list = []
     asp_list_two = []
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
-        if grade_mode:
+        if CurriculumInfo.static_curriculum_toggle:
             graduate = agent_coordinator.graduate(
                 episode.index, average_scenarios_passed
             )
@@ -196,7 +195,7 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
-        if (grade_mode == True) and (
+        if (CurriculumInfo.static_curriculum_toggle == True) and (
             graduate == True and CurriculumInfo.eval_per_grade == True
         ):
             agent_coordinator.set_eval_check_condition(True)
@@ -206,7 +205,7 @@ def train(
             policy_classes=agent_classes,
             episode=episode,
             log_dir=log_dir,
-            grade_mode=grade_mode,
+            curriculum_mode=curriculum_mode,
             agent_coordinator=agent_coordinator,
             max_episode_steps=max_episode_steps,
             evaluation_task_ids=evaluation_task_ids,
@@ -215,7 +214,7 @@ def train(
         )
         collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
-        if grade_mode == True:
+        if CurriculumInfo.static_curriculum_toggle == True:
             agent_coordinator.set_eval_check_condition(False)
             if agent_coordinator.check_cycle_condition(episode.index):
                 print("No cycling of grades -> run completed")
@@ -283,22 +282,22 @@ def train(
 
     # print(agent_coordinator.get_checkpoints())
 
-    if grade_mode is False and CurriculumInfo.tasks_levels_used is False:
+    if curriculum_mode is False:
         scenario_data_handler.display_grade_scenario_distribution(num_episodes)
         scenario_data_handler.save_grade_density(num_episodes)
 
     filepath = os.path.join(episode.experiment_dir, "Train.csv")
     try:
-        scenario_data_handler.plot_densities_data(filepath, grade_mode)
+        scenario_data_handler.plot_densities_data(filepath, curriculum_mode)
     except FileNotFoundError as e:
         # For storing testing data
         utils_dir = os.path.join(os.path.dirname(__file__), "utils/../../")
         path = os.path.join(utils_dir, filepath)
-        scenario_data_handler.plot_densities_data(path, grade_mode)
+        scenario_data_handler.plot_densities_data(path, curriculum_mode)
 
     print(scenario_data_handler.overall_densities_counter)
 
-    if grade_mode:
+    if CurriculumInfo.static_curriculum_toggle:
         print("Average scenarios passed list:", asp_list)
 
     # Wait on the remaining evaluations to finish.
@@ -384,7 +383,7 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "--gb-mode",
+        "--curriculum-mode",
         help="Toggle grade based mode",
         default="False",
         type=str_to_bool,
@@ -449,7 +448,7 @@ if __name__ == "__main__":
         policy_classes=policy_classes,
         seed=args.seed,
         log_dir=args.log_dir,
-        grade_mode=args.gb_mode,
+        curriculum_mode=args.gb_mode,
         gb_info={
             "gb_curriculum_dir": args.gb_curriculum_dir,
             "gb_build_scenarios": args.gb_build_scenarios,

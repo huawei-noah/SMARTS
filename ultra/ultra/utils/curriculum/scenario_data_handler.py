@@ -74,7 +74,7 @@ class ScenarioDataHandler:
                 print(f"{density}: 0.0")
         print("----------------------------------------------------\n")
 
-    def plot_densities_data(self, filepath=None, grade_mode=False):
+    def plot_densities_data(self, filepath=None, curriculum_mode=False):
         total_density_data = self.densities_data
         # print(total_density_data)
         header = ["no-traffic", "low", "mid", "high"]
@@ -85,7 +85,7 @@ class ScenarioDataHandler:
             writer.writerow(header)
             counter = 0
             for i in range(len(total_density_data)):
-                if not grade_mode:
+                if not curriculum_mode:
                     total_density_data[i].insert(0, f"sample-{i}")
                 else:
                     total_density_data[i].insert(0, f"grade-{i}")
