@@ -282,7 +282,7 @@ t_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (2, 4),
-                        "time_between_cluster": (10, 25),
+                        "time_between_cluster": (20, 25),
                         "time_for_each_cluster": 5,
                     },
                 },
@@ -323,7 +323,7 @@ t_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (2, 4),
-                        "time_between_cluster": (15, 30),
+                        "time_between_cluster": (20, 25),
                         "time_for_each_cluster": 5,
                     },
                 },
@@ -680,8 +680,8 @@ cross_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (3, 4),
-                        "time_between_cluster": (15, 20),
-                        "time_for_each_cluster": 10,
+                        "time_between_cluster": (20, 30),
+                        "time_for_each_cluster": 5,
                     },
                 },
                 "has_turn": False,
@@ -720,7 +720,7 @@ cross_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (1, 2),
-                        "time_between_cluster": (30, 50),
+                        "time_between_cluster": (40, 50),
                         "time_for_each_cluster": 3,
                     },
                 },
