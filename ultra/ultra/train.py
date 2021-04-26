@@ -179,7 +179,7 @@ def train(
                         info=infos[agent_id],
                     )
                 except AttributeError:
-                    loss_outputs[agent_id] = None
+                    loss_outputs[agent_id] = {}
 
             # Record the data from this episode.
             episode.record_step(
