@@ -193,8 +193,19 @@ def draw_intersection(
         1,
     )
 
+    timestep_str = f"Timestep : {step}"
+    canvas = cv2.putText(
+        canvas,
+        timestep_str,
+        (650, 40),
+        font,
+        0.5,
+        (255, 255, 255),
+        1,
+    )
+
     color_offset = 20
-    legend_position = (30, 50)
+    legend_position = (30, 10)
 
     for color_key, color in colors_legend:
         canvas = cv2.putText(

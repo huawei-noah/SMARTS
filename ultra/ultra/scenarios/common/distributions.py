@@ -247,8 +247,8 @@ t_patterns = {
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": poisson_init,
+                    "params": {},
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
@@ -282,7 +282,7 @@ t_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (2, 4),
-                        "time_between_cluster": (30, 35),
+                        "time_between_cluster": (25, 35),
                         "time_for_each_cluster": 5,
                     },
                 },
@@ -323,7 +323,7 @@ t_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (2, 4),
-                        "time_between_cluster": (30, 35),
+                        "time_between_cluster": (25, 35),
                         "time_for_each_cluster": 5,
                     },
                 },
@@ -634,8 +634,8 @@ cross_patterns = {
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": poisson_init,
+                    "params": {},
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
@@ -653,7 +653,7 @@ cross_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (1, 2),
+                        "vehicle_cluster_size": (2, 3),
                         "time_between_cluster": (50, 70),
                         "time_for_each_cluster": 5,
                     },
@@ -679,7 +679,7 @@ cross_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (3, 4),
+                        "vehicle_cluster_size": (2, 5),
                         "time_between_cluster": (25, 35),
                         "time_for_each_cluster": 5,
                     },

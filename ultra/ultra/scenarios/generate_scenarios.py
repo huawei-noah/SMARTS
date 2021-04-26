@@ -211,6 +211,7 @@ def generate_left_turn_missions(
                 ],
                 deadlock_optimization=route_info["deadlock_optimization"],
                 stopwatcher_info=stopwatcher_info,
+                traffic_params={"speed": speed, "traffic_density": traffic_density},
             )
             if (
                 stopwatcher_behavior
@@ -309,6 +310,7 @@ def generate_social_vehicles(
     route_lanes,
     route_has_turn,
     stopwatcher_info,
+    traffic_params,
     begin_time_init=None,
     deadlock_optimization=True,
 ):
@@ -349,7 +351,10 @@ def generate_social_vehicles(
         {} if begin_time_init_params is None else begin_time_init_params
     )
     begin_times = begin_time_init_func(
-        route_lanes[start_lane], len(behaviors), **begin_time_init_params
+        route_lanes[start_lane],
+        len(behaviors),
+        traffic_params,
+        **begin_time_init_params,
     )
     begin_time_idx = [0 for _ in range(route_lanes[start_lane])]
 

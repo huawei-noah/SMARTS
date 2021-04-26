@@ -60,7 +60,7 @@ class AnalysisTest(unittest.TestCase):
                 os.makedirs(output)
 
             os.system(
-                f"python ultra/scenarios/interface.py analyze --scenarios {save_dir} --max-steps 600 --end-by-stopwatcher --output {output}"
+                f"python ultra/scenarios/interface.py analyze --scenarios {save_dir} --max-steps 600 --end-by-stopwatcher --output {output} --video 1"
             )
             for dirpath, dirnames, files in os.walk(save_dir):
                 if "traffic" in dirpath:
