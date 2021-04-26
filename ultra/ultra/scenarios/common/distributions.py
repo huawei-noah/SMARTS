@@ -244,35 +244,25 @@ t_patterns = {
         "routes": {
             "south-west": {
                 "vehicles": 100,
-                "distribution": {
-                    "default": 0.54,
-                    "aggressive": 0.45,
-                    "cautious": 0.01,
-                    "blocker": 0.0,
-                },
+                "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": poisson_init,
-                    "params": {},
+                    "func": basic_begin_time_init_func,
+                    "params": {"probability": prob_heavy},
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
             },  # blocking
             "south-east": {
                 "vehicles": 100,
-                "distribution": {
-                    "default": 0.4,
-                    "aggressive": 0.6,
-                    "cautious": 0.00,
-                    "blocker": 0.0,
-                },
+                "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (1, 2),
-                        "time_between_cluster": (80, 100),
-                        "time_for_each_cluster": 2,
+                        "time_between_cluster": (60, 80),
+                        "time_for_each_cluster": 5,
                     },
                 },
                 "has_turn": False,
@@ -283,17 +273,17 @@ t_patterns = {
                 "vehicles": 1000,
                 "distribution": {
                     "default": 0.7,
-                    "aggressive": 0.27,
-                    "cautious": 0.03,
+                    "aggressive": 0.30,
+                    "cautious": 0.00,
                     "blocker": 0.00,
                 },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (3, 4),
-                        "time_between_cluster": (30, 40),
-                        "time_for_each_cluster": 12,
+                        "vehicle_cluster_size": (2, 4),
+                        "time_between_cluster": (10, 25),
+                        "time_for_each_cluster": 5,
                     },
                 },
                 "has_turn": False,
@@ -324,17 +314,17 @@ t_patterns = {
                 "vehicles": 1000,
                 "distribution": {
                     "default": 0.7,
-                    "aggressive": 0.29,
-                    "cautious": 0.01,
+                    "aggressive": 0.30,
+                    "cautious": 0.00,
                     "blocker": 0.00,
                 },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (3, 4),
-                        "time_between_cluster": (25, 50),
-                        "time_for_each_cluster": 12,
+                        "vehicle_cluster_size": (2, 4),
+                        "time_between_cluster": (15, 30),
+                        "time_for_each_cluster": 5,
                     },
                 },
                 "has_turn": False,
@@ -640,17 +630,12 @@ cross_patterns = {
     "high-density": {  # c-intersection
         "routes": {
             "south-west": {
-                "vehicles": 50,
-                "distribution": {
-                    "default": 0.7,
-                    "aggressive": 0.3,
-                    "cautious": 0.0,
-                    "blocker": 0.0,
-                },
+                "vehicles": 100,
+                "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": poisson_init,
-                    "params": {},
+                    "func": basic_begin_time_init_func,
+                    "params": {"probability": prob_heavy},
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
@@ -668,8 +653,8 @@ cross_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (3, 4),
-                        "time_between_cluster": (50, 60),
+                        "vehicle_cluster_size": (1, 2),
+                        "time_between_cluster": (50, 70),
                         "time_for_each_cluster": 5,
                     },
                 },
@@ -685,18 +670,18 @@ cross_patterns = {
             "north-south": {
                 "vehicles": 1000,
                 "distribution": {
-                    "default": 0.69,
-                    "aggressive": 0.29,
-                    "cautious": 0.02,
+                    "default": 0.70,
+                    "aggressive": 0.30,
+                    "cautious": 0.00,
                     "blocker": 0.0,
                 },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (4, 6),
-                        "time_between_cluster": (20, 50),
-                        "time_for_each_cluster": 12,
+                        "vehicle_cluster_size": (3, 4),
+                        "time_between_cluster": (15, 20),
+                        "time_for_each_cluster": 10,
                     },
                 },
                 "has_turn": False,
@@ -705,9 +690,9 @@ cross_patterns = {
             "north-east": {
                 "vehicles": 100,
                 "distribution": {
-                    "default": 0.65,
-                    "aggressive": 0.25,
-                    "cautious": 0.05,
+                    "default": 0.70,
+                    "aggressive": 0.29,
+                    "cautious": 0.01,
                     "blocker": 0.0,
                 },
                 "start_end_on_different_lanes_probability": 0.0,
@@ -735,7 +720,7 @@ cross_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (1, 2),
-                        "time_between_cluster": (30, 70),
+                        "time_between_cluster": (30, 50),
                         "time_for_each_cluster": 3,
                     },
                 },
