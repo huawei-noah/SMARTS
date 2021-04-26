@@ -20,7 +20,7 @@
 import logging
 import warnings
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Dict, Optional
 
 import cloudpickle
 
@@ -58,13 +58,15 @@ class Agent:
 
         raise NotImplementedError
 
-    def step(self, state, action, reward, next_state, done, info):
+    def step(
+        self, state, action, reward: float, next_state, done: bool, info: Dict[str, Any]
+    ) -> Dict[str, Any]:
         return {}
 
-    def save(self, path):
+    def save(self, path: str):
         pass
 
-    def load(self, path):
+    def load(self, path: str):
         pass
 
 
