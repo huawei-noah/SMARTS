@@ -67,6 +67,7 @@ setup(
     extras_require={
         "test": [
             # The following are for testing
+            "ipykernel",
             "pytest",
             "pytest-benchmark",
             "pytest-cov",
@@ -83,7 +84,6 @@ setup(
         "dev": [
             "black==20.8b1",
             "grpcio-tools==1.37.0",
-            "ipykernel",
             "isort==5.7.0",
             "sphinx",
             "sphinx-rtd-theme",
