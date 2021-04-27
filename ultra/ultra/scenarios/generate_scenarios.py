@@ -36,6 +36,7 @@ from shutil import copyfile
 import numpy as np
 import yaml
 
+from smarts.core.utils.sumo import sumolib
 from smarts.sstudio import gen_missions, gen_traffic
 from smarts.sstudio.types import (
     Distribution,
@@ -111,6 +112,7 @@ def get_direction(route_key):
         "south-west": ["south-SN", "west-EW"],
         "north-east": ["north-NS", "east-WE"],
         "north-west": ["north-NS", "west-EW"],
+        "north-south": ["north-NS", "south-NS"],
         "east-north": ["east-EW", "north-SN"],
         "east-south": ["east-EW", "south-NS"],
         "east-west": ["east-EW", "west-EW"],
@@ -163,6 +165,7 @@ def generate_left_turn_missions(
     stopwatcher_behavior,
     stopwatcher_route,
     seed,
+    stops,
     intersection_name,
     traffic_density,
 ):
@@ -198,7 +201,6 @@ def generate_left_turn_missions(
                 )
                 for ego_mission in missions
             ]
-
             flows, vehicles_log_info = generate_social_vehicles(
                 route_distribution=route_info["distribution"],
                 begin_time_init=route_info["begin_time_init"],
@@ -209,6 +211,7 @@ def generate_left_turn_missions(
                 start_end_on_different_lanes_probability=route_info[
                     "start_end_on_different_lanes_probability"
                 ],
+                stops=stops,
                 deadlock_optimization=route_info["deadlock_optimization"],
                 stopwatcher_info=stopwatcher_info,
             )
@@ -241,6 +244,74 @@ def generate_left_turn_missions(
         scenario += f"-stopwatcher-{stopwatcher_info['behavior']}"
 
     copy_map_files(scenario, map_dir, speed)
+
+    vehicles_to_not_hijack = []
+    traffic = Traffic(flows=all_flows)
+    try:
+        gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
+        if stops:
+            route_file_path = f"{scenario}/traffic/all.rou.xml"
+            map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
+            vehicle_types = list(sumolib.output.parse(route_file_path, "vType"))
+            vehicles = list()
+
+            # Add stops (if applicable) to vehicles in the existing all.rou.xml file.
+            for vehicle in sumolib.output.parse(route_file_path, "vehicle"):
+                if len(stops) > 0:
+                    vehicle_edges = vehicle.route[0].edges.split()
+                    start_edge = map_file.getEdge(vehicle_edges[0])
+
+                    for lane in start_edge.getLanes():
+                        stop_route, stop_lane, stop_position = stops[0]
+                        if lane.getID() == f"edge-{stop_route}_{stop_lane}":
+                            # Add stop information to this vehicle.
+                            stop_attributes = {
+                                "lane": lane.getID(),
+                                "endPos": stop_position,
+                                "duration": "1000",
+                            }
+                            vehicle.setAttribute("depart", 0)
+                            vehicle.setAttribute("departPos", stop_position)
+                            vehicle.setAttribute("departSpeed", 0)
+                            vehicle.setAttribute("departLane", stop_lane)
+                            vehicle.addChild("stop", attrs=stop_attributes)
+                            vehicles_to_not_hijack.append(vehicle.id)
+                            stops.pop(0)
+                            break
+                vehicles.append([float(vehicle.depart), vehicle.id, vehicle])
+            vehicles.sort(key=lambda x: (x[0], x[1]))
+
+            # Ensure all stops were added to the traffic.
+            if len(stops) != 0:
+                print(
+                    f"There are still {len(stops)} more stops "
+                    f"to place in scenario {scenario}."
+                )
+
+            # Overwrite the all.rou.xml file with the new vehicles.
+            with open(route_file_path, "w") as route_file:
+                sumolib.writeXMLHeader(route_file, "routes")
+
+                route_file.write(
+                    "<routes xmlns:xsi="
+                    '"http://www.w3.org/2001/XMLSchema-instance" '
+                    "xsi:noNamespaceSchemaLocation="
+                    '"http://sumo.dlr.de/xsd/routes_file.xsd">\n'
+                )
+
+                for vehicle_type in vehicle_types:
+                    route_file.write(vehicle_type.toXML(" " * 4))
+
+                for _, _, vehicle in vehicles:
+                    route_file.write(vehicle.toXML(" " * 4))
+
+                route_file.write("</routes>\n")
+    except Exception as exception:
+        print(exception)
+    # patch: remove route files from traffic folder to make intersection empty
+    if traffic_density == "no-traffic":
+        os.remove(f"{scenario}/traffic/all.rou.xml")
+
     if stopwatcher_behavior or "ego_hijacking_params" not in route_distributions:
         mission_objects = [Mission(ego_route) for ego_route in ego_routes]
     else:
@@ -259,7 +330,7 @@ def generate_left_turn_missions(
                 # Optional: control hijacking time, place, and emission.
                 start_time=start_time,  # When to start hijacking (might start later).
                 entry_tactic=TrapEntryTactic(
-                    wait_to_hijack_limit_s=waiting_time,  # When to give up on hijacking and start emitting a social vehicle instead.
+                    wait_to_hijack_limit_s=waiting_time,  # When to give up hijacking.
                     zone=MapZone(
                         start=(
                             ego_route.begin[0],
@@ -269,21 +340,15 @@ def generate_left_turn_missions(
                         length=zone_range[1],
                         n_lanes=(ego_route.begin[1] + 1),
                     ),  # Area to hijack.
-                    exclusion_prefixes=tuple(),  # Vehicles to be excluded (check vehicle IDs).
+                    exclusion_prefixes=vehicles_to_not_hijack,  # Don't hijack these.
                 ),
             )
             for ego_route in ego_routes
         ]
-    random.shuffle(
-        mission_objects
-    )  # Shuffle the missions so agents don't do the same route all the time.
+    # Shuffle the missions so agents don't do the same route all the time.
+    random.shuffle(mission_objects)
     gen_missions(scenario, mission_objects)
 
-    traffic = Traffic(flows=all_flows)
-    gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
-    # patch: remove route files from traffic folder to make intersection empty
-    if traffic_density == "no-traffic":
-        os.remove(f"{scenario}/traffic/all.rou.xml")
     if stopwatcher_behavior:
         metadata["stopwatcher"] = {
             "direction": stopwatcher_info["direction"],
@@ -309,6 +374,7 @@ def generate_social_vehicles(
     route_lanes,
     route_has_turn,
     stopwatcher_info,
+    stops,
     begin_time_init=None,
     deadlock_optimization=True,
 ):
@@ -405,7 +471,6 @@ def generate_social_vehicles(
                     actors={behavior: 1.0},
                 )
             )
-
         log_info[behavior_idx]["count"] += 1
         log_info["route_distribution"] = route_distribution
         log_info["num_vehicles"] = (
@@ -437,11 +502,16 @@ def scenario_worker(
     mode,
     total_seeds,
     percent,
+    stops,
     dynamic_pattern_func,
 ):
     for i, seed in enumerate(seeds):
         if not dynamic_pattern_func is None:
             route_distributions = dynamic_pattern_func(route_distributions, i)
+
+        # Stops is modified during generation. Copy stops so parallel processes don't
+        # pop elements from the same list reference.
+        stops_copy = None if stops is None else stops.copy()
 
         generate_left_turn_missions(
             missions=ego_missions,
@@ -454,6 +524,7 @@ def scenario_worker(
             stopwatcher_behavior=stopwatcher_behavior,
             stopwatcher_route=stopwatcher_route,
             seed=seed,
+            stops=stops_copy,
             traffic_density=traffic_density,
             intersection_name=intersection_type,
         )
@@ -512,14 +583,18 @@ def build_scenarios(
         intersection_types = level_config[mode]["intersection_types"]
         intersections = sorted(
             [
-                [_type, intersection_types[_type]["percent"]]
+                [
+                    _type,
+                    intersection_types[_type]["percent"],
+                    intersection_types[_type]["stops"],
+                ]
                 for _type in intersection_types
             ],
             key=lambda x: x[1],
             reverse=True,
         )
         log_dict[mode] = {x: {"count": 0, "percent": 0} for x in intersection_types}
-        for intersection_type, intersection_percent in intersections:
+        for intersection_type, intersection_percent, stops in intersections:
             part = int(float(intersection_percent) * len(mode_seeds))
             cur_split = prev_split + part
             seeds = mode_seeds[prev_split:cur_split]
@@ -569,6 +644,7 @@ def build_scenarios(
                         mode,
                         seeds,
                         percent,
+                        stops,
                         dynamic_pattern_func,
                     ),
                 )
@@ -590,7 +666,7 @@ def build_scenarios(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("generate scenarios")
-    parser.add_argument("--task", help="type a task id [0, 1, 2, 3]", type=str)
+    parser.add_argument("--task", help="type a task id [0, 1, 2, 3, X]", type=str)
     parser.add_argument("--level", help="easy/medium/hard, lo-hi/hi-lo", type=str)
     parser.add_argument(
         "--stopwatcher",

@@ -24,11 +24,11 @@ import numpy as np
 from .bezier_motion_planner import BezierMotionPlanner
 from .controllers import ActionSpaceType
 from .coordinates import Heading, Pose
-from .provider import ProviderState
+from .provider import Provider, ProviderState
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class MotionPlannerProvider:
+class MotionPlannerProvider(Provider):
     def __init__(self):
         self._is_setup = False
 

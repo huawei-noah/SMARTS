@@ -146,6 +146,7 @@ def _clean(scenario):
         "social_agents/*",
         "traffic/*",
         "history_mission.pkl",
+        "*.shf",
     ]
     p = Path(scenario)
     for file_name in to_be_removed:

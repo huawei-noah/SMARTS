@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,15 +19,32 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import NamedTuple
+from ray import tune
 
-
-class Events(NamedTuple):
-    collisions: bool
-    off_road: bool
-    off_route: bool
-    on_shoulder: bool
-    wrong_way: bool
-    not_moving: bool
-    reached_goal: bool
-    reached_max_episode_steps: bool
+config = {
+    "action_size": 2,
+    "batch_size": 2048,  # size of batch
+    "lr": 3e-5,
+    "mini_batch_size": 64,  # 64
+    "epoch_count": 20,
+    "gamma": tune.choice([0.99, 0.999]),  # discounting
+    "l": 0.95,  # lambda used in lambda-return
+    "eps": 0.2,  # epsilon value used in PPO clipping
+    "critic_tau": 1.0,
+    "actor_tau": 1.0,
+    "entropy_tau": 0.0,
+    "hidden_units": 512,
+    "seed": 2,
+    "logging_freq": 2,
+    "observation_num_lookahead": 20,
+    "social_vehicles": {
+        "encoder_key": tune.choice(
+            ["no_encoder", "precog_encoder", "pointnet_encoder"]
+        ),
+        "social_policy_hidden_units": 128,
+        "social_policy_init_std": 0.5,
+        "social_capacity": 10,
+        "num_social_features": 4,
+        "seed": 2,
+    },
+}

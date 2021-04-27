@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import json
 import math
 import os
 import random
@@ -38,9 +39,23 @@ from scipy.spatial.distance import euclidean
 import math, datetime
 
 
-def gen_default_agent_ids(num_ids):
-    """Make a list of num_ids strings in the form of 000, 001, ..., 1000, ..."""
-    return ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(num_ids)]
+def agent_pool_value(agent_name, value_name):
+    base_dir = os.path.dirname(__file__)
+    pool_path = os.path.join(base_dir, "../agent_pool.json")
+    with open(pool_path, "r") as f:
+        data = json.load(f)
+    data = data["agents"]
+    if value_name == "policy_class":
+        return data[agent_name]["path"] + ":" + data[agent_name]["locator"]
+    return data[agent_name][value_name]
+
+
+def gen_default_agent_id(number: int) -> str:
+    """Generates a default agent ID from an integer.
+
+    A default agent ID is in the form of 000, 001, ..., 1000, ...
+    """
+    return "0" * max(0, 3 - len(str(number))) + str(number)
 
 
 def gen_etag_from_locators(locators: Sequence[str]) -> str:
@@ -51,7 +66,7 @@ def gen_etag_from_locators(locators: Sequence[str]) -> str:
 
     Args:
         locators: A sequence of strings in the form of locators.
-    
+
     Returns:
         str: A string that consists of concatenated parts of strings in locators.
     """
