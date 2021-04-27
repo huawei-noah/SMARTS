@@ -80,8 +80,8 @@ def burst_begin_time_init_func(
             if density == "high-density":
                 if int(speed) < 70:
                     variable_time_between_cluster = (
-                        time_between_cluster[0] + speed_offset - (num_lanes / 2),
-                        time_between_cluster[1] + speed_offset - (num_lanes / 2),
+                        time_between_cluster[0] + speed_offset + (num_lanes / 2),
+                        time_between_cluster[1] + speed_offset + (num_lanes / 2),
                     )
                 elif int(speed) > 70:
                     variable_time_between_cluster = (
@@ -90,8 +90,8 @@ def burst_begin_time_init_func(
                     )
                 else:
                     variable_time_between_cluster = (
-                        time_between_cluster[0] - (num_lanes / 2),
-                        time_between_cluster[1] - (num_lanes / 2),
+                        time_between_cluster[0],
+                        time_between_cluster[1],
                     )
 
                 time_to_next_cluster = np.random.uniform(*variable_time_between_cluster)

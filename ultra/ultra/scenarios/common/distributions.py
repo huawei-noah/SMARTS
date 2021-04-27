@@ -714,7 +714,7 @@ cross_patterns = {
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": poisson_init,
-                    "params": {},
+                    "params": {"temperature": 10},
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
