@@ -19,9 +19,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import enum
 import json
 import os
 import sys
+from typing import Any, Dict, List, Tuple
 
 from ultra.utils.ray import default_ray_kwargs
 
@@ -37,57 +39,104 @@ import psutil
 import ray
 import torch
 
+from smarts.core.agent import Agent, AgentSpec
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check
+from ultra.utils.common import gen_default_agent_ids, gen_etag_from_locators
 from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
+def _init_agents(
+    agent_locators: Dict[str, str], agent_specs_params: Dict[str, Dict[str, Any]]
+) -> Tuple[Dict[str, AgentSpec], Dict[str, Agent]]:
+    """TODO: Docstring."""
+    agent_specs = {
+        agent_id: make(locator=agent_locator, **agent_specs_params[agent_id])
+        for agent_id, agent_locator in agent_locators.items()
+    }
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
+    return agent_specs, agents
+
+
+def _parse_agent_specs_params(agent_specs_params):
+    pass
+
+
+class AgentSpecParamsPlaceholders(enum.Enum):
+    SaveDirectory = 0
+    AgentId = 1
+
+
 # @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
 @ray.remote(num_gpus=num_gpus / 2)
 def train(
-    scenario_info,
-    num_episodes,
-    policy_classes,
-    max_episode_steps,
-    eval_info,
-    timestep_sec,
-    headless,
-    seed,
-    log_dir,
-    policy_ids=None,
+    scenario_info: Tuple[str, str],
+    num_episodes: int,
+    agent_locators: Dict[str, str],
+    agent_specs_train_params: Dict[str, Dict[str, Any]],
+    agent_specs_evaluate_params: Dict[str, Dict[str, Any]],
+    max_episode_steps: int,
+    eval_info: Dict[str, Any],
+    timestep_sec: float,
+    headless: bool,
+    seed: int,
+    log_dir: str,
+    # policy_ids=None,
+    # agent_train_params=collections.defaultdict(lambda: {}),
+    # agent_evaluation_params=collections.defaultdict(lambda: {}),
 ):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
 
-    # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
-    # or use the provided policy_ids if available.
-    agent_ids = (
-        ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
-        if not policy_ids
-        else policy_ids
-    )
-    # Ensure there is an ID for each policy, and a policy for each ID.
-    assert len(agent_ids) == len(policy_classes), (
-        "The number of agent IDs provided ({}) must be equal to "
-        "the number of policy classes provided ({}).".format(
-            len(agent_ids), len(policy_classes)
-        )
-    )
+    # # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
+    # # or use the provided policy_ids if available.
+    # agent_ids = (
+    #     ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
+    #     if not policy_ids
+    #     else policy_ids
+    # )
+    # # Ensure there is an ID for each policy, and a policy for each ID.
+    # assert len(agent_ids) == len(policy_classes), (
+    #     "The number of agent IDs provided ({}) must be equal to "
+    #     "the number of policy classes provided ({}).".format(
+    #         len(agent_ids), len(policy_classes)
+    #     )
+    # )
 
-    # Assign the policy classes to their associated ID.
-    agent_classes = {
-        agent_id: policy_class
-        for agent_id, policy_class in zip(agent_ids, policy_classes)
-    }
-    # Create the agent specifications matched with their associated ID.
+    # # Assign the policy classes to their associated ID.
+    # agent_classes = {
+    #     agent_id: policy_class
+    #     for agent_id, policy_class in zip(agent_ids, policy_classes)
+    # }
+    # # Create the agent specifications matched with their associated ID.
+    # agent_specs = {
+    #     agent_id: make(locator=policy_class)
+    #     for agent_id, policy_class in agent_classes.items()
+    # }
+    # print("AgentInterface before:", agent_specs["000"].interface)
+    # for agent_id in agent_specs:
+    #     agent_specs[agent_id].interface = agent_specs[agent_id].interface.replace(
+    #         max_episode_steps=max_episode_steps
+    #     )
+    #     agent_specs[agent_id].agent_params = (agent_train_params[agent_id],)
+    # print("AgentInterface after:", agent_specs["000"].interface)
+    # # Create the agents matched with their associated ID.
+    # agents = {
+    #     agent_id: agent_spec.build_agent()
+    #     for agent_id, agent_spec in agent_specs.items()
+    # }
+
+    # agent_specs, agents = _init_agents(agent_locators, agent_specs_train_params)
     agent_specs = {
-        agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
-        for agent_id, policy_class in agent_classes.items()
+        agent_id: make(locator=agent_locator, **agent_specs_train_params[agent_id])
+        for agent_id, agent_locator in agent_locators.items()
     }
-    # Create the agents matched with their associated ID.
     agents = {
         agent_id: agent_spec.build_agent()
         for agent_id, agent_spec in agent_specs.items()
@@ -108,10 +157,7 @@ def train(
         seed=seed,
     )
 
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+    etag = gen_etag_from_locators(agent_locators.values())
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
@@ -128,8 +174,8 @@ def train(
             with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
                 dill.dump(
                     {
-                        "agent_ids": agent_ids,
-                        "agent_classes": agent_classes,
+                        "agent_ids": list(agent_locators.keys()),
+                        "agent_classes": agent_locators,
                         "agent_specs": agent_specs,
                     },
                     metadata_file,
@@ -257,33 +303,26 @@ if __name__ == "__main__":
         default="logs",
         type=str,
     )
-    parser.add_argument(
-        "--policy-ids",
-        help="Name of each specified policy",
-        default=None,
-        type=str,
-    )
 
     base_dir = os.path.dirname(__file__)
     pool_path = os.path.join(base_dir, "agent_pool.json")
     args = parser.parse_args()
 
     # Obtain the policy class strings for each specified policy.
-    policy_classes = []
+    agent_classes = []
     with open(pool_path, "r") as f:
         data = json.load(f)
         for policy in args.policy.split(","):
             if policy in data["agents"].keys():
-                policy_classes.append(
+                agent_classes.append(
                     data["agents"][policy]["path"]
                     + ":"
                     + data["agents"][policy]["locator"]
                 )
             else:
                 raise ImportError("Invalid policy name. Please try again")
-
-    # Obtain the policy class IDs from the arguments.
-    policy_ids = args.policy_ids.split(",") if args.policy_ids else None
+    agent_ids = gen_default_agent_ids(len(agent_classes))
+    agent_locators = dict(zip(agent_ids, agent_classes))
 
     ray.init()
     ray.wait(
@@ -291,6 +330,9 @@ if __name__ == "__main__":
             train.remote(
                 scenario_info=(args.task, args.level),
                 num_episodes=int(args.episodes),
+                agent_locators=agent_locators,
+                agent_specs_train_params={"000": {"max_episode_steps": 300}},
+                agent_specs_evaluate_params=None,
                 max_episode_steps=int(args.max_episode_steps),
                 eval_info={
                     "eval_rate": float(args.eval_rate),
@@ -298,10 +340,8 @@ if __name__ == "__main__":
                 },
                 timestep_sec=float(args.timestep),
                 headless=args.headless,
-                policy_classes=policy_classes,
                 seed=args.seed,
                 log_dir=args.log_dir,
-                policy_ids=policy_ids,
             )
         ]
     )

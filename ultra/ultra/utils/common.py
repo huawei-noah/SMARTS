@@ -23,6 +23,7 @@ import math
 import os
 import random
 import shutil
+from typing import Sequence
 
 import cv2
 import dill
@@ -35,6 +36,26 @@ from skimage.transform import resize
 import ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
 import math, datetime
+
+
+def gen_default_agent_ids(num_ids):
+    """Make a list of num_ids strings in the form of 000, 001, ..., 1000, ..."""
+    return ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(num_ids)]
+
+
+def gen_etag_from_locators(locators: Sequence[str]) -> str:
+    """Creates an etag string from a list of locator strings.
+
+    For example, from a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
+    locators list, transform it to an etag of "dqn-v0:ppo-v0".
+
+    Args:
+        locators: A sequence of strings in the form of locators.
+    
+    Returns:
+        str: A string that consists of concatenated parts of strings in locators.
+    """
+    return ":".join([locator.split(":")[-1] for locator in locators])
 
 
 def gen_experiment_name():
