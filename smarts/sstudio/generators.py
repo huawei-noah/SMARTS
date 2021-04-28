@@ -163,7 +163,7 @@ class TrafficGenerator:
             # Validates, and runs route planner
             self._duarouter(
                 unsorted_input=True,
-                net_file=self._road_network_path,
+                net_file=self.road_network.net_file,
                 route_files=trips_path,
                 output_file=route_path,
                 seed=seed,

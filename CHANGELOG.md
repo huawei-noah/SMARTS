@@ -8,7 +8,7 @@ All text added must be human readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
-## [Unrealeased]
+## [Unreleased]
 ### Added 
 - Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
 process
@@ -17,14 +17,14 @@ process
 - Added reference to SMARTS paper in front page of docs
 - Only create `Renderer` on demand if vehicles are using camera-based sensors. See issue #725.
 - Added glb models for pedestrians and motorcycles
+- Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
-- Fixed sumo road network offset bug for shifted maps.  See issue #716.
+- Fixed Sumo road network offset bug for shifted maps.  See issue #716.
+- Fixed traffic generation offset bug for shifted maps.  See issue #790.
 - Fixed bugs in traffic history and changed interface to it.  See issue #732.
-
-### Fixed
 - Update `ego_open_agent` to use the package instead of the zoo directory version.
 
 ## [0.4.15] - 2021-03-18
