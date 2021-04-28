@@ -906,7 +906,7 @@ class SMARTS:
             speed=speed,
             heading=heading,
             lane_ids=lane_ids,
-            frame_time=time(),
+            frame_time=self._elapsed_sim_time,
         )
         self._envision.send(state)
 

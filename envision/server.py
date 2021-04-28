@@ -182,27 +182,31 @@ class WebClientRunLoop:
     def run_forever(self):
         async def run_loop():
             # If no frame, wait till one is present
-            frame = self._frames.start_frame
-            while frame is None:
+            frame_ptr = self._frames.start_frame
+            while frame_ptr is None:
                 await asyncio.sleep(0.1)
-                frame = self._frames.start_frame
+                frame_ptr = self._frames.start_frame
 
+            frames_to_send = []
+            last_sent_time = 0
             while True:
                 # Handle seek
                 if self._seek is not None and self._frames.start_time is not None:
-                    frame = self._frames(self._frames.start_time + self._seek)
+                    frame_ptr = self._frames(self._frames.start_time + self._seek)
                     self._seek = None
 
-                if frame is None:
+                if frame_ptr is None:
                     self._log.warning("Seek frame missing, reverting to start frame")
-                    frame = self._frames.start_frame
+                    frame_ptr = self._frames.start_frame
 
-                closed = self._push_frame_to_web_client(frame)
-                if closed:
-                    self._log.debug("Socket closed, exiting")
-                    return
+                if len(frames_to_send) > 0:
+                    closed = self._push_frame_to_web_client(frames_to_send)
+                    last_sent_time = time.time()
+                    if closed:
+                        self._log.debug("Socket closed, exiting")
+                        return
 
-                frame = await self._wait_for_next_frame(frame)
+                frame_ptr, frames_to_send = await self._wait_for_next_frame(frame_ptr, last_sent_time)
 
         def sync_run_forever():
             loop = asyncio.new_event_loop()
@@ -214,28 +218,42 @@ class WebClientRunLoop:
         self._thread = threading.Thread(target=sync_run_forever, args=(), daemon=True)
         self._thread.start()
 
-    def _push_frame_to_web_client(self, frame):
+    def _push_frame_to_web_client(self, frames):
         try:
+            frames_formatted = [
+                {
+                    "state": frame.data,
+                    "current_elapsed_time": frame.timestamp
+                    - self._frames.start_time,
+                    "total_elapsed_time": self._frames.elapsed_time,
+                } for frame in frames
+            ]
             self._client.write_message(
-                json.dumps(
-                    {
-                        "state": frame.data,
-                        "current_elapsed_time": frame.timestamp
-                        - self._frames.start_time,
-                        "total_elapsed_time": self._frames.elapsed_time,
-                    }
-                )
+                json.dumps(frames_formatted)
             )
             return False
         except WebSocketClosedError:
             return True
 
-    async def _wait_for_next_frame(self, frame):
+    def _calculate_frame_delay(self, frame_ptr, last_sent_time):
+        if time.time() - last_sent_time > self._timestep_sec:
+            return 0
+        if frame_ptr.next_ is not None:
+            return self._timestep_sec / 10
+        else:
+            # run out of frames to send
+            return .99 * self._timestep_sec
+
+    async def _wait_for_next_frame(self, frame_ptr, last_sent_time):
         while True:
-            # TODO: Consider using an asyncio queue instead
-            await asyncio.sleep(self._timestep_sec)
-            if frame.next_ is not None:
-                return frame.next_
+            delay = self._calculate_frame_delay(frame_ptr, last_sent_time)
+            await asyncio.sleep(delay)
+
+            frames_to_send = []
+            while frame_ptr.next_ is not None:
+                frames_to_send.append(frame_ptr)
+                frame_ptr = frame_ptr.next_
+            return frame_ptr, frames_to_send
 
 
 class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
