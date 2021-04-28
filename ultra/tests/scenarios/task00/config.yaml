@@ -170,7 +170,7 @@ levels:
           specs: [[70kmh,p-test,1]]
           stops: null
           bubbles:
-          - location: [intersection,40,40]  # [location, length, width]
+          - location: [intersection,40,50]  # [location, length, width]
             actor_name: "intersection-actor"
             agent_locator: "intersection_test_agent:test-agent-v0"
             agent_params: {}
@@ -189,7 +189,7 @@ levels:
           specs: [[70kmh,p-test,1]]
           stops: null
           bubbles:
-          - location: [intersection,40,40]  # [location, length, width]
+          - location: [intersection,40,50]  # [location, length, width]
             actor_name: "intersection-actor"
             agent_locator: "intersection_test_agent:test-agent-v0"
             agent_params: {}

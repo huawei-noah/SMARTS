@@ -127,15 +127,17 @@ def bubble_config_to_bubble_object(
     if location_name == "intersection":
         # Create a bubble centered at the intersection.
         assert len(location_data) == 2
+        bubble_length, bubble_width = location_data
         bubble_coordinates = map_file.getNode("junction-intersection").getCoord()
-        zone = PositionalZone(pos=bubble_coordinates, size=location_data)
+        zone = PositionalZone(pos=bubble_coordinates, size=(bubble_length, bubble_width))
     else:
         # Create a bubble on one of the lanes.
         assert len(location_data) == 4
+        lane_index, lane_offset, bubble_length, num_lanes_spanned = location_data
         zone = MapZone(
-            start=("edge-" + location_name, location_data[0], location_data[1]),
-            length=location_data[2],
-            n_lanes=location_data[3],
+            start=("edge-" + location_name, lane_index, lane_offset),
+            length=bubble_length,
+            n_lanes=num_lanes_spanned,
         )
 
     bubble = Bubble(
@@ -176,48 +178,52 @@ def add_stops_to_traffic(scenario, stops, vehicles_to_not_hijack):
     map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
     vehicle_types = list(sumolib.output.parse(route_file_path, "vType"))
     vehicles = list()
+    stops_added = 0
 
-    # Add stops (if applicable) to vehicles in the existing all.rou.xml file.
+    # XXX: Stops will not be added to vehicles if they don't match the route and lane of
+    #      the vehicle. For each vehicle, we are NOT checking each available stop to see
+    #      if the vehicle matches the route and lane, only the stop at the stops_added
+    #      index.
+
+    # Add stops (if applicable) to vehicles in the existing all.rou.xml file.   
     for vehicle in sumolib.output.parse(route_file_path, "vehicle"):
-        if len(stops) > 0:
-            vehicle_edges = vehicle.route[0].edges.split()
-            start_edge = map_file.getEdge(vehicle_edges[0])
+        if stops_added >= len(stops):
+            break
+        
+        vehicle_edges = vehicle.route[0].edges.split()
+        start_edge = map_file.getEdge(vehicle_edges[0])
 
-            for lane in start_edge.getLanes():
-                stop_route, stop_lane, stop_position = stops[0]
-                if lane.getID() == f"edge-{stop_route}_{stop_lane}":
-                    # Add stop information to this vehicle.
-                    stop_attributes = {
-                        "lane": lane.getID(),
-                        "endPos": stop_position,
-                        "duration": "1000",
-                    }
-                    vehicle.setAttribute("depart", 0)
-                    vehicle.setAttribute("departPos", stop_position)
-                    vehicle.setAttribute("departSpeed", 0)
-                    vehicle.setAttribute("departLane", stop_lane)
-                    vehicle.addChild("stop", attrs=stop_attributes)
-                    vehicles_to_not_hijack.append(vehicle.id)
-                    stops.pop(0)
-                    break
+        for lane in start_edge.getLanes():
+            stop_route, stop_lane, stop_position = stops[stops_added]
+            if lane.getID() == f"edge-{stop_route}_{stop_lane}":
+                # Add stop information to this vehicle.
+                stop_attributes = {
+                    "lane": lane.getID(),
+                    "endPos": stop_position,
+                    "duration": "1000",
+                }
+                vehicle.setAttribute("depart", 0)
+                vehicle.setAttribute("departPos", stop_position)
+                vehicle.setAttribute("departSpeed", 0)
+                vehicle.setAttribute("departLane", stop_lane)
+                vehicle.addChild("stop", attrs=stop_attributes)
+                vehicles_to_not_hijack.append(vehicle.id)
+                stops_added += 1
+                break
         vehicles.append([float(vehicle.depart), vehicle.id, vehicle])
     vehicles.sort(key=lambda x: (x[0], x[1]))
 
     # Ensure all stops were added to the traffic.
-    if len(stops) != 0:
-        print(
-            f"There are still {len(stops)} more stops to place in scenario {scenario}."
-        )
+    if stops_added < len(stops):
+        print(f"{scenario} has only placed {stops_added} out of {len(stops)} stops.")
 
     # Overwrite the all.rou.xml file with the new vehicles.
     with open(route_file_path, "w") as route_file:
         sumolib.writeXMLHeader(route_file, "routes")
 
         route_file.write(
-            "<routes xmlns:xsi="
-            '"http://www.w3.org/2001/XMLSchema-instance" '
-            "xsi:noNamespaceSchemaLocation="
-            '"http://sumo.dlr.de/xsd/routes_file.xsd">\n'
+            '<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+            'xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">\n'
         )
 
         for vehicle_type in vehicle_types:
@@ -598,10 +604,6 @@ def scenario_worker(
         if not dynamic_pattern_func is None:
             route_distributions = dynamic_pattern_func(route_distributions, i)
 
-        # Stops is modified during generation. Copy stops so parallel processes don't
-        # pop elements from the same list reference.
-        stops_copy = None if stops is None else stops.copy()
-
         generate_left_turn_missions(
             missions=ego_missions,
             route_lanes=route_lanes,
@@ -613,7 +615,7 @@ def scenario_worker(
             stopwatcher_behavior=stopwatcher_behavior,
             stopwatcher_route=stopwatcher_route,
             seed=seed,
-            stops=stops_copy,
+            stops=stops,
             bubbles=bubbles,
             traffic_density=traffic_density,
             intersection_name=intersection_type,

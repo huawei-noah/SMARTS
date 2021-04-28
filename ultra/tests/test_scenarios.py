@@ -235,7 +235,7 @@ class ScenariosTest(unittest.TestCase):
 
         # Values for these constants are extracted from
         # tests/scenarios/task00/config.yaml under the bubbles test level.
-        INTERSECTION_BUBBLE_SIZE = [40, 40]
+        INTERSECTION_BUBBLE_SIZE = (40, 50)
         INTERSECTION_BUBBLE_ACTOR_NAME = "intersection-actor"
         INTERSECTION_BUBBLE_AGENT_LOCATOR = "intersection_test_agent:test-agent-v0"
         INTERSECTION_BUBBLE_AGENT_PARAMS = {}
