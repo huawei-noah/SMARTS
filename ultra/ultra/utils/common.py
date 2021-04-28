@@ -19,12 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import enum
 import json
 import math
 import os
 import random
 import shutil
-from typing import Sequence
+from typing import Any, Dict, Sequence
 
 import cv2
 import dill
@@ -37,6 +38,22 @@ from skimage.transform import resize
 import ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
 import math, datetime
+
+
+class AgentSpecPlaceholders(enum.Enum):
+    CheckpointDirectory = 0
+    ExperimentDirectory = 1
+    Exploration = 2
+
+
+def replace_placeholder(
+    spec_params: Dict[str, Any], placeholder: AgentSpecPlaceholders, value: Any
+):
+    for param_name, param_value in spec_params.items():
+        if isinstance(param_value, dict):
+            replace_placeholder(param_value, placeholder, value)
+        if param_value == placeholder:
+            spec_params[param_name] = value
 
 
 def agent_pool_value(agent_name, value_name):

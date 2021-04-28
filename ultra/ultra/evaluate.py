@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import copy
 import os
 import pickle
 from typing import Sequence, Tuple
@@ -37,6 +38,11 @@ import ray
 import torch
 
 from smarts.zoo.registry import make
+from ultra.utils.common import (
+    AgentSpecPlaceholders,
+    gen_etag_from_locators,
+    replace_placeholder,
+)
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
 
@@ -45,9 +51,8 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 
 def evaluation_check(
     agents,
+    agent_infos,
     episode,
-    agent_ids,
-    policy_classes,
     eval_rate,
     eval_episodes,
     max_episode_steps,
@@ -60,7 +65,7 @@ def evaluation_check(
     # Evaluate agents that have reached the eval_rate.
     agent_ids_to_evaluate = [
         agent_id
-        for agent_id in agent_ids
+        for agent_id in agent_infos.keys()
         if episode.index % eval_rate == 0
         and episode.last_eval_iterations[agent_id] != episode.index
     ]
@@ -74,12 +79,12 @@ def evaluation_check(
 
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
-        # TODO: Change this to an attr check so that a checkpoint directory isn't
-        #       created if it is not needed.
         checkpoint_directory = episode.checkpoint_dir(
             agent_id, episode.get_itr(agent_id)
         )
         agents[agent_id].save(checkpoint_directory)
+        # TODO: Change this to an attr check so that a checkpoint directory isn't
+        #       created if it is not needed.
         # try:
         #     agents[agent_id].save(checkpoint_directory)
         # except AttributeError:
@@ -89,8 +94,7 @@ def evaluation_check(
         evaluation_train_task_id = evaluate.remote(
             seed=episode.eval_count,
             experiment_dir=episode.experiment_dir,
-            agent_ids=[agent_id],
-            policy_classes={agent_id: policy_classes[agent_id]},
+            agent_infos={agent_id: agent_infos[agent_id]},
             checkpoint_dirs={agent_id: checkpoint_directory},
             scenario_info=scenario_info,
             num_episodes=eval_episodes,
@@ -103,8 +107,7 @@ def evaluation_check(
         evaluation_task_id = evaluate.remote(
             seed=episode.eval_count,
             experiment_dir=episode.experiment_dir,
-            agent_ids=[agent_id],
-            policy_classes={agent_id: policy_classes[agent_id]},
+            agent_infos={agent_id: agent_infos[agent_id]},
             checkpoint_dirs={agent_id: checkpoint_directory},
             scenario_info=scenario_info,
             num_episodes=eval_episodes,
@@ -157,8 +160,7 @@ def collect_evaluations(evaluation_task_ids: dict):
 def evaluate(
     experiment_dir,
     seed,
-    agent_ids,
-    policy_classes,
+    agent_infos,
     checkpoint_dirs,
     scenario_info,
     num_episodes,
@@ -170,7 +172,31 @@ def evaluate(
 ):
     torch.set_num_threads(1)
 
-    # # Create the agent specifications matched with their associated ID.
+    agent_infos_copy = copy.deepcopy(agent_infos)
+
+    agent_locators = {
+        agent_id: agent_info["locator"]
+        for agent_id, agent_info in agent_infos_copy.items()
+    }
+
+    # Create the agent specifications matched with their associated ID.
+    agent_specs = {}
+    for agent_id, agent_info in agent_infos_copy.items():
+        replace_placeholder(
+            agent_info,
+            AgentSpecPlaceholders.CheckpointDirectory,
+            checkpoint_dirs[agent_id],
+        )
+        replace_placeholder(
+            agent_info, AgentSpecPlaceholders.ExperimentDirectory, experiment_dir
+        )
+        replace_placeholder(agent_info, AgentSpecPlaceholders.Exploration, False)
+        agent_specs[agent_id] = make(
+            agent_info["locator"], **agent_info["spec_eval_params"]
+        )
+    print("eval agent_infos:", agent_infos)
+    print("eval agent_infos_copy:", agent_infos_copy)
+
     # agent_specs = {
     #     agent_id: make(
     #         locator=policy_classes[agent_id],
@@ -181,14 +207,22 @@ def evaluate(
     #     )
     #     for agent_id in agent_ids
     # }
-    with open(f"{experiment_dir}/agent_metadata.pkl", "rb") as agent_metadata_file:
-        agent_metadata = dill.load(agent_metadata_file)
-        agent_specs = {
-            agent_id: agent_metadata["agent_specs"][agent_id] for agent_id in agent_ids
-        }
-    # Perhaps add agent_evaluation_params so that they can be appended or changed
-    # to or from the params used for training (like changing explore from True to
-    # False).
+
+    # with open(f"{experiment_dir}/agent_metadata.pkl", "rb") as agent_metadata_file:
+    #     agent_metadata = dill.load(agent_metadata_file)
+    #     agent_specs = {
+    #         agent_id: agent_metadata["agent_specs"][agent_id] for agent_id in agent_ids
+    #     }
+
+    # Build each agent from its specification, and load from the given checkpoint path.
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
+
+    # # Comment in when loading spec from pickle file.
+    # for agent_id, agent in agents.items():
+    #     agent.load(checkpoint_dirs[agent_id])
 
     # Create the environment with the specified agents.
     env = gym.make(
@@ -201,21 +235,10 @@ def evaluate(
         eval_mode=eval_mode,
     )
 
-    # Build each agent from its specification, and load from the given checkpoint path.
-    agents = {
-        agent_id: agent_spec.build_agent()
-        for agent_id, agent_spec in agent_specs.items()
-    }
-    for agent_id, agent in agents.items():
-        agent.load(checkpoint_dirs[agent_id])
-
     # A dictionary to hold the evaluation data for each agent.
-    summary_log = {agent_id: LogInfo() for agent_id in agent_ids}
+    summary_log = {agent_id: LogInfo() for agent_id in agent_infos_copy.keys()}
 
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+    etag = gen_etag_from_locators(agent_locators.values())
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.

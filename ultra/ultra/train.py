@@ -19,11 +19,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import enum
+import copy
 import json
 import os
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 from ultra.utils.ray import default_ray_kwargs
 
@@ -39,116 +39,53 @@ import psutil
 import ray
 import torch
 
-from smarts.core.agent import Agent, AgentSpec
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check, collect_evaluations
 from ultra.utils.common import (
+    AgentSpecPlaceholders,
     agent_pool_value,
     gen_default_agent_id,
     gen_etag_from_locators,
+    replace_placeholder,
 )
 from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-def _init_agents(
-    agent_locators: Dict[str, str], agent_specs_params: Dict[str, Dict[str, Any]]
-) -> Tuple[Dict[str, AgentSpec], Dict[str, Agent]]:
-    """TODO: Docstring."""
-    agent_specs = {
-        agent_id: make(locator=agent_locator, **agent_specs_params[agent_id])
-        for agent_id, agent_locator in agent_locators.items()
-    }
-    agents = {
-        agent_id: agent_spec.build_agent()
-        for agent_id, agent_spec in agent_specs.items()
-    }
-    return agent_specs, agents
-
-
-def _parse_agent_specs_params(agent_specs_params):
-    pass
-
-
-class AgentSpecParamsPlaceholders(enum.Enum):
-    SaveDirectory = 0
-    AgentId = 1
-
-
 def train(
     scenario_info: Tuple[str, str],
     num_episodes: int,
-    agent_locators: Dict[str, str],
-    agent_specs_train_params: Dict[str, Dict[str, Any]],
-    agent_specs_evaluate_params: Dict[str, Dict[str, Any]],
+    agent_infos: Dict[str, Dict[str, Any]],
     max_episode_steps: int,
     eval_info: Dict[str, Any],
     timestep_sec: float,
     headless: bool,
     seed: int,
     log_dir: str,
-    # policy_ids=None,
-    # agent_train_params=collections.defaultdict(lambda: {}),
-    # agent_evaluation_params=collections.defaultdict(lambda: {}),
 ):
     torch.set_num_threads(1)
     total_step = 0
     finished = False
     evaluation_task_ids = dict()
 
-    # # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
-    # # or use the provided policy_ids if available.
-    # agent_ids = (
-    #     ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
-    #     if not policy_ids
-    #     else policy_ids
-    # )
-    # # Ensure there is an ID for each policy, and a policy for each ID.
-    # assert len(agent_ids) == len(policy_classes), (
-    #     "The number of agent IDs provided ({}) must be equal to "
-    #     "the number of policy classes provided ({}).".format(
-    #         len(agent_ids), len(policy_classes)
-    #     )
-    # )
+    agent_infos_copy = copy.deepcopy(agent_infos)
 
-    # # Assign the policy classes to their associated ID.
-    # agent_classes = {
-    #     agent_id: policy_class
-    #     for agent_id, policy_class in zip(agent_ids, policy_classes)
-    # }
-    # # Create the agent specifications matched with their associated ID.
-    # agent_specs = {
-    #     agent_id: make(locator=policy_class)
-    #     for agent_id, policy_class in agent_classes.items()
-    # }
-    # print("AgentInterface before:", agent_specs["000"].interface)
-    # for agent_id in agent_specs:
-    #     agent_specs[agent_id].interface = agent_specs[agent_id].interface.replace(
-    #         max_episode_steps=max_episode_steps
-    #     )
-    #     agent_specs[agent_id].agent_params = (agent_train_params[agent_id],)
-    # print("AgentInterface after:", agent_specs["000"].interface)
-    # # Create the agents matched with their associated ID.
-    # agents = {
-    #     agent_id: agent_spec.build_agent()
-    #     for agent_id, agent_spec in agent_specs.items()
-    # }
-
-    # agent_specs, agents = _init_agents(agent_locators, agent_specs_train_params)
+    agent_locators = {
+        agent_id: agent_info["locator"]
+        for agent_id, agent_info in agent_infos_copy.items()
+    }
+    # TODO: Replace explore placeholder...
+    print("train agent_infos:", agent_infos)
+    print("train agent_infos_copy:", agent_infos_copy)
     agent_specs = {
-        agent_id: make(locator=agent_locator, **agent_specs_train_params[agent_id])
-        for agent_id, agent_locator in agent_locators.items()
+        agent_id: make(locator=agent_info["locator"], **agent_info["spec_train_params"])
+        for agent_id, agent_info in agent_infos_copy.items()
     }
     agents = {
         agent_id: agent_spec.build_agent()
         for agent_id, agent_spec in agent_specs.items()
     }
-
-    # agent_specs["000"] = entrypoint()
-    # agents["000"] = agent_specs["000"].build_agent()
-
-    print("Agent :", type(agents["000"]))
 
     # Create the environment.
     env = gym.make(
@@ -164,7 +101,6 @@ def train(
 
     old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
-
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
         dones = {"__all__": False}
@@ -189,8 +125,7 @@ def train(
 
         evaluation_check(
             agents=agents,
-            agent_ids=agent_ids,
-            policy_classes=agent_classes,
+            agent_infos=agent_infos,
             episode=episode,
             log_dir=log_dir,
             max_episode_steps=max_episode_steps,
@@ -325,9 +260,94 @@ if __name__ == "__main__":
     train(
         scenario_info=(args.task, args.level),
         num_episodes=int(args.episodes),
-        agent_locators=agent_locators,
-        agent_specs_train_params={"000": {"max_episode_steps": 300}},
-        agent_specs_evaluate_params=None,
+        agent_infos={
+            "000": {
+                "locator": "ultra.baselines.bdqn:bdqn-v0",
+                "spec_train_params": {
+                    "max_episode_steps": 300,
+                },
+                "spec_eval_params": {
+                    "max_episode_steps": 300,
+                    "checkpoint_dir": AgentSpecPlaceholders.CheckpointDirectory,
+                    "experiment_dir": AgentSpecPlaceholders.ExperimentDirectory,
+                    "agent_id": "000",
+                },
+            },
+            # "000": {
+            #     "locator": "open_agent:open_agent-v0",
+            #     "spec_train_params": {
+            #         "gains": {
+            #             "theta": 3.0,
+            #             "position": 4.0,
+            #             "obstacle": 3.0,
+            #             "u_accel": 0.1,
+            #             "u_yaw_rate": 1.0,
+            #             "terminal": 0.01,
+            #             "impatience": 0.01,
+            #             "speed": 0.01,
+            #             "rate": 1,
+            #         },
+            #         "debug": False,
+            #         "aggressiveness": 1,
+            #         "max_episode_steps": 300,
+            #     },
+            #     "spec_eval_params": {
+            #         "gains": {
+            #             "theta": 3.0,
+            #             "position": 4.0,
+            #             "obstacle": 3.0,
+            #             "u_accel": 0.1,
+            #             "u_yaw_rate": 1.0,
+            #             "terminal": 0.01,
+            #             "impatience": 0.01,
+            #             "speed": 0.01,
+            #             "rate": 1,
+            #         },
+            #         "debug": False,
+            #         "aggressiveness": 0,
+            #         "max_episode_steps": 300,
+            #     },
+            # },
+            # "000": {  # RL Agent uses too much GPU memory and crashes.
+            #     "locator": "rl_agent:rl-agent-v0",
+            #     "spec_train_params": {
+            #         "goal_is_nearby_threshold": 40,
+            #         "lane_end_threshold": 51,
+            #         "lane_crash_distance_threshold": 6,
+            #         "lane_crash_ttc_threshold": 2,
+            #         "intersection_crash_distance_threshold": 6,
+            #         "intersection_crash_ttc_threshold": 5,
+            #         "target_speed": 15,
+            #         "lane_change_speed": 10.0
+            #     },
+            #     "spec_eval_params": {
+            #         "goal_is_nearby_threshold": 40,
+            #         "lane_end_threshold": 51,
+            #         "lane_crash_distance_threshold": 6,
+            #         "lane_crash_ttc_threshold": 2,
+            #         "intersection_crash_distance_threshold": 6,
+            #         "intersection_crash_ttc_threshold": 5,
+            #         "target_speed": 15,
+            #         "lane_change_speed": 20.0
+            #     },
+            # },
+            # "000": {
+            #     "locator": "policies.non_interactive_agent:non-interactive-agent-v0",
+            #     "spec_train_params": {
+            #         "speed": 5,
+            #         "target_lane_index": None,
+            #     },
+            #     "spec_eval_params": {
+            #         "speed": 20,
+            #         "target_lane_index": None,
+            #     },
+            # },
+            # "000": {
+            #     "locator": "policies.keep_lane_agent:keep-lane-agent-v0",
+            #     "spec_train_params": {},
+            #     "spec_eval_params": {},
+            # },
+        },
         max_episode_steps=int(args.max_episode_steps),
         eval_info={
             "eval_rate": float(args.eval_rate),
