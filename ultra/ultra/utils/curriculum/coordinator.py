@@ -66,6 +66,11 @@ class Coordinator:
         counter = next(self.eval_counter) + 1
         self.eval_grade = CurriculumInfo.curriculum["static"]["grades"][counter]
 
+    def next_eval_grade(self):
+        # Get task and level information
+        counter = next(self.eval_counter) + 1
+        self.eval_grade = CurriculumInfo.curriculum["grades"][counter]
+
     def get_num_of_grades(self):
         return len(CurriculumInfo.curriculum["static"]["grades"])
 

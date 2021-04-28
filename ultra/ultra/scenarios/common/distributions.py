@@ -43,8 +43,8 @@ prob_easy = 0.02
 prob_medium = 0.04
 prob_heavy = 0.06
 behavior_distribution = {
-    "default": 0.85,
-    "aggressive": 0.05,
+    "default": 0.70,
+    "aggressive": 0.20,
     "cautious": 0.05,
     "blocker": 0.05,
 }
@@ -627,10 +627,30 @@ cross_patterns = {
                 "has_turn": True,
                 "deadlock_optimization": True,
             },
-            "west-east": None,
+            "west-east": {
+                "vehicles": 100,
+                "distribution": behavior_distribution,
+                "start_end_on_different_lanes_probability": 0.0,
+                "begin_time_init": {
+                    "func": basic_begin_time_init_func,
+                    "params": {"probability": prob_heavy},
+                },
+                "has_turn": False,
+                "deadlock_optimization": True,
+            },
             "west-north": None,  # blocking
             "west-south": None,  # blocking
-            "east-west": None,
+            "east-west": {
+                "vehicles": 100,
+                "distribution": behavior_distribution,
+                "start_end_on_different_lanes_probability": 0.0,
+                "begin_time_init": {
+                    "func": basic_begin_time_init_func,
+                    "params": {"probability": prob_heavy},
+                },
+                "has_turn": False,
+                "deadlock_optimization": True,
+            },
             "east-north": None,  # blocking
             "east-south": None,
             "north-south": {
