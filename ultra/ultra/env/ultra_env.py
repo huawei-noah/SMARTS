@@ -56,7 +56,7 @@ class UltraEnv(HiWayEnv):
         self.eval_mode = eval_mode
         self.curriculum_mode = curriculum_mode
 
-        if (self.curriculum_mode is False):
+        if self.curriculum_mode is False:
             self.scenario_info = scenario_info
             self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
             if not self.eval_mode:
@@ -194,7 +194,7 @@ class UltraEnv(HiWayEnv):
             )
 
         scenario = next(self._scenarios_iterator)
-        # print(scenario)
+        print(scenario)
 
         root = str(scenario._root).split("/")[-1]
         for density in [

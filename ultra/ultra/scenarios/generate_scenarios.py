@@ -493,7 +493,7 @@ def build_scenarios(
             print(e)
     else:
         train_total = level_config["train"]["total"]
-    
+
     if level_config["test"]["total"] == None:
         try:
             test_total = int(totals["test"])
@@ -588,9 +588,14 @@ def build_scenarios(
                 jobs.append(sub_proc)
                 sub_proc.start()
                 inner_prev_split = inner_cur_split
-            print(
-                f">> {mode} {intersection_type} count:{seed_count} generated: {seed_count/len(mode_seeds)} real: {intersection_percent}"
-            )
+            try:
+                print(
+                    f">> {mode} {intersection_type} count:{seed_count} generated: {seed_count/len(mode_seeds)} real: {intersection_percent}"
+                )
+            except ZeroDivisionError as e:
+                print(
+                    f">> {mode} {intersection_type} count:{seed_count} generated: {0} real: {intersection_percent}"
+                )
             # print("--")
             prev_split = cur_split
             main_seed_count += seed_count

@@ -301,16 +301,16 @@ class Episode:
                         value,
                         agent_itr,
                     )
-                    # print(f"Recording {key} for {scenario['scenario_density']}; counter = {scenario['density_counter']}")
-                    self.tb_writer.add_scalar(
-                        "{}/{}/{}".format(
-                            f"{self.active_tag}-{scenario['scenario_density']}",
-                            agent_id,
-                            key,
-                        ),
-                        value,
-                        scenario["density_counter"],
-                    )
+                    if scenario:
+                        self.tb_writer.add_scalar(
+                            "{}/{}/{}".format(
+                                f"{self.active_tag}-{scenario['scenario_density']}",
+                                agent_id,
+                                key,
+                            ),
+                            value,
+                            scenario["density_counter"],
+                        )
                     data[key] = value
             self.all_data[self.active_tag][agent_id][agent_itr] = data
 

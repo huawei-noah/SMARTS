@@ -1,6 +1,6 @@
-curriculum: 
+curriculum:
   static:
-    toggle: True
+    toggle: False
     grades:
       1: [[gb,grade1]] #[[<task>,<level>]]
       2: [[gb,grade2]]
@@ -17,9 +17,9 @@ curriculum:
         sample_rate: 30
         warmup_episodes: 100
   dynamic:
-    toggle: False
+    toggle: True
     tasks_levels_used: [["gb","no-traffic"], ["gb","low-density"], ["gb","mid-density"], ["gb","high-density"]]
-    sampling_rate: 30
+    sampling_rate: 10
     
       
 

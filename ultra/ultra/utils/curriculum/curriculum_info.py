@@ -22,13 +22,19 @@
 import os, sys
 import yaml
 
+
 class CurriculumInfo:
     def __init__(self):
         pass
 
     @classmethod
-    def initialize(cls, gb_curriculum_dir):
-        root_dir = gb_curriculum_dir  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
+    def initialize(cls, curriculum_dir=None):
+        if curriculum_dir is None:
+            curriculum_dir = "../../scenarios/grade_based_curriculum/"
+        else:
+            curriculum_dir = os.path.join("../../", curriculum_dir)
+
+        root_dir = curriculum_dir  # Path to curriculum config file
         base_dir = os.path.join(os.path.dirname(__file__), root_dir)
         grades_dir = os.path.join(base_dir, "config.yaml")
 
@@ -49,13 +55,15 @@ class CurriculumInfo:
         cls.pass_based_pass_rate = float(
             cls.curriculum["static"]["conditions"]["pass_based"]["pass_rate"]
         )
-        cls.pass_based_sample_rate = cls.curriculum["static"]["conditions"]["pass_based"][
-            "sample_rate"
-        ]
+        cls.pass_based_sample_rate = cls.curriculum["static"]["conditions"][
+            "pass_based"
+        ]["sample_rate"]
         cls.pass_based_warmup_episodes = int(
             cls.curriculum["static"]["conditions"]["pass_based"]["warmup_episodes"]
         )
-        cls.eval_per_grade = bool(cls.curriculum["static"]["conditions"]["eval_per_grade"])
+        cls.eval_per_grade = bool(
+            cls.curriculum["static"]["conditions"]["eval_per_grade"]
+        )
 
         if cls.episode_based_toggle == cls.pass_based_toggle == True:
             raise Exception(

@@ -23,6 +23,7 @@ import os, sys
 import csv
 import copy
 
+
 class ScenarioDataHandler:
     def __init__(self, tag):
         self.overall_densities_counter = {
@@ -74,8 +75,9 @@ class ScenarioDataHandler:
                 print(f"{density}: 0.0")
         print("----------------------------------------------------\n")
 
-    def plot_densities_data(self, filepath=None, curriculum_mode=False):
+    def plot_densities_data(self, filepath, curriculum_mode=False):
         total_density_data = self.densities_data
+
         # print(total_density_data)
         header = ["no-traffic", "low", "mid", "high"]
         header.insert(0, "")

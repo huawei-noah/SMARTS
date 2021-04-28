@@ -38,7 +38,9 @@ from smarts.zoo.registry import make
 from ultra.utils.common import str_to_bool
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
+from ultra.utils.curriculum.curriculum_info import CurriculumInfo
 from ultra.utils.curriculum.scenario_data_handler import ScenarioDataHandler
+from ultra.utils.curriculum.dynamic_scenarios import DynamicScenarios
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -56,16 +58,21 @@ def evaluation_check(
     headless,
     log_dir,
     evaluation_task_ids,
+    curriculum_metadata=None,
     curriculum_mode=False,
-    agent_coordinator=None,
+    static_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
-    if CurriculumInfo.static_curriculum_toggle is True and agent_coordinator.eval_per_grade is True:
-        agent_ids_to_evaluate = [
-            agent_id
-            for agent_id in agent_ids
-            if agent_coordinator.get_eval_check_condition() == True
-        ]
+    if curriculum_mode is True:
+        if (
+            CurriculumInfo.static_curriculum_toggle is True
+            and static_coordinator.eval_per_grade is True
+        ):
+            agent_ids_to_evaluate = [
+                agent_id
+                for agent_id in agent_ids
+                if static_coordinator.get_eval_check_condition() == True
+            ]
     else:
         agent_ids_to_evaluate = [
             agent_id
@@ -81,8 +88,9 @@ def evaluation_check(
     if eval_episodes < 1:
         return
 
-    if CurriculumInfo.static_curriculum_toggle == True:
-        agent_coordinator.next_eval_grade()
+    if curriculum_mode is True:
+        if CurriculumInfo.static_curriculum_toggle is True:
+            static_coordinator.next_eval_grade()
 
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
@@ -103,47 +111,49 @@ def evaluation_check(
             headless=headless,
             timestep_sec=timestep_sec,
             log_dir=log_dir,
+            curriculum_metadata=curriculum_metadata,
             curriculum_mode=curriculum_mode,
-            agent_coordinator=agent_coordinator,
+            static_coordinator=static_coordinator,
             eval_mode=True,
         )
         evaluation_task_ids[evaluation_task_id] = (
             episode.get_itr(agent_id),
             episode,
-            "eval_train",
-        )
-
-    for agent_id in agent_ids_to_evaluate:
-        # Get the checkpoint directory for the current agent and save its model.
-        checkpoint_directory = episode.checkpoint_dir(
-            agent_id, episode.get_itr(agent_id)
-        )
-        agents[agent_id].save(checkpoint_directory)
-
-        evaluation_train_task_id = evaluate.remote(
-            seed=episode.eval_count,
-            experiment_dir=episode.experiment_dir,
-            agent_ids=[agent_id],
-            policy_classes={agent_id: policy_classes[agent_id]},
-            checkpoint_dirs={agent_id: checkpoint_directory},
-            scenario_info=scenario_info,
-            num_episodes=eval_episodes,
-            max_episode_steps=max_episode_steps,
-            headless=headless,
-            timestep_sec=timestep_sec,
-            log_dir=log_dir,
-            curriculum_mode=curriculum_mode,
-            agent_coordinator=agent_coordinator,
-            eval_mode=False,
-        )
-        evaluation_task_ids[evaluation_train_task_id] = (
-            episode.get_itr(agent_id),
-            episode,
             "eval",
         )
 
-        episode.eval_count += 1
-        episode.last_eval_iterations[agent_id] = episode.get_itr(agent_id)
+    # for agent_id in agent_ids_to_evaluate:
+    #     # Get the checkpoint directory for the current agent and save its model.
+    #     checkpoint_directory = episode.checkpoint_dir(
+    #         agent_id, episode.get_itr(agent_id)
+    #     )
+    #     agents[agent_id].save(checkpoint_directory)
+
+    #     evaluation_train_task_id = evaluate.remote(
+    #         seed=episode.eval_count,
+    #         experiment_dir=episode.experiment_dir,
+    #         agent_ids=[agent_id],
+    #         policy_classes={agent_id: policy_classes[agent_id]},
+    #         checkpoint_dirs={agent_id: checkpoint_directory},
+    #         scenario_info=scenario_info,
+    #         num_episodes=eval_episodes,
+    #         max_episode_steps=max_episode_steps,
+    #         headless=headless,
+    #         timestep_sec=timestep_sec,
+    #         log_dir=log_dir,
+    #         curriculum_metadata=curriculum_metadata
+    #         curriculum_mode=curriculum_mode,
+    #         static_coordinator=static_coordinator,
+    #         eval_mode=False,
+    #     )
+    #     evaluation_task_ids[evaluation_train_task_id] = (
+    #         episode.get_itr(agent_id),
+    #         episode,
+    #         "eval_train",
+    #     )
+
+    #     episode.eval_count += 1
+    #     episode.last_eval_iterations[agent_id] = episode.get_itr(agent_id)
 
 
 def collect_evaluations(evaluation_task_ids: dict):
@@ -182,8 +192,9 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
+    curriculum_metadata=None,
     curriculum_mode=False,
-    agent_coordinator=None,
+    static_coordinator=None,
     explore=False,
     eval_mode=True,
 ):
@@ -200,6 +211,17 @@ def evaluate(
         )
         for agent_id in agent_ids
     }
+
+    if curriculum_mode is True:
+        CurriculumInfo.initialize(curriculum_metadata["curriculum_dir"])
+        if CurriculumInfo.dynamic_curriculum_toggle is True:
+            dynamic_coordinator = DynamicScenarios(
+                curriculum_metadata["curriculum_scenarios_root_dir"],
+                curriculum_metadata["curriculum_scenarios_save_dir"],
+                rate=num_episodes,
+            )
+            dynamic_coordinator.reset_test_scenarios(CurriculumInfo.tasks_levels_used)
+            scenario_info = CurriculumInfo.tasks_levels_used
 
     # Create the environment with the specified agents.
     env = gym.make(
@@ -233,12 +255,15 @@ def evaluate(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        if CurriculumInfo.static_curriculum_toggle is not False:
-            if initial_grade_switch == False:
-                observations, scenario = env.reset(True, agent_coordinator.get_eval_grade())
-                initial_grade_switch = True
-            else:
-                observations, scenario = env.reset()
+        if curriculum_mode is True:
+            if CurriculumInfo.static_curriculum_toggle is True:
+                if initial_grade_switch == False:
+                    observations, scenario = env.reset(
+                        True, static_coordinator.get_eval_grade()
+                    )
+                    initial_grade_switch = True
+                else:
+                    observations, scenario = env.reset()
         else:
             observations, scenario = env.reset()
 
@@ -281,8 +306,15 @@ def evaluate(
 
     env.close()
 
-    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes, agent_coordinator.get_eval_grade())
-    scenario_data_handler_eval.save_grade_density(num_episodes)
+    if curriculum_mode is True:
+        if CurriculumInfo.static_curriculum_toggle is True:
+            scenario_data_handler_eval.display_grade_scenario_distribution(
+                num_episodes, static_coordinator.get_eval_grade()
+            )
+            scenario_data_handler_eval.save_grade_density(num_episodes)
+        else:
+            scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+            scenario_data_handler_eval.save_grade_density(num_episodes)
 
     try:
         if eval_mode:

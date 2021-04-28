@@ -25,13 +25,16 @@ from itertools import cycle
 from ultra.scenarios.generate_scenarios import build_scenarios
 from ultra.utils.curriculum.curriculum_info import CurriculumInfo
 
+
 class Coordinator:
-    def __init__(self, gb_curriculum_dir, num_episodes):
-        CurriculumInfo.initialize(gb_curriculum_dir)
+    def __init__(self, curriculum_dir, num_episodes):
+        CurriculumInfo.initialize(curriculum_dir)
 
         self.mode = False
         self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
-        self.eval_counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
+        self.eval_counter = cycle(
+            tuple([i * 1 for i in range(self.get_num_of_grades())])
+        )
         self.grade_checkpoints = []
         self.num_episodes = num_episodes
         self.grade_counter = 0
@@ -57,7 +60,7 @@ class Coordinator:
         # Get task and level information
         counter = next(self.counter) + 1
         self.grade = CurriculumInfo.curriculum["static"]["grades"][counter]
-    
+
     def next_eval_grade(self):
         # Get task and level information
         counter = next(self.eval_counter) + 1
@@ -179,45 +182,13 @@ class Coordinator:
             total_scenarios_passed += episode.info[episode.active_tag][
                 list(agents.keys())[0]
             ].data["reached_goal"]
-            # print(
-            #     f"({episode.index + 1}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
-            #     total_scenarios_passed,
-            # )
             average_scenarios_passed = total_scenarios_passed / sample_rate
-            # print(
-            #     f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
-            # )
             total_scenarios_passed = 0.0
             return average_scenarios_passed, total_scenarios_passed
         else:
             total_scenarios_passed += episode.info[episode.active_tag][
                 list(agents.keys())[0]
             ].data["reached_goal"]
-            # print(
-            #     f"({episode.index + 1}) TOTAL SCENARIOS PASSED PER EVAL RATE:",
-            #     total_scenarios_passed,
-            # )
-            return asp, total_scenarios_passed
-
-    def sampler(self, episode, agents, total_scenarios_passed, average_scenarios_passed, asp_list):
-        (
-            average_scenarios_passed,
-            total_scenarios_passed,
-        ) = Coordinator.calculate_average_scenario_passed(
-            episode, total_scenarios_passed, agents, average_scenarios_passed
-        )
-
-        if (
-            episode.index + 1
-        ) % CurriculumInfo.pass_based_sample_rate == 0:  # Set sample rate (flag needs to be set)
-            print(
-                f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
-            )
-            asp_list.append(
-                tuple((episode.index + 1, average_scenarios_passed))
-            )
-
-        return asp_list
 
     def display(self):
         try:
@@ -228,6 +199,3 @@ class Coordinator:
         except Exception as e:
             print(e)
             pass
-
-
-    

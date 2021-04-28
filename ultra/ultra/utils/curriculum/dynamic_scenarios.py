@@ -25,20 +25,21 @@ import math
 
 from ultra.scenarios.generate_scenarios import build_scenarios
 
-class DynamicScenarios():
-    def __init__(self, rate=None):
+
+class DynamicScenarios:
+    def __init__(self, root_dir, save_dir, rate=None):
         self.distribution = {
             "no-traffic": 1,
             "low-density": 0,
             "mid-density": 0,
             "high-density": 0,
         }
-        self.root_dir = "ultra/scenarios"
-        self.save_dir = "ultra/scenarios/taskgb/"
+        self.root_dir = root_dir
+        self.save_dir = save_dir
         self.rate = rate
-    
+
     def change_distribution(self, increment_mode=True):
-        print("Old distrbution:", self.distribution)
+        # print("Old distrbution:", self.distribution)
 
         if increment_mode:
             for key, value in self.distribution.items():
@@ -46,11 +47,13 @@ class DynamicScenarios():
                     self.distribution["no-traffic"] -= 0.03
                 else:
                     self.distribution[key] += 0.01
-        
-        print("New distrbution:", self.distribution)
-    
-    def reset_scenario_pool(self):
-        base_dir = os.path.join(self.root_dir, "taskgb/t*")
+
+        # print("New distrbution:", self.distribution)
+
+    def reset_scenario_pool(self, tasks):
+        task = "task" + tasks[0][0]
+
+        base_dir = os.path.join(self.root_dir, f"{task}/t*")
         for f in glob.glob(base_dir):
             shutil.rmtree(f)
 
@@ -59,7 +62,7 @@ class DynamicScenarios():
             print(f"Num of {key} : {num_scenarios}")
             if num_scenarios != 0:
                 build_scenarios(
-                    task=f"taskgb",
+                    task=task,
                     level_name=key,
                     totals={"train": num_scenarios, "test": 1},
                     root_path=self.root_dir,
@@ -67,5 +70,26 @@ class DynamicScenarios():
                     stopwatcher_route=None,
                     save_dir=self.save_dir,
                 )
-        
+
         # os.system("ls ultra/scenarios/taskgb/")
+
+    def reset_test_scenarios(self, tasks):
+        task = "task" + tasks[0][0]
+
+        base_dir = os.path.join(self.root_dir, f"{task}/t*")
+        for f in glob.glob(base_dir):
+            shutil.rmtree(f)
+
+        for key, val in self.distribution.items():
+            num_scenarios = math.ceil(self.rate * 0.25)
+            print(f"Num of {key} : {num_scenarios}")
+            if num_scenarios != 0:
+                build_scenarios(
+                    task=task,
+                    level_name=key,
+                    totals={"train": 0, "test": num_scenarios},
+                    root_path=self.root_dir,
+                    stopwatcher_behavior=None,
+                    stopwatcher_route=None,
+                    save_dir=self.save_dir,
+                )
