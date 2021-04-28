@@ -42,7 +42,6 @@ jobs:
           --ignore=./tests/test_scenarios.py \
           --ignore=./tests/test_social_vehicles.py \
           --ignore=./tests/test_rllib_train.py \
-          --ignore=./tests/test_gb_train.py \
 
   test-light-base-tests:
     runs-on: ubuntu-18.04
@@ -80,6 +79,7 @@ jobs:
           --ignore=./tests/test_train.py \
           --ignore=./tests/test_evaluate.py \
           --ignore=./tests/test_analysis.py \
+          --ignore=./tests/test_curriculum.py \
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
