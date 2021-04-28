@@ -38,14 +38,13 @@ import ray
 import torch
 
 from smarts.zoo.registry import make
-from ultra.evaluate import evaluation_check
+from ultra.evaluate import evaluation_check, collect_evaluations
+from ultra.utils.common import agent_pool_value
 from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-# @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-@ray.remote(num_gpus=num_gpus / 2)
 def train(
     scenario_info,
     num_episodes,
@@ -61,6 +60,7 @@ def train(
     torch.set_num_threads(1)
     total_step = 0
     finished = False
+    evaluation_task_ids = dict()
 
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
@@ -113,7 +113,9 @@ def train(
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
     etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
+    old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
+
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
         dones = {"__all__": False}
@@ -136,25 +138,25 @@ def train(
                     pickle.HIGHEST_PROTOCOL,
                 )
 
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            evaluation_task_ids=evaluation_task_ids,
+            **eval_info,
+            **env.info,
+        )
+
+        collect_evaluations(evaluation_task_ids=evaluation_task_ids)
+
         while not dones["__all__"]:
             # Break if any of the agent's step counts is 1000000 or greater.
             if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
                 finished = True
                 break
-
-            # Perform the evaluation check.
-            if eval_info["eval_episodes"] != 0:
-                evaluation_check(
-                    agents=agents,
-                    agent_ids=agent_ids,
-                    policy_classes=agent_classes,
-                    episode=episode,
-                    log_dir=log_dir,
-                    max_episode_steps=max_episode_steps,
-                    **eval_info,
-                    **env.info,
-                )
-
             # Request and perform actions on each agent that received an observation.
             actions = {}
             for agent_id, observation in observations.items():
@@ -194,12 +196,15 @@ def train(
             total_step += 1
             observations = next_observations
 
-        # Normalize the data and record this episode on tensorboard.
         episode.record_episode()
         episode.record_tensorboard()
 
         if finished:
             break
+
+    # Wait on the remaining evaluations to finish.
+    while collect_evaluations(evaluation_task_ids):
+        time.sleep(0.1)
 
     env.close()
 
@@ -228,22 +233,24 @@ if __name__ == "__main__":
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=10000,
+        default=200,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="Run without envision", type=bool, default=True
+        "--headless",
+        help="Run without envision",
+        action="store_true",
     )
     parser.add_argument(
         "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
     )
     parser.add_argument(
         "--eval-rate",
-        help="Evaluation rate based on number of observations",
+        help="The number of training episodes to wait before running the evaluation",
         type=int,
-        default=10000,
+        default=200,
     )
     parser.add_argument(
         "--seed",
@@ -263,45 +270,30 @@ if __name__ == "__main__":
         default=None,
         type=str,
     )
-
-    base_dir = os.path.dirname(__file__)
-    pool_path = os.path.join(base_dir, "agent_pool.json")
     args = parser.parse_args()
 
     # Obtain the policy class strings for each specified policy.
-    policy_classes = []
-    with open(pool_path, "r") as f:
-        data = json.load(f)
-        for policy in args.policy.split(","):
-            if policy in data["agents"].keys():
-                policy_classes.append(
-                    data["agents"][policy]["path"]
-                    + ":"
-                    + data["agents"][policy]["locator"]
-                )
-            else:
-                raise ImportError("Invalid policy name. Please try again")
+    policy_classes = [
+        agent_pool_value(agent_name, "policy_class")
+        for agent_name in args.policy.split(",")
+    ]
 
     # Obtain the policy class IDs from the arguments.
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
     ray.init()
-    ray.wait(
-        [
-            train.remote(
-                scenario_info=(args.task, args.level),
-                num_episodes=int(args.episodes),
-                max_episode_steps=int(args.max_episode_steps),
-                eval_info={
-                    "eval_rate": float(args.eval_rate),
-                    "eval_episodes": int(args.eval_episodes),
-                },
-                timestep_sec=float(args.timestep),
-                headless=args.headless,
-                policy_classes=policy_classes,
-                seed=args.seed,
-                log_dir=args.log_dir,
-                policy_ids=policy_ids,
-            )
-        ]
+    train(
+        scenario_info=(args.task, args.level),
+        num_episodes=int(args.episodes),
+        max_episode_steps=int(args.max_episode_steps),
+        eval_info={
+            "eval_rate": float(args.eval_rate),
+            "eval_episodes": int(args.eval_episodes),
+        },
+        timestep_sec=float(args.timestep),
+        headless=args.headless,
+        policy_classes=policy_classes,
+        seed=args.seed,
+        log_dir=args.log_dir,
+        policy_ids=policy_ids,
     )

@@ -123,6 +123,10 @@ class Client:
             self._process.daemon = True
             self._process.start()
 
+    @property
+    def headless(self):
+        return self._headless
+
     @staticmethod
     def _write_log_state(queue, path):
         with path.open("w", encoding="utf-8") as f:

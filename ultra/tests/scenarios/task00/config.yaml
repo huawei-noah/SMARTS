@@ -10,6 +10,7 @@ levels:
         2lane_t:
            percent: 1
            specs: [[70kmh,p-test,1]]
+           stops: null
     test:
       total: 1
       ego_missions:
@@ -20,6 +21,7 @@ levels:
         2lane_t:
            percent: 1
            specs: [[70kmh,p-test,1]]
+           stops: null
   no-traffic:
     train:
       total: 1
@@ -31,6 +33,7 @@ levels:
         2lane_t:
            percent: 1
            specs: [[70kmh,no-traffic,1]]
+           stops: null
     test:
       total: 1
       ego_missions:
@@ -41,6 +44,7 @@ levels:
         2lane_t:
            percent: 1
            specs: [[70kmh,no-traffic,1]]
+           stops: null
   # Used in evaluation test
   eval_test:
     train:
@@ -56,18 +60,21 @@ levels:
                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+          stops: null
         2lane_curvy_t:
           percent: 0.4
           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+          stops: null
         3lane_t:
           percent: 0.4
           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+          stops: null
     test:
       total: 2
       ego_missions:
@@ -81,12 +88,14 @@ levels:
                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+          stops: null
         3lane_c:
           percent: 0.5
           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+          stops: null
   offset_test:
     train:
       total: 10
@@ -99,6 +108,7 @@ levels:
         2lane_t:
            percent: 1
            specs: [[70kmh,p-test,1]]
+           stops: null
     test:
       total: 1
       ego_missions:
@@ -110,3 +120,4 @@ levels:
         2lane_t:
            percent: 1
            specs: [[70kmh,p-test,1]]
+           stops: null
