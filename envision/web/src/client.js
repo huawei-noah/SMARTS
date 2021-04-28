@@ -98,11 +98,13 @@ export default class Client {
               ? -Infinity
               : value
           );
-          stateQueue.push({
-            state: data.state,
-            current_elapsed_time: data.current_elapsed_time,
-            total_elapsed_time: data.total_elapsed_time,
-          });
+          for (const frame of data) {
+            stateQueue.push({
+              state: frame.state,
+              current_elapsed_time: frame.current_elapsed_time,
+              total_elapsed_time: frame.total_elapsed_time,
+            });
+          }
         };
 
         socket.onerror = (error) => {
