@@ -71,7 +71,7 @@ class UltraPackageTest(unittest.TestCase):
                 seed=2,
                 log_dir=log_dir,
                 curriculum_mode=False,
-                gb_info={},
+                curriculum_metadata={},
             )
             ray.shutdown()
             self.assertTrue(True)
