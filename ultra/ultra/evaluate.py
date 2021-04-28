@@ -73,6 +73,14 @@ def evaluation_check(
                 for agent_id in agent_ids
                 if static_coordinator.get_eval_check_condition() == True
             ]
+        else:
+            agent_ids_to_evaluate = [
+                agent_id
+                for agent_id in agent_ids
+                if (episode.index + 1) % eval_rate == 0
+                and episode.last_eval_iterations[agent_id] != episode.index
+            ]
+
     else:
         agent_ids_to_evaluate = [
             agent_id
