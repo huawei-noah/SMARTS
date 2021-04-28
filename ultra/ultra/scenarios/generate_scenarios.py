@@ -32,6 +32,7 @@ from collections import Counter, defaultdict
 from dataclasses import replace
 from multiprocessing import Manager, Process
 from shutil import copyfile
+from typing import Any, Dict, Sequence
 
 import numpy as np
 import yaml
@@ -59,7 +60,22 @@ from ultra.scenarios.common.social_vehicle_definitions import (
 LANE_LENGTH = 137.85
 
 
-def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
+def ego_mission_config_to_route(
+    ego_mission_config: Dict[str, Any],
+    route_lanes: Dict[str, int],
+    stopwatcher_behavior: bool,
+) -> Route:
+    """Creates a Route from an ego mission config dictionary.
+
+    Args:
+        ego_mission_config: A dictionary describing the ego mission.
+        route_lanes: A dictionary of routes (edges) as keys and the number of lanes in
+            each route as values.
+        stopwatcher_behavior: A boolean value describing the presence of stopwatchers.
+
+    Returns:
+        Route: The route object created from the ego mission config.
+    """
     if stopwatcher_behavior:  # Put the ego vehicle(s) on the side road.
         mission_start = "edge-south-side"
         mission_end = "edge-dead-end"
@@ -68,20 +84,23 @@ def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
         mission_start_offset = 100
         mission_end_offset = 5
     else:
-        mission_start = "edge-{}".format(ego_mission["start"])
-        mission_end = "edge-{}".format(ego_mission["end"])
-        mission_start_lane_index = route_lanes[ego_mission["start"]] - 1
-        mission_end_lane_index = route_lanes[ego_mission["end"]] - 1
+        mission_start = "edge-{}".format(ego_mission_config["start"])
+        mission_end = "edge-{}".format(ego_mission_config["end"])
+        mission_start_lane_index = route_lanes[ego_mission_config["start"]] - 1
+        mission_end_lane_index = route_lanes[ego_mission_config["end"]] - 1
         mission_start_offset = (
             random.randint(
-                ego_mission["start_offset"][0], ego_mission["start_offset"][1]
+                ego_mission_config["start_offset"][0],
+                ego_mission_config["start_offset"][1],
             )
-            if "start_offset" in ego_mission
+            if "start_offset" in ego_mission_config
             else random.randint(50, 120)  # The default range of the offset.
         )
         mission_end_offset = (
-            random.randint(ego_mission["end_offset"][0], ego_mission["end_offset"][1])
-            if "end_offset" in ego_mission
+            random.randint(
+                ego_mission_config["end_offset"][0], ego_mission_config["end_offset"][1]
+            )
+            if "end_offset" in ego_mission_config
             else random.randint(50, 120)  # The default range of the offset.
         )
 
@@ -101,7 +120,7 @@ def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
 
 
 def bubble_config_to_bubble_object(
-    scenario, bubble_config, vehicles_to_not_hijack
+    scenario: str, bubble_config: Dict[str, Any], vehicles_to_not_hijack: Sequence[str]
 ) -> Bubble:
     """Converts a bubble config to a bubble object.
 
@@ -114,6 +133,9 @@ def bubble_config_to_bubble_object(
         vehicles_to_not_hijack:
             A tuple of vehicle IDs that are passed to the bubble. The bubble will not
             capture those vehicles that have an ID in this tuple.
+
+    Returns:
+        Bubble: The bubble object created from the bubble config.
     """
     BUBBLE_MARGIN = 2
     map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
@@ -129,7 +151,9 @@ def bubble_config_to_bubble_object(
         assert len(location_data) == 2
         bubble_length, bubble_width = location_data
         bubble_coordinates = map_file.getNode("junction-intersection").getCoord()
-        zone = PositionalZone(pos=bubble_coordinates, size=(bubble_length, bubble_width))
+        zone = PositionalZone(
+            pos=bubble_coordinates, size=(bubble_length, bubble_width)
+        )
     else:
         # Create a bubble on one of the lanes.
         assert len(location_data) == 4
@@ -158,7 +182,9 @@ def bubble_config_to_bubble_object(
     return bubble
 
 
-def add_stops_to_traffic(scenario, stops, vehicles_to_not_hijack):
+def add_stops_to_traffic(
+    scenario: str, stops: Sequence[Sequence[Any]], vehicles_to_not_hijack: Sequence[str]
+):
     """Adds stopped vehicles to the traffic by overwriting all.rou.xml and replacing
     some vehicles' attributes so that they start, and remain stopped.
 
@@ -185,11 +211,11 @@ def add_stops_to_traffic(scenario, stops, vehicles_to_not_hijack):
     #      if the vehicle matches the route and lane, only the stop at the stops_added
     #      index.
 
-    # Add stops (if applicable) to vehicles in the existing all.rou.xml file.   
+    # Add stops (if applicable) to vehicles in the existing all.rou.xml file.
     for vehicle in sumolib.output.parse(route_file_path, "vehicle"):
         if stops_added >= len(stops):
             break
-        
+
         vehicle_edges = vehicle.route[0].edges.split()
         start_edge = map_file.getEdge(vehicle_edges[0])
 
@@ -333,12 +359,12 @@ def generate_left_turn_missions(
         # to skip None
         if route_info:
             ego_routes = [
-                ego_mission_to_route(
-                    ego_mission=ego_mission,
+                ego_mission_config_to_route(
+                    ego_mission_config=ego_mission_config,
                     route_lanes=route_lanes,
                     stopwatcher_behavior=stopwatcher_behavior,
                 )
-                for ego_mission in missions
+                for ego_mission_config in missions
             ]
             flows, vehicles_log_info = generate_social_vehicles(
                 route_distribution=route_info["distribution"],
