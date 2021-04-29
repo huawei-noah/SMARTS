@@ -719,7 +719,26 @@ cross_patterns = {
                 "has_turn": True,
                 "deadlock_optimization": True,
             },  # blocking
-            "south-east": None,
+            "south-east": {
+                "vehicles": 100,
+                "distribution": {
+                    "default": 0.70,
+                    "aggressive": 0.30,
+                    "cautious": 0.00,
+                    "blocker": 0.0,
+                },
+                "start_end_on_different_lanes_probability": 0.0,
+                "begin_time_init": {
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 2),
+                        "time_between_cluster": (50, 60),
+                        "time_for_each_cluster": 5,
+                    },
+                },
+                "has_turn": True,
+                "deadlock_optimization": True,
+            },
             "south-north": {
                 "vehicles": 1000,
                 "distribution": {

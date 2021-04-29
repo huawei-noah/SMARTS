@@ -209,7 +209,7 @@ levels:
       total: 150
       ego_missions:
         # left turn from south to west
-      - start: soutmid
+      - start: south-SN
         end:   west-EW
       intersection_types:
         4lane_c:
