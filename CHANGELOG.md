@@ -17,13 +17,13 @@ process
 - Added reference to SMARTS paper in front page of docs
 - Only create `Renderer` on demand if vehicles are using camera-based sensors. See issue #725.
 - Added glb models for pedestrians and motorcycles
+- Added `near realtime` mode and `uncapped` mode in envision
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed sumo road network offset bug for shifted maps.  See issue #716.
 - Fixed bugs in traffic history and changed interface to it.  See issue #732.
-- Changed Envision Frame timestamp from when it arrived in Envision server to when it was generated in SMARTS
 
 ### Fixed
 - Update `ego_open_agent` to use the package instead of the zoo directory version.

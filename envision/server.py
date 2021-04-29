@@ -206,7 +206,9 @@ class WebClientRunLoop:
                         self._log.debug("Socket closed, exiting")
                         return
 
-                frame_ptr, frames_to_send = await self._wait_for_next_frame(frame_ptr, last_sent_time)
+                frame_ptr, frames_to_send = await self._wait_for_next_frame(
+                    frame_ptr, last_sent_time
+                )
 
         def sync_run_forever():
             loop = asyncio.new_event_loop()
@@ -223,14 +225,12 @@ class WebClientRunLoop:
             frames_formatted = [
                 {
                     "state": frame.data,
-                    "current_elapsed_time": frame.timestamp
-                    - self._frames.start_time,
+                    "current_elapsed_time": frame.timestamp - self._frames.start_time,
                     "total_elapsed_time": self._frames.elapsed_time,
-                } for frame in frames
+                }
+                for frame in frames
             ]
-            self._client.write_message(
-                json.dumps(frames_formatted)
-            )
+            self._client.write_message(json.dumps(frames_formatted))
             return False
         except WebSocketClosedError:
             return True
@@ -242,7 +242,7 @@ class WebClientRunLoop:
             return self._timestep_sec / 10
         else:
             # run out of frames to send
-            return .99 * self._timestep_sec
+            return 0.99 * self._timestep_sec
 
     async def _wait_for_next_frame(self, frame_ptr, last_sent_time):
         while True:

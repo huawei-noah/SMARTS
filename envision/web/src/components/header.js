@@ -29,7 +29,6 @@ export const PLAYMODES = Object.freeze({
   near_real_time: "near_real_time",
 });
 
-
 export default function Header_({
   simulationIds,
   matchedSimulationId,
@@ -83,7 +82,7 @@ export default function Header_({
   }
 
   function selecting_mode(mode) {
-    console.log(mode)
+    console.log(mode);
   }
 
   let selectValue = "";
@@ -127,10 +126,13 @@ export default function Header_({
       </Space>
 
       <Space style={{ float: "right" }}>
-      <Select defaultValue={PLAYMODES.near_real_time} onChange={(mode) => onSelectPlayingMode(mode)}>
-        <Option value={PLAYMODES.near_real_time}>Near Realtime Mode</Option>
-        <Option value={PLAYMODES.uncapped}>Uncapped Mode</Option>
-      </Select>
+        <Select
+          defaultValue={PLAYMODES.near_real_time}
+          onChange={(mode) => onSelectPlayingMode(mode)}
+        >
+          <Option value={PLAYMODES.near_real_time}>Near Realtime Mode</Option>
+          <Option value={PLAYMODES.uncapped}>Uncapped Mode</Option>
+        </Select>
         <Checkbox defaultChecked onClick={toggleShowControls}>
           Show Controls
         </Checkbox>

@@ -159,7 +159,7 @@ export default function Simulation({
   useEffect(() => {
     let stopPolling = false;
     (async () => {
-      console.log(`new playing mode ${playingMode}`)
+      console.log(`new playing mode ${playingMode}`);
       const msInSec = 1000;
       const it = client.worldstate(simulationId);
       let prevElapsedTime = null;
@@ -174,7 +174,7 @@ export default function Simulation({
           // playing uncapped still needs a small amount of sleep time for
           // React to trigger update
           await sleep(0.1);
-        } else if (playingMode == PLAYMODES.near_real_time) { 
+        } else if (playingMode == PLAYMODES.near_real_time) {
           // playingMode is near_real_time
           // msInSec*(currentTime-prevElapsedTime) is the time difference between
           //   current frame and previous frame

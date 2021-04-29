@@ -56,7 +56,7 @@ function App({ client }) {
   const [currentElapsedTime, setCurrentElapsedTime] = useState(0);
   const [totalElapsedTime, setTotalElapsedTime] = useState(1);
   const [playing, setPlaying] = useState(true);
-  const [playingMode, setPlayingMode] = useState(PLAYMODES.near_real_time)
+  const [playingMode, setPlayingMode] = useState(PLAYMODES.near_real_time);
   const simulationCanvasRef = useRef(null);
   const recorderRef = useRef(null);
   const { addToast } = useToasts();

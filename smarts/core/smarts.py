@@ -99,7 +99,7 @@ class SMARTS:
         self._imitation_learning_mode = False
 
         self._elapsed_sim_time = 0
-        self._total_sim_time = 0 
+        self._total_sim_time = 0
 
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
@@ -908,7 +908,7 @@ class SMARTS:
             speed=speed,
             heading=heading,
             lane_ids=lane_ids,
-            frame_time=self._elapsed_sim_time+self._total_sim_time,
+            frame_time=self._elapsed_sim_time + self._total_sim_time,
         )
         self._envision.send(state)
 
