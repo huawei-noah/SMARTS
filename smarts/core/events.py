@@ -29,3 +29,4 @@ class Events(NamedTuple):
     not_moving: bool
     reached_goal: bool
     reached_max_episode_steps: bool
+    agents_alive_done: bool
