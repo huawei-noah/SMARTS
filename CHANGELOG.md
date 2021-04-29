@@ -17,7 +17,11 @@ process
 - Added reference to SMARTS paper in front page of docs
 - Only create `Renderer` on demand if vehicles are using camera-based sensors. See issue #725.
 - Added glb models for pedestrians and motorcycles
+<<<<<<< HEAD
 - Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks
+=======
+- Added options in DoneCreteria to trigger ego agent to be done based on other agent's done situation
+>>>>>>> added done creteria based on number of agents alive
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 ### Fixed
