@@ -282,7 +282,7 @@ if __name__ == "__main__":
             "eval_episodes": int(args.eval_episodes),
         },
         timestep_sec=float(args.timestep),
-        headless=False,
+        headless=args.headless,
         policy_classes=policy_classes,
         seed=args.seed,
         log_dir=args.log_dir,

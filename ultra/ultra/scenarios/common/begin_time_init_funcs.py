@@ -33,7 +33,7 @@ def basic_vehicle_initial_distribution(probability, min_step=100000, extra_args=
     return count
 
 
-def basic_begin_time_init_func(num_lanes, num_vehicle, traffic_params=None, **params):
+def basic_begin_time_init_func(num_lanes, num_vehicle, traffic_params, **params):
     begin_times = [[] for _ in range(num_lanes)]
     for j in range(num_lanes):
         [
@@ -106,12 +106,10 @@ def burst_begin_time_init_func(
     return begin_times
 
 
-def poisson_init(num_lanes, num_vehicle, traffic_params=None, temperature=8):
-    # print("using poisson distribution ...")
+def poisson_init(num_lanes, num_vehicle, traffic_params, temperature=8):
     vehicle_spawn_time = np.random.exponential(
         temperature, size=(num_lanes, num_vehicle)
     )
     vehicle_spawn_time = list(vehicle_spawn_time)
     vehicle_spawn_time = [np.cumsum(e) for e in vehicle_spawn_time]
-    # print(vehicle_spawn_time)
     return vehicle_spawn_time
