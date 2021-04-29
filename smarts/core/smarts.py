@@ -87,10 +87,11 @@ class SMARTS:
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
         self._providers = [
-            self._traffic_sim,
             self._motion_planner_provider,
             self._traffic_history_provider,
         ]
+        if self._traffic_sim:
+            self._providers.insert(0, self._traffic_sim)
 
         # We buffer provider state between steps to compensate for TRACI's timestep delay
         self._last_provider_state = None
