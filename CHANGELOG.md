@@ -19,6 +19,7 @@ process
 - Added glb models for pedestrians and motorcycles
 - Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks
 - Added options in DoneCreteria to trigger ego agent to be done based on other agent's done situation
+- Added a multi-agent adversarial training demo, game of tag under examples folder
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 ### Fixed
