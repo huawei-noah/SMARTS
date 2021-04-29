@@ -89,18 +89,19 @@ export default class Client {
         };
 
         socket.onmessage = (event) => {
-          let data = JSON.parse(event.data, (_, value) =>
-            value === "NaN"
-              ? Nan
-              : value === "Infinity"
-              ? Infinity
-              : value === "-Infinity"
-              ? -Infinity
-              : value
-          );
-          for (const frame of data) {
+          let frames = JSON.parse(event.data);
+          for (const frame of frames) {
+            let state = JSON.parse(frame.state, (_, value) =>
+              value === "NaN"
+                ? Nan
+                : value === "Infinity"
+                ? Infinity
+                : value === "-Infinity"
+                ? -Infinity
+                : value
+            );
             stateQueue.push({
-              state: frame.state,
+              state: state,
               current_elapsed_time: frame.current_elapsed_time,
               total_elapsed_time: frame.total_elapsed_time,
             });

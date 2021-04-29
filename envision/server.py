@@ -21,6 +21,7 @@ import argparse
 import asyncio
 import bisect
 import importlib.resources as pkg_resources
+import ijson
 import json
 import logging
 import random
@@ -66,8 +67,9 @@ class AllowCORSMixin:
 
 
 class Frame:
-    def __init__(self, data: State, next_=None):
-        self._timestamp = data["frame_time"]
+    def __init__(self, data: str, timestamp: float, next_=None):
+        """data is a State object that was converted to string using json.dumps"""
+        self._timestamp = timestamp
         self._data = data
         self._size = sys.getsizeof(data)
         self.next_ = next_
@@ -281,7 +283,8 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         del FRAMES[self._simulation_id]
 
     async def on_message(self, message):
-        self._frames.append(Frame(data=json.loads(message)))
+        frame_time = next(ijson.items(message, 'frame_time', use_float=True))
+        self._frames.append(Frame(timestamp=frame_time, data=message))
 
 
 class StateWebSocket(tornado.websocket.WebSocketHandler):

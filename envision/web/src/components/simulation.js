@@ -159,7 +159,6 @@ export default function Simulation({
   useEffect(() => {
     let stopPolling = false;
     (async () => {
-      console.log(`new playing mode ${playingMode}`);
       const msInSec = 1000;
       const it = client.worldstate(simulationId);
       let prevElapsedTime = null;
