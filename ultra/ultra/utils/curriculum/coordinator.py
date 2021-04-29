@@ -20,129 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os, sys
-import yaml, csv
 from itertools import cycle
-import copy
-
-import numpy as np
-import matplotlib.pyplot as plt
 
 from ultra.scenarios.generate_scenarios import build_scenarios
-
-
-class CurriculumInfo:
-    def __init__(self):
-        pass
-
-    @classmethod
-    def initialize(cls, gb_curriculum_dir):
-        root_dir = gb_curriculum_dir  # Path to grade based config file (config.yaml needed for populating grades with scenarios (tasks, levels))
-        base_dir = os.path.join(os.path.dirname(__file__), root_dir)
-        grades_dir = os.path.join(base_dir, "config.yaml")
-
-        with open(grades_dir, "r") as task_file:
-            cls.curriculum = yaml.safe_load(task_file)["curriculum"]
-
-        cls.episode_based_toggle = bool(
-            cls.curriculum["conditions"]["episode_based"]["toggle"]
-        )
-        cls.episode_based_cycle = bool(
-            cls.curriculum["conditions"]["episode_based"]["cycle"]
-        )
-        cls.pass_based_toggle = bool(
-            cls.curriculum["conditions"]["pass_based"]["toggle"]
-        )
-        cls.pass_based_pass_rate = float(
-            cls.curriculum["conditions"]["pass_based"]["pass_rate"]
-        )
-        cls.pass_based_sample_rate = cls.curriculum["conditions"]["pass_based"][
-            "sample_rate"
-        ]
-        cls.pass_based_warmup_episodes = int(
-            cls.curriculum["conditions"]["pass_based"]["warmup_episodes"]
-        )
-        cls.eval_per_grade = bool(cls.curriculum["conditions"]["eval_per_grade"])
-
-        if cls.episode_based_toggle == cls.pass_based_toggle == True:
-            raise Exception(
-                "Both condition toggles are set to True. Only one condition should be chosen"
-            )
-        elif cls.episode_based_toggle == cls.pass_based_toggle == False:
-            raise Exception(
-                "Both condition toggles are set to False. Please choose one condition"
-            )
-
-
-class ScenarioDataHandler:
-    def __init__(self, tag):
-        self.overall_densities_counter = {
-            "no-traffic": 0,
-            "low-density": 0,
-            "mid-density": 0,
-            "high-density": 0,
-        }
-        self.grade_densities_counter = copy.deepcopy(self.overall_densities_counter)
-        self.densities_data = []
-        self.tag = tag
-
-    def record_density_data(self, scenario_density):
-        if scenario_density != "p-test":
-            self.overall_densities_counter[scenario_density] += 1
-            self.grade_densities_counter[scenario_density] += 1
-            return self.overall_densities_counter[scenario_density]
-        return
-
-    def save_grade_density(self, grade_size):
-        temp = []
-        print(f"({self.tag}) Grade size: {grade_size}")
-        for density in self.grade_densities_counter:
-            if grade_size != 0:
-                temp.append(
-                    round(self.grade_densities_counter[density] / grade_size, 2)
-                )
-            else:
-                pass
-        self.densities_data.append(temp)
-        self.grade_densities_counter = {
-            "no-traffic": 0,
-            "low-density": 0,
-            "mid-density": 0,
-            "high-density": 0,
-        }
-
-    def display_grade_scenario_distribution(self, grade_size, grade=None):
-        if grade == None:
-            grade = ">>> No grades <<<"
-        print("----------------------------------------------------")
-        print(f"Traffic density distribution for {grade} (or {self.tag} run):")
-        for density in self.grade_densities_counter:
-            if grade_size != 0:
-                print(
-                    f"{density}: {round(self.grade_densities_counter[density] / grade_size, 2)}"
-                )
-            else:
-                print(f"{density}: 0.0")
-        print("----------------------------------------------------\n")
-
-    def plot_densities_data(self, filepath=None):
-        total_density_data = self.densities_data
-        # print(total_density_data)
-        header = ["no-traffic", "low", "mid", "high"]
-        header.insert(0, "")
-
-        with open(filepath, "w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(header)
-            counter = 0
-            for i in range(len(total_density_data)):
-                total_density_data[i].insert(0, f"grade-{i}")
-                writer.writerow(total_density_data[i])
-        header = []
+from ultra.utils.curriculum.curriculum_info import CurriculumInfo
 
 
 class Coordinator:
-    def __init__(self, gb_curriculum_dir, num_episodes):
-        CurriculumInfo.initialize(gb_curriculum_dir)
+    def __init__(self, curriculum_dir, num_episodes):
+        CurriculumInfo.initialize(curriculum_dir)
 
         self.mode = False
         self.counter = cycle(tuple([i * 1 for i in range(self.get_num_of_grades())]))
@@ -159,8 +45,8 @@ class Coordinator:
         self.eval_per_grade = CurriculumInfo.eval_per_grade
 
     def build_all_scenarios(self, root_path, save_dir):
-        for key in CurriculumInfo.curriculum["grades"]:
-            for task, level in CurriculumInfo.curriculum["grades"][key]:
+        for key in CurriculumInfo.curriculum["static"]["grades"]:
+            for task, level in CurriculumInfo.curriculum["static"]["grades"][key]:
                 build_scenarios(
                     task=f"task{task}",
                     level_name=level,
@@ -173,7 +59,12 @@ class Coordinator:
     def next_grade(self):
         # Get task and level information
         counter = next(self.counter) + 1
-        self.grade = CurriculumInfo.curriculum["grades"][counter]
+        self.grade = CurriculumInfo.curriculum["static"]["grades"][counter]
+
+    def next_eval_grade(self):
+        # Get task and level information
+        counter = next(self.eval_counter) + 1
+        self.eval_grade = CurriculumInfo.curriculum["static"]["grades"][counter]
 
     def next_eval_grade(self):
         # Get task and level information
@@ -181,7 +72,7 @@ class Coordinator:
         self.eval_grade = CurriculumInfo.curriculum["grades"][counter]
 
     def get_num_of_grades(self):
-        return len(CurriculumInfo.curriculum["grades"])
+        return len(CurriculumInfo.curriculum["static"]["grades"])
 
     def get_grade(self):
         return self.grade
@@ -296,25 +187,13 @@ class Coordinator:
             total_scenarios_passed += episode.info[episode.active_tag][
                 list(agents.keys())[0]
             ].data["reached_goal"]
-            # print(
-            #     f"({episode.index + 1}) (SAMPLING) TOTAL SCENARIOS PASSED PER EVAL RATE:",
-            #     total_scenarios_passed,
-            # )
             average_scenarios_passed = total_scenarios_passed / sample_rate
-            # print(
-            #     f"({episode.index + 1}) AVERAGE SCENARIOS PASSED: {average_scenarios_passed}"
-            # )
             total_scenarios_passed = 0.0
             return average_scenarios_passed, total_scenarios_passed
         else:
             total_scenarios_passed += episode.info[episode.active_tag][
                 list(agents.keys())[0]
             ].data["reached_goal"]
-            # print(
-            #     f"({episode.index + 1}) TOTAL SCENARIOS PASSED PER EVAL RATE:",
-            #     total_scenarios_passed,
-            # )
-            return asp, total_scenarios_passed
 
     def display(self):
         try:

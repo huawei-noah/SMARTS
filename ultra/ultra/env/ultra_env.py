@@ -46,7 +46,7 @@ class UltraEnv(HiWayEnv):
         headless,
         timestep_sec,
         seed,
-        grade_mode=False,
+        curriculum_mode=False,
         eval_mode=False,
         ordered_scenarios=False,
     ):
@@ -54,9 +54,9 @@ class UltraEnv(HiWayEnv):
         self.headless = headless
         self.agent_specs = agent_specs
         self.eval_mode = eval_mode
-        self.grade_mode = grade_mode
+        self.curriculum_mode = curriculum_mode
 
-        if not self.grade_mode:
+        if self.curriculum_mode is False:
             self.scenario_info = scenario_info
             self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
             if not self.eval_mode:
@@ -194,7 +194,7 @@ class UltraEnv(HiWayEnv):
             )
 
         scenario = next(self._scenarios_iterator)
-        # print(scenario)
+        print(scenario)
 
         root = str(scenario._root).split("/")[-1]
         for density in [

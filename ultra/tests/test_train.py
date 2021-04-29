@@ -89,13 +89,8 @@ class TrainTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 seed=2,
-                grade_mode=False,
-                gb_info={
-                    "gb_curriculum_dir": "",
-                    "gb_build_scenarios": False,
-                    "gb_scenarios_root_dir": None,
-                    "gb_scenarios_save_dir": None,
-                },
+                curriculum_mode=False,
+                curriculum_metadata={},
                 log_dir=log_dir,
             )
             ray.shutdown()
@@ -132,13 +127,8 @@ class TrainTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 seed=2,
-                grade_mode=False,
-                gb_info={
-                    "gb_curriculum_dir": "",
-                    "gb_build_scenarios": False,
-                    "gb_scenarios_root_dir": None,
-                    "gb_scenarios_save_dir": None,
-                },
+                curriculum_mode=False,
+                curriculum_metadata={},
                 log_dir=log_dir,
             )
             ray.shutdown()

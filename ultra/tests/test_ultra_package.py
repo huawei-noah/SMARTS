@@ -70,13 +70,8 @@ class UltraPackageTest(unittest.TestCase):
                 headless=True,
                 seed=2,
                 log_dir=log_dir,
-                grade_mode=False,
-                gb_info={
-                    "gb_curriculum_dir": "",
-                    "gb_build_scenarios": False,
-                    "gb_scenarios_root_dir": None,
-                    "gb_scenarios_save_dir": None,
-                },
+                curriculum_mode=False,
+                curriculum_metadata={},
             )
             ray.shutdown()
             self.assertTrue(True)
