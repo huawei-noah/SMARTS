@@ -80,9 +80,11 @@ class RLlibHiWayEnv(MultiAgentEnv):
         )
 
         self._sim_name = config.get("sim_name", None)
-        self._headless = config.get("headless", False)
+        # Warnining: running rllib with envision will cause memory to run out very quickly.
+        # It is recommanded to set headless to true during training and use sumo-gui (sumo_headless=False)
+        self._headless = config.get("headless", True)
         self._num_external_sumo_clients = config.get("num_external_sumo_clients", 0)
-        self._sumo_headless = config.get("sumo_headless", True)
+        self._sumo_headless = config.get("sumo_headless", False)
         self._sumo_port = config.get("sumo_port")
         self._sumo_auto_start = config.get("sumo_auto_start", True)
         self._endless_traffic = config.get("endless_traffic", True)
@@ -147,7 +149,13 @@ class RLlibHiWayEnv(MultiAgentEnv):
 
         for done in dones.values():
             self._dones_registered += 1 if done else 0
-        dones["__all__"] = self._dones_registered == len(self._agent_specs)
+        # TODO temporary solution for game of tag: stop the episode when 1 vehicle is done
+        # so that the other vehicle does not train when the opponent is not present, which
+        # causes noisy in training
+        dones["__all__"] = self._dones_registered > 0
+        if dones["__all__"]:
+            for id in dones:
+                dones[id] = True
 
         return observations, rewards, dones, infos
 
