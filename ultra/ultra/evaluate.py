@@ -130,10 +130,7 @@ def evaluation_check(
             "eval",
         )
 
-<<<<<<< HEAD
     """ For ultra-gb, evaluating on train episode is not necessary"""
-=======
->>>>>>> b536798773c02ae4a2d86dc0a6543f838a0ca075
     # for agent_id in agent_ids_to_evaluate:
     #     # Get the checkpoint directory for the current agent and save its model.
     #     checkpoint_directory = episode.checkpoint_dir(
