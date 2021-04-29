@@ -17,7 +17,7 @@ process
 - Added reference to SMARTS paper in front page of docs
 - Only create `Renderer` on demand if vehicles are using camera-based sensors. See issue #725.
 - Added glb models for pedestrians and motorcycles
-- Added `near realtime` mode and `uncapped` mode in envision
+- Added `near realtime` mode and `uncapped` mode in Envision
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 ### Fixed
