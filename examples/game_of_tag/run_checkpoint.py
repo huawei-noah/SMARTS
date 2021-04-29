@@ -166,12 +166,6 @@ def main(scenario, headless, checkpoint_path, seed, num_episodes):
 
             observations, rewards, dones, infos = env.step(actions)
             episode.record_step(observations, rewards, dones, infos)
-            # TODO temporary solution for game of tag: stop the episode when 1 vehicle is done
-            # so that the other vehicle does not train when the opponent is not present, which
-            # causes noisy in training
-            for key in dones:
-                if dones[key]:
-                    dones["__all__"] = True
 
     env.close()
 

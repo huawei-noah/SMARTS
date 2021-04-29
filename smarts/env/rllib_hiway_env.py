@@ -149,13 +149,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
 
         for done in dones.values():
             self._dones_registered += 1 if done else 0
-        # TODO temporary solution for game of tag: stop the episode when 1 vehicle is done
-        # so that the other vehicle does not train when the opponent is not present, which
-        # causes noisy in training
-        dones["__all__"] = self._dones_registered > 0
-        if dones["__all__"]:
-            for id in dones:
-                dones[id] = True
+        dones["__all__"] = self._dones_registered == len(self._agent_specs)
 
         return observations, rewards, dones, infos
 

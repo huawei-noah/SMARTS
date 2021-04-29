@@ -181,9 +181,12 @@ def predator_reward_adapter(observations, env_reward_signal):
 
     # if no prey vehicle avaliable, have 0 reward instead
     # TODO: Test to see if this is neccessary
-    prey_vehicles = list(filter(
-        lambda v: _is_vehicle_wanted(v.id, PREY_IDS), observations.neighborhood_vehicle_states,
-    ))
+    prey_vehicles = list(
+        filter(
+            lambda v: _is_vehicle_wanted(v.id, PREY_IDS),
+            observations.neighborhood_vehicle_states,
+        )
+    )
     return rew if len(prey_vehicles) > 0 else 0
 
 
@@ -218,7 +221,10 @@ def prey_reward_adapter(observations, env_reward_signal):
 
     # if no predator vehicle avaliable, have 0 reward instead
     # TODO: Test to see if this is neccessary
-    predator_vehicles = list(filter(
-        lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS), observations.neighborhood_vehicle_states,
-    ))
+    predator_vehicles = list(
+        filter(
+            lambda v: _is_vehicle_wanted(v.id, PREDATOR_IDS),
+            observations.neighborhood_vehicle_states,
+        )
+    )
     return rew if len(predator_vehicles) > 0 else 0
