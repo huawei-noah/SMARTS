@@ -37,6 +37,7 @@ import SceneComponent from "babylonjs-hook";
 import Bubbles from "./bubbles.js";
 import Camera from "./camera.js";
 import Vehicles from "./vehicles.js";
+import { playingModes } from "./header";
 import DrivenPaths from "./driven_paths.js";
 import MissionRoutes from "./mission_routes.js";
 import Waypoints from "./waypoints.js";
@@ -58,6 +59,7 @@ export default function Simulation({
   onElapsedTimesChanged = (current, total) => {},
   style = {},
   playing = true,
+  playingMode,
 }) {
   const [scene, setScene] = useState(null);
 
@@ -157,6 +159,7 @@ export default function Simulation({
   useEffect(() => {
     let stopPolling = false;
     (async () => {
+      console.log(`new playing mode ${playingMode}`)
       const msInSec = 1000;
       const it = client.worldstate(simulationId);
       let prevElapsedTime = null;
@@ -167,10 +170,11 @@ export default function Simulation({
         let wstate, elapsed_times;
         [wstate, elapsed_times] = wstate_and_time.value;
         const currentTime = elapsed_times[0];
-        if (prevElapsedTime == null) {
+        if (prevElapsedTime == null || playingMode == playingModes.uncapped) {
           // default: wait 50ms before playing the next frame
-          await sleep(50);
-        } else {
+          await sleep(1);
+        } else { 
+          // playingMode is near_real_time
           // msInSec*(currentTime-prevElapsedTime) is the time difference between
           //   current frame and previous frame
           // Since we could have waited (Date.now() - waitStartTime) to get the current frame,
@@ -191,7 +195,7 @@ export default function Simulation({
 
     // Called when simulation ID changes
     return () => (stopPolling = true);
-  }, [simulationId, playing]);
+  }, [simulationId, playing, playingMode]);
 
   // Load map
   useEffect(() => {

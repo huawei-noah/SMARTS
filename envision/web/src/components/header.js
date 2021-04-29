@@ -24,6 +24,12 @@ import { LoadingOutlined } from "@ant-design/icons";
 const { Option, OptGroup } = Select;
 const { Header } = Layout;
 
+export const playingModes = Object.freeze({
+  uncapped: "uncapped",
+  near_real_time: "near_real_time",
+});
+
+
 export default function Header_({
   simulationIds,
   matchedSimulationId,
@@ -32,6 +38,7 @@ export default function Header_({
   onToggleShowControls,
   onToggleEgoView,
   onSelectSimulation,
+  onSelectPlayingMode,
 }) {
   const [showControl, setShowControl] = useState(true);
   const [egoView, setEgoView] = useState(false);
@@ -75,6 +82,10 @@ export default function Header_({
     return `${name} ${month}-${day} ${hour}:${minute}:${second}`;
   }
 
+  function selecting_mode(mode) {
+    console.log(mode)
+  }
+
   let selectValue = "";
   if (matchedSimulationId) {
     if (matchedSimulationId == "all") {
@@ -116,6 +127,10 @@ export default function Header_({
       </Space>
 
       <Space style={{ float: "right" }}>
+      <Select defaultValue={playingModes.near_real_time} onChange={(mode) => onSelectPlayingMode(mode)}>
+        <Option value={playingModes.near_real_time}>Near Realtime Mode</Option>
+        <Option value={playingModes.uncapped}>Uncapped Mode</Option>
+      </Select>
         <Checkbox defaultChecked onClick={toggleShowControls}>
           Show Controls
         </Checkbox>

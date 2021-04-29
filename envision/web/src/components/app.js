@@ -29,7 +29,7 @@ import html2canvas from "html2canvas";
 import { RecordRTCPromisesHandler, invokeSaveAsDialog } from "recordrtc";
 import { Layout } from "antd";
 const { Content } = Layout;
-import Header from "./header";
+import Header, { playingModes } from "./header";
 import Simulation from "./simulation";
 import SimulationGroup from "./simulation_group";
 import { attrs, agentModes } from "./control_panel";
@@ -56,6 +56,7 @@ function App({ client }) {
   const [currentElapsedTime, setCurrentElapsedTime] = useState(0);
   const [totalElapsedTime, setTotalElapsedTime] = useState(1);
   const [playing, setPlaying] = useState(true);
+  const [playingMode, setPlayingMode] = useState(playingModes.near_real_time)
   const simulationCanvasRef = useRef(null);
   const recorderRef = useRef(null);
   const { addToast } = useToasts();
@@ -120,6 +121,7 @@ function App({ client }) {
     <Layout className="layout" style={{ width: "100%", height: "100%" }}>
       <Header
         simulationIds={simulationIds}
+        onSelectPlayingMode={setPlayingMode}
         matchedSimulationId={matchedSimulationId}
         onSelectSimulation={onSelectSimulation}
         onStartRecording={onStartRecording}
@@ -173,6 +175,7 @@ function App({ client }) {
                       }}
                       style={{ flex: "1" }}
                       playing={playing}
+                      playingMode={playingMode}
                     />
                   </div>
                   <PlaybackBar
