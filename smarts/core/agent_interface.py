@@ -148,10 +148,10 @@ class AgentsAliveDoneCriteria:
     to meet its specified minimum number of alive agents.
     Example: [
         AgentsListAlive(
-            agents_list=[AGENT1, AGENT2], minimum_agents_alive_in_list=1
+            agents_list=['agent1','agent2'], minimum_agents_alive_in_list=1
         ),
         AgentsListAlive(
-            agents_list=[AGENT3], minimum_agents_alive_in_list=1
+            agents_list=['agent3'], minimum_agents_alive_in_list=1
         ),
     ]
     This agent's done event would be triggered if both 'agent1' and 'agent2' is done *or* 'agent3' is done.
