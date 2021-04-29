@@ -46,7 +46,7 @@ levels:
         4lane_t:
           percent: 1.0
           specs: [[50kmh,high-density,1.0]]
-          stops: [[south-SN,1,60]]
+          stops: null
           bubbles:
           - location: [intersection,40,40]  # [location, length, width]
             actor_name: "intersection-actor"
@@ -65,7 +65,7 @@ levels:
         4lane_t:
           percent: 1.0
           specs: [[50kmh,high-density,1.0]]
-          stops: [[south-SN,1,60]]
+          stops: null
           bubbles:
           - location: [intersection,40,40]  # [location, length, width]
             actor_name: "intersection-actor"
