@@ -15,12 +15,14 @@ levels:
                    [50kmh,low-density,0.07],[70kmh,low-density,0.07],[100kmh,low-density,0.06], #20%,
                    [50kmh,mid-density,0.05],[70kmh,mid-density,0.05],[100kmh,mid-density,0.05], #15%
                    [50kmh,high-density,0.02],[70kmh,high-density,0.02],[100kmh,high-density,0.01]] #5%
+           stops: null
         2lane_curvy_t:
            percent: 0.5
            specs: [[50kmh,no-traffic,0.20],[70kmh,no-traffic,0.20],[100kmh,no-traffic,0.20], #60%
                    [50kmh,low-density,0.07],[70kmh,low-density,0.07],[100kmh,low-density,0.06], #20%,
                    [50kmh,mid-density,0.05],[70kmh,mid-density,0.05],[100kmh,mid-density,0.05], #15%
                    [50kmh,high-density,0.02],[70kmh,high-density,0.02],[100kmh,high-density,0.01]] #5%
+           stops: null
     test:
       total: 10
       ego_missions:
@@ -33,6 +35,7 @@ levels:
                    [50kmh,low-density,0.085],[70kmh,low-density,0.085],[100kmh,low-density,0.08], #25%,
                    [50kmh,mid-density,0.07],[70kmh,mid-density,0.07],[100kmh,mid-density,0.06], #20%
                    [50kmh,high-density,0.035],[70kmh,high-density,0.035],[100kmh,high-density,0.03]] #10%
+           stops: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade2:
     train:
@@ -47,18 +50,21 @@ levels:
                    [50kmh,low-density,0.20],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #60%,
                    [50kmh,mid-density,0.07],[70kmh,mid-density,0.07],[100kmh,mid-density,0.06], #20%
                    [50kmh,high-density,0.02],[70kmh,high-density,0.02],[100kmh,high-density,0.01]] #5%
+           stops: null
         2lane_curvy_t:
            percent: 0.3
            specs: [[50kmh,no-traffic,0.05],[70kmh,no-traffic,0.05],[100kmh,no-traffic,0.05], #15%
                    [50kmh,low-density,0.20],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #60%,
                    [50kmh,mid-density,0.07],[70kmh,mid-density,0.07],[100kmh,mid-density,0.06], #20%
                    [50kmh,high-density,0.02],[70kmh,high-density,0.02],[100kmh,high-density,0.01]] #5%
+           stops: null
         3lane_t:
            percent: 0.4
            specs: [[50kmh,no-traffic,0.05],[70kmh,no-traffic,0.05],[100kmh,no-traffic,0.05], #15%
                    [50kmh,low-density,0.20],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #60%,
                    [50kmh,mid-density,0.07],[70kmh,mid-density,0.07],[100kmh,mid-density,0.06], #20%
                    [50kmh,high-density,0.02],[70kmh,high-density,0.02],[100kmh,high-density,0.01]] #5%
+           stops: null
     test:
       total: 10
       ego_missions:
@@ -71,12 +77,14 @@ levels:
                    [50kmh,low-density,0.15],[70kmh,low-density,0.15],[100kmh,low-density,0.15], #45%,
                    [50kmh,mid-density,0.085],[70kmh,mid-density,0.085],[100kmh,mid-density,0.08], #25%
                    [50kmh,high-density,0.035],[70kmh,high-density,0.035],[100kmh,high-density,0.03]] #10%
+           stops: null
         3lane_c:
            percent: 0.2
            specs: [[50kmh,no-traffic,0.07],[70kmh,no-traffic,0.07],[100kmh,no-traffic,0.06], #20%
                    [50kmh,low-density,0.15],[70kmh,low-density,0.15],[100kmh,low-density,0.15], #45%,
                    [50kmh,mid-density,0.085],[70kmh,mid-density,0.085],[100kmh,mid-density,0.08], #25%
                    [50kmh,high-density,0.035],[70kmh,high-density,0.035],[100kmh,high-density,0.03]] #10%
+           stops: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade3:
     train:
@@ -91,18 +99,21 @@ levels:
                    [50kmh,low-density,0.05],[70kmh,low-density,0.05],[100kmh,low-density,0.05], #15%,
                    [50kmh,mid-density,0.20],[70kmh,mid-density,0.20],[100kmh,mid-density,0.20], #60%
                    [50kmh,high-density,0.07],[70kmh,high-density,0.07],[100kmh,high-density,0.06]] #20%
+           stops: null
         2lane_curvy_t:
            percent: 0.4
            specs: [[50kmh,no-traffic,0.02],[70kmh,no-traffic,0.02],[100kmh,no-traffic,0.01], #5%
                    [50kmh,low-density,0.05],[70kmh,low-density,0.05],[100kmh,low-density,0.05], #15%,
                    [50kmh,mid-density,0.20],[70kmh,mid-density,0.20],[100kmh,mid-density,0.20], #60%
                    [50kmh,high-density,0.07],[70kmh,high-density,0.07],[100kmh,high-density,0.06]] #20%
+           stops: null
         3lane_t:
            percent: 0.4
            specs: [[50kmh,no-traffic,0.02],[70kmh,no-traffic,0.02],[100kmh,no-traffic,0.01], #5%
                    [50kmh,low-density,0.05],[70kmh,low-density,0.05],[100kmh,low-density,0.05], #15%,
                    [50kmh,mid-density,0.20],[70kmh,mid-density,0.20],[100kmh,mid-density,0.20], #60%
                    [50kmh,high-density,0.07],[70kmh,high-density,0.07],[100kmh,high-density,0.06]] #20%
+           stops: null
     test:
       total: 10
       ego_missions:
@@ -115,6 +126,7 @@ levels:
                    [50kmh,low-density,0.07],[70kmh,low-density,0.07],[100kmh,low-density,0.06], #20%,
                    [50kmh,mid-density,0.15],[70kmh,mid-density,0.15],[100kmh,mid-density,0.15], #45%
                    [50kmh,high-density,0.08],[70kmh,high-density,0.08],[100kmh,high-density,0.09]] #25%
+           stops: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade4:
     train:
@@ -129,18 +141,21 @@ levels:
                    [50kmh,low-density,0.05],[70kmh,low-density,0.05],[100kmh,low-density,0.05], #15%,
                    [50kmh,mid-density,0.07],[70kmh,mid-density,0.07],[100kmh,mid-density,0.06], #20%
                    [50kmh,high-density,0.20],[70kmh,high-density,0.20],[100kmh,high-density,0.20]] #60%
+           stops: null
         3lane_t:
            percent: 0.4
            specs: [[50kmh,no-traffic,0.02],[70kmh,no-traffic,0.02],[100kmh,no-traffic,0.01], #5%
                    [50kmh,low-density,0.05],[70kmh,low-density,0.05],[100kmh,low-density,0.05], #15%,
                    [50kmh,mid-density,0.07],[70kmh,mid-density,0.07],[100kmh,mid-density,0.06], #20%
                    [50kmh,high-density,0.20],[70kmh,high-density,0.20],[100kmh,high-density,0.20]] #60%
+           stops: null
         2lane_curvy_t:
            percent: 0.4
            specs: [[50kmh,no-traffic,0.02],[70kmh,no-traffic,0.02],[100kmh,no-traffic,0.01], #5%
                    [50kmh,low-density,0.05],[70kmh,low-density,0.05],[100kmh,low-density,0.05], #15%,
                    [50kmh,mid-density,0.07],[70kmh,mid-density,0.07],[100kmh,mid-density,0.06], #20%
                    [50kmh,high-density,0.20],[70kmh,high-density,0.20],[100kmh,high-density,0.20]] #60%
+           stops: null
     test:
       total: 10
       ego_missions:
@@ -153,13 +168,14 @@ levels:
                    [50kmh,low-density,0.07],[70kmh,low-density,0.07],[100kmh,low-density,0.06], #20%,
                    [50kmh,mid-density,0.08],[70kmh,mid-density,0.08],[100kmh,mid-density,0.09], #25%
                    [50kmh,high-density,0.15],[70kmh,high-density,0.15],[100kmh,high-density,0.15]] #45%
+           stops: null
         4lane_c:
            percent: 0.5
            specs: [[50kmh,no-traffic,0.035],[70kmh,no-traffic,0.035],[100kmh,no-traffic,0.03], #10%
                    [50kmh,low-density,0.07],[70kmh,low-density,0.07],[100kmh,low-density,0.06], #20%,
                    [50kmh,mid-density,0.08],[70kmh,mid-density,0.08],[100kmh,mid-density,0.09], #25%
                    [50kmh,high-density,0.15],[70kmh,high-density,0.15],[100kmh,high-density,0.15]] #45%
-
+           stops: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   no-traffic:
     train:
@@ -171,7 +187,7 @@ levels:
         2lane_t:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
-
+           stops: null
     test:
       total: null
       ego_missions:
@@ -181,7 +197,7 @@ levels:
         2lane_c:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
-  
+           stops: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   low-density:
     train:
@@ -193,7 +209,7 @@ levels:
         2lane_t:
            percent: 1
            specs: [[50kmh,low-density,0.33],[70kmh,low-density,0.34],[100kmh,low-density,0.33]]
-
+           stops: null
     test:
       total: null
       ego_missions:
@@ -203,7 +219,7 @@ levels:
         2lane_c:
            percent: 1
            specs: [[50kmh,low-density,0.33],[70kmh,low-density,0.34],[100kmh,low-density,0.33]]
-
+           stops: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   mid-density:
     train:
@@ -215,7 +231,7 @@ levels:
         2lane_t:
            percent: 1
            specs: [[50kmh,mid-density,0.33],[70kmh,mid-density,0.34],[100kmh,mid-density,0.33]]
-
+           stops: null
     test:
       total: null
       ego_missions:
@@ -225,7 +241,7 @@ levels:
         2lane_c:
            percent: 1
            specs: [[50kmh,mid-density,0.33],[70kmh,mid-density,0.34],[100kmh,mid-density,0.33]]
-
+           stops: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   high-density:
     train:
@@ -237,7 +253,7 @@ levels:
         2lane_t:
            percent: 1
            specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
-
+           stops: null
     test:
       total: null
       ego_missions:
@@ -247,3 +263,4 @@ levels:
         2lane_c:
            percent: 1
            specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
+           stops: null

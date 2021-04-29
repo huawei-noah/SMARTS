@@ -546,6 +546,7 @@ def build_scenarios(
     stopwatcher_route,
     save_dir,
     root_path,
+    totals=None,
     dynamic_pattern_func=None,
 ):
     print("Generating Scenario ...")
@@ -562,10 +563,22 @@ def build_scenarios(
     task_dir = f"{scenarios_dir}/{task}"
     pool_dir = f"{scenarios_dir}/pool"
 
-    train_total, test_total = (
-        int(level_config["train"]["total"]),
-        int(level_config["test"]["total"]),
-    )
+    if level_config["train"]["total"] == None:
+        try:
+            train_total = int(totals["train"])
+        except Exception as e:
+            print(e)
+    else:
+        train_total = level_config["train"]["total"]
+
+    if level_config["test"]["total"] == None:
+        try:
+            test_total = int(totals["test"])
+        except Exception as e:
+            print(e)
+    else:
+        test_total = level_config["test"]["total"]
+
     splitted_seeds = {
         "train": [i for i in range(train_total)],
         "test": [i for i in range(train_total, train_total + test_total)],
