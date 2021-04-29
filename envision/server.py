@@ -283,7 +283,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         del FRAMES[self._simulation_id]
 
     async def on_message(self, message):
-        frame_time = next(ijson.items(message, 'frame_time', use_float=True))
+        frame_time = next(ijson.items(message, "frame_time", use_float=True))
         self._frames.append(Frame(timestamp=frame_time, data=message))
 
 
