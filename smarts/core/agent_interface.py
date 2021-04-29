@@ -147,8 +147,12 @@ class AgentsAliveDoneCriteria:
     """A termination criteria based on the ids of agents. If set, triggers the agent to be done if any list of agents fails 
     to meet its specified minimum number of alive agents.
     Example: [
-        (['agent1', 'agent2'], 1),
-        (['agent3'], 1)
+        AgentsListAlive(
+            agents_list=[AGENT1, AGENT2], minimum_agents_alive_in_list=1
+        ),
+        AgentsListAlive(
+            agents_list=[AGENT3], minimum_agents_alive_in_list=1
+        ),
     ]
     This agent's done event would be triggered if both 'agent1' and 'agent2' is done *or* 'agent3' is done.
     """
