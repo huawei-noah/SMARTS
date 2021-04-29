@@ -38,7 +38,9 @@ from smarts.zoo.registry import make
 from ultra.utils.common import str_to_bool
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
-from ultra.utils.coordinator import ScenarioDataHandler
+from ultra.utils.curriculum.curriculum_info import CurriculumInfo
+from ultra.utils.curriculum.scenario_data_handler import ScenarioDataHandler
+from ultra.utils.curriculum.dynamic_scenarios import DynamicScenarios
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -56,16 +58,29 @@ def evaluation_check(
     headless,
     log_dir,
     evaluation_task_ids,
-    grade_mode=False,
-    agent_coordinator=None,
+    curriculum_metadata=None,
+    curriculum_mode=False,
+    static_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
-    if grade_mode == True and agent_coordinator.eval_per_grade == True:
-        agent_ids_to_evaluate = [
-            agent_id
-            for agent_id in agent_ids
-            if agent_coordinator.get_eval_check_condition() == True
-        ]
+    if curriculum_mode is True:
+        if (
+            CurriculumInfo.static_curriculum_toggle is True
+            and static_coordinator.eval_per_grade is True
+        ):
+            agent_ids_to_evaluate = [
+                agent_id
+                for agent_id in agent_ids
+                if static_coordinator.get_eval_check_condition() == True
+            ]
+        else:
+            agent_ids_to_evaluate = [
+                agent_id
+                for agent_id in agent_ids
+                if (episode.index + 1) % eval_rate == 0
+                and episode.last_eval_iterations[agent_id] != episode.index
+            ]
+
     else:
         agent_ids_to_evaluate = [
             agent_id
@@ -81,8 +96,9 @@ def evaluation_check(
     if eval_episodes < 1:
         return
 
-    if grade_mode == True:
-        agent_coordinator.next_eval_grade()
+    if curriculum_mode is True:
+        if CurriculumInfo.static_curriculum_toggle is True:
+            static_coordinator.next_eval_grade()
 
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
@@ -103,17 +119,17 @@ def evaluation_check(
             headless=headless,
             timestep_sec=timestep_sec,
             log_dir=log_dir,
-            grade_mode=grade_mode,
-            agent_coordinator=agent_coordinator,
+            curriculum_metadata=curriculum_metadata,
+            curriculum_mode=curriculum_mode,
+            static_coordinator=static_coordinator,
             eval_mode=True,
         )
         evaluation_task_ids[evaluation_task_id] = (
             episode.get_itr(agent_id),
             episode,
-            "eval_train",
+            "eval",
         )
 
-    ''' For ultra-gb, evaluating on train episode is not necessary'''
     # for agent_id in agent_ids_to_evaluate:
     #     # Get the checkpoint directory for the current agent and save its model.
     #     checkpoint_directory = episode.checkpoint_dir(
@@ -133,14 +149,15 @@ def evaluation_check(
     #         headless=headless,
     #         timestep_sec=timestep_sec,
     #         log_dir=log_dir,
-    #         grade_mode=grade_mode,
-    #         agent_coordinator=agent_coordinator,
+    #         curriculum_metadata=curriculum_metadata
+    #         curriculum_mode=curriculum_mode,
+    #         static_coordinator=static_coordinator,
     #         eval_mode=False,
     #     )
     #     evaluation_task_ids[evaluation_train_task_id] = (
     #         episode.get_itr(agent_id),
     #         episode,
-    #         "eval",
+    #         "eval_train",
     #     )
 
     #     episode.eval_count += 1
@@ -183,8 +200,9 @@ def evaluate(
     headless,
     timestep_sec,
     log_dir,
-    grade_mode=False,
-    agent_coordinator=None,
+    curriculum_metadata=None,
+    curriculum_mode=False,
+    static_coordinator=None,
     explore=False,
     eval_mode=True,
 ):
@@ -202,6 +220,17 @@ def evaluate(
         for agent_id in agent_ids
     }
 
+    if curriculum_mode is True:
+        CurriculumInfo.initialize(curriculum_metadata["curriculum_dir"])
+        if CurriculumInfo.dynamic_curriculum_toggle is True:
+            dynamic_coordinator = DynamicScenarios(
+                curriculum_metadata["curriculum_scenarios_root_dir"],
+                curriculum_metadata["curriculum_scenarios_save_dir"],
+                rate=num_episodes,
+            )
+            dynamic_coordinator.reset_test_scenarios(CurriculumInfo.tasks_levels_used)
+            scenario_info = CurriculumInfo.tasks_levels_used
+
     # Create the environment with the specified agents.
     env = gym.make(
         "ultra.env:ultra-v0",
@@ -210,7 +239,7 @@ def evaluate(
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
-        grade_mode=grade_mode,
+        curriculum_mode=curriculum_mode,
         eval_mode=eval_mode,
     )
 
@@ -234,14 +263,15 @@ def evaluate(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        if grade_mode != False:
-            if initial_grade_switch == False:
-                observations, scenario = env.reset(
-                    True, agent_coordinator.get_eval_grade()
-                )
-                initial_grade_switch = True
-            else:
-                observations, scenario = env.reset()
+        if curriculum_mode is True:
+            if CurriculumInfo.static_curriculum_toggle is True:
+                if initial_grade_switch == False:
+                    observations, scenario = env.reset(
+                        True, static_coordinator.get_eval_grade()
+                    )
+                    initial_grade_switch = True
+                else:
+                    observations, scenario = env.reset()
         else:
             observations, scenario = env.reset()
 
@@ -268,8 +298,8 @@ def evaluate(
         scenario["density_counter"] = density_counter
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        if eval_mode == True:
-            episode.record_tensorboard(recording_step=episode.index)
+        if curriculum_mode is True and eval_mode is True:
+            episode.record_tensorboard()
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
@@ -284,8 +314,15 @@ def evaluate(
 
     env.close()
 
-    scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
-    scenario_data_handler_eval.save_grade_density(num_episodes)
+    if curriculum_mode is True:
+        if CurriculumInfo.static_curriculum_toggle is True:
+            scenario_data_handler_eval.display_grade_scenario_distribution(
+                num_episodes, static_coordinator.get_eval_grade()
+            )
+            scenario_data_handler_eval.save_grade_density(num_episodes)
+        else:
+            scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+            scenario_data_handler_eval.save_grade_density(num_episodes)
 
     try:
         if eval_mode:
@@ -346,8 +383,8 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "--grade-mode",
-        help="Toggle grade mode",
+        "--curriculum-mode",
+        help="Toggle curriculum mode",
         default=False,
         type=bool,
     )
@@ -442,7 +479,7 @@ if __name__ == "__main__":
                         timestep_sec=float(args.timestep),
                         headless=args.headless,
                         log_dir=args.log_dir,
-                        grade_mode=args.grade_mode,
+                        curriculum_mode=args.curriculum_mode,
                     )
                 ]
             )[0]
