@@ -190,29 +190,25 @@ class WebClientRunLoop:
                 frame_ptr = self._frames.start_frame
 
             frames_to_send = []
-            last_sent_time = 0
             while True:
                 # Handle seek
                 if self._seek is not None and self._frames.start_time is not None:
                     frame_ptr = self._frames(self._frames.start_time + self._seek)
                     self._seek = None
-                    frames_to_send = [ frame_ptr ]
+                    frames_to_send = [frame_ptr]
 
                 if frame_ptr is None:
                     self._log.warning("Seek frame missing, reverting to start frame")
                     frame_ptr = self._frames.start_frame
-                    frames_to_send = [ frame_ptr ]
+                    frames_to_send = [frame_ptr]
 
                 if len(frames_to_send) > 0:
                     closed = self._push_frames_to_web_client(frames_to_send)
-                    last_sent_time = time.time()
                     if closed:
                         self._log.debug("Socket closed, exiting")
                         return
 
-                frame_ptr, frames_to_send = await self._wait_for_next_frame(
-                    frame_ptr, last_sent_time
-                )
+                frame_ptr, frames_to_send = await self._wait_for_next_frame(frame_ptr)
 
         def sync_run_forever():
             loop = asyncio.new_event_loop()
@@ -239,27 +235,24 @@ class WebClientRunLoop:
         except WebSocketClosedError:
             return True
 
-    def _calculate_frame_delay(self, frame_ptr, last_sent_time):
-        if time.time() - last_sent_time > self._timestep_sec:
-            return 0
-        if frame_ptr.next_ is not None:
-            return self._timestep_sec / 10
-        else:
-            # run out of frames to send
-            return 0.99 * self._timestep_sec
+    def _calculate_frame_delay(self, frame_ptr):
+        return 0.5 * self._timestep_sec if not frame_ptr.next_ else 0
 
-    async def _wait_for_next_frame(self, frame_ptr, last_sent_time):
+    async def _wait_for_next_frame(self, frame_ptr):
         while True:
-            delay = self._calculate_frame_delay(frame_ptr, last_sent_time)
+            delay = self._calculate_frame_delay(frame_ptr)
             await asyncio.sleep(delay)
 
             if frame_ptr.next_ is not None:
                 frames_to_send = []
-                while frame_ptr.next_ is not None:
+                count = 0
+                # Limit the size of a single batch to 100
+                while frame_ptr.next_ is not None and count <= 100:
                     frames_to_send.append(frame_ptr)
                     frame_ptr = frame_ptr.next_
-
+                    count += 1
                 return frame_ptr, frames_to_send
+
 
 class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
     """This websocket receives the SMARTS state (the other end of the open websocket
