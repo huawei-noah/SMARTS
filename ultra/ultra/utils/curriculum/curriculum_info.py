@@ -25,16 +25,28 @@ import yaml
 
 class CurriculumInfo:
     def __init__(self):
+        """ Empty constructor """
         pass
 
     @classmethod
-    def initialize(cls, curriculum_dir=None):
-        if curriculum_dir is None:
-            curriculum_dir = "../../scenarios/grade_based_curriculum/"
-        else:
-            curriculum_dir = os.path.join("../../", curriculum_dir)
+    def initialize(cls, curriculum_path=None):
+        """Retrieves curriculum information from curriculum config
+        file.
 
-        root_dir = curriculum_dir  # Path to curriculum config file
+        Args:
+            curriculum_path (str): path to curriculum config file
+
+        Raises:
+            ValueError: If static_toggle and dynamic_toggle are both true
+                        or false, and if static_conditions are both true
+                        or false
+        """
+        if curriculum_path is None:
+            curriculum_path = "../../scenarios/grade_based_curriculum/"
+        else:
+            curriculum_path = os.path.join("../../", curriculum_path)
+
+        root_dir = curriculum_path  # Path to curriculum config file
         base_dir = os.path.join(os.path.dirname(__file__), root_dir)
         grades_dir = os.path.join(base_dir, "config.yaml")
 
@@ -80,10 +92,10 @@ class CurriculumInfo:
         cls.sampling_rate = cls.curriculum["dynamic"]["sampling_rate"]
 
         if cls.static_curriculum_toggle == cls.dynamic_curriculum_toggle == True:
-            raise Exception(
+            raise ValueError(
                 "Both condition toggles are set to True. Only one condition should be chosen"
             )
         elif cls.static_curriculum_toggle == cls.dynamic_curriculum_toggle == False:
-            raise Exception(
+            raise ValueError(
                 "Both condition toggles are set to False. Please choose one condition"
             )

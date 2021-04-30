@@ -25,27 +25,52 @@ import copy
 
 
 class ScenarioDataHandler:
-    def __init__(self, tag):
+    def __init__(self, mode):
+        """Initializes curriculum and sets up variables
+
+        Args:
+            mode (str): train or evaluation field
+        """
+        self.densities_data = []
+        self.mode = mode
+        self._reset_densities_counter()
+        self.grade_densities_counter = copy.deepcopy(self.overall_densities_counter)
+
+    def _reset_densities_counter(self):
+        """ resets counter to zero """
         self.overall_densities_counter = {
             "no-traffic": 0,
             "low-density": 0,
             "mid-density": 0,
             "high-density": 0,
         }
-        self.grade_densities_counter = copy.deepcopy(self.overall_densities_counter)
-        self.densities_data = []
-        self.tag = tag
 
-    def record_density_data(self, scenario_density):
-        if scenario_density != "p-test":
+    def record_density_data(self, scenario_density) -> int:
+        """Records how many times a specific density is used in a
+           the entire experiment or in a single grade
+
+        Args:
+            scenario_density (str): traffic density of scenario
+
+        Returns:
+            Total occurance of specified scenario density
+        """
+        if scenario_density in self.overall_densities_counter.keys():
             self.overall_densities_counter[scenario_density] += 1
             self.grade_densities_counter[scenario_density] += 1
             return self.overall_densities_counter[scenario_density]
         return
 
     def save_grade_density(self, grade_size):
+        """Records the occurances of the different traffic densities
+            in a grade. Those values are normalized by the total size
+            of the grade.
+
+        Args:
+            grade_size (int): number of episodes in a grade
+        """
         temp = []
-        print(f"({self.tag}) Grade size: {grade_size}")
+        print(f"({self.mode}) Grade size: {grade_size}")
         for density in self.grade_densities_counter:
             if grade_size != 0:
                 temp.append(
@@ -54,18 +79,20 @@ class ScenarioDataHandler:
             else:
                 pass
         self.densities_data.append(temp)
-        self.grade_densities_counter = {
-            "no-traffic": 0,
-            "low-density": 0,
-            "mid-density": 0,
-            "high-density": 0,
-        }
+        self._reset_densities_counter()
 
     def display_grade_scenario_distribution(self, grade_size, grade=None):
+        """Displays the grade scenario density distribution
+
+        Args:
+            grade_size (int): number of episodes in a grade
+            grade (list): task and level of the grade
+
+        """
         if grade == None:
             grade = ">>> No grades <<<"
         print("----------------------------------------------------")
-        print(f"Traffic density distribution for {grade} (or {self.tag} run):")
+        print(f"Traffic density distribution for {grade} (or {self.mode} run):")
         for density in self.grade_densities_counter:
             if grade_size != 0:
                 print(
@@ -76,6 +103,13 @@ class ScenarioDataHandler:
         print("----------------------------------------------------\n")
 
     def plot_densities_data(self, filepath, curriculum_mode=False):
+        """Each grade's density information is written in a csv file
+
+        Args:
+            filepath (str): path to store the csv file
+            curriculum_mode (bool): instruction mode
+
+        """
         total_density_data = self.densities_data
 
         # print(total_density_data)
@@ -92,4 +126,3 @@ class ScenarioDataHandler:
                 else:
                     total_density_data[i].insert(0, f"grade-{i}")
                 writer.writerow(total_density_data[i])
-        header = []

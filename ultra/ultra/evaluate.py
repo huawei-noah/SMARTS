@@ -58,36 +58,21 @@ def evaluation_check(
     headless,
     log_dir,
     evaluation_task_ids,
+    eval_after_grade=False,
     curriculum_metadata=None,
     curriculum_mode=False,
     static_coordinator=None,
 ):
     # Evaluate agents that have reached the eval_rate.
-    if curriculum_mode is True:
-        if (
-            CurriculumInfo.static_curriculum_toggle is True
-            and static_coordinator.eval_per_grade is True
-        ):
-            agent_ids_to_evaluate = [
-                agent_id
-                for agent_id in agent_ids
-                if static_coordinator.get_eval_check_condition() == True
-            ]
-        else:
-            agent_ids_to_evaluate = [
-                agent_id
-                for agent_id in agent_ids
-                if (episode.index + 1) % eval_rate == 0
-                and episode.last_eval_iterations[agent_id] != episode.index
-            ]
-
-    else:
-        agent_ids_to_evaluate = [
-            agent_id
-            for agent_id in agent_ids
-            if (episode.index + 1) % eval_rate == 0
+    agent_ids_to_evaluate = [
+        agent_id
+        for agent_id in agent_ids
+        if eval_after_grade == True
+        or (
+            (episode.index + 1) % eval_rate == 0
             and episode.last_eval_iterations[agent_id] != episode.index
-        ]
+        )
+    ]
 
     # Skip evaluation if there are no agents needing an evaluation.
     if len(agent_ids_to_evaluate) < 1:
@@ -229,7 +214,9 @@ def evaluate(
                 curriculum_metadata["curriculum_scenarios_save_dir"],
                 rate=num_episodes,
             )
-            dynamic_coordinator.reset_test_scenarios(CurriculumInfo.tasks_levels_used)
+            dynamic_coordinator.reset_scenario_pool(
+                CurriculumInfo.tasks_levels_used, num_episodes
+            )
             scenario_info = CurriculumInfo.tasks_levels_used
 
     # Create the environment with the specified agents.
@@ -264,8 +251,8 @@ def evaluate(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        if curriculum_mode is True:
-            if CurriculumInfo.static_curriculum_toggle is True:
+        if curriculum_mode == True:
+            if CurriculumInfo.static_curriculum_toggle == True:
                 if initial_grade_switch == False:
                     observations, scenario = env.reset(
                         True, static_coordinator.get_eval_grade()
@@ -273,8 +260,12 @@ def evaluate(
                     initial_grade_switch = True
                 else:
                     observations, scenario = env.reset()
+            elif CurriculumInfo.dynamic_curriculum_toggle == True:
+                observations, scenario = env.reset()
         else:
             observations, scenario = env.reset()
+
+        os.system("ls tests/test_curriculum/")
 
         dones = {"__all__": False}
         infos = None
