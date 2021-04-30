@@ -71,7 +71,8 @@ def train(
 ):
 
     agent_name = policy
-    adapter = BaselineAdapter(agent_name)
+    policy_params = load_yaml(f"ultra/baselines/{agent_name}/{agent_name}/params.yaml")
+    adapter = BaselineAdapter(policy_params)
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
     config = RllibAgent.rllib_default_config(agent_name)
 

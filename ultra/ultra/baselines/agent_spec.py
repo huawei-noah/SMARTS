@@ -41,6 +41,7 @@ class BaselineAgentSpec(AgentSpec):
         self,
         policy_class,
         action_type,
+        policy_params=None,
         checkpoint_dir=None,
         task=None,
         max_episode_steps=1200,
@@ -52,6 +53,7 @@ class BaselineAgentSpec(AgentSpec):
         self,
         policy_class,
         action_type,
+        policy_params=None,
         checkpoint_dir=None,
         task=None,
         max_episode_steps=1200,
@@ -79,23 +81,18 @@ class BaselineAgentSpec(AgentSpec):
 
                 spec = new_spec
         else:
-            base_dir = os.path.join(os.path.dirname(__file__), "../")
-            pool_path = os.path.join(base_dir, "agent_pool.json")
+            # If policy_params is None, then there must be a params.yaml file in the same
+            # directory as the policy_class module.
+            if not policy_params:
+                policy_class_module_file = inspect.getfile(policy_class)
+                policy_class_module_directory = os.path.dirname(
+                    policy_class_module_file
+                )
+                policy_params = load_yaml(
+                    os.path.join(policy_class_module_directory, "params.yaml")
+                )
 
-            policy_class_name = policy_class.__name__
-            agent_name = None
-
-            with open(pool_path, "r") as f:
-                data = json.load(f)
-                agents = data["agents"].keys()
-                for agent in agents:
-                    if data["agents"][agent]["class"] == policy_class_name:
-                        agent_name = data["agents"][agent]["name"]
-                        break
-
-            assert agent_name != None
-
-            adapter = BaselineAdapter(agent_name)
+            adapter = BaselineAdapter(policy_params=policy_params)
             spec = AgentSpec(
                 interface=AgentInterface(
                     waypoints=Waypoints(lookahead=20),
