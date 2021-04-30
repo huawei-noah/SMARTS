@@ -897,6 +897,7 @@ class SMARTS:
             for bubble in self._bubble_manager.bubbles
         ]
 
+        dec_digits = len("{}".format(self._timestep_sec)) - 2
         state = envision_types.State(
             traffic=traffic,
             scenario_id=self.scenario.scenario_hash,
@@ -908,7 +909,7 @@ class SMARTS:
             speed=speed,
             heading=heading,
             lane_ids=lane_ids,
-            frame_time=round(self._elapsed_sim_time + self._total_sim_time, 1),
+            frame_time=round(self._elapsed_sim_time + self._total_sim_time, dec_digits),
         )
         self._envision.send(state)
 

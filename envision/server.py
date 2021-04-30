@@ -196,13 +196,15 @@ class WebClientRunLoop:
                 if self._seek is not None and self._frames.start_time is not None:
                     frame_ptr = self._frames(self._frames.start_time + self._seek)
                     self._seek = None
+                    frames_to_send = [ frame_ptr ]
 
                 if frame_ptr is None:
                     self._log.warning("Seek frame missing, reverting to start frame")
                     frame_ptr = self._frames.start_frame
+                    frames_to_send = [ frame_ptr ]
 
                 if len(frames_to_send) > 0:
-                    closed = self._push_frame_to_web_client(frames_to_send)
+                    closed = self._push_frames_to_web_client(frames_to_send)
                     last_sent_time = time.time()
                     if closed:
                         self._log.debug("Socket closed, exiting")
@@ -222,7 +224,7 @@ class WebClientRunLoop:
         self._thread = threading.Thread(target=sync_run_forever, args=(), daemon=True)
         self._thread.start()
 
-    def _push_frame_to_web_client(self, frames):
+    def _push_frames_to_web_client(self, frames):
         try:
             frames_formatted = [
                 {
@@ -251,11 +253,13 @@ class WebClientRunLoop:
             delay = self._calculate_frame_delay(frame_ptr, last_sent_time)
             await asyncio.sleep(delay)
 
-            frames_to_send = []
-            while frame_ptr.next_ is not None:
-                frames_to_send.append(frame_ptr)
-                frame_ptr = frame_ptr.next_
-            return frame_ptr, frames_to_send
+            if frame_ptr.next_ is not None:
+                frames_to_send = []
+                while frame_ptr.next_ is not None:
+                    frames_to_send.append(frame_ptr)
+                    frame_ptr = frame_ptr.next_
+
+                return frame_ptr, frames_to_send
 
 
 class BroadcastWebSocket(tornado.websocket.WebSocketHandler):

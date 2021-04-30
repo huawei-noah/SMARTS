@@ -81,10 +81,6 @@ export default function Header_({
     return `${name} ${month}-${day} ${hour}:${minute}:${second}`;
   }
 
-  function selecting_mode(mode) {
-    console.log(mode);
-  }
-
   let selectValue = "";
   if (matchedSimulationId) {
     if (matchedSimulationId == "all") {
