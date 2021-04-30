@@ -171,7 +171,7 @@ export default function Simulation({
         const currentTime = elapsed_times[0];
         if (prevElapsedTime == null || playingMode == PLAYMODES.uncapped) {
           // playing uncapped still needs a small amount of sleep time for
-          // React to trigger update
+          // React to trigger update, 0.1 millisecond 
           await sleep(0.1);
         } else if (playingMode == PLAYMODES.near_real_time) {
           // playingMode is near_real_time

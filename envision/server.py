@@ -245,12 +245,10 @@ class WebClientRunLoop:
 
             if frame_ptr.next_ is not None:
                 frames_to_send = []
-                count = 0
                 # Limit the size of a single batch to 100
-                while frame_ptr.next_ is not None and count <= 100:
+                while frame_ptr.next_ is not None and len(frames_to_send) <= 100:
                     frames_to_send.append(frame_ptr)
                     frame_ptr = frame_ptr.next_
-                    count += 1
                 return frame_ptr, frames_to_send
 
 
