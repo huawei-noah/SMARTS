@@ -667,7 +667,7 @@ def build_scenarios(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("generate scenarios")
     parser.add_argument("--task", help="type a task id [0, 1, 2, 3, X]", type=str)
-    parser.add_argument("--level", help="easy/medium/hard, lo-hi/hi-lo", type=str)
+    parser.add_argument("--level", help="easy/medium/hard, low-high/high-low", type=str)
     parser.add_argument(
         "--stopwatcher",
         help="all/aggressive/default/slow/blocker/crusher south-west",
