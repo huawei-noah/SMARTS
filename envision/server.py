@@ -261,7 +261,6 @@ class WebClientRunLoop:
 
                 return frame_ptr, frames_to_send
 
-
 class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
     """This websocket receives the SMARTS state (the other end of the open websocket
     is held by the Envision Client (SMARTS)) and broadcasts it to all web clients
