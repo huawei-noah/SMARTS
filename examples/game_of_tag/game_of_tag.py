@@ -30,7 +30,7 @@ from pathlib import Path
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.core.agent import AgentSpec, Agent
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
+from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria, AgentsAliveDoneCriteria, AgentsListAlive
 from smarts.core.utils.file import copy_tree
 
 
@@ -105,6 +105,16 @@ shared_interface.done_criteria = DoneCriteria(
     off_route=False,
     wrong_way=False,
     collision=True,
+    agents_alive=AgentsAliveDoneCriteria(
+        agent_lists_alive=[
+            AgentsListAlive(
+                agents_list=PREY_IDS, minimum_agents_alive_in_list=1
+            ),
+            AgentsListAlive(
+                agents_list=PREDATOR_IDS, minimum_agents_alive_in_list=1
+            ),
+        ]
+    ),
 )
 
 for agent_id in PREDATOR_IDS:
