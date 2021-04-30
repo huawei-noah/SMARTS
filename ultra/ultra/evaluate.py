@@ -174,11 +174,6 @@ def evaluate(
 
     agent_infos_copy = copy.deepcopy(agent_infos)
 
-    agent_locators = {
-        agent_id: agent_info["locator"]
-        for agent_id, agent_info in agent_infos_copy.items()
-    }
-
     # Create the agent specifications matched with their associated ID.
     agent_specs = {}
     for agent_id, agent_info in agent_infos_copy.items():
@@ -238,7 +233,9 @@ def evaluate(
     # A dictionary to hold the evaluation data for each agent.
     summary_log = {agent_id: LogInfo() for agent_id in agent_infos_copy.keys()}
 
-    etag = gen_etag_from_locators(agent_locators.values())
+    etag = gen_etag_from_locators(
+        [agent_info["locator"] for agent_info in agent_infos.values()]
+    )
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
@@ -308,15 +305,21 @@ def evaluate_saved_models(
     ) as metadata_file:
         agent_metadata = pickle.load(metadata_file)
 
-    # Extract the agent IDs and policy classes from the metadata and given models.
-    agent_ids = [
-        agent_id
-        for agent_id in agent_metadata["agent_ids"]
+    agent_infos = {
+        agent_id: agent_info
+        for agent_id, agent_info in agent_metadata["agent_infos"].items()
         if agent_id in agent_ids_from_models
-    ]
-    policy_classes = {
-        agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
     }
+
+    # # Extract the agent IDs and policy classes from the metadata and given models.
+    # agent_ids = [
+    #     agent_id
+    #     for agent_id in agent_metadata["agent_ids"]
+    #     if agent_id in agent_ids_from_models
+    # ]
+    # policy_classes = {
+    #     agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
+    # }
 
     # From a base model directory such as logs/<experiment_name>/models/*, assign each agent ID with its
     # checkpoint directories in sorted order based on the checkpoint iteration. The agent IDs are
@@ -332,7 +335,7 @@ def evaluate_saved_models(
             glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
             key=lambda x: int(x.split("/")[-1]),
         )
-        for agent_id in agent_ids
+        for agent_id in agent_infos.keys()
     }
 
     # Assert each agent ID has the same number of checkpoints saved.
@@ -343,11 +346,17 @@ def evaluate_saved_models(
         for checkpoint_directory in directories_iterator
     ), "Not all agents have the same number of checkpoints saved"
 
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a {"000": "ultra.baselines.dqn:dqn-v0", "001": "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes dict, transform it to an etag of "dqn-v0:ppo-v0-evaluation".
+    # # Define an 'etag' for this experiment's data directory based off policy_classes.
+    # # E.g. From a {"000": "ultra.baselines.dqn:dqn-v0", "001": "ultra.baselines.ppo:ppo-v0"]
+    # # policy_classes dict, transform it to an etag of "dqn-v0:ppo-v0-evaluation".
+    # etag = (
+    #     ":".join([policy_classes[agent_id].split(":")[-1] for agent_id in agent_ids])
+    #     + "-evaluation"
+    # )
     etag = (
-        ":".join([policy_classes[agent_id].split(":")[-1] for agent_id in agent_ids])
+        gen_etag_from_locators(
+            [agent_info["locator"] for agent_info in agent_infos.values()]
+        )
         + "-evaluation"
     )
 
@@ -368,9 +377,8 @@ def evaluate_saved_models(
                 [
                     evaluate.remote(
                         experiment_dir=experiment_dir,
-                        agent_ids=agent_ids,
-                        policy_classes=policy_classes,
                         seed=episode.eval_count,
+                        agent_infos=agent_infos,
                         checkpoint_dirs=current_checkpoint_directories,
                         scenario_info=scenario_info,
                         num_episodes=num_episodes,

@@ -71,10 +71,6 @@ def train(
 
     agent_infos_copy = copy.deepcopy(agent_infos)
 
-    agent_locators = {
-        agent_id: agent_info["locator"]
-        for agent_id, agent_info in agent_infos_copy.items()
-    }
     # TODO: Replace explore placeholder...
     print("train agent_infos:", agent_infos)
     print("train agent_infos_copy:", agent_infos_copy)
@@ -97,7 +93,9 @@ def train(
         seed=seed,
     )
 
-    etag = gen_etag_from_locators(agent_locators.values())
+    etag = gen_etag_from_locators(
+        [agent_info["locator"] for agent_info in agent_infos.values()]
+    )
 
     old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
@@ -115,8 +113,11 @@ def train(
             with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
                 dill.dump(
                     {
-                        "agent_ids": list(agent_locators.keys()),
-                        "agent_classes": agent_locators,
+                        # TODO: Maybe keep the agent_ids and agent_classes for backwards
+                        #       compatibility?
+                        # "agent_ids": list(agent_locators.keys()),
+                        # "agent_classes": agent_locators,
+                        "agent_infos": agent_infos,
                         "agent_specs": agent_specs,
                     },
                     metadata_file,
@@ -256,98 +257,120 @@ if __name__ == "__main__":
         for agent_number, agent_name in enumerate(args.policy.split(","))
     }
 
+    if not all("ultra.baselines" in locator for locator in agent_locators.values()):
+        raise "Cannot train non-baseline agents from the command line."
+
+    agent_infos = {
+        agent_id: {
+            "locator": agent_locator,
+            "spec_train_params": {
+                "max_episode_steps": args.max_episode_steps,
+            },
+            "spec_eval_params": {
+                "max_episode_steps": args.max_episode_steps,
+                "checkpoint_dir": AgentSpecPlaceholders.CheckpointDirectory,
+                "experiment_dir": AgentSpecPlaceholders.ExperimentDirectory,
+                "agent_id": agent_id,
+            },
+        }
+        for agent_id, agent_locator in agent_locators.items()
+    }
+
     ray.init()
     train(
         scenario_info=(args.task, args.level),
         num_episodes=int(args.episodes),
-        agent_infos={
-            "000": {
-                "locator": "ultra.baselines.bdqn:bdqn-v0",
-                "spec_train_params": {
-                    "max_episode_steps": 300,
-                },
-                "spec_eval_params": {
-                    "max_episode_steps": 300,
-                    "checkpoint_dir": AgentSpecPlaceholders.CheckpointDirectory,
-                    "experiment_dir": AgentSpecPlaceholders.ExperimentDirectory,
-                    "agent_id": "000",
-                },
-            },
-            # "000": {
-            #     "locator": "open_agent:open_agent-v0",
-            #     "spec_train_params": {
-            #         "gains": {
-            #             "theta": 3.0,
-            #             "position": 4.0,
-            #             "obstacle": 3.0,
-            #             "u_accel": 0.1,
-            #             "u_yaw_rate": 1.0,
-            #             "terminal": 0.01,
-            #             "impatience": 0.01,
-            #             "speed": 0.01,
-            #             "rate": 1,
-            #         },
-            #         "debug": False,
-            #         "aggressiveness": 1,
-            #         "max_episode_steps": 300,
-            #     },
-            #     "spec_eval_params": {
-            #         "gains": {
-            #             "theta": 3.0,
-            #             "position": 4.0,
-            #             "obstacle": 3.0,
-            #             "u_accel": 0.1,
-            #             "u_yaw_rate": 1.0,
-            #             "terminal": 0.01,
-            #             "impatience": 0.01,
-            #             "speed": 0.01,
-            #             "rate": 1,
-            #         },
-            #         "debug": False,
-            #         "aggressiveness": 0,
-            #         "max_episode_steps": 300,
-            #     },
-            # },
-            # "000": {  # RL Agent uses too much GPU memory and crashes.
-            #     "locator": "rl_agent:rl-agent-v0",
-            #     "spec_train_params": {
-            #         "goal_is_nearby_threshold": 40,
-            #         "lane_end_threshold": 51,
-            #         "lane_crash_distance_threshold": 6,
-            #         "lane_crash_ttc_threshold": 2,
-            #         "intersection_crash_distance_threshold": 6,
-            #         "intersection_crash_ttc_threshold": 5,
-            #         "target_speed": 15,
-            #         "lane_change_speed": 10.0
-            #     },
-            #     "spec_eval_params": {
-            #         "goal_is_nearby_threshold": 40,
-            #         "lane_end_threshold": 51,
-            #         "lane_crash_distance_threshold": 6,
-            #         "lane_crash_ttc_threshold": 2,
-            #         "intersection_crash_distance_threshold": 6,
-            #         "intersection_crash_ttc_threshold": 5,
-            #         "target_speed": 15,
-            #         "lane_change_speed": 20.0
-            #     },
-            # },
-            # "000": {
-            #     "locator": "policies.non_interactive_agent:non-interactive-agent-v0",
-            #     "spec_train_params": {
-            #         "speed": 5,
-            #         "target_lane_index": None,
-            #     },
-            #     "spec_eval_params": {
-            #         "speed": 20,
-            #         "target_lane_index": None,
-            #     },
-            # },
-            # "000": {
-            #     "locator": "policies.keep_lane_agent:keep-lane-agent-v0",
-            #     "spec_train_params": {},
-            #     "spec_eval_params": {},
-            # },
-        },
+        agent_infos=agent_infos,
+        # agent_infos={
+        #     "000": {
+        #         "locator": "ultra.baselines.bdqn:bdqn-v0",
+        #         "spec_train_params": {
+        #             "max_episode_steps": 300,
+        #         },
+        #         "spec_eval_params": {
+        #             "max_episode_steps": 300,
+        #             "checkpoint_dir": AgentSpecPlaceholders.CheckpointDirectory,
+        #             "experiment_dir": AgentSpecPlaceholders.ExperimentDirectory,
+        #             "agent_id": "000",
+        #         },
+        #     },
+        #     "000": {
+        #         "locator": "open_agent:open_agent-v0",
+        #         "spec_train_params": {
+        #             "gains": {
+        #                 "theta": 3.0,
+        #                 "position": 4.0,
+        #                 "obstacle": 3.0,
+        #                 "u_accel": 0.1,
+        #                 "u_yaw_rate": 1.0,
+        #                 "terminal": 0.01,
+        #                 "impatience": 0.01,
+        #                 "speed": 0.01,
+        #                 "rate": 1,
+        #             },
+        #             "debug": False,
+        #             "aggressiveness": 1,
+        #             "max_episode_steps": 300,
+        #         },
+        #         "spec_eval_params": {
+        #             "gains": {
+        #                 "theta": 3.0,
+        #                 "position": 4.0,
+        #                 "obstacle": 3.0,
+        #                 "u_accel": 0.1,
+        #                 "u_yaw_rate": 1.0,
+        #                 "terminal": 0.01,
+        #                 "impatience": 0.01,
+        #                 "speed": 0.01,
+        #                 "rate": 1,
+        #             },
+        #             "debug": False,
+        #             "aggressiveness": 0,
+        #             "max_episode_steps": 300,
+        #         },
+        #     },
+        #     "000": {  # RL Agent uses too much GPU memory and crashes.
+        #         "locator": "rl_agent:rl-agent-v0",
+        #         "spec_train_params": {
+        #             "goal_is_nearby_threshold": 40,
+        #             "lane_end_threshold": 51,
+        #             "lane_crash_distance_threshold": 6,
+        #             "lane_crash_ttc_threshold": 2,
+        #             "intersection_crash_distance_threshold": 6,
+        #             "intersection_crash_ttc_threshold": 5,
+        #             "target_speed": 15,
+        #             "lane_change_speed": 10.0
+        #         },
+        #         "spec_eval_params": {
+        #             "goal_is_nearby_threshold": 40,
+        #             "lane_end_threshold": 51,
+        #             "lane_crash_distance_threshold": 6,
+        #             "lane_crash_ttc_threshold": 2,
+        #             "intersection_crash_distance_threshold": 6,
+        #             "intersection_crash_ttc_threshold": 5,
+        #             "target_speed": 15,
+        #             "lane_change_speed": 20.0
+        #         },
+        #     },
+        #     "000": {
+        #         "locator": "policies.non_interactive_agent:non-interactive-agent-v0",
+        #         "spec_train_params": {
+        #             "speed": 5,
+        #             "target_lane_index": None,
+        #         },
+        #         "spec_eval_params": {
+        #             "speed": 20,
+        #             "target_lane_index": None,
+        #         },
+        #     },
+        #     "000": {
+        #         "locator": "policies.keep_lane_agent:keep-lane-agent-v0",
+        #         "spec_train_params": {},
+        #         "spec_eval_params": {},
+        #     },
+        # },
+        # TODO: Get rid of max_episode_steps argument. Each agent can take their own
+        #       max_episode_steps argument if they want.
         max_episode_steps=int(args.max_episode_steps),
         eval_info={
             "eval_rate": float(args.eval_rate),
