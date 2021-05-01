@@ -103,10 +103,7 @@ class Frames:
 
     @property
     def start_frame(self):
-        if len(self._frames) == 0:
-            return None
-
-        return self._frames[0]
+        return self._frames[0] if self._frames else None
 
     @property
     def start_time(self):
@@ -116,15 +113,12 @@ class Frames:
     def elapsed_time(self):
         if len(self._frames) == 0:
             return 0
-
         return self._frames[-1].timestamp - self._frames[0].timestamp
 
     def append(self, frame: Frame):
         self._enforce_max_capacity()
-
         if len(self._frames) >= 1:
             self._frames[-1].next_ = frame
-
         self._frames.append(frame)
         self._timestamps.append(frame.timestamp)
 
@@ -133,7 +127,6 @@ class Frames:
         frame_idx = bisect.bisect_left(self._timestamps, timestamp)
         if frame_idx >= len(self._frames):
             frame_idx = -1
-
         return self._frames[frame_idx]
 
     def _enforce_max_capacity(self):
@@ -183,24 +176,24 @@ class WebClientRunLoop:
 
     def run_forever(self):
         async def run_loop():
-            # If no frame, wait till one is present
-            frame_ptr = self._frames.start_frame
+            frame_ptr = None
+            # wait until we have a start_frame...
             while frame_ptr is None:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.5 * self._timestep_sec)
                 frame_ptr = self._frames.start_frame
+                frames_to_send = [frame_ptr]
 
-            frames_to_send = []
             while True:
                 # Handle seek
                 if self._seek is not None and self._frames.start_time is not None:
                     frame_ptr = self._frames(self._frames.start_time + self._seek)
+                    if not frame_ptr:
+                        self._log.warning(
+                            "Seek frame missing, reverting to start frame"
+                        )
+                        frame_ptr = self._frames.start_frame
+                    frames_to_send = [frame_ptr]
                     self._seek = None
-                    frames_to_send = [frame_ptr]
-
-                if frame_ptr is None:
-                    self._log.warning("Seek frame missing, reverting to start frame")
-                    frame_ptr = self._frames.start_frame
-                    frames_to_send = [frame_ptr]
 
                 if len(frames_to_send) > 0:
                     closed = self._push_frames_to_web_client(frames_to_send)
@@ -236,19 +229,19 @@ class WebClientRunLoop:
             return True
 
     def _calculate_frame_delay(self, frame_ptr):
+        # we may want to be more clever here in the future...
         return 0.5 * self._timestep_sec if not frame_ptr.next_ else 0
 
     async def _wait_for_next_frame(self, frame_ptr):
+        FRAME_BATCH_SIZE = 100  # limit the batch size for bandwidth and to allow breaks for seeks to be handled
         while True:
             delay = self._calculate_frame_delay(frame_ptr)
             await asyncio.sleep(delay)
-
-            if frame_ptr.next_ is not None:
-                frames_to_send = []
-                # Limit the size of a single batch to 100
-                while frame_ptr.next_ is not None and len(frames_to_send) <= 100:
-                    frames_to_send.append(frame_ptr)
-                    frame_ptr = frame_ptr.next_
+            frames_to_send = []
+            while frame_ptr.next_ and len(frames_to_send) <= FRAME_BATCH_SIZE:
+                frame_ptr = frame_ptr.next_
+                frames_to_send.append(frame_ptr)
+            if len(frames_to_send) > 0:
                 return frame_ptr, frames_to_send
 
 
@@ -295,7 +288,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
             raise tornado.web.HTTPError(404)
 
-        # TODO: Set this appropriately
+        # TODO: Set this appropriately (pass from SMARTS)
         timestep_sec = 0.1
         self._run_loop = WebClientRunLoop(
             frames=FRAMES[simulation_id],
