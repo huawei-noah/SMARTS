@@ -23,6 +23,7 @@ import os
 import warnings
 from collections import defaultdict
 from typing import List, Sequence
+from time import time
 
 import math
 import numpy
@@ -99,6 +100,7 @@ class SMARTS:
         self._imitation_learning_mode = False
 
         self._elapsed_sim_time = 0
+        self._total_sim_time = 0
 
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
@@ -290,6 +292,7 @@ class SMARTS:
         # Tell history provide to ignore vehicles if we have assigned mission to them
         self._traffic_history_provider.set_replaced_ids(scenario.missions.keys())
 
+        self._total_sim_time += self._elapsed_sim_time
         self._elapsed_sim_time = 0
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
@@ -895,6 +898,7 @@ class SMARTS:
             for bubble in self._bubble_manager.bubbles
         ]
 
+        dec_digits = len("{}".format(self._timestep_sec)) - 2
         state = envision_types.State(
             traffic=traffic,
             scenario_id=self.scenario.scenario_hash,
@@ -906,6 +910,7 @@ class SMARTS:
             speed=speed,
             heading=heading,
             lane_ids=lane_ids,
+            frame_time=round(self._elapsed_sim_time + self._total_sim_time, dec_digits),
         )
         self._envision.send(state)
 

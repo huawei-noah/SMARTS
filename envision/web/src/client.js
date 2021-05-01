@@ -89,21 +89,23 @@ export default class Client {
         };
 
         socket.onmessage = (event) => {
-          let data = JSON.parse(event.data);
-          let state = JSON.parse(data.state, (_, value) =>
-            value === "NaN"
-              ? Nan
-              : value === "Infinity"
-              ? Infinity
-              : value === "-Infinity"
-              ? -Infinity
-              : value
-          );
-          stateQueue.push({
-            state: state,
-            current_elapsed_time: data.current_elapsed_time,
-            total_elapsed_time: data.total_elapsed_time,
-          });
+          let frames = JSON.parse(event.data);
+          for (const frame of frames) {
+            let state = JSON.parse(frame.state, (_, value) =>
+              value === "NaN"
+                ? Nan
+                : value === "Infinity"
+                ? Infinity
+                : value === "-Infinity"
+                ? -Infinity
+                : value
+            );
+            stateQueue.push({
+              state: state,
+              current_elapsed_time: frame.current_elapsed_time,
+              total_elapsed_time: frame.total_elapsed_time,
+            });
+          }
         };
 
         socket.onerror = (error) => {
