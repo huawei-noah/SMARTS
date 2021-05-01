@@ -67,6 +67,7 @@ setup(
     extras_require={
         "test": [
             # The following are for testing
+            "ipykernel",
             "pytest",
             "pytest-benchmark",
             "pytest-cov",

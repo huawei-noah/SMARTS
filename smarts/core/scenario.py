@@ -196,7 +196,9 @@ class Scenario:
             self.traffic_history_lane_width if traffic_history else None
         )
         net_file = os.path.join(self._root, "map.net.xml")
-        self._road_network = SumoRoadNetwork.from_file(net_file, default_lane_width)
+        self._road_network = SumoRoadNetwork.from_file(
+            net_file, default_lane_width=default_lane_width
+        )
         self._net_file_hash = file_md5_hash(self._road_network.net_file)
         self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
