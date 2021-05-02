@@ -21,12 +21,19 @@ const wait = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
+const frameBufferModes = {
+  NO_BIAS: 0, // randomly evict frames when buffer full
+  PRIMACY_BIAS: 1, // prefer evicting more recent frames
+  RECENCY_BIAS: 2, // more recent frames will have higher granularity
+};
+
 export default class Client {
   constructor({
     endpoint,
     delay = 2000,
     retries = Number.POSITIVE_INFINITY,
-    maxFrameQueueSize = 300000,
+    maxFrameBufferSize = 300000,
+    frameBufferMode = frameBufferModes.NO_BIAS,
   }) {
     this._endpoint = new URL(endpoint);
     this._wsEndpoint = new URL(endpoint);
@@ -35,7 +42,9 @@ export default class Client {
     this._delay = delay;
     this._maxRetries = retries;
     this._glb_cache = {};
-    this._maxFrameQueueSize = maxFrameQueueSize;
+
+    this._maxFrameBufferSize = maxFrameBufferSize;
+    this._frameBufferMode = frameBufferMode;
 
     this._sockets = {};
     this._stateQueues = {};
@@ -108,10 +117,43 @@ export default class Client {
               // if it's moved back in time, it was from a seek and we're now
               // going to receive those frames again, so flush.
               stateQueue.length = 0;
-            } else if (stateQueue.length > self._maxFrameQueueSize) {
-              // evenly thin out older frames to allow granular newer frames...
-              stateQueue = stateQueue.filter((frame, ind) => ind % 2 == 0);
-              self._stateQueues[simulationId] = stateQueue;
+            } else if (stateQueue.length > self._maxFrameBufferSize) {
+              // the following is a placeholder to protect us
+              // until we revisit the architecture, at which point
+              // different policies can be implemented here.  for example,
+              // we might eventually want this to depend on the playback mode,
+              // or on events that happened in the simulation (although that
+              // would require upstream support).  We might also want to
+              // dump frames to a local file rather than just evicting them.
+              switch (self._frameBufferMode) {
+                case frameBufferModes.RECENCY_BIAS: {
+                  // evenly thin out older frames to allow granular newer frames...
+                  // (each time this is done, the earliest frames will get even thinner.)
+                  // This allows for a "fast-forward-like catch up" to the most
+                  // recent events in the simulation (when not in near-real-time
+                  // playing mode).
+                  stateQueue = stateQueue.filter((frame, ind) => ind % 2 == 0);
+                  self._stateQueues[simulationId] = stateQueue;
+                  break;
+                }
+                case frameBufferModes.PRIMACY_BIAS: {
+                  // newer frames have a higher probability of being evicted...
+                  let removeIndex = Math.floor(
+                    stateQueue.length * Math.sqrt(Math.random())
+                  );
+                  stateQueue.splice(removeIndex, 1);
+                  break;
+                }
+                case frameBufferModes.NO_BIAS:
+                default: {
+                  // randomly choose a frame to remove...
+                  // spread the degradation randomly throughout the history.
+                  let removeIndex = Math.floor(
+                    stateQueue.length * Math.random()
+                  );
+                  stateQueue.splice(removeIndex, 1);
+                }
+              }
             }
             stateQueue.push({
               state: state,
