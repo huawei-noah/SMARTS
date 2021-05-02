@@ -94,10 +94,14 @@ export default class Client {
                 ? -Infinity
                 : value
             );
-            if (stateQueue.length > 0 && frame.current_elapsed_time <= stateQueue[stateQueue.length - 1].current_elapsed_time)
-                // if it's moved back in time, it was from a seek and we're now
-                // going to receive those frames again, so flush.
-                stateQueue.length = 0;
+            if (
+              stateQueue.length > 0 &&
+              frame.current_elapsed_time <=
+                stateQueue[stateQueue.length - 1].current_elapsed_time
+            )
+              // if it's moved back in time, it was from a seek and we're now
+              // going to receive those frames again, so flush.
+              stateQueue.length = 0;
             stateQueue.push({
               state: state,
               current_elapsed_time: frame.current_elapsed_time,
