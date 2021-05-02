@@ -175,11 +175,11 @@ class WebClientRunLoop:
             self._thread = None
 
     def run_forever(self):
-        async def run_loop():
+        def run_loop():
             frame_ptr = None
             # wait until we have a start_frame...
             while frame_ptr is None:
-                await asyncio.sleep(0.5 * self._timestep_sec)
+                time.sleep(0.5 * self._timestep_sec)
                 frame_ptr = self._frames.start_frame
                 frames_to_send = [frame_ptr]
 
@@ -195,13 +195,13 @@ class WebClientRunLoop:
                     frames_to_send = [frame_ptr]
                     self._seek = None
 
-                if len(frames_to_send) > 0:
-                    closed = self._push_frames_to_web_client(frames_to_send)
-                    if closed:
-                        self._log.debug("Socket closed, exiting")
-                        return
+                assert len(frames_to_send) > 0
+                closed = self._push_frames_to_web_client(frames_to_send)
+                if closed:
+                    self._log.debug("Socket closed, exiting")
+                    return
 
-                frame_ptr, frames_to_send = await self._wait_for_next_frame(frame_ptr)
+                frame_ptr, frames_to_send = self._wait_for_next_frame(frame_ptr)
 
         def sync_run_forever():
             loop = asyncio.new_event_loop()
@@ -232,11 +232,11 @@ class WebClientRunLoop:
         # we may want to be more clever here in the future...
         return 0.5 * self._timestep_sec if not frame_ptr.next_ else 0
 
-    async def _wait_for_next_frame(self, frame_ptr):
+    def _wait_for_next_frame(self, frame_ptr):
         FRAME_BATCH_SIZE = 100  # limit the batch size for bandwidth and to allow breaks for seeks to be handled
         while True:
             delay = self._calculate_frame_delay(frame_ptr)
-            await asyncio.sleep(delay)
+            time.sleep(delay)
             frames_to_send = []
             while frame_ptr.next_ and len(frames_to_send) <= FRAME_BATCH_SIZE:
                 frame_ptr = frame_ptr.next_

@@ -32,7 +32,6 @@ export default class Client {
     this._glb_cache = {};
 
     this._sockets = {};
-    this._flushStream = {};
     this._stateQueues = {};
     this._simulationSelectedTime = {};
   }
@@ -55,10 +54,6 @@ export default class Client {
       this._sockets[simulationId] = null;
     }
 
-    if (!(simulationId in this._flushStream)) {
-      this._flushStream[simulationId] = false;
-    }
-
     if (
       !this._sockets[simulationId] &&
       this._sockets[simulationId].readyState == WebSocket.OPEN
@@ -68,7 +63,6 @@ export default class Client {
     }
 
     this._sockets[simulationId].send(JSON.stringify({ seek: seconds }));
-    this._flushStream[simulationId] = true;
   }
 
   async _obtainStream(simulationId, stateQueue, remainingRetries) {
@@ -100,6 +94,10 @@ export default class Client {
                 ? -Infinity
                 : value
             );
+            if (stateQueue.length > 0 && frame.current_elapsed_time <= stateQueue[stateQueue.length - 1].current_elapsed_time)
+                // if it's moved back in time, it was from a seek and we're now
+                // going to receive those frames again, so flush.
+                stateQueue.length = 0;
             stateQueue.push({
               state: state,
               current_elapsed_time: frame.current_elapsed_time,
@@ -138,10 +136,6 @@ export default class Client {
       this._sockets[simulationId] = null;
     }
 
-    if (!(simulationId in this._flushStream)) {
-      this._flushStream[simulationId] = false;
-    }
-
     if (!(simulationId in this._stateQueues)) {
       this._stateQueues[simulationId] = [];
     }
@@ -157,12 +151,6 @@ export default class Client {
 
       if (isConnected) {
         while (this._stateQueues[simulationId].length > 0) {
-          if (this._flushStream[simulationId]) {
-            this._flushStream[simulationId] = false;
-            this._stateQueues[simulationId].length = 0;
-            continue;
-          }
-
           // Removes the oldest element
           let item = this._stateQueues[simulationId].shift();
           let elapsed_times = [

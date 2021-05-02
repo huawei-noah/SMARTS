@@ -155,36 +155,30 @@ export default function Simulation({
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
   };
 
-  // State subscription
+  // State subscription, animate until the next render...
   useEffect(() => {
     let stopPolling = false;
     (async () => {
       const msInSec = 1000;
       const it = client.worldstate(simulationId);
       let prevElapsedTime = null;
-      let waitStartTime = null;
+      let waitStartTime = Date.now();
       let wstate_and_time;
       if (playing) wstate_and_time = await it.next();
       while (!stopPolling && playing && !wstate_and_time.done) {
         let wstate, elapsed_times;
         [wstate, elapsed_times] = wstate_and_time.value;
-        const currentTime = elapsed_times[0];
         if (prevElapsedTime == null || playingMode == PLAYMODES.uncapped) {
           // playing uncapped still needs a small amount of sleep time for
           // React to trigger update, 0.1 millisecond
           await sleep(0.1);
         } else if (playingMode == PLAYMODES.near_real_time) {
-          // playingMode is near_real_time
-          // msInSec*(currentTime-prevElapsedTime) is the time difference between
-          //   current frame and previous frame
-          // Since we could have waited (Date.now() - waitStartTime) to get the current frame,
-          //    we deduct this amount from the time we will be waiting
           await sleep(
-            msInSec * (currentTime - prevElapsedTime) -
+            msInSec * (elapsed_times[0] - prevElapsedTime) -
               (Date.now() - waitStartTime)
           );
+          prevElapsedTime = elapsed_times[0];
         }
-        prevElapsedTime = currentTime;
 
         setWorldState(wstate);
         onElapsedTimesChanged(...elapsed_times);
