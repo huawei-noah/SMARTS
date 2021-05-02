@@ -22,7 +22,12 @@ const wait = (ms) => {
 };
 
 export default class Client {
-  constructor({ endpoint, delay = 2000, retries = Number.POSITIVE_INFINITY }) {
+  constructor({
+    endpoint,
+    delay = 2000,
+    retries = Number.POSITIVE_INFINITY,
+    maxFrameQueueSize = 300000,
+  }) {
     this._endpoint = new URL(endpoint);
     this._wsEndpoint = new URL(endpoint);
     this._wsEndpoint.protocol = "ws";
@@ -30,6 +35,7 @@ export default class Client {
     this._delay = delay;
     this._maxRetries = retries;
     this._glb_cache = {};
+    this._maxFrameQueueSize = maxFrameQueueSize;
 
     this._sockets = {};
     this._stateQueues = {};
@@ -98,10 +104,15 @@ export default class Client {
               stateQueue.length > 0 &&
               frame.current_elapsed_time <=
                 stateQueue[stateQueue.length - 1].current_elapsed_time
-            )
+            ) {
               // if it's moved back in time, it was from a seek and we're now
               // going to receive those frames again, so flush.
               stateQueue.length = 0;
+            } else if (stateQueue.length > self._maxFrameQueueSize) {
+              // evenly thin out older frames to allow granular newer frames...
+              stateQueue = stateQueue.filter((frame, ind) => ind % 2 == 0);
+              self._stateQueues[simulationId] = stateQueue;
+            }
             stateQueue.push({
               state: state,
               current_elapsed_time: frame.current_elapsed_time,
