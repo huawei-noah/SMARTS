@@ -31,10 +31,13 @@ import dill
 import gym
 import ray
 
-from smarts.core.controllers import ActionSpaceType
-from ultra.baselines.agent_spec import BaselineAgentSpec
-from ultra.baselines.sac.sac.policy import SACPolicy
+from smarts.zoo.registry import make
 from ultra.evaluate import evaluate, evaluation_check, collect_evaluations
+from ultra.utils.common import (
+    AgentSpecPlaceholder,
+    gen_default_agent_id,
+    gen_etag_from_locators,
+)
 from ultra.utils.episode import episodes
 
 seed = 2
@@ -231,14 +234,13 @@ class EvaluateTest(unittest.TestCase):
         ) as metadata_file:
             agent_metadata = pickle.load(metadata_file)
 
-        agent_ids = agent_metadata["agent_ids"]
-        policy_classes = agent_metadata["agent_classes"]
+        agent_infos = agent_metadata["agent_infos"]
         checkpoint_directories = {
             agent_id: sorted(
                 glob.glob(os.path.join(models_directory, agent_id, "*")),
                 key=lambda x: int(x.split("/")[-1]),
             )
-            for agent_id in agent_ids
+            for agent_id in agent_infos.keys()
         }
 
         ray.shutdown()
@@ -246,9 +248,8 @@ class EvaluateTest(unittest.TestCase):
         try:
             evaluate.remote(
                 experiment_dir=None,
-                agent_ids=agent_ids,
-                policy_classes=policy_classes,
                 seed=seed,
+                agent_infos=agent_infos,
                 checkpoint_dirs=checkpoint_directories,
                 scenario_info=("00", "eval_test"),
                 num_episodes=1,
@@ -351,15 +352,32 @@ class EvaluateTest(unittest.TestCase):
 
 
 def run_experiment(scenario_info, num_agents, log_dir, headless=True):
-    agent_ids = ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(num_agents)]
-    agent_classes = {agent_id: "ultra.baselines.sac:sac-v0" for agent_id in agent_ids}
+    agent_locators = {
+        gen_default_agent_id(agent_number): "ultra.baselines.sac:sac-v0"
+        for agent_number in range(num_agents)
+    }
+    agent_infos = {
+        agent_id: {
+            "locator": agent_locator,
+            "spec_train_params": {
+                "max_episode_steps": 2,
+            },
+            "spec_eval_params": {
+                "max_episode_steps": 2,
+                "checkpoint_dir": AgentSpecPlaceholder.CheckpointDirectory,
+                "experiment_dir": AgentSpecPlaceholder.ExperimentDirectory,
+                "agent_id": agent_id,
+            },
+        }
+        for agent_id, agent_locator in agent_locators.items()
+    }
     agent_specs = {
-        agent_id: BaselineAgentSpec(
-            action_type=ActionSpaceType.Continuous,
-            policy_class=SACPolicy,
-            max_episode_steps=2,
-        )
-        for agent_id in agent_ids
+        agent_id: make(locator=agent_info["locator"], **agent_info["spec_train_params"])
+        for agent_id, agent_info in agent_infos.items()
+    }
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
     }
 
     env = gym.make(
@@ -371,13 +389,8 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
         seed=seed,
     )
 
-    agents = {
-        agent_id: agent_spec.build_agent()
-        for agent_id, agent_spec in agent_specs.items()
-    }
-
     total_step = 0
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in agent_classes])
+    etag = gen_etag_from_locators(agent_locators.values())
     evaluation_task_ids = dict()
 
     for episode in episodes(1, etag=etag, log_dir=log_dir):
@@ -393,8 +406,11 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
                 dill.dump(
                     {
-                        "agent_ids": agent_ids,
-                        "agent_classes": agent_classes,
+                        # TODO: Maybe keep the agent_ids and agent_classes for backwards
+                        #       compatibility?
+                        # "agent_ids": list(agent_locators.keys()),
+                        # "agent_classes": agent_locators,
+                        "agent_infos": agent_infos,
                         "agent_specs": agent_specs,
                     },
                     metadata_file,
@@ -404,12 +420,11 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
         while not dones["__all__"]:
             evaluation_check(
                 agents=agents,
-                agent_ids=agent_ids,
+                agent_infos=agent_infos,
                 episode=episode,
                 eval_rate=10,
                 eval_episodes=1,
                 max_episode_steps=2,
-                policy_classes=agent_classes,
                 scenario_info=scenario_info,
                 evaluation_task_ids=evaluation_task_ids,
                 timestep_sec=0.1,

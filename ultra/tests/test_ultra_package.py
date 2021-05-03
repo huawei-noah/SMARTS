@@ -27,6 +27,7 @@ import ray
 
 from ultra.scenarios.generate_scenarios import build_scenarios
 from ultra.train import train
+from ultra.utils.common import AgentSpecPlaceholder
 
 
 class UltraPackageTest(unittest.TestCase):
@@ -52,15 +53,28 @@ class UltraPackageTest(unittest.TestCase):
         except:
             self.assertTrue(False)
 
-        policy_class = "ultra.baselines.sac:sac-v0"
+        agent_infos = {
+            "000": {
+                "locator": "ultra.baselines.sac:sac-v0",
+                "spec_train_params": {
+                    "max_episode_steps": 2,
+                },
+                "spec_eval_params": {
+                    "max_episode_steps": 2,
+                    "checkpoint_dir": AgentSpecPlaceholder.CheckpointDirectory,
+                    "experiment_dir": AgentSpecPlaceholder.ExperimentDirectory,
+                    "agent_id": "000",
+                },
+            },
+        }
 
         ray.shutdown()
         try:
             ray.init(ignore_reinit_error=True)
             train(
                 scenario_info=("00", "eval_test"),
-                policy_classes=[policy_class],
                 num_episodes=1,
+                agent_infos=agent_infos,
                 max_episode_steps=2,
                 eval_info={
                     "eval_rate": 1000,

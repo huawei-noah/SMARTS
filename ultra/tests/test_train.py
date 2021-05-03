@@ -32,6 +32,7 @@ from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.train import train
+from ultra.utils.common import AgentSpecPlaceholder
 
 AGENT_ID = "001"
 seed = 2
@@ -73,15 +74,28 @@ class TrainTest(unittest.TestCase):
             shutil.rmtree(log_dir)
 
         seed = 2
-        policy_classes = ["ultra.baselines.sac:sac-v0"]
+        agent_infos = {
+            "000": {
+                "locator": "ultra.baselines.sac:sac-v0",
+                "spec_train_params": {
+                    "max_episode_steps": 2,
+                },
+                "spec_eval_params": {
+                    "max_episode_steps": 2,
+                    "checkpoint_dir": AgentSpecPlaceholder.CheckpointDirectory,
+                    "experiment_dir": AgentSpecPlaceholder.ExperimentDirectory,
+                    "agent_id": "000",
+                },
+            },
+        }
 
         ray.shutdown()
         try:
             ray.init(ignore_reinit_error=True)
             train(
                 scenario_info=("00", "easy"),
-                policy_classes=policy_classes,
                 num_episodes=1,
+                agent_infos=agent_infos,
                 max_episode_steps=2,
                 eval_info={
                     "eval_rate": 1000,
@@ -105,19 +119,52 @@ class TrainTest(unittest.TestCase):
             shutil.rmtree(log_dir)
 
         seed = 2
-        policy_classes = [
-            "ultra.baselines.sac:sac-v0",
-            "ultra.baselines.ppo:ppo-v0",
-            "ultra.baselines.td3:td3-v0",
-        ]
+        agent_infos = {
+            "000": {
+                "locator": "ultra.baselines.sac:sac-v0",
+                "spec_train_params": {
+                    "max_episode_steps": 2,
+                },
+                "spec_eval_params": {
+                    "max_episode_steps": 2,
+                    "checkpoint_dir": AgentSpecPlaceholder.CheckpointDirectory,
+                    "experiment_dir": AgentSpecPlaceholder.ExperimentDirectory,
+                    "agent_id": "000",
+                },
+            },
+            "001": {
+                "locator": "ultra.baselines.ppo:ppo-v0",
+                "spec_train_params": {
+                    "max_episode_steps": 2,
+                },
+                "spec_eval_params": {
+                    "max_episode_steps": 2,
+                    "checkpoint_dir": AgentSpecPlaceholder.CheckpointDirectory,
+                    "experiment_dir": AgentSpecPlaceholder.ExperimentDirectory,
+                    "agent_id": "001",
+                },
+            },
+            "002": {
+                "locator": "ultra.baselines.td3:td3-v0",
+                "spec_train_params": {
+                    "max_episode_steps": 2,
+                },
+                "spec_eval_params": {
+                    "max_episode_steps": 2,
+                    "checkpoint_dir": AgentSpecPlaceholder.CheckpointDirectory,
+                    "experiment_dir": AgentSpecPlaceholder.ExperimentDirectory,
+                    "agent_id": "002",
+                },
+            },
+        }
 
         ray.shutdown()
         try:
             ray.init(ignore_reinit_error=True)
             train(
                 scenario_info=("00-multiagent", "easy"),
-                policy_classes=policy_classes,
                 num_episodes=1,
+                agent_infos=agent_infos,
                 max_episode_steps=2,
                 eval_info={
                     "eval_rate": 1000,
