@@ -453,6 +453,11 @@ def generate_social_vehicles(
         if "stopwatcher" in behavior_idx:
             start_lane_id = route_lanes[stopwatcher_info["direction"][0]] - 1
             end_lane_id = route_lanes[stopwatcher_info["direction"][1]] - 1
+            # To ensure that the stopwatcher spawns in all scenarios the
+            # stopwatcher's begin time is bounded between 10s to 50s
+            # (100ts to 500ts, if 1s = 1 ts). During analysis, the
+            # stopwatcher is guaranteed to spawn before the 500ts
+            # and no less then 100ts
             begin_time = random.randint(10, 200)
             flows.append(
                 generate_stopwatcher(
