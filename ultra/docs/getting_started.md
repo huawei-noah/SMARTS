@@ -23,7 +23,7 @@ Task 1 Training Scenario|Task 1 Testing Scenario
     ...
     <level_name>:
       train:
-        total:  # The number of training scenarios to generate.
+        total:  # The number of training scenarios to generate. For dynamic curriculas this value can be set to null
         intersection_types:
           <intersection_shape>:
               percent:  # Proportion of scenarios with this intersection.
@@ -51,7 +51,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--task`: The task number to run (default is 1).
   - `--level`: The level of the task (default is easy).
   - `--episodes`: The number of training episodes to run (default is 1000000).
-  - `--max-episode-steps`: The option to limit the number of steps per epsiodes (default is 200).
+  - `--max-episode-steps`: The option to limit the number of steps per episodes (default is 200).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
   - `--headless`: Whether to run training without Envision (default is True).
   - `--eval-episodes`: The number of evaluation episodes (default is 200).
@@ -59,12 +59,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--seed`: The environment seed (default is 2).
   - `--policy`: The policy (agent) to train (default is sac).
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
-  - `--max-steps-episode`: The option to limit the number of steps per epsiodes (default is 10000).
-  - `--gb-mode`: Use the grade-based structure, will ignore the tasks and levels flag (default is False).
-  - `--gb-curriculum-dir`: Path to the grade based curriculum directory which is used to gather task and level information of the grades (default is ../scenarios/grade_based_curriculum/).
-  - `--gb-build-scenarios` : Option to automatically build all the scenarios which will be needed from each grade. If you have already build the scenarios then simply ignore this flag (default is False).
-  - `--gb-scenarios-root-dir` : Specifiy the directory where the gb tasks (config files) are stored (default is ultra/scenarios).
-  - `--gb-scenarios-save-dir` : Specifiy the directory to save the scenarios in. Default is to save the scenarios inside it's respective task directory (default is None)
+  - `--max-steps-episode`: The option to limit the number of steps per episodes (default is 10000).
 
   Run the following command to train our DQN agent with a quick training session (if you started Envision in the previous section, refresh your browser to observe the training):
   ```sh
@@ -87,7 +82,7 @@ After training your agent, your models should be saved under `logs/<timestamped_
   - `--policy`: A string tag on the evaluation experiment directory (default is TD3).
   - `--models`: The path to the saved model (default is models/).
   - `--episodes`: The number of evaluation episodes (default is 200).
-  - `--max-episode-steps`: The option to limit the number of steps per epsiodes (default is 200).
+  - `--max-episode-steps`: The option to limit the number of steps per episodes (default is 200).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
   - `--headless`: Whether to run evaluation without Envision (default is True).
   - `--experiment-dir`: The path to the spec file that includes adapters and policy parameters.
@@ -99,52 +94,8 @@ After training your agent, your models should be saved under `logs/<timestamped_
   ```
   > This will produce another experiment directory under `logs/` containing the results of the evaluation.
 
-## Using the grade-based structure
-
-The grade-based (GB) structure allows scenarios to be added dynamically during training/testing runs. This is done by dividing an experiment into so called grades, which are combinations of different tasks and levels. 
-
-When an agent is put into training with grade-mode enable (run train.py with flag --grade-mode True), an coordinator object is initialized. It is responsible for setting up the scenarios in each grade and performing graduation (switching) of the agent into the next grade.
-
-Unlike the regular the training setup (grade mode disable), there is another task folder called grade-based-task under ultra/scenarios
-which has the blueprint of which set of scenarios are in each grade
-
-```yaml
-curriculum:
-  grades:
-    1: [[<task>,<level>]]
-    2: [[<task>,<level>], [<task>,<level>]]
-    # 3: [[<task>,<level>], ... ,[<task>,<level>]] can have as many combinations of tasks and levels
-  conditions:
-    episode_based: # Agent graduates after completing a N number of episodes in each grade
-      toggle: <bool> # Enable the condition
-      cycle: <bool> # Option to keep cycling through grades to episodes limit
-    pass_based: # Agent graduates after getting an average completion rate, the average is taken over the eval-rate (sampling-rate)
-      toggle: <bool> # Enable the condition
-      pass_rate: <float> # Scalar between 0 and 1; describes the threshold completion rate (%)
-      sample_rate: <int> # Takes the average of the total scenarios passed tsp) wrt the sample rate 
-```
-A more specific example in which we take the three levels from task 1 and distribute it among three grades
-
-```yaml
-grades:
-  1: [[1,no-traffic]]
-  2: [[1,easy]]
-  3: [[1,hard]]
-  conditions:
-    episode_based:
-      toggle: True 
-      cycle: True 
-    pass_based:
-      toggle: False 
-      pass_rate: 0.50 # If the average scenario passed exceeds more than 0.5 then grade is switched
-      sample_rate: 30 # Every 30 episodes slot, the average scenario passed (asp) is calculated (asp = tsp / sample_rate)
-```
-Now when we enter grade 1, the agent will see only the scenarios that are part of (task 1, level easy), same applies to grades 2 and 3. The condition for graduation is that the agent will complete N number of episodes in each grade. N is the quotient of the total number of episodes / total number of grades. 
-
-To use the grade-based structure, you will follow the same steps as any other training with exception that you will need to turn on --grade-mode by setting that flag to True
-
 ```sh
-$ python ultra/train.py --episodes 600 --eval-episodes 0 --eval-rate 50 --policy sac --grade-mode True --max-episode-steps 200
+$ python ultra/train.py --episodes 600 --eval-episodes 0 --eval-rate 50 --policy sac --curriculum-mode True --max-episode-steps 200
 ```
 > Notice that the --task and --level flags are irrelevant because you have already put them in the config file (in grade_based_task folder)
 
