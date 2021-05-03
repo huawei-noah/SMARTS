@@ -453,7 +453,7 @@ def generate_social_vehicles(
         if "stopwatcher" in behavior_idx:
             start_lane_id = route_lanes[stopwatcher_info["direction"][0]] - 1
             end_lane_id = route_lanes[stopwatcher_info["direction"][1]] - 1
-            begin_time = random.randint(10, 50)
+            begin_time = random.randint(10, 200)
             flows.append(
                 generate_stopwatcher(
                     stopwatcher_behavior=stopwatcher_info["behavior"],

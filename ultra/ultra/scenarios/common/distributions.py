@@ -318,9 +318,9 @@ t_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (2, 4),
+                        "vehicle_cluster_size": (1, 4),
                         "time_between_cluster": (25, 35),
-                        "time_for_each_cluster": 5,
+                        "time_for_each_cluster": 3,
                     },
                 },
                 "has_turn": False,
@@ -359,9 +359,9 @@ t_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (2, 4),
+                        "vehicle_cluster_size": (1, 4),
                         "time_between_cluster": (25, 35),
-                        "time_for_each_cluster": 5,
+                        "time_for_each_cluster": 3,
                     },
                 },
                 "has_turn": False,
@@ -714,7 +714,7 @@ cross_patterns = {
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": poisson_init,
-                    "params": {"temperature": 10},
+                    "params": {"temperature": 12},
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
@@ -751,8 +751,8 @@ cross_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (2, 3),
-                        "time_between_cluster": (50, 70),
+                        "vehicle_cluster_size": (1, 3),
+                        "time_between_cluster": (60, 70),
                         "time_for_each_cluster": 5,
                     },
                 },
@@ -779,7 +779,7 @@ cross_patterns = {
                     "params": {
                         "vehicle_cluster_size": (2, 5),
                         "time_between_cluster": (25, 35),
-                        "time_for_each_cluster": 5,
+                        "time_for_each_cluster": 3,
                     },
                 },
                 "has_turn": False,
