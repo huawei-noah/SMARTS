@@ -39,7 +39,7 @@ import torch
 
 from smarts.zoo.registry import make
 from ultra.utils.common import (
-    AgentSpecPlaceholders,
+    AgentSpecPlaceholder,
     gen_etag_from_locators,
     replace_placeholder,
 )
@@ -179,13 +179,13 @@ def evaluate(
     for agent_id, agent_info in agent_infos_copy.items():
         replace_placeholder(
             agent_info,
-            AgentSpecPlaceholders.CheckpointDirectory,
+            AgentSpecPlaceholder.CheckpointDirectory,
             checkpoint_dirs[agent_id],
         )
         replace_placeholder(
-            agent_info, AgentSpecPlaceholders.ExperimentDirectory, experiment_dir
+            agent_info, AgentSpecPlaceholder.ExperimentDirectory, experiment_dir
         )
-        replace_placeholder(agent_info, AgentSpecPlaceholders.Exploration, False)
+        replace_placeholder(agent_info, AgentSpecPlaceholder.Exploration, False)
         agent_specs[agent_id] = make(
             agent_info["locator"], **agent_info["spec_eval_params"]
         )

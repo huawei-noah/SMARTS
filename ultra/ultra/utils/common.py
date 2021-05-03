@@ -40,14 +40,14 @@ from scipy.spatial.distance import euclidean
 import math, datetime
 
 
-class AgentSpecPlaceholders(enum.Enum):
+class AgentSpecPlaceholder(enum.Enum):
     CheckpointDirectory = 0
     ExperimentDirectory = 1
     Exploration = 2
 
 
 def replace_placeholder(
-    spec_params: Dict[str, Any], placeholder: AgentSpecPlaceholders, value: Any
+    spec_params: Dict[str, Any], placeholder: AgentSpecPlaceholder, value: Any
 ):
     for param_name, param_value in spec_params.items():
         if isinstance(param_value, dict):

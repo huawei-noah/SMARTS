@@ -42,7 +42,7 @@ import torch
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluation_check, collect_evaluations
 from ultra.utils.common import (
-    AgentSpecPlaceholders,
+    AgentSpecPlaceholder,
     agent_pool_value,
     gen_default_agent_id,
     gen_etag_from_locators,
@@ -268,8 +268,8 @@ if __name__ == "__main__":
             },
             "spec_eval_params": {
                 "max_episode_steps": args.max_episode_steps,
-                "checkpoint_dir": AgentSpecPlaceholders.CheckpointDirectory,
-                "experiment_dir": AgentSpecPlaceholders.ExperimentDirectory,
+                "checkpoint_dir": AgentSpecPlaceholder.CheckpointDirectory,
+                "experiment_dir": AgentSpecPlaceholder.ExperimentDirectory,
                 "agent_id": agent_id,
             },
         }
@@ -289,8 +289,8 @@ if __name__ == "__main__":
         #         },
         #         "spec_eval_params": {
         #             "max_episode_steps": 300,
-        #             "checkpoint_dir": AgentSpecPlaceholders.CheckpointDirectory,
-        #             "experiment_dir": AgentSpecPlaceholders.ExperimentDirectory,
+        #             "checkpoint_dir": AgentSpecPlaceholder.CheckpointDirectory,
+        #             "experiment_dir": AgentSpecPlaceholder.ExperimentDirectory,
         #             "agent_id": "000",
         #         },
         #     },
