@@ -42,6 +42,7 @@ jobs:
           --ignore=./tests/test_scenarios.py \
           --ignore=./tests/test_social_vehicles.py \
           --ignore=./tests/test_rllib_train.py \
+          --ignore=./tests/test_tune.py \
 
   test-light-base-tests:
     runs-on: ubuntu-18.04
