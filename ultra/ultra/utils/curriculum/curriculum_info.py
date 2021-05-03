@@ -42,7 +42,7 @@ class CurriculumInfo:
                         or false
         """
         if curriculum_path is None:
-            curriculum_path = "../../scenarios/grade_based_curriculum/"
+            curriculum_path = "../../scenarios/curriculum/"  # Default path to curriculum path in ultra/scenarios
         else:
             curriculum_path = os.path.join("../../", curriculum_path)
 

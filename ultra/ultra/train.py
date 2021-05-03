@@ -439,7 +439,7 @@ if __name__ == "__main__":
         "--curriculum-dir",
         help="local path to grade based (GB) curriculum dir. Local path is path from ultra/",
         type=str,
-        default="scenarios/grade_based_curriculum/",
+        default="scenarios/curriculum/",
     )
     parser.add_argument(
         "--curriculum-build-scenarios",
