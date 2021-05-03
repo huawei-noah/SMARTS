@@ -123,4 +123,4 @@ For testing scenarios, the same process applies. However, test scenarios will be
   - `--curriculum-scenarios-root-dir` : Specify the directory where the curriculum tasks (config files) are stored (default is ultra/scenarios).
   - `--curriculum-scenarios-save-dir` : Specify the directory to save the scenarios in. Default is to save the scenarios inside it's respective task directory (default is None).
 
-
+> The base tools which are needed for implementing curriculum learning in ULTRA are completed, however with continuos progress on the research front, these tools will be subjected to change
