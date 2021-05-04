@@ -44,7 +44,12 @@ from ray.tune.trial import Trial
 
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluate_saved_models
-from ultra.utils.common import agent_pool_value
+from ultra.utils.common import (
+    AgentSpecPlaceholder,
+    agent_pool_value,
+    gen_default_agent_id,
+    gen_etag_from_locators,
+)
 from ultra.utils.episode import episodes
 
 _AVAILABLE_TUNE_METRICS = [
@@ -81,27 +86,32 @@ def tune_train(
     total_step = 0
     finished = False
 
-    assert len(policy_classes) == 1, "Can only tune with single agent experiments."
+    if not all("ultra.baselines" in policy_class for policy_class in policy_classes):
+        raise "Cannot currently tune non-baseline agents."
+    if len(policy_classes) != 1:
+        raise "Can only tune with single agent experiments."
 
-    # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...
-    agent_ids = [
-        "0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))
-    ]
-    # Assign the policy classes to their associated ID.
-    agent_classes = {
-        agent_id: policy_class
-        for agent_id, policy_class in zip(agent_ids, policy_classes)
+    # Agent infos for baseline agents.
+    agent_infos = {
+        gen_default_agent_id(agent_number): {
+            "locator": agent_locator,
+            "spec_train_params": {
+                "max_episode_steps": max_episode_steps,
+                "policy_params": config,
+            },
+            "spec_eval_params": {
+                "max_episode_steps": max_episode_steps,
+                "checkpoint_dir": AgentSpecPlaceholder.CheckpointDirectory,
+                "experiment_dir": AgentSpecPlaceholder.ExperimentDirectory,
+                "agent_id": "000",
+            },
+        }
+        for agent_number, agent_locator in enumerate(policy_classes)
     }
-    # Create the agent specifications matched with their associated ID.
     agent_specs = {
-        agent_id: make(
-            locator=policy_class,
-            policy_params=config,
-            max_episode_steps=max_episode_steps,
-        )
-        for agent_id, policy_class in agent_classes.items()
+        agent_id: make(agent_info["locator"], **agent_info["spec_train_params"])
+        for agent_id, agent_info in agent_infos.items()
     }
-    # Create the agents matched with their associated ID.
     agents = {
         agent_id: agent_spec.build_agent()
         for agent_id, agent_spec in agent_specs.items()
@@ -117,10 +127,7 @@ def tune_train(
         seed=seed,
     )
 
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+    etag = gen_etag_from_locators(policy_classes)
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
@@ -137,8 +144,11 @@ def tune_train(
             with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
                 dill.dump(
                     {
-                        "agent_ids": agent_ids,
-                        "agent_classes": agent_classes,
+                        # TODO: Maybe keep the agent_ids and agent_classes for backwards
+                        #       compatibility?
+                        # "agent_ids": list(agent_locators.keys()),
+                        # "agent_classes": agent_locators,
+                        "agent_infos": agent_infos,
                         "agent_specs": agent_specs,
                     },
                     metadata_file,
@@ -192,7 +202,7 @@ def tune_train(
 
         # Save the agent if we have reached its save rate.
         if (episode.index + 1) % save_rate == 0:
-            for agent_id in agent_ids:
+            for agent_id in agent_infos.keys():
                 checkpoint_directory = episode.checkpoint_dir(agent_id, episode.index)
                 agents[agent_id].save(checkpoint_directory)
 
@@ -200,9 +210,9 @@ def tune_train(
         tune_value = sum(
             [
                 episode.info[episode.active_tag][agent_id].data[metric]
-                for agent_id in agent_ids
+                for agent_id in agent_infos.keys()
             ]
-        ) / len(agent_ids)
+        ) / len(agent_infos)
         tune.report(**{metric: tune_value})
 
         if finished:
