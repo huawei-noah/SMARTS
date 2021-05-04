@@ -78,21 +78,23 @@ def burst_begin_time_init_func(
 
             speed = "".join(filter(lambda i: i.isdigit(), speed))
             if density == "high-density":
-                if int(speed) < 70:
+                if int(speed) == 50:
                     variable_time_between_cluster = (
                         time_between_cluster[0] + speed_offset + (num_lanes / 2),
                         time_between_cluster[1] + speed_offset + (num_lanes / 2),
                     )
-                elif int(speed) > 70:
+                elif int(speed) == 70:
+                    variable_time_between_cluster = (
+                        time_between_cluster[0],
+                        time_between_cluster[1],
+                    )
+                elif int(speed) == 100:
                     variable_time_between_cluster = (
                         time_between_cluster[0] - speed_offset - (num_lanes / 2),
                         time_between_cluster[1] - speed_offset - (num_lanes / 2),
                     )
                 else:
-                    variable_time_between_cluster = (
-                        time_between_cluster[0],
-                        time_between_cluster[1],
-                    )
+                    raise ValueError(f"Unsupported speed: {speed}.")
 
                 time_to_next_cluster = np.random.uniform(*variable_time_between_cluster)
             else:
