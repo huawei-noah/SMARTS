@@ -204,6 +204,7 @@ class Client:
             nonlocal connection_established
             tries = 1
             while True:
+                # TODO: use a real network socket instead (probably UDP)
                 ws = websocket.WebSocketApp(
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
