@@ -21,8 +21,20 @@ const wait = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
+const frameBufferModes = {
+  NO_BIAS: 0, // randomly evict frames when buffer full
+  PRIMACY_BIAS: 1, // prefer evicting more recent frames
+  RECENCY_BIAS: 2, // more recent frames will have higher granularity
+};
+
 export default class Client {
-  constructor({ endpoint, delay = 2000, retries = Number.POSITIVE_INFINITY }) {
+  constructor({
+    endpoint,
+    delay = 2000,
+    retries = Number.POSITIVE_INFINITY,
+    maxFrameBufferSize = 300000,
+    frameBufferMode = frameBufferModes.NO_BIAS,
+  }) {
     this._endpoint = new URL(endpoint);
     this._wsEndpoint = new URL(endpoint);
     this._wsEndpoint.protocol = "ws";
@@ -31,8 +43,10 @@ export default class Client {
     this._maxRetries = retries;
     this._glb_cache = {};
 
+    this._maxFrameBufferSize = maxFrameBufferSize;
+    this._frameBufferMode = frameBufferMode;
+
     this._sockets = {};
-    this._flushStream = {};
     this._stateQueues = {};
     this._simulationSelectedTime = {};
   }
@@ -55,10 +69,6 @@ export default class Client {
       this._sockets[simulationId] = null;
     }
 
-    if (!(simulationId in this._flushStream)) {
-      this._flushStream[simulationId] = false;
-    }
-
     if (
       !this._sockets[simulationId] &&
       this._sockets[simulationId].readyState == WebSocket.OPEN
@@ -68,7 +78,6 @@ export default class Client {
     }
 
     this._sockets[simulationId].send(JSON.stringify({ seek: seconds }));
-    this._flushStream[simulationId] = true;
   }
 
   async _obtainStream(simulationId, stateQueue, remainingRetries) {
@@ -100,6 +109,52 @@ export default class Client {
                 ? -Infinity
                 : value
             );
+            if (
+              stateQueue.length > 0 &&
+              frame.current_elapsed_time <=
+                stateQueue[stateQueue.length - 1].current_elapsed_time
+            ) {
+              // if it's moved back in time, it was from a seek and we're now
+              // going to receive those frames again, so flush.
+              stateQueue.length = 0;
+            } else if (stateQueue.length > self._maxFrameBufferSize) {
+              // the following is a placeholder to protect us
+              // until we revisit the architecture, at which point
+              // different policies can be implemented here.  for example,
+              // we might eventually want this to depend on the playback mode,
+              // or on events that happened in the simulation (although that
+              // would require upstream support).  We might also want to
+              // dump frames to a local file rather than just evicting them.
+              switch (self._frameBufferMode) {
+                case frameBufferModes.RECENCY_BIAS: {
+                  // evenly thin out older frames to allow granular newer frames...
+                  // (each time this is done, the earliest frames will get even thinner.)
+                  // This allows for a "fast-forward-like catch up" to the most
+                  // recent events in the simulation (when not in near-real-time
+                  // playing mode).
+                  stateQueue = stateQueue.filter((frame, ind) => ind % 2 == 0);
+                  self._stateQueues[simulationId] = stateQueue;
+                  break;
+                }
+                case frameBufferModes.PRIMACY_BIAS: {
+                  // newer frames have a higher probability of being evicted...
+                  let removeIndex = Math.floor(
+                    stateQueue.length * Math.sqrt(Math.random())
+                  );
+                  stateQueue.splice(removeIndex, 1);
+                  break;
+                }
+                case frameBufferModes.NO_BIAS:
+                default: {
+                  // randomly choose a frame to remove...
+                  // spread the degradation randomly throughout the history.
+                  let removeIndex = Math.floor(
+                    stateQueue.length * Math.random()
+                  );
+                  stateQueue.splice(removeIndex, 1);
+                }
+              }
+            }
             stateQueue.push({
               state: state,
               current_elapsed_time: frame.current_elapsed_time,
@@ -138,10 +193,6 @@ export default class Client {
       this._sockets[simulationId] = null;
     }
 
-    if (!(simulationId in this._flushStream)) {
-      this._flushStream[simulationId] = false;
-    }
-
     if (!(simulationId in this._stateQueues)) {
       this._stateQueues[simulationId] = [];
     }
@@ -157,12 +208,6 @@ export default class Client {
 
       if (isConnected) {
         while (this._stateQueues[simulationId].length > 0) {
-          if (this._flushStream[simulationId]) {
-            this._flushStream[simulationId] = false;
-            this._stateQueues[simulationId].length = 0;
-            continue;
-          }
-
           // Removes the oldest element
           let item = this._stateQueues[simulationId].shift();
           let elapsed_times = [
