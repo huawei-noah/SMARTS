@@ -109,7 +109,7 @@ class AgentType(IntEnum):
     """All observations and continuous action space"""
     Standard = 2
     """Minimal observations for dealing with waypoints and other vehicles and
-    continuous action space.
+    ActuatorDynamic action space.
     """
     Laner = 3
     """Agent sees waypoints and performs lane actions"""
