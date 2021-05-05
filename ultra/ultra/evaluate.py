@@ -91,29 +91,29 @@ def evaluation_check(
             agent_id, episode.get_itr(agent_id)
         )
         agents[agent_id].save(checkpoint_directory)
-
-        evaluation_task_id = evaluate.remote(
-            seed=episode.eval_count,
-            experiment_dir=episode.experiment_dir,
-            agent_ids=[agent_id],
-            policy_classes={agent_id: policy_classes[agent_id]},
-            checkpoint_dirs={agent_id: checkpoint_directory},
-            scenario_info=scenario_info,
-            num_episodes=eval_episodes,
-            max_episode_steps=max_episode_steps,
-            headless=headless,
-            timestep_sec=timestep_sec,
-            log_dir=log_dir,
-            curriculum_metadata=curriculum_metadata,
-            curriculum_mode=curriculum_mode,
-            static_coordinator=static_coordinator,
-            eval_mode=True,
-        )
-        evaluation_task_ids[evaluation_task_id] = (
-            episode.get_itr(agent_id),
-            episode,
-            "eval",
-        )
+        print("~~~~~~~~~~~~~~~ MODEL SAVED ~~~~~~~~~~~~~~~~~~")
+        # evaluation_task_id = evaluate.remote(
+        #     seed=episode.eval_count,
+        #     experiment_dir=episode.experiment_dir,
+        #     agent_ids=[agent_id],
+        #     policy_classes={agent_id: policy_classes[agent_id]},
+        #     checkpoint_dirs={agent_id: checkpoint_directory},
+        #     scenario_info=scenario_info,
+        #     num_episodes=eval_episodes,
+        #     max_episode_steps=max_episode_steps,
+        #     headless=headless,
+        #     timestep_sec=timestep_sec,
+        #     log_dir=log_dir,
+        #     curriculum_metadata=curriculum_metadata,
+        #     curriculum_mode=curriculum_mode,
+        #     static_coordinator=static_coordinator,
+        #     eval_mode=True,
+        # )
+        # evaluation_task_ids[evaluation_task_id] = (
+        #     episode.get_itr(agent_id),
+        #     episode,
+        #     "eval",
+        # )
 
     """ For ultra-gb, evaluating on train episode is not necessary"""
     # for agent_id in agent_ids_to_evaluate:
@@ -219,6 +219,7 @@ def evaluate(
             )
             scenario_info = CurriculumInfo.tasks_levels_used
 
+    print("scenario_info:", scenario_info)
     # Create the environment with the specified agents.
     env = gym.make(
         "ultra.env:ultra-v0",
@@ -265,8 +266,6 @@ def evaluate(
         else:
             observations, scenario = env.reset()
 
-        os.system("ls tests/test_curriculum/")
-
         dones = {"__all__": False}
         infos = None
         episode.reset(mode="Evaluation")
@@ -290,8 +289,8 @@ def evaluate(
         scenario["density_counter"] = density_counter
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        if curriculum_mode is True and eval_mode is True:
-            episode.record_tensorboard()
+        if eval_mode is True:
+            episode.record_tensorboard(recording_step=episode.index)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
@@ -312,9 +311,9 @@ def evaluate(
                 num_episodes, static_coordinator.get_eval_grade()
             )
             scenario_data_handler_eval.save_grade_density(num_episodes)
-        else:
-            scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
-            scenario_data_handler_eval.save_grade_density(num_episodes)
+    else:
+        scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+        scenario_data_handler_eval.save_grade_density(num_episodes)
 
     try:
         if eval_mode:
@@ -475,7 +474,7 @@ if __name__ == "__main__":
                     )
                 ]
             )[0]
-            episode.record_tensorboard()
+            episode.record_tensorboard(recording_step=0)
             episode.eval_count += 1
     finally:
         time.sleep(1)

@@ -109,7 +109,7 @@ def train(
         CurriculumInfo.initialize(curriculum_metadata["curriculum_dir"])
         if CurriculumInfo.static_curriculum_toggle is True:
             print("\n------------ Static Curriculum MODE : Enabled ------------\n")
-            static_coordinator, scenario_info = static_curriculum_setup(
+            static_coordinator, scenario_info, num_episodes = static_curriculum_setup(
                 curriculum_metadata, num_episodes
             )
             dynamic_coordinator = None
@@ -272,7 +272,10 @@ def train(
 
         if curriculum_mode is True:
             if CurriculumInfo.static_curriculum_toggle is True:
-                calculate_average_reached_goal(
+                (
+                    average_reached_goal,
+                    total_reached_goal,
+                ) = calculate_average_reached_goal(
                     episode, total_reached_goal, agents, average_reached_goal
                 )
                 if (episode.index + 1) % CurriculumInfo.pass_based_sample_rate == 0:
@@ -335,7 +338,7 @@ def static_curriculum_setup(curriculum_metadata, num_episodes):
         print("New max episodes (due to end case):", num_episodes)
 
     print("Num of episodes:", num_episodes)
-    return static_coordinator, scenario_info
+    return static_coordinator, scenario_info, num_episodes
 
 
 def dynamic_curriculum_setup(curriculum_metadata):
@@ -350,24 +353,23 @@ def dynamic_curriculum_setup(curriculum_metadata):
 
 
 def calculate_average_reached_goal(
-    episode, total_scenarios_passed, agents, average_reached_goal
+    episode, total_reached_goal, agents, average_reached_goal
 ):
-    try:
-        sample_rate = CurriculumInfo.pass_based_sample_rate
-    except AttributeError as e:
-        sample_rate = rate
+    sample_rate = CurriculumInfo.pass_based_sample_rate
 
     if (episode.index + 1) % sample_rate == 0:
-        total_scenarios_passed += episode.info[episode.active_tag][
+        total_reached_goal += episode.info[episode.active_tag][
             list(agents.keys())[0]
         ].data["reached_goal"]
-        average_reached_goal = total_scenarios_passed / sample_rate
-        total_scenarios_passed = 0.0
-        return average_reached_goal, total_scenarios_passed
+        average_reached_goal = total_reached_goal / sample_rate
+        total_reached_goal = 0.0
+        return average_reached_goal, total_reached_goal
     else:
-        total_scenarios_passed += episode.info[episode.active_tag][
+        total_reached_goal += episode.info[episode.active_tag][
             list(agents.keys())[0]
         ].data["reached_goal"]
+
+    return average_reached_goal, total_reached_goal
 
 
 if __name__ == "__main__":

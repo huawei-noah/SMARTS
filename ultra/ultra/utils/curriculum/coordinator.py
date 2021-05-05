@@ -40,7 +40,7 @@ class Coordinator:
         self.eval_counter = cycle(tuple([i * 1 for i in range(self.get_num_grades())]))
         self.num_episodes = num_episodes
         self.grade_counter = 0
-        self.episode_per_grade = 1
+        self.episode_per_grade = -1
         self.warmup_episodes = 1
         self.end_warmup = False
         self.eval_check = False
@@ -82,7 +82,7 @@ class Coordinator:
         global grade carrier. Coordinator needs two methods to control training
         grade and evaluation grade. This is due to the train/eval parallelization,
         which causes the coordinator to work in training/evaluation at different
-        times. To avoid the mix up of grades, there are seperate methods to deal
+        times. To avoid the mix up of grades, there are separate methods to deal
         with the train/eval.
         """
         # Get task and level information
@@ -145,7 +145,7 @@ class Coordinator:
                                           sampling rate
 
         Returns:
-            the eligiblity of the agents to enter the next grade
+            the eligibility of the agents to enter the next grade
         """
         self.episode_per_grade += 1
         if CurriculumInfo.pass_based_toggle == True:
@@ -184,7 +184,7 @@ class Coordinator:
             index (int): reference to an episode in an sequence of episodes
 
         Returns:
-            the eligiblity of the agents to enter the next grade
+            the eligibility of the agents to enter the next grade
         """
         if index == 0:
             self.grade_counter += 1
@@ -193,8 +193,8 @@ class Coordinator:
             index % int(self.num_episodes / self.get_num_grades())
         ) == 0 and index != 0:
             self.next_train_grade()
-            self.grade_counter += 1
             self.display()
+            self.grade_counter += 1
             return True
         else:
             return False
@@ -211,15 +211,15 @@ class Coordinator:
                                           sampling rate
 
         Returns:
-            the eligiblity of the agents to enter the next grade
+            the eligibility of the agents to enter the next grade
         """
         # Switch to next grade on the basis of certain percentage of completed scenarios
         if index != 0:
             if average_reached_goal >= CurriculumInfo.pass_based_pass_rate:
                 print(f"({index}) AVERAGE SCENARIOS PASSED: {average_reached_goal}")
                 self.next_train_grade()
-                self.grade_counter += 1
                 self.display()
+                self.grade_counter += 1
                 return True
             else:
                 return False
@@ -235,8 +235,8 @@ class Coordinator:
         """
         try:
             print("\n----------------------------------------------------")
-            print("Grade counter :", self.grade_counter)
-            print(f"\nCurrent grade: {self.grade}")
+            print("Grade counter :", self.grade_counter + 1)
+            print(f"\nCurrent grade: {self.train_grade}")
             print("----------------------------------------------------")
         except AttributeError as e:
             print(e)

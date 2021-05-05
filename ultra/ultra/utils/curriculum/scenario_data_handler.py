@@ -33,12 +33,17 @@ class ScenarioDataHandler:
         """
         self.densities_data = []
         self.mode = mode
-        self._reset_densities_counter()
+        self.overall_densities_counter = {
+            "no-traffic": 0,
+            "low-density": 0,
+            "mid-density": 0,
+            "high-density": 0,
+        }
         self.grade_densities_counter = copy.deepcopy(self.overall_densities_counter)
 
     def _reset_densities_counter(self):
         """ resets counter to zero """
-        self.overall_densities_counter = {
+        self.grade_densities_counter = {
             "no-traffic": 0,
             "low-density": 0,
             "mid-density": 0,
@@ -92,7 +97,7 @@ class ScenarioDataHandler:
         if grade == None:
             grade = ">>> No grades <<<"
         print("----------------------------------------------------")
-        print(f"Traffic density distribution for {grade} (or {self.mode} run):")
+        print(f"Traffic density distribution for previous grade (or {self.mode} run):")
         for density in self.grade_densities_counter:
             if grade_size != 0:
                 print(

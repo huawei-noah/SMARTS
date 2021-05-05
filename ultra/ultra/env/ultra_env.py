@@ -194,7 +194,7 @@ class UltraEnv(HiWayEnv):
             )
 
         scenario = next(self._scenarios_iterator)
-        print(scenario)
+        # print(scenario)
 
         root = str(scenario._root).split("/")[-1]
         for density in [
