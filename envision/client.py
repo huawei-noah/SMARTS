@@ -181,12 +181,17 @@ class Client:
             self._log.debug("Connection to Envision closed")
 
         def on_error(ws, error):
+            nonlocal connection_established
             if str(error) == "'NoneType' object has no attribute 'sock'":
                 # XXX: websocket-client library outputs some strange logs, just
                 #      surpress them for now.
                 return
 
-            self._log.error(f"Connection to Envision terminated with: {error}")
+            logmsg = f"Connection to Envision terminated with: {error}"
+            if connection_established:
+                self._log.error(logmsg)
+            else:
+                self._log.info(logmsg)
 
         def on_open(ws):
             nonlocal connection_established
