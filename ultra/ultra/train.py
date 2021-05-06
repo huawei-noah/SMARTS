@@ -120,6 +120,7 @@ def train(
                 curriculum_metadata
             )
             static_coordinator = None
+        save_model_only = True
     else:
         print("\n------------ Curriculum MODE : Disabled ------------\n")
         dynamic_coordinator = None
@@ -215,6 +216,7 @@ def train(
             max_episode_steps=max_episode_steps,
             evaluation_task_ids=evaluation_task_ids,
             eval_after_grade=eval_after_grade,
+            save_model_only=save_model_only,
             **eval_info,
             **env.info,
         )

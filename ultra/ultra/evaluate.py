@@ -63,6 +63,7 @@ def evaluation_check(
     curriculum_metadata=None,
     curriculum_mode=False,
     static_coordinator=None,
+    save_model_only=False,
 ):
     # Evaluate agents that have reached the eval_rate.
     agent_ids_to_evaluate = [
@@ -92,29 +93,33 @@ def evaluation_check(
             agent_id, episode.get_itr(agent_id)
         )
         agents[agent_id].save(checkpoint_directory)
-        print("~~~~~~~~~~~~~~~ MODEL SAVED ~~~~~~~~~~~~~~~~~~")
-        # evaluation_task_id = evaluate.remote(
-        #     seed=episode.eval_count,
-        #     experiment_dir=episode.experiment_dir,
-        #     agent_ids=[agent_id],
-        #     policy_classes={agent_id: policy_classes[agent_id]},
-        #     checkpoint_dirs={agent_id: checkpoint_directory},
-        #     scenario_info=scenario_info,
-        #     num_episodes=eval_episodes,
-        #     max_episode_steps=max_episode_steps,
-        #     headless=headless,
-        #     timestep_sec=timestep_sec,
-        #     log_dir=log_dir,
-        #     curriculum_metadata=curriculum_metadata,
-        #     curriculum_mode=curriculum_mode,
-        #     static_coordinator=static_coordinator,
-        #     eval_mode=True,
-        # )
-        # evaluation_task_ids[evaluation_task_id] = (
-        #     episode.get_itr(agent_id),
-        #     episode,
-        #     "eval",
-        # )
+        print(
+            f"MODEL SAVED @ Timestep: {episode.get_itr(agent_id)} ~~~~ MODEL STORED @ {episode.experiment_dir}"
+        )
+
+        if save_model_only == False:
+            evaluation_task_id = evaluate.remote(
+                seed=episode.eval_count,
+                experiment_dir=episode.experiment_dir,
+                agent_ids=[agent_id],
+                policy_classes={agent_id: policy_classes[agent_id]},
+                checkpoint_dirs={agent_id: checkpoint_directory},
+                scenario_info=scenario_info,
+                num_episodes=eval_episodes,
+                max_episode_steps=max_episode_steps,
+                headless=headless,
+                timestep_sec=timestep_sec,
+                log_dir=log_dir,
+                curriculum_metadata=curriculum_metadata,
+                curriculum_mode=curriculum_mode,
+                static_coordinator=static_coordinator,
+                eval_mode=True,
+            )
+            evaluation_task_ids[evaluation_task_id] = (
+                episode.get_itr(agent_id),
+                episode,
+                "eval",
+            )
 
     """ For ultra-gb, evaluating on train episode is not necessary"""
     # for agent_id in agent_ids_to_evaluate:
