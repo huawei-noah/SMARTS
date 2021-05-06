@@ -168,6 +168,7 @@ class Client:
         wait_between_retries: float = 0.05,
     ):
         connection_established = False
+        warned_about_connection = False
 
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
             # if not already serialized
@@ -181,12 +182,24 @@ class Client:
             self._log.debug("Connection to Envision closed")
 
         def on_error(ws, error):
+            nonlocal connection_established, warned_about_connection
             if str(error) == "'NoneType' object has no attribute 'sock'":
                 # XXX: websocket-client library outputs some strange logs, just
                 #      surpress them for now.
                 return
 
-            self._log.error(f"Connection to Envision terminated with: {error}")
+            if connection_established:
+                self._log.error(f"Connection to Envision terminated with: {error}")
+            else:
+                logmsg = f"Connection to Envision failed with: {error}."
+                if not warned_about_connection:
+                    self._log.warning(
+                        logmsg
+                        + "  Try using `--headless` if not using Envision server."
+                    )
+                    warned_about_connection = True
+                else:
+                    self._log.info(logmsg)
 
         def on_open(ws):
             nonlocal connection_established
