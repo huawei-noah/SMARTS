@@ -79,6 +79,7 @@ jobs:
           --ignore=./tests/test_train.py \
           --ignore=./tests/test_evaluate.py \
           --ignore=./tests/test_analysis.py \
+          --ignore=./tests/test_zoo_agents.py \
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
