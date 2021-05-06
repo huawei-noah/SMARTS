@@ -38,6 +38,7 @@ class ScenarioDataHandler:
             "low-density": 0,
             "mid-density": 0,
             "high-density": 0,
+            "constant-flow": 0,
         }
         self.grade_densities_counter = copy.deepcopy(self.overall_densities_counter)
 
@@ -48,6 +49,7 @@ class ScenarioDataHandler:
             "low-density": 0,
             "mid-density": 0,
             "high-density": 0,
+            "constant-flow": 0,
         }
 
     def record_density_data(self, scenario_density) -> int:

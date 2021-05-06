@@ -141,6 +141,8 @@ def train(
     average_reached_goal = 0.0
     total_reached_goal = 0.0
     eval_after_grade = False
+    grade_counter = 0
+    arg_container = [list()] * static_coordinator.get_num_grades()
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if curriculum_mode is True:
@@ -160,6 +162,7 @@ def train(
                     scenario_data_handler.save_grade_density(grade_size)
                     static_coordinator.episode_per_grade = 0
                     static_coordinator.end_warmup = False
+                    grade_counter += 1
                 else:
                     observations, scenario = env.reset()
                 # print("static_coordinator.episode_per_grade:", static_coordinator.episode_per_grade)
@@ -280,7 +283,7 @@ def train(
                     episode, total_reached_goal, agents, average_reached_goal
                 )
                 if (episode.index + 1) % CurriculumInfo.pass_based_sample_rate == 0:
-                    print(f"({episode.index + 1}) ASP: {average_reached_goal}")
+                    print(f"({episode.index + 1}) ARG: {average_reached_goal}")
             elif CurriculumInfo.dynamic_curriculum_toggle is True:
                 if (
                     episode.index + 1

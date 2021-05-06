@@ -65,9 +65,9 @@ tasks:
     hard:
       train: "scenarios/task1/train_hard*"
       test:  "scenarios/task1/test_hard*"
-    random:
-      train: "scenarios/task1/train_random*"
-      test:  "scenarios/task1/test_random*"
+    constant-flow:
+      train: "scenarios/task1/train_constant-flow*"
+      test:  "scenarios/task1/test_constant-flow*"
   task2:
     lo-hi:
       train: "scenarios/task2/train_lo-hi*"

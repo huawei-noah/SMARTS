@@ -203,6 +203,7 @@ class UltraEnv(HiWayEnv):
             "mid-density",
             "high-density",
             "p-test",
+            "constant-flow"
         ]:
             if density in root:
                 scenario_density = density

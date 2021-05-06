@@ -88,7 +88,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade3:
     train:
-      total: 500
+      total: 1000
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -115,7 +115,7 @@ levels:
                    [50kmh,high-density,0.07],[70kmh,high-density,0.07],[100kmh,high-density,0.06]] #20%
            stops: null
     test:
-      total: 300
+      total: 1
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -130,7 +130,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade4:
     train:
-      total: 500
+      total: 1000
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -157,7 +157,7 @@ levels:
                    [50kmh,high-density,0.20],[70kmh,high-density,0.20],[100kmh,high-density,0.20]] #60%
            stops: null
     test:
-      total: 300
+      total: 1
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -179,20 +179,28 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   no-traffic:
     train:
-      total: null
+      total: 100
       ego_missions:
       - start: south-SN
         end:   west-EW
       intersection_types:
         2lane_t:
-           percent: 1
+           percent: 0.4
+           specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
+           stops: null
+        3lane_t:
+           percent: 0.4
+           specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
+           stops: null
+        2lane_curvy_t:
+           percent: 0.2
            specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
            stops: null
     test:
-      total: null
+      total: 100
       ego_missions:
-      - start: south-SN
-        end:   west-EW
+      - start: north-NS
+        end:   east-WE
       intersection_types:
         2lane_c:
            percent: 1
