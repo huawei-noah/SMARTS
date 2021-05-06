@@ -344,7 +344,11 @@ def episodes(n, etag=None, log_dir=None):
             f"Total Steps",
             f"Steps/Sec",
             f"Score",
+<<<<<<< HEAD
             f"Goal completion"
+=======
+            f"Goal Completed",
+>>>>>>> 333e2dc5... Apply suggestions from code review
         ],
         width=col_width,
         style="round",
@@ -385,7 +389,7 @@ def episodes(n, etag=None, log_dir=None):
                 agent_goal_completion_strings = [
                     "{}: {}".format(
                         agent_id,
-                        int(agent_info.data["reached_goal"]),
+                        bool(agent_info.data["reached_goal"]),
                     )
                     for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
