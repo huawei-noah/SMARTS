@@ -125,6 +125,7 @@ def train(
         print("\n------------ Curriculum MODE : Disabled ------------\n")
         dynamic_coordinator = None
         static_coordinator = None
+        save_model_only = False
 
     scenario_data_handler = ScenarioDataHandler("Train")
 
