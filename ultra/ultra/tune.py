@@ -124,7 +124,7 @@ def tune_train(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        observations = env.reset()
+        observations, scenario = env.reset()
         dones = {"__all__": False}
         infos = None
         episode.reset()
