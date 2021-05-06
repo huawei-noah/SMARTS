@@ -65,7 +65,7 @@ def try_fsync(fd):
 
 
 @contextmanager
-def suppress_output(stderr = True, stdout = True):
+def suppress_output(stderr=True, stdout=True):
     cleanup_stderr = None
     cleanup_stdout = None
     try:
@@ -79,6 +79,7 @@ def suppress_output(stderr = True, stdout = True):
             cleanup_stderr(c_stderr)
         if stdout and cleanup_stdout:
             cleanup_stdout(c_stdout)
+
 
 def _suppress_fileout(stdname):
     original = getattr(sys, stdname)
@@ -110,4 +111,5 @@ def _suppress_fileout(stdname):
                 raise e
         finally:
             setattr(sys, stdname, original)
+
     return cleanup
