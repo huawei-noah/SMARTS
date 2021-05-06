@@ -193,7 +193,10 @@ class Client:
             else:
                 logmsg = f"Connection to Envision failed with: {error}."
                 if not warned_about_connection:
-                    self._log.warning(logmsg + "  Try using `--headless` if not using Envision server.")
+                    self._log.warning(
+                        logmsg
+                        + "  Try using `--headless` if not using Envision server."
+                    )
                     warned_about_connection = True
                 else:
                     self._log.info(logmsg)
