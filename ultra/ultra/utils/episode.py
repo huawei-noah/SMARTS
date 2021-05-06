@@ -344,11 +344,7 @@ def episodes(n, etag=None, log_dir=None):
             f"Total Steps",
             f"Steps/Sec",
             f"Score",
-<<<<<<< HEAD
-            f"Goal completion"
-=======
             f"Goal Completed",
->>>>>>> 333e2dc5... Apply suggestions from code review
         ],
         width=col_width,
         style="round",
