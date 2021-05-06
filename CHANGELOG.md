@@ -28,6 +28,7 @@ process
 - Fixed traffic generation offset bug for shifted maps.  See issue #790.
 - Fixed bugs in traffic history and changed interface to it.  See issue #732.
 - Update `ego_open_agent` to use the package instead of the zoo directory version.
+- Quieted noisy pybullet log messages.
 
 ## [0.4.15] - 2021-03-18
 ### Added
