@@ -95,7 +95,7 @@ Due to work in progress with further research into curriculum learning. The dyna
       # N/A
     dynamic:
       toggle: <bool> # Turn on dynamic curriculum settings
-      tasks_levels_used: <list> # All the tasks & levels that "can" be used
+      tasks_levels_used: <list> # All the tasks & levels that can be used
       sampling_rate: <list> # The rate at which the curriculum is updated in terms of episodes
 ```
 A specific example with values to describe the dynamic curriculum setup:
