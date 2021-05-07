@@ -35,6 +35,10 @@ tasks:
     high-density:
       train: "../tests/curriculum_test/train_high-density*"
       test: "../tests/curriculum_test/test_high-density*"
+  taskX:
+    road-blocks:
+      train: "scenarios/taskX/train_road-blocks*"
+      test:  "scenarios/taskX/test_road-blocks*"
   task0:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"

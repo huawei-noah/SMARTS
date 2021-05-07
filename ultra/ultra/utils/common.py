@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
+import json
 import math
 import os
 import random
@@ -48,6 +49,17 @@ def str_to_bool(str_value):
     if str_value.lower() in ["no", "false", "f", "n", "0"]:
         return False
     raise argparse.ArgumentTypeError("Boolean value expected")
+
+
+def agent_pool_value(agent_name, value_name):
+    base_dir = os.path.dirname(__file__)
+    pool_path = os.path.join(base_dir, "../agent_pool.json")
+    with open(pool_path, "r") as f:
+        data = json.load(f)
+    data = data["agents"]
+    if value_name == "policy_class":
+        return data[agent_name]["path"] + ":" + data[agent_name]["locator"]
+    return data[agent_name][value_name]
 
 
 def gen_experiment_name():
