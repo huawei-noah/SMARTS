@@ -19,7 +19,7 @@ process
 - Added glb models for pedestrians and motorcycles
 - Added `near realtime` mode and `uncapped` mode in Envision
 - Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks
-- Added options in DoneCreteria to trigger ego agent to be done based on other agent's done situation
+- Added options in `DoneCriteria` to trigger ego agent to be done based on other agent's done situation
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 ### Fixed
