@@ -60,7 +60,7 @@ def main(scenarios, headless, seed):
             observations = smarts.reset(scenario)
 
             dones = {agent_id: False}
-            while not dones.get(agent_id, False):
+            while not dones.get(agent_id, True):
                 agent_obs = observations[agent_id]
                 agent_action = agent.act(agent_obs)
 
