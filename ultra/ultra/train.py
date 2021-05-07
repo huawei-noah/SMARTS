@@ -87,23 +87,23 @@ def train(
     )
 
     saved_model = True
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if saved_model == True:
         experiment_dir = "saved_train/experiment-2021.5.6-22:52:32-ppo-v0/"
         # Load relevant agent metadata.
-        with open("saved_train/experiment-2021.5.6-22:52:32-ppo-v0/agent_metadata.pkl", "rb") as metadata_file:
+        with open(
+            "saved_train/experiment-2021.5.6-22:52:32-ppo-v0/agent_metadata.pkl", "rb"
+        ) as metadata_file:
             agent_metadata = pickle.load(metadata_file)
 
         for key in agent_metadata.keys():
             print(f"KEY: {key} -> {agent_metadata[key]}")
         # Extract the agent IDs and policy classes from the metadata and given models.
-        agent_ids = [
-            agent_id
-            for agent_id in agent_metadata["agent_ids"]
-        ]
+        agent_ids = [agent_id for agent_id in agent_metadata["agent_ids"]]
         print("AGENT IDS", agent_ids)
         agent_classes = {
-            agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
+            agent_id: agent_metadata["agent_classes"][agent_id]
+            for agent_id in agent_ids
         }
         print("AGENT CLASSES", agent_classes)
         agent_checkpoint_directories = {
@@ -155,7 +155,7 @@ def train(
         }
         print("AGENTS:", agents)
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if saved_model == False:
         # Assign the policy classes to their associated ID.
         agent_classes = {
@@ -172,7 +172,7 @@ def train(
             agent_id: agent_spec.build_agent()
             for agent_id, agent_spec in agent_specs.items()
         }
-    
+
     # Define an 'etag' for this experiment's data directory based off policy_classes.
     # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
