@@ -22,6 +22,7 @@
 import json
 import os
 import sys
+import glob
 
 from ultra.utils.ray import default_ray_kwargs
 
@@ -85,22 +86,93 @@ def train(
         )
     )
 
-    # Assign the policy classes to their associated ID.
-    agent_classes = {
-        agent_id: policy_class
-        for agent_id, policy_class in zip(agent_ids, policy_classes)
-    }
-    # Create the agent specifications matched with their associated ID.
-    agent_specs = {
-        agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
-        for agent_id, policy_class in agent_classes.items()
-    }
-    # Create the agents matched with their associated ID.
-    agents = {
-        agent_id: agent_spec.build_agent()
-        for agent_id, agent_spec in agent_specs.items()
-    }
+    saved_model = True
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if saved_model == True:
+        experiment_dir = "saved_train/experiment-2021.5.6-22:52:32-ppo-v0/"
+        # Load relevant agent metadata.
+        with open("saved_train/experiment-2021.5.6-22:52:32-ppo-v0/agent_metadata.pkl", "rb") as metadata_file:
+            agent_metadata = pickle.load(metadata_file)
 
+        for key in agent_metadata.keys():
+            print(f"KEY: {key} -> {agent_metadata[key]}")
+        # Extract the agent IDs and policy classes from the metadata and given models.
+        agent_ids = [
+            agent_id
+            for agent_id in agent_metadata["agent_ids"]
+        ]
+        print("AGENT IDS", agent_ids)
+        agent_classes = {
+            agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
+        }
+        print("AGENT CLASSES", agent_classes)
+        agent_checkpoint_directories = {
+            agent_id: sorted(
+                glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
+                key=lambda x: int(x.split("/")[-1]),
+            )
+            for agent_id in agent_ids
+        }
+        print("AGENT CHECKPOINT DIRS", agent_checkpoint_directories)
+
+        # directories_iterator = iter(agent_checkpoint_directories.values())
+        # number_of_checkpoints = len(next(directories_iterator))
+        # assert all(
+        #     len(checkpoint_directory) == number_of_checkpoints
+        #     for checkpoint_directory in directories_iterator
+        # ), "Not all agents have the same number of checkpoints saved"
+
+        current_checkpoint_directories = {
+            agent_id: agent_directories[0]
+            for agent_id, agent_directories in agent_checkpoint_directories.items()
+        }
+        print("AGENT CURRENT CHECKPOINT DIRS", current_checkpoint_directories)
+        # # Assign the policy classes to their associated ID.
+        # agent_classes = {
+        #     agent_id: policy_class
+        #     for agent_id, policy_class in zip(agent_ids, policy_classes)
+        # }
+        # # Create the agent specifications matched with their associated ID.
+        # agent_specs = {
+        #     agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
+        #     for agent_id, policy_class in agent_classes.items()
+        # }
+        # Create the agents matched with their associated ID.
+        agent_specs = {
+            agent_id: make(
+                locator=agent_classes[agent_id],
+                checkpoint_dir=current_checkpoint_directories[agent_id],
+                experiment_dir=experiment_dir,
+                max_episode_steps=max_episode_steps,
+                agent_id=agent_id,
+            )
+            for agent_id in agent_ids
+        }
+        print("AGENT SPECS", agent_specs)
+        agents = {
+            agent_id: agent_spec.build_agent()
+            for agent_id, agent_spec in agent_specs.items()
+        }
+        print("AGENTS:", agents)
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if saved_model == False:
+        # Assign the policy classes to their associated ID.
+        agent_classes = {
+            agent_id: policy_class
+            for agent_id, policy_class in zip(agent_ids, policy_classes)
+        }
+        # Create the agent specifications matched with their associated ID.
+        agent_specs = {
+            agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
+            for agent_id, policy_class in agent_classes.items()
+        }
+        # Create the agents matched with their associated ID.
+        agents = {
+            agent_id: agent_spec.build_agent()
+            for agent_id, agent_spec in agent_specs.items()
+        }
+    
     # Define an 'etag' for this experiment's data directory based off policy_classes.
     # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
@@ -143,8 +215,6 @@ def train(
     average_reached_goal = 0.0
     total_reached_goal = 0.0
     eval_after_grade = False
-    grade_counter = 0
-    arg_container = [list()] * static_coordinator.get_num_grades()
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if curriculum_mode is True:
@@ -164,7 +234,6 @@ def train(
                     scenario_data_handler.save_grade_density(grade_size)
                     static_coordinator.episode_per_grade = 0
                     static_coordinator.end_warmup = False
-                    grade_counter += 1
                 else:
                     observations, scenario = env.reset()
                 # print("static_coordinator.episode_per_grade:", static_coordinator.episode_per_grade)
@@ -234,8 +303,8 @@ def train(
                     break
 
         while not dones["__all__"]:
-            # Break if any of the agent's step counts is 1000000 or greater.
-            if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
+            # Break if any of the agent's step counts is 10000000 or greater.
+            if any([episode.get_itr(agent_id) >= 10000000 for agent_id in agents]):
                 finished = True
                 break
             # Request and perform actions on each agent that received an observation.

@@ -2,10 +2,10 @@ curriculum:
   static:
     toggle: True
     grades:
-      1: [[gb,no-traffic]] #[[<task>,<level>]]
-      2: [[1,constant-flow]]
-      3: [[gb,grade3]]
-      4: [[gb,grade4]]
+      # 1: [[gb,no-traffic]] #[[<task>,<level>]]
+      1: [[1,constant-flow]]
+      # 3: [[gb,grade3]]
+      # 4: [[gb,grade4]]
     conditions:
       eval_per_grade: True
       episode_based:
