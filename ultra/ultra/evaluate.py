@@ -295,7 +295,7 @@ def evaluate(
         scenario["density_counter"] = density_counter
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        if eval_mode is True:
+        if eval_mode is True and curriculum_mode is True:
             episode.record_tensorboard(recording_step=episode.index)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
