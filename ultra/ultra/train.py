@@ -98,14 +98,17 @@ def train(
 
         for key in agent_metadata.keys():
             print(f"KEY: {key} -> {agent_metadata[key]}")
+
         # Extract the agent IDs and policy classes from the metadata and given models.
         agent_ids = [agent_id for agent_id in agent_metadata["agent_ids"]]
         print("AGENT IDS", agent_ids)
+
         agent_classes = {
             agent_id: agent_metadata["agent_classes"][agent_id]
             for agent_id in agent_ids
         }
         print("AGENT CLASSES", agent_classes)
+
         agent_checkpoint_directories = {
             agent_id: sorted(
                 glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
@@ -115,29 +118,20 @@ def train(
         }
         print("AGENT CHECKPOINT DIRS", agent_checkpoint_directories)
 
-        # directories_iterator = iter(agent_checkpoint_directories.values())
-        # number_of_checkpoints = len(next(directories_iterator))
-        # assert all(
-        #     len(checkpoint_directory) == number_of_checkpoints
-        #     for checkpoint_directory in directories_iterator
-        # ), "Not all agents have the same number of checkpoints saved"
+        directories_iterator = iter(agent_checkpoint_directories.values())
+        number_of_checkpoints = len(next(directories_iterator))
+        assert all(
+            len(checkpoint_directory) == number_of_checkpoints
+            for checkpoint_directory in directories_iterator
+        ), "Not all agents have the same number of checkpoints saved"
 
         current_checkpoint_directories = {
             agent_id: agent_directories[0]
             for agent_id, agent_directories in agent_checkpoint_directories.items()
         }
         print("AGENT CURRENT CHECKPOINT DIRS", current_checkpoint_directories)
-        # # Assign the policy classes to their associated ID.
-        # agent_classes = {
-        #     agent_id: policy_class
-        #     for agent_id, policy_class in zip(agent_ids, policy_classes)
-        # }
-        # # Create the agent specifications matched with their associated ID.
-        # agent_specs = {
-        #     agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
-        #     for agent_id, policy_class in agent_classes.items()
-        # }
-        # Create the agents matched with their associated ID.
+
+        # Create the agent specifications matched with their associated ID.
         agent_specs = {
             agent_id: make(
                 locator=agent_classes[agent_id],
@@ -149,6 +143,8 @@ def train(
             for agent_id in agent_ids
         }
         print("AGENT SPECS", agent_specs)
+        
+        # Create the agents matched with their associated ID.
         agents = {
             agent_id: agent_spec.build_agent()
             for agent_id, agent_spec in agent_specs.items()
