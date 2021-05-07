@@ -230,7 +230,7 @@ class SMARTS:
 
         # 8. Advance the simulation clock.
         # round due to FP precision issues, but need to allow arbitrarily-small dt's
-        dec_digits = int(1 - math.log10(dt % 1))
+        dec_digits = len("{}".format(self._timestep_sec)) - 2
         self._elapsed_sim_time = round(self._elapsed_sim_time + dt, dec_digits)
 
         return observations, rewards, dones, extras
