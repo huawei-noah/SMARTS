@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import os
 import pickle
+from typing import Sequence, Tuple
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -58,36 +59,22 @@ def evaluation_check(
     headless,
     log_dir,
     evaluation_task_ids,
+    eval_after_grade=False,
     curriculum_metadata=None,
     curriculum_mode=False,
     static_coordinator=None,
+    save_model_only=False,
 ):
     # Evaluate agents that have reached the eval_rate.
-    if curriculum_mode is True:
-        if (
-            CurriculumInfo.static_curriculum_toggle is True
-            and static_coordinator.eval_per_grade is True
-        ):
-            agent_ids_to_evaluate = [
-                agent_id
-                for agent_id in agent_ids
-                if static_coordinator.get_eval_check_condition() == True
-            ]
-        else:
-            agent_ids_to_evaluate = [
-                agent_id
-                for agent_id in agent_ids
-                if (episode.index + 1) % eval_rate == 0
-                and episode.last_eval_iterations[agent_id] != episode.index
-            ]
-
-    else:
-        agent_ids_to_evaluate = [
-            agent_id
-            for agent_id in agent_ids
-            if (episode.index + 1) % eval_rate == 0
+    agent_ids_to_evaluate = [
+        agent_id
+        for agent_id in agent_ids
+        if eval_after_grade == True
+        or (
+            (episode.index + 1) % eval_rate == 0
             and episode.last_eval_iterations[agent_id] != episode.index
-        ]
+        )
+    ]
 
     # Skip evaluation if there are no agents needing an evaluation.
     if len(agent_ids_to_evaluate) < 1:
@@ -106,29 +93,33 @@ def evaluation_check(
             agent_id, episode.get_itr(agent_id)
         )
         agents[agent_id].save(checkpoint_directory)
+        print(
+            f"MODEL SAVED @ Timestep: {episode.get_itr(agent_id)} ~~~~ MODEL STORED @ {episode.experiment_dir}"
+        )
 
-        evaluation_task_id = evaluate.remote(
-            seed=episode.eval_count,
-            experiment_dir=episode.experiment_dir,
-            agent_ids=[agent_id],
-            policy_classes={agent_id: policy_classes[agent_id]},
-            checkpoint_dirs={agent_id: checkpoint_directory},
-            scenario_info=scenario_info,
-            num_episodes=eval_episodes,
-            max_episode_steps=max_episode_steps,
-            headless=headless,
-            timestep_sec=timestep_sec,
-            log_dir=log_dir,
-            curriculum_metadata=curriculum_metadata,
-            curriculum_mode=curriculum_mode,
-            static_coordinator=static_coordinator,
-            eval_mode=True,
-        )
-        evaluation_task_ids[evaluation_task_id] = (
-            episode.get_itr(agent_id),
-            episode,
-            "eval",
-        )
+        if save_model_only == False:
+            evaluation_task_id = evaluate.remote(
+                seed=episode.eval_count,
+                experiment_dir=episode.experiment_dir,
+                agent_ids=[agent_id],
+                policy_classes={agent_id: policy_classes[agent_id]},
+                checkpoint_dirs={agent_id: checkpoint_directory},
+                scenario_info=scenario_info,
+                num_episodes=eval_episodes,
+                max_episode_steps=max_episode_steps,
+                headless=headless,
+                timestep_sec=timestep_sec,
+                log_dir=log_dir,
+                curriculum_metadata=curriculum_metadata,
+                curriculum_mode=curriculum_mode,
+                static_coordinator=static_coordinator,
+                eval_mode=True,
+            )
+            evaluation_task_ids[evaluation_task_id] = (
+                episode.get_itr(agent_id),
+                episode,
+                "eval",
+            )
 
     """ For ultra-gb, evaluating on train episode is not necessary"""
     # for agent_id in agent_ids_to_evaluate:
@@ -229,9 +220,12 @@ def evaluate(
                 curriculum_metadata["curriculum_scenarios_save_dir"],
                 rate=num_episodes,
             )
-            dynamic_coordinator.reset_test_scenarios(CurriculumInfo.tasks_levels_used)
+            dynamic_coordinator.reset_scenario_pool(
+                CurriculumInfo.tasks_levels_used, num_episodes
+            )
             scenario_info = CurriculumInfo.tasks_levels_used
 
+    print("scenario_info:", scenario_info)
     # Create the environment with the specified agents.
     env = gym.make(
         "ultra.env:ultra-v0",
@@ -264,8 +258,8 @@ def evaluate(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        if curriculum_mode is True:
-            if CurriculumInfo.static_curriculum_toggle is True:
+        if curriculum_mode == True:
+            if CurriculumInfo.static_curriculum_toggle == True:
                 if initial_grade_switch == False:
                     observations, scenario = env.reset(
                         True, static_coordinator.get_eval_grade()
@@ -273,6 +267,8 @@ def evaluate(
                     initial_grade_switch = True
                 else:
                     observations, scenario = env.reset()
+            elif CurriculumInfo.dynamic_curriculum_toggle == True:
+                observations, scenario = env.reset()
         else:
             observations, scenario = env.reset()
 
@@ -299,8 +295,8 @@ def evaluate(
         scenario["density_counter"] = density_counter
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        if curriculum_mode is True and eval_mode is True:
-            episode.record_tensorboard()
+        if eval_mode is True:
+            episode.record_tensorboard(recording_step=episode.index)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
@@ -321,9 +317,9 @@ def evaluate(
                 num_episodes, static_coordinator.get_eval_grade()
             )
             scenario_data_handler_eval.save_grade_density(num_episodes)
-        else:
-            scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
-            scenario_data_handler_eval.save_grade_density(num_episodes)
+    else:
+        scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+        scenario_data_handler_eval.save_grade_density(num_episodes)
 
     try:
         if eval_mode:
@@ -341,72 +337,31 @@ def evaluate(
     return summary_log
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser("intersection-evaluation")
-    parser.add_argument(
-        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
-    )
-    parser.add_argument(
-        "--level",
-        help="Levels available : [easy, medium, hard, no-traffic]",
-        type=str,
-        default="easy",
-    )
-    parser.add_argument(
-        "--models",
-        nargs="+",
-        help="The models in the models/ directory of the experiment to evaluate",
-    )
-    parser.add_argument(
-        "--episodes", help="Number of training episodes", type=int, default=200
-    )
-    parser.add_argument(
-        "--max-episode-steps",
-        help="Maximum number of steps per episode",
-        type=int,
-        default=200,
-    )
-    parser.add_argument(
-        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
-    )
-    parser.add_argument(
-        "--headless", help="Run without envision", type=str_to_bool, default="True"
-    )
-    parser.add_argument(
-        "--experiment-dir",
-        help="Path to the experiment directory",
-        type=str,
-    )
-    parser.add_argument(
-        "--log-dir",
-        help="Log directory location",
-        default="logs",
-        type=str,
-    )
-    parser.add_argument(
-        "--curriculum-mode",
-        help="Toggle curriculum mode",
-        default=False,
-        type=bool,
-    )
-    args = parser.parse_args()
-
-    if not os.path.exists(args.log_dir):
-        os.makedirs(args.log_dir)
-
-    if not all([os.path.exists(model_path) for model_path in args.models]):
+def evaluate_saved_models(
+    experiment_dir: str,
+    log_dir: str,
+    headless: bool,
+    max_episode_steps: int,
+    model_paths: Sequence[str],
+    num_episodes: int,
+    scenario_info: Tuple[str, str],
+    timestep: float,
+):
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    if not all([os.path.exists(model_path) for model_path in model_paths]):
         raise "At least one path to a model is invalid"
-
-    if not all([os.listdir(model_path) for model_path in args.models]):
+    if not all([os.listdir(model_path) for model_path in model_paths]):
         raise "There are no models to evaluate in at least one model path"
 
+    # Get agent IDs from the models to be evaluated.
     agent_ids_from_models = [
-        os.path.basename(os.path.normpath(model_path)) for model_path in args.models
+        os.path.basename(os.path.normpath(model_path)) for model_path in model_paths
     ]
 
     # Load relevant agent metadata.
     with open(
-        os.path.join(args.experiment_dir, "agent_metadata.pkl"), "rb"
+        os.path.join(experiment_dir, "agent_metadata.pkl"), "rb"
     ) as metadata_file:
         agent_metadata = pickle.load(metadata_file)
 
@@ -431,7 +386,7 @@ if __name__ == "__main__":
     # }
     agent_checkpoint_directories = {
         agent_id: sorted(
-            glob.glob(os.path.join(args.experiment_dir, "models", agent_id, "*")),
+            glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
             key=lambda x: int(x.split("/")[-1]),
         )
         for agent_id in agent_ids
@@ -458,7 +413,7 @@ if __name__ == "__main__":
         for episode in episodes(
             number_of_checkpoints,
             etag=etag,
-            log_dir=args.log_dir,
+            log_dir=log_dir,
         ):
             # Obtain a checkpoint directory for each agent.
             current_checkpoint_directories = {
@@ -469,23 +424,80 @@ if __name__ == "__main__":
             episode.info[episode.active_tag] = ray.get(
                 [
                     evaluate.remote(
-                        experiment_dir=args.experiment_dir,
+                        experiment_dir=experiment_dir,
                         agent_ids=agent_ids,
                         policy_classes=policy_classes,
                         seed=episode.eval_count,
                         checkpoint_dirs=current_checkpoint_directories,
-                        scenario_info=(args.task, args.level),
-                        num_episodes=int(args.episodes),
-                        max_episode_steps=int(args.max_episode_steps),
-                        timestep_sec=float(args.timestep),
-                        headless=args.headless,
-                        log_dir=args.log_dir,
-                        curriculum_mode=args.curriculum_mode,
+                        scenario_info=scenario_info,
+                        num_episodes=num_episodes,
+                        max_episode_steps=max_episode_steps,
+                        timestep_sec=timestep,
+                        headless=headless,
+                        log_dir=log_dir,
                     )
                 ]
             )[0]
-            episode.record_tensorboard()
+            episode.record_tensorboard(recording_step=0)
             episode.eval_count += 1
     finally:
         time.sleep(1)
         ray.shutdown()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("intersection-evaluation")
+    parser.add_argument(
+        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
+    )
+    parser.add_argument(
+        "--level",
+        help="Levels available : [easy, medium, hard, no-traffic]",
+        type=str,
+        default="easy",
+    )
+    parser.add_argument(
+        "--models",
+        nargs="+",
+        help="The models in the models/ directory of the experiment to evaluate",
+    )
+    parser.add_argument(
+        "--episodes", help="Number of training episodes", type=int, default=200
+    )
+    parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
+    )
+    parser.add_argument(
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
+    )
+    parser.add_argument(
+        "--headless",
+        help="Run without envision",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--experiment-dir",
+        help="Path to the experiment directory",
+        type=str,
+    )
+    parser.add_argument(
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
+    )
+    args = parser.parse_args()
+
+    evaluate_saved_models(
+        experiment_dir=args.experiment_dir,
+        log_dir=args.log_dir,
+        headless=args.headless,
+        max_episode_steps=int(args.max_episode_steps),
+        model_paths=args.models,
+        num_episodes=int(args.episodes),
+        scenario_info=(args.task, args.level),
+        timestep=float(args.timestep),
+    )

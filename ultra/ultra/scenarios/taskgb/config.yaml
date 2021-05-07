@@ -4,7 +4,7 @@
 levels:
   grade1:
     train:
-      total: 10
+      total: 1000
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -24,7 +24,7 @@ levels:
                    [50kmh,high-density,0.02],[70kmh,high-density,0.02],[100kmh,high-density,0.01]] #5%
            stops: null
     test:
-      total: 10
+      total: 300
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -39,7 +39,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade2:
     train:
-      total: 10
+      total: 500
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -66,7 +66,7 @@ levels:
                    [50kmh,high-density,0.02],[70kmh,high-density,0.02],[100kmh,high-density,0.01]] #5%
            stops: null
     test:
-      total: 10
+      total: 300
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -88,7 +88,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade3:
     train:
-      total: 10
+      total: 500
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -115,7 +115,7 @@ levels:
                    [50kmh,high-density,0.07],[70kmh,high-density,0.07],[100kmh,high-density,0.06]] #20%
            stops: null
     test:
-      total: 10
+      total: 300
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -130,7 +130,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade4:
     train:
-      total: 10
+      total: 500
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -157,7 +157,7 @@ levels:
                    [50kmh,high-density,0.20],[70kmh,high-density,0.20],[100kmh,high-density,0.20]] #60%
            stops: null
     test:
-      total: 10
+      total: 300
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -245,7 +245,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   high-density:
     train:
-      total: null
+      total: 1
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -255,12 +255,49 @@ levels:
            specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
            stops: null
     test:
-      total: null
+      total: 250
       ego_missions:
       - start: south-SN
         end:   west-EW
       intersection_types:
         2lane_c:
+           percent: 0.5
+           specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
+           stops: null
+        3lane_c:
+           percent: 0.5
+           specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
+           stops: null
+
+  # Evaluation only scenarios ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  eval-equal:
+    train:
+      total: 1
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
            percent: 1
            specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
+           stops: null
+    test:
+      total: 1200
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+           percent: 0.5
+           specs: [[50kmh,no-traffic,0.08],[70kmh,no-traffic,0.09],[100kmh,no-traffic,0.08], #25%
+                   [50kmh,low-density,0.08],[70kmh,low-density,0.09],[100kmh,low-density,0.08], #25%
+                   [50kmh,mid-density,0.08],[70kmh,mid-density,0.09],[100kmh,mid-density,0.08], #25%
+                   [50kmh,high-density,0.08],[70kmh,high-density,0.09],[100kmh,high-density,0.08]] #25%
+           stops: null
+        3lane_c:
+           percent: 0.5
+           specs: [[50kmh,no-traffic,0.08],[70kmh,no-traffic,0.09],[100kmh,no-traffic,0.08], #25%
+                   [50kmh,low-density,0.08],[70kmh,low-density,0.09],[100kmh,low-density,0.08], #25%
+                   [50kmh,mid-density,0.08],[70kmh,mid-density,0.09],[100kmh,mid-density,0.08], #25%
+                   [50kmh,high-density,0.08],[70kmh,high-density,0.09],[100kmh,high-density,0.08]] #25%
            stops: null

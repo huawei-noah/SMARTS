@@ -143,7 +143,7 @@ levels:
            percent: 0.5
            specs: [[50kmh,high-density,0.21],[70kmh,high-density,0.2],[100kmh,high-density,0.2], #61%
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
-                   [50kmh,low-density,0.01],[70kmh,low-density,0.01],[100kmh,low-density,0.01]] # 3%
+                   [50kmh,low-density,0.01],[70kmh,low-density,0.01],[100kmh,low-density,0.01]] # 3%]
            stops: null
         3lane_c:
            percent: 0.5

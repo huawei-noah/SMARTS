@@ -88,8 +88,7 @@ class CurriculumTest(unittest.TestCase):
             os.system(
                 f"python ultra/train.py --curriculum-mode True --curriculum-dir {curriculum_dir} \
                 --headless True --episodes 1 --max-episode-steps 2 --curriculum-scenarios-root-dir tests/scenarios \
-                --eval-episodes 0 --curriculum-scenarios-save-dir {CurriculumTest.OUTPUT_DIRECTORY} --log-dir {log_dir} \
-                --curriculum-build-scenarios True"
+                --eval-episodes 0 --curriculum-scenarios-save-dir {CurriculumTest.OUTPUT_DIRECTORY} --log-dir {log_dir}"
             )
         except Exception as err:
             print(err)
@@ -181,8 +180,10 @@ class CurriculumTest(unittest.TestCase):
             graduate = agent_coordinator.graduate(episode.index, num_episodes)
             # If agent switches to new grade
             if graduate == True:
-                self.assertEqual(next(grade_iterator), agent_coordinator.get_grade()[0])
-                print(agent_coordinator.get_grade()[0])
+                self.assertEqual(
+                    next(grade_iterator), agent_coordinator.get_train_grade()[0]
+                )
+                print(agent_coordinator.get_train_grade()[0])
 
             # If agent has completed all levels (no cycle through levels again)
             if agent_coordinator.check_cycle_condition(episode.index):
