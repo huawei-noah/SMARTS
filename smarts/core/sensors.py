@@ -33,6 +33,7 @@ import numpy as np
 from smarts.core import coordinates
 from smarts.core import scenario
 from smarts.core import waypoints
+from smarts.core.agent_interface import AgentsAliveDoneCriteria
 from smarts.core.coordinates import BoundingBox, Heading, HeadingMethods
 from smarts.core.events import Events
 from smarts.core.lidar import Lidar
@@ -535,6 +536,46 @@ class Sensors:
         return sensor_state.step()
 
     @classmethod
+    def _agents_alive_done_check(
+        cls, agent_manager, agents_alive: AgentsAliveDoneCriteria
+    ):
+        if not agents_alive:
+            return False
+
+        if (
+            agents_alive.minimum_ego_agents_alive
+            and len(agent_manager.ego_agent_ids) < agents_alive.minimum_ego_agents_alive
+        ):
+            return True
+        if (
+            agents_alive.minimum_total_agents_alive
+            and len(agent_manager.agent_ids) < agents_alive.minimum_total_agents_alive
+        ):
+            return True
+        if agents_alive.agent_lists_alive:
+            for agents_list_alive in agents_alive.agent_lists_alive:
+                assert isinstance(
+                    agents_list_alive.agents_list, (List, Set, Tuple)
+                ), "Please specify a list of agent ids to watch"
+                assert isinstance(
+                    agents_list_alive.minimum_agents_alive_in_list, int
+                ), "Please specify an int for minimum number of alive agents in the list"
+                assert (
+                    agents_list_alive.minimum_agents_alive_in_list >= 0
+                ), "minimum_agents_alive_in_list should not be negative"
+                agents_alive_check = [
+                    1 if id in agent_manager.agent_ids else 0
+                    for id in agents_list_alive.agents_list
+                ]
+                if (
+                    agents_alive_check.count(1)
+                    < agents_list_alive.minimum_agents_alive_in_list
+                ):
+                    return True
+
+        return False
+
+    @classmethod
     def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state):
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
@@ -548,6 +589,9 @@ class Sensors:
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
             sim, vehicle
         )
+        agents_alive_done = cls._agents_alive_done_check(
+            sim.agent_manager, done_criteria.agents_alive
+        )
 
         done = (
             (is_off_road and done_criteria.off_road)
@@ -558,6 +602,7 @@ class Sensors:
             or (is_not_moving and done_criteria.not_moving)
             or (is_off_route and done_criteria.off_route)
             or (is_wrong_way and done_criteria.wrong_way)
+            or agents_alive_done
         )
 
         events = Events(
@@ -569,6 +614,7 @@ class Sensors:
             on_shoulder=is_on_shoulder,
             wrong_way=is_wrong_way,
             not_moving=is_not_moving,
+            agents_alive_done=agents_alive_done,
         )
 
         return done, events

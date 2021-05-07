@@ -21,6 +21,7 @@ import argparse
 import asyncio
 import bisect
 import importlib.resources as pkg_resources
+import ijson
 import json
 import logging
 import random
@@ -40,6 +41,7 @@ from tornado.websocket import WebSocketClosedError
 
 import smarts.core.models
 from envision.web import dist as web_dist
+from envision.types import State
 from smarts.core.utils.file import path2hash
 
 logging.basicConfig(level=logging.WARNING)
@@ -65,8 +67,8 @@ class AllowCORSMixin:
 
 
 class Frame:
-    def __init__(self, data: str, timestamp: int, next_=None):
-        # Time since epoch in seconds
+    def __init__(self, data: str, timestamp: float, next_=None):
+        """data is a State object that was converted to string using json.dumps"""
         self._timestamp = timestamp
         self._data = data
         self._size = sys.getsizeof(data)
@@ -101,10 +103,7 @@ class Frames:
 
     @property
     def start_frame(self):
-        if len(self._frames) == 0:
-            return None
-
-        return self._frames[0]
+        return self._frames[0] if self._frames else None
 
     @property
     def start_time(self):
@@ -114,15 +113,12 @@ class Frames:
     def elapsed_time(self):
         if len(self._frames) == 0:
             return 0
-
         return self._frames[-1].timestamp - self._frames[0].timestamp
 
     def append(self, frame: Frame):
         self._enforce_max_capacity()
-
         if len(self._frames) >= 1:
             self._frames[-1].next_ = frame
-
         self._frames.append(frame)
         self._timestamps.append(frame.timestamp)
 
@@ -131,7 +127,6 @@ class Frames:
         frame_idx = bisect.bisect_left(self._timestamps, timestamp)
         if frame_idx >= len(self._frames):
             frame_idx = -1
-
         return self._frames[frame_idx]
 
     def _enforce_max_capacity(self):
@@ -180,29 +175,33 @@ class WebClientRunLoop:
             self._thread = None
 
     def run_forever(self):
-        async def run_loop():
-            # If no frame, wait till one is present
-            frame = self._frames.start_frame
-            while frame is None:
-                await asyncio.sleep(0.1)
-                frame = self._frames.start_frame
+        def run_loop():
+            frame_ptr = None
+            # wait until we have a start_frame...
+            while frame_ptr is None:
+                time.sleep(0.5 * self._timestep_sec)
+                frame_ptr = self._frames.start_frame
+                frames_to_send = [frame_ptr]
 
             while True:
                 # Handle seek
                 if self._seek is not None and self._frames.start_time is not None:
-                    frame = self._frames(self._frames.start_time + self._seek)
+                    frame_ptr = self._frames(self._frames.start_time + self._seek)
+                    if not frame_ptr:
+                        self._log.warning(
+                            "Seek frame missing, reverting to start frame"
+                        )
+                        frame_ptr = self._frames.start_frame
+                    frames_to_send = [frame_ptr]
                     self._seek = None
 
-                if frame is None:
-                    self._log.warning("Seek frame missing, reverting to start frame")
-                    frame = self._frames.start_frame
-
-                closed = self._push_frame_to_web_client(frame)
+                assert len(frames_to_send) > 0
+                closed = self._push_frames_to_web_client(frames_to_send)
                 if closed:
                     self._log.debug("Socket closed, exiting")
                     return
 
-                frame = await self._wait_for_next_frame(frame)
+                frame_ptr, frames_to_send = self._wait_for_next_frame(frame_ptr)
 
         def sync_run_forever():
             loop = asyncio.new_event_loop()
@@ -214,28 +213,36 @@ class WebClientRunLoop:
         self._thread = threading.Thread(target=sync_run_forever, args=(), daemon=True)
         self._thread.start()
 
-    def _push_frame_to_web_client(self, frame):
+    def _push_frames_to_web_client(self, frames):
         try:
-            self._client.write_message(
-                json.dumps(
-                    {
-                        "state": frame.data,
-                        "current_elapsed_time": frame.timestamp
-                        - self._frames.start_time,
-                        "total_elapsed_time": self._frames.elapsed_time,
-                    }
-                )
-            )
+            frames_formatted = [
+                {
+                    "state": frame.data,
+                    "current_elapsed_time": frame.timestamp - self._frames.start_time,
+                    "total_elapsed_time": self._frames.elapsed_time,
+                }
+                for frame in frames
+            ]
+            self._client.write_message(json.dumps(frames_formatted))
             return False
         except WebSocketClosedError:
             return True
 
-    async def _wait_for_next_frame(self, frame):
+    def _calculate_frame_delay(self, frame_ptr):
+        # we may want to be more clever here in the future...
+        return 0.5 * self._timestep_sec if not frame_ptr.next_ else 0
+
+    def _wait_for_next_frame(self, frame_ptr):
+        FRAME_BATCH_SIZE = 100  # limit the batch size for bandwidth and to allow breaks for seeks to be handled
         while True:
-            # TODO: Consider using an asyncio queue instead
-            await asyncio.sleep(self._timestep_sec)
-            if frame.next_ is not None:
-                return frame.next_
+            delay = self._calculate_frame_delay(frame_ptr)
+            time.sleep(delay)
+            frames_to_send = []
+            while frame_ptr.next_ and len(frames_to_send) <= FRAME_BATCH_SIZE:
+                frame_ptr = frame_ptr.next_
+                frames_to_send.append(frame_ptr)
+            if len(frames_to_send) > 0:
+                return frame_ptr, frames_to_send
 
 
 class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
@@ -263,9 +270,8 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         del FRAMES[self._simulation_id]
 
     async def on_message(self, message):
-        time_since_epoch = time.time()
-        frame = Frame(timestamp=time_since_epoch, data=message)
-        self._frames.append(frame)
+        frame_time = next(ijson.items(message, "frame_time", use_float=True))
+        self._frames.append(Frame(timestamp=frame_time, data=message))
 
 
 class StateWebSocket(tornado.websocket.WebSocketHandler):
@@ -282,7 +288,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
             raise tornado.web.HTTPError(404)
 
-        # TODO: Set this appropriately
+        # TODO: Set this appropriately (pass from SMARTS)
         timestep_sec = 0.1
         self._run_loop = WebClientRunLoop(
             frames=FRAMES[simulation_id],

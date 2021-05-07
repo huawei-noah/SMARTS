@@ -34,6 +34,7 @@ class Events(NamedTuple):
     reached_goal: bool
     reached_max_episode_steps: bool
     wrong_way: bool
+    agents_alive_done: bool
 
 
 def events_to_proto(events: Events) -> observation_pb2.Events:
