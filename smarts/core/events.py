@@ -47,6 +47,7 @@ def events_to_proto(events: Events) -> observation_pb2.Events:
         off_road=events.off_road,
         wrong_way=events.wrong_way,
         not_moving=events.not_moving,
+        agents_alive_done=events.agents_alive_done,
     )
 
 
@@ -60,6 +61,7 @@ def proto_to_events(proto: observation_pb2.Events) -> Events:
         off_road=proto.off_road,
         wrong_way=proto.wrong_way,
         not_moving=proto.not_moving,
+        agents_alive_done=proto.agents_alive_done,
     )
 
 

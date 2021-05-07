@@ -62,6 +62,7 @@ message Events {
     bool reached_goal=6;
     bool reached_max_episode_steps=7;
     bool wrong_way=8;
+    bool agents_alive_done=9;
 }
 
 message BoundingBox{
