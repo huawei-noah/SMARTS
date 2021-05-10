@@ -70,6 +70,8 @@ class UltraPackageTest(unittest.TestCase):
                 headless=True,
                 seed=2,
                 log_dir=log_dir,
+                experiment_dir=None,
+                save_model_only=False,
                 curriculum_mode=False,
                 curriculum_metadata={},
             )
