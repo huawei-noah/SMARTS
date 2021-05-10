@@ -207,7 +207,7 @@ class VehicleIndex:
             self._controlled_by["vehicle_id"] == vehicle_id
         ]["actor_id"]
 
-        if actor_ids.size > 0:
+        if actor_ids:
             return self._2id_to_id[actor_ids[0]]
 
         return None
