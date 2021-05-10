@@ -20,17 +20,16 @@
 
 import argparse
 import csv
-import ijson
 import logging
 import math
 import os
 import sqlite3
-import yaml
 
-import pandas as pd
+import ijson
 import numpy as np
+import pandas as pd
+import yaml
 from numpy.lib.stride_tricks import as_strided as stride
-
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide

@@ -28,12 +28,12 @@ import sqlite3
 import uuid
 from dataclasses import dataclass, field
 from functools import lru_cache
-from cached_property import cached_property
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
 
 import numpy as np
+from cached_property import cached_property
 
 from smarts.core.coordinates import Heading
 from smarts.core.data_model import SocialAgent

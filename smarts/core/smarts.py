@@ -19,13 +19,13 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import logging
+import math
 import os
 import warnings
 from collections import defaultdict
-from typing import List, Sequence
 from time import time
+from typing import List, Sequence
 
-import math
 import numpy
 
 from envision import types as envision_types

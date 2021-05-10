@@ -36,9 +36,9 @@ from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
+from .renderer import Renderer
 from .scenario import Mission, Via
 from .waypoints import Waypoint
-from .renderer import Renderer
 
 logger = logging.getLogger(__name__)
 
