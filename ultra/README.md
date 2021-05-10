@@ -25,6 +25,7 @@ Get started by choosing an option below.
 - [More about ULTRA Agents](docs/agent.md)
 - [ULTRA supports RLlib](docs/rllib.md)
 - [Multi-agent Experiments in ULTRA](docs/multiagent.md)
+- [Curriculum learning in ULTRA](docs/curriculum_learning.md)
 
 ### Citing ULTRA
 For a longer introduction to ULTRA, including its purpose, concepts, and benchmarks, please see [ULTRA: A reinforcement learning generatlization benchmark for autonomous driving](https://ml4ad.github.io/files/papers2020/ULTRA:%20A%20reinforcement%20learning%20generalization%20benchmark%20for%20autonomous%20driving.pdf).
