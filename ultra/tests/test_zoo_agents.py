@@ -43,6 +43,10 @@ class KeepLaneAgent(Agent):
     def act(self, _):
         return "keep_lane"
 
+    # TODO: Remove if/when smarts.core.agent.Agent has this method.
+    def save(self, _):
+        pass
+
 
 register(
     locator="waypoints_test_agent-v0",
