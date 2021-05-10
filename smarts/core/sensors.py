@@ -390,7 +390,7 @@ class Sensors:
         )
 
         events = Events(
-            collisions=sim.vehicle_collisions(vehicle.id) and not reached_goal,
+            collisions=sim.vehicle_collisions(vehicle.id),
             off_road=is_off_road and not reached_goal,
             reached_goal=reached_goal,
             reached_max_episode_steps=reached_max_episode_steps and not reached_goal,
