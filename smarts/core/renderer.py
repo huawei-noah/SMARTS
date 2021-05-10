@@ -19,34 +19,35 @@
 # THE SOFTWARE.
 
 
-from __future__ import (
+from __future__ import (  # to allow for typing to refer to class being defined (Renderer)
     annotations,
-)  # to allow for typing to refer to class being defined (Renderer)
-import os
+)
+
+import importlib.resources as pkg_resources
 import logging
+import os
 from threading import Lock
 from typing import NamedTuple
-import importlib.resources as pkg_resources
 
 import gltf
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
-    NodePath,
-    Shader,
-    loadPrcFileData,
     FrameBufferProperties,
     GraphicsOutput,
     GraphicsPipe,
+    NodePath,
     OrthographicLens,
+    Shader,
     Texture,
     WindowProperties,
+    loadPrcFileData,
 )
 
 from . import glsl, models
-from .masks import RenderMasks
 from .colors import SceneColors
-from .scenario import Scenario
 from .coordinates import Pose
+from .masks import RenderMasks
+from .scenario import Scenario
 
 
 class RendererException(Exception):

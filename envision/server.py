@@ -21,7 +21,6 @@ import argparse
 import asyncio
 import bisect
 import importlib.resources as pkg_resources
-import ijson
 import json
 import logging
 import random
@@ -32,6 +31,7 @@ import time
 from pathlib import Path
 from typing import Dict, Sequence
 
+import ijson
 import tornado.gen
 import tornado.ioloop
 import tornado.iostream
@@ -40,8 +40,8 @@ import tornado.websocket
 from tornado.websocket import WebSocketClosedError
 
 import smarts.core.models
-from envision.web import dist as web_dist
 from envision.types import State
+from envision.web import dist as web_dist
 from smarts.core.utils.file import path2hash
 
 logging.basicConfig(level=logging.WARNING)

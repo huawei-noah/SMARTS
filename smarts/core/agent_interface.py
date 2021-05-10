@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field, replace
 from enum import IntEnum
-from typing import Optional, Union, List, Tuple
+from typing import List, Optional, Tuple, Union
 
 from .controllers import ActionSpaceType
 from .lidar_sensor_params import BasicLidar
