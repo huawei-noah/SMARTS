@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import json
 import os
-import shutil
+import shutil, glob
 import sys
 import unittest
 
@@ -31,7 +31,7 @@ import ray
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
-from ultra.train import train
+from ultra.train import train, load_model
 
 seed = 2
 
@@ -40,135 +40,188 @@ class TrainTest(unittest.TestCase):
     # Put generated files and folders in this directory.
     OUTPUT_DIRECTORY = "tests/train_test/"
 
-    def test_train_cli(self):
-        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+    @classmethod
+    def setUpClass(cls):
+        """Trained a model"""
+        model_log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/")
         try:
             os.system(
-                f"python ultra/train.py --task 00 --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir}"
+                f"python ultra/train.py --task 00 --level easy --episodes 4 --eval-rate 2 --max-episode-steps 2 --log-dir {model_log_dir} --save-model-only True"
             )
         except Exception as err:
             print(err)
             self.assertTrue(False)
 
-        if not os.path.exists(log_dir):
+        if not os.path.exists(model_log_dir):
             self.assertTrue(False)
 
-    def test_train_cli_multiagent(self):
-        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+    # def test_train_cli(self):
+    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+    #     try:
+    #         os.system(
+    #             f"python ultra/train.py --task 00 --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir}"
+    #         )
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
+
+    #     if not os.path.exists(log_dir):
+    #         self.assertTrue(False)
+
+    # def test_train_cli_multiagent(self):
+    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+    #     try:
+    #         os.system(
+    #             f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
+    #         )
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
+
+    #     if not os.path.exists(log_dir):
+    #         self.assertTrue(False)
+
+    # def test_train_single_agent(self):
+    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+    #     if os.path.exists(log_dir):
+    #         shutil.rmtree(log_dir)
+
+    #     seed = 2
+    #     policy_classes = ["ultra.baselines.sac:sac-v0"]
+
+    #     ray.shutdown()
+    #     try:
+    #         ray.init(ignore_reinit_error=True)
+    #         train(
+    #             scenario_info=("00", "easy"),
+    #             policy_classes=policy_classes,
+    #             num_episodes=1,
+    #             max_episode_steps=2,
+    #             eval_info={
+    #                 "eval_rate": 1000,
+    #                 "eval_episodes": 2,
+    #             },
+    #             timestep_sec=0.1,
+    #             headless=True,
+    #             seed=2,
+    #             curriculum_mode=False,
+    #             curriculum_metadata={},
+    #             log_dir=log_dir,
+    #         )
+    #         ray.shutdown()
+    #         self.assertTrue(True)
+    #     except ray.exceptions.WorkerCrashedError as err:
+    #         print(err)
+    #         self.assertTrue(False)
+    #         ray.shutdown()
+
+    # def test_train_multiagent(self):
+    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+    #     if os.path.exists(log_dir):
+    #         shutil.rmtree(log_dir)
+
+    #     seed = 2
+    #     policy_classes = [
+    #         "ultra.baselines.sac:sac-v0",
+    #         "ultra.baselines.ppo:ppo-v0",
+    #         "ultra.baselines.td3:td3-v0",
+    #     ]
+
+    #     ray.shutdown()
+    #     try:
+    #         ray.init(ignore_reinit_error=True)
+    #         train(
+    #             scenario_info=("00-multiagent", "easy"),
+    #             policy_classes=policy_classes,
+    #             num_episodes=1,
+    #             max_episode_steps=2,
+    #             eval_info={
+    #                 "eval_rate": 1000,
+    #                 "eval_episodes": 2,
+    #             },
+    #             timestep_sec=0.1,
+    #             headless=True,
+    #             seed=2,
+    #             curriculum_mode=False,
+    #             curriculum_metadata={},
+    #             log_dir=log_dir,
+    #         )
+    #         ray.shutdown()
+    #         self.assertTrue(True)
+    #     except ray.exceptions.WorkerCrashedError as err:
+    #         print(err)
+    #         self.assertTrue(False)
+    #         ray.shutdown()
+
+    # def test_train_models(self):
+    #     '''Further train the trained model'''
+    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+    #     experiment_dir = experiment_dir = glob.glob(
+    #         os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
+    #     )[0]
+    #     try:
+    #         os.system(
+    #             f"python ultra/train.py --task 00 --level easy --episodes 5 --eval-episodes 0 --max-episode-steps 2 --experiment-dir {experiment_dir} --log-dir {log_dir}"
+    #         )
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
+
+    #     if not os.path.exists(log_dir):
+    #         self.assertTrue(False)
+
+    #     shutil.rmtree(log_dir)
+
+    def test_load_model(self):
+        experiment_dir = experiment_dir = glob.glob(
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
+        )[0]
+        agent_ids, agent_classes, agent_specs = load_model(experiment_dir)
+
+        self.assertEqual(agent_ids[0], "000")
+        self.assertEqual(agent_classes[agent_ids[0]], "ultra.baselines.sac:sac-v0")
+        self.assertIsInstance(agent_specs[agent_ids[0]], AgentSpec)
+
         try:
-            os.system(
-                f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
-            )
+            agents = {
+                agent_id: agent_spec.build_agent()
+                for agent_id, agent_spec in agent_specs.items()
+            }
         except Exception as err:
             print(err)
             self.assertTrue(False)
 
-        if not os.path.exists(log_dir):
-            self.assertTrue(False)
+    # def test_check_agents_from_pool(self):
+    #     seed = 2
+    #     policy = ""
 
-    def test_train_single_agent(self):
-        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
-        if os.path.exists(log_dir):
-            shutil.rmtree(log_dir)
+    #     with open("ultra/agent_pool.json") as f:
+    #         data = json.load(f)
+    #         for policy in data["agents"].keys():
+    #             policy_path = data["agents"][policy]["path"]
+    #             policy_locator = data["agents"][policy]["locator"]
+    #             policy_class = str(policy_path) + ":" + str(policy_locator)
+    #             try:
+    #                 spec = make(locator=policy_class)
+    #                 agent = spec.build_agent()
+    #             except ImportError as err:
+    #                 self.assertTrue(False)
 
-        seed = 2
-        policy_classes = ["ultra.baselines.sac:sac-v0"]
+    # def test_spec_is_instance_agentspec(self):
+    #     policy_class = "ultra.baselines.sac:sac-v0"
+    #     spec = make(locator=policy_class)
+    #     self.assertIsInstance(spec, AgentSpec)
 
-        ray.shutdown()
-        try:
-            ray.init(ignore_reinit_error=True)
-            train(
-                scenario_info=("00", "easy"),
-                policy_classes=policy_classes,
-                num_episodes=1,
-                max_episode_steps=2,
-                eval_info={
-                    "eval_rate": 1000,
-                    "eval_episodes": 2,
-                },
-                timestep_sec=0.1,
-                headless=True,
-                seed=2,
-                curriculum_mode=False,
-                curriculum_metadata={},
-                log_dir=log_dir,
-            )
-            ray.shutdown()
-            self.assertTrue(True)
-        except ray.exceptions.WorkerCrashedError as err:
-            print(err)
-            self.assertTrue(False)
-            ray.shutdown()
+    # def test_agent_is_instance_policy(self):
+    #     policy_class = "ultra.baselines.sac:sac-v0"
+    #     spec = make(locator=policy_class)
+    #     agent = spec.build_agent()
+    #     self.assertIsInstance(agent, SACPolicy)
 
-    def test_train_multiagent(self):
-        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
-        if os.path.exists(log_dir):
-            shutil.rmtree(log_dir)
-
-        seed = 2
-        policy_classes = [
-            "ultra.baselines.sac:sac-v0",
-            "ultra.baselines.ppo:ppo-v0",
-            "ultra.baselines.td3:td3-v0",
-        ]
-
-        ray.shutdown()
-        try:
-            ray.init(ignore_reinit_error=True)
-            train(
-                scenario_info=("00-multiagent", "easy"),
-                policy_classes=policy_classes,
-                num_episodes=1,
-                max_episode_steps=2,
-                eval_info={
-                    "eval_rate": 1000,
-                    "eval_episodes": 2,
-                },
-                timestep_sec=0.1,
-                headless=True,
-                seed=2,
-                curriculum_mode=False,
-                curriculum_metadata={},
-                log_dir=log_dir,
-            )
-            ray.shutdown()
-            self.assertTrue(True)
-        except ray.exceptions.WorkerCrashedError as err:
-            print(err)
-            self.assertTrue(False)
-            ray.shutdown()
-
-    def test_check_agents_from_pool(self):
-        seed = 2
-        policy = ""
-
-        with open("ultra/agent_pool.json") as f:
-            data = json.load(f)
-            for policy in data["agents"].keys():
-                policy_path = data["agents"][policy]["path"]
-                policy_locator = data["agents"][policy]["locator"]
-                policy_class = str(policy_path) + ":" + str(policy_locator)
-                try:
-                    spec = make(locator=policy_class)
-                    agent = spec.build_agent()
-                except ImportError as err:
-                    self.assertTrue(False)
-
-    def test_spec_is_instance_agentspec(self):
-        policy_class = "ultra.baselines.sac:sac-v0"
-        spec = make(locator=policy_class)
-        self.assertIsInstance(spec, AgentSpec)
-
-    def test_agent_is_instance_policy(self):
-        policy_class = "ultra.baselines.sac:sac-v0"
-        spec = make(locator=policy_class)
-        agent = spec.build_agent()
-        self.assertIsInstance(agent, SACPolicy)
-
-    def tearDown(self):
-        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
-        if os.path.exists(log_dir):
-            shutil.rmtree(log_dir)
+    # def tearDown(self):
+    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+    #     if os.path.exists(log_dir):
+    #         shutil.rmtree(log_dir)
 
     @classmethod
     def tearDownClass(cls):

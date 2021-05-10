@@ -52,6 +52,56 @@ from ultra.utils.curriculum.dynamic_scenarios import DynamicScenarios
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
+def load_model(experiment_dir):
+    # Load relevant agent metadata.
+    with open(
+        os.path.join(experiment_dir, "agent_metadata.pkl"), "rb"
+    ) as metadata_file:
+        agent_metadata = pickle.load(metadata_file)
+
+    for key in agent_metadata.keys():
+        assert key in ["agent_ids", "agent_classes", "agent_specs"]
+
+    # Extract the agent IDs and policy classes from the metadata and given models.
+    agent_ids = [agent_id for agent_id in agent_metadata["agent_ids"]]
+
+    agent_classes = {
+        agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
+    }
+
+    agent_checkpoint_directories = {
+        agent_id: sorted(
+            glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
+            key=lambda x: int(x.split("/")[-1]),
+        )
+        for agent_id in agent_ids
+    }
+
+    length_dir = len(agent_checkpoint_directories[agent_ids[0]])
+    if length_dir > 1:
+        print(
+            f"\nThere are {length_dir} models inside in the experiment dir. Only the latest model >>> {agent_checkpoint_directories[agent_ids[0]][length_dir-1]} <<< will be trained\n"
+        )
+
+    current_checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][
+        length_dir - 1
+    ]
+
+    # Create the agent specifications matched with their associated ID and corresponding
+    # checkpoint directory
+    agent_specs = {
+        agent_id: make(
+            locator=agent_classes[agent_id],
+            checkpoint_dir=current_checkpoint_directory,
+            experiment_dir=experiment_dir,
+            agent_id=agent_id,
+        )
+        for agent_id in agent_ids
+    }
+
+    return agent_ids, agent_classes, agent_specs
+
+
 def train(
     scenario_info,
     num_episodes,
@@ -62,6 +112,8 @@ def train(
     headless,
     seed,
     log_dir,
+    experiment_dir,
+    save_model_only,
     curriculum_mode,
     curriculum_metadata,
     policy_ids=None,
@@ -71,88 +123,23 @@ def train(
     finished = False
     evaluation_task_ids = dict()
 
-    # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
-    # or use the provided policy_ids if available.
-    agent_ids = (
-        ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
-        if not policy_ids
-        else policy_ids
-    )
-    # Ensure there is an ID for each policy, and a policy for each ID.
-    assert len(agent_ids) == len(policy_classes), (
-        "The number of agent IDs provided ({}) must be equal to "
-        "the number of policy classes provided ({}).".format(
-            len(agent_ids), len(policy_classes)
+    if experiment_dir:
+        agent_ids, agent_classes, agent_specs = load_model(experiment_dir)
+    else:
+        # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
+        # or use the provided policy_ids if available.
+        agent_ids = (
+            ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
+            if not policy_ids
+            else policy_ids
         )
-    )
-
-    saved_model = True
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if saved_model == True:
-        experiment_dir = "saved_train/experiment-2021.5.6-22:52:32-ppo-v0/"
-        # Load relevant agent metadata.
-        with open(
-            "saved_train/experiment-2021.5.6-22:52:32-ppo-v0/agent_metadata.pkl", "rb"
-        ) as metadata_file:
-            agent_metadata = pickle.load(metadata_file)
-
-        for key in agent_metadata.keys():
-            print(f"KEY: {key} -> {agent_metadata[key]}")
-
-        # Extract the agent IDs and policy classes from the metadata and given models.
-        agent_ids = [agent_id for agent_id in agent_metadata["agent_ids"]]
-        print("AGENT IDS", agent_ids)
-
-        agent_classes = {
-            agent_id: agent_metadata["agent_classes"][agent_id]
-            for agent_id in agent_ids
-        }
-        print("AGENT CLASSES", agent_classes)
-
-        agent_checkpoint_directories = {
-            agent_id: sorted(
-                glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
-                key=lambda x: int(x.split("/")[-1]),
+        # Ensure there is an ID for each policy, and a policy for each ID.
+        assert len(agent_ids) == len(policy_classes), (
+            "The number of agent IDs provided ({}) must be equal to "
+            "the number of policy classes provided ({}).".format(
+                len(agent_ids), len(policy_classes)
             )
-            for agent_id in agent_ids
-        }
-        print("AGENT CHECKPOINT DIRS", agent_checkpoint_directories)
-
-        directories_iterator = iter(agent_checkpoint_directories.values())
-        number_of_checkpoints = len(next(directories_iterator))
-        assert all(
-            len(checkpoint_directory) == number_of_checkpoints
-            for checkpoint_directory in directories_iterator
-        ), "Not all agents have the same number of checkpoints saved"
-
-        current_checkpoint_directories = {
-            agent_id: agent_directories[0]
-            for agent_id, agent_directories in agent_checkpoint_directories.items()
-        }
-        print("AGENT CURRENT CHECKPOINT DIRS", current_checkpoint_directories)
-
-        # Create the agent specifications matched with their associated ID.
-        agent_specs = {
-            agent_id: make(
-                locator=agent_classes[agent_id],
-                checkpoint_dir=current_checkpoint_directories[agent_id],
-                experiment_dir=experiment_dir,
-                max_episode_steps=max_episode_steps,
-                agent_id=agent_id,
-            )
-            for agent_id in agent_ids
-        }
-        print("AGENT SPECS", agent_specs)
-        
-        # Create the agents matched with their associated ID.
-        agents = {
-            agent_id: agent_spec.build_agent()
-            for agent_id, agent_spec in agent_specs.items()
-        }
-        print("AGENTS:", agents)
-
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if saved_model == False:
+        )
         # Assign the policy classes to their associated ID.
         agent_classes = {
             agent_id: policy_class
@@ -163,11 +150,12 @@ def train(
             agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
             for agent_id, policy_class in agent_classes.items()
         }
-        # Create the agents matched with their associated ID.
-        agents = {
-            agent_id: agent_spec.build_agent()
-            for agent_id, agent_spec in agent_specs.items()
-        }
+
+    # Create the agents matched with their associated ID.
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
 
     # Define an 'etag' for this experiment's data directory based off policy_classes.
     # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
@@ -188,12 +176,10 @@ def train(
                 curriculum_metadata
             )
             static_coordinator = None
-        save_model_only = True
     else:
         print("\n------------ Curriculum MODE : Disabled ------------\n")
         dynamic_coordinator = None
         static_coordinator = None
-        save_model_only = False
 
     scenario_data_handler = ScenarioDataHandler("Train")
 
@@ -381,7 +367,9 @@ def train(
     filepath = os.path.join(episode.experiment_dir, "Train.csv")
     scenario_data_handler.plot_densities_data(filepath, curriculum_mode)
 
-    print(scenario_data_handler.overall_densities_counter)
+    print(
+        "\nTotal scenario occurances:", scenario_data_handler.overall_densities_counter
+    )
 
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):
@@ -504,6 +492,18 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
+        "--experiment-dir",
+        help="Path to the base dir of trained model",
+        default=None,
+        type=str,
+    )
+    parser.add_argument(
+        "--save-model-only",
+        help="Model is saved at checkpoint, but no evaluation occurs",
+        default="False",
+        type=str_to_bool,
+    )
+    parser.add_argument(
         "--curriculum-mode",
         help="Toggle grade based mode",
         default="False",
@@ -561,6 +561,8 @@ if __name__ == "__main__":
         policy_classes=policy_classes,
         seed=args.seed,
         log_dir=args.log_dir,
+        experiment_dir=args.experiment_dir,
+        save_model_only=args.save_model_only,
         curriculum_mode=args.curriculum_mode,
         curriculum_metadata={
             "curriculum_dir": args.curriculum_dir,
