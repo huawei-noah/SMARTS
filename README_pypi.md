@@ -19,30 +19,4 @@ py -m pip install smarts
  
 # For Unix/MACOSX user
 python3 -m pip install smarts
-
-# Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
-./install_deps.sh
-
-# verify sumo is >= 1.5.0
-# if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
-sumo
-
-# setup virtual environment; presently only Python 3.7.x is officially supported
-python3.7 -m venv .venv
-
-# enter virtual environment to install all dependencies
-source .venv/bin/activate
-
-# upgrade pip, a recent version of pip is needed for the version of tensorflow we depend on
-pip install --upgrade pip
-
-# install [train] version of python package with the rllib dependencies
-pip install -e .[train]
-
-# make sure you can run sanity-test (and verify they are passing)
-# if tests fail, check './sanity_test_result.xml' for test report. 
-pip install -e .[test]
-make sanity-test
-
-# then you can run a scenario, see following section for more details
 ```
