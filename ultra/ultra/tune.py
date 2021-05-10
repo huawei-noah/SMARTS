@@ -239,7 +239,6 @@ def _save_best_params(best_conditions: Sequence[str], result: ExperimentAnalysis
 def _perform_evaluation_on_best(
     best_conditions: Sequence[str],
     headless: bool,
-    max_episode_steps: int,
     num_episodes: int,
     result: ExperimentAnalysis,
     scenario_info: Tuple[str, str],
@@ -260,7 +259,6 @@ def _perform_evaluation_on_best(
         experiment_dir=evaluation_experiment_dir,
         log_dir=evaluation_results_dir,
         headless=headless,
-        max_episode_steps=max_episode_steps,
         model_paths=evaluation_models_dir,
         num_episodes=num_episodes,
         scenario_info=scenario_info,
@@ -451,7 +449,6 @@ if __name__ == "__main__":
     _perform_evaluation_on_best(
         best_conditions=[args.metric, args.mode, args.scope],
         headless=args.headless,
-        max_episode_steps=int(args.max_episode_steps),
         num_episodes=int(args.eval_episodes),
         result=result,
         scenario_info=(args.task, args.level),

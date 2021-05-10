@@ -57,7 +57,6 @@ def train(
     scenario_info: Tuple[str, str],
     num_episodes: int,
     agent_infos: Dict[str, Dict[str, Any]],
-    max_episode_steps: int,
     eval_info: Dict[str, Any],
     timestep_sec: float,
     headless: bool,
@@ -129,7 +128,6 @@ def train(
             agent_infos=agent_infos,
             episode=episode,
             log_dir=log_dir,
-            max_episode_steps=max_episode_steps,
             evaluation_task_ids=evaluation_task_ids,
             **eval_info,
             **env.info,
@@ -369,9 +367,6 @@ if __name__ == "__main__":
         #         "spec_eval_params": {},
         #     },
         # },
-        # TODO: Get rid of max_episode_steps argument. Each agent can take their own
-        #       max_episode_steps argument if they want.
-        max_episode_steps=int(args.max_episode_steps),
         eval_info={
             "eval_rate": float(args.eval_rate),
             "eval_episodes": int(args.eval_episodes),

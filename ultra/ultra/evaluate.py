@@ -55,7 +55,6 @@ def evaluation_check(
     episode,
     eval_rate,
     eval_episodes,
-    max_episode_steps,
     scenario_info,
     timestep_sec,
     headless,
@@ -98,7 +97,6 @@ def evaluation_check(
             checkpoint_dirs={agent_id: checkpoint_directory},
             scenario_info=scenario_info,
             num_episodes=eval_episodes,
-            max_episode_steps=max_episode_steps,
             headless=headless,
             timestep_sec=timestep_sec,
             log_dir=log_dir,
@@ -111,7 +109,6 @@ def evaluation_check(
             checkpoint_dirs={agent_id: checkpoint_directory},
             scenario_info=scenario_info,
             num_episodes=eval_episodes,
-            max_episode_steps=max_episode_steps,
             headless=headless,
             timestep_sec=timestep_sec,
             log_dir=log_dir,
@@ -164,7 +161,6 @@ def evaluate(
     checkpoint_dirs,
     scenario_info,
     num_episodes,
-    max_episode_steps,
     headless,
     timestep_sec,
     log_dir,
@@ -192,32 +188,11 @@ def evaluate(
     print("eval agent_infos:", agent_infos)
     print("eval agent_infos_copy:", agent_infos_copy)
 
-    # agent_specs = {
-    #     agent_id: make(
-    #         locator=policy_classes[agent_id],
-    #         checkpoint_dir=checkpoint_dirs[agent_id],
-    #         experiment_dir=experiment_dir,
-    #         max_episode_steps=max_episode_steps,
-    #         agent_id=agent_id,
-    #     )
-    #     for agent_id in agent_ids
-    # }
-
-    # with open(f"{experiment_dir}/agent_metadata.pkl", "rb") as agent_metadata_file:
-    #     agent_metadata = dill.load(agent_metadata_file)
-    #     agent_specs = {
-    #         agent_id: agent_metadata["agent_specs"][agent_id] for agent_id in agent_ids
-    #     }
-
     # Build each agent from its specification, and load from the given checkpoint path.
     agents = {
         agent_id: agent_spec.build_agent()
         for agent_id, agent_spec in agent_specs.items()
     }
-
-    # # Comment in when loading spec from pickle file.
-    # for agent_id, agent in agents.items():
-    #     agent.load(checkpoint_dirs[agent_id])
 
     # Create the environment with the specified agents.
     env = gym.make(
@@ -281,7 +256,6 @@ def evaluate_saved_models(
     experiment_dir: str,
     log_dir: str,
     headless: bool,
-    max_episode_steps: int,
     model_paths: Sequence[str],
     num_episodes: int,
     scenario_info: Tuple[str, str],
@@ -382,7 +356,6 @@ def evaluate_saved_models(
                         checkpoint_dirs=current_checkpoint_directories,
                         scenario_info=scenario_info,
                         num_episodes=num_episodes,
-                        max_episode_steps=max_episode_steps,
                         timestep_sec=timestep,
                         headless=headless,
                         log_dir=log_dir,
@@ -446,7 +419,6 @@ if __name__ == "__main__":
         experiment_dir=args.experiment_dir,
         log_dir=args.log_dir,
         headless=args.headless,
-        max_episode_steps=int(args.max_episode_steps),
         model_paths=args.models,
         num_episodes=int(args.episodes),
         scenario_info=(args.task, args.level),

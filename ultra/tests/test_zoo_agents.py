@@ -97,7 +97,6 @@ class ZooAgentsTest(unittest.TestCase):
         TASK = "00"
         LEVEL = "easy"
         NUM_EPISODES = 2
-        MAX_EPISODE_STEPS = 10
         EVAL_RATE = 1
         EVAL_EPISODES = 1
         TIMESTEP_SEC = 0.1
@@ -125,7 +124,6 @@ class ZooAgentsTest(unittest.TestCase):
                 scenario_info=(TASK, LEVEL),
                 num_episodes=NUM_EPISODES,
                 agent_infos=agent_infos,
-                max_episode_steps=MAX_EPISODE_STEPS,
                 eval_info={
                     "eval_rate": EVAL_RATE,
                     "eval_episodes": EVAL_EPISODES,
