@@ -364,11 +364,11 @@ class Sensors:
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
+        reached_goal = cls._agent_reached_goal(sim, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)
         is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
         is_not_moving = cls._vehicle_is_not_moving(sim, vehicle)
-        reached_goal = cls._agent_reached_goal(sim, vehicle)
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
             sim, vehicle
@@ -390,15 +390,15 @@ class Sensors:
         )
 
         events = Events(
-            collisions=sim.vehicle_collisions(vehicle.id),
-            off_road=is_off_road,
+            collisions=sim.vehicle_collisions(vehicle.id) and not reached_goal,
+            off_road=is_off_road and not reached_goal,
             reached_goal=reached_goal,
-            reached_max_episode_steps=reached_max_episode_steps,
-            off_route=is_off_route,
-            on_shoulder=is_on_shoulder,
-            wrong_way=is_wrong_way,
-            not_moving=is_not_moving,
-            agents_alive_done=agents_alive_done,
+            reached_max_episode_steps=reached_max_episode_steps and not reached_goal,
+            off_route=is_off_route and not reached_goal,
+            on_shoulder=is_on_shoulder and not reached_goal,
+            wrong_way=is_wrong_way and not reached_goal,
+            not_moving=is_not_moving and not reached_goal,
+            agents_alive_done=agents_alive_done and not reached_goal,
         )
 
         return done, events

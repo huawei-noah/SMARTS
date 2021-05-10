@@ -546,7 +546,49 @@ class SumoRoadNetwork:
 
         radius = max(5, 2 * self._default_lane_width)
         nearest_lanes = self.nearest_lanes(point[:2], radius=radius)
-        return any(0.5 * nl.getWidth() + 1e-1 > dist for nl, dist in nearest_lanes)
+        return any(dist < 0.5 * nl.getWidth() + 1e-1 for nl, dist in nearest_lanes)
+
+    def drove_off_map(self, veh_position, veh_heading):
+        # try to determine if the vehicle "exited" the map by driving beyond the end of a dead-end lane.
+        radius = max(5, 2 * self._default_lane_width)
+        nearest_lanes = self.nearest_lanes(veh_position[:2], radius=radius)
+        if not nearest_lanes:
+            return False  # we can't tell anything here
+        nl, dist = nearest_lanes[0]
+        if nl.getOutgoing() or dist < 0.5 * nl.getWidth() + 1e-1:
+            return False  # the last lane it was in was not a dead-end, or it's still in a lane
+        end_node = nl.getEdge().getToNode()
+        end_point = end_node.getCoord()
+        dist = math.sqrt(
+            (veh_position[0] - end_point[0]) ** 2
+            + (veh_position[1] - end_point[1]) ** 2
+        )
+        if dist > 2 * nl.getWidth():
+            return False  # it's no where near the end of the lane
+        # now check its heading to ensure it was going in roughly the right direction for this lane
+        end_shape = end_node.getShape()
+        veh_heading %= 2 * math.pi
+        tolerance = math.pi / 4
+        for p in range(1, len(end_shape)):
+            num = end_shape[p][1] - end_shape[p - 1][1]
+            den = end_shape[p][0] - end_shape[p - 1][0]
+            crossing_heading = math.atan(-den / num)
+            if den < 0:
+                crossing_heading += math.pi
+            elif num < 0:
+                crossing_heading -= math.pi
+            crossing_heading -= math.pi / 2
+            # we allow for it to be going either way since it's a pain to determine which side of the edge it's on
+            if (
+                abs(veh_heading - crossing_heading % (2 * math.pi)) < tolerance
+                or abs(
+                    (veh_heading + math.pi) % (2 * math.pi)
+                    - crossing_heading % (2 * math.pi)
+                )
+                < tolerance
+            ):
+                return True
+        return False
 
     def road_nodes_with_triggers(self):
         """Scan the road network for any nodes with ID's that match the form:

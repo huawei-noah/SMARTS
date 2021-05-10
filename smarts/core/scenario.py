@@ -97,6 +97,19 @@ class PositionalGoal(Goal):
         return dist <= self.radius
 
 
+@dataclass
+class ExitGoal(Goal):
+    def __init__(self, road_network):
+        super().__init__()
+        self._road_network = road_network
+
+    def is_endless(self):
+        return True
+
+    def is_reached(self, vehicle):
+        return self._road_network.drove_off_map(vehicle.position, vehicle.heading)
+
+
 def default_entry_tactic():
     return sstudio_types.TrapEntryTactic(
         wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None
@@ -560,7 +573,7 @@ class Scenario:
                 start=Start(
                     (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
                 ),
-                goal=EndlessGoal(),
+                goal=ExitGoal(self.road_network),
                 start_time=start_time,
             )
             p_cur.close()

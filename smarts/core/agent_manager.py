@@ -112,7 +112,7 @@ class AgentManager:
         assert agent_ids.issubset(self.agent_ids)
         self._pending_agent_ids -= agent_ids
 
-    def observe_from(self, sim, vehicle_ids):
+    def observe_from(self, sim, vehicle_ids, done_this_step=set()):
         observations = {}
         rewards = {}
         dones = {}
@@ -126,6 +126,12 @@ class AgentManager:
             )
             rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
             scores[agent_id] = vehicle.trip_meter_sensor()
+
+        # also add agents that were done in virtue of just dropping out
+        for dvid in done_this_step:
+            aid = self._vehicle_with_sensors.get(dvid, None)
+            if aid:
+                dones[aid] = True
 
         return observations, rewards, scores, dones
 
