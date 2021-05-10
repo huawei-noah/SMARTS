@@ -178,6 +178,7 @@ gen_missions(
 gen_traffic(scenario, traffic, "traffic")
 ```
 to create a social agent going from east to west on 2 straight one way road.
+
 You can read more about the Scenario Studio [here](https://smarts.readthedocs.io/en/latest/sim/scenario_studio.html).
 ## CLI tool
 
