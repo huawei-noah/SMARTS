@@ -20,8 +20,10 @@ process
 - Added `near realtime` mode and `uncapped` mode in Envision
 - Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks
 - Added options in `DoneCriteria` to trigger ego agent to be done based on other agent's done situation
+- Added an `ExitGoal` goal for imitation learning agents.
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
+- Updated imitation learning examples.
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed Sumo road network offset bug for shifted maps.  See issue #716.
