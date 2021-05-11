@@ -7,13 +7,13 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 
 ![](docs/_static/smarts_envision.gif)
 
-## Installation of SMARTS package
-You can install SMARTS package from [PyPI](https://pypi.org/project/smarts/).
+## Installation of the SMARTS package
+You can install the SMARTS package from [PyPI](https://pypi.org/project/smarts/).
 
-Package installation requires Python >= 3.7. 
+Package installation requires Python >= 3.7.
+If you dont have python 3.7 or higher, make sure to install or update python first
+
 ```bash
-# If you dont have python 3.7 or higher, make sure to install or update python first
-
 # For windows user 
 py -m pip install smarts
  
@@ -38,7 +38,7 @@ SUMO primarily targets Ubuntu versions >= 16.04. So you may not be able to downl
 
 If you try through a package manager make sure to command-line call `sumo` to make sure that you have the right version of SUMO.
 
-We would recommend using the prebuilt binaries but if you are using Ubuntu 16 (Xenial),there is a bash script in `extras/sumo/ubuntu_build' that you can use to automate the compilation of SUMO version 1.5.0.
+We would recommend using the prebuilt binaries but if you are using Ubuntu 16 (Xenial), there is a bash script in `extras/sumo/ubuntu_build` that you can use to automate the compilation of SUMO version 1.5.0.
 
 ### macOS
 
@@ -49,16 +49,16 @@ macOS installation of SUMO is straight-forward. See https://sumo.dlr.de/docs/Dow
     * If you build from the git repository we recommend you use: **[SUMO version 1.7.0](https://github.com/eclipse/sumo/commits/v1_7_0)** or higher
   
 ## Modules installed
-Through smarts package, you have access to ['core'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/core), ['env'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/env), ['sstudio'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/sstudio) and ['zoo'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/zoo) as sub-modules under 'smarts' module and 
-then ['envision'](https://github.com/huawei-noah/SMARTS/tree/master/envision) as separate package.
-It also provides scl module which supports it Command line tool.
+Through the SMARTS package, you have access to ['core'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/core), ['env'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/env), ['sstudio'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/sstudio) and ['zoo'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/zoo) as sub-modules under `smarts` module and 
+then ['envision'](https://github.com/huawei-noah/SMARTS/tree/master/envision) as a separate package.
+The scl module is also provided to support the Command line tool.
 
 ## How To Use
-SMARTS provides users the ability to customize their agents. The agent is defined in terms of the interface it expects from the environment and the responses an agent produces.
+SMARTS provides users the ability to customize their agents. The agent is defined in terms of the interface it expects from the environment, and the responses an agent produces.
 
-You can learn more about how to build agents [here](https://smarts.readthedocs.io/en/latest/sim/agent.html)
+You can learn more about how to build agents [here](https://smarts.readthedocs.io/en/latest/sim/agent.html).
 
-You can build a single agent experiment as simple as,
+Here is a simple example of how a single agent experiment can be built,
 
 ```python
 import gym
@@ -70,7 +70,7 @@ class SimpleAgent(Agent):
         return "keep_lane"
 
 agent_spec = AgentSpec(
-    interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
+    interface=AgentInterface.from_type(AgentType.Laner),
     agent_builder=SimpleAgent,
 )
 
@@ -98,10 +98,10 @@ for _ in range(1000):
     }
     observations, _, _, _ = env.step(agent_actions)
 ```
-To enrich your training datasets, you can edit your own map through [SUMO’s NETEDIT](https://sumo.dlr.de/docs/NETEDIT.html) and export it in a map.net.xml format. 
+To enrich your training datasets, you can edit your own map through [SUMO’s NETEDIT](https://sumo.dlr.de/docs/NETEDIT.html) and export it in a `map.net.xml` format. 
 
-Example this map.net html code creates a simple straight path
-```html
+Example this `map.net.xml` code creates a simple straight path:
+```xml
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
@@ -137,9 +137,9 @@ Example this map.net html code creates a simple straight path
 
 </configuration>
 ```
-The sstudio package supports flexible and expressive scenario specification which you can use to generate traffic with different traffic vehicle numbers and routes, and agent missions.
+The `sstudio` package supports flexible and expressive scenario specification which you can use to generate traffic with different traffic vehicle numbers and routes, and agent missions.
 
-You can create a simple scenario.py script to generate the scenario like
+You can create a simple `scenario.py` script to generate the scenario like
 
 ```python
 from pathlib import Path
@@ -177,16 +177,16 @@ gen_missions(
 )
 gen_traffic(scenario, traffic, "traffic")
 ```
-to create a social agent going from east to west on 2 straight one way road.
+to create a social agent going from east to west on a straight one-way road.
 
 You can read more about the Scenario Studio [here](https://smarts.readthedocs.io/en/latest/sim/scenario_studio.html).
 ## CLI tool
 
-SMARTS provides a command-line tool to interact with scenario studio and Envision using the command scl.
-The scl command is abbreviation for "smarts command line".
+SMARTS provides a command-line tool to interact with scenario studio and Envision using the command `scl`.
+The `scl` command is abbreviation for "smarts command line".
 
 Usage
-```
+```bash
 scl COMMAND SUBCOMMAND [OPTIONS] [ARGS]...
 ```
 
@@ -209,8 +209,8 @@ Subcommands of zoo:
 ### Examples:
 If you make a directory where you make all your scenarios, you can:
 
-```
-# Start envision, serve scenario assets out of ./scenarios
+```bash
+# Start envision, serve scenarios assets out of ./scenarios
 scl envision start --scenarios ./scenarios
 
 # Build all scenario under given directories
@@ -224,4 +224,4 @@ scl scenario clean scenarios/loop
 ```
 
 ## Documentation
-Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest)
+Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest).
