@@ -161,4 +161,4 @@ rm-pycache:
 
 .PHONY: rm-cov
 rm-cov:
-	find . -type f -name ".coverage*" -print -delete
+	find . -type f -name ".coverage*" -delete
