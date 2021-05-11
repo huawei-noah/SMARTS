@@ -459,13 +459,15 @@ def generate_social_vehicles(
             )
         else:
             behavior = get_social_vehicle_behavior(behavior_idx)
+            start_offset = random.randint(80, 100)
+            end_offset = random.randint(80, 100)
             flows.append(
                 Flow(
                     begin=begin_time,
                     end=end_time,
                     route=Route(
-                        begin=(f"edge-{start_lane}", start_lane_id, "base"),
-                        end=(f"edge-{end_lane}", end_lane_id, "max"),
+                        begin=(f"edge-{start_lane}", start_lane_id, start_offset),
+                        end=(f"edge-{end_lane}", end_lane_id, end_offset),
                     ),
                     rate=1,
                     actors={behavior: 1.0},

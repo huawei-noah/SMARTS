@@ -43,6 +43,9 @@ tasks:
     hard:
       train: "scenarios/task1/train_hard*"
       test:  "scenarios/task1/test_hard*"
+    simple-v0:
+      train: "scenarios/task1/train_simple-v0*"
+      test:  "scenarios/task1/test_simple-v0*"
   task2:
     low-high:
       train: "scenarios/task2/train_low-high*"

@@ -152,3 +152,39 @@ levels:
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,low-density,0.01],[70kmh,low-density,0.01],[100kmh,low-density,0.01]] # 3%
            stops: null
+
+  simple-v0:
+    train:
+      total: 10
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+        start_offset: [90, 100]
+        end_offset:   [50, 100]
+      intersection_types:
+        2lane_t:
+           percent: 0.5
+           specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
+           stops: null
+        3lane_t:
+           percent: 0.5
+           specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
+           stops: null
+    test:
+      total: 10
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+        start_offset: [90, 100]
+        end_offset:   [50, 100]
+      intersection_types:
+        2lane_c:
+           percent: 0.5
+           specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
+           stops: null
+        3lane_c:
+           percent: 0.5
+           specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
+           stops: null

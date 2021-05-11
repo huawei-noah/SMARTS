@@ -356,6 +356,39 @@ t_patterns = {
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
+    # ----------------------------------------------------- SIMPLE LEVELS ------------------------------------------------
+    "simple-v0": {  # t-intersection
+        "routes": {
+            "south-west": None,
+            "south-east": None,
+            "south-north": None,  # blocking
+            "west-east": {
+                "vehicles": 100,
+                "distribution": behavior_distribution,
+                "start_end_on_different_lanes_probability": 0.0,
+                "begin_time_init": {
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (2, 2),
+                        "time_between_cluster": (40, 50),
+                        "time_for_each_cluster": 5,
+                    },
+                },
+                "has_turn": False,
+                "deadlock_optimization": True,
+            },
+            "west-north": None,  # blocking
+            "west-south": None,
+            "east-south": None,
+            "east-north": None,  # blocking
+        },
+        "ego_hijacking_params": {
+            "zone_range": [5, 10],
+            "wait_to_hijack_limit_s": 5,
+            "start_time": 10,  # any value or default for LANE_LENGTH / speed_m_per_s
+        },
+    },
+
     "p-stopwatchers": {  # t-intersection
         "routes": {
             "south-west": None,
@@ -743,6 +776,39 @@ cross_patterns = {
                     "params": {"probability": prob_heavy},
                 },
                 "has_turn": True,
+                "deadlock_optimization": True,
+            },
+        },
+        "ego_hijacking_params": {
+            "zone_range": [5, 10],
+            "wait_to_hijack_limit_s": 10,
+            "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
+        },
+    },
+    # ----------------------------------------------------- SIMPLE LEVELS ------------------------------------------------
+    "simple-v0": {  # c-intersection
+        "routes": {
+            "south-west": None,
+            "south-east": None,
+            "south-north": None,  # blocking
+            "west-east": None,
+            "west-north": None,  # blocking
+            "west-south": None,
+            "east-south": None,
+            "east-north": None,  # blocking
+            "north-south": {
+                "vehicles": 100,
+                "distribution": behavior_distribution,
+                "start_end_on_different_lanes_probability": 0.0,
+                "begin_time_init": {
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (2, 3),
+                        "time_between_cluster": (100, 100),
+                        "time_for_each_cluster": 1,
+                    },
+                },
+                "has_turn": False,
                 "deadlock_optimization": True,
             },
         },
