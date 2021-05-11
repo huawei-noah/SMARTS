@@ -24,12 +24,9 @@ import math
 import os
 import pickle
 import random
-import sqlite3
 import uuid
-from contextlib import nullcontext, closing
 from dataclasses import dataclass, field
 from functools import lru_cache
-from cached_property import cached_property
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
@@ -40,6 +37,7 @@ from smarts.core.coordinates import Heading
 from smarts.core.data_model import SocialAgent
 from smarts.core.route import ShortestRoute
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import vec_to_radians
@@ -157,83 +155,6 @@ class LapMission:
             self.goal.is_reached(vehicle)
             and distance_travelled > self.route_length * self.num_laps
         )
-
-
-class TrafficHistory:
-    def __init__(self, db):
-        self._db = db
-        self._db_cnxn = None
-
-    def connect_if_not(self):
-        if not self._db_cnxn:
-            self._db_cnxn = sqlite3.connect(self._db)
-
-    def close_db(self):
-        if self._db_cnxn:
-            self._db_cnxn.close()
-            self._db_cnxn = None
-
-    def _query_val(self, query, params=(), result_type=float):
-        with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
-            sqlite3.connect(self._db)
-        ) as dbcnxn:
-            cur = dbcnxn.cursor()
-            cur.execute(query, params)
-            row = cur.fetchone()
-            cur.close()
-        if not row:
-            return None
-        return row if result_type is tuple else result_type(row[0])
-
-    def _query_list(self, query, params=()):
-        with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
-            sqlite3.connect(self._db)
-        ) as dbcnxn:
-            cur = dbcnxn.cursor()
-            for row in cur.execute(query, params):
-                yield row
-            cur.close()
-
-    @cached_property
-    def lane_width(self):
-        return self._query_val("SELECT value FROM Spec where key='map_net.lane_width'")
-
-    @cached_property
-    def target_speed(self):
-        return self._query_val("SELECT value FROM Spec where key='speed_limit_mps'")
-
-    @lru_cache(maxsize=32)
-    def vehicle_last_seen_time(self, vehicle_id):
-        query = "SELECT max(sim_time) FROM Trajectory WHERE vehicle_id = ?"
-        return self._query_val(query, params=(vehicle_id,))
-
-    def first_seen_times(self):
-        # For now, limit agent missions to just cars (V.type = 2)
-        query = """SELECT T.vehicle_id, min(T.sim_time)
-            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
-            WHERE V.type = 2
-            GROUP BY vehicle_id"""
-        return self._query_list(query)
-
-    def vehicle_pose_at_time(self, vehicle_id, sim_time):
-        query = """SELECT position_x, position_y, heading_rad
-                   FROM Trajectory
-                   WHERE vehicle_id = ? and sim_time = ?"""
-        return self._query_val(
-            query, params=(int(vehicle_id), float(sim_time)), result_type=tuple
-        )
-
-    def vehicle_ids_active_between(self, start_time, end_time):
-        query = "SELECT DISTINCT vehicle_id FROM Trajectory WHERE ? <= sim_time AND sim_time <= ?"
-        return self._query_list(query, (start_time, end_time))
-
-    def vehicles_active_between(self, start_time, end_time):
-        query = """SELECT V.id, V.type, V.length, V.width,
-                          T.position_x, T.position_y, T.heading_rad, T.speed
-                   FROM Vehicle AS V INNER JOIN Trajectory AS T ON V.id = T.vehicle_id
-                   WHERE T.sim_time > ? AND T.sim_time <= ?
-                   ORDER BY T.sim_time DESC"""
-        return self._query_list(query, (start_time, end_time))
 
 
 class Scenario:
