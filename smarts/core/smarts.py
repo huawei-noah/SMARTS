@@ -290,7 +290,9 @@ class SMARTS:
             self.setup(scenario)
 
         # Tell history provide to ignore vehicles if we have assigned mission to them
-        self._traffic_history_provider.set_replaced_ids(scenario.missions.keys())
+        self._traffic_history_provider.set_replaced_ids(
+            m.vehicle_id for m in scenario.missions.values()
+        )
 
         self._total_sim_time += self._elapsed_sim_time
         self._elapsed_sim_time = 0
@@ -330,8 +332,8 @@ class SMARTS:
         assert isinstance(provider, Provider)
         self._providers.append(provider)
 
-    def switch_ego_agent(self, agent_interface):
-        self._agent_manager.switch_initial_agent(agent_interface)
+    def switch_ego_agents(self, agent_interface):
+        self._agent_manager.switch_initial_agents(agent_interface)
         self._is_setup = False
 
     def _setup_bullet_client(self, client: bc.BulletClient):

@@ -124,6 +124,7 @@ class Mission:
     entry_tactic: EntryTactic = None
     task: Tuple[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
+    vehicle_id: str = None  # if specified, use this vehicle (for histories)
 
     @property
     def has_fixed_route(self):
@@ -516,8 +517,8 @@ class Scenario:
             bubbles = pickle.load(f)
             return bubbles
 
-    def set_ego_missions(self, ego_mission):
-        self._missions.update(ego_mission)
+    def set_ego_missions(self, ego_missions):
+        self._missions = ego_missions
 
     @cached_property
     def traffic_history_lane_width(self):
@@ -562,6 +563,7 @@ class Scenario:
                 ),
                 goal=EndlessGoal(),
                 start_time=start_time,
+                vehicle_id=vid,
             )
             p_cur.close()
         st_cur.close()
