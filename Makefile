@@ -13,6 +13,7 @@ test: build-all-scenarios
 		--ignore=./smarts/env/tests/test_benchmark.py \
 		--ignore=./smarts/env/tests/test_learning.py \
 		-k 'not test_long_determinism'
+	rm -f .coverage*
 
 .PHONY: sanity-test
 sanity-test: build-all-scenarios
@@ -31,10 +32,12 @@ sanity-test: build-all-scenarios
 		./tests/test_examples.py::test_examples[multi_agent] \
 		./tests/test_examples.py::test_multi_instance_example \
 		./smarts/env/tests/test_social_agent.py::test_social_agents
+	rm -f .coverage*
 
 .PHONY: test-learning
 test-learning: build-all-scenarios
 	pytest -v -s -o log_cli=1 -o log_cli_level=INFO ./smarts/env/tests/test_learning.py
+	rm -f .coverage*
 
 .PHONY: test-memory-growth
 test-memory-growth: build-all-scenarios
@@ -44,6 +47,7 @@ test-memory-growth: build-all-scenarios
 		--dist=loadscope \
 		-n `nproc --ignore 1` \
 		./smarts/core/tests/test_smarts_memory_growth.py
+	rm -f .coverage*
 
 .PHONY: test-long-determinism
 test-long-determinism: 
@@ -51,6 +55,7 @@ test-long-determinism:
 	PYTHONHASHSEED=42 pytest -v \
 		--forked \
 		./smarts/env/tests/test_determinism.py::test_long_determinism
+	rm -f .coverage*
 
 .PHONY: benchmark
 benchmark: build-all-scenarios
@@ -126,6 +131,7 @@ clean:
 	rm -f ./$(scenario)/*.rou.alt.xml
 	rm -rf ./$(scenario)/traffic
 	rm -rf ./$(scenario)/social_agents
+	rm -f .coverage*
 
 .PHONY: format
 format:
