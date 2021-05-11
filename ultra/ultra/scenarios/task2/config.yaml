@@ -1,5 +1,5 @@
 levels:
-  lo-hi:
+  low-high:
     train:
       total: 800
       ego_missions:
@@ -42,7 +42,7 @@ levels:
                    [50kmh,low-density,0.01],[70kmh,low-density,0.01],[100kmh,low-density,0.01]] # 3%
            stops: null
            bubbles: null
-  hi-low:
+  high-low:
     train:
       total: 800
       ego_missions:
