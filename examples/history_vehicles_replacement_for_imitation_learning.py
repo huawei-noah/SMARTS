@@ -24,31 +24,6 @@ class KeepLaneAgent(Agent):
         return (self._target_speed, 0)
 
 
-def _choose_random_sample(vehicle_missions, k, traffic_history, logger):
-    # ensure overlapping time intervals across sample
-    # this is inefficient, but it's not that important
-    choice = random.choice(list(vehicle_missions.keys()))
-    sample = {choice}
-    sample_start_time = vehicle_missions[choice].start_time
-    sample_end_time = traffic_history.vehicle_last_seen_time(choice)
-    while len(sample) < k:
-        choices = list(
-            traffic_history.vehicle_ids_active_between(
-                sample_start_time, sample_end_time
-            )
-        )
-        if len(choices) <= len(sample):
-            logger.warning(f"Unable to choose {k} overlapping missions.")
-            break
-        choice = str(random.choice(choices)[0])
-        sample_start_time = min(vehicle_missions[choice].start_time, sample_start_time)
-        sample_end_time = max(
-            traffic_history.vehicle_last_seen_time(choice), sample_end_time
-        )
-        sample.add(choice)
-    return sample
-
-
 def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
     assert vehicles_to_replace > 0
     assert episodes > 0
@@ -75,6 +50,9 @@ def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
                 "no vehicle missions found for scenario {}.".format(scenario.name)
             )
             continue
+        veh_start_times = {
+            vid: mission.start_time for vid, mission in veh_missions.items()
+        }
 
         k = vehicles_to_replace
         if vehicles_to_replace > len(veh_missions):
@@ -102,17 +80,25 @@ def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
             agentid_to_vehid = {}
             agent_interfaces = {}
             history_start_time = None
-            sample = _choose_random_sample(
-                veh_missions, k, scenario.traffic_history, logger
+            sample = scenario.traffic_history.random_overlapping_sample(
+                veh_start_times, k
             )
+            if len(sample) < k:
+                logger.warning(
+                    f"Unable to choose {k} overlapping missions.  allowing non-overlapping."
+                )
+                leftover = set(veh_start_times.keys()) - sample
+                sample.update(set(random.sample(leftover, k - len(sample))))
             logger.info(f"chose vehicles: {sample}")
             for veh_id in sample:
                 agent_id = f"ego-agent-IL-{veh_id}"
                 agentid_to_vehid[agent_id] = veh_id
                 agent_interfaces[agent_id] = agent_spec.interface
-                mission = veh_missions[veh_id]
-                if not history_start_time or mission.start_time < history_start_time:
-                    history_start_time = mission.start_time
+                if (
+                    not history_start_time
+                    or veh_start_times[veh_id] < history_start_time
+                ):
+                    history_start_time = veh_start_times[veh_id]
 
             # Build the Agents for the to-be-hijacked vehicles
             # and gather their missions

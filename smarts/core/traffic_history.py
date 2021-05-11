@@ -22,6 +22,7 @@
 from cached_property import cached_property
 from contextlib import nullcontext, closing
 from functools import lru_cache
+import random
 import sqlite3
 
 
@@ -100,3 +101,24 @@ class TrafficHistory:
                    WHERE T.sim_time > ? AND T.sim_time <= ?
                    ORDER BY T.sim_time DESC"""
         return self._query_list(query, (start_time, end_time))
+
+    def random_overlapping_sample(self, vehicle_start_times, k):
+        # ensure overlapping time intervals across sample
+        # this is inefficient, but it's not that important
+        # Note: this may return a sample with less than k
+        # if we're unable to find k overlapping.
+        choice = random.choice(list(vehicle_start_times.keys()))
+        sample = {choice}
+        sample_start_time = vehicle_start_times[choice]
+        sample_end_time = self.vehicle_last_seen_time(choice)
+        while len(sample) < k:
+            choices = list(
+                self.vehicle_ids_active_between(sample_start_time, sample_end_time)
+            )
+            if len(choices) <= len(sample):
+                break
+            choice = str(random.choice(choices)[0])
+            sample_start_time = min(vehicle_start_times[choice], sample_start_time)
+            sample_end_time = max(self.vehicle_last_seen_time(choice), sample_end_time)
+            sample.add(choice)
+        return sample
