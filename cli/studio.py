@@ -18,12 +18,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import multiprocessing
+import os
 import subprocess
 import sys
 from pathlib import Path
 from threading import Thread
 
 import click
+
+from smarts.core.sumo_road_network import SumoRoadNetwork
 
 
 @click.group(name="scenario")
@@ -38,12 +41,20 @@ def scenario_cli():
     default=False,
     help="Clean previously generated artifacts first",
 )
+@click.option(
+    "--allow-offset-map",
+    is_flag=True,
+    default=False,
+    help="Allows Sumo's road network (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
+        SumoRoadNetwork.shifted_net_file_name
+    ),
+)
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build_scenario(clean, scenario):
-    _build_single_scenario(clean, scenario)
+def build_scenario(clean, allow_offset_map, scenario):
+    _build_single_scenario(clean, allow_offset_map, scenario)
 
 
-def _build_single_scenario(clean, scenario):
+def _build_single_scenario(clean, allow_offset_map, scenario):
     import importlib.resources as pkg_resources
 
     from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
@@ -53,9 +64,17 @@ def _build_single_scenario(clean, scenario):
         _clean(scenario)
 
     scenario_root = Path(scenario)
-    map_net = scenario_root / "map.net.xml"
+    map_net = str(scenario_root / "map.net.xml")
+    if not allow_offset_map:
+        SumoRoadNetwork.from_file(map_net, shift_to_origin=True)
+    elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
+        click.echo(
+            "WARNING: {} already exists.  Remove it if you want to use unshifted/offset map.net.xml instead.".format(
+                SumoRoadNetwork.shifted_net_file_name
+            )
+        )
     map_glb = scenario_root / "map.glb"
-    generate_glb_from_sumo_network(str(map_net), str(map_glb))
+    generate_glb_from_sumo_network(map_net, str(map_glb))
 
     requirements_txt = scenario_root / "requirements.txt"
     if requirements_txt.exists():
@@ -105,8 +124,16 @@ def _build_single_scenario(clean, scenario):
     default=False,
     help="Clean previously generated artifacts first",
 )
+@click.option(
+    "--allow-offset-maps",
+    is_flag=True,
+    default=False,
+    help="Allows Sumo's road networks (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
+        SumoRoadNetwork.shifted_net_file_name
+    ),
+)
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all_scenarios(clean, scenarios):
+def build_all_scenarios(clean, allow_offset_maps, scenarios):
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
         # if scenarios is not given, set /scenarios as default
@@ -117,7 +144,7 @@ def build_all_scenarios(clean, scenarios):
         for p in path.rglob("*.net.xml"):
             scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
             builder_thread = Thread(
-                target=_build_single_scenario, args=(clean, scenario)
+                target=_build_single_scenario, args=(clean, allow_offset_maps, scenario)
             )
             builder_thread.start()
             builder_threads[p] = builder_thread
@@ -136,6 +163,7 @@ def clean_scenario(scenario):
 def _clean(scenario):
     to_be_removed = [
         "map.glb",
+        SumoRoadNetwork.shifted_net_file_name,
         "bubbles.pkl",
         "missions.pkl",
         "flamegraph-perf.log",
@@ -146,6 +174,7 @@ def _clean(scenario):
         "social_agents/*",
         "traffic/*",
         "history_mission.pkl",
+        "*.shf",
     ]
     p = Path(scenario)
     for file_name in to_be_removed:

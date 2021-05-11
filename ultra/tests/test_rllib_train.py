@@ -42,15 +42,13 @@ class RLlibTrainTest(unittest.TestCase):
         log_dir = os.path.join(RLlibTrainTest.OUTPUT_DIRECTORY, "tests/rllib_results/")
         try:
             os.system(
-                f"python ultra/rllib_train.py --task 00 --level easy --episodes 1 --training-batch-size 200 --headless True --log-dir {log_dir}"
+                f"python ultra/rllib_train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --eval-episodes 1 --train-batch-size 1 --sgd-minibatch-size 1 --rollout-fragment-length 1 --headless --log-dir {log_dir}"
             )
         except Exception as err:
             print(err)
             self.assertTrue(False)
 
-        if os.path.exists(log_dir):
-            self.assertTrue(True)
-        else:
+        if not os.path.exists(log_dir):
             self.assertTrue(False)
 
     def test_rllib_train_method(self):
@@ -61,6 +59,8 @@ class RLlibTrainTest(unittest.TestCase):
             train(
                 task=("00", "easy"),
                 num_episodes=1,
+                max_episode_steps=2,
+                rollout_fragment_length=1,
                 policy="ppo",
                 eval_info={
                     "eval_rate": 2,
@@ -69,16 +69,15 @@ class RLlibTrainTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 seed=2,
-                training_batch_size=200,
+                train_batch_size=1,
+                sgd_minibatch_size=1,
                 log_dir=log_dir,
             )
         except Exception as err:
             print(err)
             self.assertTrue(False)
 
-        if os.path.exists(log_dir):
-            self.assertTrue(True)
-        else:
+        if not os.path.exists(log_dir):
             self.assertTrue(False)
 
     @classmethod

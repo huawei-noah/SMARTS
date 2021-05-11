@@ -24,6 +24,7 @@ import math
 import os
 import pickle
 import random
+import sqlite3
 import uuid
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -32,6 +33,7 @@ from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
 
 import numpy as np
+from cached_property import cached_property
 
 from smarts.core.coordinates import Heading
 from smarts.core.data_model import SocialAgent
@@ -40,7 +42,6 @@ from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import vec_to_radians
-from smarts.core.utils.traffic_history_service import Traffic_history_service
 from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
@@ -188,17 +189,19 @@ class Scenario:
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
         self._log_dir = self._resolve_log_dir(log_dir)
-
         self._validate_assets_exist()
-        self._road_network = SumoRoadNetwork.from_file(self.net_filepath)
-        self._net_file_hash = file_md5_hash(self.net_filepath)
+
+        self._traffic_history = traffic_history
+        default_lane_width = (
+            self.traffic_history_lane_width if traffic_history else None
+        )
+        net_file = os.path.join(self._root, "map.net.xml")
+        self._road_network = SumoRoadNetwork.from_file(
+            net_file, default_lane_width=default_lane_width
+        )
+        self._net_file_hash = file_md5_hash(self._road_network.net_file)
         self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
-        self._traffic_history_service = Traffic_history_service(traffic_history)
-
-    @property
-    def mapLocationOffset(self):
-        return self._road_network.netOffset
 
     def __repr__(self):
         return f"""Scenario(
@@ -284,7 +287,7 @@ class Scenario:
                 concrete_route,
                 concrete_agent_missions,
                 concrete_social_agents,
-                conrete_traffic_history,
+                concrete_traffic_history,
             ) in product(
                 np.roll(routes, roll_routes, 0),
                 np.roll(agent_missions, roll_agent_missions, 0),
@@ -315,7 +318,7 @@ class Scenario:
                     },
                     social_agents=concrete_social_agents,
                     surface_patches=surface_patches,
-                    traffic_history=conrete_traffic_history,
+                    traffic_history=concrete_traffic_history,
                 )
 
     @staticmethod
@@ -516,25 +519,62 @@ class Scenario:
     def set_ego_missions(self, ego_mission):
         self._missions.update(ego_mission)
 
+    @cached_property
+    def traffic_history_lane_width(self):
+        histories_db = sqlite3.connect(self._traffic_history)
+        cur = histories_db.cursor()
+        cur.execute("SELECT value FROM Spec where key='map_net.lane_width'")
+        row = cur.fetchone()
+        cur.close()
+        histories_db.close()
+        return float(row[0]) if row else None
+
+    @cached_property
+    def traffic_history_target_speed(self):
+        histories_db = sqlite3.connect(self._traffic_history)
+        cur = histories_db.cursor()
+        cur.execute("SELECT value FROM Spec where key='speed_limit_mps'")
+        row = cur.fetchone()
+        cur.close()
+        histories_db.close()
+        return float(row[0]) if row else None
+
     def discover_missions_of_traffic_histories(self, vehicle_missions={}):
-        return Traffic_history_service.fetch_agent_missions(
-            self._traffic_history_service.history_file_path,
-            self._root,
-            self.mapLocationOffset,
-        )
+        histories_db = sqlite3.connect(self._traffic_history)
+        # For now, limit agent missions to just cars (V.type = 2)
+        st_query = """SELECT T.vehicle_id, min(T.sim_time)
+            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
+            WHERE V.type = 2
+            GROUP BY vehicle_id"""
+        p_query = "SELECT position_x, position_y, heading_rad FROM Trajectory WHERE vehicle_id = ? and sim_time = ?"
+        map_offset = self._road_network.net_offset
+        st_cur = histories_db.cursor()
+        for row in st_cur.execute(st_query):
+            vid = str(row[0])
+            start_time = float(row[1])
+            p_cur = histories_db.cursor()
+            vrow = p_cur.execute(p_query, (int(vid), start_time)).fetchone()
+            assert vrow
+            pos_x, pos_y, heading = vrow
+            vehicle_missions[vid] = Mission(
+                start=Start(
+                    (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
+                ),
+                goal=EndlessGoal(),
+                start_time=start_time,
+            )
+            p_cur.close()
+        st_cur.close()
+        histories_db.close()
+        return vehicle_missions
 
     @staticmethod
     def discover_traffic_histories(scenario_root):
-        path = os.path.join(scenario_root, "traffic_histories.pkl")
-        if not os.path.exists(path):
-            return []
-
-        traffic_histories = []
-        with open(path, "rb") as f:
-            files = pickle.load(f)
-            traffic_histories = [os.path.join(scenario_root, f) for f in files]
-
-        return traffic_histories
+        return [
+            entry
+            for entry in os.scandir(scenario_root)
+            if entry.is_file() and entry.path.endswith(".shf")
+        ]
 
     @staticmethod
     def _extract_mission(mission, road_network):
@@ -718,10 +758,6 @@ class Scenario:
         return self._surface_patches
 
     @property
-    def net_filepath(self):
-        return os.path.join(self._root, "map.net.xml")
-
-    @property
     def net_file_hash(self):
         return self._net_file_hash
 
@@ -794,16 +830,11 @@ class Scenario:
 
     def _validate_assets_exist(self):
         assert Scenario.is_valid_scenario(self._root)
-
         os.makedirs(self._log_dir, exist_ok=True)
 
     @property
-    def traffic_history_service(self):
-        return self._traffic_history_service
-
-    @traffic_history_service.setter
-    def traffic_history_service(self, traffic_history_service: Traffic_history_service):
-        self._traffic_history_service = traffic_history_service
+    def traffic_history(self):
+        return self._traffic_history
 
     @property
     def scenario_hash(self):

@@ -18,11 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Set
 
 import numpy as np
 
+from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Pose
+from .scenario import Scenario
 from .vehicle import VehicleState
 
 
@@ -46,3 +48,32 @@ class ProviderState:
                 del self.vehicles[index]
             except ValueError:
                 continue
+
+
+class Provider:
+    """A Provider tracks a (sub)set of vehicles that all share the same action space.
+    This is a base class (interface) from which all Providers should inherit."""
+
+    ## TAI: Consider renaming to VehicleSet or somesuch.
+
+    @property
+    def action_spaces(self) -> Set[ActionSpaceType]:
+        raise NotImplementedError
+
+    def setup(self, scenario: Scenario) -> ProviderState:
+        raise NotImplementedError
+
+    def step(self, actions, dt, elapsed_sim_time) -> ProviderState:
+        raise NotImplementedError
+
+    def sync(self, provider_state: ProviderState):
+        raise NotImplementedError
+
+    def create_vehicle(self, provider_vehicle: VehicleState):
+        raise NotImplementedError
+
+    def reset(self):
+        raise NotImplementedError
+
+    def teardown(self):
+        raise NotImplementedError

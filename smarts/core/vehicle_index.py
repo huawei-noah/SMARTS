@@ -601,7 +601,9 @@ class VehicleIndex:
         Vehicle.attach_sensors_to_vehicle(
             sim, vehicle, agent_interface, sensor_state.mission_planner
         )
-        vehicle.np.reparentTo(sim.vehicles_np)
+        if sim.is_rendering:
+            vehicle.create_renderer_node(sim.renderer)
+            sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=True)
 
         vehicle_id = _2id(vehicle.id)
         agent_id = _2id(original_agent_id)
@@ -635,7 +637,9 @@ class VehicleIndex:
         )
 
         vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id)
-        vehicle.np.reparentTo(sim._root_np)
+        if sim.is_rendering:
+            vehicle.create_renderer_node(sim.renderer)
+            sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=False)
 
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
@@ -651,6 +655,14 @@ class VehicleIndex:
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
         return vehicle
+
+    def begin_rendering_vehicles(self, renderer):
+        agent_ids = self.agent_vehicle_ids()
+        for vehicle in self._vehicles.values():
+            if not vehicle.renderer:
+                vehicle.create_renderer_node(renderer)
+                is_agent = vehicle.id in agent_ids
+                renderer.begin_rendering_vehicle(vehicle.id, is_agent)
 
     def sensor_states_items(self):
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._sensor_states.items())

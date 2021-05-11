@@ -49,9 +49,11 @@ def isnotebook():
 libc = ctypes.CDLL(None)
 try:
     c_stderr = ctypes.c_void_p.in_dll(libc, "stderr")
+    c_stdout = ctypes.c_void_p.in_dll(libc, "stdout")
 except:
     # macOS
     c_stderr = ctypes.c_void_p.in_dll(libc, "__stderrp")
+    c_stdout = ctypes.c_void_p.in_dll(libc, "__stdoutp")
 
 
 def try_fsync(fd):
@@ -63,39 +65,51 @@ def try_fsync(fd):
 
 
 @contextmanager
-def suppress_stdout():
-    original_stderr = sys.stderr
+def suppress_output(stderr=True, stdout=True):
+    cleanup_stderr = None
+    cleanup_stdout = None
     try:
-        original_stderr_fno = sys.stderr.fileno()
+        if stderr:
+            cleanup_stderr = _suppress_fileout("stderr")
+        if stdout:
+            cleanup_stdout = _suppress_fileout("stdout")
+        yield
+    finally:
+        if stderr and cleanup_stderr:
+            cleanup_stderr(c_stderr)
+        if stdout and cleanup_stdout:
+            cleanup_stdout(c_stdout)
+
+
+def _suppress_fileout(stdname):
+    original = getattr(sys, stdname)
+    try:
+        original_std_fno = original.fileno()
     except UnsupportedOperation as e:
         if not isnotebook():
             raise e
         ## This case is notebook which does not have issues with the c_printf
-        try:
-            yield
-        finally:
-            return
-    dup_stderr_fno = os.dup(original_stderr_fno)
+        return None
 
+    dup_std_fno = os.dup(original_std_fno)
     devnull_fno = os.open(os.devnull, os.O_WRONLY)
-    os.dup2(devnull_fno, original_stderr_fno)
-    sys.stderr = os.fdopen(devnull_fno, "w")
+    os.dup2(devnull_fno, original_std_fno)
+    setattr(sys, stdname, os.fdopen(devnull_fno, "w"))
 
-    try:
-        yield
-    finally:
-        sys.stderr.flush()
-        libc.fflush(c_stderr)
+    def cleanup(c_stdobj):
+        getattr(sys, stdname).flush()
+        libc.fflush(c_stdobj)
         try_fsync(devnull_fno)
         os.close(devnull_fno)
-
-        os.dup2(dup_stderr_fno, original_stderr_fno)
-        os.close(dup_stderr_fno)
+        os.dup2(dup_std_fno, original_std_fno)
+        os.close(dup_std_fno)
         try:
-            sys.stderr.close()
+            getattr(sys, stdname).close()
         except OSError as e:
             # This happens in some environments and is fine so we should ignore just it
             if e.errno != 9:  # [Errno 9] Bad file descriptor
                 raise e
         finally:
-            sys.stderr = original_stderr
+            setattr(sys, stdname, original)
+
+    return cleanup

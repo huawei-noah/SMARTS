@@ -2,7 +2,7 @@
 # ```bash
 # $ export VERSION=v0.4.13
 # $ cd /path/to/SMARTS
-# $ docker build -t huaweinoah/smarts:$VERSION-minimal -f minimal.Dockerfile .
+# $ docker build -t huaweinoah/smarts:$VERSION-minimal -f Dockerfile.minimal .
 # $ docker push huaweinoah/smarts:$VERSION-minimal
 # ```
 
