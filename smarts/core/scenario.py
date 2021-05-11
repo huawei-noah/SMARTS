@@ -26,6 +26,7 @@ import pickle
 import random
 import sqlite3
 import uuid
+from contextlib import nullcontext, closing
 from dataclasses import dataclass, field
 from functools import lru_cache
 from cached_property import cached_property
@@ -158,6 +159,83 @@ class LapMission:
         )
 
 
+class TrafficHistory:
+    def __init__(self, db):
+        self._db = db
+        self._db_cnxn = None
+
+    def connect_if_not(self):
+        if not self._db_cnxn:
+            self._db_cnxn = sqlite3.connect(self._db)
+
+    def close_db(self):
+        if self._db_cnxn:
+            self._db_cnxn.close()
+            self._db_cnxn = None
+
+    def _query_val(self, query, params=(), result_type=float):
+        with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
+            sqlite3.connect(self._db)
+        ) as dbcnxn:
+            cur = dbcnxn.cursor()
+            cur.execute(query, params)
+            row = cur.fetchone()
+            cur.close()
+        if not row:
+            return None
+        return row if result_type is tuple else result_type(row[0])
+
+    def _query_list(self, query, params=()):
+        with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
+            sqlite3.connect(self._db)
+        ) as dbcnxn:
+            cur = dbcnxn.cursor()
+            for row in cur.execute(query, params):
+                yield row
+            cur.close()
+
+    @cached_property
+    def lane_width(self):
+        return self._query_val("SELECT value FROM Spec where key='map_net.lane_width'")
+
+    @cached_property
+    def target_speed(self):
+        return self._query_val("SELECT value FROM Spec where key='speed_limit_mps'")
+
+    @lru_cache(maxsize=32)
+    def vehicle_last_seen_time(self, vehicle_id):
+        query = "SELECT max(sim_time) FROM Trajectory WHERE vehicle_id = ?"
+        return self._query_val(query, params=(vehicle_id,))
+
+    def first_seen_times(self):
+        # For now, limit agent missions to just cars (V.type = 2)
+        query = """SELECT T.vehicle_id, min(T.sim_time)
+            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
+            WHERE V.type = 2
+            GROUP BY vehicle_id"""
+        return self._query_list(query)
+
+    def vehicle_pose_at_time(self, vehicle_id, sim_time):
+        query = """SELECT position_x, position_y, heading_rad
+                   FROM Trajectory
+                   WHERE vehicle_id = ? and sim_time = ?"""
+        return self._query_val(
+            query, params=(int(vehicle_id), float(sim_time)), result_type=tuple
+        )
+
+    def vehicle_ids_active_between(self, start_time, end_time):
+        query = "SELECT DISTINCT vehicle_id FROM Trajectory WHERE ? <= sim_time AND sim_time <= ?"
+        return self._query_list(query, (start_time, end_time))
+
+    def vehicles_active_between(self, start_time, end_time):
+        query = """SELECT V.id, V.type, V.length, V.width,
+                          T.position_x, T.position_y, T.heading_rad, T.speed
+                   FROM Vehicle AS V INNER JOIN Trajectory AS T ON V.id = T.vehicle_id
+                   WHERE T.sim_time > ? AND T.sim_time <= ?
+                   ORDER BY T.sim_time DESC"""
+        return self._query_list(query, (start_time, end_time))
+
+
 class Scenario:
     """The purpose of the Scenario is to provide an aggregate of all
     code/configuration/assets that is specialized to a scenario using SUMO.
@@ -192,10 +270,13 @@ class Scenario:
         self._log_dir = self._resolve_log_dir(log_dir)
         self._validate_assets_exist()
 
-        self._traffic_history = traffic_history
-        default_lane_width = (
-            self.traffic_history_lane_width if traffic_history else None
-        )
+        if traffic_history:
+            self._traffic_history = TrafficHistory(traffic_history)
+            default_lane_width = self.traffic_history.lane_width
+        else:
+            self._traffic_history = None
+            default_lane_width = None
+
         net_file = os.path.join(self._root, "map.net.xml")
         self._road_network = SumoRoadNetwork.from_file(
             net_file, default_lane_width=default_lane_width
@@ -520,43 +601,14 @@ class Scenario:
     def set_ego_missions(self, ego_missions):
         self._missions = ego_missions
 
-    @cached_property
-    def traffic_history_lane_width(self):
-        histories_db = sqlite3.connect(self._traffic_history)
-        cur = histories_db.cursor()
-        cur.execute("SELECT value FROM Spec where key='map_net.lane_width'")
-        row = cur.fetchone()
-        cur.close()
-        histories_db.close()
-        return float(row[0]) if row else None
-
-    @cached_property
-    def traffic_history_target_speed(self):
-        histories_db = sqlite3.connect(self._traffic_history)
-        cur = histories_db.cursor()
-        cur.execute("SELECT value FROM Spec where key='speed_limit_mps'")
-        row = cur.fetchone()
-        cur.close()
-        histories_db.close()
-        return float(row[0]) if row else None
-
     def discover_missions_of_traffic_histories(self, vehicle_missions={}):
-        histories_db = sqlite3.connect(self._traffic_history)
-        # For now, limit agent missions to just cars (V.type = 2)
-        st_query = """SELECT T.vehicle_id, min(T.sim_time)
-            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
-            WHERE V.type = 2
-            GROUP BY vehicle_id"""
-        p_query = "SELECT position_x, position_y, heading_rad FROM Trajectory WHERE vehicle_id = ? and sim_time = ?"
         map_offset = self._road_network.net_offset
-        st_cur = histories_db.cursor()
-        for row in st_cur.execute(st_query):
-            vid = str(row[0])
+        for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])
-            p_cur = histories_db.cursor()
-            vrow = p_cur.execute(p_query, (int(vid), start_time)).fetchone()
-            assert vrow
-            pos_x, pos_y, heading = vrow
+            pph = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
+            assert pph
+            pos_x, pos_y, heading = pph
+            vid = str(row[0])
             vehicle_missions[vid] = Mission(
                 start=Start(
                     (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
@@ -565,9 +617,6 @@ class Scenario:
                 start_time=start_time,
                 vehicle_id=vid,
             )
-            p_cur.close()
-        st_cur.close()
-        histories_db.close()
         return vehicle_missions
 
     @staticmethod

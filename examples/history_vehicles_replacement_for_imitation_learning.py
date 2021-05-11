@@ -24,6 +24,31 @@ class KeepLaneAgent(Agent):
         return (self._target_speed, 0)
 
 
+def _choose_random_sample(vehicle_missions, k, traffic_history, logger):
+    # ensure overlapping time intervals across sample
+    # this is inefficient, but it's not that important
+    choice = random.choice(list(vehicle_missions.keys()))
+    sample = {choice}
+    sample_start_time = vehicle_missions[choice].start_time
+    sample_end_time = traffic_history.vehicle_last_seen_time(choice)
+    while len(sample) < k:
+        choices = list(
+            traffic_history.vehicle_ids_active_between(
+                sample_start_time, sample_end_time
+            )
+        )
+        if len(choices) <= len(sample):
+            logger.warning(f"Unable to choose {k} overlapping missions.")
+            break
+        choice = str(random.choice(choices)[0])
+        sample_start_time = min(vehicle_missions[choice].start_time, sample_start_time)
+        sample_end_time = max(
+            traffic_history.vehicle_last_seen_time(choice), sample_end_time
+        )
+        sample.add(choice)
+    return sample
+
+
 def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
     assert vehicles_to_replace > 0
     assert episodes > 0
@@ -66,7 +91,7 @@ def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
                 AgentType.LanerWithSpeed, max_episode_steps=None
             ),
             agent_builder=KeepLaneAgent,
-            agent_params=scenario.traffic_history_target_speed,
+            agent_params=scenario.traffic_history.target_speed,
         )
 
         for episode in range(episodes):
@@ -77,8 +102,9 @@ def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
             agentid_to_vehid = {}
             agent_interfaces = {}
             history_start_time = None
-            sample = random.sample(veh_missions.keys(), k)
-            # TODO: ensure overlapping time intervals across sample
+            sample = _choose_random_sample(
+                veh_missions, k, scenario.traffic_history, logger
+            )
             logger.info(f"chose vehicles: {sample}")
             for veh_id in sample:
                 agent_id = f"ego-agent-IL-{veh_id}"
@@ -154,7 +180,7 @@ if __name__ == "__main__":
     main(
         script=parser.prog,
         scenarios=args.scenarios,
-        headless=False,  # args.headless,
+        headless=args.headless,
         seed=args.seed,
         vehicles_to_replace=args.k,
         episodes=args.episodes,
