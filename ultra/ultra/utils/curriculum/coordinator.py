@@ -36,14 +36,13 @@ class Coordinator:
         """
         CurriculumInfo.initialize(curriculum_dir)
 
-        self.train_counter = cycle(tuple([i * 1 for i in range(self.get_num_grades())]))
-        self.eval_counter = cycle(tuple([i * 1 for i in range(self.get_num_grades())]))
-        self.num_episodes = num_episodes
-        self.grade_counter = 0
-        self.episode_per_grade = -1
-        self.warmup_episodes = 1
+        self._train_counter = cycle(tuple([i * 1 for i in range(self.num_grades)]))
+        self._eval_counter = cycle(tuple([i * 1 for i in range(self.num_grades)]))
+        self._num_episodes = num_episodes
+        self._grade_counter = 0
+        self._episodes_per_grade = -1
+        self._warmup_episodes = 1
         self.end_warmup = False
-        self.eval_check = False
 
     def build_all_scenarios(self, root_path, save_dir):
         """Builds all of the scenarios needed in the curriculum
@@ -67,15 +66,16 @@ class Coordinator:
         """Increments training grade counter and stores new training grade inside
         global grade carrier
         """
-        counter = next(self.train_counter) + 1
-        self.train_grade = CurriculumInfo.curriculum["static"]["grades"][counter]
+        counter = next(self._train_counter) + 1
+        self._train_grade = CurriculumInfo.curriculum["static"]["grades"][counter]
 
-    def get_train_grade(self) -> list:
+    @property
+    def train_grade(self) -> list:
         """
         Returns:
             current train grade
         """
-        return self.train_grade
+        return self._train_grade
 
     def next_eval_grade(self):
         """Increments evaluation grade counter and stores evaluation grade inside
@@ -86,33 +86,35 @@ class Coordinator:
         with the train/eval.
         """
         # Get task and level information
-        counter = next(self.eval_counter) + 1
-        self.eval_grade = CurriculumInfo.curriculum["static"]["grades"][counter]
+        counter = next(self._eval_counter) + 1
+        self._eval_grade = CurriculumInfo.curriculum["static"]["grades"][counter]
 
-    def get_eval_grade(self) -> list:
+    @property
+    def eval_grade(self) -> list:
         """
         Returns:
             current eval grade
         """
-        return self.eval_grade
+        return self._eval_grade
 
-    def get_num_grades(self):
+    @property
+    def num_grades(self):
         """
         Returns:
             the number of grades in the static curriculum
         """
         return len(CurriculumInfo.curriculum["static"]["grades"])
 
-    def get_grade_size(self) -> int:
+    @property
+    def grade_size(self) -> int:
         """
         Returns:
             the number of episodes in the current grade
         """
         if CurriculumInfo.episode_based_toggle:
-            return int(self.num_episodes / self.get_num_grades())
+            return int(self._num_episodes / self.num_grades)
         else:
-            grade_size = self.episode_per_grade
-            return grade_size
+            return self._episodes_per_grade
 
     def check_cycle_condition(self, index) -> bool:
         """Checks if curriculum needs to be repeated
@@ -126,10 +128,10 @@ class Coordinator:
         if (CurriculumInfo.episode_based_cycle == False) and (
             CurriculumInfo.episode_based_toggle == True
         ):
-            if index + 1 > int(self.get_num_grades() * self.get_grade_size()):
+            if index + 1 > int(self.num_grades * self.grade_size):
                 return True
         elif (CurriculumInfo.pass_based_toggle == True) and (
-            self.grade_counter >= self.get_num_grades()
+            self._grade_counter >= self.num_grades
         ):
             return True
         return False
@@ -147,20 +149,20 @@ class Coordinator:
         Returns:
             the eligibility of the agents to enter the next grade
         """
-        self.episode_per_grade += 1
+        self._episodes_per_grade += 1
         if CurriculumInfo.pass_based_toggle == True:
             if CurriculumInfo.pass_based_warmup_episodes != 0:
                 if (
-                    self.warmup_episodes % CurriculumInfo.pass_based_warmup_episodes
+                    self._warmup_episodes % CurriculumInfo.pass_based_warmup_episodes
                     == 0
                 ) and (self.end_warmup == False):
-                    print("***WARM-UP episode:", self.warmup_episodes)
-                    self.warmup_episodes = 1
+                    print("***WARM-UP episode:", self._warmup_episodes)
+                    self._warmup_episodes = 1
                     self.end_warmup = True
                     return False
                 elif self.end_warmup == False:
-                    print("***WARM-UP episode:", self.warmup_episodes)
-                    self.warmup_episodes += 1
+                    print("***WARM-UP episode:", self._warmup_episodes)
+                    self._warmup_episodes += 1
                     return False
             else:
                 self.end_warmup = True
@@ -187,14 +189,12 @@ class Coordinator:
             the eligibility of the agents to enter the next grade
         """
         if index == 0:
-            self.grade_counter += 1
+            self._grade_counter += 1
             self.display()
-        elif (
-            index % int(self.num_episodes / self.get_num_grades())
-        ) == 0 and index != 0:
+        elif (index % int(self._num_episodes / self.num_grades)) == 0 and index != 0:
             self.next_train_grade()
             self.display()
-            self.grade_counter += 1
+            self._grade_counter += 1
             return True
         else:
             return False
@@ -216,10 +216,10 @@ class Coordinator:
         # Switch to next grade on the basis of certain percentage of completed scenarios
         if index != 0:
             if average_reached_goal >= CurriculumInfo.pass_based_pass_rate:
-                print(f"({index}) AVERAGE SCENARIOS PASSED: {average_reached_goal}")
+                print(f"({index}) AVERAGE REACHED GOAL: {average_reached_goal}")
                 self.next_train_grade()
                 self.display()
-                self.grade_counter += 1
+                self._grade_counter += 1
                 return True
             else:
                 return False
@@ -227,17 +227,8 @@ class Coordinator:
             self.display()
 
     def display(self):
-        """Prints information about succeeding grade
-
-        Raises:
-            AttributeError : Unexpected error due to self.grade_counter
-                             not being defined
-        """
-        try:
-            print("\n----------------------------------------------------")
-            print("Grade counter :", self.grade_counter + 1)
-            print(f"\nCurrent grade: {self.train_grade}")
-            print("----------------------------------------------------")
-        except AttributeError as e:
-            print(e)
-            pass
+        """Prints information about succeeding grade"""
+        print("\n----------------------------------------------------")
+        print("Grade counter :", self._grade_counter)
+        print(f"\nCurrent grade: {self._train_grade}")
+        print("----------------------------------------------------")
