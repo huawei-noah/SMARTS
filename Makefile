@@ -158,3 +158,7 @@ wheel: docs
 .PHONY: rm-pycache
 rm-pycache:
 	find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+
+.PHONY: rm-cov
+rm-cov:
+	find . -type f -name ".coverage*" -print -delete
