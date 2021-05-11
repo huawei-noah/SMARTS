@@ -11,7 +11,7 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 You can install the SMARTS package from [PyPI](https://pypi.org/project/smarts/).
 
 Package installation requires Python >= 3.7.
-If you dont have python 3.7 or higher, make sure to install or update python first
+If you dont have python 3.7 or higher, make sure to install or update python first.
 
 ```bash
 # For windows user 
@@ -21,7 +21,7 @@ py -m pip install smarts
 python3 -m pip install smarts
 ```
 ## Installation of SUMO
-[SUMO or "Simulation of Urban Mobility"](https://sumo.dlr.de/docs/index.html) is an open source highly portable, microscopic and continuous traffic simulation package which SMARTS currently uses as a tool to create scenarios. You need to install SUMO to use the different modules and packages installed through the command above.
+[SUMO or "Simulation of Urban Mobility"](https://sumo.dlr.de/docs/index.html) is an open source, highly portable, microscopic and continuous traffic simulation package which SMARTS currently uses as a tool to create scenarios. You need to install SUMO to use the different modules and packages installed through the command above.
 You can find a general location for sources and binaries for all platforms here: 
 - https://sumo.dlr.de/docs/Downloads.php
 
@@ -40,9 +40,9 @@ If you try through a package manager make sure to command-line call `sumo` to ma
 
 We would recommend using the prebuilt binaries but if you are using Ubuntu 16 (Xenial), there is a bash script in `extras/sumo/ubuntu_build` that you can use to automate the compilation of SUMO version 1.5.0.
 
-### macOS
+### MacOS
 
-macOS installation of SUMO is straight-forward. See https://sumo.dlr.de/docs/Downloads.php#macos_binaries for details.
+MacOS installation of SUMO is straight-forward. See https://sumo.dlr.de/docs/Downloads.php#macos_binaries for details.
 
 * If you wish to find binaries: **[SUMO Download Page](https://sumo.dlr.de/docs/Downloads.php)**
     * **Please note that building SUMO may not install other vital dependencies that SUMO requires to run.**
@@ -51,14 +51,14 @@ macOS installation of SUMO is straight-forward. See https://sumo.dlr.de/docs/Dow
 ## Modules installed
 Through the SMARTS package, you have access to ['core'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/core), ['env'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/env), ['sstudio'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/sstudio) and ['zoo'](https://github.com/huawei-noah/SMARTS/tree/master/smarts/zoo) as sub-modules under `smarts` module and 
 then ['envision'](https://github.com/huawei-noah/SMARTS/tree/master/envision) as a separate package.
-The scl module is also provided to support the Command line tool.
+The `scl` module is also provided to support the command line tool.
 
 ## How To Use
 SMARTS provides users the ability to customize their agents. The agent is defined in terms of the interface it expects from the environment, and the responses an agent produces.
 
 You can learn more about how to build agents [here](https://smarts.readthedocs.io/en/latest/sim/agent.html).
 
-Here is a simple example of how a single agent experiment can be built,
+Here is a simple example of how a single agent experiment can be built:
 
 ```python
 import gym
@@ -100,7 +100,7 @@ for _ in range(1000):
 ```
 To enrich your training datasets, you can edit your own map through [SUMO’s NETEDIT](https://sumo.dlr.de/docs/NETEDIT.html) and export it in a `map.net.xml` format. 
 
-Example this `map.net.xml` code creates a simple straight path:
+This example `map.net.xml` code creates a simple straight path:
 ```xml
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
@@ -139,7 +139,7 @@ Example this `map.net.xml` code creates a simple straight path:
 ```
 The `sstudio` package supports flexible and expressive scenario specification which you can use to generate traffic with different traffic vehicle numbers and routes, and agent missions.
 
-You can create a simple `scenario.py` script to generate the scenario like
+You can create a simple `scenario.py` script to generate the scenario like:
 
 ```python
 from pathlib import Path
@@ -177,37 +177,37 @@ gen_missions(
 )
 gen_traffic(scenario, traffic, "traffic")
 ```
-to create a social agent going from east to west on a straight one-way road.
+That creates a social agent going from east to west on a straight one-way road.
 
 You can read more about the Scenario Studio [here](https://smarts.readthedocs.io/en/latest/sim/scenario_studio.html).
 ## CLI tool
 
 SMARTS provides a command-line tool to interact with scenario studio and Envision using the command `scl`.
-The `scl` command is abbreviation for "smarts command line".
+The `scl` command is an abbreviation for "smarts command line".
 
-Usage
+Usage:
 ```bash
 scl COMMAND SUBCOMMAND [OPTIONS] [ARGS]...
 ```
 
 Commands:
-* envision
-* scenario
-* zoo
+* `envision`
+* `scenario`
+* `zoo`
 
-Subcommands of scenario:
-* build-all: Generate all scenarios under the given directories
-* build: Generate a single scenario
-* clean: Clean generated artifacts
+Subcommands of `scenario`:
+* `build-all`: Generate all scenarios under the given directories
+* `build`: Generate a single scenario
+* `clean`: Clean generated artifacts
 
-Subcommands of envision:
-* start: start envision server
+Subcommands of `envision`:
+* `start`: start an Envision server
 
-Subcommands of zoo:
-* zoo: Build an agent, used for submitting to the agent-zoo
+Subcommands of `zoo`:
+* `zoo`: Build an agent, used for submitting to the agent-zoo
 
 ### Examples:
-If you make a directory where you make all your scenarios, you can:
+If you make a directory where you keep all your scenarios, you can:
 
 ```bash
 # Start envision, serve scenarios assets out of ./scenarios
