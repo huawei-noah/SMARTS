@@ -152,12 +152,12 @@ def train(
                 )
                 if graduate == True:
                     observations, scenario = env.reset(
-                        True, static_coordinator.get_train_grade()
+                        True, static_coordinator.train_grade
                     )
                     average_reached_goal = 0.0
-                    grade_size = static_coordinator.get_grade_size()
+                    grade_size = static_coordinator.grade_size
                     scenario_data_handler.display_grade_scenario_distribution(
-                        grade_size, static_coordinator.get_train_grade()
+                        grade_size, static_coordinator.train_grade
                     )
                     scenario_data_handler.save_grade_density(grade_size)
                     static_coordinator.episode_per_grade = 0
@@ -283,7 +283,9 @@ def train(
                     episode, total_reached_goal, agents, average_reached_goal
                 )
                 if (episode.index + 1) % CurriculumInfo.pass_based_sample_rate == 0:
-                    print(f"({episode.index + 1}) ASP: {average_reached_goal}")
+                    print(
+                        f"({episode.index + 1}) AVERAGE REACHED GOAL: {average_reached_goal}"
+                    )
             elif CurriculumInfo.dynamic_curriculum_toggle is True:
                 if (
                     episode.index + 1
@@ -333,11 +335,11 @@ def static_curriculum_setup(curriculum_metadata, num_episodes):
             curriculum_metadata["curriculum_scenarios_save_dir"],
         )
 
-    print("Number of grades:", static_coordinator.get_num_grades())
+    print("Number of grades:", static_coordinator.num_grades)
     static_coordinator.next_train_grade()
-    scenario_info = tuple(static_coordinator.get_train_grade())
+    scenario_info = tuple(static_coordinator.train_grade)
 
-    if num_episodes % static_coordinator.get_num_grades() == 0:
+    if num_episodes % static_coordinator.num_grades == 0:
         num_episodes += 1
         print("New max episodes (due to end case):", num_episodes)
 

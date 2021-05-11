@@ -193,9 +193,6 @@ class Episode:
     def gap_mode(self):
         self.active_tag = "Gap"
 
-    def get_mode(self):
-        return self.active_tag
-
     def calculate_gap(self):
         gap_info = self.info["Gap"]
         for agent_id, agent_info in self.info["Evaluation"].items():

@@ -262,7 +262,7 @@ def evaluate(
             if CurriculumInfo.static_curriculum_toggle == True:
                 if initial_grade_switch == False:
                     observations, scenario = env.reset(
-                        True, static_coordinator.get_eval_grade()
+                        True, static_coordinator.eval_grade
                     )
                     initial_grade_switch = True
                 else:
@@ -314,7 +314,7 @@ def evaluate(
     if curriculum_mode is True:
         if CurriculumInfo.static_curriculum_toggle is True:
             scenario_data_handler_eval.display_grade_scenario_distribution(
-                num_episodes, static_coordinator.get_eval_grade()
+                num_episodes, static_coordinator.eval_grade
             )
             scenario_data_handler_eval.save_grade_density(num_episodes)
     else:

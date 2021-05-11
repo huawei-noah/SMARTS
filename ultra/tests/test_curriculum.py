@@ -161,10 +161,11 @@ class CurriculumTest(unittest.TestCase):
     def test_static_coordinator(self):
         log_dir = os.path.join(CurriculumTest.OUTPUT_DIRECTORY, "logs/")
         curriculum_dir = "../tests/scenarios/static_test_curriculum"
-        num_episodes = 8
+        num_episodes = 6
         etag = "sac-v0"
 
         agent_coordinator = Coordinator(curriculum_dir, num_episodes)
+        agent_coordinator._train_grade = ">>> TEST COORDINATOR <<<"
 
         grade_iterator = iter(
             cycle(
@@ -180,11 +181,7 @@ class CurriculumTest(unittest.TestCase):
             graduate = agent_coordinator.graduate(episode.index, num_episodes)
             # If agent switches to new grade
             if graduate == True:
-                self.assertEqual(
-                    next(grade_iterator), agent_coordinator.get_train_grade()[0]
-                )
-                print(agent_coordinator.get_train_grade()[0])
-
+                self.assertEqual(next(grade_iterator), agent_coordinator.train_grade[0])
             # If agent has completed all levels (no cycle through levels again)
             if agent_coordinator.check_cycle_condition(episode.index):
                 print("No cycling of grades -> run completed")
