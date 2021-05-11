@@ -391,14 +391,14 @@ class Sensors:
 
         events = Events(
             collisions=sim.vehicle_collisions(vehicle.id),
-            off_road=is_off_road and not reached_goal,
+            off_road=is_off_road,
             reached_goal=reached_goal,
-            reached_max_episode_steps=reached_max_episode_steps and not reached_goal,
-            off_route=is_off_route and not reached_goal,
-            on_shoulder=is_on_shoulder and not reached_goal,
-            wrong_way=is_wrong_way and not reached_goal,
-            not_moving=is_not_moving and not reached_goal,
-            agents_alive_done=agents_alive_done and not reached_goal,
+            reached_max_episode_steps=reached_max_episode_steps,
+            off_route=is_off_route,
+            on_shoulder=is_on_shoulder,
+            wrong_way=is_wrong_way,
+            not_moving=is_not_moving,
+            agents_alive_done=agents_alive_done,
         )
 
         return done, events
