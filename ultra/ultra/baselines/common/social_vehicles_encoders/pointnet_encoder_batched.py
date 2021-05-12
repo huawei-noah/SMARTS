@@ -28,14 +28,14 @@ import numpy as np
 
 
 class STNkd(nn.Module):
-    def __init__(self, k=64, nc=16):
+    def __init__(self, k=64, nc=16, bias=True):
         super(STNkd, self).__init__()
-        self.conv1 = torch.nn.Conv1d(k, nc, 1)
-        self.conv2 = torch.nn.Conv1d(nc, nc * 4, 1)
-        self.conv3 = torch.nn.Conv1d(nc * 4, nc * 16, 1)
-        self.fc1 = nn.Linear(nc * 16, nc * 4)
-        self.fc2 = nn.Linear(nc * 4, nc)
-        self.fc3 = nn.Linear(nc, k * k)
+        self.conv1 = torch.nn.Conv1d(k, nc, 1, bias=bias)
+        self.conv2 = torch.nn.Conv1d(nc, nc * 4, 1, bias=bias)
+        self.conv3 = torch.nn.Conv1d(nc * 4, nc * 16, 1, bias=bias)
+        self.fc1 = nn.Linear(nc * 16, nc * 4, bias=bias)
+        self.fc2 = nn.Linear(nc * 4, nc, bias=bias)
+        self.fc3 = nn.Linear(nc, k * k, bias=bias)
         self.relu = nn.ReLU()
 
         # self.bn1 = nn.BatchNorm1d(nc)
@@ -81,6 +81,7 @@ class PNEncoderBatched(nn.Module):
         feature_transform=True,
         nc=16,
         transform_loss_weight=0.1,
+        bias=True,
     ):
         assert global_features
         super(PNEncoderBatched, self).__init__()
@@ -90,12 +91,12 @@ class PNEncoderBatched(nn.Module):
         self.feature_transform = feature_transform
         self.transform_loss_weight = transform_loss_weight
 
-        self.transformD = STNkd(k=input_dim, nc=nc)
-        self.conv1 = nn.Conv1d(self.input_dim, nc, 1)
+        self.transformD = STNkd(k=input_dim, nc=nc, bias=bias)
+        self.conv1 = nn.Conv1d(self.input_dim, nc, 1, bias=bias)
         # self.bn1 = nn.BatchNorm1d(nc)
-        self.conv2 = nn.Conv1d(nc, nc * 4, 1)
+        self.conv2 = nn.Conv1d(nc, nc * 4, 1, bias=bias)
         # self.bn2 = nn.BatchNorm1d(nc * 4)
-        self.conv3 = nn.Conv1d(nc * 4, nc * 16, 1)
+        self.conv3 = nn.Conv1d(nc * 4, nc * 16, 1, bias=bias)
         # self.bn3 = nn.BatchNorm1d(nc * 16)
         identity = lambda x: x
         self.bn1, self.bn2, self.bn3 = [identity] * 3
@@ -104,7 +105,7 @@ class PNEncoderBatched(nn.Module):
         self.output_dim = nc * 16
 
         if self.feature_transform:
-            self.transformF = STNkd(k=self.nc, nc=nc)
+            self.transformF = STNkd(k=self.nc, nc=nc, bias=bias)
 
         self.empty_fill = torch.from_numpy(
             np.asarray(

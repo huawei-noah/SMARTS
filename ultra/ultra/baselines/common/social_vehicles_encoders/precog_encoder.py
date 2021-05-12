@@ -32,6 +32,7 @@ class PrecogFeatureExtractor(nn.Module):
         social_capacity=None,
         embed_dim=None,
         seed=None,
+        bias=True,
     ):
         super(PrecogFeatureExtractor, self).__init__()
         if seed is not None:
@@ -41,11 +42,11 @@ class PrecogFeatureExtractor(nn.Module):
         self.embed_dim = embed_dim
         self.n_social_features = n_social_features
         self.social_net = nn.Sequential(
-            nn.Linear(n_social_features, hidden_units),
+            nn.Linear(n_social_features, hidden_units, bias=bias),
             nn.ReLU(),
-            nn.Linear(hidden_units, hidden_units),
+            nn.Linear(hidden_units, hidden_units, bias=bias),
             nn.ReLU(),
-            nn.Linear(hidden_units, embed_dim),
+            nn.Linear(hidden_units, embed_dim, bias=bias),
         )
 
         self.output_dim = embed_dim * social_capacity
