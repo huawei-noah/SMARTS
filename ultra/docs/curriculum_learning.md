@@ -23,10 +23,10 @@ curriculum:
     conditions:
       eval_per_grade: <bool> # Evaluation takes places after completion of grade. An "exam" at the end of year
       episode_based: # Agent graduates after completing a N number of episodes in each grade
-        toggle: <bool> # Enable the condition
-        cycle: <bool> # Option to keep cycling through grades to episodes limit
+        toggle: <bool> # Enable the condition (Only one condition can be toggle at a time)
+        cycle: <bool> # Option to cycle through grades (e.g grade 1 -> grade 2 -> grade 1 -> grade 2) until episode limit is reached 
       pass_based: # Agent graduates after getting an average completion rate, the average is taken over the eval-rate (sampling-rate)
-        toggle: <bool> # Enable the condition
+        toggle: <bool> # Enable the condition (Only one condition can be toggle at a time)
         pass_rate: <float> # Scalar between 0 and 1; describes the threshold completion rate (%)
         sample_rate: <int> # Samples for some parameter (average_reached_goal) at every N episodes
         warmup_episodes: <int> # Starting N episodes where sampling does not occur, thus no graduation can take place

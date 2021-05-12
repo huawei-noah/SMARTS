@@ -88,7 +88,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade3:
     train:
-      total: 1000
+      total: 500
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -115,7 +115,7 @@ levels:
                    [50kmh,high-density,0.07],[70kmh,high-density,0.07],[100kmh,high-density,0.06]] #20%
            stops: null
     test:
-      total: 1
+      total: 300
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -130,7 +130,7 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   grade4:
     train:
-      total: 1000
+      total: 500
       ego_missions:
       - start: south-SN
         end:   west-EW
@@ -157,7 +157,7 @@ levels:
                    [50kmh,high-density,0.20],[70kmh,high-density,0.20],[100kmh,high-density,0.20]] #60%
            stops: null
     test:
-      total: 1
+      total: 300
       ego_missions:
       - start: south-SN
         end:   west-EW

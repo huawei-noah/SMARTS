@@ -150,14 +150,16 @@ class Coordinator:
             the eligibility of the agents to enter the next grade
         """
         self._episodes_per_grade += 1
+        print(self._episodes_per_grade)
         if CurriculumInfo.pass_based_toggle == True:
             if CurriculumInfo.pass_based_warmup_episodes != 0:
                 if (
-                    self._warmup_episodes % CurriculumInfo.pass_based_warmup_episodes
+                    (self._warmup_episodes + 1)
+                    % CurriculumInfo.pass_based_warmup_episodes
                     == 0
                 ) and (self.end_warmup == False):
                     print("***WARM-UP episode:", self._warmup_episodes)
-                    self._warmup_episodes = 1
+                    self._warmup_episodes = 0
                     self.end_warmup = True
                     return False
                 elif self.end_warmup == False:
