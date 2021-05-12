@@ -10,6 +10,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 
+## Removed
+- Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
+
 ## [0.4.16] - 2021-05-11
 ### Added 
 - Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
