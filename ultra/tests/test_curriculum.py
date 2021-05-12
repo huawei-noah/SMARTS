@@ -142,6 +142,8 @@ class CurriculumTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 seed=2,
+                experiment_dir=None,
+                save_model_only=False,
                 curriculum_mode=True,
                 curriculum_metadata={
                     "curriculum_dir": curriculum_dir,
