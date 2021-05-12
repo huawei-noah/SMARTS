@@ -155,12 +155,12 @@ levels:
   # ----------------------------------------- SIMPLE LEVELS ------------------------------------------
   simple-v0:
     train:
-      total: 20
+      total: 30
       ego_missions:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
-        start_offset: [90, 100]
+        start_offset: [90, 120]
         end_offset:   [90, 100]
       intersection_types:
         2lane_t:
@@ -175,18 +175,18 @@ levels:
            percent: 0.3
            specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
            stops: null
-        # 2lane_c:
-        #    percent: 0.1
-        #    specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
-        #    stops: null
-        # 3lane_c:
-        #    percent: 0.2
-        #    specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
-        #    stops: null
-        # 4lane_c:
-        #    percent: 0.3
-        #    specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
-        #    stops: null
+        2lane_c:
+           percent: 0.1
+           specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
+           stops: null
+        3lane_c:
+           percent: 0.2
+           specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
+           stops: null
+        4lane_c:
+           percent: 0.3
+           specs: [[50kmh,simple-v0,0.33],[70kmh,simple-v0,0.34],[100kmh,simple-v0,0.33]]
+           stops: null
     test:
       total: 1
       ego_missions:
@@ -203,12 +203,12 @@ levels:
            
   simple-v1:
     train:
-      total: 20
+      total: 30
       ego_missions:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
-        start_offset: [90, 100]
+        start_offset: [90, 120]
         end_offset:   [90, 100]
       intersection_types:
         2lane_t:
@@ -223,18 +223,18 @@ levels:
            percent: 0.3
            specs: [[50kmh,simple-v1,0.33],[70kmh,simple-v1,0.34],[100kmh,simple-v1,0.33]]
            stops: null
-        # 2lane_c:
-        #    percent: 0.1
-        #    specs: [[50kmh,simple-v1,0.33],[70kmh,simple-v1,0.34],[100kmh,simple-v1,0.33]]
-        #    stops: null
-        # 3lane_c:
-        #    percent: 0.2
-        #    specs: [[50kmh,simple-v1,0.33],[70kmh,simple-v1,0.34],[100kmh,simple-v1,0.33]]
-        #    stops: null
-        # 4lane_c:
-        #    percent: 0.3
-        #    specs: [[50kmh,simple-v1,0.33],[70kmh,simple-v1,0.34],[100kmh,simple-v1,0.33]]
-        #    stops: null
+        2lane_c:
+           percent: 0.1
+           specs: [[50kmh,simple-v1,0.33],[70kmh,simple-v1,0.34],[100kmh,simple-v1,0.33]]
+           stops: null
+        3lane_c:
+           percent: 0.2
+           specs: [[50kmh,simple-v1,0.33],[70kmh,simple-v1,0.34],[100kmh,simple-v1,0.33]]
+           stops: null
+        4lane_c:
+           percent: 0.3
+           specs: [[50kmh,simple-v1,0.33],[70kmh,simple-v1,0.34],[100kmh,simple-v1,0.33]]
+           stops: null
     test:
       total: 1
       ego_missions:
@@ -250,12 +250,12 @@ levels:
            stops: null
   simple-v2:
     train:
-      total: 20
+      total: 30
       ego_missions:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
-        start_offset: [90, 100]
+        start_offset: [90, 120]
         end_offset:   [90, 100]
       intersection_types:
         2lane_t:
@@ -270,18 +270,18 @@ levels:
            percent: 0.3
            specs: [[50kmh,simple-v2,0.33],[70kmh,simple-v2,0.34],[100kmh,simple-v2,0.33]]
            stops: null
-        # 2lane_c:
-        #    percent: 0.1
-        #    specs: [[50kmh,simple-v2,0.33],[70kmh,simple-v2,0.34],[100kmh,simple-v2,0.33]]
-        #    stops: null
-        # 3lane_c:
-        #    percent: 0.2
-        #    specs: [[50kmh,simple-v2,0.33],[70kmh,simple-v2,0.34],[100kmh,simple-v2,0.33]]
-        #    stops: null
-        # 4lane_c:
-        #    percent: 0.3
-        #    specs: [[50kmh,simple-v2,0.33],[70kmh,simple-v2,0.34],[100kmh,simple-v2,0.33]]
-        #    stops: null
+        2lane_c:
+           percent: 0.1
+           specs: [[50kmh,simple-v2,0.33],[70kmh,simple-v2,0.34],[100kmh,simple-v2,0.33]]
+           stops: null
+        3lane_c:
+           percent: 0.2
+           specs: [[50kmh,simple-v2,0.33],[70kmh,simple-v2,0.34],[100kmh,simple-v2,0.33]]
+           stops: null
+        4lane_c:
+           percent: 0.3
+           specs: [[50kmh,simple-v2,0.33],[70kmh,simple-v2,0.34],[100kmh,simple-v2,0.33]]
+           stops: null
     test:
       total: 10
       ego_missions:

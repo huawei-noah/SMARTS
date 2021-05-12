@@ -397,7 +397,7 @@ t_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (1, 1),
-                        "time_between_cluster": (10, 20),
+                        "time_between_cluster": (10, 50),
                         "time_for_each_cluster": 1,
                     },
                 },
