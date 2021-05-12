@@ -64,6 +64,7 @@ def get_social_vehicle_configs(
                 "embed_dim": 8,
                 "social_capacity": int(social_capacity),
                 "seed": int(seed),
+                "bias": False,
             },
         }
     elif encoder_key == "pointnet_encoder":
@@ -74,6 +75,7 @@ def get_social_vehicle_configs(
                 "input_dim": int(num_social_features),
                 "nc": 8,
                 "transform_loss_weight": 0.1,
+                "bias": True,
             },
         }
     elif encoder_key == "pointnet_encoder_batched":
@@ -84,6 +86,7 @@ def get_social_vehicle_configs(
                 "input_dim": int(num_social_features),
                 "nc": 8,
                 "transform_loss_weight": 0.1,
+                "bias": True,
             },
         }
     elif encoder_key == "no_encoder":
