@@ -92,12 +92,6 @@ $(scenario)/flamegraph-perf.log: build-scenario $(script) smarts/core/* smarts/e
 	# pip install git+https://github.com/asokoloski/python-flamegraph.git
 	python -m flamegraph -i 0.001 -o $(scenario)/flamegraph-perf.log $(script) $(scenario)
 
-.PHONY: pview
-pview: $(scenario)/map.egg
-	# !!! READ THE pview MANUAL !!!
-	# https://www.panda3d.org/manual/?title=Previewing_3D_Models_in_Pview
-	pview -c -l $(scenario)/map.egg
-
 .PHONY: sumo-gui
 sumo-gui: $(scenario)/map.net.xml
 	sumo-gui \
