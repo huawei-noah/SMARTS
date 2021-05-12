@@ -341,6 +341,7 @@ def episodes(n, etag=None, log_dir=None):
             f"Total Steps",
             f"Steps/Sec",
             f"Score",
+            f"Goal Completed",
         ],
         width=col_width,
         style="round",
@@ -378,12 +379,20 @@ def episodes(n, etag=None, log_dir=None):
                     )
                     for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
+                agent_goal_completion_strings = [
+                    "{}: {}".format(
+                        agent_id,
+                        bool(agent_info.data["reached_goal"]),
+                    )
+                    for agent_id, agent_info in e.info[e.active_tag].items()
+                ]
                 row = (
                     f"{e.index + 1}/{n}",
                     f"{e.sim2wall_ratio:.2f}",
                     f"{e.steps}",
                     f"{e.steps_per_second:.2f}",
                     ", ".join(agent_rewards_strings),
+                    ", ".join(agent_goal_completion_strings),
                 )
                 table(row)
             else:

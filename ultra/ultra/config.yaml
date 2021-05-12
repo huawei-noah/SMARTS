@@ -101,3 +101,7 @@ tasks:
     high-density:
       train: "scenarios/taskgb/train_high-density*"
       test: "scenarios/taskgb/test_high-density*"
+    # Evaluation only scenarios
+    eval-equal:
+      train: "scenarios/eval_scenarios/train_eval-equal*"
+      test: "scenarios/eval_scenarios/test_eval-equal*"
