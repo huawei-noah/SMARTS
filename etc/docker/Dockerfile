@@ -57,7 +57,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install SMARTS
 ENV PYTHONPATH=/src
-COPY . /src
+COPY ../../. /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e .[train,test,dev]
 
