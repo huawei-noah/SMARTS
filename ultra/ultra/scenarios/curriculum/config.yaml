@@ -2,17 +2,17 @@ curriculum:
   static:
     toggle: True
     grades:
-      1: [[gb,grade1]] #[[<task>,<level>]]
-      2: [[gb,grade2]]
-      3: [[gb,grade3]]
-      4: [[gb,grade4]]
+      1: [[gb,no-traffic]] #[[<task>,<level>]]
+      2: [[gb,grade4]]
+      # 3: [[gb,grade3]]
+      # 4: [[gb,grade4]]
     conditions:
-      eval_per_grade: True
+      eval_per_grade: False
       episode_based:
-        toggle: False
+        toggle: True
         cycle: False
       pass_based:
-        toggle: True
+        toggle: False
         pass_rate: 0.70
         sample_rate: 30
         warmup_episodes: 100
