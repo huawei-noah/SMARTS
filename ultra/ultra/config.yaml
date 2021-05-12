@@ -46,6 +46,12 @@ tasks:
     simple-v0:
       train: "scenarios/task1/train_simple-v0*"
       test:  "scenarios/task1/test_simple-v0*"
+    simple-v1:
+      train: "scenarios/task1/train_simple-v1*"
+      test:  "scenarios/task1/test_simple-v1*"
+    simple-v2:
+      train: "scenarios/task1/train_simple-v2*"
+      test:  "scenarios/task1/test_simple-v2*"
   task2:
     low-high:
       train: "scenarios/task2/train_low-high*"

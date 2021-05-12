@@ -213,6 +213,7 @@ def generate_left_turn_missions(
                 ],
                 stops=stops,
                 deadlock_optimization=route_info["deadlock_optimization"],
+                pos_offsets=route_info["pos_offsets"],
                 stopwatcher_info=stopwatcher_info,
             )
             if (
@@ -377,6 +378,7 @@ def generate_social_vehicles(
     stops,
     begin_time_init=None,
     deadlock_optimization=True,
+    pos_offsets=None,
 ):
     flows = []
     behaviors = []
@@ -459,8 +461,12 @@ def generate_social_vehicles(
             )
         else:
             behavior = get_social_vehicle_behavior(behavior_idx)
-            start_offset = random.randint(80, 100)
-            end_offset = random.randint(80, 100)
+            if pos_offsets != None:
+                start_offset = random.randint(pos_offsets["start"][0], pos_offsets["start"][1])
+                end_offset = random.randint(pos_offsets["end"][0], pos_offsets["end"][1])
+            else:
+                start_offset = "base"
+                end_offset = "max"
             flows.append(
                 Flow(
                     begin=begin_time,
