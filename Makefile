@@ -45,7 +45,7 @@ test-memory-growth: build-all-scenarios
 		--dist=loadscope \
 		-n `nproc --ignore 1` \
 		./smarts/core/tests/test_smarts_memory_growth.py
-	rm -f .coverage*
+	rm -f .coverage.*
 
 .PHONY: test-long-determinism
 test-long-determinism: 
@@ -128,7 +128,7 @@ clean:
 	rm -f ./$(scenario)/*.rou.alt.xml
 	rm -rf ./$(scenario)/traffic
 	rm -rf ./$(scenario)/social_agents
-	rm -f .coverage*
+	rm -f .coverage.*
 
 .PHONY: format
 format:
