@@ -40,8 +40,8 @@ class Coordinator:
         self._eval_counter = cycle(tuple([i * 1 for i in range(self.num_grades)]))
         self._num_episodes = num_episodes
         self._grade_counter = 0
-        self._episodes_per_grade = -1
-        self._warmup_episodes = 1
+        self._episodes_per_grade = 0
+        self._warmup_episodes = 0
         self.end_warmup = False
 
     def build_all_scenarios(self, root_path, save_dir):

@@ -167,7 +167,6 @@ class CurriculumTest(unittest.TestCase):
         etag = "sac-v0"
 
         agent_coordinator = Coordinator(curriculum_dir, num_episodes)
-        agent_coordinator._train_grade = ">>> TEST COORDINATOR <<<"
 
         grade_iterator = iter(
             cycle(
