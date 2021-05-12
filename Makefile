@@ -14,6 +14,7 @@ test: build-all-scenarios
 		--ignore=./smarts/env/tests/test_learning.py \
 		-k 'not test_long_determinism'
 	rm -f .coverage.*
+	rm -f .coverage*
 
 .PHONY: sanity-test
 sanity-test: build-all-scenarios
@@ -46,6 +47,7 @@ test-memory-growth: build-all-scenarios
 		-n `nproc --ignore 1` \
 		./smarts/core/tests/test_smarts_memory_growth.py
 	rm -f .coverage.*
+	rm -f .coverage*
 
 .PHONY: test-long-determinism
 test-long-determinism: 
@@ -129,6 +131,7 @@ clean:
 	rm -rf ./$(scenario)/traffic
 	rm -rf ./$(scenario)/social_agents
 	rm -f .coverage.*
+	rm -f .coverage*
 
 .PHONY: format
 format:
@@ -159,3 +162,4 @@ rm-pycache:
 .PHONY: rm-cov
 rm-cov:
 	find . -type f -name ".coverage.*" -delete
+	find . -type f -name ".coverage*" -delete
