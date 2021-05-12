@@ -4,7 +4,6 @@ from unittest import mock
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
