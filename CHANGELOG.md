@@ -22,9 +22,10 @@ process
 - Added `near realtime` mode and `uncapped` mode in Envision
 - Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks
 - Added options in `DoneCriteria` to trigger ego agent to be done based on other agent's done situation
-- Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828 
+- Added `README_pypi.md` to update to the general user installation PyPI instructions. See Issue #828 
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
+- Refactored the top level of the SMARTS module to make it easier to navigate the project and understand its structure. See issue #776.
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed Sumo road network offset bug for shifted maps.  See issue #716.
