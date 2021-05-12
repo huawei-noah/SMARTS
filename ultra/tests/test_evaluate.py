@@ -175,7 +175,7 @@ class EvaluateTest(unittest.TestCase):
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00 --level eval_test --models {models} --experiment-dir {experiment_dir} "
-            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless True"
+            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
 
         ray.shutdown()
@@ -205,7 +205,7 @@ class EvaluateTest(unittest.TestCase):
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00-multiagent --level eval_test --models {models} --experiment-dir {experiment_dir} "
-            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless True"
+            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
 
         ray.shutdown()

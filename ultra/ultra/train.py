@@ -110,20 +110,22 @@ def train(
         CurriculumInfo.initialize(curriculum_metadata["curriculum_dir"])
         if CurriculumInfo.static_curriculum_toggle is True:
             print("\n------------ Static Curriculum MODE : Enabled ------------\n")
-            static_coordinator, scenario_info = static_curriculum_setup(
+            static_coordinator, scenario_info, num_episodes = static_curriculum_setup(
                 curriculum_metadata, num_episodes
             )
             dynamic_coordinator = None
         elif CurriculumInfo.dynamic_curriculum_toggle is True:
-            print("\n------------ Dynamic Curriculum MODE : Disabled ------------\n")
+            print("\n------------ Dynamic Curriculum MODE : Enabled ------------\n")
             dynamic_coordinator, scenario_info = dynamic_curriculum_setup(
                 curriculum_metadata
             )
             static_coordinator = None
+        save_model_only = True
     else:
-        print("\n------------ No Curriculum ------------\n")
+        print("\n------------ Curriculum MODE : Disabled ------------\n")
         dynamic_coordinator = None
         static_coordinator = None
+        save_model_only = False
 
     scenario_data_handler = ScenarioDataHandler("Train")
 
@@ -138,24 +140,24 @@ def train(
         curriculum_mode=curriculum_mode,
     )
 
-    average_scenarios_passed = 0.0
-    total_scenarios_passed = 0.0
-    asp_list = []
+    average_reached_goal = 0.0
+    total_reached_goal = 0.0
+    eval_after_grade = False
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if curriculum_mode is True:
             if CurriculumInfo.static_curriculum_toggle:
                 graduate = static_coordinator.graduate(
-                    episode.index, average_scenarios_passed
+                    episode.index, average_reached_goal
                 )
                 if graduate == True:
                     observations, scenario = env.reset(
-                        True, static_coordinator.get_grade()
+                        True, static_coordinator.train_grade
                     )
-                    average_scenarios_passed = 0.0
-                    grade_size = static_coordinator.get_grade_size()
+                    average_reached_goal = 0.0
+                    grade_size = static_coordinator.grade_size
                     scenario_data_handler.display_grade_scenario_distribution(
-                        grade_size, static_coordinator.get_grade()
+                        grade_size, static_coordinator.train_grade
                     )
                     scenario_data_handler.save_grade_density(grade_size)
                     static_coordinator.episode_per_grade = 0
@@ -202,7 +204,7 @@ def train(
             if (CurriculumInfo.static_curriculum_toggle == True) and (
                 graduate == True and CurriculumInfo.eval_per_grade == True
             ):
-                static_coordinator.set_eval_check_condition(True)
+                eval_after_grade = True
         evaluation_check(
             agents=agents,
             agent_ids=agent_ids,
@@ -214,14 +216,16 @@ def train(
             static_coordinator=static_coordinator,
             max_episode_steps=max_episode_steps,
             evaluation_task_ids=evaluation_task_ids,
+            eval_after_grade=eval_after_grade,
+            save_model_only=save_model_only,
             **eval_info,
             **env.info,
         )
         collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
-        if curriculum_mode is True:
+        if curriculum_mode == True:
+            eval_after_grade = False
             if CurriculumInfo.static_curriculum_toggle == True:
-                static_coordinator.set_eval_check_condition(False)
                 if static_coordinator.check_cycle_condition(episode.index):
                     print("No cycling of grades -> run completed")
                     break
@@ -272,11 +276,16 @@ def train(
 
         if curriculum_mode is True:
             if CurriculumInfo.static_curriculum_toggle is True:
-                Coordinator.calculate_average_scenario_passed(
-                    episode, total_scenarios_passed, agents, average_scenarios_passed
+                (
+                    average_reached_goal,
+                    total_reached_goal,
+                ) = calculate_average_reached_goal(
+                    episode, total_reached_goal, agents, average_reached_goal
                 )
                 if (episode.index + 1) % CurriculumInfo.pass_based_sample_rate == 0:
-                    print(f"({episode.index + 1}) ASP: {average_scenarios_passed}")
+                    print(
+                        f"({episode.index + 1}) AVERAGE REACHED GOAL: {average_reached_goal}"
+                    )
             elif CurriculumInfo.dynamic_curriculum_toggle is True:
                 if (
                     episode.index + 1
@@ -325,19 +334,17 @@ def static_curriculum_setup(curriculum_metadata, num_episodes):
             curriculum_metadata["curriculum_scenarios_root_dir"],
             curriculum_metadata["curriculum_scenarios_save_dir"],
         )
-    print(
-        "Number of Intervals (grades):",
-        static_coordinator.get_num_of_grades(),
-    )
-    static_coordinator.next_grade()
-    scenario_info = tuple(static_coordinator.get_grade())
 
-    if num_episodes % static_coordinator.get_num_of_grades() == 0:
+    print("Number of grades:", static_coordinator.num_grades)
+    static_coordinator.next_train_grade()
+    scenario_info = tuple(static_coordinator.train_grade)
+
+    if num_episodes % static_coordinator.num_grades == 0:
         num_episodes += 1
         print("New max episodes (due to end case):", num_episodes)
 
     print("Num of episodes:", num_episodes)
-    return static_coordinator, scenario_info
+    return static_coordinator, scenario_info, num_episodes
 
 
 def dynamic_curriculum_setup(curriculum_metadata):
@@ -349,6 +356,26 @@ def dynamic_curriculum_setup(curriculum_metadata):
     dynamic_coordinator.reset_scenario_pool(CurriculumInfo.tasks_levels_used)
     scenario_info = CurriculumInfo.tasks_levels_used
     return dynamic_coordinator, scenario_info
+
+
+def calculate_average_reached_goal(
+    episode, total_reached_goal, agents, average_reached_goal
+):
+    sample_rate = CurriculumInfo.pass_based_sample_rate
+
+    if (episode.index + 1) % sample_rate == 0:
+        total_reached_goal += episode.info[episode.active_tag][
+            list(agents.keys())[0]
+        ].data["reached_goal"]
+        average_reached_goal = total_reached_goal / sample_rate
+        total_reached_goal = 0.0
+        return average_reached_goal, total_reached_goal
+    else:
+        total_reached_goal += episode.info[episode.active_tag][
+            list(agents.keys())[0]
+        ].data["reached_goal"]
+
+    return average_reached_goal, total_reached_goal
 
 
 if __name__ == "__main__":
@@ -420,7 +447,7 @@ if __name__ == "__main__":
         "--curriculum-dir",
         help="local path to grade based (GB) curriculum dir. Local path is path from ultra/",
         type=str,
-        default="scenarios/grade_based_curriculum/",
+        default="scenarios/curriculum/",
     )
     parser.add_argument(
         "--curriculum-build-scenarios",

@@ -392,6 +392,7 @@ def episodes(n, etag=None, log_dir=None):
                     f"{e.steps}",
                     f"{e.steps_per_second:.2f}",
                     ", ".join(agent_rewards_strings),
+                    ", ".join(agent_goal_completion_strings),
                 )
                 table(row)
             else:

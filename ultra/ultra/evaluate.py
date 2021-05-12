@@ -59,36 +59,22 @@ def evaluation_check(
     headless,
     log_dir,
     evaluation_task_ids,
+    eval_after_grade=False,
     curriculum_metadata=None,
     curriculum_mode=False,
     static_coordinator=None,
+    save_model_only=False,
 ):
     # Evaluate agents that have reached the eval_rate.
-    if curriculum_mode is True:
-        if (
-            CurriculumInfo.static_curriculum_toggle is True
-            and static_coordinator.eval_per_grade is True
-        ):
-            agent_ids_to_evaluate = [
-                agent_id
-                for agent_id in agent_ids
-                if static_coordinator.get_eval_check_condition() == True
-            ]
-        else:
-            agent_ids_to_evaluate = [
-                agent_id
-                for agent_id in agent_ids
-                if (episode.index + 1) % eval_rate == 0
-                and episode.last_eval_iterations[agent_id] != episode.index
-            ]
-
-    else:
-        agent_ids_to_evaluate = [
-            agent_id
-            for agent_id in agent_ids
-            if (episode.index + 1) % eval_rate == 0
+    agent_ids_to_evaluate = [
+        agent_id
+        for agent_id in agent_ids
+        if eval_after_grade == True
+        or (
+            (episode.index + 1) % eval_rate == 0
             and episode.last_eval_iterations[agent_id] != episode.index
-        ]
+        )
+    ]
 
     # Skip evaluation if there are no agents needing an evaluation.
     if len(agent_ids_to_evaluate) < 1:
@@ -107,29 +93,33 @@ def evaluation_check(
             agent_id, episode.get_itr(agent_id)
         )
         agents[agent_id].save(checkpoint_directory)
+        print(
+            f"MODEL SAVED @ Timestep: {episode.get_itr(agent_id)} ~~~~ MODEL STORED @ {episode.experiment_dir}"
+        )
 
-        evaluation_task_id = evaluate.remote(
-            seed=episode.eval_count,
-            experiment_dir=episode.experiment_dir,
-            agent_ids=[agent_id],
-            policy_classes={agent_id: policy_classes[agent_id]},
-            checkpoint_dirs={agent_id: checkpoint_directory},
-            scenario_info=scenario_info,
-            num_episodes=eval_episodes,
-            max_episode_steps=max_episode_steps,
-            headless=headless,
-            timestep_sec=timestep_sec,
-            log_dir=log_dir,
-            curriculum_metadata=curriculum_metadata,
-            curriculum_mode=curriculum_mode,
-            static_coordinator=static_coordinator,
-            eval_mode=True,
-        )
-        evaluation_task_ids[evaluation_task_id] = (
-            episode.get_itr(agent_id),
-            episode,
-            "eval",
-        )
+        if save_model_only == False:
+            evaluation_task_id = evaluate.remote(
+                seed=episode.eval_count,
+                experiment_dir=episode.experiment_dir,
+                agent_ids=[agent_id],
+                policy_classes={agent_id: policy_classes[agent_id]},
+                checkpoint_dirs={agent_id: checkpoint_directory},
+                scenario_info=scenario_info,
+                num_episodes=eval_episodes,
+                max_episode_steps=max_episode_steps,
+                headless=headless,
+                timestep_sec=timestep_sec,
+                log_dir=log_dir,
+                curriculum_metadata=curriculum_metadata,
+                curriculum_mode=curriculum_mode,
+                static_coordinator=static_coordinator,
+                eval_mode=True,
+            )
+            evaluation_task_ids[evaluation_task_id] = (
+                episode.get_itr(agent_id),
+                episode,
+                "eval",
+            )
 
     """ For ultra-gb, evaluating on train episode is not necessary"""
     # for agent_id in agent_ids_to_evaluate:
@@ -230,9 +220,12 @@ def evaluate(
                 curriculum_metadata["curriculum_scenarios_save_dir"],
                 rate=num_episodes,
             )
-            dynamic_coordinator.reset_test_scenarios(CurriculumInfo.tasks_levels_used)
+            dynamic_coordinator.reset_scenario_pool(
+                CurriculumInfo.tasks_levels_used, num_episodes
+            )
             scenario_info = CurriculumInfo.tasks_levels_used
 
+    print("scenario_info:", scenario_info)
     # Create the environment with the specified agents.
     env = gym.make(
         "ultra.env:ultra-v0",
@@ -265,15 +258,17 @@ def evaluate(
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
-        if curriculum_mode is True:
-            if CurriculumInfo.static_curriculum_toggle is True:
+        if curriculum_mode == True:
+            if CurriculumInfo.static_curriculum_toggle == True:
                 if initial_grade_switch == False:
                     observations, scenario = env.reset(
-                        True, static_coordinator.get_eval_grade()
+                        True, static_coordinator.eval_grade
                     )
                     initial_grade_switch = True
                 else:
                     observations, scenario = env.reset()
+            elif CurriculumInfo.dynamic_curriculum_toggle == True:
+                observations, scenario = env.reset()
         else:
             observations, scenario = env.reset()
 
@@ -300,8 +295,8 @@ def evaluate(
         scenario["density_counter"] = density_counter
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        if curriculum_mode is True and eval_mode is True:
-            episode.record_tensorboard()
+        if eval_mode is True and curriculum_mode is True:
+            episode.record_tensorboard(recording_step=episode.index)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
@@ -319,12 +314,12 @@ def evaluate(
     if curriculum_mode is True:
         if CurriculumInfo.static_curriculum_toggle is True:
             scenario_data_handler_eval.display_grade_scenario_distribution(
-                num_episodes, static_coordinator.get_eval_grade()
+                num_episodes, static_coordinator.eval_grade
             )
             scenario_data_handler_eval.save_grade_density(num_episodes)
-        else:
-            scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
-            scenario_data_handler_eval.save_grade_density(num_episodes)
+    else:
+        scenario_data_handler_eval.display_grade_scenario_distribution(num_episodes)
+        scenario_data_handler_eval.save_grade_density(num_episodes)
 
     try:
         if eval_mode:
@@ -443,7 +438,7 @@ def evaluate_saved_models(
                     )
                 ]
             )[0]
-            episode.record_tensorboard()
+            episode.record_tensorboard(recording_step=0)
             episode.eval_count += 1
     finally:
         time.sleep(1)
