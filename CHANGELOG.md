@@ -59,7 +59,7 @@ using the original coordinate system.  See Issue #325.
 - Envision now resumes from current frame after un-pausing.
 - Skipped generation of cut-in waypoints if they are further off-road than SMARTS currently supports to avoid process crash.
 - Fix envision error 15 by cleanly shutting down the envision worker process.
-
+- Removed all coverage files created during make test. See issue #826
 ## [Format] - 2021-03-12
 ### Added 
 – Describe any new features that have been added since the last version was released.
