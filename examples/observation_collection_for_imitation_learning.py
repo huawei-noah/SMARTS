@@ -1,7 +1,7 @@
 import logging
 
 from envision.client import Client as Envision
-from examples import default_argument_parser
+from .argument_parser import default_argument_parser
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
