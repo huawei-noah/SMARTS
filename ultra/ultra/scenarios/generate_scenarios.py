@@ -201,6 +201,11 @@ def generate_left_turn_missions(
                 )
                 for ego_mission in missions
             ]
+            # Not all routes need to have a custom start/end offset
+            if "pos_offsets" in route_info:
+                pos_offsets = route_info["pos_offsets"]
+            else:
+                pos_offsets = None
             flows, vehicles_log_info = generate_social_vehicles(
                 route_distribution=route_info["distribution"],
                 begin_time_init=route_info["begin_time_init"],
@@ -213,7 +218,7 @@ def generate_left_turn_missions(
                 ],
                 stops=stops,
                 deadlock_optimization=route_info["deadlock_optimization"],
-                pos_offsets=route_info["pos_offsets"],
+                pos_offsets=pos_offsets,
                 stopwatcher_info=stopwatcher_info,
             )
             if (
@@ -376,9 +381,9 @@ def generate_social_vehicles(
     route_has_turn,
     stopwatcher_info,
     stops,
+    pos_offsets,
     begin_time_init=None,
     deadlock_optimization=True,
-    pos_offsets=None,
 ):
     flows = []
     behaviors = []
