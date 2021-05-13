@@ -121,6 +121,7 @@ class Controllers:
         elif action_space == ActionSpaceType.Imitation:
             ImitationController.perform_action(sim.timestep_sec, vehicle, action)
         else:
+            # Note: TargetPose and MultiTargetPose use a MotionPlannerProvider directly
             raise ValueError(
                 f"perform_action(action_space={action_space}, ...) has failed "
                 "inside controller"

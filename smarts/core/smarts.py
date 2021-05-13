@@ -679,6 +679,13 @@ class SMARTS:
             interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
             return interface.action_space in action_spaces
 
+        def matches_no_provider_action_space(agent_id):
+            interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            for provider in self.providers:
+                if interface.action_space in provider.action_spaces:
+                    return False
+            return True
+
         pybullet_actions = {}
         other_actions = {}
         for agent_id, action in actions.items():
@@ -686,11 +693,17 @@ class SMARTS:
                 continue
             if matches_provider_action_spaces(agent_id, self._dynamic_action_spaces):
                 pybullet_actions[agent_id] = action
-            else:
+            elif matches_no_provider_action_space(agent_id):
                 other_actions[agent_id] = action
 
-        accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions))
-        accumulated_provider_state.merge(self._nondynamic_provider_step(other_actions))
+        if pybullet_actions:
+            accumulated_provider_state.merge(
+                self._pybullet_provider_step(pybullet_actions)
+            )
+        if other_actions:
+            accumulated_provider_state.merge(
+                self._nondynamic_provider_step(other_actions)
+            )
 
         for provider in self.providers:
             provider_state = self._step_provider(provider, actions, dt)
