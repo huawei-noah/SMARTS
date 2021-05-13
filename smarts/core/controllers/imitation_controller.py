@@ -50,7 +50,7 @@ class ImitationController:
 
         # TAI: consider making this a dynamic_action_space, like...
         elif isinstance(vehicle.chassis, AckermannChassis):
-            mass = 2356  # from vehicle.urdf, mass of car in kg
+            mass = vehicle.chassis.mass_and_inertia[0]  # in kg
             if acceleration >= 0:
                 # necessary torque is N*m = kg*m*acceleration
                 torque_ratio = mass / vehicle.chassis.max_torque
