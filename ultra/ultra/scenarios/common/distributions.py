@@ -302,7 +302,7 @@ t_patterns = {
                         "time_for_each_cluster": 5,
                     },
                 },
-                "has_turn": False,
+                "has_turn": True,
                 "deadlock_optimization": False,
             },  # blocking
             "south-north": None,  # blocking
@@ -344,7 +344,7 @@ t_patterns = {
                         "time_for_each_cluster": 5,
                     },
                 },
-                "has_turn": False,
+                "has_turn": True,
                 "deadlock_optimization": False,
             },  # blocking
             "east-west": {
@@ -380,7 +380,7 @@ t_patterns = {
                         "time_for_each_cluster": 2,
                     },
                 },
-                "has_turn": False,
+                "has_turn": True,
                 "deadlock_optimization": False,
             },
             # t-intersection has no north route
