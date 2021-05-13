@@ -56,7 +56,6 @@ class ImitationController:
             )
             vehicle.control(new_pose, target_speed)
 
-        # TAI: consider making this a dynamic_action_space, like...
         elif isinstance(vehicle.chassis, AckermannChassis):
             mass = vehicle.chassis.mass_and_inertia[0]  # in kg
             if acceleration >= 0:
