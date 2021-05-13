@@ -37,7 +37,7 @@ from smarts.zoo import manager_pb2, manager_pb2_grpc
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_manager_addrs=None, buffer_size=3):
+    def __init__(self, zoo_manager_addrs=None, buffer_size=3, max_workers=4):
         """
         Args:
             zoo_manager_addrs:
@@ -87,7 +87,7 @@ class RemoteAgentBuffer:
             conn["channel"], conn["stub"] = get_manager_channel_stub(conn["address"])
 
         self._buffer_size = buffer_size
-        self._replenish_threadpool = futures.ThreadPoolExecutor()
+        self._replenish_threadpool = futures.ThreadPoolExecutor(max_workers=max_workers)
         self._agent_buffer = [
             self._remote_agent_future() for _ in range(self._buffer_size)
         ]
