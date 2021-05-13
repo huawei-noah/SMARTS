@@ -238,7 +238,7 @@ python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 
 If you're comfortable using docker or are on a platform without suitable support to easily run SMARTS (e.g. an older version of Ubuntu) you can run the following,
 
 ```bash
-$ cd /path/to/SMARTS/etc/docker
+$ cd /path/to/SMARTS
 $ docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:<version>
 # E.g. docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:v0.4.12
 # <press enter>
@@ -264,7 +264,7 @@ $ python examples/single_agent.py scenarios/loop
 
 ```bash
 # For this to work, your account needs to be added to the huaweinoah org
-$ cd /path/to/SMARTS/etc/docker
+$ cd /path/to/SMARTS
 docker login
 
 export VERSION=v0.4.3-pre
