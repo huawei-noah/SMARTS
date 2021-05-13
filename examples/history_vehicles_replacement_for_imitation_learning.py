@@ -19,14 +19,21 @@ class PlaceholderAgent(Agent):
     """This is just a place holder such the example code here has a real Agent to work with.
     In actual use, this would be replaced by an agent based on a trained Imitation Learning model."""
 
-    def __init__(self, target_speed=15.0):
-        self._target_speed = target_speed
+    def __init__(self, initial_speed=15.0):
+        self._initial_speed = initial_speed
+        self._initial_speed_set = False
 
     @staticmethod
     def _dist(pose1, pose2):
         return math.sqrt((pose1[0] - pose2[0]) ** 2 + (pose1[1] - pose2[1]) ** 2)
 
     def act(self, obs):
+        if not self._initial_speed_set:
+            # special case:  if a singleton int or float is
+            # returned, it's taken to be initializing the speed
+            self._initial_speed_set = True
+            return self._initial_speed
+
         # Since we don't have a trained model to compute our actions, here we
         # just "fake it" by attempting to match whatever the nearest vehicle
         # is doing...

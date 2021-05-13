@@ -28,7 +28,15 @@ from smarts.core.utils.math import fast_quaternion_from_angle, radians_to_vec
 class ImitationController:
     @classmethod
     def perform_action(cls, dt, vehicle, action):
-        assert len(action) == 2
+        if isinstance(action, (int, float)):
+            # special case:  setting the initial speed
+            if isinstance(vehicle.chassis, BoxChassis):
+                vehicle.control(vehicle.pose, action)
+            elif isinstance(vehicle.chassis, AckermannChassis):
+                vehicle.chassis.speed = action  # hack that calls control internally
+            return
+
+        assert isinstance(action, (list, tuple)) and len(action) == 2
         # acceleration in m/s^2, angluar_velocity in rad/s
         acceleration, angular_velocity = action
 

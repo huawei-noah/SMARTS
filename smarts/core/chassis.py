@@ -418,7 +418,10 @@ class AckermannChassis(Chassis):
     def speed(self, speed: float = None):
         # TODO: Temporary, figure out the required joint velocities to achieve the
         #       requested speed
-        self.control(throttle=1)
+        if not speed or self.speed < speed:
+            self.control(brake=1)
+        elif self.speed > speed:
+            self.control(throttle=1)
 
     @property
     def yaw_rate(self):
