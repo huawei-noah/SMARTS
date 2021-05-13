@@ -105,6 +105,8 @@ class SumoTrafficSimulation(Provider):
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
+        self._reload_count = 20
+        self._current_reload_count = 0
 
     def __repr__(self):
         return f"""SumoTrafficSim(
@@ -240,20 +242,21 @@ class SumoTrafficSimulation(Provider):
 
         return load_params
 
-    def setup(self, scenario) -> ProviderState:
+    def setup(self, next_scenario) -> ProviderState:
         self._log.debug("Setting up SumoTrafficSim %s" % self)
         assert not self._is_setup, (
             "Can't setup twice, %s, see teardown()" % self._is_setup
         )
 
         # restart sumo process only when map file changes
-        if self._scenario and self._scenario.net_file_hash == scenario.net_file_hash:
-            restart_sumo = False
-        else:
-            restart_sumo = True
+        restart_sumo = not (
+            self._scenario \
+            and self._scenario.net_file_hash == next_scenario.net_file_hash
+        ) or self._current_reload_count >= self._reload_count
+        self._current_reload_count = self._current_reload_count % self._reload_count + 1
 
-        self._scenario = scenario
-        self._log_file = scenario.unique_sumo_log_file()
+        self._scenario = next_scenario
+        self._log_file = next_scenario.unique_sumo_log_file()
 
         if restart_sumo:
             self._initialize_traci_conn()
