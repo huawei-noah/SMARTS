@@ -467,8 +467,12 @@ def generate_social_vehicles(
         else:
             behavior = get_social_vehicle_behavior(behavior_idx)
             if pos_offsets != None:
-                start_offset = random.randint(pos_offsets["start"][0], pos_offsets["start"][1])
-                end_offset = random.randint(pos_offsets["end"][0], pos_offsets["end"][1])
+                start_offset = random.randint(
+                    pos_offsets["start"][0], pos_offsets["start"][1]
+                )
+                end_offset = random.randint(
+                    pos_offsets["end"][0], pos_offsets["end"][1]
+                )
             else:
                 start_offset = "base"
                 end_offset = "max"

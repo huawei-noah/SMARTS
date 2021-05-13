@@ -52,7 +52,7 @@ t_patterns = {
     "no-traffic": {  # t-intersection
         "routes": {
             "south-west": {
-                "vehicles": 5,
+                "vehicles": 2,
                 "start_end_on_different_lanes_probability": 0.0,
                 "distribution": behavior_distribution,
                 "begin_time_init": {
@@ -80,43 +80,6 @@ t_patterns = {
                 "has_turn": True,
                 "deadlock_optimization": True,
             },
-        },
-        # t-intersection has no north route
-    },
-    "blocks": {  # t-intersection
-        "routes": {
-            "south-north": None,
-            "south-east": None,
-            "south-west": {
-                "vehicles": 10,
-                "start_end_on_different_lanes_probability": 0.0,
-                "distribution": behavior_distribution,
-                "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_easy},
-                },
-                "has_turn": True,
-                "deadlock_optimization": True,
-            },
-            "west-east": None,
-            "west-south": None,
-            "east-west": {
-                "vehicles": 10,
-                "start_end_on_different_lanes_probability": 0.0,
-                "distribution": behavior_distribution,
-                "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_easy},
-                },
-                "has_turn": True,
-                "deadlock_optimization": True,
-            },
-            "east-south": None,
-        },
-        "ego_hijacking_params": {
-            "zone_range": [5, 10],
-            "wait_to_hijack_limit_s": 10,
-            "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
         # t-intersection has no north route
     },
@@ -361,7 +324,7 @@ t_patterns = {
     # Simple levels are tagged with a version [e.g v0, v1, v2], these tags represent variation of traffic
     # at the intersection. By default, as the version tags increment there will be higher degree of social
     # vehicle interactions with the ego.
-    "simple-v0" : {
+    "simple-v0": {
         "routes": {
             "south-west": None,
             "south-east": None,
@@ -374,43 +337,25 @@ t_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (1, 1),
-                        "time_between_cluster": (10, 20),
+                        "time_between_cluster": (5, 15),
                         "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (160, 165),
+                    "end": (20, 20),
                 },
             },
             "west-north": None,  # blocking
             "west-south": None,
             "east-south": None,
             "east-north": None,  # blocking
-            "east-west": {
-                "vehicles": 1,
-                "distribution": behavior_distribution,
-                "start_end_on_different_lanes_probability": 0.0,
-                "begin_time_init": {
-                    "func": burst_begin_time_init_func,
-                    "params": {
-                        "vehicle_cluster_size": (1, 1),
-                        "time_between_cluster": (10, 50),
-                        "time_for_each_cluster": 1,
-                    },
-                },
-                "has_turn": False,
-                "deadlock_optimization": True,
-                "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
-                },
-            },
+            "east-west": None,
         }
     },
-    "simple-v1" : {
+    "simple-v1": {
         "routes": {
             "south-west": None,
             "south-east": None,
@@ -422,16 +367,16 @@ t_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (2,2),
-                        "time_between_cluster": (10, 20),
+                        "vehicle_cluster_size": (1, 1),
+                        "time_between_cluster": (5, 10),
                         "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (160, 165),
+                    "end": (50, 50),
                 },
             },
             "west-north": None,  # blocking
@@ -451,8 +396,8 @@ t_patterns = {
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (160, 165),
+                    "end": (50, 50),
                 },
             },
             "east-north": None,  # blocking
@@ -463,16 +408,16 @@ t_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (2, 2),
-                        "time_between_cluster": (10, 20),
+                        "vehicle_cluster_size": (1, 1),
+                        "time_between_cluster": (5, 10),
                         "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (160, 165),
+                    "end": (50, 50),
                 },
             },
         }
@@ -483,41 +428,41 @@ t_patterns = {
             "south-east": None,
             "south-north": None,  # blocking
             "west-east": {
-                "vehicles": 3,
+                "vehicles": 2,
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (2, 3),
-                        "time_between_cluster": (10, 20),
-                        "time_for_each_cluster": 2,
+                        "vehicle_cluster_size": (1, 1),
+                        "time_between_cluster": (5, 10),
+                        "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (130, 140),
+                    "end": (150, 160),
                 },
             },
             "east-west": {
-                "vehicles": 3,
+                "vehicles": 2,
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (2, 3),
-                        "time_between_cluster": (10, 20),
-                        "time_for_each_cluster": 2,
+                        "vehicle_cluster_size": (1, 1),
+                        "time_between_cluster": (5, 10),
+                        "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (130, 140),
+                    "end": (150, 160),
                 },
             },
             "west-north": None,  # blocking
@@ -536,8 +481,8 @@ t_patterns = {
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (130, 140),
+                    "end": (150, 160),
                 },
             },
             "east-south": {
@@ -555,19 +500,18 @@ t_patterns = {
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (130, 140),
+                    "end": (150, 160),
                 },
             },
             "east-north": None,  # blocking
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
-            "wait_to_hijack_limit_s": 1,
-            "start_time": 2,  # any value or default for LANE_LENGTH / speed_m_per_s
+            "wait_to_hijack_limit_s": 2,
+            "start_time": 3,  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
-
     "p-stopwatchers": {  # t-intersection
         "routes": {
             "south-west": None,
@@ -969,7 +913,7 @@ cross_patterns = {
     # Simple levels are tagged with a version [e.g v0, v1, v2], these tags represent variation of traffic
     # at the intersection. By default, as the version tags increment there will be higher degree of social
     # vehicle interactions with the ego.
-    "simple-v0" : {
+    "simple-v0": {
         "routes": {
             "south-west": None,
             "south-east": None,
@@ -980,7 +924,7 @@ cross_patterns = {
             "east-south": None,
             "east-north": None,  # blocking
             "north-south": {
-                "vehicles": 2,
+                "vehicles": 1,
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
@@ -994,13 +938,13 @@ cross_patterns = {
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (120, 120),
+                    "end": (150, 160),
                 },
             },
         }
     },
-    "simple-v1" : {
+    "simple-v1": {
         "routes": {
             "south-west": None,
             "south-east": None,
@@ -1017,16 +961,16 @@ cross_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (1, 2),
+                        "vehicle_cluster_size": (1, 1),
                         "time_between_cluster": (5, 10),
-                        "time_for_each_cluster": 5,
+                        "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (120, 120),
+                    "end": (50, 50),
                 },
             },
             "north-south": {
@@ -1036,16 +980,16 @@ cross_patterns = {
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (1, 2),
+                        "vehicle_cluster_size": (1, 1),
                         "time_between_cluster": (5, 15),
-                        "time_for_each_cluster": 2,
+                        "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (120, 120),
+                    "end": (50, 50),
                 },
             },
         }
@@ -1056,7 +1000,8 @@ cross_patterns = {
             "south-east": None,
             "south-north": None,  # blocking
             "west-east": None,
-            "west-north": {
+            "west-north": None,
+            "west-south": {
                 "vehicles": 1,
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
@@ -1064,18 +1009,17 @@ cross_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (1, 1),
-                        "time_between_cluster": (10, 20),
-                        "time_for_each_cluster": 2,
+                        "time_between_cluster": (5, 25),
+                        "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (120, 140),
+                    "end": (150, 160),
                 },
             },
-            "west-south": None,
             "east-south": {
                 "vehicles": 1,
                 "distribution": behavior_distribution,
@@ -1084,19 +1028,19 @@ cross_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (1, 1),
-                        "time_between_cluster": (20, 25),
-                        "time_for_each_cluster": 2,
+                        "time_between_cluster": (5, 25),
+                        "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (120, 140),
+                    "end": (150, 160),
                 },
             },
             "east-north": {
-                "vehicles": 1,
+                "vehicles": 2,
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
@@ -1104,33 +1048,33 @@ cross_patterns = {
                     "params": {
                         "vehicle_cluster_size": (1, 1),
                         "time_between_cluster": (5, 15),
-                        "time_for_each_cluster": 2,
+                        "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (120, 140),
+                    "end": (150, 160),
                 },
             },
             "north-south": {
-                "vehicles": 3,
+                "vehicles": 2,
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
                     "params": {
-                        "vehicle_cluster_size": (2, 3),
-                        "time_between_cluster": (10, 20),
-                        "time_for_each_cluster": 2,
+                        "vehicle_cluster_size": (1, 1),
+                        "time_between_cluster": (5, 10),
+                        "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (120, 140),
+                    "end": (150, 160),
                 },
             },
             "north-west": {
@@ -1141,22 +1085,41 @@ cross_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (1, 1),
-                        "time_between_cluster": (10, 20),
-                        "time_for_each_cluster": 2,
+                        "time_between_cluster": (5, 25),
+                        "time_for_each_cluster": 1,
                     },
                 },
                 "has_turn": False,
                 "deadlock_optimization": True,
                 "pos_offsets": {
-                    "start": (110,130),
-                    "end": (150,160),
+                    "start": (120, 140),
+                    "end": (150, 160),
+                },
+            },
+            "north-east": {
+                "vehicles": 2,
+                "distribution": behavior_distribution,
+                "start_end_on_different_lanes_probability": 0.0,
+                "begin_time_init": {
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 1),
+                        "time_between_cluster": (5, 25),
+                        "time_for_each_cluster": 1,
+                    },
+                },
+                "has_turn": False,
+                "deadlock_optimization": True,
+                "pos_offsets": {
+                    "start": (120, 140),
+                    "end": (150, 160),
                 },
             },
         },
         "ego_hijacking_params": {
             "zone_range": [5, 10],
-            "wait_to_hijack_limit_s": 0,
-            "start_time": 1,  # any value or default for LANE_LENGTH / speed_m_per_s
+            "wait_to_hijack_limit_s": 2,
+            "start_time": 3,  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
 }
