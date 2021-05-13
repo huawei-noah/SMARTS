@@ -60,7 +60,7 @@ def main(scenarios, headless, seed):
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sim=SumoTrafficSimulation(headless=False),
+        traffic_sim=None,
         envision=None if headless else Envision(),
     )
     for _ in scenarios:
