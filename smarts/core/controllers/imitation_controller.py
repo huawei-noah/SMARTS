@@ -28,19 +28,20 @@ from smarts.core.utils.math import fast_quaternion_from_angle, radians_to_vec
 class ImitationController:
     @classmethod
     def perform_action(cls, dt, vehicle, action):
+        chassis = vehicle.chassis
         if isinstance(action, (int, float)):
             # special case:  setting the initial speed
-            if isinstance(vehicle.chassis, BoxChassis):
+            if isinstance(chassis, BoxChassis):
                 vehicle.control(vehicle.pose, action)
-            elif isinstance(vehicle.chassis, AckermannChassis):
-                vehicle.chassis.speed = action  # hack that calls control internally
+            elif isinstance(chassis, AckermannChassis):
+                chassis.speed = action  # hack that calls control internally
             return
 
         assert isinstance(action, (list, tuple)) and len(action) == 2
         # acceleration in m/s^2, angluar_velocity in rad/s
         acceleration, angular_velocity = action
 
-        if isinstance(vehicle.chassis, BoxChassis):
+        if isinstance(chassis, BoxChassis):
             target_speed = vehicle.speed + acceleration * dt
             target_heading = (vehicle.heading + angular_velocity * dt) % (2 * math.pi)
             speed_x, speed_y = radians_to_vec(target_heading)
@@ -56,21 +57,19 @@ class ImitationController:
             )
             vehicle.control(new_pose, target_speed)
 
-        elif isinstance(vehicle.chassis, AckermannChassis):
-            mass = vehicle.chassis.mass_and_inertia[0]  # in kg
+        elif isinstance(chassis, AckermannChassis):
+            mass = chassis.mass_and_inertia[0]  # in kg
             if acceleration >= 0:
                 # necessary torque is N*m = kg*m*acceleration
-                torque_ratio = mass / vehicle.chassis.max_torque
+                torque_ratio = mass / (4 * chassis.wheel_radius * chassis.max_torque)
                 throttle = np.clip(acceleration * torque_ratio, 0, 1)
                 brake = 0
             else:
                 throttle = 0
                 # necessary torque is N*m = kg*m*acceleration
-                torque_ratio = mass / vehicle.chassis.max_btorque
+                torque_ratio = mass / (4 * chassis.wheel_radius * chassis.max_btorque)
                 brake = np.clip(-acceleration * torque_ratio, 0, 1)
-            steering = np.clip(
-                dt * -angular_velocity * vehicle.chassis.steering_ratio, -1, 1
-            )
+            steering = np.clip(dt * -angular_velocity * chassis.steering_ratio, -1, 1)
             vehicle.control(throttle=throttle, brake=brake, steering=steering)
 
         else:
