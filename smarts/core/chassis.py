@@ -496,6 +496,18 @@ class AckermannChassis(Chassis):
         return self._rear_track_width
 
     @property
+    def max_torque(self):
+        return self._max_torque
+
+    @property
+    def max_btorque(self):
+        return self._max_btorque
+
+    @property
+    def steering_ratio(self):
+        return self._steering_gear_ratio
+
+    @property
     def bullet_id(self) -> str:
         return self._bullet_id
 
