@@ -9,6 +9,12 @@ All text added must be human readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
+### Added 
+- Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
+### Changed
+- `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
+### Fixed
+- Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 
 ## [0.4.16] - 2021-05-11
 ### Added 
