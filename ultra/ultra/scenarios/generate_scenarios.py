@@ -32,18 +32,22 @@ from collections import Counter, defaultdict
 from dataclasses import replace
 from multiprocessing import Manager, Process
 from shutil import copyfile
+from typing import Any, Dict, Sequence
 
 import numpy as np
 import yaml
 
 from smarts.core.utils.sumo import sumolib
-from smarts.sstudio import gen_missions, gen_traffic
+from smarts.sstudio import gen_bubbles, gen_missions, gen_traffic
 from smarts.sstudio.types import (
+    Bubble,
     Distribution,
     Flow,
     MapZone,
     Mission,
+    PositionalZone,
     Route,
+    SocialAgentActor,
     Traffic,
     TrapEntryTactic,
 )
@@ -56,7 +60,22 @@ from ultra.scenarios.common.social_vehicle_definitions import (
 LANE_LENGTH = 137.85
 
 
-def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
+def ego_mission_config_to_route(
+    ego_mission_config: Dict[str, Any],
+    route_lanes: Dict[str, int],
+    stopwatcher_behavior: bool,
+) -> Route:
+    """Creates a Route from an ego mission config dictionary.
+
+    Args:
+        ego_mission_config: A dictionary describing the ego mission.
+        route_lanes: A dictionary of routes (edges) as keys and the number of lanes in
+            each route as values.
+        stopwatcher_behavior: A boolean value describing the presence of stopwatchers.
+
+    Returns:
+        Route: The route object created from the ego mission config.
+    """
     if stopwatcher_behavior:  # Put the ego vehicle(s) on the side road.
         mission_start = "edge-south-side"
         mission_end = "edge-dead-end"
@@ -65,20 +84,23 @@ def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
         mission_start_offset = 100
         mission_end_offset = 5
     else:
-        mission_start = "edge-{}".format(ego_mission["start"])
-        mission_end = "edge-{}".format(ego_mission["end"])
-        mission_start_lane_index = route_lanes[ego_mission["start"]] - 1
-        mission_end_lane_index = route_lanes[ego_mission["end"]] - 1
+        mission_start = "edge-{}".format(ego_mission_config["start"])
+        mission_end = "edge-{}".format(ego_mission_config["end"])
+        mission_start_lane_index = route_lanes[ego_mission_config["start"]] - 1
+        mission_end_lane_index = route_lanes[ego_mission_config["end"]] - 1
         mission_start_offset = (
             random.randint(
-                ego_mission["start_offset"][0], ego_mission["start_offset"][1]
+                ego_mission_config["start_offset"][0],
+                ego_mission_config["start_offset"][1],
             )
-            if "start_offset" in ego_mission
+            if "start_offset" in ego_mission_config
             else random.randint(50, 120)  # The default range of the offset.
         )
         mission_end_offset = (
-            random.randint(ego_mission["end_offset"][0], ego_mission["end_offset"][1])
-            if "end_offset" in ego_mission
+            random.randint(
+                ego_mission_config["end_offset"][0], ego_mission_config["end_offset"][1]
+            )
+            if "end_offset" in ego_mission_config
             else random.randint(50, 120)  # The default range of the offset.
         )
 
@@ -95,6 +117,148 @@ def ego_mission_to_route(ego_mission, route_lanes, stopwatcher_behavior=False):
         ),
     )
     return route
+
+
+def bubble_config_to_bubble_object(
+    scenario: str, bubble_config: Dict[str, Any], vehicles_to_not_hijack: Sequence[str]
+) -> Bubble:
+    """Converts a bubble config to a bubble object.
+
+    Args:
+        scenario:
+            A string representing the path to this scenario.
+        bubble_config:
+            A dictionary with 'location', 'actor_name', 'agent_locator', and
+            'agent_params' keys that is used to initialize the bubble.
+        vehicles_to_not_hijack:
+            A tuple of vehicle IDs that are passed to the bubble. The bubble will not
+            capture those vehicles that have an ID in this tuple.
+
+    Returns:
+        Bubble: The bubble object created from the bubble config.
+    """
+    BUBBLE_MARGIN = 2
+    map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
+
+    location_name = bubble_config["location"][0]
+    location_data = bubble_config["location"][1:]
+    actor_name = bubble_config["actor_name"]
+    agent_locator = bubble_config["agent_locator"]
+    agent_params = bubble_config["agent_params"]
+
+    if location_name == "intersection":
+        # Create a bubble centered at the intersection.
+        assert len(location_data) == 2
+        bubble_length, bubble_width = location_data
+        bubble_coordinates = map_file.getNode("junction-intersection").getCoord()
+        zone = PositionalZone(
+            pos=bubble_coordinates, size=(bubble_length, bubble_width)
+        )
+    else:
+        # Create a bubble on one of the lanes.
+        assert len(location_data) == 4
+        lane_index, lane_offset, bubble_length, num_lanes_spanned = location_data
+        zone = MapZone(
+            start=("edge-" + location_name, lane_index, lane_offset),
+            length=bubble_length,
+            n_lanes=num_lanes_spanned,
+        )
+
+    bubble = Bubble(
+        zone=zone,
+        actor=SocialAgentActor(
+            name=actor_name,
+            agent_locator=agent_locator,
+            policy_kwargs=agent_params,
+            initial_speed=None,
+        ),
+        margin=BUBBLE_MARGIN,
+        limit=None,
+        exclusion_prefixes=vehicles_to_not_hijack,
+        follow_actor_id=None,
+        follow_offset=None,
+        keep_alive=False,
+    )
+    return bubble
+
+
+def add_stops_to_traffic(
+    scenario: str, stops: Sequence[Sequence[Any]], vehicles_to_not_hijack: Sequence[str]
+):
+    """Adds stopped vehicles to the traffic by overwriting all.rou.xml and replacing
+    some vehicles' attributes so that they start, and remain stopped.
+
+    Args:
+        scenario:
+            A string representing the path to this scenario.
+        stops:
+            A list of lists, where each list element contains information about where
+            to stop the vehicle. Each element of stops is a list in the form of
+            [stop_edge, stop_lane_index, stop_offset]. For stops of length n, n vehicles
+            will be chosen to be stopped in the scenario.
+        vehicles_to_not_hijack:
+            A list of vehicle IDs that is appended to. Each stopped vehicle's ID is
+            appended to this list as stopped vehicles should not be hijacked.
+    """
+    route_file_path = f"{scenario}/traffic/all.rou.xml"
+    map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
+    vehicle_types = list(sumolib.output.parse(route_file_path, "vType"))
+    vehicles = list()
+    stops_added = 0
+
+    # XXX: Stops will not be added to vehicles if they don't match the route and lane of
+    #      the vehicle. For each vehicle, we are NOT checking each available stop to see
+    #      if the vehicle matches the route and lane, only the stop at the stops_added
+    #      index.
+
+    # Add stops (if applicable) to vehicles in the existing all.rou.xml file.
+    for vehicle in sumolib.output.parse(route_file_path, "vehicle"):
+        if stops_added >= len(stops):
+            break
+
+        vehicle_edges = vehicle.route[0].edges.split()
+        start_edge = map_file.getEdge(vehicle_edges[0])
+
+        for lane in start_edge.getLanes():
+            stop_route, stop_lane, stop_position = stops[stops_added]
+            if lane.getID() == f"edge-{stop_route}_{stop_lane}":
+                # Add stop information to this vehicle.
+                stop_attributes = {
+                    "lane": lane.getID(),
+                    "endPos": stop_position,
+                    "duration": "1000",
+                }
+                vehicle.setAttribute("depart", 0)
+                vehicle.setAttribute("departPos", stop_position)
+                vehicle.setAttribute("departSpeed", 0)
+                vehicle.setAttribute("departLane", stop_lane)
+                vehicle.addChild("stop", attrs=stop_attributes)
+                vehicles_to_not_hijack.append(vehicle.id)
+                stops_added += 1
+                break
+        vehicles.append([float(vehicle.depart), vehicle.id, vehicle])
+    vehicles.sort(key=lambda x: (x[0], x[1]))
+
+    # Ensure all stops were added to the traffic.
+    if stops_added < len(stops):
+        print(f"{scenario} has only placed {stops_added} out of {len(stops)} stops.")
+
+    # Overwrite the all.rou.xml file with the new vehicles.
+    with open(route_file_path, "w") as route_file:
+        sumolib.writeXMLHeader(route_file, "routes")
+
+        route_file.write(
+            '<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+            'xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">\n'
+        )
+
+        for vehicle_type in vehicle_types:
+            route_file.write(vehicle_type.toXML(" " * 4))
+
+        for _, _, vehicle in vehicles:
+            route_file.write(vehicle.toXML(" " * 4))
+
+        route_file.write("</routes>\n")
 
 
 def copy_map_files(scenario, map_dir, speed):
@@ -166,6 +330,7 @@ def generate_left_turn_missions(
     stopwatcher_route,
     seed,
     stops,
+    bubbles,
     intersection_name,
     traffic_density,
 ):
@@ -194,12 +359,12 @@ def generate_left_turn_missions(
         # to skip None
         if route_info:
             ego_routes = [
-                ego_mission_to_route(
-                    ego_mission=ego_mission,
+                ego_mission_config_to_route(
+                    ego_mission_config=ego_mission_config,
                     route_lanes=route_lanes,
                     stopwatcher_behavior=stopwatcher_behavior,
                 )
-                for ego_mission in missions
+                for ego_mission_config in missions
             ]
             flows, vehicles_log_info = generate_social_vehicles(
                 route_distribution=route_info["distribution"],
@@ -250,65 +415,11 @@ def generate_left_turn_missions(
     try:
         gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
         if stops:
-            route_file_path = f"{scenario}/traffic/all.rou.xml"
-            map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
-            vehicle_types = list(sumolib.output.parse(route_file_path, "vType"))
-            vehicles = list()
-
-            # Add stops (if applicable) to vehicles in the existing all.rou.xml file.
-            for vehicle in sumolib.output.parse(route_file_path, "vehicle"):
-                if len(stops) > 0:
-                    vehicle_edges = vehicle.route[0].edges.split()
-                    start_edge = map_file.getEdge(vehicle_edges[0])
-
-                    for lane in start_edge.getLanes():
-                        stop_route, stop_lane, stop_position = stops[0]
-                        if lane.getID() == f"edge-{stop_route}_{stop_lane}":
-                            # Add stop information to this vehicle.
-                            stop_attributes = {
-                                "lane": lane.getID(),
-                                "endPos": stop_position,
-                                "duration": "1000",
-                            }
-                            vehicle.setAttribute("depart", 0)
-                            vehicle.setAttribute("departPos", stop_position)
-                            vehicle.setAttribute("departSpeed", 0)
-                            vehicle.setAttribute("departLane", stop_lane)
-                            vehicle.addChild("stop", attrs=stop_attributes)
-                            vehicles_to_not_hijack.append(vehicle.id)
-                            stops.pop(0)
-                            break
-                vehicles.append([float(vehicle.depart), vehicle.id, vehicle])
-            vehicles.sort(key=lambda x: (x[0], x[1]))
-
-            # Ensure all stops were added to the traffic.
-            if len(stops) != 0:
-                print(
-                    f"There are still {len(stops)} more stops "
-                    f"to place in scenario {scenario}."
-                )
-
-            # Overwrite the all.rou.xml file with the new vehicles.
-            with open(route_file_path, "w") as route_file:
-                sumolib.writeXMLHeader(route_file, "routes")
-
-                route_file.write(
-                    "<routes xmlns:xsi="
-                    '"http://www.w3.org/2001/XMLSchema-instance" '
-                    "xsi:noNamespaceSchemaLocation="
-                    '"http://sumo.dlr.de/xsd/routes_file.xsd">\n'
-                )
-
-                for vehicle_type in vehicle_types:
-                    route_file.write(vehicle_type.toXML(" " * 4))
-
-                for _, _, vehicle in vehicles:
-                    route_file.write(vehicle.toXML(" " * 4))
-
-                route_file.write("</routes>\n")
+            add_stops_to_traffic(scenario, stops, vehicles_to_not_hijack)
     except Exception as exception:
         print(exception)
-    # patch: remove route files from traffic folder to make intersection empty
+
+    # Patch: Remove route files from traffic folder to make intersection empty.
     if traffic_density == "no-traffic":
         os.remove(f"{scenario}/traffic/all.rou.xml")
 
@@ -348,6 +459,15 @@ def generate_left_turn_missions(
     # Shuffle the missions so agents don't do the same route all the time.
     random.shuffle(mission_objects)
     gen_missions(scenario, mission_objects)
+
+    if bubbles:
+        bubble_objects = [
+            bubble_config_to_bubble_object(
+                scenario, bubble_config, vehicles_to_not_hijack
+            )
+            for bubble_config in bubbles
+        ]
+        gen_bubbles(scenario, bubble_objects)
 
     if stopwatcher_behavior:
         metadata["stopwatcher"] = {
@@ -503,15 +623,12 @@ def scenario_worker(
     total_seeds,
     percent,
     stops,
+    bubbles,
     dynamic_pattern_func,
 ):
     for i, seed in enumerate(seeds):
         if not dynamic_pattern_func is None:
             route_distributions = dynamic_pattern_func(route_distributions, i)
-
-        # Stops is modified during generation. Copy stops so parallel processes don't
-        # pop elements from the same list reference.
-        stops_copy = None if stops is None else stops.copy()
 
         generate_left_turn_missions(
             missions=ego_missions,
@@ -524,7 +641,8 @@ def scenario_worker(
             stopwatcher_behavior=stopwatcher_behavior,
             stopwatcher_route=stopwatcher_route,
             seed=seed,
-            stops=stops_copy,
+            stops=stops,
+            bubbles=bubbles,
             traffic_density=traffic_density,
             intersection_name=intersection_type,
         )
@@ -587,6 +705,7 @@ def build_scenarios(
                     _type,
                     intersection_types[_type]["percent"],
                     intersection_types[_type]["stops"],
+                    intersection_types[_type]["bubbles"],
                 ]
                 for _type in intersection_types
             ],
@@ -594,7 +713,7 @@ def build_scenarios(
             reverse=True,
         )
         log_dict[mode] = {x: {"count": 0, "percent": 0} for x in intersection_types}
-        for intersection_type, intersection_percent, stops in intersections:
+        for intersection_type, intersection_percent, stops, bubbles in intersections:
             part = int(float(intersection_percent) * len(mode_seeds))
             cur_split = prev_split + part
             seeds = mode_seeds[prev_split:cur_split]
@@ -645,6 +764,7 @@ def build_scenarios(
                         seeds,
                         percent,
                         stops,
+                        bubbles,
                         dynamic_pattern_func,
                     ),
                 )
@@ -667,7 +787,7 @@ def build_scenarios(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("generate scenarios")
     parser.add_argument("--task", help="type a task id [0, 1, 2, 3, X]", type=str)
-    parser.add_argument("--level", help="easy/medium/hard, lo-hi/hi-lo", type=str)
+    parser.add_argument("--level", help="easy/medium/hard, low-high/high-low", type=str)
     parser.add_argument(
         "--stopwatcher",
         help="all/aggressive/default/slow/blocker/crusher south-west",
