@@ -482,7 +482,10 @@ class Sensors:
 
         # Route is endless
         if not route_edges:
-            is_wrong_way = cls._vehicle_is_wrong_way(sim, vehicle, nearest_lane.getID())
+            if nearest_lane.getEdge().isSpecial():
+                is_wrong_way = False
+            else:
+                is_wrong_way = cls._vehicle_is_wrong_way(sim, vehicle, nearest_lane.getID())
             return (False, is_wrong_way)
 
         closest_edges = []
@@ -503,7 +506,10 @@ class Sensors:
             # Lanes from an edge are parallel so any lane from the edge will do for direction check
             # but the innermost lane will be the last lane in the edge and usually the closest.
             lane_to_check = route_edge_or_oncoming.getLanes()[-1]
-            is_wrong_way = cls._vehicle_is_wrong_way(
+            if lane_to_check.getEdge().isSpecial():
+                is_wrong_way = False
+            else:
+                is_wrong_way = cls._vehicle_is_wrong_way(
                 sim, vehicle, lane_to_check.getID()
             )
 
