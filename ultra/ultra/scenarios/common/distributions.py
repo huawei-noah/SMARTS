@@ -396,7 +396,7 @@ t_patterns = {
             "south-east": None,
             "south-north": None,  # blocking
             "west-east": {
-                "vehicles": 2,
+                "vehicles": 1,
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
@@ -424,7 +424,7 @@ t_patterns = {
                     "func": burst_begin_time_init_func,
                     "params": {
                         "vehicle_cluster_size": (1, 1),
-                        "time_between_cluster": (10, 20),
+                        "time_between_cluster": (5, 20),
                         "time_for_each_cluster": 1,
                     },
                 },
@@ -437,7 +437,7 @@ t_patterns = {
             },
             "east-north": None,  # blocking
             "east-west": {
-                "vehicles": 2,
+                "vehicles": 1,
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
