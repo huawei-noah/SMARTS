@@ -354,12 +354,13 @@ t_patterns = {
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
-    # ----------------------------------------------------- SIMPLE LEVELS ------------------------------------------------
-    # The simple levels provides the ego vehicle with a greater intersection with social vehicles.
-    # Simple levels are tagged with a version [e.g v0, v1, v2], these tags represent variation of traffic
-    # at the intersection. By default, as the version tags increment there will be higher degree of social
-    # vehicle interactions with the ego.
-    "simple-v0": {
+    # -------------------------------------------------- Intersection specific traffic distribution ------------------------------------------------
+    # The following traffic distributions [low-interaction, mid-interaction, high-interaction] are created to emphasize interaction between ego and
+    # social vehicles at the intersections (T or Cross). The key differences between these distributions and the {low, mid, high}-density are that they
+    # do not focus on interactions beyond the intersection, uses very limited number of social vehicles and there are no social vehicles in the ego
+    # mission route. In terms of implementation, these distribution will be used inside the simple level, where the goal is to make the ego agent
+    # familiar with the intersection
+    "low-interaction": {
         "routes": {
             "south-west": None,
             "south-east": None,
@@ -390,7 +391,7 @@ t_patterns = {
             "east-west": None,
         }
     },
-    "simple-v1": {
+    "mid-interaction": {
         "routes": {
             "south-west": None,
             "south-east": None,
@@ -457,7 +458,7 @@ t_patterns = {
             },
         }
     },
-    "simple-v2": {  # t-intersection
+    "high-interaction": {  # t-intersection
         "routes": {
             "south-west": None,
             "south-east": None,
@@ -988,12 +989,13 @@ cross_patterns = {
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
-    # ----------------------------------------------------- SIMPLE LEVELS ------------------------------------------------
-    # The simple levels provides the ego vehicle with a greater intersection with social vehicles.
-    # Simple levels are tagged with a version [e.g v0, v1, v2], these tags represent variation of traffic
-    # at the intersection. By default, as the version tags increment there will be higher degree of social
-    # vehicle interactions with the ego.
-    "simple-v0": {
+    # -------------------------------------------------- Intersection specific traffic distribution ------------------------------------------------
+    # The following traffic distributions [low-interaction, mid-interaction, high-interaction] are created to emphasize interaction between ego and
+    # social vehicles at the intersections (T or Cross). The key differences between these distributions and the {low, mid, high}-density are that they
+    # do not focus on interactions beyond the intersection, uses very limited number of social vehicles and there are no social vehicles in the ego
+    # mission route. In terms of implementation, these distribution will be used inside the simple level, where the goal is to make the ego agent
+    # familiar with the intersection
+    "low-interaction": {
         "routes": {
             "south-west": None,
             "south-east": None,
@@ -1024,7 +1026,7 @@ cross_patterns = {
             },
         }
     },
-    "simple-v1": {
+    "mid-interaction": {
         "routes": {
             "south-west": None,
             "south-east": None,
@@ -1074,7 +1076,7 @@ cross_patterns = {
             },
         }
     },
-    "simple-v2": {  # c-intersection
+    "high-interaction": {  # c-intersection
         "routes": {
             "south-west": None,
             "south-east": None,
