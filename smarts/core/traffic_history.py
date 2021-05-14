@@ -32,10 +32,10 @@ class TrafficHistory:
         self._db_cnxn = None
 
     def connect_for_multiple_queries(self):
-        '''Optional optimization to avoid the overhead of parsing
-           the sqlite file header multiple times for clients that
-           will be performing multiple queries.  If used, then
-           disconnect() should be called when finished.'''
+        """Optional optimization to avoid the overhead of parsing
+        the sqlite file header multiple times for clients that
+        will be performing multiple queries.  If used, then
+        disconnect() should be called when finished."""
         if not self._db_cnxn:
             self._db_cnxn = sqlite3.connect(self._db)
 
@@ -67,11 +67,13 @@ class TrafficHistory:
 
     @cached_property
     def lane_width(self):
-        return self._query_val(float, "SELECT value FROM Spec where key='map_net.lane_width'")
+        query = "SELECT value FROM Spec where key='map_net.lane_width'"
+        return self._query_val(float, query)
 
     @cached_property
     def target_speed(self):
-        return self._query_val(float, "SELECT value FROM Spec where key='speed_limit_mps'")
+        query = "SELECT value FROM Spec where key='speed_limit_mps'"
+        return self._query_val(float, query)
 
     @lru_cache(maxsize=32)
     def vehicle_final_exit_time(self, vehicle_id):
@@ -90,9 +92,7 @@ class TrafficHistory:
         query = """SELECT position_x, position_y, heading_rad
                    FROM Trajectory
                    WHERE vehicle_id = ? and sim_time = ?"""
-        return self._query_val(
-            tuple, query, params=(int(vehicle_id), float(sim_time))
-        )
+        return self._query_val(tuple, query, params=(int(vehicle_id), float(sim_time)))
 
     def vehicle_ids_active_between(self, start_time, end_time):
         query = "SELECT DISTINCT vehicle_id FROM Trajectory WHERE ? <= sim_time AND sim_time <= ?"
