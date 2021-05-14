@@ -41,12 +41,12 @@ from ultra.scenarios.common.begin_time_init_funcs import *
 
 prob_easy = 0.02
 prob_medium = 0.04
-prob_heavy = 0.06
+prob_heavy = 0.08
 behavior_distribution = {
-    "default": 0.85,
-    "aggressive": 0.05,
-    "cautious": 0.05,
-    "blocker": 0.05,
+    "default": 0.70,
+    "aggressive": 0.20,
+    "cautious": 0.08,
+    "blocker": 0.02,
 }
 t_patterns = {
     "no-traffic": {  # t-intersection
@@ -247,8 +247,8 @@ t_patterns = {
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": poisson_init,
+                    "params": {},
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
@@ -258,46 +258,77 @@ t_patterns = {
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 2),
+                        "time_between_cluster": (60, 80),
+                        "time_for_each_cluster": 5,
+                    },
                 },
                 "has_turn": True,
-                "deadlock_optimization": True,
+                "deadlock_optimization": False,
             },  # blocking
             "south-north": None,  # blocking
             "west-east": {
                 "vehicles": 1000,
-                "distribution": behavior_distribution,
+                "distribution": {
+                    "default": 0.7,
+                    "aggressive": 0.30,
+                    "cautious": 0.00,
+                    "blocker": 0.00,
+                },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 4),
+                        "time_between_cluster": (25, 35),
+                        "time_for_each_cluster": 3,
+                    },
                 },
                 "has_turn": False,
-                "deadlock_optimization": False,
+                "deadlock_optimization": True,
             },
             "west-north": None,  # blocking
             "west-south": {
                 "vehicles": 100,
-                "distribution": behavior_distribution,
+                "distribution": {
+                    "default": 0.7,
+                    "aggressive": 0.29,
+                    "cautious": 0.01,
+                    "blocker": 0.00,
+                },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 2),
+                        "time_between_cluster": (30, 60),
+                        "time_for_each_cluster": 5,
+                    },
                 },
-                "has_turn": False,
+                "has_turn": True,
                 "deadlock_optimization": False,
             },  # blocking
             "east-west": {
                 "vehicles": 1000,
-                "distribution": behavior_distribution,
+                "distribution": {
+                    "default": 0.7,
+                    "aggressive": 0.30,
+                    "cautious": 0.00,
+                    "blocker": 0.00,
+                },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 4),
+                        "time_between_cluster": (25, 35),
+                        "time_for_each_cluster": 3,
+                    },
                 },
                 "has_turn": False,
-                "deadlock_optimization": False,
+                "deadlock_optimization": True,
             },
             "east-north": None,  # blocking
             "east-south": {
@@ -305,8 +336,12 @@ t_patterns = {
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 2),
+                        "time_between_cluster": (60, 70),
+                        "time_for_each_cluster": 2,
+                    },
                 },
                 "has_turn": True,
                 "deadlock_optimization": False,
@@ -586,7 +621,7 @@ t_patterns = {
 }
 
 cross_patterns = {
-    "no-traffic": {  # t-intersection
+    "no-traffic": {  # c-intersection
         "routes": {
             "south-west": {
                 "vehicles": 2,
@@ -746,7 +781,7 @@ cross_patterns = {
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
-    "mid-density": {  # t-intersection
+    "mid-density": {  # c-intersection
         "routes": {
             "south-west": {
                 "vehicles": 100,
@@ -827,76 +862,121 @@ cross_patterns = {
             "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
         },
     },
-    "high-density": {  # t-intersection
+    "high-density": {  # c-intersection
         "routes": {
             "south-west": {
                 "vehicles": 100,
                 "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": poisson_init,
+                    "params": {"temperature": 12},
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
             },  # blocking
             "south-east": {
                 "vehicles": 100,
-                "distribution": behavior_distribution,
-                "start_end_on_different_lanes_probability": 0.0,
-                "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                "distribution": {
+                    "default": 0.70,
+                    "aggressive": 0.30,
+                    "cautious": 0.00,
+                    "blocker": 0.0,
                 },
-                "has_turn": True,
-                "deadlock_optimization": True,
-            },  # blocking
-            "south-north": {
-                "vehicles": 1000,
-                "distribution": behavior_distribution,
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 2),
+                        "time_between_cluster": (50, 60),
+                        "time_for_each_cluster": 5,
+                    },
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
             },
-            "west-east": None,
+            "south-north": {
+                "vehicles": 1000,
+                "distribution": {
+                    "default": 0.7,
+                    "aggressive": 0.3,
+                    "cautious": 0.0,
+                    "blocker": 0.0,
+                },
+                "start_end_on_different_lanes_probability": 0.0,
+                "begin_time_init": {
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 3),
+                        "time_between_cluster": (60, 70),
+                        "time_for_each_cluster": 5,
+                    },
+                },
+                "has_turn": False,
+                "deadlock_optimization": True,
+            },
             "west-north": None,  # blocking
             "west-south": None,  # blocking
             "east-west": None,
+            "west-east": None,
             "east-north": None,  # blocking
             "east-south": None,
             "north-south": {
                 "vehicles": 1000,
-                "distribution": behavior_distribution,
+                "distribution": {
+                    "default": 0.70,
+                    "aggressive": 0.30,
+                    "cautious": 0.00,
+                    "blocker": 0.0,
+                },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (2, 5),
+                        "time_between_cluster": (25, 35),
+                        "time_for_each_cluster": 3,
+                    },
                 },
-                "has_turn": True,
+                "has_turn": False,
                 "deadlock_optimization": True,
             },
             "north-east": {
                 "vehicles": 100,
-                "distribution": behavior_distribution,
+                "distribution": {
+                    "default": 0.70,
+                    "aggressive": 0.29,
+                    "cautious": 0.01,
+                    "blocker": 0.0,
+                },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 2),
+                        "time_between_cluster": (30, 60),
+                        "time_for_each_cluster": 5,
+                    },
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
             },
             "north-west": {
                 "vehicles": 100,
-                "distribution": behavior_distribution,
+                "distribution": {
+                    "default": 0.30,
+                    "aggressive": 0.70,
+                    "cautious": 0.00,
+                    "blocker": 0.0,
+                },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
-                    "func": basic_begin_time_init_func,
-                    "params": {"probability": prob_heavy},
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 2),
+                        "time_between_cluster": (40, 50),
+                        "time_for_each_cluster": 3,
+                    },
                 },
                 "has_turn": True,
                 "deadlock_optimization": True,
