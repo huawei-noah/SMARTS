@@ -155,7 +155,7 @@ def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
 if __name__ == "__main__":
     parser = default_argument_parser("history-vehicles-replacement-example")
     parser.add_argument(
-        "--replacements-per-episode",
+        "--replacements-per-episode", "-k",
         help="The number vehicles to randomly replace with agents per episode.",
         type=int,
         default=3,
