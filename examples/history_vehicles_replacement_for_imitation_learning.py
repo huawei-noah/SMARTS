@@ -41,8 +41,7 @@ def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
     assert traffic_history_provider
 
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
-    for _ in scenarios:
-        scenario = next(scenarios_iterator)
+    for scenario in scenarios_iterator:
         logger.debug("working on scenario {}".format(scenario.name))
         veh_missions = scenario.discover_missions_of_traffic_histories()
         if not veh_missions:
@@ -55,7 +54,7 @@ def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
         }
 
         k = vehicles_to_replace
-        if vehicles_to_replace > len(veh_missions):
+        if k > len(veh_missions):
             logger.warning(
                 "vehicles_to_replace={} is greater than the number of vehicle missions ({}).".format(
                     vehicles_to_replace, len(veh_missions)
@@ -156,7 +155,7 @@ def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
 if __name__ == "__main__":
     parser = default_argument_parser("history-vehicles-replacement-example")
     parser.add_argument(
-        "-k",
+        "--replacements-per-episode",
         help="The number vehicles to randomly replace with agents per episode.",
         type=int,
         default=3,
@@ -168,6 +167,6 @@ if __name__ == "__main__":
         scenarios=args.scenarios,
         headless=args.headless,
         seed=args.seed,
-        vehicles_to_replace=args.k,
+        vehicles_to_replace=args.replacements_per_episode,
         episodes=args.episodes,
     )

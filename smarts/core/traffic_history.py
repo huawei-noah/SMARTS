@@ -31,16 +31,20 @@ class TrafficHistory:
         self._db = db
         self._db_cnxn = None
 
-    def connect_if_not(self):
+    def connect_for_multiple_queries(self):
+        '''Optional optimization to avoid the overhead of parsing
+           the sqlite file header multiple times for clients that
+           will be performing multiple queries.  If used, then
+           disconnect() should be called when finished.'''
         if not self._db_cnxn:
             self._db_cnxn = sqlite3.connect(self._db)
 
-    def close_db(self):
+    def disconnect(self):
         if self._db_cnxn:
             self._db_cnxn.close()
             self._db_cnxn = None
 
-    def _query_val(self, query, params=(), result_type=float):
+    def _query_val(self, result_type, query, params=()):
         with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
             sqlite3.connect(self._db)
         ) as dbcnxn:
@@ -63,16 +67,16 @@ class TrafficHistory:
 
     @cached_property
     def lane_width(self):
-        return self._query_val("SELECT value FROM Spec where key='map_net.lane_width'")
+        return self._query_val(float, "SELECT value FROM Spec where key='map_net.lane_width'")
 
     @cached_property
     def target_speed(self):
-        return self._query_val("SELECT value FROM Spec where key='speed_limit_mps'")
+        return self._query_val(float, "SELECT value FROM Spec where key='speed_limit_mps'")
 
     @lru_cache(maxsize=32)
-    def vehicle_last_seen_time(self, vehicle_id):
+    def vehicle_final_exit_time(self, vehicle_id):
         query = "SELECT max(sim_time) FROM Trajectory WHERE vehicle_id = ?"
-        return self._query_val(query, params=(vehicle_id,))
+        return self._query_val(float, query, params=(vehicle_id,))
 
     def first_seen_times(self):
         # For now, limit agent missions to just cars (V.type = 2)
@@ -87,7 +91,7 @@ class TrafficHistory:
                    FROM Trajectory
                    WHERE vehicle_id = ? and sim_time = ?"""
         return self._query_val(
-            query, params=(int(vehicle_id), float(sim_time)), result_type=tuple
+            tuple, query, params=(int(vehicle_id), float(sim_time))
         )
 
     def vehicle_ids_active_between(self, start_time, end_time):
@@ -110,7 +114,7 @@ class TrafficHistory:
         choice = random.choice(list(vehicle_start_times.keys()))
         sample = {choice}
         sample_start_time = vehicle_start_times[choice]
-        sample_end_time = self.vehicle_last_seen_time(choice)
+        sample_end_time = self.vehicle_final_exit_time(choice)
         while len(sample) < k:
             choices = list(
                 self.vehicle_ids_active_between(sample_start_time, sample_end_time)
@@ -119,6 +123,6 @@ class TrafficHistory:
                 break
             choice = str(random.choice(choices)[0])
             sample_start_time = min(vehicle_start_times[choice], sample_start_time)
-            sample_end_time = max(self.vehicle_last_seen_time(choice), sample_end_time)
+            sample_end_time = max(self.vehicle_final_exit_time(choice), sample_end_time)
             sample.add(choice)
         return sample

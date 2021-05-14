@@ -332,8 +332,8 @@ class SMARTS:
         assert isinstance(provider, Provider)
         self._providers.append(provider)
 
-    def switch_ego_agents(self, agent_interface):
-        self._agent_manager.switch_initial_agents(agent_interface)
+    def switch_ego_agents(self, agent_interfaces):
+        self._agent_manager.switch_initial_agents(agent_interfaces)
         self._is_setup = False
 
     def _setup_bullet_client(self, client: bc.BulletClient):

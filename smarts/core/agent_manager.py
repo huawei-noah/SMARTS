@@ -304,8 +304,8 @@ class AgentManager:
             obs = observations[agent_id]
             self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
-    def switch_initial_agents(self, agent_interface):
-        self._initial_interfaces = agent_interface
+    def switch_initial_agents(self, agent_interfaces):
+        self._initial_interfaces = agent_interfaces
 
     def setup_agents(self, sim):
         self.init_ego_agents(sim)

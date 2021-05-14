@@ -49,7 +49,7 @@ class TrafficHistoryProvider(Provider):
     def setup(self, scenario) -> ProviderState:
         self._histories = scenario.traffic_history
         if self._histories:
-            self._histories.connect_if_not()
+            self._histories.connect_for_multiple_queries()
         self._map_location_offset = scenario.road_network.net_offset
         self._is_setup = True
         return ProviderState()
@@ -66,7 +66,7 @@ class TrafficHistoryProvider(Provider):
     def teardown(self):
         self._is_setup = False
         if self._histories:
-            self._histories.close_db()
+            self._histories.disconnect()
             self._histories = None
         self._replaced_vehicle_ids = set()
 
