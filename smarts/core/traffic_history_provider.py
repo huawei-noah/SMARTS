@@ -17,10 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from itertools import cycle
 import logging
-from typing import Set
 import sqlite3
+from itertools import cycle
+from typing import NamedTuple, Set
 
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Heading, Pose
@@ -35,6 +35,9 @@ class TrafficHistoryProvider(Provider):
         self._log = logging.getLogger(self.__class__.__name__)
         self._map_location_offset = None
         self._replaced_vehicle_ids = set()
+        self._last_step_vehicles = set()
+        self._this_step_dones = set()
+        self._vehicle_id_prefix = "history-vehicle-"
         self._start_time_offset = 0
 
     @property
@@ -45,6 +48,10 @@ class TrafficHistoryProvider(Provider):
     def start_time(self, start_time: float):
         assert start_time >= 0, "start_time should be positive"
         self._start_time_offset = start_time
+
+    @property
+    def done_this_step(self):
+        return self._this_step_dones
 
     def setup(self, scenario) -> ProviderState:
         self._histories = scenario.traffic_history
@@ -111,7 +118,7 @@ class TrafficHistoryProvider(Provider):
             default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
             vehicles.append(
                 VehicleState(
-                    vehicle_id=f"social-agent-history-{v_id}",
+                    vehicle_id=self._vehicle_id_prefix + v_id,
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center(
                         [
@@ -135,4 +142,9 @@ class TrafficHistoryProvider(Provider):
                     source="HISTORY",
                 )
             )
+        self._this_step_dones = {
+            self._vehicle_id_prefix + v_id
+            for v_id in self._last_step_vehicles - vehicle_ids
+        }
+        self._last_step_vehicles = vehicle_ids
         return ProviderState(vehicles=vehicles)

@@ -23,14 +23,14 @@ import pytest
 
 from smarts.core.agent_interface import (
     AgentInterface,
-    DoneCriteria,
     AgentsAliveDoneCriteria,
     AgentsListAlive,
+    DoneCriteria,
 )
-from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Sensors
+from smarts.core.smarts import SMARTS
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 AGENT1 = "agent1"
 AGENT2 = "agent2"

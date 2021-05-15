@@ -19,13 +19,13 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import logging
+import math
 import os
 import warnings
 from collections import defaultdict
-from typing import List, Sequence
 from time import time
+from typing import List, Sequence
 
-import math
 import numpy
 
 from envision import types as envision_types
@@ -113,6 +113,7 @@ class SMARTS:
             ActionSpaceType.LaneWithContinuousSpeed,
             ActionSpaceType.Trajectory,
             ActionSpaceType.MPC,
+            ActionSpaceType.Imitation,
         }
 
         # Set up indices
@@ -433,7 +434,9 @@ class SMARTS:
         )
 
     def observe_from(self, vehicle_ids):
-        return self._agent_manager.observe_from(self, vehicle_ids)
+        return self._agent_manager.observe_from(
+            self, vehicle_ids, self._traffic_history_provider.done_this_step
+        )
 
     @property
     def renderer(self):
@@ -598,6 +601,36 @@ class SMARTS:
 
         return provider_state
 
+    def _nondynamic_provider_step(self, agent_actions) -> ProviderState:
+        self._perform_agent_actions(agent_actions)
+
+        provider_state = ProviderState()
+        nondynamic_agent_ids = {
+            agent_id
+            for agent_id, interface in self._agent_manager.agent_interfaces.items()
+            if interface.action_space not in self._dynamic_action_spaces
+        }
+
+        for vehicle_id in self._vehicle_index.agent_vehicle_ids():
+            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+            if agent_id not in nondynamic_agent_ids:
+                continue
+
+            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+            assert isinstance(vehicle.chassis, BoxChassis)
+            provider_state.vehicles.append(
+                VehicleState(
+                    vehicle_id=vehicle.id,
+                    vehicle_type="passenger",
+                    pose=vehicle.pose,
+                    dimensions=vehicle.chassis.dimensions,
+                    speed=vehicle.speed,
+                    source="OTHER",
+                )
+            )
+
+        return provider_state
+
     @property
     def vehicle_index(self):
         return self._vehicle_index
@@ -650,14 +683,31 @@ class SMARTS:
             interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
             return interface.action_space in action_spaces
 
-        # PyBullet
-        pybullet_actions = {
-            agent_id: action
-            for agent_id, action in actions.items()
-            if agent_controls_vehicles(agent_id)
-            and matches_provider_action_spaces(agent_id, self._dynamic_action_spaces)
-        }
-        accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions))
+        def matches_no_provider_action_space(agent_id):
+            interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            for provider in self.providers:
+                if interface.action_space in provider.action_spaces:
+                    return False
+            return True
+
+        pybullet_actions = {}
+        other_actions = {}
+        for agent_id, action in actions.items():
+            if not agent_controls_vehicles(agent_id):
+                continue
+            if matches_provider_action_spaces(agent_id, self._dynamic_action_spaces):
+                pybullet_actions[agent_id] = action
+            elif matches_no_provider_action_space(agent_id):
+                other_actions[agent_id] = action
+
+        if pybullet_actions:
+            accumulated_provider_state.merge(
+                self._pybullet_provider_step(pybullet_actions)
+            )
+        if other_actions:
+            accumulated_provider_state.merge(
+                self._nondynamic_provider_step(other_actions)
+            )
 
         for provider in self.providers:
             provider_state = self._step_provider(provider, actions, dt)
@@ -881,7 +931,7 @@ class SMARTS:
                 position[agent_id] = v.pose.position[:2]
                 heading[agent_id] = v.pose.heading
                 if (
-                    len(vehicle_obs.waypoint_paths) > 0
+                    vehicle_obs.waypoint_paths
                     and len(vehicle_obs.waypoint_paths[0]) > 0
                 ):
                     lane_ids[agent_id] = vehicle_obs.waypoint_paths[0][0].lane_id

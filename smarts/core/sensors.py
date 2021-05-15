@@ -36,9 +36,9 @@ from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
+from .renderer import Renderer
 from .scenario import Mission, Via
 from .waypoints import Waypoint
-from .renderer import Renderer
 
 logger = logging.getLogger(__name__)
 
@@ -364,11 +364,11 @@ class Sensors:
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
+        reached_goal = cls._agent_reached_goal(sim, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)
         is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
         is_not_moving = cls._vehicle_is_not_moving(sim, vehicle)
-        reached_goal = cls._agent_reached_goal(sim, vehicle)
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
             sim, vehicle
