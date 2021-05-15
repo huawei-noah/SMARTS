@@ -250,10 +250,8 @@ class SumoTrafficSimulation(Provider):
 
         # restart sumo process only when map file changes
         restart_sumo = (
-            not (
-                self._scenario
-                and self._scenario.net_file_hash == next_scenario.net_file_hash
-            )
+            not self._scenario
+            or self._scenario.net_file_hash != next_scenario.net_file_hash
             or self._current_reload_count >= self._reload_count
         )
         self._current_reload_count = self._current_reload_count % self._reload_count + 1
