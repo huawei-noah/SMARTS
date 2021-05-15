@@ -23,6 +23,7 @@ from typing import Dict, Set, Tuple
 import cloudpickle
 
 from envision.types import format_actor_id
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import MissionPlanner
@@ -72,6 +73,7 @@ class AgentManager:
         self.teardown_ego_agents()
         self.teardown_social_agents()
         self._vehicle_with_sensors = dict()
+        self._pending_agent_ids = set()
 
     def destroy(self):
         self._remote_agent_buffer.destroy()
@@ -313,8 +315,8 @@ class AgentManager:
             obs = observations[agent_id]
             self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
-    def switch_initial_agent(self, agent_interface):
-        self._initial_interfaces = agent_interface
+    def switch_initial_agents(self, agent_interfaces: Dict[str, AgentInterface]):
+        self._initial_interfaces = agent_interfaces
 
     def setup_agents(self, sim):
         self.init_ego_agents(sim)
