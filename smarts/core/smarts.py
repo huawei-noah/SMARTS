@@ -432,7 +432,9 @@ class SMARTS:
         )
 
     def observe_from(self, vehicle_ids):
-        return self._agent_manager.observe_from(self, vehicle_ids)
+        return self._agent_manager.observe_from(
+            self, vehicle_ids, self._traffic_history_provider.done_this_step
+        )
 
     @property
     def renderer(self):

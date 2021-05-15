@@ -97,6 +97,28 @@ class PositionalGoal(Goal):
         return dist <= self.radius
 
 
+@dataclass
+class TraverseGoal(Goal):
+    """A TraverseGoal is satisfied whenever an Agent-driven vehicle
+    successfully finishes traversing a non-closed (acyclical) map
+    It's a way for the vehicle to exit the simulation successfully,
+    for example, driving across from one side to the other on a
+    straight road and then continuing off the map.  This goal is
+    non-specific about *where* the map is exited, save for that
+    the vehicle must be going the correct direction in its lane
+    just prior to doing so."""
+
+    def __init__(self, road_network: SumoRoadNetwork):
+        super().__init__()
+        self._road_network = road_network
+
+    def is_endless(self):
+        return True
+
+    def is_reached(self, vehicle):
+        return self._road_network.drove_off_map(vehicle.position, vehicle.heading)
+
+
 def default_entry_tactic():
     return sstudio_types.TrapEntryTactic(
         wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None
@@ -560,7 +582,7 @@ class Scenario:
                 start=Start(
                     (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
                 ),
-                goal=EndlessGoal(),
+                goal=TraverseGoal(self.road_network),
                 start_time=start_time,
             )
             p_cur.close()

@@ -1,12 +1,14 @@
 import logging
 import math
 from dataclasses import replace
+from typing import Sequence, Tuple, Union
 
 from envision.client import Client as Envision
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Mission, Scenario
+from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
@@ -19,7 +21,7 @@ class PlaceholderAgent(Agent):
     """This is just a place holder such the example code here has a real Agent to work with.
     In actual use, this would be replaced by an agent based on a trained Imitation Learning model."""
 
-    def __init__(self, initial_speed=15.0):
+    def __init__(self, initial_speed: float = 15.0):
         self._initial_speed = initial_speed
         self._initial_speed_set = False
 
@@ -27,7 +29,7 @@ class PlaceholderAgent(Agent):
     def _dist(pose1, pose2):
         return math.sqrt((pose1[0] - pose2[0]) ** 2 + (pose1[1] - pose2[1]) ** 2)
 
-    def act(self, obs):
+    def act(self, obs: Observation) -> Union[Tuple[float, float], float]:
         if not self._initial_speed_set:
             # special case:  if a singleton int or float is
             # returned, it's taken to be initializing the speed
@@ -56,7 +58,7 @@ class PlaceholderAgent(Agent):
         return (acceleration, angular_velocity)
 
 
-def main(scenarios, headless, seed):
+def main(scenarios: Sequence[str], headless: bool, seed: int):
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
     smarts = SMARTS(
         agent_interfaces={},
