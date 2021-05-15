@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field, replace
 from enum import IntEnum
-from typing import Optional, Union, List, Tuple
+from typing import List, Optional, Tuple, Union
 
 from .controllers import ActionSpaceType
 from .lidar_sensor_params import BasicLidar
@@ -127,6 +127,8 @@ class AgentType(IntEnum):
     """Controls multiple vehicles"""
     MPCTracker = 10
     """Agent performs trajectory tracking using model predictive control."""
+    Imitation = 11
+    """Agent sees neighbor vehicles and performs actions based on imitation-learned model (acceleration, angular_velocity)."""
 
 
 @dataclass(frozen=True)
@@ -361,6 +363,12 @@ class AgentInterface:
             interface = AgentInterface(
                 waypoints=True,
                 action=ActionSpaceType.Continuous,
+            )
+        # For testing imitation learners
+        elif requested_type == AgentType.Imitation:
+            interface = AgentInterface(
+                neighborhood_vehicles=True,
+                action=ActionSpaceType.Imitation,
             )
         else:
             raise Exception("Unsupported agent type %s" % requested_type)

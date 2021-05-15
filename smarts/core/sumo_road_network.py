@@ -27,11 +27,11 @@ from functools import lru_cache
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
 from typing import Sequence, Tuple, Union
-from cached_property import cached_property
 
 import numpy as np
 import trimesh
 import trimesh.scene
+from cached_property import cached_property
 from shapely import ops
 from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.geometry.base import CAP_STYLE, JOIN_STYLE

@@ -2,7 +2,7 @@ import logging
 from typing import Sequence
 
 from envision.client import Client as Envision
-from examples import default_argument_parser
+from examples.argument_parser import default_argument_parser
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario

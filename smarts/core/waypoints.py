@@ -17,22 +17,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from __future__ import (
+from __future__ import (  # to allow for typing to refer to class being defined (LinkedWaypoint)
     annotations,
-)  # to allow for typing to refer to class being defined (LinkedWaypoint)
+)
+
+import math
 import queue
 import random
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Sequence, NamedTuple, List
 from functools import lru_cache
+from typing import List, NamedTuple, Sequence
 
-import math
 import numpy as np
 
-from .utils.math import inplace_unwrap
 from smarts.core.utils.file import suppress_pkg_resources
+
+from .utils.math import inplace_unwrap
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
