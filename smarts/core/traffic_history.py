@@ -26,7 +26,7 @@ from contextlib import nullcontext, closing
 from functools import lru_cache
 import random
 import sqlite3
-from typing import Dict, Generator, NamedTuple, Set, Tuple
+from typing import Dict, Generator, NamedTuple, Set, Tuple, TypeVar
 
 
 class TrafficHistory:
@@ -47,7 +47,9 @@ class TrafficHistory:
             self._db_cnxn.close()
             self._db_cnxn = None
 
-    def _query_val(self, result_type, query: str, params=()):
+    def _query_val(
+        self, result_type: TypeVar["T"], query: str, params: Tuple = ()
+    ) -> T:
         with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
             sqlite3.connect(self._db)
         ) as dbcnxn:
@@ -59,7 +61,9 @@ class TrafficHistory:
             return None
         return row if result_type is tuple else result_type(row[0])
 
-    def _query_list(self, query: str, params=()):
+    def _query_list(
+        self, query: str, params: Tuple = ()
+    ) -> Generator[Tuple, None, None]:
         with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
             sqlite3.connect(self._db)
         ) as dbcnxn:
