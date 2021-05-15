@@ -18,11 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-from typing import Set
+from typing import Dict, Set
 
 import cloudpickle
 
 from envision.types import format_actor_id
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import MissionPlanner
@@ -304,7 +305,7 @@ class AgentManager:
             obs = observations[agent_id]
             self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
-    def switch_initial_agents(self, agent_interfaces):
+    def switch_initial_agents(self, agent_interfaces: Dict[str, AgentInterface]):
         self._initial_interfaces = agent_interfaces
 
     def setup_agents(self, sim):

@@ -529,14 +529,14 @@ class Scenario:
             pph = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
             assert pph
             pos_x, pos_y, heading = pph
-            vid = str(row[0])
-            vehicle_missions[vid] = Mission(
+            v_id = str(row[0])
+            vehicle_missions[v_id] = Mission(
                 start=Start(
                     (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
                 ),
                 goal=EndlessGoal(),
                 start_time=start_time,
-                vehicle_id=vid,
+                vehicle_id=v_id,
             )
         return vehicle_missions
 

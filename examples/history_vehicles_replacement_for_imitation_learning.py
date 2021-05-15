@@ -59,7 +59,7 @@ def main(
             )
             continue
         veh_start_times = {
-            vid: mission.start_time for vid, mission in veh_missions.items()
+            v_id: mission.start_time for v_id, mission in veh_missions.items()
         }
 
         k = vehicles_to_replace
