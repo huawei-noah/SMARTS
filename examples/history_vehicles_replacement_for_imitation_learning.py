@@ -61,7 +61,6 @@ class PlaceholderAgent(Agent):
         return (acceleration, angular_velocity)
 
 
-
 def main(
     script: str,
     scenarios: Sequence[str],
