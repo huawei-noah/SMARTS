@@ -27,7 +27,7 @@ import sqlite3
 
 
 class TrafficHistory:
-    def __init__(self, db):
+    def __init__(self, db: str):
         self._db = db
         self._db_cnxn = None
 
@@ -44,7 +44,7 @@ class TrafficHistory:
             self._db_cnxn.close()
             self._db_cnxn = None
 
-    def _query_val(self, result_type, query, params=()):
+    def _query_val(self, result_type, query: str, params=()):
         with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
             sqlite3.connect(self._db)
         ) as dbcnxn:
@@ -56,7 +56,7 @@ class TrafficHistory:
             return None
         return row if result_type is tuple else result_type(row[0])
 
-    def _query_list(self, query, params=()):
+    def _query_list(self, query: str, params=()):
         with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
             sqlite3.connect(self._db)
         ) as dbcnxn:
@@ -76,7 +76,7 @@ class TrafficHistory:
         return self._query_val(float, query)
 
     @lru_cache(maxsize=32)
-    def vehicle_final_exit_time(self, vehicle_id):
+    def vehicle_final_exit_time(self, vehicle_id: str):
         query = "SELECT max(sim_time) FROM Trajectory WHERE vehicle_id = ?"
         return self._query_val(float, query, params=(vehicle_id,))
 
@@ -88,17 +88,17 @@ class TrafficHistory:
             GROUP BY vehicle_id"""
         return self._query_list(query)
 
-    def vehicle_pose_at_time(self, vehicle_id, sim_time):
+    def vehicle_pose_at_time(self, vehicle_id: str, sim_time: float):
         query = """SELECT position_x, position_y, heading_rad
                    FROM Trajectory
                    WHERE vehicle_id = ? and sim_time = ?"""
         return self._query_val(tuple, query, params=(int(vehicle_id), float(sim_time)))
 
-    def vehicle_ids_active_between(self, start_time, end_time):
+    def vehicle_ids_active_between(self, start_time: float, end_time: float):
         query = "SELECT DISTINCT vehicle_id FROM Trajectory WHERE ? <= sim_time AND sim_time <= ?"
         return self._query_list(query, (start_time, end_time))
 
-    def vehicles_active_between(self, start_time, end_time):
+    def vehicles_active_between(self, start_time: float, end_time: float):
         query = """SELECT V.id, V.type, V.length, V.width,
                           T.position_x, T.position_y, T.heading_rad, T.speed
                    FROM Vehicle AS V INNER JOIN Trajectory AS T ON V.id = T.vehicle_id
@@ -106,7 +106,7 @@ class TrafficHistory:
                    ORDER BY T.sim_time DESC"""
         return self._query_list(query, (start_time, end_time))
 
-    def random_overlapping_sample(self, vehicle_start_times, k):
+    def random_overlapping_sample(self, vehicle_start_times, k: int):
         # ensure overlapping time intervals across sample
         # this is inefficient, but it's not that important
         # Note: this may return a sample with less than k

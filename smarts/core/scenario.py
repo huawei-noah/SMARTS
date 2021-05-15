@@ -519,7 +519,7 @@ class Scenario:
             bubbles = pickle.load(f)
             return bubbles
 
-    def set_ego_missions(self, ego_missions):
+    def set_ego_missions(self, ego_missions: dict):
         self._missions = ego_missions
 
     def discover_missions_of_traffic_histories(self, vehicle_missions={}):
@@ -541,7 +541,7 @@ class Scenario:
         return vehicle_missions
 
     @staticmethod
-    def discover_traffic_histories(scenario_root):
+    def discover_traffic_histories(scenario_root: str):
         return [
             entry
             for entry in os.scandir(scenario_root)
