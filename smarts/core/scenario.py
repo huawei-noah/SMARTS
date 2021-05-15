@@ -99,7 +99,7 @@ class PositionalGoal(Goal):
 
 @dataclass
 class TraverseGoal(Goal):
-    """An TraverseGoal is satisfied whenever an Agent-driven vehicle
+    """A TraverseGoal is satisfied whenever an Agent-driven vehicle
     successfully finishes traversing a non-closed (acyclical) map
     It's a way for the vehicle to exit the simulation successfully,
     for example, driving across from one side to the other on a

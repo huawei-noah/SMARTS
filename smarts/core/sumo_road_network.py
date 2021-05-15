@@ -548,7 +548,7 @@ class SumoRoadNetwork:
         nearest_lanes = self.nearest_lanes(point[:2], radius=radius)
         return any(dist < 0.5 * nl.getWidth() + 1e-1 for nl, dist in nearest_lanes)
 
-    def drove_off_map(self, veh_position, veh_heading):
+    def drove_off_map(self, veh_position: Tuple[float, float, float], veh_heading: float) -> bool:
         # try to determine if the vehicle "exited" the map by driving beyond the end of a dead-end lane.
         radius = max(5, 2 * self._default_lane_width)
         nearest_lanes = self.nearest_lanes(veh_position[:2], radius=radius)
