@@ -114,7 +114,9 @@ class AgentManager:
 
     def observe_from(
         self, sim, vehicle_ids: Set[str], done_this_step: Set[str] = set()
-    ) -> Tuple[Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]]:
+    ) -> Tuple[
+        Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
+    ]:
         observations = {}
         rewards = {}
         dones = {}
