@@ -108,7 +108,7 @@ class TraverseGoal(Goal):
     the vehicle must be going the correct direction in its lane
     just prior to doing so."""
 
-    def __init__(self, road_network):
+    def __init__(self, road_network: SumoRoadNetwork):
         super().__init__()
         self._road_network = road_network
 

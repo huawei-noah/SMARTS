@@ -20,7 +20,7 @@ process
 - Added `near realtime` mode and `uncapped` mode in Envision
 - Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks
 - Added options in `DoneCriteria` to trigger ego agent to be done based on other agent's done situation
-- Added an `TraverseGoal` goal for imitation learning agents.
+- Added a `TraverseGoal` goal for imitation learning agents.
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 - Updated imitation learning examples.
