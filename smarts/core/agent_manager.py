@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-from typing import Set, Tuple
+from typing import Dict, Set, Tuple
 
 import cloudpickle
 
@@ -27,7 +27,7 @@ from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.remote_agent_buffer import RemoteAgentBuffer
-from smarts.core.sensors import Sensors
+from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
 from smarts.zoo.registry import make as make_social_agent
@@ -114,7 +114,7 @@ class AgentManager:
 
     def observe_from(
         self, sim, vehicle_ids: Set[str], done_this_step: Set[str] = set()
-    ) -> Tuple[dict, dict, dict, dict]:
+    ) -> Tuple[Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]]:
         observations = {}
         rewards = {}
         dones = {}

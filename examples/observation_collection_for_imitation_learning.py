@@ -1,4 +1,5 @@
 import logging
+from typing import Sequence
 
 from envision.client import Client as Envision
 from examples import default_argument_parser
@@ -11,7 +12,7 @@ from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 logging.basicConfig(level=logging.INFO)
 
 
-def main(scenarios, headless, seed):
+def main(scenarios: Sequence[str], headless: bool, seed: int):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
         agent_builder=None,

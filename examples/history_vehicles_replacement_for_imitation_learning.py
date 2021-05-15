@@ -1,5 +1,6 @@
 import logging
 from dataclasses import replace
+from typing import Tuple
 
 from envision.client import Client as Envision
 from examples import default_argument_parser
@@ -14,14 +15,14 @@ logging.basicConfig(level=logging.INFO)
 
 
 class KeepLaneAgent(Agent):
-    def __init__(self, target_speed=15.0):
+    def __init__(self, target_speed: float = 15.0):
         self._target_speed = target_speed
 
-    def act(self, obs):
+    def act(self, obs) -> Tuple[float, int]:
         return (self._target_speed, 0)
 
 
-def main(scenarios, headless, seed):
+def main(scenarios: Sequence[str], headless: bool, seed: int):
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
     smarts = SMARTS(
         agent_interfaces={},
