@@ -84,12 +84,12 @@ class TrafficHistory:
 
     @lru_cache(maxsize=32)
     def vehicle_final_exit_time(self, vehicle_id: str) -> float:
-        query = "SELECT max(sim_time) FROM Trajectory WHERE vehicle_id = ?"
+        query = "SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id = ?"
         return self._query_val(float, query, params=(vehicle_id,))
 
     def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
         # For now, limit agent missions to just cars (V.type = 2)
-        query = """SELECT T.vehicle_id, min(T.sim_time)
+        query = """SELECT T.vehicle_id, MIN(T.sim_time)
             FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
             WHERE V.type = 2
             GROUP BY vehicle_id"""
@@ -131,8 +131,8 @@ class TrafficHistory:
         return (TrafficHistory.VehicleRow(*row) for row in rows)
 
     def random_overlapping_sample(
-        self, vehicle_start_times: Dict[int, float], k: int
-    ) -> Set[int]:
+        self, vehicle_start_times: Dict[str, float], k: int
+    ) -> Set[str]:
         # ensure overlapping time intervals across sample
         # this is inefficient, but it's not that important
         # Note: this may return a sample with less than k

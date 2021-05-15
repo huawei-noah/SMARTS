@@ -545,7 +545,8 @@ class Scenario:
     def set_ego_missions(self, ego_missions: dict):
         self._missions = ego_missions
 
-    def discover_missions_of_traffic_histories(self, vehicle_missions={}):
+    def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
+        vehicle_missions = {}
         map_offset = self._road_network.net_offset
         for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])

@@ -13,7 +13,6 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Mission, Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.utils.math import min_angles_difference_signed
 
