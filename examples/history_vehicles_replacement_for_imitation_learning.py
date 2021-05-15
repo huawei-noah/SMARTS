@@ -2,6 +2,7 @@ import logging
 from dataclasses import replace
 import random
 import sys
+from typing import Sequence, Tuple
 
 from envision.client import Client as Envision
 from examples import default_argument_parser
@@ -17,14 +18,21 @@ logging.basicConfig(level=logging.INFO)
 
 
 class KeepLaneAgent(Agent):
-    def __init__(self, target_speed=15.0):
+    def __init__(self, target_speed: float = 15.0):
         self._target_speed = target_speed
 
-    def act(self, obs):
+    def act(self, obs) -> Tuple[float, int]:
         return (self._target_speed, 0)
 
 
-def main(script, scenarios, headless, seed, vehicles_to_replace, episodes):
+def main(
+    script: str,
+    scenarios: Sequence[str],
+    headless: bool,
+    seed: int,
+    vehicles_to_replace: int,
+    episodes: int,
+):
     assert vehicles_to_replace > 0
     assert episodes > 0
     logger = logging.getLogger(script)

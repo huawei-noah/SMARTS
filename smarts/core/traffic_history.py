@@ -24,6 +24,7 @@ from contextlib import nullcontext, closing
 from functools import lru_cache
 import random
 import sqlite3
+from typing import Dict, Generator, Set, Tuple
 
 
 class TrafficHistory:
@@ -66,21 +67,21 @@ class TrafficHistory:
             cur.close()
 
     @cached_property
-    def lane_width(self):
+    def lane_width(self) -> float:
         query = "SELECT value FROM Spec where key='map_net.lane_width'"
         return self._query_val(float, query)
 
     @cached_property
-    def target_speed(self):
+    def target_speed(self) -> float:
         query = "SELECT value FROM Spec where key='speed_limit_mps'"
         return self._query_val(float, query)
 
     @lru_cache(maxsize=32)
-    def vehicle_final_exit_time(self, vehicle_id: str):
+    def vehicle_final_exit_time(self, vehicle_id: str) -> float:
         query = "SELECT max(sim_time) FROM Trajectory WHERE vehicle_id = ?"
         return self._query_val(float, query, params=(vehicle_id,))
 
-    def first_seen_times(self):
+    def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
         # For now, limit agent missions to just cars (V.type = 2)
         query = """SELECT T.vehicle_id, min(T.sim_time)
             FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
@@ -88,17 +89,25 @@ class TrafficHistory:
             GROUP BY vehicle_id"""
         return self._query_list(query)
 
-    def vehicle_pose_at_time(self, vehicle_id: str, sim_time: float):
+    def vehicle_pose_at_time(
+        self, vehicle_id: str, sim_time: float
+    ) -> Tuple[float, float, float]:
         query = """SELECT position_x, position_y, heading_rad
                    FROM Trajectory
                    WHERE vehicle_id = ? and sim_time = ?"""
         return self._query_val(tuple, query, params=(int(vehicle_id), float(sim_time)))
 
-    def vehicle_ids_active_between(self, start_time: float, end_time: float):
+    def vehicle_ids_active_between(
+        self, start_time: float, end_time: float
+    ) -> Generator[int, None, None]:
         query = "SELECT DISTINCT vehicle_id FROM Trajectory WHERE ? <= sim_time AND sim_time <= ?"
         return self._query_list(query, (start_time, end_time))
 
-    def vehicles_active_between(self, start_time: float, end_time: float):
+    def vehicles_active_between(
+        self, start_time: float, end_time: float
+    ) -> Generator[
+        Tuple[int, int, float, float, float, float, float, float], None, None
+    ]:
         query = """SELECT V.id, V.type, V.length, V.width,
                           T.position_x, T.position_y, T.heading_rad, T.speed
                    FROM Vehicle AS V INNER JOIN Trajectory AS T ON V.id = T.vehicle_id
@@ -106,7 +115,9 @@ class TrafficHistory:
                    ORDER BY T.sim_time DESC"""
         return self._query_list(query, (start_time, end_time))
 
-    def random_overlapping_sample(self, vehicle_start_times, k: int):
+    def random_overlapping_sample(
+        self, vehicle_start_times: Dict[int, float], k: int
+    ) -> Set[int]:
         # ensure overlapping time intervals across sample
         # this is inefficient, but it's not that important
         # Note: this may return a sample with less than k
