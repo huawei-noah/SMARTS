@@ -9,6 +9,10 @@ All text added must be human readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
+### Fixed
+- Limited the number of workers SMARTS will use to establish remote agents so as to lower memory footprint.
+- Patched a restart of SUMO every 50 resets to avoid rampant memory growth.
+
 
 ## [0.4.16] - 2021-05-11
 ### Added 
