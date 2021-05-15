@@ -105,7 +105,7 @@ class SumoTrafficSimulation(Provider):
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
-        self._reload_count = 20
+        self._reload_count = 50
         self._current_reload_count = 0
 
     def __repr__(self):
