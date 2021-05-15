@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from itertools import cycle
 import logging
-from typing import Set, NamedTuple
+from typing import Set
 import sqlite3
 
 from .controllers import ActionSpaceType
@@ -78,16 +78,6 @@ class TrafficHistoryProvider(Provider):
         # Ignore other sim state
         pass
 
-    class _HistoryRow(NamedTuple):
-        vehicle_id: int
-        vehicle_type: int
-        vehicle_length: float
-        vehicle_width: float
-        position_x: float
-        position_y: float
-        heading_rad: float
-        speed: float
-
     def _decode_vehicle_type(self, vehicle_type):
         # Options from NGSIM and INTERACTION currently include:
         #  1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
@@ -112,8 +102,7 @@ class TrafficHistoryProvider(Provider):
         vehicle_ids = set()
         history_time = self._start_time_offset + elapsed_sim_time
         rows = self._histories.vehicles_active_between(history_time - dt, history_time)
-        for row in rows:
-            hr = TrafficHistoryProvider._HistoryRow(*row)
+        for hr in rows:
             v_id = str(hr.vehicle_id)
             if v_id in vehicle_ids or v_id in self._replaced_vehicle_ids:
                 continue

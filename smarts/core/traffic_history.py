@@ -18,13 +18,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-
+from __future__ import (
+    annotations,
+)  # to allow for typing to refer to class being defined (TrafficHistory)
 from cached_property import cached_property
 from contextlib import nullcontext, closing
 from functools import lru_cache
 import random
 import sqlite3
-from typing import Dict, Generator, Set, Tuple
+from typing import Dict, Generator, NamedTuple, Set, Tuple
 
 
 class TrafficHistory:
@@ -103,17 +105,26 @@ class TrafficHistory:
         query = "SELECT DISTINCT vehicle_id FROM Trajectory WHERE ? <= sim_time AND sim_time <= ?"
         return self._query_list(query, (start_time, end_time))
 
+    class VehicleRow(NamedTuple):
+        vehicle_id: int
+        vehicle_type: int
+        vehicle_length: float
+        vehicle_width: float
+        position_x: float
+        position_y: float
+        heading_rad: float
+        speed: float
+
     def vehicles_active_between(
         self, start_time: float, end_time: float
-    ) -> Generator[
-        Tuple[int, int, float, float, float, float, float, float], None, None
-    ]:
+    ) -> Generator[TrafficHistory.VehicleRow, None, None]:
         query = """SELECT V.id, V.type, V.length, V.width,
                           T.position_x, T.position_y, T.heading_rad, T.speed
                    FROM Vehicle AS V INNER JOIN Trajectory AS T ON V.id = T.vehicle_id
                    WHERE T.sim_time > ? AND T.sim_time <= ?
                    ORDER BY T.sim_time DESC"""
-        return self._query_list(query, (start_time, end_time))
+        rows = self._query_list(query, (start_time, end_time))
+        return (TrafficHistory.VehicleRow(*row) for row in rows)
 
     def random_overlapping_sample(
         self, vehicle_start_times: Dict[int, float], k: int
