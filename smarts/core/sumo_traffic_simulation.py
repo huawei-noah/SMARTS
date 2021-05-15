@@ -105,8 +105,12 @@ class SumoTrafficSimulation(Provider):
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
+
+        # TODO: remove when SUMO fixes SUMO reset memory growth bug.
+        # `sumo-gui` memory growth is faster.
         self._reload_count = 50
         self._current_reload_count = 0
+        # /TODO
 
     def __repr__(self):
         return f"""SumoTrafficSim(
