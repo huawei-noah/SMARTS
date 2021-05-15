@@ -1,12 +1,13 @@
 import logging
 from dataclasses import replace
-from typing import Tuple
+from typing import Sequence, Tuple
 
 from envision.client import Client as Envision
 from examples import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Mission, Scenario
+from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
@@ -18,7 +19,7 @@ class KeepLaneAgent(Agent):
     def __init__(self, target_speed: float = 15.0):
         self._target_speed = target_speed
 
-    def act(self, obs) -> Tuple[float, int]:
+    def act(self, obs: Observation) -> Tuple[float, int]:
         return (self._target_speed, 0)
 
 
