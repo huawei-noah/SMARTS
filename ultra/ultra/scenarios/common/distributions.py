@@ -394,7 +394,7 @@ t_patterns = {
     # -------------------------------------------------- Intersection specific traffic distribution ------------------------------------------------
     # The following traffic distributions [low-interaction, mid-interaction, high-interaction] are created to emphasize interaction between ego and
     # social vehicles at the intersections (T or Cross). The key differences between these distributions and the {low, mid, high}-density are that they
-    # do not focus on interactions beyond the intersection, uses very limited number of social vehicles and there are no social vehicles in the ego
+    # do not focus on interactions beyond the intersection, use a very limited number of social vehicles, and there are no social vehicles in the ego
     # mission route. In terms of implementation, these distribution will be used inside the simple level, where the goal is to make the ego agent
     # familiar with the intersection
     "low-interaction": {
@@ -1029,7 +1029,7 @@ cross_patterns = {
     # -------------------------------------------------- Intersection specific traffic distribution ------------------------------------------------
     # The following traffic distributions [low-interaction, mid-interaction, high-interaction] are created to emphasize interaction between ego and
     # social vehicles at the intersections (T or Cross). The key differences between these distributions and the {low, mid, high}-density are that they
-    # do not focus on interactions beyond the intersection, uses very limited number of social vehicles and there are no social vehicles in the ego
+    # do not focus on interactions beyond the intersection, use a very limited number of social vehicles, and there are no social vehicles in the ego
     # mission route. In terms of implementation, these distribution will be used inside the simple level, where the goal is to make the ego agent
     # familiar with the intersection
     "low-interaction": {

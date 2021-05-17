@@ -597,7 +597,7 @@ def generate_social_vehicles(
             )
         else:
             behavior = get_social_vehicle_behavior(behavior_idx)
-            if pos_offsets != None:
+            if pos_offsets:
                 start_offset = random.randint(
                     pos_offsets["start"][0], pos_offsets["start"][1]
                 )

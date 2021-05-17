@@ -236,8 +236,8 @@ levels:
            stops: null
            bubbles: null
   # ----------------------------------------- PRIMITIVE INTERSECTION LEVELS ------------------------------------------
-  # These levels contain one type of traffic distribution (i.e low-intersection, mid-intersection, high-intersection).
-  # Purpose of these levels is to debug agents on a specific traffic distribution before implementing them into
+  # These levels contain one type of traffic distribution (i.e. low-interaction, mid-interaction, high-interaction). 
+  # The purpose of these levels is to debug agents on a specific traffic distribution before implementing them into
   # the primary levels (simple, easy, medium, hard).
   low-interaction: # Interaction between one social vehicle and the ego agent at the intersection
     train:
