@@ -151,4 +151,3 @@ levels:
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,low-density,0.01],[70kmh,low-density,0.01],[100kmh,low-density,0.01]] # 3%
            stops: null
-           

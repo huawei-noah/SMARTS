@@ -77,6 +77,9 @@ def load_model(experiment_dir):
         for agent_id in agent_ids
     }
 
+    # Confined to single agent experimens only
+    assert len(agent_ids) == 1, "Cannot load model from multi-agent experiments."
+
     length_dir = len(agent_checkpoint_directories[agent_ids[0]])
     if length_dir > 1:
         print(
@@ -287,8 +290,8 @@ def train(
                     break
 
         while not dones["__all__"]:
-            # Break if any of the agent's step counts is 10000000 or greater.
-            if any([episode.get_itr(agent_id) >= 10000000 for agent_id in agents]):
+            # Break if any of the agent's step counts is 100000 or greater.
+            if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
                 finished = True
                 break
             # Request and perform actions on each agent that received an observation.
