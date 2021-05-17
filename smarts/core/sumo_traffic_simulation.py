@@ -483,7 +483,9 @@ class SumoTrafficSimulation(Provider):
         )
 
         # TODO: Vehicle Id should not be using prefixes this way
-        if vehicle_id.startswith("social-agent"):
+        if vehicle_id.startswith("social-agent") or vehicle_id.startswith(
+            "history-vehicle"
+        ):
             # This is based on ID convention
             vehicle_color = SumoTrafficSimulation._social_agent_vehicle_color()
         else:

@@ -418,7 +418,10 @@ class AckermannChassis(Chassis):
     def speed(self, speed: float = None):
         # TODO: Temporary, figure out the required joint velocities to achieve the
         #       requested speed
-        self.control(throttle=1)
+        if not speed or self.speed < speed:
+            self.control(brake=1)
+        elif self.speed > speed:
+            self.control(throttle=1)
 
     @property
     def yaw_rate(self):
@@ -494,6 +497,18 @@ class AckermannChassis(Chassis):
     @property
     def rear_track_width(self):
         return self._rear_track_width
+
+    @property
+    def max_torque(self):
+        return self._max_torque
+
+    @property
+    def max_btorque(self):
+        return self._max_btorque
+
+    @property
+    def steering_ratio(self):
+        return self._steering_gear_ratio
 
     @property
     def bullet_id(self) -> str:

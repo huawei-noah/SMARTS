@@ -24,7 +24,6 @@ import math
 import os
 import pickle
 import random
-import sqlite3
 import uuid
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -39,6 +38,7 @@ from smarts.core.coordinates import Heading
 from smarts.core.data_model import SocialAgent
 from smarts.core.route import ShortestRoute
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import vec_to_radians
@@ -97,6 +97,28 @@ class PositionalGoal(Goal):
         return dist <= self.radius
 
 
+@dataclass
+class TraverseGoal(Goal):
+    """A TraverseGoal is satisfied whenever an Agent-driven vehicle
+    successfully finishes traversing a non-closed (acyclical) map
+    It's a way for the vehicle to exit the simulation successfully,
+    for example, driving across from one side to the other on a
+    straight road and then continuing off the map.  This goal is
+    non-specific about *where* the map is exited, save for that
+    the vehicle must be going the correct direction in its lane
+    just prior to doing so."""
+
+    def __init__(self, road_network: SumoRoadNetwork):
+        super().__init__()
+        self._road_network = road_network
+
+    def is_endless(self):
+        return True
+
+    def is_reached(self, vehicle):
+        return self._road_network.drove_off_map(vehicle.position, vehicle.heading)
+
+
 def default_entry_tactic():
     return sstudio_types.TrapEntryTactic(
         wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None
@@ -124,6 +146,7 @@ class Mission:
     entry_tactic: EntryTactic = None
     task: Tuple[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
+    vehicle_id: str = None  # if specified, use this vehicle (for histories)
 
     @property
     def has_fixed_route(self):
@@ -191,10 +214,13 @@ class Scenario:
         self._log_dir = self._resolve_log_dir(log_dir)
         self._validate_assets_exist()
 
-        self._traffic_history = traffic_history
-        default_lane_width = (
-            self.traffic_history_lane_width if traffic_history else None
-        )
+        if traffic_history:
+            self._traffic_history = TrafficHistory(traffic_history)
+            default_lane_width = self.traffic_history.lane_width
+        else:
+            self._traffic_history = None
+            default_lane_width = None
+
         net_file = os.path.join(self._root, "map.net.xml")
         self._road_network = SumoRoadNetwork.from_file(
             net_file, default_lane_width=default_lane_width
@@ -516,60 +542,30 @@ class Scenario:
             bubbles = pickle.load(f)
             return bubbles
 
-    def set_ego_missions(self, ego_mission):
-        self._missions.update(ego_mission)
+    def set_ego_missions(self, ego_missions: dict):
+        self._missions = ego_missions
 
-    @cached_property
-    def traffic_history_lane_width(self):
-        histories_db = sqlite3.connect(self._traffic_history)
-        cur = histories_db.cursor()
-        cur.execute("SELECT value FROM Spec where key='map_net.lane_width'")
-        row = cur.fetchone()
-        cur.close()
-        histories_db.close()
-        return float(row[0]) if row else None
-
-    @cached_property
-    def traffic_history_target_speed(self):
-        histories_db = sqlite3.connect(self._traffic_history)
-        cur = histories_db.cursor()
-        cur.execute("SELECT value FROM Spec where key='speed_limit_mps'")
-        row = cur.fetchone()
-        cur.close()
-        histories_db.close()
-        return float(row[0]) if row else None
-
-    def discover_missions_of_traffic_histories(self, vehicle_missions={}):
-        histories_db = sqlite3.connect(self._traffic_history)
-        # For now, limit agent missions to just cars (V.type = 2)
-        st_query = """SELECT T.vehicle_id, min(T.sim_time)
-            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
-            WHERE V.type = 2
-            GROUP BY vehicle_id"""
-        p_query = "SELECT position_x, position_y, heading_rad FROM Trajectory WHERE vehicle_id = ? and sim_time = ?"
+    def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
+        vehicle_missions = {}
         map_offset = self._road_network.net_offset
-        st_cur = histories_db.cursor()
-        for row in st_cur.execute(st_query):
-            vid = str(row[0])
+        for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])
-            p_cur = histories_db.cursor()
-            vrow = p_cur.execute(p_query, (int(vid), start_time)).fetchone()
-            assert vrow
-            pos_x, pos_y, heading = vrow
-            vehicle_missions[vid] = Mission(
+            pph = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
+            assert pph
+            pos_x, pos_y, heading = pph
+            v_id = str(row[0])
+            vehicle_missions[v_id] = Mission(
                 start=Start(
                     (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
                 ),
-                goal=EndlessGoal(),
+                goal=TraverseGoal(self.road_network),
                 start_time=start_time,
+                vehicle_id=v_id,
             )
-            p_cur.close()
-        st_cur.close()
-        histories_db.close()
         return vehicle_missions
 
     @staticmethod
-    def discover_traffic_histories(scenario_root):
+    def discover_traffic_histories(scenario_root: str):
         return [
             entry
             for entry in os.scandir(scenario_root)
