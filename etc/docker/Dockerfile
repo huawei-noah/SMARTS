@@ -52,12 +52,12 @@ RUN wget -O /etc/X11/xorg.conf http://xpra.org/xorg.conf && \
 ENV SUMO_HOME /usr/share/sumo
 
 # Install requirements.txt
-COPY ../../requirements.txt /tmp/requirements.txt
+COPY ./requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install SMARTS
 ENV PYTHONPATH=/src
-COPY ../../. /src
+COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e .[train,test,dev]
 

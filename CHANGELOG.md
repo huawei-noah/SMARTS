@@ -9,7 +9,8 @@ All text added must be human readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
-
+### Changed
+- Refactored the top level of the SMARTS module to make it easier to navigate the project and understand its structure. See issue #776.
 ## [0.4.16] - 2021-05-11
 ### Added 
 - Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
@@ -25,7 +26,7 @@ process
 - Added `README_pypi.md` to update to the general user installation PyPI instructions. See Issue #828 
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
-- Refactored the top level of the SMARTS module to make it easier to navigate the project and understand its structure. See issue #776.
+
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed Sumo road network offset bug for shifted maps.  See issue #716.
