@@ -12,7 +12,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added 
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
 - Added a `TraverseGoal` goal for imitation learning agents.  See Issue #848.
-- Added `README_pypi.md` to update to the general user installation PyPI instructions. See Issue #828.
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
 - Refactored the top level of the SMARTS module to make it easier to navigate the project and understand its structure. See issue #776.
@@ -32,7 +31,7 @@ process
 - Added `near realtime` mode and `uncapped` mode in Envision
 - Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks
 - Added options in `DoneCriteria` to trigger ego agent to be done based on other agent's done situation
-
+- Added `README_pypi.md` to update to the general user installation PyPI instructions. See Issue #828.
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 - Updated imitation learning examples.
