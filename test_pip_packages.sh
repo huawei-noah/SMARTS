@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
 venv_dir=`mktemp -u -d`
-
-python3.7 -m venv "${venv_dir}"
-source "${venv_dir}/bin/activate"
+python3.7 -m venv ${venv_dir}
+. ${venv_dir}/bin/activate
 
 # install our requirements
 pip install --upgrade pip
