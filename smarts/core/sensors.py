@@ -292,9 +292,9 @@ class Sensors:
         )
 
         if (
-                done
-                and sensor_state.steps_completed == 1
-                and agent_id in sim.agent_manager.ego_agent_ids
+            done
+            and sensor_state.steps_completed == 1
+            and agent_id in sim.agent_manager.ego_agent_ids
         ):
             logger.warning(f"Agent Id: {agent_id} is done on the first step")
 
@@ -321,19 +321,19 @@ class Sensors:
 
     @classmethod
     def _agents_alive_done_check(
-            cls, agent_manager, agents_alive: AgentsAliveDoneCriteria
+        cls, agent_manager, agents_alive: AgentsAliveDoneCriteria
     ):
         if not agents_alive:
             return False
 
         if (
-                agents_alive.minimum_ego_agents_alive
-                and len(agent_manager.ego_agent_ids) < agents_alive.minimum_ego_agents_alive
+            agents_alive.minimum_ego_agents_alive
+            and len(agent_manager.ego_agent_ids) < agents_alive.minimum_ego_agents_alive
         ):
             return True
         if (
-                agents_alive.minimum_total_agents_alive
-                and len(agent_manager.agent_ids) < agents_alive.minimum_total_agents_alive
+            agents_alive.minimum_total_agents_alive
+            and len(agent_manager.agent_ids) < agents_alive.minimum_total_agents_alive
         ):
             return True
         if agents_alive.agent_lists_alive:
@@ -345,15 +345,15 @@ class Sensors:
                     agents_list_alive.minimum_agents_alive_in_list, int
                 ), "Please specify an int for minimum number of alive agents in the list"
                 assert (
-                        agents_list_alive.minimum_agents_alive_in_list >= 0
+                    agents_list_alive.minimum_agents_alive_in_list >= 0
                 ), "minimum_agents_alive_in_list should not be negative"
                 agents_alive_check = [
                     1 if id in agent_manager.agent_ids else 0
                     for id in agents_list_alive.agents_list
                 ]
                 if (
-                        agents_alive_check.count(1)
-                        < agents_list_alive.minimum_agents_alive_in_list
+                    agents_alive_check.count(1)
+                    < agents_list_alive.minimum_agents_alive_in_list
                 ):
                     return True
 
@@ -378,15 +378,15 @@ class Sensors:
         )
 
         done = (
-                (is_off_road and done_criteria.off_road)
-                or reached_goal
-                or reached_max_episode_steps
-                or (is_on_shoulder and done_criteria.on_shoulder)
-                or (collided and done_criteria.collision)
-                or (is_not_moving and done_criteria.not_moving)
-                or (is_off_route and done_criteria.off_route)
-                or (is_wrong_way and done_criteria.wrong_way)
-                or agents_alive_done
+            (is_off_road and done_criteria.off_road)
+            or reached_goal
+            or reached_max_episode_steps
+            or (is_on_shoulder and done_criteria.on_shoulder)
+            or (collided and done_criteria.collision)
+            or (is_not_moving and done_criteria.not_moving)
+            or (is_off_route and done_criteria.off_route)
+            or (is_wrong_way and done_criteria.wrong_way)
+            or agents_alive_done
         )
 
         events = Events(
@@ -463,7 +463,7 @@ class Sensors:
 
         vehicle_pos = vehicle.position[:2]
         vehicle_minimum_radius_bounds = (
-                np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
+            np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
         )
         # Check that center of vehicle is still close to route
         # Most lanes are around 3.2 meters wide
@@ -485,7 +485,9 @@ class Sensors:
             if nearest_lane.getEdge().isSpecial():
                 is_wrong_way = False
             else:
-                is_wrong_way = cls._vehicle_is_wrong_way(sim, vehicle, nearest_lane.getID())
+                is_wrong_way = cls._vehicle_is_wrong_way(
+                    sim, vehicle, nearest_lane.getID()
+                )
             return (False, is_wrong_way)
 
         closest_edges = []
@@ -524,8 +526,8 @@ class Sensors:
 
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
-                np.fabs(vehicle.pose.heading.relative_to(closest_waypoint.heading))
-                > 0.5 * np.pi
+            np.fabs(vehicle.pose.heading.relative_to(closest_waypoint.heading))
+            > 0.5 * np.pi
         )
 
     @classmethod
@@ -566,8 +568,8 @@ class Sensors:
             instance_id, closest_edges[on_route_edge_index]
         )
         if (
-                oncoming_edge
-                and oncoming_edge in closest_edges[: max(0, on_route_edge_index - 1)]
+            oncoming_edge
+            and oncoming_edge in closest_edges[: max(0, on_route_edge_index - 1)]
         ):
             # oncoming edge was closer
             return oncoming_edge
@@ -624,14 +626,14 @@ class SensorState:
 
 class CameraSensor(Sensor):
     def __init__(
-            self,
-            vehicle,
-            renderer: Renderer,
-            name: str,
-            mask: int,
-            width: int,
-            height: int,
-            resolution: float,
+        self,
+        vehicle,
+        renderer: Renderer,
+        name: str,
+        mask: int,
+        width: int,
+        height: int,
+        resolution: float,
     ):
         assert renderer
         self._log = logging.getLogger(self.__class__.__name__)
@@ -657,12 +659,12 @@ class CameraSensor(Sensor):
 
 class DrivableAreaGridMapSensor(CameraSensor):
     def __init__(
-            self,
-            vehicle,
-            width: int,
-            height: int,
-            resolution: float,
-            renderer: Renderer,
+        self,
+        vehicle,
+        width: int,
+        height: int,
+        resolution: float,
+        renderer: Renderer,
     ):
         super().__init__(
             vehicle,
@@ -677,7 +679,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
 
     def __call__(self) -> DrivableAreaGridMap:
         assert (
-                self._camera is not None
+            self._camera is not None
         ), "Drivable area grid map has not been initialized"
 
         ram_image = self._camera.wait_for_ram_image(img_format="A")
@@ -699,12 +701,12 @@ class DrivableAreaGridMapSensor(CameraSensor):
 
 class OGMSensor(CameraSensor):
     def __init__(
-            self,
-            vehicle,
-            width: int,
-            height: int,
-            resolution: float,
-            renderer: Renderer,
+        self,
+        vehicle,
+        width: int,
+        height: int,
+        resolution: float,
+        renderer: Renderer,
     ):
         super().__init__(
             vehicle,
@@ -741,12 +743,12 @@ class OGMSensor(CameraSensor):
 
 class RGBSensor(CameraSensor):
     def __init__(
-            self,
-            vehicle,
-            width: int,
-            height: int,
-            resolution: float,
-            renderer: Renderer,
+        self,
+        vehicle,
+        width: int,
+        height: int,
+        resolution: float,
+        renderer: Renderer,
     ):
         super().__init__(
             vehicle, renderer, "rgb", RenderMasks.RGB_HIDE, width, height, resolution
@@ -775,11 +777,11 @@ class RGBSensor(CameraSensor):
 
 class LidarSensor(Sensor):
     def __init__(
-            self,
-            vehicle,
-            bullet_client,
-            sensor_params: SensorParams = None,
-            lidar_offset=(0, 0, 1),
+        self,
+        vehicle,
+        bullet_client,
+        sensor_params: SensorParams = None,
+        lidar_offset=(0, 0, 1),
     ):
         self._vehicle = vehicle
         self._bullet_client = bullet_client
@@ -829,7 +831,7 @@ class DrivenPathSensor(Sensor):
         pass
 
     def distance_travelled(
-            self, sim, last_n_seconds: float = None, last_n_steps: int = None
+        self, sim, last_n_seconds: float = None, last_n_steps: int = None
     ):
         if last_n_seconds is None and last_n_steps is None:
             raise ValueError("Either last N seconds or last N steps must be provided")
@@ -879,15 +881,15 @@ class TripMeterSensor(Sensor):
 
         should_count_wp = (
             # if we do not have a fixed route, we count all waypoints we accumulate
-                not self._mission_planner.mission.has_fixed_route
-                # if we have a route to follow, only count wps on route
-                or wp_edge in self._mission_planner.route.edges
+            not self._mission_planner.mission.has_fixed_route
+            # if we have a route to follow, only count wps on route
+            or wp_edge in self._mission_planner.route.edges
         )
 
         threshold_for_counting_wp = 0.5  # meters from last tracked waypoint
         if (
-                np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
-                and should_count_wp
+            np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
+            and should_count_wp
         ):
             self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
                 most_recent_wp, new_wp
@@ -1049,7 +1051,7 @@ class AccelerometerSensor(Sensor):
 
 class ViaSensor(Sensor):
     def __init__(
-            self, vehicle, mission_planner, lane_acquisition_range, speed_accuracy
+        self, vehicle, mission_planner, lane_acquisition_range, speed_accuracy
     ):
         self._consumed_via_points = set()
         self._mission_planner: MissionPlanner = mission_planner
@@ -1090,11 +1092,11 @@ class ViaSensor(Sensor):
             near_points.append(point)
             dist_from_point_sq = squared_dist(vehicle_position, via.position)
             if (
-                    dist_from_point_sq <= via.hit_distance ** 2
-                    and via not in self._consumed_via_points
-                    and np.isclose(
-                self._vehicle.speed, via.required_speed, atol=self._speed_accuracy
-            )
+                dist_from_point_sq <= via.hit_distance ** 2
+                and via not in self._consumed_via_points
+                and np.isclose(
+                    self._vehicle.speed, via.required_speed, atol=self._speed_accuracy
+                )
             ):
                 self._consumed_via_points.add(via)
                 hit_points.append(point)
