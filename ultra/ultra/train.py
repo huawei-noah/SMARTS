@@ -110,6 +110,7 @@ def train(
     num_episodes,
     policy_classes,
     max_episode_steps,
+    max_steps,
     eval_info,
     timestep_sec,
     headless,
@@ -290,8 +291,8 @@ def train(
                     break
 
         while not dones["__all__"]:
-            # Break if any of the agent's step counts is 100000 or greater.
-            if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
+            # Break if any of the agent's step counts is max_steps (default is 1000000) or greater.
+            if any([episode.get_itr(agent_id) >= max_steps for agent_id in agents]):
                 finished = True
                 break
             # Request and perform actions on each agent that received an observation.
@@ -466,6 +467,12 @@ if __name__ == "__main__":
         default=200,
     )
     parser.add_argument(
+        "--max-steps",
+        help="Maximum total number of training steps",
+        type=int,
+        default=1000000,
+    )
+    parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
@@ -559,6 +566,7 @@ if __name__ == "__main__":
         scenario_info=(args.task, args.level),
         num_episodes=int(args.episodes),
         max_episode_steps=int(args.max_episode_steps),
+        max_steps=int(args.max_steps),
         eval_info={
             "eval_rate": int(args.eval_rate),
             "eval_episodes": int(args.eval_episodes),
