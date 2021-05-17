@@ -201,6 +201,11 @@ def generate_left_turn_missions(
                 )
                 for ego_mission in missions
             ]
+            # Not all routes need to have a custom start/end offset
+            if "pos_offsets" in route_info:
+                pos_offsets = route_info["pos_offsets"]
+            else:
+                pos_offsets = None
             flows, vehicles_log_info = generate_social_vehicles(
                 route_distribution=route_info["distribution"],
                 begin_time_init=route_info["begin_time_init"],
@@ -211,6 +216,7 @@ def generate_left_turn_missions(
                 start_end_on_different_lanes_probability=route_info[
                     "start_end_on_different_lanes_probability"
                 ],
+                pos_offsets=pos_offsets,
                 stops=stops,
                 deadlock_optimization=route_info["deadlock_optimization"],
                 stopwatcher_info=stopwatcher_info,
@@ -376,6 +382,7 @@ def generate_social_vehicles(
     route_has_turn,
     stopwatcher_info,
     traffic_params,
+    pos_offsets,
     stops,
     begin_time_init=None,
     deadlock_optimization=True,
@@ -465,13 +472,23 @@ def generate_social_vehicles(
             )
         else:
             behavior = get_social_vehicle_behavior(behavior_idx)
+            if pos_offsets != None:
+                start_offset = random.randint(
+                    pos_offsets["start"][0], pos_offsets["start"][1]
+                )
+                end_offset = random.randint(
+                    pos_offsets["end"][0], pos_offsets["end"][1]
+                )
+            else:
+                start_offset = "base"
+                end_offset = "max"
             flows.append(
                 Flow(
                     begin=begin_time,
                     end=end_time,
                     route=Route(
-                        begin=(f"edge-{start_lane}", start_lane_id, "base"),
-                        end=(f"edge-{end_lane}", end_lane_id, "max"),
+                        begin=(f"edge-{start_lane}", start_lane_id, start_offset),
+                        end=(f"edge-{end_lane}", end_lane_id, end_offset),
                     ),
                     rate=1,
                     actors={behavior: 1.0},

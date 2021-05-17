@@ -43,6 +43,9 @@ tasks:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
       test:  "scenarios/task1/train_no-traffic*"
+    simple:
+      train: "scenarios/task1/train_simple*"
+      test:  "scenarios/task1/test_simple*"
     easy:
       train: "scenarios/task1/train_easy*"
       test:  "scenarios/task1/train_easy*"
@@ -52,6 +55,15 @@ tasks:
     hard:
       train: "scenarios/task1/train_hard*"
       test:  "scenarios/task1/train_hard*"
+    low-interaction:
+      train: "scenarios/task1/train_low-interaction*"
+      test:  "scenarios/task1/test_low-interaction*"
+    mid-interaction:
+      train: "scenarios/task1/train_mid-interaction*"
+      test:  "scenarios/task1/test_mid-interaction*"
+    high-interaction:
+      train: "scenarios/task1/train_high-interaction*"
+      test:  "scenarios/task1/test_high-interaction*"
   task1:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
