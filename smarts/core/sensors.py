@@ -511,7 +511,7 @@ class Sensors:
             else:
                 is_wrong_way = cls._vehicle_is_wrong_way(
                 sim, vehicle, lane_to_check.getID()
-            )
+                )
 
         return (is_off_route, is_wrong_way)
 
