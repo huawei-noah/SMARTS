@@ -80,7 +80,7 @@ def evaluation_check(
     if len(agent_ids_to_evaluate) < 1:
         return
 
-    if eval_episodes < 1:
+    if eval_episodes < 1 and save_model_only == False:
         return
 
     if curriculum_mode is True:

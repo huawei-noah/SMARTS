@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import json
 import os
-import shutil
+import shutil, glob
 import sys
 import unittest
 
@@ -31,7 +31,7 @@ import ray
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
-from ultra.train import train
+from ultra.train import train, load_model
 
 seed = 2
 
@@ -39,6 +39,21 @@ seed = 2
 class TrainTest(unittest.TestCase):
     # Put generated files and folders in this directory.
     OUTPUT_DIRECTORY = "tests/train_test/"
+
+    @classmethod
+    def setUpClass(cls):
+        """Trained a model"""
+        model_log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/")
+        try:
+            os.system(
+                f"python ultra/train.py --task 00 --level easy --episodes 4 --eval-rate 2 --max-episode-steps 2 --log-dir {model_log_dir} --save-model-only True"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
+
+        if not os.path.exists(model_log_dir):
+            self.assertTrue(False)
 
     def test_train_cli(self):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
@@ -89,6 +104,8 @@ class TrainTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 seed=2,
+                experiment_dir=None,
+                save_model_only=False,
                 curriculum_mode=False,
                 curriculum_metadata={},
                 log_dir=log_dir,
@@ -127,6 +144,8 @@ class TrainTest(unittest.TestCase):
                 timestep_sec=0.1,
                 headless=True,
                 seed=2,
+                experiment_dir=None,
+                save_model_only=False,
                 curriculum_mode=False,
                 curriculum_metadata={},
                 log_dir=log_dir,
@@ -137,6 +156,44 @@ class TrainTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
             ray.shutdown()
+
+    def test_train_models(self):
+        """Further train the trained model"""
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+        experiment_dir = experiment_dir = glob.glob(
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
+        )[0]
+        try:
+            os.system(
+                f"python ultra/train.py --task 00 --level easy --episodes 5 --eval-episodes 0 --max-episode-steps 2 --experiment-dir {experiment_dir} --log-dir {log_dir}"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
+
+        if not os.path.exists(log_dir):
+            self.assertTrue(False)
+
+        shutil.rmtree(log_dir)
+
+    def test_load_model(self):
+        experiment_dir = experiment_dir = glob.glob(
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
+        )[0]
+        agent_ids, agent_classes, agent_specs = load_model(experiment_dir)
+
+        self.assertEqual(agent_ids[0], "000")
+        self.assertEqual(agent_classes[agent_ids[0]], "ultra.baselines.sac:sac-v0")
+        self.assertIsInstance(agent_specs[agent_ids[0]], AgentSpec)
+
+        try:
+            agents = {
+                agent_id: agent_spec.build_agent()
+                for agent_id, agent_spec in agent_specs.items()
+            }
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
 
     def test_check_agents_from_pool(self):
         seed = 2

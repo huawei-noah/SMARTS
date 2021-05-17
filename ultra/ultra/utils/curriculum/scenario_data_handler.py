@@ -33,22 +33,13 @@ class ScenarioDataHandler:
         """
         self.densities_data = []
         self.mode = mode
-        self.overall_densities_counter = {
-            "no-traffic": 0,
-            "low-density": 0,
-            "mid-density": 0,
-            "high-density": 0,
-        }
+        self.overall_densities_counter = {}
         self.grade_densities_counter = copy.deepcopy(self.overall_densities_counter)
 
     def _reset_densities_counter(self):
         """ resets counter to zero """
-        self.grade_densities_counter = {
-            "no-traffic": 0,
-            "low-density": 0,
-            "mid-density": 0,
-            "high-density": 0,
-        }
+        for key in self.grade_densities_counter.keys():
+            self.grade_densities_counter[key] = 0
 
     def record_density_data(self, scenario_density) -> int:
         """Records how many times a specific density is used in a
@@ -63,8 +54,12 @@ class ScenarioDataHandler:
         if scenario_density in self.overall_densities_counter.keys():
             self.overall_densities_counter[scenario_density] += 1
             self.grade_densities_counter[scenario_density] += 1
-            return self.overall_densities_counter[scenario_density]
-        return
+        else:
+            # Intialize the density key and increment occurance as well
+            self.overall_densities_counter[scenario_density] = 1
+            self.grade_densities_counter[scenario_density] = 1
+
+        return self.overall_densities_counter[scenario_density]
 
     def save_grade_density(self, grade_size):
         """Records the occurances of the different traffic densities

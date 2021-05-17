@@ -179,20 +179,28 @@ levels:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   no-traffic:
     train:
-      total: null
+      total: 100
       ego_missions:
       - start: south-SN
         end:   west-EW
       intersection_types:
         2lane_t:
-           percent: 1
+           percent: 0.4
+           specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
+           stops: null
+        3lane_t:
+           percent: 0.4
+           specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
+           stops: null
+        2lane_curvy_t:
+           percent: 0.2
            specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
            stops: null
     test:
-      total: null
+      total: 100
       ego_missions:
-      - start: south-SN
-        end:   west-EW
+      - start: north-NS
+        end:   east-WE
       intersection_types:
         2lane_c:
            percent: 1
@@ -267,6 +275,38 @@ levels:
         3lane_c:
            percent: 0.5
            specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
+           stops: null
+    
+  constant-flow:
+    train:
+      total: 1000
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 0.4
+           specs: [[50kmh,constant-flow,0.33],[70kmh,constant-flow,0.34],[100kmh,constant-flow,0.33]] #100%
+           stops: null
+        3lane_t:
+           percent: 0.4
+           specs: [[50kmh,constant-flow,0.33],[70kmh,constant-flow,0.34],[100kmh,constant-flow,0.33]] #100%
+           stops: null
+        2lane_curvy_t:
+           percent: 0.2
+           specs: [[50kmh,constant-flow,0.33],[70kmh,constant-flow,0.34],[100kmh,constant-flow,0.33]] #100%
+           stops: null
+    test:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+           percent: 1
+           specs: [[50kmh,constant-flow,0.33],[70kmh,constant-flow,0.34],[100kmh,constant-flow,0.33]] #100%
            stops: null
 
   # Evaluation only scenarios ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
