@@ -33,6 +33,7 @@ from smarts.core.scenario import Scenario
 from smarts.env.hiway_env import HiWayEnv
 from ultra.baselines.adapter import BaselineAdapter
 from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.scenarios.common.distributions import t_patterns, cross_patterns
 
 path.append("./ultra")
 from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
@@ -195,24 +196,6 @@ class UltraEnv(HiWayEnv):
 
         scenario = next(self._scenarios_iterator)
         # print(scenario)
-
-        root = str(scenario._root).split("/")[-1]
-        for density in [
-            "no-traffic",
-            "low-density",
-            "mid-density",
-            "high-density",
-            "p-test",
-            "constant-flow",
-            "blocks",
-        ]:
-            if density in root:
-                scenario_density = density
-            else:
-                continue
-
-        scenario_info = {"root": root, "scenario_density": scenario_density}
-
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
 
@@ -221,10 +204,21 @@ class UltraEnv(HiWayEnv):
             for agent_id, obs in env_observations.items()
         }
 
+        """Extract the type of traffic distribution from scenario"""
+        distributions = set(list(t_patterns.keys()) + list(cross_patterns.keys()))
+        root = str(scenario._root).split("/")[-1]
+        for density in distributions:
+            if density in root:
+                scenario_density = density
+            else:
+                continue
+
+        scenario_info = {"root": root, "scenario_density": scenario_density}
+
         return observations, scenario_info
 
     def get_scenarios(self, grade):
-        """only for grade based structure"""
+        """only for curriculum learning"""
         _scenarios = []
         # For each set of task and level, get the tasks's train and test scenarios
         for task, level in grade:
