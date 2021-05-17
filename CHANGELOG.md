@@ -15,7 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
-- Fixed a bug which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
+- Fixed a bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
 ## [0.4.16] - 2021-05-11
 ### Added 
 - Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
