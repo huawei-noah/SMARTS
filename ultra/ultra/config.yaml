@@ -39,6 +39,15 @@ tasks:
     road-blocks:
       train: "scenarios/taskX/train_road-blocks*"
       test:  "scenarios/taskX/test_road-blocks*"
+    low-interaction:
+      train: "scenarios/taskX/train_low-interaction*"
+      test:  "scenarios/taskX/test_low-interaction*"
+    mid-interaction:
+      train: "scenarios/taskX/train_mid-interaction*"
+      test:  "scenarios/taskX/test_mid-interaction*"
+    high-interaction:
+      train: "scenarios/taskX/train_high-interaction*"
+      test:  "scenarios/taskX/test_high-interaction*"
   task0:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
@@ -68,15 +77,6 @@ tasks:
     hard:
       train: "scenarios/task1/train_hard*"
       test:  "scenarios/task1/test_hard*"
-    low-interaction:
-      train: "scenarios/task1/train_low-interaction*"
-      test:  "scenarios/task1/test_low-interaction*"
-    mid-interaction:
-      train: "scenarios/task1/train_mid-interaction*"
-      test:  "scenarios/task1/test_mid-interaction*"
-    high-interaction:
-      train: "scenarios/task1/train_high-interaction*"
-      test:  "scenarios/task1/test_high-interaction*"
   task2:
     lo-hi:
       train: "scenarios/task2/train_lo-hi*"
