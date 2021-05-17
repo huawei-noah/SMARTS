@@ -28,7 +28,7 @@ import numpy as np
 
 
 class STNkd(nn.Module):
-    def __init__(self, k=64, nc=16, bias=True):
+    def __init__(self, k: int, nc: int, bias: bool):
         super(STNkd, self).__init__()
         self.conv1 = torch.nn.Conv1d(k, nc, 1, bias=bias)
         self.conv2 = torch.nn.Conv1d(nc, nc * 4, 1, bias=bias)
