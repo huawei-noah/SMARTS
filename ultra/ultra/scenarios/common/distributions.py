@@ -83,6 +83,43 @@ t_patterns = {
         },
         # t-intersection has no north route
     },
+    "blocks": {  # t-intersection
+        "routes": {
+            "south-north": None,
+            "south-east": None,
+            "south-west": {
+                "vehicles": 10,
+                "start_end_on_different_lanes_probability": 0.0,
+                "distribution": behavior_distribution,
+                "begin_time_init": {
+                    "func": basic_begin_time_init_func,
+                    "params": {"probability": prob_easy},
+                },
+                "has_turn": True,
+                "deadlock_optimization": True,
+            },
+            "west-east": None,
+            "west-south": None,
+            "east-west": {
+                "vehicles": 10,
+                "start_end_on_different_lanes_probability": 0.0,
+                "distribution": behavior_distribution,
+                "begin_time_init": {
+                    "func": basic_begin_time_init_func,
+                    "params": {"probability": prob_easy},
+                },
+                "has_turn": True,
+                "deadlock_optimization": True,
+            },
+            "east-south": None,
+        },
+        "ego_hijacking_params": {
+            "zone_range": [5, 10],
+            "wait_to_hijack_limit_s": 10,
+            "start_time": "default",  # any value or default for LANE_LENGTH / speed_m_per_s
+        },
+        # t-intersection has no north route
+    },
     "low-density": {  # t-intersection
         "routes": {
             "south-west": {
