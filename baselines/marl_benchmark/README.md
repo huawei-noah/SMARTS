@@ -22,7 +22,7 @@ $ git checkout marl_benchmark
 To run the training procedure,
 
 ```bash
-# from cases/marl_benchmark/
+# from baselines/marl_benchmark/
 $ python run.py <scenario> -f <config_file>
 # E.x. python run.py scenarios/intersections/4lane -f agents/ppo/baseline-lane-control.yaml
 ```
@@ -30,7 +30,7 @@ $ python run.py <scenario> -f <config_file>
 To run the evaluation procedure for multiple algorithms,
 
 ```bash
-# from cases/marl_benchmark/
+# from baselines/marl_benchmark/
 $ python evaluate.py <scenario> -f <config_files>
 # E.x. python evaluate.py scenarios/intersections/4lane \
 #          -f agents/ppo/baseline-lane-control.yaml \
