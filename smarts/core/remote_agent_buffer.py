@@ -88,9 +88,7 @@ class RemoteAgentBuffer:
             conn["channel"], conn["stub"] = get_manager_channel_stub(conn["address"])
 
         self._buffer_size = buffer_size
-        self._replenish_threadpool = futures.ThreadPoolExecutor(
-            max_workers=max_workers
-        )
+        self._replenish_threadpool = futures.ThreadPoolExecutor(max_workers=max_workers)
         self._agent_buffer = [
             self._remote_agent_future() for _ in range(self._buffer_size)
         ]
