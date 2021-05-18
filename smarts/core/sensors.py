@@ -482,6 +482,9 @@ class Sensors:
 
         # Route is endless
         if not route_edges:
+
+            # If the vehicle goes into an intersection, turn off the is_wrong_way check to avoid
+            # incorrect wrong-way event detection
             if nearest_lane.getEdge().isSpecial():
                 is_wrong_way = False
             else:
@@ -508,6 +511,9 @@ class Sensors:
             # Lanes from an edge are parallel so any lane from the edge will do for direction check
             # but the innermost lane will be the last lane in the edge and usually the closest.
             lane_to_check = route_edge_or_oncoming.getLanes()[-1]
+
+            # If the vehicle goes into an intersection, turn off the is_wrong_way check to avoid
+            # incorrect wrong-way event detection
             if lane_to_check.getEdge().isSpecial():
                 is_wrong_way = False
             else:
