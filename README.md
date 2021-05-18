@@ -103,7 +103,7 @@ See [./envision/README.md](./envision/README.md) for more information on Envisio
 Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Here's how you can use one of the example scripts with a scenario.
 
 ```bash
-# Update the command=... in ./supervisord.conf
+# Update the command=... in ./examples/supervisord.conf
 #
 # [program:smarts]
 # command=python examples/single_agent.py scenarios/loop
