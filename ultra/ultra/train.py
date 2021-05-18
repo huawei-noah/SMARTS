@@ -538,7 +538,7 @@ if __name__ == "__main__":
         "--curriculum-scenarios-save-dir",
         help="Save the scenarios in specified directory",
         type=str,
-        default="ultra/scenarios/taskgb/",
+        default=None,
     )
 
     base_dir = os.path.dirname(__file__)
