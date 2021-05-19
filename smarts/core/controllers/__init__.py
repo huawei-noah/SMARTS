@@ -26,6 +26,7 @@ from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
 )
+from smarts.core.controllers.imitation_controller import ImitationController
 from smarts.core.controllers.lane_following_controller import (
     LaneFollowingController,
     LaneFollowingControllerState,
@@ -47,6 +48,7 @@ class ActionSpaceType(Enum):
     Trajectory = 5
     MultiTargetPose = 6  # for boid control
     MPC = 7
+    Imitation = 8
 
 
 class Controllers:
@@ -116,7 +118,10 @@ class Controllers:
                 perform_lane_following(target_speed=12.5, lane_change=1)
             elif action == "change_lane_right":
                 perform_lane_following(target_speed=12.5, lane_change=-1)
+        elif action_space == ActionSpaceType.Imitation:
+            ImitationController.perform_action(sim.timestep_sec, vehicle, action)
         else:
+            # Note: TargetPose and MultiTargetPose use a MotionPlannerProvider directly
             raise ValueError(
                 f"perform_action(action_space={action_space}, ...) has failed "
                 "inside controller"

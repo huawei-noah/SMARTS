@@ -18,16 +18,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-from typing import Set
+from typing import Dict, Set, Tuple
 
 import cloudpickle
 
 from envision.types import format_actor_id
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.remote_agent_buffer import RemoteAgentBuffer
-from smarts.core.sensors import Sensors
+from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
 from smarts.zoo.registry import make as make_social_agent
@@ -72,6 +73,7 @@ class AgentManager:
         self.teardown_ego_agents()
         self.teardown_social_agents()
         self._vehicle_with_sensors = dict()
+        self._pending_agent_ids = set()
 
     def destroy(self):
         self._remote_agent_buffer.destroy()
@@ -112,7 +114,11 @@ class AgentManager:
         assert agent_ids.issubset(self.agent_ids)
         self._pending_agent_ids -= agent_ids
 
-    def observe_from(self, sim, vehicle_ids):
+    def observe_from(
+        self, sim, vehicle_ids: Set[str], done_this_step: Set[str] = set()
+    ) -> Tuple[
+        Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
+    ]:
         observations = {}
         rewards = {}
         dones = {}
@@ -126,6 +132,12 @@ class AgentManager:
             )
             rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
             scores[agent_id] = vehicle.trip_meter_sensor()
+
+        # also add agents that were done in virtue of just dropping out
+        for done_v_id in done_this_step:
+            agent_id = self._vehicle_with_sensors.get(done_v_id, None)
+            if agent_id:
+                dones[agent_id] = True
 
         return observations, rewards, scores, dones
 
@@ -303,8 +315,8 @@ class AgentManager:
             obs = observations[agent_id]
             self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
-    def switch_initial_agent(self, agent_interface):
-        self._initial_interfaces = agent_interface
+    def switch_initial_agents(self, agent_interfaces: Dict[str, AgentInterface]):
+        self._initial_interfaces = agent_interfaces
 
     def setup_agents(self, sim):
         self.init_ego_agents(sim)
