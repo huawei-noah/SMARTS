@@ -17,7 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
-- Fixed a bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
+- Fixed a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
 - Limited the number of workers SMARTS will use to establish remote agents so as to lower memory footprint.
 - Patched a restart of SUMO every 50 resets to avoid rampant memory growth.
 ## Removed
