@@ -701,7 +701,7 @@ def build_scenarios(
     level_config = task_config["levels"][level_name]
     scenarios_dir = os.path.dirname(os.path.realpath(__file__))
     task_dir = f"{scenarios_dir}/{task}"
-    
+
     if pool_dir is None:
         pool_path = os.path.join(scenarios_dir, "pool")
     else:

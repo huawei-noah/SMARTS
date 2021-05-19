@@ -54,7 +54,7 @@ class AnalysisTest(unittest.TestCase):
                 stopwatcher_route="south-west",
                 root_path="tests/scenarios",
                 save_dir=save_dir,
-                pool_dir="pool/analysis_pool"
+                pool_dir="pool/analysis_pool",
             )
 
             if not os.path.exists(output):
