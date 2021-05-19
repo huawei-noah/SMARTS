@@ -11,11 +11,17 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added 
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
+- Added a `TraverseGoal` goal for imitation learning agents.  See Issue #848.
+- Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828 
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 - Fixed a bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
+- Limited the number of workers SMARTS will use to establish remote agents so as to lower memory footprint.
+- Patched a restart of SUMO every 50 resets to avoid rampant memory growth.
+## Removed
+- Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 
 ## [0.4.16] - 2021-05-11
 ### Added 
@@ -29,9 +35,9 @@ process
 - Added `near realtime` mode and `uncapped` mode in Envision
 - Added `--allow-offset-map` option for `scl scenario build` to prevent auto-shifting of Sumo road networks
 - Added options in `DoneCriteria` to trigger ego agent to be done based on other agent's done situation
-- Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828 
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
+- Updated imitation learning examples.
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed Sumo road network offset bug for shifted maps.  See issue #716.
