@@ -57,7 +57,7 @@ if __name__ == "__main__":
     )
     parser_generate_scenarios.add_argument(
         "--root-dir",
-        help="directory for saving scenarios",
+        help="path to task directory",
         type=str,
         default="ultra/scenarios",
     )

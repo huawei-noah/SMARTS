@@ -703,7 +703,7 @@ def build_scenarios(
     task_dir = f"{scenarios_dir}/{task}"
 
     if pool_dir is None:
-        pool_path = os.path.join(scenarios_dir, "pool")
+        pool_path = os.path.join(scenarios_dir, "pool/experiment_pool")
     else:
         pool_path = os.path.join(scenarios_dir, pool_dir)
 
