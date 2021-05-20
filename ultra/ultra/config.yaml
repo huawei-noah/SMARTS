@@ -20,6 +20,9 @@ tasks:
     bubbles:
       train: "scenarios/taskX/train_bubbles*"
       test:  "scenarios/taskX/test_bubbles*"
+    intersection-specific:
+      train: "scenarios/taskX/train_intersection-specific*"
+      test:  "scenarios/taskX/test_intersection-specific*"
     low-interaction:
       train: "scenarios/taskX/train_low-interaction*"
       test:  "scenarios/taskX/test_low-interaction*"

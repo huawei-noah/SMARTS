@@ -76,6 +76,65 @@ levels:
             agent_locator: "policies.non_interactive_agent:non-interactive-agent-v0"
             agent_params: {speed: 30}
   # ----------------------------------------- PRIMITIVE INTERSECTION LEVELS ------------------------------------------
+  intersection-specific:
+    train:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+        start_offset: [110, 120]
+        end_offset:   [10, 10]
+      intersection_types:
+        2lane_t:
+          percent: 0.2
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null
+        3lane_t:
+          percent: 0.4
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null
+        4lane_t:
+          percent: 0.4
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null
+    test:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+        start_offset: [110, 120]
+        end_offset:   [10, 10]
+      intersection_types:
+        2lane_c:
+          percent: 0.2
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null
+        3lane_c:
+          percent: 0.4
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null
   # These levels contain one type of traffic distribution (i.e. low-interaction, mid-interaction, high-interaction). 
   # The purpose of these levels is to debug agents on a specific traffic distribution before implementing them into
   # the primary levels (simple, easy, medium, hard).
