@@ -7,6 +7,7 @@ from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
+from ultra.ultra.baselines.ppo.ppo import policy
 
 logging.basicConfig(level=logging.INFO)
 
