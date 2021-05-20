@@ -525,12 +525,9 @@ class Sensors:
         # When the vehicle is in an intersection, turn off the `wrong way` check to avoid
         # false positive `wrong way` events.
         if lane_to_check.getEdge().isSpecial():
-            is_wrong_way = False
-        else:
-            is_wrong_way = cls._vehicle_is_wrong_way(
-                sim, vehicle, lane_to_check.getID()
-            )
-        return is_wrong_way
+            return False
+
+        return cls._vehicle_is_wrong_way(sim, vehicle, lane_to_check.getID())
 
     @classmethod
     @lru_cache(maxsize=32)
