@@ -23,15 +23,6 @@ tasks:
     intersection-specific:
       train: "scenarios/taskX/train_intersection-specific*"
       test:  "scenarios/taskX/test_intersection-specific*"
-    low-interaction:
-      train: "scenarios/taskX/train_low-interaction*"
-      test:  "scenarios/taskX/test_low-interaction*"
-    mid-interaction:
-      train: "scenarios/taskX/train_mid-interaction*"
-      test:  "scenarios/taskX/test_mid-interaction*"
-    high-interaction:
-      train: "scenarios/taskX/train_high-interaction*"
-      test:  "scenarios/taskX/test_high-interaction*"
   task0:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
