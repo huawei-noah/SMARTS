@@ -38,9 +38,7 @@ register(
 )
 register(
     locator="td3-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous, policy_class=TD3Policy, **kwargs
-    ),
+    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=TD3Policy, **kwargs),
 )
 register(
     locator="dqn-v0",

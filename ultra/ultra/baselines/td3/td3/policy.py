@@ -40,10 +40,10 @@ from ultra.baselines.td3.td3.noise import (
     LinearSchedule,
 )
 from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
+from ultra.baselines.adapter import observation_space_from_type
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class TD3Policy(Agent):
@@ -53,7 +53,7 @@ class TD3Policy(Agent):
         checkpoint_dir=None,
     ):
         self.policy_params = policy_params
-        self.action_size = int(policy_params["action_size"])
+        self.action_size = 2
         self.action_range = np.asarray([[-1.0, 1.0], [-1.0, 1.0]], dtype=np.float32)
         self.actor_lr = float(policy_params["actor_lr"])
         self.critic_lr = float(policy_params["critic_lr"])
@@ -75,34 +75,36 @@ class TD3Policy(Agent):
         self.action_high = torch.tensor([[each[1] for each in self.action_range]])
         self.seed = int(policy_params["seed"])
         self.prev_action = np.zeros(self.action_size)
+        self.action_type = policy_params["action_type"]
+        self.observation_type = policy_params["observation_type"]
+        self.reward_type = policy_params["reward_type"]
 
-        # state preprocessing
+        if self.action_type != "continuous":
+            raise Exception("TD3 baseline only supports the 'continuous' action type.")
+        if self.observation_type != "vector":
+            raise Exception("TD3 baseline only supports the 'vector' observation type.")
+
+        self.observation_space = observation_space_from_type(self.observation_type)
+        self.low_dim_states_size = self.observation_space["low_dim_states"].shape[0]
+        self.social_capacity = self.observation_space["social_vehicles"].shape[0]
+        self.num_social_features = self.observation_space["social_vehicles"].shape[1]
+
+        self.encoder_key = policy_params["social_vehicles"]["encoder_key"]
         self.social_policy_hidden_units = int(
             policy_params["social_vehicles"].get("social_policy_hidden_units", 0)
-        )
-        self.social_capacity = int(
-            policy_params["social_vehicles"].get("social_capacity", 0)
-        )
-        self.observation_num_lookahead = int(
-            policy_params.get("observation_num_lookahead", 0)
         )
         self.social_policy_init_std = int(
             policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
-        self.num_social_features = int(
-            policy_params["social_vehicles"].get("num_social_features", 0)
-        )
         self.social_vehicle_config = get_social_vehicle_configs(
-            **policy_params["social_vehicles"]
+            encoder_key=self.encoder_key,
+            num_social_features=self.num_social_features,
+            social_capacity=self.social_capacity,
+            seed=self.seed,
+            social_policy_hidden_units=self.social_policy_hidden_units,
+            social_policy_init_std=self.social_policy_init_std,
         )
-
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.state_description = BaselineStatePreprocessor.get_state_description(
-            policy_params["social_vehicles"],
-            policy_params["observation_num_lookahead"],
-            self.action_size,
-        )
-
         self.social_feature_encoder_class = self.social_vehicle_encoder[
             "social_feature_encoder_class"
         ]
@@ -132,7 +134,7 @@ class TD3Policy(Agent):
     @property
     def state_size(self):
         # Adjusting state_size based on number of features (ego+social)
-        size = sum(self.state_description["low_dim_states"].values())
+        size = self.low_dim_states_size
         if self.social_feature_encoder_class:
             size += self.social_feature_encoder_class(
                 **self.social_feature_encoder_params
@@ -271,9 +273,6 @@ class TD3Policy(Agent):
             reward=reward,
             next_state=next_state,
             done=float(done),
-            social_capacity=self.social_capacity,
-            observation_num_lookahead=self.observation_num_lookahead,
-            social_vehicle_config=self.social_vehicle_config,
             prev_action=self.prev_action,
         )
         self.step_count += 1
