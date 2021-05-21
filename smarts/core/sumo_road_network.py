@@ -107,6 +107,7 @@ class SumoRoadNetwork:
         self._lanepoints = None
         if lanepoint_spacing is not None:
             assert lanepoint_spacing > 0
+            # XXX: this should be last here since LanePoints() calls road_network methods immediately
             self._lanepoints = LanePoints(self, spacing=lanepoint_spacing)
 
     @staticmethod

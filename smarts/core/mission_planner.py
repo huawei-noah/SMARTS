@@ -20,23 +20,52 @@
 import logging
 import math
 import random
-from dataclasses import replace
-from typing import Optional
+from dataclasses import dataclass, replace
+from typing import Optional, Sequence
 
 import numpy as np
 
 from .agent_interface import AgentBehavior
 from .coordinates import Heading, Pose
+from .lanepoints import LanePoints, LanePoint, LinkedLanePoint
 from .route import EmptyRoute, ShortestRoute
 from .scenario import EndlessGoal, LapMission, Mission, Start
 from .sumo_road_network import SumoRoadNetwork
 from .utils.math import evaluate_bezier as bezier
-from .utils.math import radians_to_vec, vec_to_radians
-from .lanepoints import Waypoint, LanePoint, LanePoints
+from .utils.math import radians_to_vec, vec_to_radians, inplace_unwrap
 
 
 class PlanningError(Exception):
     pass
+
+
+@dataclass(frozen=True)
+class Waypoint(LanePoint):
+    """Dynamic, based on map and vehicle.  Unlike LanePoints,
+    Waypoints do not have to snap to the middle of a road-network Lane,
+    but rather they start just in front of a vehicle's present location.
+    These are usually what is returned through a vehicle's sensors.
+    Waypoints are always evenly-spaced."""
+
+    # XXX: consider renaming lane_id, lane_index, lane_width
+    #      to nearest_lane_id, nearest_lane_index, nearest_lane_width
+
+    @classmethod
+    def from_LanePoint(cls, lp):
+        return cls(
+            pos=lp.pos,
+            heading=lp.heading,
+            lane_width=lp.lane_width,
+            speed_limit=lp.speed_limit,
+            lane_id=lp.lane_id,
+            lane_index=lp.lane_index,
+        )
+
+    def __eq__(self, other):
+        return super().__eq__(other)
+
+    def __hash__(self):
+        return super().__hash__()
 
 
 class MissionPlanner:
@@ -148,39 +177,53 @@ class MissionPlanner:
         lane = self._road_network.lane_by_id(lane_id)
         return self._road_network.lane_center_at_point(lane, position)
 
-    def waypoint_paths_at(self, sim, pose: Pose, lookahead: float):
-        """Call assumes you're on the correct route already. We do not presently
-        "replan" in case the route has changed.
+    def waypoint_paths_at(
+        self,
+        pose: Pose,
+        lookahead: int,
+        within_radius: float = 5,
+        filter_from_count: int = 3,
+        constrain_to_route: bool = True,
+    ):
+        """Computes equally-spaced Waypoints for all lane paths
+        up to lookahead waypoints ahead, starting on the Edge containing
+        the nearest LanePoint to pose within within_radius meters.
+        Constrains paths to your (possibly-inferred) route only if constrain_to_route.
+        Route inference assumes you're on the correct route already;
+        we do not presently "replan" in case the route has changed."""
+        if constrain_to_route:
+            assert (
+                self._did_plan
+            ), "Must call plan(...) before being able to invoke the mission planner."
+
+            edge_ids = self._edge_ids(pose)
+            if edge_ids:
+                return self._waypoint_paths_along_route(
+                    pose.position, lookahead, edge_ids
+                )
+
+        return self._waypoint_paths_at(
+            pose, lookahead, within_radius, filter_from_count
+        )
+
+    def waypoint_paths_on_lane_at(
+        self, pose: Pose, lane_id: str, lookahead: int, constrain_to_route: bool = True
+    ):
+        """Computes equally-spaced Waypoints for all lane paths up to lookahead waypoints ahead
+        starting at the nearest LanePoint to pose within lane lane_id.
+        Constrains paths to your (possibly-inferred) route only if constrain_to_route.
+        Route inference assumes you're on the correct route already;
+        we do not presently "replan" in case the route has changed.
         """
-        assert (
-            self._did_plan
-        ), "Must call plan(...) before being able to invoke the mission planner."
-
-        edge_ids = self._edge_ids(pose)
-        if edge_ids:
-            return self._lanepoints.waypoint_paths_along_route(
-                pose.position, lookahead, edge_ids
-            )
-
-        return self._lanepoints.waypoint_paths_at(pose, lookahead)
-
-    def waypoint_paths_on_lane_at(self, pose: Pose, lane_id: str, lookahead: float):
-        """Call assumes you're on the correct route already. We do not presently
-        "replan" in case the route has changed.
-        """
-        assert (
-            self._did_plan
-        ), "Must call plan(...) before being able to invoke the mission planner."
-
-        edge_ids = self._edge_ids(pose, lane_id)
-        if edge_ids:
-            return self._lanepoints.waypoint_paths_on_lane_at(
-                pose.position, lane_id, lookahead, edge_ids
-            )
-
-        # TODO STEVE:  why not pass lane_id down to waypoint_paths_on_lane_at?
-        # TODO STEVE:  this looks up the closest lane instead (which we already have?)
-        return self._lanepoints.waypoint_paths_at(pose, lookahead)
+        edge_ids = None
+        if constrain_to_route:
+            assert (
+                self._did_plan
+            ), "Must call plan(...) before being able to invoke the mission planner."
+            edge_ids = self._edge_ids(pose, lane_id)
+        return self._waypoint_paths_on_lane_at(
+            pose.position, lane_id, lookahead, edge_ids
+        )
 
     def _edge_ids(self, pose: Pose, lane_id: str = None):
         if self._mission.has_fixed_route:
@@ -204,8 +247,8 @@ class MissionPlanner:
             return []
 
         edge_ids = [edge.getID()]
-        next_edges = list(edge.getOutgoing().keys())
 
+        next_edges = list(edge.getOutgoing().keys())
         assert (
             len(next_edges) <= 1
         ), "A junction is expected to have <= 1 outgoing edges"
@@ -266,9 +309,7 @@ class MissionPlanner:
             and lane.getID() != target_lane.getID()
             and self._task_is_triggered is False
         ):
-            nei_wps = self._lanepoints.waypoint_paths_on_lane_at(
-                position, lane.getID(), 60
-            )
+            nei_wps = self._waypoint_paths_on_lane_at(position, lane.getID(), 60)
             speed_limit = np.clip(
                 np.clip(
                     (target_velocity * 1.1)
@@ -281,9 +322,7 @@ class MissionPlanner:
             )
         else:
             self._task_is_triggered = True
-            nei_wps = self._lanepoints.waypoint_paths_on_lane_at(
-                position, target_lane.getID(), 60
-            )
+            nei_wps = self._waypoint_paths_on_lane_at(position, target_lane.getID(), 60)
 
             cut_in_speed = target_velocity * 2.3
 
@@ -294,9 +333,7 @@ class MissionPlanner:
             # perform the cut-in task and instead the speed of the vehicle is
             # increased.
             if vehicle.speed < target_velocity + 1.5:
-                nei_wps = self._lanepoints.waypoint_paths_on_lane_at(
-                    position, lane.getID(), 60
-                )
+                nei_wps = self._waypoint_paths_on_lane_at(position, lane.getID(), 60)
                 speed_limit = np.clip(target_velocity * 2.1, 0.5, 30)
                 self._task_is_triggered = False
 
@@ -338,9 +375,7 @@ class MissionPlanner:
         ## the position of ego car is here: [x, y]
         ego_position = pose.position[:2]
         ego_lane = self._road_network.nearest_lane(ego_position)
-        ego_wps = self._lanepoints.waypoint_paths_on_lane_at(
-            ego_position, ego_lane.getID(), 60
-        )
+        ego_wps = self._waypoint_paths_on_lane_at(ego_position, ego_lane.getID(), 60)
         if self._mission.task.initial_speed is None:
             default_speed = ego_wps[0][0].speed_limit
         else:
@@ -526,10 +561,192 @@ class MissionPlanner:
 
     def _paths_of_lane_at(self, lane, offset, lookahead=30):
         wp_start = self._road_network.world_coord_from_offset(lane, offset)
-
-        paths = self._lanepoints.waypoint_paths_on_lane_at(
+        return self._waypoint_paths_on_lane_at(
             point=wp_start,
             lane_id=lane.getID(),
             lookahead=lookahead,
         )
-        return paths
+
+    def _waypoint_paths_on_lane_at(
+        self, point, lane_id, lookahead: int, filter_edge_ids: Sequence[str] = None
+    ):
+        """computes equally-spaced Waypoints for all lane paths
+        up to lookahead waypoints ahead, constrained to filter_edge_ids if specified,
+        starting at the nearest LanePoint to point within lane lane_id."""
+        closest_linked_lp = self._lanepoints.closest_linked_lanepoint_on_lane_to_point(
+            point, lane_id
+        )
+        return self._waypoints_starting_at_lanepoint(
+            closest_linked_lp,
+            lookahead,
+            tuple(filter_edge_ids) if filter_edge_ids else (),
+            tuple(point),
+        )
+
+    def _waypoint_paths_at(
+        self,
+        pose: Pose,
+        lookahead: int,
+        within_radius: int = 5,
+        filter_from_count: int = 3,
+    ):
+        closest_linked_lp = self._lanepoints.closest_lanepoint(
+            pose, filter_from_count=filter_from_count, within_radius=within_radius
+        )
+        closest_lane = self._road_network.lane_by_id(closest_linked_lp.lane_id)
+
+        waypoint_paths = []
+        for lane in closest_lane.getEdge().getLanes():
+            lane_id = lane.getID()
+            waypoint_paths += self._waypoint_paths_on_lane_at(
+                pose.position, lane_id, lookahead
+            )
+
+        sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
+        return sorted_wps
+
+    def _waypoint_paths_along_route(self, point, lookahead: int, route):
+        """finds the closest lane to vehicle's position that is on its route,
+        then gets waypoint paths from all lanes in its edge there."""
+        assert len(route) > 0, f"Expected at least 1 edge in the route, got: {route}"
+        closest_lp_on_each_route_edge = [
+            self._lanepoints.closest_lanepoint_on_edge(point, edge) for edge in route
+        ]
+        closest_linked_lp = min(
+            closest_lp_on_each_route_edge, key=lambda l_lp: l_lp.lp.dist_to(point)
+        )
+        closest_lane = self._road_network.lane_by_id(closest_linked_lp.lp.lane_id)
+
+        waypoint_paths = []
+        for lane in closest_lane.getEdge().getLanes():
+            lane_id = lane.getID()
+            waypoint_paths += self._waypoint_paths_on_lane_at(
+                point, lane_id, lookahead, route
+            )
+
+        sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
+        return sorted_wps
+
+    def _waypoints_starting_at_lanepoint(
+        self, lanepoint: LinkedLanePoint, lookahead: int, filter_edge_ids: tuple, point
+    ):
+        """computes equally-spaced Waypoints for all lane paths starting at lanepoint
+        up to lookahead waypoints ahead, constrained to filter_edge_ids if specified."""
+        lanepoint_paths = self._lanepoints.paths_starting_at_lanepoint(
+            lanepoint, lookahead, filter_edge_ids
+        )
+        return [
+            MissionPlanner._equally_spaced_path(path, point) for path in lanepoint_paths
+        ]
+
+    @staticmethod
+    def _equally_spaced_path(path, point):
+        """given a list of LanePoints starting near point, that may not be evenly spaced,
+        returns the same number of Waypoints that are evenly spaced and start at point."""
+
+        continuous_variables = [
+            "positions_x",
+            "positions_y",
+            "headings",
+            "lane_width",
+            "speed_limit",
+        ]
+        discrete_variables = ["lane_id", "lane_index"]
+
+        ref_lanepoints_coordinates = {
+            parameter: [] for parameter in (continuous_variables + discrete_variables)
+        }
+        for idx, lanepoint in enumerate(path):
+            if not lanepoint.is_shape_lp and 0 < idx < len(path) - 1:
+                continue
+            ref_lanepoints_coordinates["positions_x"].append(lanepoint.lp.pos[0])
+            ref_lanepoints_coordinates["positions_y"].append(lanepoint.lp.pos[1])
+            ref_lanepoints_coordinates["headings"].append(
+                lanepoint.lp.heading.as_bullet
+            )
+            ref_lanepoints_coordinates["lane_id"].append(lanepoint.lp.lane_id)
+            ref_lanepoints_coordinates["lane_index"].append(lanepoint.lp.lane_index)
+            ref_lanepoints_coordinates["lane_width"].append(lanepoint.lp.lane_width)
+            ref_lanepoints_coordinates["speed_limit"].append(lanepoint.lp.speed_limit)
+
+        ref_lanepoints_coordinates["headings"] = inplace_unwrap(
+            ref_lanepoints_coordinates["headings"]
+        )
+        first_lp_heading = ref_lanepoints_coordinates["headings"][0]
+        lp_position = np.array([*path[0].lp.pos, 0])
+        vehicle_pos = np.array([point[0], point[1], 0])
+        heading_vector = np.array(
+            [
+                *radians_to_vec(first_lp_heading),
+                0,
+            ]
+        )
+        projected_distant_lp_vehicle = np.inner(
+            (vehicle_pos - lp_position), heading_vector
+        )
+
+        ref_lanepoints_coordinates["positions_x"][0] = (
+            lp_position[0] + projected_distant_lp_vehicle * heading_vector[0]
+        )
+        ref_lanepoints_coordinates["positions_y"][0] = (
+            lp_position[1] + projected_distant_lp_vehicle * heading_vector[1]
+        )
+        # To ensure that the distance between waypoints are equal, we used
+        # interpolation approach inspired by:
+        # https://stackoverflow.com/a/51515357
+        cumulative_path_dist = np.cumsum(
+            np.sqrt(
+                np.ediff1d(ref_lanepoints_coordinates["positions_x"], to_begin=0) ** 2
+                + np.ediff1d(ref_lanepoints_coordinates["positions_y"], to_begin=0) ** 2
+            )
+        )
+
+        if len(cumulative_path_dist) <= 1:
+            return [Waypoint.from_LanePoint(path[0].lp)]
+
+        evenly_spaced_cumulative_path_dist = np.linspace(
+            0, cumulative_path_dist[-1], len(path)
+        )
+
+        evenly_spaced_coordinates = {}
+        for variable in continuous_variables:
+            evenly_spaced_coordinates[variable] = np.interp(
+                evenly_spaced_cumulative_path_dist,
+                cumulative_path_dist,
+                ref_lanepoints_coordinates[variable],
+            )
+
+        for variable in discrete_variables:
+            ref_coordinates = ref_lanepoints_coordinates[variable]
+            evenly_spaced_coordinates[variable] = []
+            jdx = 0
+            for idx in range(len(path)):
+                while (
+                    jdx + 1 < len(cumulative_path_dist)
+                    and evenly_spaced_cumulative_path_dist[idx]
+                    > cumulative_path_dist[jdx + 1]
+                ):
+                    jdx += 1
+
+                evenly_spaced_coordinates[variable].append(ref_coordinates[jdx])
+            evenly_spaced_coordinates[variable].append(ref_coordinates[-1])
+
+        equally_spaced_path = []
+        for idx in range(len(path)):
+            equally_spaced_path.append(
+                Waypoint(
+                    pos=np.array(
+                        [
+                            evenly_spaced_coordinates["positions_x"][idx],
+                            evenly_spaced_coordinates["positions_y"][idx],
+                        ]
+                    ),
+                    heading=Heading(evenly_spaced_coordinates["headings"][idx]),
+                    lane_width=evenly_spaced_coordinates["lane_width"][idx],
+                    speed_limit=evenly_spaced_coordinates["speed_limit"][idx],
+                    lane_id=evenly_spaced_coordinates["lane_id"][idx],
+                    lane_index=evenly_spaced_coordinates["lane_index"][idx],
+                )
+            )
+
+        return equally_spaced_path

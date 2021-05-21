@@ -217,11 +217,11 @@ class AgentInterface:
     waypoints: Union[Waypoints, bool] = False
     """Enable the Waypoint Paths sensor, a list of valid waypoint paths along the current mission."""
 
+    # XXX: consider making this return LanePoints instead?
     road_waypoints: Union[RoadWaypoints, bool] = False
     """
     Enable the Road Waypoints sensor, waypoints along all lanes (oncoming included) of the road the
     vehicle is currently on will be provided even if these waypoints do not match the current mission.
-    TODO STEVE:  make these LanePoints instead?
     """
 
     drivable_area_grid_map: Union[DrivableAreaGridMap, bool] = False

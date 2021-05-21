@@ -23,20 +23,18 @@ from __future__ import (  # to allow for typing to refer to class being defined 
 
 import math
 import queue
-import random
-import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, NamedTuple, Sequence
+from typing import List, NamedTuple
 
 import numpy as np
 
-from smarts.core.utils.file import suppress_pkg_resources
-
-from .utils.math import inplace_unwrap
+import warnings
 
 with warnings.catch_warnings():
+    from smarts.core.utils.file import suppress_pkg_resources
+
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
     with suppress_pkg_resources():
         # We force sklearn to use a different importer since sklearn's use of pkg_resources is
@@ -131,32 +129,6 @@ class LinkedLanePoint(NamedTuple):
         ## so the lru_cache on _lanepoint_paths_starting_at_lanepoint() below
         ## doesn't return the wrong set of LanePoints.
         return hash(self.lp) + sum(hash(nlp.lp) for nlp in self.nexts)
-
-
-@dataclass(frozen=True)
-class Waypoint(LanePoint):
-    """Dynamic, based on map and vehicle.  Unlike LanePoints,
-    Waypoints do not have to snap to the middle of a road-network Lane,
-    but rather they start just in front of a vehicle's present location.
-    These are usually what is returned through a vehicle's sensors.
-    Waypoints are always evenly-spaced."""
-
-    @classmethod
-    def from_LanePoint(cls, lp):
-        return cls(
-            pos=lp.pos,
-            heading=lp.heading,
-            lane_width=lp.lane_width,
-            speed_limit=lp.speed_limit,
-            lane_id=lp.lane_id,
-            lane_index=lp.lane_index,
-        )
-
-    def __eq__(self, other):
-        return super().__eq__(other)
-
-    def __hash__(self):
-        return super().__hash__()
 
 
 class LanePoints:
@@ -505,7 +477,11 @@ class LanePoints:
 
         return [[linked_lps[idx] for idx in idxs] for idxs in closest_indices]
 
-    def closest_lanepoint_batched(self, poses, filter_from_count, within_radius):
+    # TODO:  cleanup / consolidate these "closest_lanepoint*" methods (lots of redundancies)...
+
+    def closest_lanepoint_batched(
+        self, poses, filter_from_count: int, within_radius: float
+    ):
         linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
             poses,
             self._linked_lanepoints,
@@ -513,15 +489,16 @@ class LanePoints:
             within_radius=within_radius,
             k=filter_from_count,
         )
-
         return [l_lps[0].lp for l_lps in linked_lanepoints]
 
-    def closest_lanepoint(self, pose, filter_from_count=10, within_radius=10):
+    def closest_lanepoint(
+        self, pose: Pose, filter_from_count: int = 10, within_radius: float = 10
+    ):
         return self.closest_lanepoint_batched(
             [pose], filter_from_count, within_radius=within_radius
         )[0]
 
-    def closest_lanepoints(self, point, desired_count):
+    def closest_lanepoints(self, point, desired_count: int):
         linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
             [point],
             self._linked_lanepoints,
@@ -530,7 +507,6 @@ class LanePoints:
             k=desired_count,
             keep_all_k=True,
         )[0]
-
         return [llp.lp for llp in linked_lanepoints]
 
     def closest_lanepoint_on_lane(self, pose, lane_id):
@@ -542,85 +518,26 @@ class LanePoints:
             within_radius=10,
             k=10,
         )[0][0]
-
         return linked_lanepoint.lp
 
-    def closest_lanepoint_on_lane_to_point(self, position, lane_id):
+    def closest_linked_lanepoint_on_lane_to_point(self, point, lane_id):
         lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
-        linked_lanepoint = LanePoints._closest_linked_lp_in_kd_tree_batched(
-            [position], self._lanepoints_by_lane_id[lane_id], lane_kd_tree
-        )[0][0]
-
-        return linked_lanepoint.lp
-
-    ## STEVE TODO:  everything from here down should be moved to MissionPlanner
-
-    def waypoint_paths_on_lane_at(
-        self, point, lane_id, lookahead, filter_edge_ids: Sequence[str] = None
-    ):
-        lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
-        closest_linked_lp = LanePoints._closest_linked_lp_in_kd_tree_batched(
+        return LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
-        return self._waypoints_starting_at_lanepoint(
-            closest_linked_lp,
-            lookahead,
-            tuple(filter_edge_ids) if filter_edge_ids else (),
-            tuple(point),
-        )
 
-    def waypoint_paths_at(self, pose, lookahead, filter_from_count=3, within_radius=5):
-        closest_linked_lp = self.closest_lanepoint(
-            pose, filter_from_count=filter_from_count, within_radius=within_radius
-        )
-        closest_lane = self._road_network.lane_by_id(closest_linked_lp.lane_id)
+    def closest_lanepoint_on_lane_to_point(self, point, lane_id):
+        return self.closest_linked_lanepoint_on_lane_to_point(point, lane_id).lp
 
-        waypoint_paths = []
-        for lane in closest_lane.getEdge().getLanes():
-            lane_id = lane.getID()
-            waypoint_paths += self.waypoint_paths_on_lane_at(
-                pose.position, lane_id, lookahead
-            )
-
-        sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
-        return sorted_wps
-
-    def waypoint_paths_along_route(self, point, lookahead, route):
-        assert len(route) > 0, f"Expected at least 1 edge in the route, got: {route}"
-        closest_lp_on_each_route_edge = [
-            LanePoints._closest_linked_lp_in_kd_tree_batched(
-                [point],
-                self._lanepoints_by_edge_id[edge],
-                self._lanepoints_kd_tree_by_edge_id[edge],
-            )[0][0]
-            for edge in route
-        ]
-
-        closest_linked_lp = min(
-            closest_lp_on_each_route_edge, key=lambda l_lp: l_lp.lp.dist_to(point)
-        )
-        closest_lane = self._road_network.lane_by_id(closest_linked_lp.lp.lane_id)
-
-        waypoint_paths = []
-        for lane in closest_lane.getEdge().getLanes():
-            lane_id = lane.getID()
-            waypoint_paths += self.waypoint_paths_on_lane_at(
-                point, lane_id, lookahead, route
-            )
-
-        sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
-        return sorted_wps
-
-    def _waypoints_starting_at_lanepoint(
-        self, lanepoint: LinkedLanePoint, lookahead: int, filter_edge_ids: tuple, point
-    ):
-        lanepoint_paths = self._lanepoint_paths_starting_at_lanepoint(
-            lanepoint, lookahead, filter_edge_ids
-        )
-        return [self._equally_spaced_path(path, point) for path in lanepoint_paths]
+    def closest_lanepoint_on_edge(self, point, edge_id):
+        return LanePoints._closest_linked_lp_in_kd_tree_batched(
+            [point],
+            self._lanepoints_by_edge_id[edge_id],
+            self._lanepoints_kd_tree_by_edge_id[edge_id],
+        )[0][0]
 
     @lru_cache(maxsize=32)
-    def _lanepoint_paths_starting_at_lanepoint(
+    def paths_starting_at_lanepoint(
         self, lanepoint: LinkedLanePoint, lookahead: int, filter_edge_ids: tuple
     ):
         lanepoint_paths = [[lanepoint]]
@@ -645,112 +562,3 @@ class LanePoints:
             lanepoint_paths = next_lanepoint_paths
 
         return lanepoint_paths
-
-    def _equally_spaced_path(self, path, point):
-        continuous_variables = [
-            "positions_x",
-            "positions_y",
-            "headings",
-            "lane_width",
-            "speed_limit",
-        ]
-
-        discrete_variables = ["lane_id", "lane_index"]
-
-        ref_lanepoints_coordinates = {
-            parameter: [] for parameter in (continuous_variables + discrete_variables)
-        }
-        for idx, lanepoint in enumerate(path):
-            if not lanepoint.is_shape_lp and 0 < idx < len(path) - 1:
-                continue
-            ref_lanepoints_coordinates["positions_x"].append(lanepoint.lp.pos[0])
-            ref_lanepoints_coordinates["positions_y"].append(lanepoint.lp.pos[1])
-            ref_lanepoints_coordinates["headings"].append(
-                lanepoint.lp.heading.as_bullet
-            )
-            ref_lanepoints_coordinates["lane_id"].append(lanepoint.lp.lane_id)
-            ref_lanepoints_coordinates["lane_index"].append(lanepoint.lp.lane_index)
-            ref_lanepoints_coordinates["lane_width"].append(lanepoint.lp.lane_width)
-            ref_lanepoints_coordinates["speed_limit"].append(lanepoint.lp.speed_limit)
-
-        ref_lanepoints_coordinates["headings"] = inplace_unwrap(
-            ref_lanepoints_coordinates["headings"]
-        )
-        first_lp_heading = ref_lanepoints_coordinates["headings"][0]
-        lp_position = np.array([*path[0].lp.pos, 0])
-        vehicle_pos = np.array([point[0], point[1], 0])
-        heading_vector = np.array(
-            [
-                *radians_to_vec(first_lp_heading),
-                0,
-            ]
-        )
-        projected_distant_lp_vehicle = np.inner(
-            (vehicle_pos - lp_position), heading_vector
-        )
-
-        ref_lanepoints_coordinates["positions_x"][0] = (
-            lp_position[0] + projected_distant_lp_vehicle * heading_vector[0]
-        )
-        ref_lanepoints_coordinates["positions_y"][0] = (
-            lp_position[1] + projected_distant_lp_vehicle * heading_vector[1]
-        )
-        # To ensure that the distance between waypoints are equal, we used
-        # interpolation approach inspired by:
-        # https://stackoverflow.com/a/51515357
-        cumulative_path_dist = np.cumsum(
-            np.sqrt(
-                np.ediff1d(ref_lanepoints_coordinates["positions_x"], to_begin=0) ** 2
-                + np.ediff1d(ref_lanepoints_coordinates["positions_y"], to_begin=0) ** 2
-            )
-        )
-
-        if len(cumulative_path_dist) <= 1:
-            return [Waypoint.from_LanePoint(path[0].lp)]
-
-        evenly_spaced_cumulative_path_dist = np.linspace(
-            0, cumulative_path_dist[-1], len(path)
-        )
-
-        evenly_spaced_coordinates = {}
-        for variable in continuous_variables:
-            evenly_spaced_coordinates[variable] = np.interp(
-                evenly_spaced_cumulative_path_dist,
-                cumulative_path_dist,
-                ref_lanepoints_coordinates[variable],
-            )
-
-        for variable in discrete_variables:
-            ref_coordinates = ref_lanepoints_coordinates[variable]
-            evenly_spaced_coordinates[variable] = []
-            jdx = 0
-            for idx in range(len(path)):
-                while (
-                    jdx + 1 < len(cumulative_path_dist)
-                    and evenly_spaced_cumulative_path_dist[idx]
-                    > cumulative_path_dist[jdx + 1]
-                ):
-                    jdx += 1
-
-                evenly_spaced_coordinates[variable].append(ref_coordinates[jdx])
-            evenly_spaced_coordinates[variable].append(ref_coordinates[-1])
-
-        equally_spaced_path = []
-        for idx in range(len(path)):
-            equally_spaced_path.append(
-                Waypoint(
-                    pos=np.array(
-                        [
-                            evenly_spaced_coordinates["positions_x"][idx],
-                            evenly_spaced_coordinates["positions_y"][idx],
-                        ]
-                    ),
-                    heading=Heading(evenly_spaced_coordinates["headings"][idx]),
-                    lane_width=evenly_spaced_coordinates["lane_width"][idx],
-                    speed_limit=evenly_spaced_coordinates["speed_limit"][idx],
-                    lane_id=evenly_spaced_coordinates["lane_id"][idx],
-                    lane_index=evenly_spaced_coordinates["lane_index"][idx],
-                )
-            )
-
-        return equally_spaced_path
