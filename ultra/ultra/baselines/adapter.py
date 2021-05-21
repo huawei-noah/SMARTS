@@ -58,10 +58,6 @@ random.seed(seed)
 num_lookahead = 100
 
 
-class AdapterType(enum.Enum):
-    pass
-
-
 class ActionType(enum.Enum):
     DISCRETE = "discrete"
     CONTINUOUS = "continuous"
@@ -76,91 +72,22 @@ class RewardType(enum.Enum):
     DEFAULT = "default"
 
 
-class ObservationAdapter:
-    _ACCEPTED_INTERFACES = [
-        DrivableAreaGridMap,
-        OGM,
-        RGB,
-        Lidar,
-        Waypoints,
-        RoadWaypoints,
-        NeighborhoodVehicles,
-        Accelerometer,
-    ]
+# TODO: Should create separate modules for each adapter since they are all purely static
+#       classes. E.g. adapters/__init__.py that contains the functions at the bottom of
+#       this file, and adapters/default_adapters.py that contains the default adapters.
 
-    def __init__(
-        self,
-        name: str,
-        gym_space: gym.spaces,
-        size: int,
-        required_interfaces: Dict[str, Any],
-    ):
-        self._name = name
-        self._gym_space = gym_space
-        self._size = size
-        self._required_interfaces = required_interfaces
 
-        for interface in self._required_interfaces:
-            if type(interface) not in self._ACCEPTED_INTERFACES:
-                raise f"{type(interface)} is not an accepted observation interface."
+class Adapter:
+    gym_space: gym.Space
+    required_interface: Dict[str, Any]
 
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def gym_space(self) -> gym.spaces:
-        return self._gym_space
-
-    @property
-    def size(self) -> int:
-        return self._size
-
-    @property
-    def required_interfaces(
-        self,
-    ) -> Dict[
-        str,
-        Union[
-            DrivableAreaGridMap,
-            OGM,
-            RGB,
-            Lidar,
-            Waypoints,
-            RoadWaypoints,
-            NeighborhoodVehicles,
-            Accelerometer,
-        ],
-    ]:
-        return self._required_interfaces
-
-    # TODO: This could be a static method if we don't keep any instance attributes.
-    def adapt(self, observation: Observation):
+    @staticmethod
+    def adapt(*args, **kwargs):
         raise NotImplementedError
 
 
-class TopDownRgbObservationAdapter(ObservationAdapter):
-    _WIDTH = 64
-    _HEIGHT = 64
-    _RESOLUTION = 50 / 64
-
-    def __init__(self):
-        super(TopDownRgbObservationAdapter, self).__init__(
-            name="top_down_rgb",
-            gym_space=gym.spaces.Box(low=-1.0, high=1.0, shape=(3, self._HEIGHT, self._WIDTH)),
-            size=self._WIDTH * self._HEIGHT,
-            required_interfaces={
-                "rgb": RGB(width=self._WIDTH, height=self._HEIGHT, resolution=self._RESOLUTION)
-            }
-        )
-
-    def adapt(self, observation: Observation):
-        # TODO: Make into grayscale and support stacking.
-        return observation.top_down_rgb
-
-
-class LowDimStatesObservationAdapter(ObservationAdapter):
-    _WAYPOINTS = 20
+class VectorObservationAdapter(Adapter):
+    _WAYPOINTS = 20  # Number of waypoints on the path ahead of the ego vehicle.
     _SIZE = (
         1 +               # Speed.
         1 +               # Distance from center.
@@ -176,27 +103,30 @@ class LowDimStatesObservationAdapter(ObservationAdapter):
         "steering": 3.14,  # In radians.
         "angle_error": 3.14,  # In radians.
         "relative_goal_position": 100.0,
-        # "action": 1.0,  # 2
         "waypoints_lookahead": 10.0,
         "road_speed": 30.0,
     }
+    _RADIUS = 200.0  # Locate all social vehicles within this radius of the ego vehicle.
+    _CAPACITY = 10  # Number of social vehicles we keep in the adapted observation.
+    _FEATURES = 4  # Number of features for each social vehicle.
 
-    def __init__(self):
-        super(LowDimStatesObservationAdapter, self).__init__(
-            name="low_dim_states",
-            gym_space=gym.spaces.Box(
-                low=-1e10,
-                high=1e10,
-                shape=(self._SIZE,),
-                dtype=torch.Tensor,
+    gym_space: gym.Space = gym.spaces.Dict(
+        {
+            "low_dim_states": gym.spaces.Box(
+                low=-1e10, high=1e10, shape=(_SIZE,), dtype=np.ndarray
             ),
-            size=None,  # TODO: Fill this out.
-            required_interfaces={
-                "waypoints": Waypoints(lookahead=self._WAYPOINTS)
-            }
-        )
+            "social_vehicles": gym.spaces.Box(
+                low=-1e10, high=1e10, shape=(_CAPACITY, _FEATURES), dtype=np.ndarray,
+            ),
+        }
+    )
+    required_interface = {
+        "waypoints": Waypoints(lookahead=_WAYPOINTS),
+        "neighborhood_vehicles": NeighborhoodVehicles(_RADIUS)
+    }
 
-    def adapt(self, observation: Observation):
+    @staticmethod
+    def adapt(observation: Observation):
         ego_position = observation.ego_vehicle_state.position
         ego_heading = observation.ego_vehicle_state.heading
         ego_speed = observation.ego_vehicle_state.speed
@@ -245,8 +175,8 @@ class LowDimStatesObservationAdapter(ObservationAdapter):
             events=observation.events,
         )
         normalized_observation = [
-            self._normalize(key, observation_dict[key])
-            for key in self._NORMALIZATION_VALUES.keys()
+            VectorObservationAdapter._normalize(key, observation_dict[key])
+            for key in VectorObservationAdapter._NORMALIZATION_VALUES.keys()
         ]
         low_dim_states_observation = np.concatenate([
             value
@@ -255,47 +185,17 @@ class LowDimStatesObservationAdapter(ObservationAdapter):
             for value in normalized_observation
         ], axis=-1)
 
-        return low_dim_states_observation
-
-    def _normalize(self, key, value):
-        if key not in self._NORMALIZATION_VALUES:
-            return value
-        return value / self._NORMALIZATION_VALUES[key]
-
-
-class SocialVehiclesObservationAdapter(ObservationAdapter):
-    _RADIUS = 100.0
-    _CAPACITY = 10  # Number of social vehicles we keep.
-    _FEATURES = 4  # Number of features for each social vehicle.
-
-    def __init__(self):
-        super(SocialVehiclesObservationAdapter, self).__init__(
-            name="social_vehicles",
-            gym_space=gym.spaces.Box(
-                low=-1e10,
-                high=1e10,
-                shape=(self._CAPACITY, self._FEATURES),
-                dtype=np.ndarray,
-            ),
-            size=None,  # TODO: Fill this out.
-            required_interfaces={
-                "neighborhood_vehicles": NeighborhoodVehicles(self._RADIUS)
-            }
-        )
-
-    def adapt(self, observation: Observation):
-        ego_position = observation.ego_vehicle_state.position
-        ego_heading = observation.ego_vehicle_state.heading
+        # Adapt the social vehicles.
         social_vehicles = observation.neighborhood_vehicle_states
 
         # Sort by distance to the ego vehicle.
         social_vehicles.sort(
-            key=lambda vehicle: self._get_distance(vehicle, ego_position), reverse=False
+            key=lambda vehicle: VectorObservationAdapter._get_distance(vehicle, ego_position), reverse=False
         )
 
         # Extract the state of each social vehicle.
         social_vehicles = np.asarray([
-            self._extract_social_vehicle_state(
+            VectorObservationAdapter._extract_social_vehicle_state(
                 social_vehicle=social_vehicle,
                 ego_position=ego_position,
                 ego_heading=ego_heading,
@@ -304,17 +204,26 @@ class SocialVehiclesObservationAdapter(ObservationAdapter):
         ], dtype=np.float32)
 
         # Pad with zero vectors if we don't have enough social vehicles.
-        if len(social_vehicles) < self._CAPACITY:
-            remain = self._CAPACITY - len(social_vehicles)
+        if len(social_vehicles) < VectorObservationAdapter._CAPACITY:
+            remain = VectorObservationAdapter._CAPACITY - len(social_vehicles)
             empty_social_vehicles = np.zeros(
-                shape=(remain, self._FEATURES), dtype=np.float32
+                shape=(remain, VectorObservationAdapter._FEATURES), dtype=np.float32
             )
             social_vehicles = np.concatenate((social_vehicles, empty_social_vehicles))
 
         # Remove extra social vehicles if there were too many in the observation.
-        social_vehicles = social_vehicles[:self._CAPACITY]
+        social_vehicles = social_vehicles[:VectorObservationAdapter._CAPACITY]
 
-        return social_vehicles
+        vector_observation = {
+            "low_dim_states": low_dim_states_observation,
+            "social_vehicles": social_vehicles,
+        }
+        return vector_observation
+
+    def _normalize(key, value):
+        if key not in VectorObservationAdapter._NORMALIZATION_VALUES:
+            return value
+        return value / VectorObservationAdapter._NORMALIZATION_VALUES[key]
 
     def _extract_social_vehicle_state(
         social_vehicle: VehicleObservation,
@@ -341,21 +250,34 @@ class SocialVehiclesObservationAdapter(ObservationAdapter):
         return distance.euclidean(social_vehicle.position[:2], ego_position[:2])
 
 
-class VectorObservationAdapter(ObservationAdapter):
-    pass
+class ImageObservationAdapter(Adapter):
+    _WIDTH = 64
+    _HEIGHT = 64
+    _RESOLUTION = 50 / 64
+
+    gym_space: gym.Space = gym.spaces.Box(
+        low=-1.0, high=1.0, shape=(_HEIGHT, _WIDTH), dtype=np.ndarray
+    )
+    required_interface={
+        "rgb": RGB(width=_WIDTH, height=_HEIGHT, resolution=_RESOLUTION)
+    }
+
+    @staticmethod
+    def adapt(observation: Observation):
+        raise NotImplementedError  # TODO: Fill in.
 
 
-class RewardAdapter:
-    @property
-    def required_interfaces(self):
-        raise NotImplementedError
+class DefaultRewardAdapter(Adapter):
+    _WAYPOINTS = 20
+    _RADIUS = 200.0
 
-    def adapt(self, observation: Observation, reward):
-        raise NotImplementedError
-
-
-class DefaultRewardAdapter(RewardAdapter):
-    # TODO: Have a required interfaces property.
+    gym_space: gym.Space = gym.spaces.Box(
+        low=-1e10, high=1e10, shape=(1,), dtype=float
+    )
+    required_interface={
+        "waypoints": Waypoints(lookahead=_WAYPOINTS),
+        "neighborhood_vehicles": NeighborhoodVehicles(_RADIUS),
+    }
 
     def adapt(self, observation: Observation, reward: float):
         env_reward = reward
@@ -458,7 +380,7 @@ class DefaultRewardAdapter(RewardAdapter):
 # observation_type = params.observation_type
 # reward_type = params.reward_type
 #
-# required_interfaces = adapter.required_interfaces_from_types(
+# required_interface = adapter.required_interface_from_types(
 #     action_type=action_type,
 #     observation_type=observation_type,
 #     reward_type=reward,
@@ -466,7 +388,7 @@ class DefaultRewardAdapter(RewardAdapter):
 #
 # spec = AgentSpec(
 #     interface=AgentInterface(
-#         **required_interfaces,
+#         **required_interface,
 #         max_episode_steps=max_episode_steps,
 #         debug=True,
 #     ),
@@ -479,146 +401,53 @@ class DefaultRewardAdapter(RewardAdapter):
 #     reward_adapter=adapter.reward_adapter_from_type(reward_type),
 # )
 #
+
+# _TYPE_TO_ADAPTER = {
+#     ActionType.DISCRETE: None,  # TODO: Fill in.
+#     ActionType.CONTINUOUS: None,  # TODO: Fill in.
+#     ObservationType.VECTOR: VectorObservationAdapter,
+#     ObservationType.IMAGE: ImageObservationAdapter,
+#     RewardType.DEFAULT: DefaultRewardAdapter,
+# }
 _TYPE_TO_ADAPTER = {
     ActionType.DISCRETE: None,  # TODO: Fill in.
     ActionType.CONTINUOUS: None,  # TODO: Fill in.
     ObservationType.VECTOR: VectorObservationAdapter,
-    ObservationType.IMAGE: TopDownRgbObservationAdapter,
+    ObservationType.IMAGE: ImageObservationAdapter,
     RewardType.DEFAULT: DefaultRewardAdapter,
 }
 
 
-def action_space_from_type(action_type: Union[ActionType, str]) -> gym.Space:
+def action_space_from_type(action_type: ActionType) -> gym.Space:
     return _TYPE_TO_ADAPTER[action_type].gym_space
 
 
-def action_adapter_from_type(action_type: Union[ActionType, str]) -> Callable:
+def action_adapter_from_type(action_type: ActionType) -> Callable:
     return _TYPE_TO_ADAPTER[action_type].adapt
 
 
 def observation_space_from_type(
-    observation_type: Union[ObservationType, str]
+    observation_type: ObservationType
 ) -> gym.Space:
     return _TYPE_TO_ADAPTER[observation_type].gym_space
 
 
 def observation_adapter_from_type(
-    observation_type: Union[ObservationType, str]
+    observation_type: ObservationType
 ) -> Callable:
     return _TYPE_TO_ADAPTER[observation_type].adapt
 
 
-def reward_adapter_from_type(reward_type: Union[RewardAdapter, str]) -> Callable:
+def reward_adapter_from_type(reward_type: RewardType) -> Callable:
     return _TYPE_TO_ADAPTER[reward_type].adapt
 
 
-def required_interfaces_from_types(
-    action_type: Union[ActionType, str],
-    observation_type: Union[ObservationType, str],
-    reward_type: Union[RewardType, str],
+def required_interface_from_types(
+    action_type: ActionType,
+    observation_type: ObservationType,
+    reward_type: RewardType,
 ) -> Dict[str, Any]:
+    # TODO: Ensure that there are no conflicts between the required interfaces for each
+    #       adapter type. Then, return the union of the required interfaces for each
+    #       adapter.
     raise NotImplementedError
-
-
-# NOTE: Idea for how the baseline adapter could work.
-class BaselineAdapter:
-    def __init__(self,
-        policy_params,
-        observation_adapters: Sequence[ObservationAdapter],
-        reward_adapter: RewardAdapter,
-    ):
-        self._observation_adapters = observation_adapters
-        self._reward_adapter = reward_adapter
-
-    @classmethod
-    def from_params(cls, params: Dict[str, Any]):
-        assert "action_type" in params
-        assert "observation_type" in params
-        assert "reward_type" in params
-        raise NotImplementedError
-
-    @classmethod
-    def from_type(cls, adapter_type: AdapterType):
-        # TODO: Ensure adapter_type is valid.
-        raise NotImplementedError
-
-    # NOTE: Needed for RLlib.
-    @property
-    def observation_space(self):
-        # return gym.spaces.Dict(
-        #     {
-        #         observation_adapter.name: observation_adapter.gym_space
-        #         for observation_adapter in self._observation_adapters
-        #     }
-        # )
-        return BaselineAdapter.observation_space_from_type(self._observation_type)
-
-    # NOTE: Needed for RLlib.
-    @property
-    def action_space(self):
-        # TODO: Change this so that it is either continuous or discrete.
-        return gym.spaces.Box(
-            low=np.array([0.0, 0.0, -1.0]),
-            high=np.array([1.0, 1.0, 1.0]),
-            dtype=np.float32,
-        )
-
-    @staticmethod
-    def observation_space_from_type(observation_type: Union[ObservationType, str]):
-        # To be used by agents when they need the size of the observation.
-        if observation_type == ObservationType.VECTOR:
-            # Return the observation description of the vector observation.
-            observation_adapters = BaselineAdapter._observation_adapters_from_type(
-                observation_type
-            )
-            return gym.spaces.Dict(
-                {
-                    observation_adapter.name: observation_adapter.gym_space
-                    for observation_adapter in observation_adapters
-                }
-            )
-        elif observation_type == ObservationType.IMAGE:
-            # Return the observation description of the image observation.
-            return gym.spaces.Dict(
-                {
-                    TopDownRgbObservationAdapter.name: TopDownRgbObservationAdapter.gym_space,
-                }
-            )
-        else:
-            raise Exception(f"Unsupported observation type {observation_type}.")
-
-    @staticmethod
-    def _observation_adapters_from_type(
-        observation_type: Union[ObservationType, str]
-    ) -> Sequence[ObservationAdapter]:
-        if observation_type == ObservationType.VECTOR:
-            return [LowDimStatesObservationAdapter, SocialVehiclesObservationAdapter]
-        elif observation_type == ObservationType.IMAGE:
-            return [TopDownRgbObservationAdapter]
-        else:
-            raise Exception(f"Unsupported observation type {observation_type}.")
-
-    # def action_adapter(self, model_action):
-    #     # print why this doesn't go through?
-    #     throttle, brake, steering = model_action
-    #     # print(M)
-    #     return np.array([throttle, brake, steering * np.pi * 0.25])
-
-    # XXX: Maybe not needed.
-    def adapt_action(self, action):
-        return action
-
-    def adapt_observation(self, observation: Observation):
-        adapted_observation = {
-            observation_adapter.name: observation_adapter.adapt(observation)
-            for observation_adapter in self._observation_adapters
-        }
-        return adapted_observation
-
-    def adapt_reward(self, observation: Observation, reward: float):
-        adapted_reward = self._reward_adapter(observation, reward)
-        return adapted_reward
-
-    # XXX: Maybe not needed.
-    def adapt_info(self, observation: Observation, reward: float, info: Dict[str, Any]):
-        return info
