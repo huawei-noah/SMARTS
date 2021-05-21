@@ -38,7 +38,7 @@ from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
 from .renderer import Renderer
 from .scenario import Mission, Via
-from .waypoints import Waypoint
+from .lanepoints import Waypoint, LanePoint
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +176,7 @@ class Sensors:
             neighborhood_vehicles = vehicle.neighborhood_vehicles_sensor()
 
             if len(neighborhood_vehicles) > 0:
-                neighborhood_vehicle_wps = sim.waypoints.closest_waypoint_batched(
+                neighborhood_vehicle_lps = sim.lanepoints.closest_lanepoint_batched(
                     [v.pose for v in neighborhood_vehicles],
                     within_radius=vehicle.length,
                     filter_from_count=10,
@@ -188,26 +188,27 @@ class Sensors:
                         bounding_box=v.dimensions,
                         heading=v.pose.heading,
                         speed=v.speed,
-                        edge_id=sim.road_network.edge_by_lane_id(wp.lane_id).getID(),
-                        lane_id=wp.lane_id,
-                        lane_index=wp.lane_index,
+                        edge_id=sim.road_network.edge_by_lane_id(lp.lane_id).getID(),
+                        lane_id=lp.lane_id,
+                        lane_index=lp.lane_index,
                     )
-                    for v, wp in zip(neighborhood_vehicles, neighborhood_vehicle_wps)
+                    for v, lp in zip(neighborhood_vehicles, neighborhood_vehicle_lps)
                 ]
 
         if vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
-            waypoint_paths = sim.waypoints.waypoint_paths_at(
+            # TODO STEVE:  not mission_planner?
+            waypoint_paths = sim.lanepoints.waypoint_paths_at(
                 vehicle.pose,
                 lookahead=1,
                 within_radius=vehicle.length,
                 filter_from_count=3,  # For calculating distance travelled
             )
 
-        closest_waypoint = sim.waypoints.closest_waypoint(vehicle.pose)
-        ego_lane_id = closest_waypoint.lane_id
-        ego_lane_index = closest_waypoint.lane_index
+        closest_lanepoint = sim.lanepoints.closest_lanepoint(vehicle.pose)
+        ego_lane_id = closest_lanepoint.lane_id
+        ego_lane_index = closest_lanepoint.lane_index
         ego_edge_id = sim.road_network.edge_by_lane_id(ego_lane_id).getID()
         ego_vehicle_state = vehicle.state
 
@@ -511,14 +512,14 @@ class Sensors:
 
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, lane_id):
-        closest_waypoint = sim.scenario.waypoints.closest_waypoint_on_lane(
+        closest_lanepoint = sim.scenario.lanepoints.closest_lanepoint_on_lane(
             vehicle.pose,
             lane_id,
         )
 
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
-            np.fabs(vehicle.pose.heading.relative_to(closest_waypoint.heading))
+            np.fabs(vehicle.pose.heading.relative_to(closest_lanepoint.heading))
             > 0.5 * np.pi
         )
 
@@ -853,7 +854,8 @@ class TripMeterSensor(Sensor):
         self._sim = sim
         self._mission_planner = mission_planner
 
-        waypoint_paths = sim.waypoints.waypoint_paths_at(
+        # TODO STEVE:  not mission_planner?
+        waypoint_paths = sim.lanepoints.waypoint_paths_at(
             vehicle.pose, lookahead=1, within_radius=vehicle.length
         )
         starting_wp = waypoint_paths[0][0]
@@ -961,8 +963,8 @@ class RoadWaypointsSensor(Sensor):
         self._horizon = horizon
 
     def __call__(self):
-        wp = self._sim.waypoints.closest_waypoint(self._vehicle.pose)
-        road_edges = self._sim.road_network.road_edge_data_for_lane_id(wp.lane_id)
+        lp = self._sim.lanepoints.closest_lanepoint(self._vehicle.pose)
+        road_edges = self._sim.road_network.road_edge_data_for_lane_id(lp.lane_id)
 
         lane_paths = {}
         for edge in road_edges.forward_edges + road_edges.oncoming_edges:
@@ -1002,7 +1004,8 @@ class RoadWaypointsSensor(Sensor):
             )
 
             wps_to_lookahead = self._horizon * 2
-            paths = self._sim.waypoints.waypoint_paths_on_lane_at(
+            # TODO STEVE:  not mission_planner?
+            paths = self._sim.lanepoints.waypoint_paths_on_lane_at(
                 point=wp_start,
                 lane_id=lane.getID(),
                 lookahead=wps_to_lookahead,

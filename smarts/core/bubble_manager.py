@@ -549,7 +549,7 @@ class BubbleManager:
         self, sim, vehicle_id, agent_id, agent_interface, bubble
     ):
         mission_planner = MissionPlanner(
-            sim.scenario.waypoints, sim.scenario.road_network
+            sim.scenario.lanepoints, sim.scenario.road_network
         )
         vehicle = sim.vehicle_index.start_agent_observation(
             sim,

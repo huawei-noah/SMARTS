@@ -421,7 +421,7 @@ class LaneFollowingController:
         agent_id, vehicle, controller_state, sensor_state
     ):
         # When we reach the end of our target lane, we need to update it
-        # to the next lane best lane along the path
+        # to the next best lane along the path
         state = controller_state
         paths = sensor_state.mission_planner.waypoint_paths_on_lane_at(
             vehicle.pose, state.target_lane_id, lookahead=2

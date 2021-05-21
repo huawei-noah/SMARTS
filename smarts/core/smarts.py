@@ -58,7 +58,7 @@ from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
-from .waypoints import Waypoints
+from .lanepoints import LanePoints
 
 
 class SMARTSNotSetupError(Exception):
@@ -281,7 +281,7 @@ class SMARTS:
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
             self._trap_manager.init_traps(
-                scenario.road_network, scenario.waypoints, scenario.missions
+                scenario.road_network, scenario.lanepoints, scenario.missions
             )
             self._agent_manager.init_ego_agents(self)
             if self._renderer:
@@ -464,8 +464,8 @@ class SMARTS:
         return self._traffic_sim
 
     @property
-    def waypoints(self) -> Waypoints:
-        return self.scenario.waypoints
+    def lanepoints(self) -> LanePoints:
+        return self.scenario.lanepoints
 
     @property
     def road_network(self) -> SumoRoadNetwork:

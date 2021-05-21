@@ -402,7 +402,7 @@ class AgentManager:
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
         planner = MissionPlanner(
-            scenario.waypoints,
+            scenario.lanepoints,
             scenario.road_network,
             agent_behavior=agent_interface.agent_behavior,
         )
@@ -515,7 +515,7 @@ class AgentManager:
                 continue
 
             mission_planner = MissionPlanner(
-                sim.scenario.waypoints, sim.scenario.road_network
+                sim.scenario.lanepoints, sim.scenario.road_network
             )
 
             mission_planner.plan(mission=None)

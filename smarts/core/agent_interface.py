@@ -221,6 +221,7 @@ class AgentInterface:
     """
     Enable the Road Waypoints sensor, waypoints along all lanes (oncoming included) of the road the
     vehicle is currently on will be provided even if these waypoints do not match the current mission.
+    TODO STEVE:  make these LanePoints instead?
     """
 
     drivable_area_grid_map: Union[DrivableAreaGridMap, bool] = False

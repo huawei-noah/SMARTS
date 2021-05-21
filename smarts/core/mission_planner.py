@@ -32,7 +32,7 @@ from .scenario import EndlessGoal, LapMission, Mission, Start
 from .sumo_road_network import SumoRoadNetwork
 from .utils.math import evaluate_bezier as bezier
 from .utils.math import radians_to_vec, vec_to_radians
-from .waypoints import Waypoint, Waypoints
+from .lanepoints import Waypoint, LanePoint, LanePoints
 
 
 class PlanningError(Exception):
@@ -41,10 +41,10 @@ class PlanningError(Exception):
 
 class MissionPlanner:
     def __init__(
-        self, waypoints: Waypoints, road_network: SumoRoadNetwork, agent_behavior=None
+        self, lanepoints: LanePoints, road_network: SumoRoadNetwork, agent_behavior=None
     ):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._waypoints = waypoints
+        self._lanepoints = lanepoints
         self._agent_behavior = agent_behavior or AgentBehavior(aggressiveness=5)
         self._mission = None
         self._route = None
@@ -80,11 +80,11 @@ class MissionPlanner:
         )
         offset *= n_lane.getLength()
         coord = self._road_network.world_coord_from_offset(n_lane, offset)
-        nearest_wp = self._waypoints.closest_waypoint_on_lane_to_point(
+        nearest_lp = self._lanepoints.closest_lanepoint_on_lane_to_point(
             coord, n_lane.getID()
         )
         return Mission(
-            start=Start(tuple(nearest_wp.pos), nearest_wp.heading),
+            start=Start(tuple(nearest_lp.pos), nearest_lp.heading),
             goal=EndlessGoal(),
             entry_tactic=None,
         )
@@ -160,11 +160,11 @@ class MissionPlanner:
 
         edge_ids = self._edge_ids(pose)
         if edge_ids:
-            return self._waypoints.waypoint_paths_along_route(
+            return self._lanepoints.waypoint_paths_along_route(
                 pose.position, lookahead, edge_ids
             )
 
-        return self._waypoints.waypoint_paths_at(pose, lookahead)
+        return self._lanepoints.waypoint_paths_at(pose, lookahead)
 
     def waypoint_paths_on_lane_at(self, pose: Pose, lane_id: str, lookahead: float):
         """Call assumes you're on the correct route already. We do not presently
@@ -176,28 +176,30 @@ class MissionPlanner:
 
         edge_ids = self._edge_ids(pose, lane_id)
         if edge_ids:
-            return self._waypoints.waypoint_paths_on_lane_at(
+            return self._lanepoints.waypoint_paths_on_lane_at(
                 pose.position, lane_id, lookahead, edge_ids
             )
 
-        return self._waypoints.waypoint_paths_at(pose, lookahead)
+        # TODO STEVE:  why not pass lane_id down to waypoint_paths_on_lane_at?
+        # TODO STEVE:  this looks up the closest lane instead (which we already have?)
+        return self._lanepoints.waypoint_paths_at(pose, lookahead)
 
     def _edge_ids(self, pose: Pose, lane_id: str = None):
         if self._mission.has_fixed_route:
             return [edge.getID() for edge in self._route.edges]
 
-        # Filter waypoints to the internal lane the vehicle is driving on to deal w/
-        # non-fixed routes (e.g. endless missions). This is so that the waypoints don't
+        # Filter lanepoints to the internal lane the vehicle is driving on to deal w/
+        # non-fixed routes (e.g. endless missions). This is so that the lanepoints don't
         # jump between junction connections.
         if lane_id is None:
-            # We take the 10 closest waypoints to then filter down to that which has
-            # the closest heading. This way we get the waypoint on our lane instead of
+            # We take the 10 closest lanepoints to then filter down to that which has
+            # the closest heading. This way we get the lanepoint on our lane instead of
             # a potentially closer lane that is on a different junction connection.
-            closest_wps = self._waypoints.closest_waypoints(pose, desired_count=10)
-            closest_wps = sorted(
-                closest_wps, key=lambda wp: abs(pose.heading - wp.heading)
+            closest_lps = self._lanepoints.closest_lanepoints(pose, desired_count=10)
+            closest_lps = sorted(
+                closest_lps, key=lambda lp: abs(pose.heading - lp.heading)
             )
-            lane_id = closest_wps[0].lane_id
+            lane_id = closest_lps[0].lane_id
 
         edge = self._road_network.lane_by_id(lane_id).getEdge()
         if edge.getFunction() != "internal":
@@ -266,7 +268,7 @@ class MissionPlanner:
             and lane.getID() != target_lane.getID()
             and self._task_is_triggered is False
         ):
-            nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+            nei_wps = self._lanepoints.waypoint_paths_on_lane_at(
                 position, lane.getID(), 60
             )
             speed_limit = np.clip(
@@ -281,7 +283,7 @@ class MissionPlanner:
             )
         else:
             self._task_is_triggered = True
-            nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+            nei_wps = self._lanepoints.waypoint_paths_on_lane_at(
                 position, target_lane.getID(), 60
             )
 
@@ -294,7 +296,7 @@ class MissionPlanner:
             # perform the cut-in task and instead the speed of the vehicle is
             # increased.
             if vehicle.speed < target_velocity + 1.5:
-                nei_wps = self._waypoints.waypoint_paths_on_lane_at(
+                nei_wps = self._lanepoints.waypoint_paths_on_lane_at(
                     position, lane.getID(), 60
                 )
                 speed_limit = np.clip(target_velocity * 2.1, 0.5, 30)
@@ -338,7 +340,7 @@ class MissionPlanner:
         ## the position of ego car is here: [x, y]
         ego_position = pose.position[:2]
         ego_lane = self._road_network.nearest_lane(ego_position)
-        ego_wps = self._waypoints.waypoint_paths_on_lane_at(
+        ego_wps = self._lanepoints.waypoint_paths_on_lane_at(
             ego_position, ego_lane.getID(), 60
         )
         if self._mission.task.initial_speed is None:
@@ -427,8 +429,8 @@ class MissionPlanner:
         if not neighborhood_vehicles and not self._task_is_triggered:
             return ego_wps_des_speed
 
-        wp = self._waypoints.closest_waypoint(pose)
-        current_edge = self._road_network.edge_by_lane_id(wp.lane_id)
+        lp = self._lanepoints.closest_lanepoint(pose)
+        current_edge = self._road_network.edge_by_lane_id(lp.lane_id)
 
         if self._task_is_triggered is False:
             self._uturn_initial_heading = pose.heading
@@ -470,7 +472,7 @@ class MissionPlanner:
 
         offset = self._road_network.offset_into_lane(start_lane, pose.position[:2])
         oncoming_offset = max(0, target_lane.getLength() - offset)
-        paths = self.paths_of_lane_at(target_lane, oncoming_offset, lookahead=30)
+        paths = self._paths_of_lane_at(target_lane, oncoming_offset, lookahead=30)
 
         target = paths[0][-1]
 
@@ -524,10 +526,10 @@ class MissionPlanner:
 
         return [trajectory]
 
-    def paths_of_lane_at(self, lane, offset, lookahead=30):
+    def _paths_of_lane_at(self, lane, offset, lookahead=30):
         wp_start = self._road_network.world_coord_from_offset(lane, offset)
 
-        paths = self._waypoints.waypoint_paths_on_lane_at(
+        paths = self._lanepoints.waypoint_paths_on_lane_at(
             point=wp_start,
             lane_id=lane.getID(),
             lookahead=lookahead,

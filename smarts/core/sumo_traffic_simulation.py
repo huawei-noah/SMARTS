@@ -723,10 +723,10 @@ class SumoTrafficSimulation(Provider):
         return vehicle_id
 
     def _emit_vehicle_near_position(self, position, vehicle_id=None) -> str:
-        wp = self._scenario.waypoints.closest_waypoint(position)
-        lane = self._scenario.road_network.lane_by_id(wp.lane_id)
+        lp = self._scenario.lanepoints.closest_lanepoint(position)
+        lane = self._scenario.road_network.lane_by_id(lp.lane_id)
         offset_in_lane = self._scenario.road_network.offset_into_lane(
-            lane, tuple(wp.pos)
+            lane, tuple(lp.pos)
         )
 
         if not vehicle_id:
@@ -737,7 +737,7 @@ class SumoTrafficSimulation(Provider):
             vehicle_id,
             "",
             departPos=offset_in_lane,
-            departLane=wp.lane_index,
+            departLane=lp.lane_index,
         )
 
         self._traci_conn.vehicle.moveToXY(

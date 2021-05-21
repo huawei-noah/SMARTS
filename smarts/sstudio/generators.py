@@ -28,7 +28,7 @@ from yattag import Doc, indent
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.core.utils.sumo import sumolib
-from smarts.core.waypoints import Waypoints
+from smarts.core.lanepoints import LanePoints
 
 from . import types
 
@@ -40,19 +40,19 @@ class InvalidRoute(Exception):
 
 
 class RandomRouteGenerator:
-    """Generates a random route out of the routes available given waypoints and a
+    """Generates a random route out of the routes available given LanePoints and a
     road network.
 
     Args:
-        waypoints:
-            Linked waypoints which are generally subdivisions of a road network's routes
+        LanePoints:
+            Linked LanePoints which are generally subdivisions of a road network's routes
         road_network:
             A network of routes defined for vehicles of different kinds to travel on.
     """
 
-    def __init__(self, waypoints: Waypoints, road_network: SumoRoadNetwork):
+    def __init__(self, lanepoints: LanePoints, road_network: SumoRoadNetwork):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._waypoints = waypoints
+        self._lanepoints = lanepoints
         self._road_network = road_network
 
     @classmethod
@@ -64,8 +64,8 @@ class RandomRouteGenerator:
         """
         road_network = SumoRoadNetwork.from_file(net_file)
         # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
-        waypoints = Waypoints(road_network, spacing=2.0)
-        return cls(waypoints, road_network)
+        lanepoints = LanePoints(road_network, spacing=2.0)
+        return cls(lanepoints, road_network)
 
     def __iter__(self):
         return self
