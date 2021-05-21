@@ -686,6 +686,7 @@ def build_scenarios(
     stopwatcher_route,
     save_dir,
     root_path,
+    pool_dir=None,
     dynamic_pattern_func=None,
 ):
     print("Generating Scenario ...")
@@ -700,7 +701,11 @@ def build_scenarios(
     level_config = task_config["levels"][level_name]
     scenarios_dir = os.path.dirname(os.path.realpath(__file__))
     task_dir = f"{scenarios_dir}/{task}"
-    pool_dir = f"{scenarios_dir}/pool"
+
+    if pool_dir is None:
+        pool_path = os.path.join(scenarios_dir, "pool/experiment_pool")
+    else:
+        pool_path = os.path.join(scenarios_dir, pool_dir)
 
     train_total, test_total = (
         int(level_config["train"]["total"]),
@@ -751,7 +756,7 @@ def build_scenarios(
                 reverse=True,
             )
             seed_count = 0
-            map_dir = f"{pool_dir}/{intersection_type}"
+            map_dir = f"{pool_path}/{intersection_type}"
             with open(f"{map_dir}/info.json") as jsonfile:
                 map_metadata = json.load(jsonfile)
                 route_lanes = map_metadata["num_lanes"]
