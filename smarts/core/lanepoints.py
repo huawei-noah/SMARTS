@@ -63,11 +63,11 @@ class LanePoint:
     lane_id: str  # ID of lane under lanepoint
     lane_index: int  # Index of the lane this lanepoint is over. 0 is the outer(right) most lane.
 
-    def dist_to(self, p):
+    def dist_to(self, p) -> float:
         """Calculates straight line distance to the given 2D point"""
         return np.linalg.norm(self.pos - vec_2d(p))
 
-    def relative_heading(self, h: Heading):
+    def relative_heading(self, h: Heading) -> Heading:
         """Computes relative heading between the given angle and the lanepoint heading
 
         Returns:
@@ -81,7 +81,7 @@ class LanePoint:
 
         return self.heading.relative_to(h)
 
-    def signed_lateral_error(self, p):
+    def signed_lateral_error(self, p) -> float:
         """Returns the signed lateral distance from the given point to the
         line formed by the lanepoint position and the lanepoints heading.
 
@@ -90,7 +90,7 @@ class LanePoint:
         return signed_dist_to_line(p, self.pos, self.heading.direction_vector())
 
     @property
-    def pose(self):
+    def pose(self) -> Pose:
         return Pose.from_center(tuple(self.pos), self.heading)
 
     def __hash__(self):
@@ -134,7 +134,6 @@ class LinkedLanePoint(NamedTuple):
 class LanePoints:
     def __init__(self, road_network, spacing, debug=True):
         self.spacing = spacing
-        self._next_lanepoint_id = 0
         self._road_network = road_network
 
         # XXX: for a big map, may not want to cache ALL of the potential LanePoints
@@ -409,13 +408,13 @@ class LanePoints:
 
         return initial_lanepoint, shape_lanepoints
 
-    def _edge(self, lp):
+    def _edge(self, lp: LanePoint):
         lane = self._road_network.lane_by_id(lp.lane_id)
         return lane.getEdge()
 
     @staticmethod
     def _closest_linked_lp_in_kd_tree_with_pose_batched(
-        poses, lanepoints, tree, within_radius, k=10, keep_all_k=False
+        poses, lanepoints, tree, within_radius, k: int = 10, keep_all_k: bool = False
     ):
         linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_batched(
             [pose.position[:2] for pose in poses], lanepoints, tree, k=k
@@ -469,7 +468,7 @@ class LanePoints:
         ]
 
     @staticmethod
-    def _closest_linked_lp_in_kd_tree_batched(points, linked_lps, tree, k=1):
+    def _closest_linked_lp_in_kd_tree_batched(points, linked_lps, tree, k: int = 1):
         p2ds = np.array([vec_2d(p) for p in points])
         closest_indices = tree.query(
             p2ds, k=min(k, len(linked_lps)), return_distance=False, sort_results=True
@@ -481,7 +480,7 @@ class LanePoints:
 
     def closest_lanepoint_batched(
         self, poses, filter_from_count: int, within_radius: float
-    ):
+    ) -> List[LanePoint]:
         linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
             poses,
             self._linked_lanepoints,
@@ -493,12 +492,12 @@ class LanePoints:
 
     def closest_lanepoint(
         self, pose: Pose, filter_from_count: int = 10, within_radius: float = 10
-    ):
+    ) -> LanePoint:
         return self.closest_lanepoint_batched(
             [pose], filter_from_count, within_radius=within_radius
         )[0]
 
-    def closest_lanepoints(self, point, desired_count: int):
+    def closest_lanepoints(self, point, desired_count: int) -> List[LanePoint]:
         linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
             [point],
             self._linked_lanepoints,
@@ -509,7 +508,7 @@ class LanePoints:
         )[0]
         return [llp.lp for llp in linked_lanepoints]
 
-    def closest_lanepoint_on_lane(self, pose, lane_id):
+    def closest_lanepoint_on_lane(self, pose, lane_id: str) -> LanePoint:
         lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
         linked_lanepoint = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
             [pose],
@@ -520,16 +519,18 @@ class LanePoints:
         )[0][0]
         return linked_lanepoint.lp
 
-    def closest_linked_lanepoint_on_lane_to_point(self, point, lane_id):
+    def closest_linked_lanepoint_on_lane_to_point(
+        self, point, lane_id: str
+    ) -> LinkedLanePoint:
         lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
         return LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
 
-    def closest_lanepoint_on_lane_to_point(self, point, lane_id):
+    def closest_lanepoint_on_lane_to_point(self, point, lane_id: str) -> LanePoint:
         return self.closest_linked_lanepoint_on_lane_to_point(point, lane_id).lp
 
-    def closest_lanepoint_on_edge(self, point, edge_id):
+    def closest_lanepoint_on_edge(self, point, edge_id: str) -> LinkedLanePoint:
         return LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point],
             self._lanepoints_by_edge_id[edge_id],
@@ -539,7 +540,7 @@ class LanePoints:
     @lru_cache(maxsize=32)
     def paths_starting_at_lanepoint(
         self, lanepoint: LinkedLanePoint, lookahead: int, filter_edge_ids: tuple
-    ):
+    ) -> List[List[LinkedLanePoint]]:
         lanepoint_paths = [[lanepoint]]
         for _ in range(lookahead):
             next_lanepoint_paths = []

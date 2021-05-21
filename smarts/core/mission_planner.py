@@ -21,7 +21,7 @@ import logging
 import math
 import random
 from dataclasses import dataclass, replace
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 import numpy as np
 
@@ -51,7 +51,7 @@ class Waypoint(LanePoint):
     #      to nearest_lane_id, nearest_lane_index, nearest_lane_width
 
     @classmethod
-    def from_LanePoint(cls, lp):
+    def from_LanePoint(cls, lp: LanePoint):
         return cls(
             pos=lp.pos,
             heading=lp.heading,
@@ -184,7 +184,7 @@ class MissionPlanner:
         within_radius: float = 5,
         filter_from_count: int = 3,
         constrain_to_route: bool = True,
-    ):
+    ) -> List[List[Waypoint]]:
         """Computes equally-spaced Waypoints for all lane paths
         up to lookahead waypoints ahead, starting on the Edge containing
         the nearest LanePoint to pose within within_radius meters.
@@ -208,7 +208,7 @@ class MissionPlanner:
 
     def waypoint_paths_on_lane_at(
         self, pose: Pose, lane_id: str, lookahead: int, constrain_to_route: bool = True
-    ):
+    ) -> List[List[Waypoint]]:
         """Computes equally-spaced Waypoints for all lane paths up to lookahead waypoints ahead
         starting at the nearest LanePoint to pose within lane lane_id.
         Constrains paths to your (possibly-inferred) route only if constrain_to_route.
