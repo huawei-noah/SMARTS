@@ -22,6 +22,7 @@
 import collections
 import dataclasses
 import enum
+from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading
 from typing import Any, Callable, Dict, Iterable, List, Sequence, Tuple, Union
 import numpy as np
@@ -41,9 +42,6 @@ from smarts.core.agent_interface import (
     Waypoints
 )
 from smarts.core.sensors import Observation, VehicleObservation
-from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
-from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")
 from ultra.utils.common import (
@@ -86,6 +84,28 @@ class Adapter:
         raise NotImplementedError
 
 
+class DiscreteActionAdapter(Adapter):
+    gym_space: gym.Space = None  # TODO: Make gym space.
+    required_interface = { "action": ActionSpaceType.Lane }
+
+    @staticmethod
+    def adapt(action):
+        return action
+
+
+class ContinuousActionAdapter(Adapter):
+    gym_space: gym.Space = gym.spaces.Box(
+        low=np.array([0.0, 0.0, -1.0]),
+        high=np.array([1.0, 1.0, 1.0]),
+        dtype=np.float32,
+    )
+    required_interface = { "action": ActionSpaceType.Continuous }
+
+    @staticmethod
+    def adapt(action):
+        return action
+
+
 class VectorObservationAdapter(Adapter):
     _WAYPOINTS = 20  # Number of waypoints on the path ahead of the ego vehicle.
     _SIZE = (
@@ -113,16 +133,16 @@ class VectorObservationAdapter(Adapter):
     gym_space: gym.Space = gym.spaces.Dict(
         {
             "low_dim_states": gym.spaces.Box(
-                low=-1e10, high=1e10, shape=(_SIZE,), dtype=np.ndarray
+                low=-1e10, high=1e10, shape=(_SIZE,), dtype=np.float32,
             ),
             "social_vehicles": gym.spaces.Box(
-                low=-1e10, high=1e10, shape=(_CAPACITY, _FEATURES), dtype=np.ndarray,
+                low=-1e10, high=1e10, shape=(_CAPACITY, _FEATURES), dtype=np.float32,
             ),
         }
     )
     required_interface = {
         "waypoints": Waypoints(lookahead=_WAYPOINTS),
-        "neighborhood_vehicles": NeighborhoodVehicles(_RADIUS)
+        "neighborhood_vehicles": NeighborhoodVehicles(radius=_RADIUS),
     }
 
     @staticmethod
@@ -141,7 +161,7 @@ class VectorObservationAdapter(Adapter):
             start=ego_start
         )
         ego_closest_waypoint, ego_lookahead_waypoints = get_closest_waypoint(
-            num_lookahead=100,
+            num_lookahead=VectorObservationAdapter._WAYPOINTS,
             goal_path=ego_goal_path,
             ego_position=ego_position,
             ego_heading=ego_heading
@@ -173,6 +193,7 @@ class VectorObservationAdapter(Adapter):
             ego_position=ego_position,
             waypoint_paths=ego_waypoints,
             events=observation.events,
+            waypoints_lookahead=ego_lookahead_waypoints
         )
         normalized_observation = [
             VectorObservationAdapter._normalize(key, observation_dict[key])
@@ -188,20 +209,26 @@ class VectorObservationAdapter(Adapter):
         # Adapt the social vehicles.
         social_vehicles = observation.neighborhood_vehicle_states
 
-        # Sort by distance to the ego vehicle.
-        social_vehicles.sort(
-            key=lambda vehicle: VectorObservationAdapter._get_distance(vehicle, ego_position), reverse=False
-        )
-
-        # Extract the state of each social vehicle.
-        social_vehicles = np.asarray([
-            VectorObservationAdapter._extract_social_vehicle_state(
-                social_vehicle=social_vehicle,
-                ego_position=ego_position,
-                ego_heading=ego_heading,
+        if len(social_vehicles) == 0:
+            # There are no social vehicles. Create an empty array with the correct
+            # number of features so it can be padded.
+            social_vehicles = np.empty(
+                (0, VectorObservationAdapter._FEATURES), dtype=np.float32
             )
-            for social_vehicle in social_vehicles
-        ], dtype=np.float32)
+        else:
+            # Sort by distance to the ego vehicle.
+            social_vehicles.sort(
+                key=lambda vehicle: VectorObservationAdapter._get_distance(vehicle, ego_position), reverse=False
+            )
+            # Extract the state of each social vehicle.
+            social_vehicles = np.asarray([
+                VectorObservationAdapter._extract_social_vehicle_state(
+                    social_vehicle=social_vehicle,
+                    ego_position=ego_position,
+                    ego_heading=ego_heading,
+                )
+                for social_vehicle in social_vehicles
+            ], dtype=np.float32)
 
         # Pad with zero vectors if we don't have enough social vehicles.
         if len(social_vehicles) < VectorObservationAdapter._CAPACITY:
@@ -236,6 +263,7 @@ class VectorObservationAdapter(Adapter):
         )
         absolute_heading_difference = social_vehicle.heading - ego_heading
 
+        # NOTE: The number of elements in this list should equal _FEATURES.
         social_vehicle_state = [
             relative_position_difference[0] / 100.0,
             relative_position_difference[1] / 100.0,
@@ -256,7 +284,7 @@ class ImageObservationAdapter(Adapter):
     _RESOLUTION = 50 / 64
 
     gym_space: gym.Space = gym.spaces.Box(
-        low=-1.0, high=1.0, shape=(_HEIGHT, _WIDTH), dtype=np.ndarray
+        low=-1.0, high=1.0, shape=(_HEIGHT, _WIDTH), dtype=np.float32
     )
     required_interface={
         "rgb": RGB(width=_WIDTH, height=_HEIGHT, resolution=_RESOLUTION)
@@ -271,15 +299,17 @@ class DefaultRewardAdapter(Adapter):
     _WAYPOINTS = 20
     _RADIUS = 200.0
 
+    # TODO: Reward doesn't need a gym space.
     gym_space: gym.Space = gym.spaces.Box(
-        low=-1e10, high=1e10, shape=(1,), dtype=float
+        low=-1e10, high=1e10, shape=(1,), dtype=np.float32
     )
     required_interface={
         "waypoints": Waypoints(lookahead=_WAYPOINTS),
-        "neighborhood_vehicles": NeighborhoodVehicles(_RADIUS),
+        "neighborhood_vehicles": NeighborhoodVehicles(radius=_RADIUS),
     }
 
-    def adapt(self, observation: Observation, reward: float):
+    @staticmethod
+    def adapt(observation: Observation, reward: float):
         env_reward = reward
         ego_events = observation.events
         ego_observation = observation.ego_vehicle_state
@@ -383,7 +413,7 @@ class DefaultRewardAdapter(Adapter):
 # required_interface = adapter.required_interface_from_types(
 #     action_type=action_type,
 #     observation_type=observation_type,
-#     reward_type=reward,
+#     reward_type=reward_type,
 # )
 #
 # spec = AgentSpec(
@@ -402,19 +432,13 @@ class DefaultRewardAdapter(Adapter):
 # )
 #
 
-# _TYPE_TO_ADAPTER = {
-#     ActionType.DISCRETE: None,  # TODO: Fill in.
-#     ActionType.CONTINUOUS: None,  # TODO: Fill in.
-#     ObservationType.VECTOR: VectorObservationAdapter,
-#     ObservationType.IMAGE: ImageObservationAdapter,
-#     RewardType.DEFAULT: DefaultRewardAdapter,
-# }
-_TYPE_TO_ADAPTER = {
-    ActionType.DISCRETE: None,  # TODO: Fill in.
-    ActionType.CONTINUOUS: None,  # TODO: Fill in.
-    ObservationType.VECTOR: VectorObservationAdapter,
-    ObservationType.IMAGE: ImageObservationAdapter,
-    RewardType.DEFAULT: DefaultRewardAdapter,
+# TODO: Have the keys be enums.
+_TYPE_TO_ADAPTER: Dict[str, Adapter] = {
+    "continuous": ContinuousActionAdapter,
+    "discrete": DiscreteActionAdapter,
+    "vector": VectorObservationAdapter,
+    "image": ImageObservationAdapter,
+    "default": DefaultRewardAdapter,
 }
 
 
@@ -447,7 +471,35 @@ def required_interface_from_types(
     observation_type: ObservationType,
     reward_type: RewardType,
 ) -> Dict[str, Any]:
-    # TODO: Ensure that there are no conflicts between the required interfaces for each
-    #       adapter type. Then, return the union of the required interfaces for each
-    #       adapter.
-    raise NotImplementedError
+    # TODO: If we are using the Types we have to convert them from strings here first.
+
+    required_interface = {}
+
+    # TODO: Make this nicer.
+
+    action_interface = _TYPE_TO_ADAPTER[action_type].required_interface
+    observation_interface = _TYPE_TO_ADAPTER[observation_type].required_interface
+    reward_interface = _TYPE_TO_ADAPTER[reward_type].required_interface
+
+    for interface_name, interface in action_interface.items():
+        if interface_name in required_interface:
+            # TODO: Does this actually compare the interfaces correctly?
+            assert required_interface[interface_name] == interface
+        else:
+            required_interface[interface_name] = interface
+
+    for interface_name, interface in observation_interface.items():
+        if interface_name in required_interface:
+            # TODO: Does this actually compare the interfaces correctly?
+            assert required_interface[interface_name] == interface
+        else:
+            required_interface[interface_name] = interface
+
+    for interface_name, interface in reward_interface.items():
+        if interface_name in required_interface:
+            # TODO: Does this actually compare the interfaces correctly?
+            assert required_interface[interface_name] == interface
+        else:
+            required_interface[interface_name] = interface
+
+    return required_interface
