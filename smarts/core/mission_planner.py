@@ -40,15 +40,13 @@ class PlanningError(Exception):
 
 
 class MissionPlanner:
-    def __init__(
-        self, lanepoints: LanePoints, road_network: SumoRoadNetwork, agent_behavior=None
-    ):
+    def __init__(self, road_network: SumoRoadNetwork, agent_behavior=None):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._lanepoints = lanepoints
         self._agent_behavior = agent_behavior or AgentBehavior(aggressiveness=5)
         self._mission = None
         self._route = None
         self._road_network = road_network
+        self._lanepoints = road_network.lanepoints
         self._did_plan = False
         self._task_is_triggered = False
         # TODO: These variables should be put in an appropriate place.

@@ -165,6 +165,9 @@ class LanePoints:
         self._next_lanepoint_id = 0
         self._road_network = road_network
 
+        # XXX: for a big map, may not want to cache ALL of the potential LanePoints
+        #      nor waste time here finding all of them.
+        #      Lanepoints might be generated on demand based upon edges and lookahead.
         shape_lps = self._shape_lanepoints()
         self._linked_lanepoints = LanePoints._interpolate_shape_lanepoints(
             shape_lps, spacing

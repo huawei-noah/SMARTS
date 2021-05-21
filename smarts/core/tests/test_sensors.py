@@ -90,7 +90,7 @@ def test_waypoints_sensor(scenarios):
         heading_=Heading(0),
     )
 
-    mission_planner = MissionPlanner(scenario.lanepoints, scenario.road_network)
+    mission_planner = MissionPlanner(scenario.road_network)
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
 
@@ -144,7 +144,7 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
         heading_=Heading(0),
     )
     mission_planner = MissionPlanner(
-        scenario.lanepoints, scenario.road_network, AgentBehavior(aggressiveness=3)
+        scenario.road_network, AgentBehavior(aggressiveness=3)
     )
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
@@ -202,7 +202,7 @@ def test_waypoints_sensor_with_cut_in_task(cut_in_scenarios):
     )
 
     mission_planner = MissionPlanner(
-        scenario.lanepoints, scenario.road_network, AgentBehavior(aggressiveness=3)
+        scenario.road_network, AgentBehavior(aggressiveness=3)
     )
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)

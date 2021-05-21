@@ -39,6 +39,7 @@ from shapely.ops import snap, triangulate
 from trimesh.exchange import gltf
 
 from .utils.math import rotate_around_point
+from .lanepoints import LanePoints
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
 from sumolib.net.edge import Edge  # isort:skip
@@ -92,7 +93,9 @@ class SumoRoadNetwork:
     # in North America (although US highway lanes are wider at ~3.7m).
     DEFAULT_LANE_WIDTH = 3.2
 
-    def __init__(self, graph, net_file, default_lane_width=None):
+    def __init__(
+        self, graph, net_file, default_lane_width=None, lanepoint_spacing=None
+    ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
         self._net_file = net_file
@@ -101,6 +104,10 @@ class SumoRoadNetwork:
             if default_lane_width is not None
             else SumoRoadNetwork.DEFAULT_LANE_WIDTH
         )
+        self._lanepoints = None
+        if lanepoint_spacing is not None:
+            assert lanepoint_spacing > 0
+            self._lanepoints = LanePoints(self, spacing=lanepoint_spacing)
 
     @staticmethod
     def _check_net_origin(bbox):
@@ -143,7 +150,13 @@ class SumoRoadNetwork:
         return False
 
     @classmethod
-    def from_file(cls, net_file, shift_to_origin=False, default_lane_width=None):
+    def from_file(
+        cls,
+        net_file,
+        shift_to_origin=False,
+        default_lane_width=None,
+        lanepoint_spacing=None,
+    ):
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
@@ -165,7 +178,12 @@ class SumoRoadNetwork:
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
 
-        return cls(G, net_file, default_lane_width)
+        return cls(
+            G,
+            net_file,
+            default_lane_width=default_lane_width,
+            lanepoint_spacing=lanepoint_spacing,
+        )
 
     @property
     def graph(self):
@@ -192,6 +210,10 @@ class SumoRoadNetwork:
     @default_lane_width.setter
     def default_lane_width(self, default_lane_width):
         self._default_lane_width = default_lane_width
+
+    @property
+    def lanepoints(self):
+        return self._lanepoints
 
     def _compute_road_polygons(self):
         lane_to_poly = {}

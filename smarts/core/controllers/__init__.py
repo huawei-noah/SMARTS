@@ -136,7 +136,7 @@ class ControllerState:
             ActionSpaceType.LaneWithContinuousSpeed,
         ):
             # TAI: we should probably be fetching these waypoint through the mission planner
-            target_lane_id = sim.lanepoints.closest_lanepoint(
+            target_lane_id = sim.road_network.lanepoints.closest_lanepoint(
                 vehicle_pose, filter_from_count=4
             ).lane_id
             return LaneFollowingControllerState(target_lane_id)
