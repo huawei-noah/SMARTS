@@ -473,7 +473,6 @@ class LanePoints:
         closest_indices = tree.query(
             p2ds, k=min(k, len(linked_lps)), return_distance=False, sort_results=True
         )
-
         return [[linked_lps[idx] for idx in idxs] for idxs in closest_indices]
 
     # TODO:  cleanup / consolidate these "closest_lanepoint*" methods (lots of redundancies)...
@@ -519,6 +518,9 @@ class LanePoints:
         )[0][0]
         return linked_lanepoint.lp
 
+    def closest_lanepoint_on_lane_to_point(self, point, lane_id: str) -> LanePoint:
+        return self.closest_linked_lanepoint_on_lane_to_point(point, lane_id).lp
+
     def closest_linked_lanepoint_on_lane_to_point(
         self, point, lane_id: str
     ) -> LinkedLanePoint:
@@ -527,10 +529,7 @@ class LanePoints:
             [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
 
-    def closest_lanepoint_on_lane_to_point(self, point, lane_id: str) -> LanePoint:
-        return self.closest_linked_lanepoint_on_lane_to_point(point, lane_id).lp
-
-    def closest_lanepoint_on_edge(self, point, edge_id: str) -> LinkedLanePoint:
+    def closest_linked_lanepoint_on_edge(self, point, edge_id: str) -> LinkedLanePoint:
         return LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point],
             self._lanepoints_by_edge_id[edge_id],

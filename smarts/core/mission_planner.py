@@ -610,7 +610,8 @@ class MissionPlanner:
         then gets waypoint paths from all lanes in its edge there."""
         assert len(route) > 0, f"Expected at least 1 edge in the route, got: {route}"
         closest_lp_on_each_route_edge = [
-            self._lanepoints.closest_lanepoint_on_edge(point, edge) for edge in route
+            self._lanepoints.closest_linked_lanepoint_on_edge(point, edge)
+            for edge in route
         ]
         closest_linked_lp = min(
             closest_lp_on_each_route_edge, key=lambda l_lp: l_lp.lp.dist_to(point)
