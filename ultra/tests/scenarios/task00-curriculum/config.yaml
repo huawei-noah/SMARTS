@@ -13,6 +13,7 @@ levels:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
            stops: null
+           bubbles: null
     test:
       total: 5
       ego_missions:
@@ -23,6 +24,7 @@ levels:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
            stops: null
+           bubbles: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   test_grade2:
     train:
@@ -35,6 +37,7 @@ levels:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
            stops: null
+           bubbles: null
     test:
       total: 5
       ego_missions:
@@ -45,6 +48,7 @@ levels:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
            stops: null
+           bubbles: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   test_grade3:
     train:
@@ -57,6 +61,7 @@ levels:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
            stops: null
+           bubbles: null
     test:
       total: 5
       ego_missions:
@@ -67,6 +72,7 @@ levels:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,low-density,0.33],[100kmh,mid-density,0.34]]
            stops: null
+           bubbles: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   no-traffic:
     train:
@@ -79,6 +85,7 @@ levels:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
            stops: null
+           bubbles: null
     test:
       total: null
       ego_missions:
@@ -89,6 +96,7 @@ levels:
            percent: 1
            specs: [[50kmh,no-traffic,0.33],[70kmh,no-traffic,0.34],[100kmh,no-traffic,0.33]]
            stops: null
+           bubbles: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   low-density:
     train:
@@ -101,6 +109,7 @@ levels:
            percent: 1
            specs: [[50kmh,low-density,0.33],[70kmh,low-density,0.34],[100kmh,low-density,0.33]]
            stops: null
+           bubbles: null
     test:
       total: null
       ego_missions:
@@ -111,6 +120,7 @@ levels:
            percent: 1
            specs: [[50kmh,low-density,0.33],[70kmh,low-density,0.34],[100kmh,low-density,0.33]]
            stops: null
+           bubbles: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   mid-density:
     train:
@@ -123,6 +133,7 @@ levels:
            percent: 1
            specs: [[50kmh,mid-density,0.33],[70kmh,mid-density,0.34],[100kmh,mid-density,0.33]]
            stops: null
+           bubbles: null
     test:
       total: null
       ego_missions:
@@ -133,6 +144,7 @@ levels:
            percent: 1
            specs: [[50kmh,mid-density,0.33],[70kmh,mid-density,0.34],[100kmh,mid-density,0.33]]
            stops: null
+           bubbles: null
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   high-density:
     train:
@@ -145,6 +157,7 @@ levels:
            percent: 1
            specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
            stops: null
+           bubbles: null
     test:
       total: null
       ego_missions:
@@ -155,4 +168,5 @@ levels:
            percent: 1
            specs: [[50kmh,high-density,0.33],[70kmh,high-density,0.34],[100kmh,high-density,0.33]]
            stops: null
+           bubbles: null
   

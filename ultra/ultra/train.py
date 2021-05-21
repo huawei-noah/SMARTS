@@ -40,7 +40,6 @@ import torch
 import matplotlib.pyplot as plt
 
 from smarts.zoo.registry import make
-from ultra.utils.common import str_to_bool
 from ultra.evaluate import evaluation_check, collect_evaluations
 from ultra.utils.common import agent_pool_value
 from ultra.utils.episode import episodes
@@ -204,6 +203,7 @@ def train(
     total_reached_goal = 0.0
     eval_after_grade = False
 
+    old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         if curriculum_mode is True:
             if CurriculumInfo.static_curriculum_toggle:
@@ -476,7 +476,9 @@ if __name__ == "__main__":
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="Run without envision", type=str_to_bool, default="True"
+        "--headless",
+        help="Run without envision",
+        action="store_true",
     )
     parser.add_argument(
         "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
@@ -568,7 +570,7 @@ if __name__ == "__main__":
         max_episode_steps=int(args.max_episode_steps),
         max_steps=int(args.max_steps),
         eval_info={
-            "eval_rate": int(args.eval_rate),
+            "eval_rate": float(args.eval_rate),
             "eval_episodes": int(args.eval_episodes),
         },
         timestep_sec=float(args.timestep),

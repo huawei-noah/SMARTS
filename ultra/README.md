@@ -2,9 +2,9 @@
 
 ## Unprotected Left Turn for Robust Agents
 
-Ultra provides a gym-based environment using SMARTS for tackling intersection navigation and more specifically unprotected left turn.
+ULTRA provides a gym-based environment using SMARTS to tackle intersection navigation, specifically the unprotected left turn.
 
-Here is the summary of key features:
+Key features:
  - Customizable scenarios with different levels of difficulty.
  - Analysis tools to evaluate traffic designs including low-mid-high densities.
  - Tools to support analyzing social-vehicle behaviors.
@@ -28,15 +28,15 @@ Get started by choosing an option below.
 - [Curriculum learning in ULTRA](docs/curriculum_learning.md)
 
 ### Citing ULTRA
-For a longer introduction to ULTRA, including its purpose, concepts, and benchmarks, please see [ULTRA: A reinforcement learning generatlization benchmark for autonomous driving](https://ml4ad.github.io/files/papers2020/ULTRA:%20A%20reinforcement%20learning%20generalization%20benchmark%20for%20autonomous%20driving.pdf).
+For a longer introduction to ULTRA, including its purpose, concepts, and benchmarks, please see [ULTRA: A reinforcement learning generalization benchmark for autonomous driving](https://ml4ad.github.io/files/papers2020/ULTRA:%20A%20reinforcement%20learning%20generalization%20benchmark%20for%20autonomous%20driving.pdf).
 
-If you use ULTRA in your research, you can use to the following citation.
+If you use ULTRA in your research, you can use the following citation.
 ```
 @misc{elsayed20_ultra,
-  author          = {Elsayed, Mohamed and Hassanzadeh, Kimia and Nguyen, Nhat M,
+  author          = {Elsayed, Mohamed and Hassanzadeh, Kimia and Nguyen, Nhat M.
                   and Alban, Montgomery and Zhu, Xiru and Graves, Daniel and
                   Luo, Jun},
-  journal         = {Machine Learning for Autonomous Driving Workshoo, Neural
+  journal         = {Machine Learning for Autonomous Driving Workshop, Neural
                   Information Processing Systems},
   title           = {ULTRA: A reinforcement learning generalization benchmark
                   for autonomous driving},

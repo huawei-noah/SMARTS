@@ -42,7 +42,7 @@ class RLlibTrainTest(unittest.TestCase):
         log_dir = os.path.join(RLlibTrainTest.OUTPUT_DIRECTORY, "tests/rllib_results/")
         try:
             os.system(
-                f"python ultra/rllib_train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --eval-episodes 1 --train-batch-size 1 --sgd-minibatch-size 1 --rollout-fragment-length 1 --headless True --log-dir {log_dir}"
+                f"python ultra/rllib_train.py --task 00 --level easy --episodes 1 --max-episode-steps 2 --eval-episodes 1 --train-batch-size 1 --sgd-minibatch-size 1 --rollout-fragment-length 1 --headless --log-dir {log_dir}"
             )
         except Exception as err:
             print(err)

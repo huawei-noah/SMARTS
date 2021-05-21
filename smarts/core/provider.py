@@ -69,6 +69,9 @@ class Provider:
     def sync(self, provider_state: ProviderState):
         raise NotImplementedError
 
+    def create_vehicle(self, provider_vehicle: VehicleState):
+        raise NotImplementedError
+
     def reset(self):
         raise NotImplementedError
 

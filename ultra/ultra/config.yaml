@@ -72,10 +72,10 @@ tasks:
       train: "scenarios/task1/train_hard*"
       test:  "scenarios/task1/test_hard*"
   task2:
-    lo-hi:
+    lo2-high:
       train: "scenarios/task2/train_lo-hi*"
       test:  "scenarios/task2/test_lo-hi*"
-    hi-lo:
+    high-low:
       train: "scenarios/task2/train_hi-lo*"
       test:  "scenarios/task2/test_hi-lo*"
   taskgb:
@@ -107,7 +107,3 @@ tasks:
     constant-flow:
       train: "scenarios/taskgb/train_constant-flow*"
       test:  "scenarios/taskgb/test_constant-flow*"
-    # Evaluation only scenarios
-    eval-equal:
-      train: "scenarios/eval_scenarios/train_eval-equal*"
-      test: "scenarios/eval_scenarios/test_eval-equal*"
