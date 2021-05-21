@@ -36,9 +36,7 @@ register(
 )
 register(
     locator="ppo-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy, **kwargs
-    ),
+    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=PPOPolicy, **kwargs),
 )
 register(
     locator="td3-v0",

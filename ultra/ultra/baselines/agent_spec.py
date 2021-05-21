@@ -22,25 +22,18 @@
 import json
 import numpy as np
 import torch, yaml, os, inspect, dill
-from smarts.core.controllers import ActionSpaceType
-from smarts.core.agent_interface import (
-    AgentInterface,
-    AgentType,
-    OGM,
-    Waypoints,
-    NeighborhoodVehicles,
-)
+from smarts.core.agent_interface import AgentInterface
+from ultra.baselines.adapter import action_adapter_from_type, observation_adapter_from_type, required_interface_from_types, reward_adapter_from_type
 
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
-from ultra.baselines.adapter import BaselineAdapter
 
 
 class BaselineAgentSpec(AgentSpec):
     def __init__(
         self,
         policy_class,
-        action_type,
+        # action_type,
         policy_params=None,
         checkpoint_dir=None,
         task=None,
@@ -52,10 +45,10 @@ class BaselineAgentSpec(AgentSpec):
     def __new__(
         self,
         policy_class,
-        action_type,
+        # action_type,
         policy_params=None,
         checkpoint_dir=None,
-        task=None,
+        # task=None,
         max_episode_steps=1200,
         experiment_dir=None,
         agent_id="",
@@ -92,21 +85,36 @@ class BaselineAgentSpec(AgentSpec):
                     os.path.join(policy_class_module_directory, "params.yaml")
                 )
 
-            adapter = BaselineAdapter(policy_params=policy_params)
+            action_type = policy_params["action_type"]
+            observation_type = policy_params["observation_type"]
+            reward_type = policy_params["reward_type"]
+
+            adapter_interface_requirements = required_interface_from_types(
+                action_type=action_type,
+                observation_type=observation_type,
+                reward_type=reward_type,
+            )
+            action_adapter = action_adapter_from_type(action_type=action_type)
+            observation_adapter = observation_adapter_from_type(
+                observation_type=observation_type
+            )
+            reward_adapter = reward_adapter_from_type(reward_type=reward_type)
+
             spec = AgentSpec(
                 interface=AgentInterface(
-                    waypoints=Waypoints(lookahead=20),
-                    neighborhood_vehicles=NeighborhoodVehicles(200),
-                    action=action_type,
-                    rgb=False,
+                    **adapter_interface_requirements,
                     max_episode_steps=max_episode_steps,
                     debug=True,
                 ),
                 agent_params=dict(
-                    policy_params=adapter.policy_params, checkpoint_dir=checkpoint_dir
+                    policy_params=policy_params, checkpoint_dir=checkpoint_dir
                 ),
                 agent_builder=policy_class,
-                observation_adapter=adapter.observation_adapter,
-                reward_adapter=adapter.reward_adapter,
+                action_adapter=action_adapter,
+                observation_adapter=observation_adapter,
+                reward_adapter=reward_adapter,
             )
+
+            print(">>> SPEC:", spec)
+
         return spec
