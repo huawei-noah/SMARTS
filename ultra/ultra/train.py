@@ -516,14 +516,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--save-model-only",
         help="Model is saved at checkpoint, but no evaluation occurs",
-        default="False",
-        type=str_to_bool,
+        default=False,
+        type=bool,
     )
     parser.add_argument(
         "--curriculum-mode",
         help="Toggle grade based mode",
-        default="False",
-        type=str_to_bool,
+        default=False,
+        type=bool,
     )
     parser.add_argument(
         "--curriculum-dir",
@@ -534,8 +534,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--curriculum-build-scenarios",
         help="Build all scenarios from curriculum",
-        default="False",
-        type=str_to_bool,
+        default=False,
+        type=bool,
     )
     parser.add_argument(
         "--curriculum-scenarios-root-dir",

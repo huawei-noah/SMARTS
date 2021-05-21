@@ -51,7 +51,7 @@ class CurriculumTest(unittest.TestCase):
         try:
             os.system(
                 f"python ultra/train.py --curriculum-mode True --curriculum-dir {curriculum_dir} \
-                --headless True --episodes 6 --max-episode-steps 2 --curriculum-scenarios-root-dir tests/scenarios \
+                --headless --episodes 6 --max-episode-steps 2 --curriculum-scenarios-root-dir tests/scenarios \
                 --eval-episodes 0 --curriculum-scenarios-save-dir {CurriculumTest.OUTPUT_DIRECTORY} --log-dir {log_dir} \
                 --curriculum-build-scenarios True"
             )
@@ -69,7 +69,7 @@ class CurriculumTest(unittest.TestCase):
         try:
             os.system(
                 f"python ultra/train.py --curriculum-mode True --curriculum-dir {curriculum_dir} \
-                --headless True --episodes 6 --max-episode-steps 2 --curriculum-scenarios-root-dir tests/scenarios \
+                --headless --episodes 6 --max-episode-steps 2 --curriculum-scenarios-root-dir tests/scenarios \
                 --eval-rate 2 --eval-episodes 2 --curriculum-scenarios-save-dir {CurriculumTest.OUTPUT_DIRECTORY} --log-dir {log_dir} \
                 --curriculum-build-scenarios True"
             )
@@ -87,7 +87,7 @@ class CurriculumTest(unittest.TestCase):
         try:
             os.system(
                 f"python ultra/train.py --curriculum-mode True --curriculum-dir {curriculum_dir} \
-                --headless True --episodes 1 --max-episode-steps 2 --curriculum-scenarios-root-dir tests/scenarios \
+                --headless --episodes 1 --max-episode-steps 2 --curriculum-scenarios-root-dir tests/scenarios \
                 --eval-episodes 0 --curriculum-scenarios-save-dir {CurriculumTest.OUTPUT_DIRECTORY} --log-dir {log_dir}"
             )
         except Exception as err:
@@ -104,7 +104,7 @@ class CurriculumTest(unittest.TestCase):
         try:
             os.system(
                 f"python ultra/train.py --curriculum-mode True --curriculum-dir {curriculum_dir} \
-                --headless True --episodes 1 --max-episode-steps 2 --curriculum-scenarios-root-dir tests/scenarios \
+                --headless --episodes 1 --max-episode-steps 2 --curriculum-scenarios-root-dir tests/scenarios \
                 --eval-rate 1 --eval-episodes 2 --curriculum-scenarios-save-dir {CurriculumTest.OUTPUT_DIRECTORY} --log-dir {log_dir}"
             )
         except Exception as err:
@@ -134,6 +134,7 @@ class CurriculumTest(unittest.TestCase):
                 scenario_info=("00-gb", "test_grade1"),
                 policy_classes=policy_classes,
                 num_episodes=6,
+                max_steps=1000,
                 max_episode_steps=2,
                 eval_info={
                     "eval_rate": 50,

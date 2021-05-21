@@ -48,7 +48,6 @@ from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
 from ultra.baselines.adapter import BaselineAdapter
 
-from ultra.utils.common import str_to_bool
 from ultra.utils.episode import Callbacks
 from ultra.utils.episode import log_creator
 

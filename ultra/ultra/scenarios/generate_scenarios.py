@@ -384,7 +384,6 @@ def generate_left_turn_missions(
                 pos_offsets=pos_offsets,
                 stops=stops,
                 deadlock_optimization=route_info["deadlock_optimization"],
-                pos_offsets=pos_offsets,
                 stopwatcher_info=stopwatcher_info,
                 traffic_params={"speed": speed, "traffic_density": traffic_density},
             )

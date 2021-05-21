@@ -36,7 +36,6 @@ import ray
 import torch
 
 from smarts.zoo.registry import make
-from ultra.utils.common import str_to_bool
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
 from ultra.utils.curriculum.curriculum_info import CurriculumInfo
