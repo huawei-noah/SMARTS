@@ -152,6 +152,12 @@ class Waypoint(LanePoint):
             lane_index=lp.lane_index,
         )
 
+    def __eq__(self, other):
+        return super().__eq__(other)
+
+    def __hash__(self):
+        return super().__hash__()
+
 
 class LanePoints:
     def __init__(self, road_network, spacing, debug=True):
@@ -432,10 +438,11 @@ class LanePoints:
         lane = self._road_network.lane_by_id(lp.lane_id)
         return lane.getEdge()
 
+    @staticmethod
     def _closest_linked_lp_in_kd_tree_with_pose_batched(
-        self, poses, lanepoints, tree, within_radius, k=10, keep_all_k=False
+        poses, lanepoints, tree, within_radius, k=10, keep_all_k=False
     ):
-        linked_lanepoints = self._closest_linked_lp_in_kd_tree_batched(
+        linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_batched(
             [pose.position[:2] for pose in poses], lanepoints, tree, k=k
         )
 
@@ -465,7 +472,7 @@ class LanePoints:
             if len(group) == 0
         ]
         if len(unfound_lanepoints) > 0:
-            remaining_linked_lps = self._closest_linked_lp_in_kd_tree_batched(
+            remaining_linked_lps = LanePoints._closest_linked_lp_in_kd_tree_batched(
                 [pose.position[:2] for _, pose in unfound_lanepoints],
                 lanepoints,
                 tree=tree,
@@ -486,7 +493,8 @@ class LanePoints:
             for idx, l_lps in enumerate(linked_lanepoints)
         ]
 
-    def _closest_linked_lp_in_kd_tree_batched(self, points, linked_lps, tree, k=1):
+    @staticmethod
+    def _closest_linked_lp_in_kd_tree_batched(points, linked_lps, tree, k=1):
         p2ds = np.array([vec_2d(p) for p in points])
         closest_indices = tree.query(
             p2ds, k=min(k, len(linked_lps)), return_distance=False, sort_results=True
@@ -495,7 +503,7 @@ class LanePoints:
         return [[linked_lps[idx] for idx in idxs] for idxs in closest_indices]
 
     def closest_lanepoint_batched(self, poses, filter_from_count, within_radius):
-        linked_lanepoints = self._closest_linked_lp_in_kd_tree_with_pose_batched(
+        linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
             poses,
             self._linked_lanepoints,
             self._lanepoints_kd_tree,
@@ -511,7 +519,7 @@ class LanePoints:
         )[0]
 
     def closest_lanepoints(self, point, desired_count):
-        linked_lanepoints = self._closest_linked_lp_in_kd_tree_with_pose_batched(
+        linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
             [point],
             self._linked_lanepoints,
             self._lanepoints_kd_tree,
@@ -524,7 +532,7 @@ class LanePoints:
 
     def closest_lanepoint_on_lane(self, pose, lane_id):
         lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
-        linked_lanepoint = self._closest_linked_lp_in_kd_tree_with_pose_batched(
+        linked_lanepoint = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
             [pose],
             self._lanepoints_by_lane_id[lane_id],
             lane_kd_tree,
@@ -536,7 +544,7 @@ class LanePoints:
 
     def closest_lanepoint_on_lane_to_point(self, position, lane_id):
         lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
-        linked_lanepoint = self._closest_linked_lp_in_kd_tree_batched(
+        linked_lanepoint = LanePoints._closest_linked_lp_in_kd_tree_batched(
             [position], self._lanepoints_by_lane_id[lane_id], lane_kd_tree
         )[0][0]
 
@@ -548,7 +556,7 @@ class LanePoints:
         self, point, lane_id, lookahead, filter_edge_ids: Sequence[str] = None
     ):
         lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
-        closest_linked_lp = self._closest_linked_lp_in_kd_tree_batched(
+        closest_linked_lp = LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
         return self._waypoints_starting_at_lanepoint(
@@ -577,7 +585,7 @@ class LanePoints:
     def waypoint_paths_along_route(self, point, lookahead, route):
         assert len(route) > 0, f"Expected at least 1 edge in the route, got: {route}"
         closest_lp_on_each_route_edge = [
-            self._closest_linked_lp_in_kd_tree_batched(
+            LanePoints._closest_linked_lp_in_kd_tree_batched(
                 [point],
                 self._lanepoints_by_edge_id[edge],
                 self._lanepoints_kd_tree_by_edge_id[edge],
