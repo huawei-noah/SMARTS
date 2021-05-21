@@ -31,13 +31,17 @@ class ChaseViaPointsAgent(Agent):
             1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
         )
 
+class PPO(Agent):
+    def act(self, obs):
+        return super().act(obs)
 
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
         ),
-        agent_builder=ChaseViaPointsAgent,
+        # agent_builder=ChaseViaPointsAgent,
+        agent_builder=PPO,
     )
 
     env = gym.make(
