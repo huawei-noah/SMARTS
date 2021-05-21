@@ -225,7 +225,6 @@ def evaluate(
             )
             scenario_info = CurriculumInfo.tasks_levels_used
 
-    print("scenario_info:", scenario_info)
     # Create the environment with the specified agents.
     env = gym.make(
         "ultra.env:ultra-v0",
