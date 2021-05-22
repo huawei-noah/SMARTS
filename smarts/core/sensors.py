@@ -366,6 +366,7 @@ class Sensors:
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
+        # TODO:  the following calls nearest_lanes (expensive) 6 times
         reached_goal = cls._agent_reached_goal(sim, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)
@@ -421,12 +422,12 @@ class Sensors:
 
     @classmethod
     def _vehicle_is_on_shoulder(cls, sim, vehicle):
-        return any(
-            [
-                not sim.scenario.road_network.point_is_within_road(corner_coordinate)
-                for corner_coordinate in vehicle.bounding_box
-            ]
-        )
+        # XXX: this isn't technically right as this would also return True
+        #      for vehicles that are completely off road.
+        for corner_coordinate in vehicle.bounding_box:
+            if not sim.scenario.road_network.point_is_within_road(corner_coordinate):
+                return True
+        return False
 
     @classmethod
     def _vehicle_is_not_moving(cls, sim, vehicle):

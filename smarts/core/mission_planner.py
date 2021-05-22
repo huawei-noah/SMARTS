@@ -21,7 +21,7 @@ import logging
 import math
 import random
 from dataclasses import dataclass, replace
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -77,6 +77,7 @@ class MissionPlanner:
         self._route = None
         self._road_network = road_network
         self._lanepoints = road_network.lanepoints
+        self._waypoints_cache = MissionPlanner._WaypointsCache()
         self._did_plan = False
         self._task_is_triggered = False
         # TODO: These variables should be put in an appropriate place.
@@ -569,8 +570,12 @@ class MissionPlanner:
         )
 
     def _waypoint_paths_on_lane_at(
-        self, point, lane_id, lookahead: int, filter_edge_ids: Sequence[str] = None
-    ):
+        self,
+        point: Sequence,
+        lane_id,
+        lookahead: int,
+        filter_edge_ids: Sequence[str] = None,
+    ) -> List[List[Waypoint]]:
         """computes equally-spaced Waypoints for all lane paths
         up to lookahead waypoints ahead, constrained to filter_edge_ids if specified,
         starting at the nearest LanePoint to point within lane lane_id."""
@@ -590,7 +595,7 @@ class MissionPlanner:
         lookahead: int,
         within_radius: int = 5,
         filter_from_count: int = 3,
-    ):
+    ) -> List[List[Waypoint]]:
         closest_linked_lp = self._lanepoints.closest_lanepoint(
             pose, filter_from_count=filter_from_count, within_radius=within_radius
         )
@@ -606,7 +611,9 @@ class MissionPlanner:
         sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
         return sorted_wps
 
-    def _waypoint_paths_along_route(self, point, lookahead: int, route):
+    def _waypoint_paths_along_route(
+        self, point, lookahead: int, route
+    ) -> List[List[Waypoint]]:
         """finds the closest lane to vehicle's position that is on its route,
         then gets waypoint paths from all lanes in its edge there."""
         assert len(route) > 0, f"Expected at least 1 edge in the route, got: {route}"
@@ -629,20 +636,70 @@ class MissionPlanner:
         sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
         return sorted_wps
 
+    class _WaypointsCache:
+        def __init__(
+            self,
+            lookahead: int = 0,
+            point: Tuple[float, float, float] = None,
+            filter_edge_ids: tuple = None,
+            paths: List[List[Waypoint]] = None,
+        ):
+            self.update(lookahead, point, filter_edge_ids, paths)
+
+        def update(
+            self,
+            lookahead: int,
+            point: Tuple[float, float, float],
+            filter_edge_ids: tuple,
+            paths: List[List[Waypoint]],
+        ):
+            self.lookahead = lookahead
+            self.point = point
+            self.filter_edge_ids = filter_edge_ids
+            self.paths = paths
+
+        def hit(
+            self,
+            lookahead: int,
+            point: Tuple[float, float, float],
+            filter_edge_ids: tuple,
+        ) -> bool:
+            return (
+                lookahead <= self.lookahead
+                and point == self.point
+                and filter_edge_ids == self.filter_edge_ids
+            )
+
     def _waypoints_starting_at_lanepoint(
-        self, lanepoint: LinkedLanePoint, lookahead: int, filter_edge_ids: tuple, point
-    ):
+        self,
+        lanepoint: LinkedLanePoint,
+        lookahead: int,
+        filter_edge_ids: tuple,
+        point: Tuple[float, float, float],
+    ) -> List[List[Waypoint]]:
         """computes equally-spaced Waypoints for all lane paths starting at lanepoint
         up to lookahead waypoints ahead, constrained to filter_edge_ids if specified."""
+
+        # The following acts sort of like lru_cache(1), but it allows
+        # for lookahead to be <= to the cached value...
+        if self._waypoints_cache.hit(lookahead, point, filter_edge_ids):
+            # consider just returning all of them (not slicing)?
+            return self._waypoints_cache.paths[:lookahead]
+
         lanepoint_paths = self._lanepoints.paths_starting_at_lanepoint(
             lanepoint, lookahead, filter_edge_ids
         )
-        return [
+        result = [
             MissionPlanner._equally_spaced_path(path, point) for path in lanepoint_paths
         ]
 
+        self._waypoints_cache.update(lookahead, point, filter_edge_ids, result)
+        return result
+
     @staticmethod
-    def _equally_spaced_path(path, point):
+    def _equally_spaced_path(
+        path: Sequence[LinkedLanePoint], point: Tuple[float, float, float]
+    ) -> List[Waypoint]:
         """given a list of LanePoints starting near point, that may not be evenly spaced,
         returns the same number of Waypoints that are evenly spaced and start at point."""
 

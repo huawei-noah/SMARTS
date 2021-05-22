@@ -429,6 +429,7 @@ class SumoRoadNetwork:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
         x, y = point
+        # XXX: note that this getNeighboringLanes() call is fairly heavy/expensive (as revealed by profiling)
         candidate_lanes = self._graph.getNeighboringLanes(
             x, y, r=radius, includeJunctions=include_junctions, allowFallback=False
         )
@@ -559,17 +560,11 @@ class SumoRoadNetwork:
 
     def point_is_within_road(self, point):
         # XXX: Not robust around junctions (since their shape is quite crude?)
-        # # We use a small radius 10 factor in some forgiveness for crude SUMO distance checks
-        # for lane, dist in self.nearest_lanes(point[:2], radius=10):
-        #     shape = SumoRoadNetwork.buffered_lane_or_edge(lane, lane.getWidth() * 1)
-        #     if sumolib.geomhelper.isWithin(point, shape):
-        #         return True
-        #
-        # return False
-
         radius = max(5, 2 * self._default_lane_width)
-        nearest_lanes = self.nearest_lanes(point[:2], radius=radius)
-        return any(dist < 0.5 * nl.getWidth() + 1e-1 for nl, dist in nearest_lanes)
+        for nl, dist in self.nearest_lanes(point[:2], radius=radius):
+            if dist < 0.5 * nl.getWidth() + 1e-1:
+                return True
+        return False
 
     def drove_off_map(
         self, veh_position: Tuple[float, float, float], veh_heading: float
