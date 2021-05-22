@@ -637,38 +637,48 @@ class MissionPlanner:
         return sorted_wps
 
     class _WaypointsCache:
-        def __init__(
-            self,
-            lookahead: int = 0,
-            point: Tuple[float, float, float] = None,
-            filter_edge_ids: tuple = None,
-            paths: List[List[Waypoint]] = None,
-        ):
-            self.update(lookahead, point, filter_edge_ids, paths)
+        def __init__(self):
+            self.lookahead = 0
+            self.point = (0, 0, 0)
+            self.filter_edge_ids = ()
+            self._starts = {}
+
+        def _match(self, lookahead, point, filter_edge_ids) -> bool:
+            return (
+                lookahead <= self.lookahead
+                and point[0] == self.point[0]
+                and point[1] == self.point[1]
+                and filter_edge_ids == self.filter_edge_ids
+            )
 
         def update(
             self,
             lookahead: int,
             point: Tuple[float, float, float],
             filter_edge_ids: tuple,
+            llp: LinkedLanePoint,
             paths: List[List[Waypoint]],
         ):
-            self.lookahead = lookahead
-            self.point = point
-            self.filter_edge_ids = filter_edge_ids
-            self.paths = paths
+            if not self._match(lookahead, point, filter_edge_ids):
+                self.lookahead = lookahead
+                self.point = point
+                self.filter_edge_ids = filter_edge_ids
+                self._starts = {}
+            self._starts[llp.lp.lane_index] = paths
 
-        def hit(
+        def query(
             self,
             lookahead: int,
             point: Tuple[float, float, float],
             filter_edge_ids: tuple,
-        ) -> bool:
-            return (
-                lookahead <= self.lookahead
-                and point == self.point
-                and filter_edge_ids == self.filter_edge_ids
-            )
+            llp: LinkedLanePoint,
+        ) -> List[List[Waypoint]]:
+            if self._match(lookahead, point, filter_edge_ids):
+                hit = self._starts.get(llp.lp.lane_index, None)
+                # consider just returning all of them (not slicing)?
+                if hit:
+                    return [path[: (lookahead + 1)] for path in hit]
+            return None
 
     def _waypoints_starting_at_lanepoint(
         self,
@@ -682,9 +692,11 @@ class MissionPlanner:
 
         # The following acts sort of like lru_cache(1), but it allows
         # for lookahead to be <= to the cached value...
-        if self._waypoints_cache.hit(lookahead, point, filter_edge_ids):
-            # consider just returning all of them (not slicing)?
-            return self._waypoints_cache.paths[:lookahead]
+        cache_paths = self._waypoints_cache.query(
+            lookahead, point, filter_edge_ids, lanepoint
+        )
+        if cache_paths:
+            return cache_paths
 
         lanepoint_paths = self._lanepoints.paths_starting_at_lanepoint(
             lanepoint, lookahead, filter_edge_ids
@@ -693,7 +705,10 @@ class MissionPlanner:
             MissionPlanner._equally_spaced_path(path, point) for path in lanepoint_paths
         ]
 
-        self._waypoints_cache.update(lookahead, point, filter_edge_ids, result)
+        self._waypoints_cache.update(
+            lookahead, point, filter_edge_ids, lanepoint, result
+        )
+
         return result
 
     @staticmethod
