@@ -277,12 +277,12 @@ class Vehicle:
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
         origin = self.position[:2]
-        radius = numpy.array([self.width / 2, self.length / 2])
-        corners = [(-1, 1), (1, 1), (1, -1), (-1, -1)]
+        dimensions = numpy.array([self.width, self.length])
+        corners = numpy.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
         heading = self.heading
         return [
             rotate_around_point(
-                point=origin + numpy.array(corner) * radius,
+                point=origin + corner * dimensions,
                 radians=heading,
                 origin=origin,
             )

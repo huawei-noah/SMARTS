@@ -962,14 +962,13 @@ class WaypointsSensor(Sensor):
 class RoadWaypointsSensor(Sensor):
     def __init__(self, vehicle, sim, mission_planner, horizon=32):
         self._vehicle = vehicle
-        self._sim = sim
-        self._lanepoints = sim.road_network.lanepoints
+        self._road_netowrk = sim.road_network
         self._mission_planner = mission_planner
         self._horizon = horizon
 
     def __call__(self):
-        lp = self._lanepoints.closest_lanepoint(self._vehicle.pose)
-        road_edges = self._sim.road_network.road_edge_data_for_lane_id(lp.lane_id)
+        lp = self._road_network.lanepoints.closest_lanepoint(self._vehicle.pose)
+        road_edges = self.road_network.road_edge_data_for_lane_id(lp.lane_id)
 
         lane_paths = {}
         for edge in road_edges.forward_edges + road_edges.oncoming_edges:
@@ -988,7 +987,7 @@ class RoadWaypointsSensor(Sensor):
 
     def paths_for_lane(self, lane, overflow_offset=None):
         if overflow_offset is None:
-            offset = self._sim.road_network.offset_into_lane(
+            offset = self._road_network.offset_into_lane(
                 lane, self._vehicle.position[:2]
             )
             start_offset = offset - self._horizon
@@ -1003,9 +1002,7 @@ class RoadWaypointsSensor(Sensor):
             return paths
         else:
             start_offset = max(0, start_offset)
-            wp_start = self._sim.road_network.world_coord_from_offset(
-                lane, start_offset
-            )
+            wp_start = self._road_network.world_coord_from_offset(lane, start_offset)
             adj_pose = Pose.from_center(wp_start, self._vehicle.heading)
             wps_to_lookahead = self._horizon * 2
             paths = self._mission_planner.waypoint_paths_on_lane_at(
