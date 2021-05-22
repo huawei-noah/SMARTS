@@ -962,13 +962,13 @@ class WaypointsSensor(Sensor):
 class RoadWaypointsSensor(Sensor):
     def __init__(self, vehicle, sim, mission_planner, horizon=32):
         self._vehicle = vehicle
-        self._road_netowrk = sim.road_network
+        self._road_network = sim.road_network
         self._mission_planner = mission_planner
         self._horizon = horizon
 
     def __call__(self):
         lp = self._road_network.lanepoints.closest_lanepoint(self._vehicle.pose)
-        road_edges = self.road_network.road_edge_data_for_lane_id(lp.lane_id)
+        road_edges = self._road_network.road_edge_data_for_lane_id(lp.lane_id)
 
         lane_paths = {}
         for edge in road_edges.forward_edges + road_edges.oncoming_edges:
