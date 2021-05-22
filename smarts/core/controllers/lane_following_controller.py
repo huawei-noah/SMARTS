@@ -78,8 +78,9 @@ class LaneFollowingController:
         state = controller_state
         # This lookahead value is coupled with a few calculations below, changing it
         # may affect stability of the controller.
+        lookahead = 10
         wp_paths = sensor_state.mission_planner.waypoint_paths_at(
-            vehicle.pose, lookahead=16
+            vehicle.pose, lookahead=lookahead
         )
         current_lane = LaneFollowingController.find_current_lane(
             wp_paths, vehicle.position
@@ -101,7 +102,7 @@ class LaneFollowingController:
             ewma_road_curviness / road_curviness_normalization, 0, 1
         )
         # Number of trajectory point used for curvature calculation.
-        num_trajectory_points = min([10, len(wp_path)])
+        num_trajectory_points = min([lookahead, len(wp_path)])
         trajectory = [
             [wp_path[i].pos[0] for i in range(num_trajectory_points)],
             [wp_path[i].pos[1] for i in range(num_trajectory_points)],

@@ -675,8 +675,8 @@ class MissionPlanner:
         ) -> List[List[Waypoint]]:
             if self._match(lookahead, point, filter_edge_ids):
                 hit = self._starts.get(llp.lp.lane_index, None)
-                # consider just returning all of them (not slicing)?
                 if hit:
+                    # consider just returning all of them (not slicing)?
                     return [path[: (lookahead + 1)] for path in hit]
             return None
 
