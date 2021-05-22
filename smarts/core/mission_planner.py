@@ -42,10 +42,11 @@ class PlanningError(Exception):
 @dataclass(frozen=True)
 class Waypoint(LanePoint):
     """Dynamic, based on map and vehicle.  Unlike LanePoints,
-    Waypoints do not have to snap to the middle of a road-network Lane,
-    but rather they start just in front of a vehicle's present location.
-    These are usually what is returned through a vehicle's sensors.
-    Waypoints are always evenly-spaced."""
+    Waypoints do not have to snap to the middle of a road-network Lane.
+    They start abreast of a vehicle's present location in the nearest Lane
+    and are then interpolatd along the LanePoints paths such that
+    they're evenly spaced.  These are usually what is returned through
+    a vehicle's sensors."""
 
     # XXX: consider renaming lane_id, lane_index, lane_width
     #      to nearest_lane_id, nearest_lane_index, nearest_lane_width
