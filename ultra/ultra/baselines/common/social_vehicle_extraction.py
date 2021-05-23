@@ -23,7 +23,7 @@ import numpy as np
 import random
 from scipy.spatial.distance import euclidean
 from collections import defaultdict
-from ultra.utils.common import rotate2d_vector
+from ultra.ultra.utils.common import rotate2d_vector
 
 HORIZONTAL = 0
 VERTICAL = 1

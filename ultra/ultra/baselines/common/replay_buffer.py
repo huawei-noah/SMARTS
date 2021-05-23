@@ -24,7 +24,7 @@ from collections import deque, namedtuple
 import numpy as np
 import random, copy
 import torch
-from ultra.utils.common import normalize_im
+from ultra.ultra.utils.common import normalize_im
 from collections.abc import Iterable
 
 from torch.utils.data import Dataset, Sampler, DataLoader

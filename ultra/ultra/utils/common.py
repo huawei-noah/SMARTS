@@ -32,7 +32,7 @@ from matplotlib import pyplot as plt
 from scipy.spatial.distance import euclidean
 from skimage.transform import resize
 
-import ultra.utils.geometry as geometry
+import ultra.ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
 import math, datetime
 

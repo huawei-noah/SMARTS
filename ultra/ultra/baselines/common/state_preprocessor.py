@@ -33,11 +33,11 @@ from smarts.core.sensors import (
     Heading,
     Observation,
 )
-from ultra.baselines.common.social_vehicle_extraction import (
+from ultra.ultra.baselines.common.social_vehicle_extraction import (
     get_social_vehicles_leading,
     get_social_vehicles_states_sorted_by_distance,
 )
-from ultra.utils.common import (
+from ultra.ultra.utils.common import (
     get_closest_waypoint,
     get_path_to_goal,
 )

@@ -33,7 +33,8 @@ class ChaseViaPointsAgent(Agent):
 
 class PPO(Agent):
     def act(self, obs):
-        return super().act(obs)
+        # return policy.PPOPolicy.act
+        return '5'
 
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
