@@ -23,7 +23,7 @@ from itertools import cycle
 import glob, yaml
 from smarts.core.scenario import Scenario
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-from ultra.baselines.adapter import BaselineAdapter
+from ultra.baselines.adapter import reward_adapter_from_type
 from ultra.baselines.common.yaml_loader import load_yaml
 import numpy as np
 from scipy.spatial import distance
@@ -51,7 +51,11 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
         config["scenarios"] = _scenarios
-        self.ultra_scores = BaselineAdapter.reward_adapter
+        # TODO: Does the ULTRA environment need an ultra_scores? Perhaps the reward
+        #       adapter should be agent-specific. Also, check if ultra_scores is being
+        #       called twice on the same reward... once in step() and then another time
+        #       in generate_logs().
+        self.ultra_scores = reward_adapter_from_type("default")
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:

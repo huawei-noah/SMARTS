@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os, gym
+from ultra.baselines.adapter import action_adapter_from_type, action_space_from_type, observation_adapter_from_type, observation_space_from_type, reward_adapter_from_type
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.utils.ray import default_ray_kwargs
 import timeit, datetime
 
@@ -47,7 +49,6 @@ from ultra.baselines.rllib.models.fc_network import CustomFCModel
 from ultra.baselines.rllib.agent import RllibAgent
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
-from ultra.baselines.adapter import BaselineAdapter
 
 from ultra.utils.episode import Callbacks
 from ultra.utils.episode import log_creator
@@ -69,22 +70,57 @@ def train(
     sgd_minibatch_size,
     log_dir,
 ):
-
     agent_name = policy
     policy_params = load_yaml(f"ultra/baselines/{agent_name}/{agent_name}/params.yaml")
-    adapter = BaselineAdapter(policy_params)
+
+    action_type = policy_params["action_type"]
+    observation_type = policy_params["observation_type"]
+    reward_type = policy_params["reward_type"]
+
+    if action_type != "continuous":
+        raise Exception("RLlib training only supports the 'continuous' action type.")
+    if observation_type != "vector":
+        raise Exception("RLlib training only supports the 'vector' observation type.")
+
+    action_space = action_space_from_type(action_type=action_type)
+    observation_space = observation_space_from_type(observation_type=observation_type)
+
+    action_adapter = action_adapter_from_type(action_type=action_type)
+    observation_adapter = observation_adapter_from_type(observation_type=observation_type)
+    reward_adapter = reward_adapter_from_type(reward_type=reward_type)
+
+    encoder_key = policy_params["social_vehicles"]["encoder_key"]
+    num_social_features = observation_space["social_vehicles"].shape[1]
+    social_capacity = observation_space["social_vehicles"].shape[0]
+    social_policy_hidden_units = int(
+        policy_params["social_vehicles"].get("social_policy_hidden_units", 0)
+    )
+    social_policy_init_std = int(
+        policy_params["social_vehicles"].get("social_policy_init_std", 0)
+    )
+    social_vehicle_config = get_social_vehicle_configs(
+        encoder_key=encoder_key,
+        num_social_features=num_social_features,
+        social_capacity=social_capacity,
+        seed=seed,  # NOTE: We are the local seed, not the seed from the policy params.
+        social_policy_hidden_units=social_policy_hidden_units,
+        social_policy_init_std=social_policy_init_std,
+    )
+
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
     config = RllibAgent.rllib_default_config(agent_name)
 
     rllib_policies = {
         "default_policy": (
             None,
-            adapter.observation_space,
-            adapter.action_space,
+            observation_space,
+            action_space,
             {
                 "model": {
                     "custom_model": "fc_model",
-                    "custom_model_config": {"adapter": adapter},
+                    "custom_model_config": {
+                        "social_vehicle_config": social_vehicle_config
+                    },
                 }
             },
         )
@@ -101,9 +137,9 @@ def train(
             ),
             agent_params={},
             agent_builder=None,
-            observation_adapter=adapter.observation_adapter,
-            reward_adapter=adapter.reward_adapter,
-            # action_adapter=adapter.action_adapter,
+            action_adapter=action_adapter,
+            observation_adapter=observation_adapter,
+            reward_adapter=reward_adapter,
         )
     }
 
