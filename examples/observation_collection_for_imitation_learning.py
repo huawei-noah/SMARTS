@@ -31,9 +31,14 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
 
     smarts.reset(next(scenarios_iterator))
 
+    # could also include "motorcycle" or "truck" in this set if desired
+    vehicle_types = frozenset({"car"})
+
     for _ in range(5000):
         smarts.step({})
-        current_vehicles = smarts.vehicle_index.social_vehicle_ids()
+        current_vehicles = smarts.vehicle_index.social_vehicle_ids(
+            vehicle_types=vehicle_types
+        )
         smarts.attach_sensors_to_vehicles(agent_spec, current_vehicles)
         obs, _, _, dones = smarts.observe_from(current_vehicles)
         # TODO: save observations for imitation learning

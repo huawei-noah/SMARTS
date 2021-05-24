@@ -164,11 +164,15 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
-    def social_vehicle_ids(self):
+    def social_vehicle_ids(self, vehicle_types=None):
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Social
         ]["vehicle_id"]
-        vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
+        vehicle_ids = [
+            self._2id_to_id[id_]
+            for id_ in vehicle_ids
+            if not vehicle_types or self._vehicles[id_].vehicle_type in vehicle_types
+        ]
         return set(vehicle_ids)
 
     @cache
