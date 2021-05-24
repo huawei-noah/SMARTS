@@ -21,7 +21,7 @@ import logging
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from typing import NamedTuple
+from typing import FrozenSet, NamedTuple
 
 import numpy as np
 import tableprint as tp
@@ -164,7 +164,7 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
-    def social_vehicle_ids(self, vehicle_types=None):
+    def social_vehicle_ids(self, vehicle_types: FrozenSet[str] = None):
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Social
         ]["vehicle_id"]
