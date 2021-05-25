@@ -77,9 +77,18 @@ class DQNPolicy(Agent):
             ),
         ]
         self.merge_action_spaces = 0
-        self.index2actions = [merge_discrete_action_spaces([discrete_action_space])[0] for discrete_action_space in discrete_action_spaces]
-        self.action2indexs = [merge_discrete_action_spaces([discrete_action_space])[1] for discrete_action_space in discrete_action_spaces]
-        self.num_actions = [len(discrete_action_space) for discrete_action_space in discrete_action_spaces]
+        self.index2actions = [
+            merge_discrete_action_spaces([discrete_action_space])[0]
+            for discrete_action_space in discrete_action_spaces
+        ]
+        self.action2indexs = [
+            merge_discrete_action_spaces([discrete_action_space])[1]
+            for discrete_action_space in discrete_action_spaces
+        ]
+        self.num_actions = [
+            len(discrete_action_space)
+            for discrete_action_space in discrete_action_spaces
+        ]
 
         self.observation_space = observation_space_from_type(self.observation_type)
         self.low_dim_states_size = self.observation_space["low_dim_states"].shape[0]

@@ -20,7 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os, gym
-from ultra.baselines.adapter import action_adapter_from_type, action_space_from_type, observation_adapter_from_type, observation_space_from_type, reward_adapter_from_type
+from ultra.baselines.adapter import (
+    action_adapter_from_type,
+    action_space_from_type,
+    observation_adapter_from_type,
+    observation_space_from_type,
+    reward_adapter_from_type,
+)
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.utils.ray import default_ray_kwargs
 import timeit, datetime
@@ -86,7 +92,9 @@ def train(
     observation_space = observation_space_from_type(observation_type=observation_type)
 
     action_adapter = action_adapter_from_type(action_type=action_type)
-    observation_adapter = observation_adapter_from_type(observation_type=observation_type)
+    observation_adapter = observation_adapter_from_type(
+        observation_type=observation_type
+    )
     reward_adapter = reward_adapter_from_type(reward_type=reward_type)
 
     encoder_key = policy_params["social_vehicles"]["encoder_key"]

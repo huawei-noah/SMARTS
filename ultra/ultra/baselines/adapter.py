@@ -39,7 +39,7 @@ from smarts.core.agent_interface import (
     OGM,
     RGB,
     RoadWaypoints,
-    Waypoints
+    Waypoints,
 )
 from smarts.core.sensors import Observation, VehicleObservation
 
@@ -86,7 +86,7 @@ class Adapter:
 
 class DiscreteActionAdapter(Adapter):
     gym_space: gym.Space = None  # TODO: Make gym space.
-    required_interface = { "action": ActionSpaceType.Lane }
+    required_interface = {"action": ActionSpaceType.Lane}
 
     @staticmethod
     def adapt(action):
@@ -99,7 +99,7 @@ class ContinuousActionAdapter(Adapter):
         high=np.array([1.0, 1.0, 1.0]),
         dtype=np.float32,
     )
-    required_interface = { "action": ActionSpaceType.Continuous }
+    required_interface = {"action": ActionSpaceType.Continuous}
 
     @staticmethod
     def adapt(action):
@@ -109,13 +109,13 @@ class ContinuousActionAdapter(Adapter):
 class VectorObservationAdapter(Adapter):
     _WAYPOINTS = 20  # Number of waypoints on the path ahead of the ego vehicle.
     _SIZE = (
-        1 +               # Speed.
-        1 +               # Distance from center.
-        1 +               # Steering.
-        1 +               # Angle error.
-        2 +               # Relative goal position.
-        2 * _WAYPOINTS +  # Waypoints lookahead.
-        1                 # Road speed.
+        1  # Speed.
+        + 1  # Distance from center.
+        + 1  # Steering.
+        + 1  # Angle error.
+        + 2  # Relative goal position
+        + 2 * _WAYPOINTS  # Waypoints lookahead.
+        + 1  # Road speed.
     )
     _NORMALIZATION_VALUES = {
         "speed": 30.0,
@@ -133,10 +133,10 @@ class VectorObservationAdapter(Adapter):
     gym_space: gym.Space = gym.spaces.Dict(
         {
             "low_dim_states": gym.spaces.Box(
-                low=-1e10, high=1e10, shape=(_SIZE,), dtype=np.float32,
+                low=-1e10, high=1e10, shape=(_SIZE,), dtype=np.float32
             ),
             "social_vehicles": gym.spaces.Box(
-                low=-1e10, high=1e10, shape=(_CAPACITY, _FEATURES), dtype=np.float32,
+                low=-1e10, high=1e10, shape=(_CAPACITY, _FEATURES), dtype=np.float32
             ),
         }
     )
@@ -156,15 +156,13 @@ class VectorObservationAdapter(Adapter):
         ego_waypoints = observation.waypoint_paths
 
         ego_goal_path = get_path_to_goal(
-            goal=ego_goal,
-            paths=ego_waypoints,
-            start=ego_start
+            goal=ego_goal, paths=ego_waypoints, start=ego_start
         )
         ego_closest_waypoint, ego_lookahead_waypoints = get_closest_waypoint(
             num_lookahead=VectorObservationAdapter._WAYPOINTS,
             goal_path=ego_goal_path,
             ego_position=ego_position,
-            ego_heading=ego_heading
+            ego_heading=ego_heading,
         )
         ego_lookahead_waypoints = np.hstack(ego_lookahead_waypoints)
 
@@ -176,7 +174,7 @@ class VectorObservationAdapter(Adapter):
 
         ego_relative_rotated_goal_position = rotate2d_vector(
             np.asarray(ego_goal.position[0:2]) - np.asarray(ego_position[0:2]),
-            -ego_heading
+            -ego_heading,
         )
 
         observation_dict = dict(
@@ -193,18 +191,21 @@ class VectorObservationAdapter(Adapter):
             ego_position=ego_position,
             waypoint_paths=ego_waypoints,
             events=observation.events,
-            waypoints_lookahead=ego_lookahead_waypoints
+            waypoints_lookahead=ego_lookahead_waypoints,
         )
         normalized_observation = [
             VectorObservationAdapter._normalize(key, observation_dict[key])
             for key in VectorObservationAdapter._NORMALIZATION_VALUES.keys()
         ]
-        low_dim_states = np.concatenate([
-            value
-            if isinstance(value, collections.abc.Iterable)
-            else np.asarray([value])
-            for value in normalized_observation
-        ], axis=-1)
+        low_dim_states = np.concatenate(
+            [
+                value
+                if isinstance(value, collections.abc.Iterable)
+                else np.asarray([value])
+                for value in normalized_observation
+            ],
+            axis=-1,
+        )
 
         # Adapt the social vehicles.
         social_vehicles = observation.neighborhood_vehicle_states
@@ -216,17 +217,22 @@ class VectorObservationAdapter(Adapter):
         else:
             # Sort by distance to the ego vehicle.
             social_vehicles.sort(
-                key=lambda vehicle: VectorObservationAdapter._get_distance(vehicle, ego_position), reverse=False
+                key=lambda vehicle: VectorObservationAdapter._get_distance(
+                    vehicle, ego_position
+                ),
+                reverse=False,
             )
             # Extract the state of each social vehicle.
-            social_vehicles = np.asarray([
-                VectorObservationAdapter._extract_social_vehicle_state(
-                    social_vehicle=social_vehicle,
-                    ego_position=ego_position,
-                    ego_heading=ego_heading,
-                )
-                for social_vehicle in social_vehicles
-            ])
+            social_vehicles = np.asarray(
+                [
+                    VectorObservationAdapter._extract_social_vehicle_state(
+                        social_vehicle=social_vehicle,
+                        ego_position=ego_position,
+                        ego_heading=ego_heading,
+                    )
+                    for social_vehicle in social_vehicles
+                ]
+            )
 
         # Pad with zero vectors if we don't have enough social vehicles.
         if len(social_vehicles) < VectorObservationAdapter._CAPACITY:
@@ -237,7 +243,7 @@ class VectorObservationAdapter(Adapter):
             social_vehicles = np.concatenate((social_vehicles, empty_social_vehicles))
 
         # Remove extra social vehicles if there were too many in the observation.
-        social_vehicles = social_vehicles[:VectorObservationAdapter._CAPACITY]
+        social_vehicles = social_vehicles[: VectorObservationAdapter._CAPACITY]
 
         vector_observation = {
             "low_dim_states": low_dim_states.astype(np.float32),
@@ -266,7 +272,7 @@ class VectorObservationAdapter(Adapter):
             relative_position_difference[0] / 100.0,
             relative_position_difference[1] / 100.0,
             absolute_heading_difference / 3.14,
-            social_vehicle.speed / 30.0
+            social_vehicle.speed / 30.0,
         ]
         return social_vehicle_state
 
@@ -284,7 +290,7 @@ class ImageObservationAdapter(Adapter):
     gym_space: gym.Space = gym.spaces.Box(
         low=-1.0, high=1.0, shape=(_HEIGHT, _WIDTH), dtype=np.float32
     )
-    required_interface={
+    required_interface = {
         "rgb": RGB(width=_WIDTH, height=_HEIGHT, resolution=_RESOLUTION)
     }
 
@@ -301,7 +307,7 @@ class DefaultRewardAdapter(Adapter):
     gym_space: gym.Space = gym.spaces.Box(
         low=-1e10, high=1e10, shape=(1,), dtype=np.float32
     )
-    required_interface={
+    required_interface = {
         "waypoints": Waypoints(lookahead=_WAYPOINTS),
         "neighborhood_vehicles": NeighborhoodVehicles(radius=_RADIUS),
     }
@@ -448,15 +454,11 @@ def action_adapter_from_type(action_type: ActionType) -> Callable:
     return _TYPE_TO_ADAPTER[action_type].adapt
 
 
-def observation_space_from_type(
-    observation_type: ObservationType
-) -> gym.Space:
+def observation_space_from_type(observation_type: ObservationType) -> gym.Space:
     return _TYPE_TO_ADAPTER[observation_type].gym_space
 
 
-def observation_adapter_from_type(
-    observation_type: ObservationType
-) -> Callable:
+def observation_adapter_from_type(observation_type: ObservationType) -> Callable:
     return _TYPE_TO_ADAPTER[observation_type].adapt
 
 

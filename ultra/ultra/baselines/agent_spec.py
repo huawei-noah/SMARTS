@@ -23,7 +23,12 @@ import json
 import numpy as np
 import torch, yaml, os, inspect, dill
 from smarts.core.agent_interface import AgentInterface
-from ultra.baselines.adapter import action_adapter_from_type, observation_adapter_from_type, required_interface_from_types, reward_adapter_from_type
+from ultra.baselines.adapter import (
+    action_adapter_from_type,
+    observation_adapter_from_type,
+    required_interface_from_types,
+    reward_adapter_from_type,
+)
 
 from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec

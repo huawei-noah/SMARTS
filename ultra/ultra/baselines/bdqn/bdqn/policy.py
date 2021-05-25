@@ -68,12 +68,17 @@ class BehavioralDQNPolicy(DQNPolicy):
         if self.action_type != "discrete":
             raise Exception("BDQN baseline only supports the 'discrete' action type.")
         if self.observation_type != "vector":
-            raise Exception("BDQN baseline only supports the 'vector' observation type.")
+            raise Exception(
+                "BDQN baseline only supports the 'vector' observation type."
+            )
 
         discrete_action_spaces = [[0], [1]]
         self.merge_action_spaces = -1
         index_to_actions = [
-            discrete_action_space.tolist() if not isinstance(discrete_action_space, list) else discrete_action_space for discrete_action_space in discrete_action_spaces
+            discrete_action_space.tolist()
+            if not isinstance(discrete_action_space, list)
+            else discrete_action_space
+            for discrete_action_space in discrete_action_spaces
         ]
         action_to_indexs = {
             str(discrete_action): index

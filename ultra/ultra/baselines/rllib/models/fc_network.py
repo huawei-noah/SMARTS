@@ -49,13 +49,19 @@ class CustomFCModel(TorchModelV2, nn.Module):
         nn.Module.__init__(self)
 
         if "social_vehicle_config" in model_config["custom_model_config"]:
-            social_vehicle_config = model_config["custom_model_config"]["social_vehicle_config"]
+            social_vehicle_config = model_config["custom_model_config"][
+                "social_vehicle_config"
+            ]
         else:
             social_vehicle_config = customized_model_kwargs["social_vehicle_config"]
 
         social_vehicle_encoder_config = social_vehicle_config["encoder"]
-        social_feature_encoder_class = social_vehicle_encoder_config["social_feature_encoder_class"]
-        social_feature_encoder_params = social_vehicle_encoder_config["social_feature_encoder_params"]
+        social_feature_encoder_class = social_vehicle_encoder_config[
+            "social_feature_encoder_class"
+        ]
+        social_feature_encoder_params = social_vehicle_encoder_config[
+            "social_feature_encoder_params"
+        ]
         self.social_feature_encoder = (
             social_feature_encoder_class(**social_feature_encoder_params)
             if social_feature_encoder_class
