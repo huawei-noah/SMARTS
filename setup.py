@@ -35,7 +35,7 @@ setup(
         "pandas",
         "psutil",
         "visdom",
-        "pybullet",
+        "pybullet==3.0.6",
         "sklearn",  # KDTree from sklearn is used by waypoints
         "tableprint",
         "trimesh",  # Used for writing .glb files
