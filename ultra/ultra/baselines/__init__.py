@@ -47,6 +47,6 @@ register(
 register(
     locator="bdqn-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Lane, policy_class=BehavioralDQNPolicy, **kwargs
+        policy_class=BehavioralDQNPolicy, **kwargs
     ),
 )
