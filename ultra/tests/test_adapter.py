@@ -27,7 +27,6 @@ import ray
 
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import make
-from ultra.baselines.adapter import BaselineAdapter
 from ultra.baselines.agent_spec import BaselineAgentSpec
 
 AGENT_ID = "001"

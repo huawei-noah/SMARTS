@@ -199,10 +199,10 @@ class VectorObservationAdapter(Adapter):
             VectorObservationAdapter._normalize(key, observation_dict[key])
             for key in VectorObservationAdapter._NORMALIZATION_VALUES.keys()
         ]
-        low_dim_states_observation = np.concatenate([
+        low_dim_states = np.concatenate([
             value
             if isinstance(value, collections.abc.Iterable)
-            else np.asarray([value]).astype(np.float32)
+            else np.asarray([value])
             for value in normalized_observation
         ], axis=-1)
 
@@ -212,9 +212,7 @@ class VectorObservationAdapter(Adapter):
         if len(social_vehicles) == 0:
             # There are no social vehicles. Create an empty array with the correct
             # number of features so it can be padded.
-            social_vehicles = np.empty(
-                (0, VectorObservationAdapter._FEATURES), dtype=np.float32
-            )
+            social_vehicles = np.empty((0, VectorObservationAdapter._FEATURES))
         else:
             # Sort by distance to the ego vehicle.
             social_vehicles.sort(
@@ -228,13 +226,13 @@ class VectorObservationAdapter(Adapter):
                     ego_heading=ego_heading,
                 )
                 for social_vehicle in social_vehicles
-            ], dtype=np.float32)
+            ])
 
         # Pad with zero vectors if we don't have enough social vehicles.
         if len(social_vehicles) < VectorObservationAdapter._CAPACITY:
             remain = VectorObservationAdapter._CAPACITY - len(social_vehicles)
             empty_social_vehicles = np.zeros(
-                shape=(remain, VectorObservationAdapter._FEATURES), dtype=np.float32
+                shape=(remain, VectorObservationAdapter._FEATURES)
             )
             social_vehicles = np.concatenate((social_vehicles, empty_social_vehicles))
 
@@ -242,8 +240,8 @@ class VectorObservationAdapter(Adapter):
         social_vehicles = social_vehicles[:VectorObservationAdapter._CAPACITY]
 
         vector_observation = {
-            "low_dim_states": low_dim_states_observation,
-            "social_vehicles": social_vehicles,
+            "low_dim_states": low_dim_states.astype(np.float32),
+            "social_vehicles": social_vehicles.astype(np.float32),
         }
         return vector_observation
 
