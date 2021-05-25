@@ -482,7 +482,7 @@ class Sensors:
 
         # Route is endless
         if not route_edges:
-            is_wrong_way = cls._vehicle_is_wrong_way(sim, vehicle, nearest_lane.getID())
+            is_wrong_way = cls._check_wrong_way_event(nearest_lane, sim, vehicle)
             return (False, is_wrong_way)
 
         closest_edges = []
@@ -503,9 +503,7 @@ class Sensors:
             # Lanes from an edge are parallel so any lane from the edge will do for direction check
             # but the innermost lane will be the last lane in the edge and usually the closest.
             lane_to_check = route_edge_or_oncoming.getLanes()[-1]
-            is_wrong_way = cls._vehicle_is_wrong_way(
-                sim, vehicle, lane_to_check.getID()
-            )
+            is_wrong_way = cls._check_wrong_way_event(lane_to_check, sim, vehicle)
 
         return (is_off_route, is_wrong_way)
 
@@ -521,6 +519,15 @@ class Sensors:
             np.fabs(vehicle.pose.heading.relative_to(closest_waypoint.heading))
             > 0.5 * np.pi
         )
+
+    @classmethod
+    def _check_wrong_way_event(cls, lane_to_check, sim, vehicle):
+        # When the vehicle is in an intersection, turn off the `wrong way` check to avoid
+        # false positive `wrong way` events.
+        if lane_to_check.getEdge().isSpecial():
+            return False
+
+        return cls._vehicle_is_wrong_way(sim, vehicle, lane_to_check.getID())
 
     @classmethod
     @lru_cache(maxsize=32)
