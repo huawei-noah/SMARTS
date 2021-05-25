@@ -15,6 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828 
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
+- Refactored `Waypoints` into `LanePoints` (static, map-based) and `Waypoints` (dynamic).  See Issue #829.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 
