@@ -42,9 +42,7 @@ register(
 )
 register(
     locator="dqn-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous, policy_class=DQNPolicy, **kwargs
-    ),
+    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=DQNPolicy, **kwargs),
 )
 register(
     locator="bdqn-v0",
