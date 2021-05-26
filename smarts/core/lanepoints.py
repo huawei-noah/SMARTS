@@ -128,7 +128,7 @@ class LinkedLanePoint(NamedTuple):
         ## distinguish between different continuations here too
         ## so the lru_cache on _lanepoint_paths_starting_at_lanepoint() below
         ## doesn't return the wrong set of LanePoints.
-        return hash(self.lp) + sum(hash(nlp.lp) for nlp in self.nexts)
+        return hash((self.lp, tuple(nlp.lp for nlp in self.nexts)))
 
 
 class LanePoints:
