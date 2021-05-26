@@ -1,4 +1,5 @@
 import logging
+import pickle
 from typing import Sequence
 
 from envision.client import Client as Envision
@@ -29,19 +30,44 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
         list([]),
     )
 
-    smarts.reset(next(scenarios_iterator))
+    scenario = next(scenarios_iterator)
+    smarts.reset(scenario)
+
+    collected_data = {}
 
     # could also include "motorcycle" or "truck" in this set if desired
     vehicle_types = frozenset({"car"})
 
-    for _ in range(5000):
+    while True:
         smarts.step({})
         current_vehicles = smarts.vehicle_index.social_vehicle_ids(
             vehicle_types=vehicle_types
         )
+
+        if collected_data and not current_vehicles or smarts.elapsed_sim_time > 60:
+            print("no more vehicles.  exiting...")
+            break
+
         smarts.attach_sensors_to_vehicles(agent_spec, current_vehicles)
         obs, _, _, dones = smarts.observe_from(current_vehicles)
-        # TODO: save observations for imitation learning
+
+        # just a hypothetical example of how we might collect some observations to save...
+        for car, car_obs in obs.items():
+            car_state = car_obs.ego_vehicle_state
+            t = smarts.elapsed_sim_time
+            collected_data.setdefault(car, {}).setdefault(t, {})
+            collected_data[car][t]["ego_pos"] = car_state.position
+            collected_data[car][t]["heading"] = car_state.heading
+            collected_data[car][t]["speed"] = car_state.speed
+            collected_data[car][t]["angular_velocity"] = car_state.yaw_rate
+            # note: acceleration is a 3-vector...
+            collected_data[car][t]["acceleration"] = car_state.linear_acceleration
+
+    # an example of how we might save the data per car
+    for car, data in collected_data.items():
+        outfile = f"data_{scenario.name}_{scenario.traffic_history.name}_{car}.pkl"
+        with open(outfile, "wb") as of:
+            pickle.dump(data, of)
 
     smarts.destroy()
 

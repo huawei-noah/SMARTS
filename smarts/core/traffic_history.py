@@ -34,13 +34,17 @@ class TrafficHistory:
         self._db = db
         self._db_cnxn = None
 
+    @property
+    def name(self):
+        return self._db.name[:-4]  # all history files have ".shf" extension
+
     def connect_for_multiple_queries(self):
         """Optional optimization to avoid the overhead of parsing
         the sqlite file header multiple times for clients that
         will be performing multiple queries.  If used, then
         disconnect() should be called when finished."""
         if not self._db_cnxn:
-            self._db_cnxn = sqlite3.connect(self._db)
+            self._db_cnxn = sqlite3.connect(self._db.path)
 
     def disconnect(self):
         if self._db_cnxn:

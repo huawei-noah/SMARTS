@@ -15,11 +15,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828 
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
+- Vehicles with a `BoxChassis` can now use an `AccelerometerSensor` too.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 - Fixed a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
 - Limited the number of workers SMARTS will use to establish remote agents so as to lower memory footprint.
 - Patched a restart of SUMO every 50 resets to avoid rampant memory growth.
+- Fixed bugs in `AccelerometerSensor`.  See PR #8??.
+- Ensure that `yaw_rate` is always a scalar in `EgoVehicleObservation`.
 ## Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 

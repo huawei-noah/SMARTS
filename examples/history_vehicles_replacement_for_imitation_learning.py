@@ -1,6 +1,7 @@
+from dataclasses import replace
 import logging
 import math
-from dataclasses import replace
+import numpy as np
 import random
 import sys
 from typing import Sequence, Tuple, Union
@@ -14,7 +15,7 @@ from smarts.core.scenario import Mission, Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
-from smarts.core.utils.math import min_angles_difference_signed
+from smarts.core.utils.math import min_angles_difference_signed, radians_to_vec
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,7 +43,7 @@ class PlaceholderAgent(Agent):
         # just "fake it" by attempting to match whatever the nearest vehicle
         # is doing...
         if not obs.neighborhood_vehicle_states:
-            return (0, 0)
+            return ((0.0, 0.0, 0.0), 0.0)
         nn = obs.neighborhood_vehicle_states[0]
         me = obs.ego_vehicle_state
         heading_delta = min_angles_difference_signed(nn.heading, me.heading)
@@ -52,10 +53,11 @@ class PlaceholderAgent(Agent):
             PlaceholderAgent._dist(me.position, nn.position) > 15
             or heading_delta > math.pi / 2
         ):
-            return (0, 0)
+            return ((0.0, 0.0, 0.0), 0.0)
         # simulate a "cushion" we might find in the real data
         avg_following_distance_s = 2
-        acceleration = (nn.speed - me.speed) / avg_following_distance_s
+        nn_velocity = np.append(radians_to_vec(nn.heading) * nn.speed, 0.0)
+        acceleration = (nn_velocity - me.linear_velocity) / avg_following_distance_s
         angular_velocity = heading_delta / avg_following_distance_s
         return (acceleration, angular_velocity)
 

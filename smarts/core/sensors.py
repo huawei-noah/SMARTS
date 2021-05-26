@@ -219,7 +219,9 @@ class Sensors:
         }
         if vehicle.subscribed_to_accelerometer_sensor:
             acceleration_values = vehicle.accelerometer_sensor(
-                ego_vehicle_state.linear_velocity, ego_vehicle_state.angular_velocity
+                ego_vehicle_state.linear_velocity,
+                ego_vehicle_state.angular_velocity,
+                ego_vehicle_state.pose.heading,
             )
             acceleration_params.update(
                 dict(
@@ -1022,25 +1024,39 @@ class RoadWaypointsSensor(Sensor):
 
 class AccelerometerSensor(Sensor):
     def __init__(self, vehicle, sim):
-        self.linear_accelerations = deque(maxlen=3)
-        self.angular_accelerations = deque(maxlen=3)
+        self._dt = sim.timestep_sec
+        self.linear_velocities = deque(maxlen=3)
+        self.angular_velocities = deque(maxlen=3)
 
-    def __call__(self, linear_velocity, angular_velocity):
+    def __call__(self, linear_velocity, angular_velocity, heading):
         if linear_velocity is not None:
-            self.linear_accelerations.append(linear_velocity)
+            self.linear_velocities.append(linear_velocity)
         if angular_velocity is not None:
-            self.angular_accelerations.append(angular_velocity)
+            self.angular_velocities.append(angular_velocity)
 
-        if len(self.linear_accelerations) < 3 or len(self.angular_accelerations) < 3:
-            return (0.0, 0.0, 0.0, 0.0)
+        linear_acc = np.array((0.0, 0.0, 0.0))
+        angular_acc = np.array((0.0, 0.0, 0.0))
+        linear_jerk = np.array((0.0, 0.0, 0.0))
+        angular_jerk = np.array((0.0, 0.0, 0.0))
 
-        linear_acc = self.linear_accelerations[0] - self.linear_accelerations[1]
-        last_linear_acc = self.linear_accelerations[1] - self.linear_accelerations[2]
-        angular_acc = self.angular_accelerations[0] - self.angular_accelerations[1]
-        last_angular_acc = self.angular_accelerations[1] - self.angular_accelerations[2]
-
-        linear_jerk = linear_acc - last_linear_acc
-        angular_jerk = angular_acc - last_angular_acc
+        if len(self.linear_velocities) >= 2:
+            linear_acc = (
+                self.linear_velocities[-1] - self.linear_velocities[-2]
+            ) / self._dt
+            if len(self.linear_velocities) >= 3:
+                last_linear_acc = (
+                    self.linear_velocities[-2] - self.linear_velocities[-3]
+                ) / self._dt
+                linear_jerk = linear_acc - last_linear_acc
+        if len(self.angular_velocities) >= 2:
+            angular_acc = (
+                self.angular_velocities[-1] - self.angular_velocities[-2]
+            ) / self._dt
+            if len(self.angular_velocities) >= 3:
+                last_angular_acc = (
+                    self.angular_velocities[-2] - self.angular_velocities[-3]
+                ) / self._dt
+                angular_jerk = angular_acc - last_angular_acc
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)
 

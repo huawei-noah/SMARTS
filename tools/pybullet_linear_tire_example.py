@@ -84,11 +84,10 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
             vehicle, action, controller_state, dt_sec=TIMESTEP_SEC
         )
 
+        z_yaw = vehicle.chassis.velocity_vectors[1][2]
         xx.append(vehicle.position[0])
         yy.append(vehicle.position[1])
-        rvx.append(
-            vehicle.chassis.yaw_rate[2] * vehicle.chassis.longitudinal_lateral_speed[0]
-        )
+        rvx.append(z_yaw * vehicle.chassis.longitudinal_lateral_speed[0])
         vy.append(vehicle.chassis.longitudinal_lateral_speed[1])
         latforce.append(
             (1 / 2500)

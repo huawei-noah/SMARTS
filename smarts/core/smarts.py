@@ -549,7 +549,9 @@ class SMARTS:
                     # state of this vehicle
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                     assert isinstance(pybullet_vehicle.chassis, BoxChassis)
-                    pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
+                    pybullet_vehicle.control(
+                        pose=vehicle.pose, speed=vehicle.speed, dt=self._timestep_sec
+                    )
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
@@ -557,6 +559,8 @@ class SMARTS:
                 else:
                     # It is a new social vehicle we have not seen yet.
                     # Create it's avatar.
+                    # XXX: this needs to be disentangled from pybullet.
+                    # XXX: (adding social vehicles to the vehicle index should not require pybullet to be present)
                     social_vehicle = self._vehicle_index.build_social_vehicle(
                         sim=self,
                         vehicle_state=vehicle,
@@ -565,7 +569,9 @@ class SMARTS:
                         vehicle_type=vehicle.vehicle_type,
                     )
                 # Update the social vehicle avatar to match the vehicle state
-                social_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
+                social_vehicle.control(
+                    pose=vehicle.pose, speed=vehicle.speed, dt=self._timestep_sec
+                )
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:
         self._perform_agent_actions(agent_actions)
