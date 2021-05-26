@@ -24,7 +24,6 @@ from torch import nn
 from torch.distributions.normal import Normal
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFCNet
-from ultra.baselines.common.state_preprocessor import *
 
 
 class CustomFCModel(TorchModelV2, nn.Module):
