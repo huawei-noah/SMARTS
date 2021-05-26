@@ -135,6 +135,9 @@ class Chassis:
         )
         return shapely_rotate(poly, self.pose.heading, use_radians=True)
 
+    def step(self, current_simulation_time):
+        raise NotImplementedError
+
 
 class BoxChassis(Chassis):
     """Control a vehicle by setting its absolute position and heading. The collision
@@ -227,6 +230,9 @@ class BoxChassis(Chassis):
         self._pose = other.pose
         self.speed = other.speed
         # ignore physics
+
+    def step(self, current_simulation_time):
+        pass
 
     def teardown(self):
         self._bullet_constraint.teardown()

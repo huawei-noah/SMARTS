@@ -547,6 +547,7 @@ class SMARTS:
                     # This is not a pybullet agent, but it has an avatar in this world
                     # to make it's observations. Update the avatar to match the new
                     # state of this vehicle
+                    # XXX: this needs to be disentangled from pybullet.
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                     assert isinstance(pybullet_vehicle.chassis, BoxChassis)
                     pybullet_vehicle.control(
@@ -584,7 +585,6 @@ class SMARTS:
         pybullet_agent_ids = {
             agent_id
             for agent_id, interface in self._agent_manager.agent_interfaces.items()
-            if interface.action_space in self._dynamic_action_spaces
         }
 
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
@@ -602,36 +602,6 @@ class SMARTS:
                     dimensions=vehicle.chassis.dimensions,
                     speed=vehicle.speed,
                     source="PYBULLET",
-                )
-            )
-
-        return provider_state
-
-    def _nondynamic_provider_step(self, agent_actions) -> ProviderState:
-        self._perform_agent_actions(agent_actions)
-
-        provider_state = ProviderState()
-        nondynamic_agent_ids = {
-            agent_id
-            for agent_id, interface in self._agent_manager.agent_interfaces.items()
-            if interface.action_space not in self._dynamic_action_spaces
-        }
-
-        for vehicle_id in self._vehicle_index.agent_vehicle_ids():
-            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-            if agent_id not in nondynamic_agent_ids:
-                continue
-
-            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            assert isinstance(vehicle.chassis, BoxChassis)
-            provider_state.vehicles.append(
-                VehicleState(
-                    vehicle_id=vehicle.id,
-                    vehicle_type="passenger",
-                    pose=vehicle.pose,
-                    dimensions=vehicle.chassis.dimensions,
-                    speed=vehicle.speed,
-                    source="OTHER",
                 )
             )
 
@@ -697,22 +667,14 @@ class SMARTS:
             return True
 
         pybullet_actions = {}
-        other_actions = {}
         for agent_id, action in actions.items():
             if not agent_controls_vehicles(agent_id):
                 continue
-            if matches_provider_action_spaces(agent_id, self._dynamic_action_spaces):
-                pybullet_actions[agent_id] = action
-            elif matches_no_provider_action_space(agent_id):
-                other_actions[agent_id] = action
+            pybullet_actions[agent_id] = action
 
         if pybullet_actions:
             accumulated_provider_state.merge(
                 self._pybullet_provider_step(pybullet_actions)
-            )
-        if other_actions:
-            accumulated_provider_state.merge(
-                self._nondynamic_provider_step(other_actions)
             )
 
         for provider in self.providers:
