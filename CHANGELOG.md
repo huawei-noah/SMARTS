@@ -15,6 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828 
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
+- Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 - Fixed a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
@@ -38,7 +39,6 @@ process
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 - Updated imitation learning examples.
-- Updated some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266.
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed Sumo road network offset bug for shifted maps.  See issue #716.
