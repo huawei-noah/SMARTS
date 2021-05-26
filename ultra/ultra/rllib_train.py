@@ -95,6 +95,7 @@ def train(
     observation_adapter = adapters.adapter_from_type(adapter_type=observation_type)
     reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
 
+    params_seed = policy_params["seed"]
     encoder_key = policy_params["social_vehicles"]["encoder_key"]
     num_social_features = observation_space["social_vehicles"].shape[1]
     social_capacity = observation_space["social_vehicles"].shape[0]
@@ -108,7 +109,7 @@ def train(
         encoder_key=encoder_key,
         num_social_features=num_social_features,
         social_capacity=social_capacity,
-        seed=seed,  # NOTE: We are the local seed, not the seed from the policy params.
+        seed=params_seed,
         social_policy_hidden_units=social_policy_hidden_units,
         social_policy_init_std=social_policy_init_std,
     )
