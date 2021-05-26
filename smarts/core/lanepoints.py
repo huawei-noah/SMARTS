@@ -26,7 +26,7 @@ import queue
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Sequence
 
 import numpy as np
 
@@ -40,6 +40,10 @@ with warnings.catch_warnings():
         # We force sklearn to use a different importer since sklearn's use of pkg_resources is
         # aggressive
         from sklearn.neighbors import KDTree
+
+from smarts.core.utils.sumo import sumolib  # isort:skip
+from sumolib.net.edge import Edge  # isort:skip
+from sumolib.net.lane import Lane  # isort:skip
 
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.utils.math import (
@@ -132,7 +136,7 @@ class LinkedLanePoint(NamedTuple):
 
 
 class LanePoints:
-    def __init__(self, road_network, spacing, debug=True):
+    def __init__(self, road_network, spacing: float, debug: bool = True):
         self.spacing = spacing
         self._road_network = road_network
 
@@ -164,11 +168,13 @@ class LanePoints:
         }
 
     @staticmethod
-    def _build_kd_tree(linked_lps):
+    def _build_kd_tree(linked_lps: Sequence[LinkedLanePoint]) -> KDTree:
         return KDTree(np.array([l_lp.lp.pos for l_lp in linked_lps]), leaf_size=50)
 
     @staticmethod
-    def _interpolate_shape_lanepoints(shape_lanepoints, spacing):
+    def _interpolate_shape_lanepoints(
+        shape_lanepoints: Sequence[LinkedLanePoint], spacing: float
+    ) -> List[LinkedLanePoint]:
         # memoize interpolated lanepoints on the shape lanepoint at start of
         # the line we are interpolating
         interp_memo = {}
@@ -183,7 +189,9 @@ class LanePoints:
         return linked_lanepoints
 
     @staticmethod
-    def _interpolate_from_shape_lp(shape_lp, spacing, interp_memo):
+    def _interpolate_from_shape_lp(
+        shape_lp: LinkedLanePoint, spacing: float, interp_memo: dict
+    ) -> Tuple[LinkedLanePoint, List[LinkedLanePoint]]:
         shape_queue = queue.Queue()
         shape_queue.put((shape_lp, None))
         newly_created_lanepoints = []
@@ -228,12 +236,12 @@ class LanePoints:
 
     @staticmethod
     def _process_interp_for_lane_lp(
-        shape_lp,
-        first_linked_lanepoint,
-        next_shape_lp,
-        spacing,
-        newly_created_lanepoints,
-    ):
+        shape_lp: LinkedLanePoint,
+        first_linked_lanepoint: LinkedLanePoint,
+        next_shape_lp: LinkedLanePoint,
+        spacing: float,
+        newly_created_lanepoints: List[LinkedLanePoint],
+    ) -> LinkedLanePoint:
         lane_id = shape_lp.lp.lane_id
 
         curr_lanepoint = first_linked_lanepoint
@@ -294,7 +302,7 @@ class LanePoints:
             dist_into_lane_seg += spacing
         return curr_lanepoint
 
-    def _shape_lanepoints(self):
+    def _shape_lanepoints(self) -> List[LinkedLanePoint]:
         """Computes the lane shape (start/shape/end) lanepoints for all lanes in
         the network, the result of this function can be used to interpolate
         lanepoints along lanes to the desired granularity.
@@ -314,7 +322,9 @@ class LanePoints:
 
         return shape_lanepoints
 
-    def _shape_lanepoints_along_lane(self, lane, lanepoint_by_lane_memo):
+    def _shape_lanepoints_along_lane(
+        self, lane: Lane, lanepoint_by_lane_memo: dict
+    ) -> Tuple[LinkedLanePoint, List[LinkedLanePoint]]:
         lane_queue = queue.Queue()
         lane_queue.put((lane, None))
         shape_lanepoints = []
@@ -408,13 +418,18 @@ class LanePoints:
 
         return initial_lanepoint, shape_lanepoints
 
-    def _edge(self, lp: LanePoint):
+    def _edge(self, lp: LanePoint) -> Edge:
         lane = self._road_network.lane_by_id(lp.lane_id)
         return lane.getEdge()
 
     @staticmethod
     def _closest_linked_lp_in_kd_tree_with_pose_batched(
-        poses, lanepoints, tree, within_radius, k: int = 10, keep_all_k: bool = False
+        poses,
+        lanepoints,
+        tree,
+        within_radius: float,
+        k: int = 10,
+        keep_all_k: bool = False,
     ):
         linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_batched(
             [pose.position[:2] for pose in poses], lanepoints, tree, k=k
@@ -468,7 +483,9 @@ class LanePoints:
         ]
 
     @staticmethod
-    def _closest_linked_lp_in_kd_tree_batched(points, linked_lps, tree, k: int = 1):
+    def _closest_linked_lp_in_kd_tree_batched(
+        points, linked_lps, tree: KDTree, k: int = 1
+    ):
         p2ds = np.array([vec_2d(p) for p in points])
         closest_indices = tree.query(
             p2ds, k=min(k, len(linked_lps)), return_distance=False, sort_results=True
