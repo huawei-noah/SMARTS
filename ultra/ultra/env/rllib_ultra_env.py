@@ -56,7 +56,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
         #       called twice on the same reward... once in step() and then another time
         #       in generate_logs().
         self.ultra_scores = adapters.adapter_from_type(
-            adapters.type_from_string("default_reward")
+            adapter_type=adapters.AdapterType.DefaultReward
         )
         super().__init__(config=config)
 
