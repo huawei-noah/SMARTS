@@ -1,10 +1,8 @@
 from dataclasses import replace
 import logging
 import math
-import numpy as np
 import pickle
 import random
-import sys
 from typing import Sequence, Tuple, Union
 
 from envision.client import Client as Envision
@@ -16,7 +14,6 @@ from smarts.core.scenario import Mission, Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
-from smarts.core.utils.math import min_angles_difference_signed, radians_to_vec
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +23,7 @@ class ReplayCheckerAgent(Agent):
     This agent checks that the action space is working 'as expected'.
     In actual use, this would be replaced by an agent based on a trained Imitation Learning model."""
 
-    def __init__(self, timestep_sec):
+    def __init__(self, timestep_sec: float):
         self._timestep_sec = timestep_sec
 
     def load_data_for_vehicle(
