@@ -91,47 +91,27 @@ def adapter_from_type(adapter_type: AdapterType) -> Callable:
     raise Exception(f"An adapter function is not set for adapter type {adapter_type}.")
 
 
-def required_interface_from_types(
-    action_type: AdapterType, observation_type: AdapterType, reward_type: AdapterType
-) -> Dict[str, Any]:
+def required_interface_from_types(*adapter_types: AdapterType) -> Dict[str, Any]:
     required_interface = {}
 
-    if action_type not in _TYPE_TO_REQUIRED_INTERFACE:
-        raise Exception(
-            f"A required interface is not set for adapter type {action_type}."
-        )
-    if observation_type not in _TYPE_TO_REQUIRED_INTERFACE:
-        raise Exception(
-            f"A required interface is not set for adapter type {observation_type}."
-        )
-    if reward_type not in _TYPE_TO_REQUIRED_INTERFACE:
-        raise Exception(
-            f"A required interface is not set for adapter type {reward_type}."
-        )
+    for adapter_type in adapter_types:
+        if adapter_type not in _TYPE_TO_REQUIRED_INTERFACE:
+            raise Exception(
+                f"A required interface is not set for adapter type {adapter_type}."
+            )
+        adapter_type_interface = _TYPE_TO_REQUIRED_INTERFACE[adapter_type]
 
-    action_interface = _TYPE_TO_REQUIRED_INTERFACE[action_type]
-    observation_interface = _TYPE_TO_REQUIRED_INTERFACE[observation_type]
-    reward_interface = _TYPE_TO_REQUIRED_INTERFACE[reward_type]
-
-    # TODO: Make this nicer.
-
-    for interface_name, interface in action_interface.items():
-        if interface_name in required_interface:
-            # TODO: Does this actually compare the interfaces correctly?
-            assert required_interface[interface_name] == interface
-        else:
-            required_interface[interface_name] = interface
-    for interface_name, interface in observation_interface.items():
-        if interface_name in required_interface:
-            # TODO: Does this actually compare the interfaces correctly?
-            assert required_interface[interface_name] == interface
-        else:
-            required_interface[interface_name] = interface
-    for interface_name, interface in reward_interface.items():
-        if interface_name in required_interface:
-            # TODO: Does this actually compare the interfaces correctly?
-            assert required_interface[interface_name] == interface
-        else:
-            required_interface[interface_name] = interface
+        # Ensure current interface requirements don't conflict with previous interface
+        # requirements.
+        for interface_name, interface_requirement in adapter_type_interface.items():
+            if interface_name in required_interface:
+                if required_interface[interface_name] != interface_requirement:
+                    # The interface for the same interface name is different.
+                    raise Exception(
+                        f"Cannot resolve {interface_requirement} requirement with "
+                        f"existing {required_interface[interface_name]} requirement."
+                    )
+            else:
+                required_interface[interface_name] = interface_requirement
 
     return required_interface

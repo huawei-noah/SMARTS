@@ -74,8 +74,8 @@ class BaselineAgentSpec(AgentSpec):
 
                 spec = new_spec
         else:
-            # If policy_params is None, then there must be a params.yaml file in the same
-            # directory as the policy_class module.
+            # If policy_params is None, then there must be a params.yaml file in the
+            # same directory as the policy_class module.
             if not policy_params:
                 policy_class_module_file = inspect.getfile(policy_class)
                 policy_class_module_directory = os.path.dirname(
@@ -96,9 +96,7 @@ class BaselineAgentSpec(AgentSpec):
             )
 
             adapter_interface_requirements = adapters.required_interface_from_types(
-                action_type=action_type,
-                observation_type=observation_type,
-                reward_type=reward_type,
+                action_type, observation_type, reward_type
             )
             action_adapter = adapters.adapter_from_type(adapter_type=action_type)
             observation_adapter = adapters.adapter_from_type(
