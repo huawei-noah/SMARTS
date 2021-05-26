@@ -38,5 +38,7 @@ required_interface = {"rgb": RGB(width=_WIDTH, height=_HEIGHT, resolution=_RESOL
 
 
 def adapt(observation: Observation):
-    # TODO: Implement this.
-    raise NotImplementedError("The default image observation is not yet implemented.")
+    rgb_image = observation.top_down_rgb.data
+    gray_image = np.dot(rgb_image, (0.2125, 0.7154, 0.0721))
+    normalized_gray_image = np.divide(gray_image, 255.0)
+    return normalized_gray_image
