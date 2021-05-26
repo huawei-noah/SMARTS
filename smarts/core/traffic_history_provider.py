@@ -107,8 +107,10 @@ class TrafficHistoryProvider(Provider):
             return ProviderState(vehicles=[])
         vehicles = []
         vehicle_ids = set()
-        history_time = self._start_time_offset + elapsed_sim_time
-        rows = self._histories.vehicles_active_between(history_time - dt, history_time)
+        dec_digits = len("{}".format(dt)) - 2
+        history_time = round(self._start_time_offset + elapsed_sim_time, dec_digits)
+        prev_time = round(history_time - dt, dec_digits)
+        rows = self._histories.vehicles_active_between(prev_time, history_time)
         for hr in rows:
             v_id = str(hr.vehicle_id)
             if v_id in vehicle_ids or v_id in self._replaced_vehicle_ids:
