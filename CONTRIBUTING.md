@@ -4,10 +4,9 @@
 The following is a set of concise guidelines for contributing to SMARTS and its packages. Feel free to propose changes to this document in a pull request.
 
 ## Code of Conduct
-- Be respectful. 
-- Keep criticism strictly to code.
-- Ask a project lead before revealing information about the project to outside entities. 
-- If in doubt about conduct ask.
+- Be respectful to other contributors. 
+- Keep criticism strictly to code when reviewing pull requests.
+- If in doubt about conduct ask the team lead or other contributors.
 
 We encourage all forms of contributions to SMARTS, not limited to:
 * Code review and improvement
@@ -45,23 +44,21 @@ Please take care in using good commit messages as they're useful for debugging, 
 
 1. Do your best to see that your code compiles locally.
 2. Run `make format`. See [Formatting](#Formatting).
-3. Do not push to `master`. Instead make a branch and a [merge request](#Merge-Requests)
+3. Do not push to `master`. Instead make a branch and a [pull request](#Pull-Requests)
 
 ## Submission of a Pull Request
 
 1. Rebase on master
 2. Run `make test` locally to see if all test cases pass
-3. Be sure to include new test cases if introducing a new feature or fixing a bug.
-4. Update the documentation and apply comments to the public API. You are encouraged to add usage cases.
-5. Describe the problem and add references to the related issues that the request solves.
-6. Request review of your code by other contributors. Try to improve your code as much as possible to lessen the burden on others.
-
-## Merge Requests
-
-1. Do _not_ keep long living branches. Branches are for a specific task. They should not become a sub repository.
-2. Send in merge requests frequently. Do not send a large chunk of code in a single merge request. For large tasks, keep a plan, break things into stages and merge things in stage by stage
-3. If you change platform code, you are responsible to ensure all tests and all examples still run normally.
-4. Please enable squashing on your Merge Request before merging, this helps keep every commit on master in a working state and aids bisecting when searching for regressions.
+3. If you change platform code, you are responsible to ensure all tests and all examples still run normally.   
+4. Be sure to include new test cases if introducing a new feature or fixing a bug.
+5. Update the documentation and apply comments to the public API. You are encouraged to add usage cases.
+6. Update the `CHANGELOG.md` addressing what changes were made for the current version and make sure to indicate the PR # linking the changes.   
+7. For PR description, describe the problem and add references to the related issues that the request addresses.
+8. Request review of your code by at least two other contributors. Try to improve your code as much as possible to lessen the burden on others.
+9. Do _not_ keep long living branches. Branches are for a specific task. They should not become a sub repository.
+10. After your PR gets approved by at least other contributors you may merge your PR. 
+11. Please enable squashing on your Pull Request before merging, this helps keep every commit on master in a working state and aids bisecting when searching for regressions.
 
 
 In the body, give a reason for the pull request and tag in issues that the pull request solves. The `WIP:` is for pull requests that should raise discussion but are not in review state.
