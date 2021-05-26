@@ -32,7 +32,6 @@ import numpy as np
 from ray import tune
 from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
-
 from ray.rllib.models import ModelCatalog
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import (

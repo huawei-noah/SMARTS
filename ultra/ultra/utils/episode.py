@@ -98,7 +98,6 @@ class LogInfo:
         self.data["off_route"] = int(events.off_route)
         self.data["reached_goal"] = int(events.reached_goal)
         self.data["timed_out"] = int(events.reached_max_episode_steps)
-        #
 
     def step(self):
         self.data["episode_length"] += 1
@@ -155,7 +154,6 @@ class Episode:
         self.tb_writer = tb_writer
         self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
-        # self.scenario = None
 
     @property
     def sim2wall_ratio(self):
@@ -285,14 +283,12 @@ class Episode:
 
         # Only create tensorboard once from training process.
         self.initialize_tb_writer()
-        # print(self.experiment_name)
 
         for agent_id, agent_info in self.info[self.active_tag].items():
             agent_itr = recording_step if recording_step else self.get_itr(agent_id)
             data = {}
 
             scenario = agent_info.data["scenario"]
-            # print("Scenario_info:", scenario)
 
             for key, value in agent_info.data.items():
                 if not isinstance(value, (list, tuple, dict, np.ndarray)):

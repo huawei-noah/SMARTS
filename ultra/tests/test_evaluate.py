@@ -170,7 +170,6 @@ class EvaluateTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
         )[0]
-        print(experiment_dir)
         models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
         evaluate_command = (
             f"python ultra/evaluate.py "
@@ -199,9 +198,7 @@ class EvaluateTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*")
         )[0]
-        print(experiment_dir)
         models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
-        print(models)
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00-multiagent --level eval_test --models {models} --experiment-dir {experiment_dir} "

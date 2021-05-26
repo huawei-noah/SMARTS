@@ -22,7 +22,6 @@
 import torch
 from torch import nn
 from torch.distributions.normal import Normal
-import numpy as np
 
 
 class ActorNetwork(nn.Module):
@@ -41,7 +40,7 @@ class ActorNetwork(nn.Module):
             nn.Tanh(),
         )
 
-    def forward(self, state, training=False, unsqueeze=False):
+    def forward(self, state, training=False):
         low_dim_state = state["low_dim_states"]
         social_vehicles_state = state["social_vehicles"]
 
@@ -56,15 +55,12 @@ class ActorNetwork(nn.Module):
             aux_losses.update(social_encoder_aux_losses)
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
-
-        if len(social_feature) > 0:
-            social_feature = torch.cat(social_feature, 0)
-
-            state = torch.cat([low_dim_state, social_feature], -1)
-        else:
-            social_feature = []
-            state = low_dim_state
-
+        social_feature = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
+        state = (
+            torch.cat([low_dim_state, social_feature], -1)
+            if len(social_feature) > 0
+            else low_dim_state
+        )
         a = self.model(state)
 
         if training:
@@ -86,7 +82,7 @@ class CriticNetwork(nn.Module):
             nn.Linear(hidden_units, 1),
         )
 
-    def forward(self, state, training=False, unsqueeze=False):
+    def forward(self, state, training=False):
         low_dim_state = state["low_dim_states"]
         social_vehicles_state = state["social_vehicles"]
         aux_losses = {}
@@ -100,14 +96,13 @@ class CriticNetwork(nn.Module):
             aux_losses.update(social_encoder_aux_losses)
         else:
             social_feature = [e.reshape(1, -1) for e in social_vehicles_state]
+        social_feature = torch.cat(social_feature, 0) if len(social_feature) > 0 else []
 
-        if len(social_feature) > 0:
-            social_feature = torch.cat(social_feature, 0)
-            state = torch.cat([low_dim_state, social_feature], -1)
-        else:
-            social_feature = []
-            state = low_dim_state
-
+        state = (
+            torch.cat([low_dim_state, social_feature], -1)
+            if len(social_feature) > 0
+            else low_dim_state
+        )
         q = self.model(state)
         if training:
             return q, aux_losses
@@ -127,7 +122,7 @@ class PPONetwork(nn.Module):
         social_feature_encoder_params=None,
     ):
         super(PPONetwork, self).__init__()
-        print("PPO NETWORK", hidden_units, state_size, action_size, init_std)
+
         if seed is not None:
             torch.manual_seed(seed)
         self.social_feature_encoder_class = social_feature_encoder_class
@@ -157,9 +152,9 @@ class PPONetwork(nn.Module):
         # self.init_last_layer(self.actor)
         self.log_std = nn.Parameter(torch.log(init_std * torch.ones(1, action_size)))
 
-    def forward(self, x, training=False, unsqueeze=False):
-        value, critic_aux_loss = self.critic(x, training=training, unsqueeze=unsqueeze)
-        mu, actor_aux_loss = self.actor(x, training=training, unsqueeze=unsqueeze)
+    def forward(self, x, training=False):
+        value, critic_aux_loss = self.critic(x, training=training)
+        mu, actor_aux_loss = self.actor(x, training=training)
         std = torch.ones_like(mu) * 0.5
         dist = Normal(mu, std)
 

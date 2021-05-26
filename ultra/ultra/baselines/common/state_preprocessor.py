@@ -41,7 +41,6 @@ from ultra.utils.common import (
     get_closest_waypoint,
     get_path_to_goal,
 )
-from ultra.scenarios.common.visualization import draw_intersection
 
 
 class StatePreprocessor:
