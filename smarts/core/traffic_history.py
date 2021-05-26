@@ -36,7 +36,7 @@ class TrafficHistory:
         self._db_cnxn = None
 
     @property
-    def name(self):
+    def name(self) -> str:
         return os.path.splitext(self._db.name)[0]
 
     def connect_for_multiple_queries(self):

@@ -99,7 +99,7 @@ class Chassis:
         raise NotImplementedError
 
     @property
-    def speed(self):
+    def speed(self) -> float:
         raise NotImplementedError
 
     @speed.setter
@@ -188,7 +188,7 @@ class BoxChassis(Chassis):
         return self._bullet_body._bullet_id
 
     @property
-    def speed(self):
+    def speed(self) -> float:
         # in m/s
         return self._speed
 
@@ -430,7 +430,7 @@ class AckermannChassis(Chassis):
         return -steering_radians
 
     @property
-    def speed(self):
+    def speed(self) -> float:
         """Returns speed in m/s."""
         velocity, _ = np.array(self._client.getBaseVelocity(self._bullet_id))
         speed = math.sqrt(velocity.dot(velocity))
