@@ -29,7 +29,9 @@ class ReplayCheckerAgent(Agent):
     def __init__(self, timestep_sec):
         self._timestep_sec = timestep_sec
 
-    def load_data_for_vehicle(self, vehicle_id: str, scenario: Scenario, time_offset: float):
+    def load_data_for_vehicle(
+        self, vehicle_id: str, scenario: Scenario, time_offset: float
+    ):
         self._vehicle_id = vehicle_id  # for debugging
         self._time_offset = time_offset
         datafile = f"data_{scenario.name}_{scenario.traffic_history.name}_Agent-history-vehicle-{vehicle_id}.pkl"
@@ -51,12 +53,16 @@ class ReplayCheckerAgent(Agent):
         exp = self._data.get(dtime, None)
         if exp:
             cur_state = obs.ego_vehicle_state
-            assert math.isclose(cur_state.heading, exp["heading"]), f'vid={self._vehicle_id}: {cur_state.heading} != {exp["heading"]} @ {obs_time}'
-            assert math.isclose(cur_state.speed, exp["speed"]), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
-            #assert math.isclose(cur_state.position[0], exp["ego_pos"][0]), f'vid={self._vehicle_id}: {cur_state.position[0]} != {exp["ego_pos"][0]} @ {obs_time}'
-            #assert math.isclose(cur_state.position[1], exp["ego_pos"][1]), f'vid={self._vehicle_id}: {cur_state.position[1]} != {exp["ego_pos"][1]} @ {obs_time}'
+            assert math.isclose(
+                cur_state.heading, exp["heading"]
+            ), f'vid={self._vehicle_id}: {cur_state.heading} != {exp["heading"]} @ {obs_time}'
+            assert math.isclose(
+                cur_state.speed, exp["speed"]
+            ), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
+            # assert math.isclose(cur_state.position[0], exp["ego_pos"][0]), f'vid={self._vehicle_id}: {cur_state.position[0]} != {exp["ego_pos"][0]} @ {obs_time}'
+            # assert math.isclose(cur_state.position[1], exp["ego_pos"][1]), f'vid={self._vehicle_id}: {cur_state.position[1]} != {exp["ego_pos"][1]} @ {obs_time}'
 
-        return (data['acceleration'], data['angular_velocity'])
+        return (data["acceleration"], data["angular_velocity"])
 
 
 def main(

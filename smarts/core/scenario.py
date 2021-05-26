@@ -121,7 +121,10 @@ class TraverseGoal(Goal):
 
 def default_entry_tactic(default_entry_speed: float = None):
     return sstudio_types.TrapEntryTactic(
-        wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None, default_entry_speed=default_entry_speed
+        wait_to_hijack_limit_s=0,
+        exclusion_prefixes=tuple(),
+        zone=None,
+        default_entry_speed=default_entry_speed,
     )
 
 
@@ -307,7 +310,7 @@ class Scenario:
                 roll_routes = random.randint(0, len(routes))
                 roll_agent_missions = random.randint(0, len(agent_missions))
                 roll_social_agents = random.randint(0, len(social_agents))
-                roll_traffic_histories = 0#random.randint(0, len(traffic_histories))
+                roll_traffic_histories = random.randint(0, len(traffic_histories))
 
             for (
                 concrete_route,
