@@ -42,7 +42,7 @@ config = {
         "social_policy_hidden_units": 128,
         "social_policy_init_std": 0.5,
     },
-    "action_type": "continuous",
-    "observation_type": "vector",
-    "reward_type": "default",
+    "action_type": "default_action_continuous",
+    "observation_type": "default_observation_vector",
+    "reward_type": "default_reward",
 }

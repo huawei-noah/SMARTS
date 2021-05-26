@@ -22,16 +22,11 @@
 import json
 import numpy as np
 import torch, yaml, os, inspect, dill
-from smarts.core.agent_interface import AgentInterface
-from ultra.baselines.adapter import (
-    action_adapter_from_type,
-    observation_adapter_from_type,
-    required_interface_from_types,
-    reward_adapter_from_type,
-)
 
-from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
+from smarts.core.agent_interface import AgentInterface
+from ultra.baselines.common.yaml_loader import load_yaml
+import ultra.adapters as adapters
 
 
 class BaselineAgentSpec(AgentSpec):
@@ -90,20 +85,26 @@ class BaselineAgentSpec(AgentSpec):
                     os.path.join(policy_class_module_directory, "params.yaml")
                 )
 
-            action_type = policy_params["action_type"]
-            observation_type = policy_params["observation_type"]
-            reward_type = policy_params["reward_type"]
+            action_type = adapters.type_from_string(
+                string_type=policy_params["action_type"]
+            )
+            observation_type = adapters.type_from_string(
+                string_type=policy_params["observation_type"]
+            )
+            reward_type = adapters.type_from_string(
+                string_type=policy_params["reward_type"]
+            )
 
-            adapter_interface_requirements = required_interface_from_types(
+            adapter_interface_requirements = adapters.required_interface_from_types(
                 action_type=action_type,
                 observation_type=observation_type,
                 reward_type=reward_type,
             )
-            action_adapter = action_adapter_from_type(action_type=action_type)
-            observation_adapter = observation_adapter_from_type(
-                observation_type=observation_type
+            action_adapter = adapters.adapter_from_type(adapter_type=action_type)
+            observation_adapter = adapters.adapter_from_type(
+                adapter_type=observation_type
             )
-            reward_adapter = reward_adapter_from_type(reward_type=reward_type)
+            reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
 
             spec = AgentSpec(
                 interface=AgentInterface(
@@ -119,7 +120,5 @@ class BaselineAgentSpec(AgentSpec):
                 observation_adapter=observation_adapter,
                 reward_adapter=reward_adapter,
             )
-
-            print(">>> SPEC:", spec)
 
         return spec

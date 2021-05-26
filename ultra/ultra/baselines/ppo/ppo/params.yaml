@@ -15,6 +15,6 @@ social_vehicles:
     encoder_key: no_encoder
     social_policy_hidden_units: 128
     social_policy_init_std: 0.5
-action_type: continuous  # Only continuous action is supported for PPO.
-observation_type: vector  # Only vector observation is supported for PPO.
-reward_type: default
+action_type: default_action_continuous
+observation_type: default_observation_vector
+reward_type: default_reward

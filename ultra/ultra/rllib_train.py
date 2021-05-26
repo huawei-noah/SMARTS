@@ -20,13 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os, gym
-from ultra.baselines.adapter import (
-    action_adapter_from_type,
-    action_space_from_type,
-    observation_adapter_from_type,
-    observation_space_from_type,
-    reward_adapter_from_type,
-)
+import ultra.adapters as adapters
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.utils.ray import default_ray_kwargs
 import timeit, datetime
@@ -79,23 +73,27 @@ def train(
     agent_name = policy
     policy_params = load_yaml(f"ultra/baselines/{agent_name}/{agent_name}/params.yaml")
 
-    action_type = policy_params["action_type"]
-    observation_type = policy_params["observation_type"]
-    reward_type = policy_params["reward_type"]
+    action_type = adapters.type_from_string(policy_params["action_type"])
+    observation_type = adapters.type_from_string(policy_params["observation_type"])
+    reward_type = adapters.type_from_string(policy_params["reward_type"])
 
-    if action_type != "continuous":
-        raise Exception("RLlib training only supports the 'continuous' action type.")
-    if observation_type != "vector":
-        raise Exception("RLlib training only supports the 'vector' observation type.")
+    if action_type != adapters.AdapterType.DefaultActionContinuous:
+        raise Exception(
+            f"RLlib training only supports the "
+            f"{adapters.AdapterType.DefaultActionContinuous} action type."
+        )
+    if observation_type != adapters.AdapterType.DefaultObservationVector:
+        raise Exception(
+            f"RLlib training only supports the "
+            f"{adapters.AdapterType.DefaultObservationVector} observation type."
+        )
 
-    action_space = action_space_from_type(action_type=action_type)
-    observation_space = observation_space_from_type(observation_type=observation_type)
+    action_space = adapters.space_from_type(adapter_type=action_type)
+    observation_space = adapters.space_from_type(adapter_type=observation_type)
 
-    action_adapter = action_adapter_from_type(action_type=action_type)
-    observation_adapter = observation_adapter_from_type(
-        observation_type=observation_type
-    )
-    reward_adapter = reward_adapter_from_type(reward_type=reward_type)
+    action_adapter = adapters.adapter_from_type(adapter_type=action_type)
+    observation_adapter = adapters.adapter_from_type(adapter_type=observation_type)
+    reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
 
     encoder_key = policy_params["social_vehicles"]["encoder_key"]
     num_social_features = observation_space["social_vehicles"].shape[1]

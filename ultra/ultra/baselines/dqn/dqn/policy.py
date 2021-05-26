@@ -26,7 +26,7 @@ from ultra.baselines.dqn.dqn.network import *
 from smarts.core.agent import Agent
 from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
 import pathlib, os, copy
-from ultra.baselines.adapter import observation_space_from_type
+import ultra.adapters as adapters
 from ultra.baselines.dqn.dqn.network import DQNWithSocialEncoder
 from ultra.baselines.dqn.dqn.explore import EpsilonExplore
 from ultra.baselines.common.replay_buffer import ReplayBuffer
@@ -61,14 +61,22 @@ class DQNPolicy(Agent):
         self.to_real_action = to_3d_action
         self.action_size = 2
         self.prev_action = np.zeros(self.action_size)
-        self.action_type = policy_params["action_type"]
-        self.observation_type = policy_params["observation_type"]
-        self.reward_type = policy_params["reward_type"]
+        self.action_type = adapters.type_from_string(policy_params["action_type"])
+        self.observation_type = adapters.type_from_string(
+            policy_params["observation_type"]
+        )
+        self.reward_type = adapters.type_from_string(policy_params["reward_type"])
 
-        if self.action_type != "continuous":
-            raise Exception("DQN baseline only supports the 'continuous' action type.")
-        if self.observation_type != "vector":
-            raise Exception("DQN baseline only supports the 'vector' observation type.")
+        if self.action_type != adapters.AdapterType.DefaultActionContinuous:
+            raise Exception(
+                f"DQN baseline only supports the "
+                f"{adapters.AdapterType.DefaultActionContinuous} action type."
+            )
+        if self.observation_type != adapters.AdapterType.DefaultObservationVector:
+            raise Exception(
+                f"DQN baseline only supports the "
+                f"{adapters.AdapterType.DefaultObservationVector} observation type."
+            )
 
         discrete_action_spaces = [
             np.asarray([-0.25, 0.0, 0.5, 0.75, 1.0]),
@@ -90,7 +98,7 @@ class DQNPolicy(Agent):
             for discrete_action_space in discrete_action_spaces
         ]
 
-        self.observation_space = observation_space_from_type(self.observation_type)
+        self.observation_space = adapters.space_from_type(self.observation_type)
         self.low_dim_states_size = self.observation_space["low_dim_states"].shape[0]
         self.social_capacity = self.observation_space["social_vehicles"].shape[0]
         self.num_social_features = self.observation_space["social_vehicles"].shape[1]
@@ -263,8 +271,7 @@ class DQNPolicy(Agent):
         max_steps_reached = info["logs"]["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
-        # TODO: Remember to change this when self.action_type becomes an enum.
-        if self.action_type == "continuous":
+        if self.action_type == adapters.AdapterType.DefaultActionContinuous:
             action = to_2d_action(action)
             _action = (
                 [[e] for e in action]

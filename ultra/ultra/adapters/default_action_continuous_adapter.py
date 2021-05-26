@@ -19,30 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from ray import tune
+import gym
+import numpy as np
 
-config = {
-    "batch_size": 2048,  # size of batch
-    "lr": 3e-5,
-    "mini_batch_size": 64,  # 64
-    "epoch_count": 20,
-    "gamma": tune.choice([0.99, 0.999]),  # discounting
-    "l": 0.95,  # lambda used in lambda-return
-    "eps": 0.2,  # epsilon value used in PPO clipping
-    "critic_tau": 1.0,
-    "actor_tau": 1.0,
-    "entropy_tau": 0.0,
-    "hidden_units": 512,
-    "seed": 2,
-    "logging_freq": 2,
-    "social_vehicles": {
-        "encoder_key": tune.choice(
-            ["no_encoder", "precog_encoder", "pointnet_encoder"]
-        ),
-        "social_policy_hidden_units": 128,
-        "social_policy_init_std": 0.5,
-    },
-    "action_type": "default_action_continuous",
-    "observation_type": "default_observation_vector",
-    "reward_type": "default_reward",
-}
+from smarts.core.controllers import ActionSpaceType
+
+
+gym_space: gym.Space = gym.spaces.Box(
+    low=np.array([0.0, 0.0, -1.0]),
+    high=np.array([1.0, 1.0, 1.0]),
+    dtype=np.float32,
+)
+required_interface = {"action": ActionSpaceType.Continuous}
+
+
+def adapt(action):
+    return action

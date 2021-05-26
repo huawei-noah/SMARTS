@@ -31,7 +31,7 @@ from scipy.spatial import distance
 
 from smarts.core.scenario import Scenario
 from smarts.env.hiway_env import HiWayEnv
-from ultra.baselines.adapter import reward_adapter_from_type
+import ultra.adapters as adapters
 from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")
@@ -62,7 +62,9 @@ class UltraEnv(HiWayEnv):
         #       adapter should be agent-specific. Also, check if ultra_scores is being
         #       called twice on the same reward... once in step() and then another time
         #       in generate_logs().
-        self.ultra_scores = reward_adapter_from_type("default")
+        self.ultra_scores = adapters.adapter_from_type(
+            adapters.type_from_string("default_reward")
+        )
 
         super().__init__(
             scenarios=_scenarios,

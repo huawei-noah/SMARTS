@@ -22,7 +22,7 @@
 # some parts of this implementation is inspired by https://github.com/Khrylx/PyTorch-RL
 import torch, os, yaml
 import numpy as np
-from ultra.baselines.adapter import observation_space_from_type
+import ultra.adapters as adapters
 from ultra.baselines.ppo.ppo.network import PPONetwork
 from smarts.core.agent import Agent
 import pathlib
@@ -68,16 +68,24 @@ class PPOPolicy(Agent):
         self.terminals = []
         self.action_size = 2
         self.prev_action = np.zeros(self.action_size)
-        self.action_type = policy_params["action_type"]
-        self.observation_type = policy_params["observation_type"]
-        self.reward_type = policy_params["reward_type"]
+        self.action_type = adapters.type_from_string(policy_params["action_type"])
+        self.observation_type = adapters.type_from_string(
+            policy_params["observation_type"]
+        )
+        self.reward_type = adapters.type_from_string(policy_params["reward_type"])
 
-        if self.action_type != "continuous":
-            raise Exception("PPO baseline only supports the 'continuous' action type.")
-        if self.observation_type != "vector":
-            raise Exception("PPO baseline only supports the 'vector' observation type.")
+        if self.action_type != adapters.AdapterType.DefaultActionContinuous:
+            raise Exception(
+                f"PPO baseline only supports the "
+                f"{adapters.AdapterType.DefaultActionContinuous} action type."
+            )
+        if self.observation_type != adapters.AdapterType.DefaultObservationVector:
+            raise Exception(
+                f"PPO baseline only supports the "
+                f"{adapters.AdapterType.DefaultObservationVector} observation type."
+            )
 
-        self.observation_space = observation_space_from_type(self.observation_type)
+        self.observation_space = adapters.space_from_type(self.observation_type)
         self.low_dim_states_size = self.observation_space["low_dim_states"].shape[0]
         self.social_capacity = self.observation_space["social_vehicles"].shape[0]
         self.num_social_features = self.observation_space["social_vehicles"].shape[1]
