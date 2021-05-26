@@ -28,10 +28,6 @@ setup(
         "numpy",
         "rich",
         "rtree",  # Used by sumolib
-        "filelock",
-        "lz4",
-        "networkx",
-        "opencv-python",
         "pandas",
         "psutil",
         "visdom",
