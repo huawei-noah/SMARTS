@@ -127,6 +127,7 @@ class Vias:
 
 @dataclass
 class Observation:
+    sim_time: float
     events: Events
     ego_vehicle_state: EgoVehicleObservation
     neighborhood_vehicle_states: List[VehicleObservation]
@@ -302,6 +303,7 @@ class Sensors:
 
         return (
             Observation(
+                sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle_observation,
                 neighborhood_vehicle_states=neighborhood_vehicles,

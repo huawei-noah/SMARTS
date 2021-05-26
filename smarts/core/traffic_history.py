@@ -102,7 +102,7 @@ class TrafficHistory:
     def vehicle_pose_at_time(
         self, vehicle_id: str, sim_time: float
     ) -> Tuple[float, float, float]:
-        query = """SELECT position_x, position_y, heading_rad
+        query = """SELECT position_x, position_y, heading_rad, speed
                    FROM Trajectory
                    WHERE vehicle_id = ? and sim_time = ?"""
         return self._query_val(tuple, query, params=(int(vehicle_id), float(sim_time)))

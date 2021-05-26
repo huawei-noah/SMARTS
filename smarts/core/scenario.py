@@ -119,9 +119,9 @@ class TraverseGoal(Goal):
         return self._road_network.drove_off_map(vehicle.position, vehicle.heading)
 
 
-def default_entry_tactic():
+def default_entry_tactic(default_entry_speed: float = None):
     return sstudio_types.TrapEntryTactic(
-        wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None
+        wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None, default_entry_speed=default_entry_speed
     )
 
 
@@ -307,7 +307,7 @@ class Scenario:
                 roll_routes = random.randint(0, len(routes))
                 roll_agent_missions = random.randint(0, len(agent_missions))
                 roll_social_agents = random.randint(0, len(social_agents))
-                roll_traffic_histories = random.randint(0, len(traffic_histories))
+                roll_traffic_histories = 0#random.randint(0, len(traffic_histories))
 
             for (
                 concrete_route,
@@ -550,14 +550,16 @@ class Scenario:
         map_offset = self._road_network.net_offset
         for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])
-            pph = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
-            assert pph
-            pos_x, pos_y, heading = pph
+            pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
+            assert pphs
+            pos_x, pos_y, heading, speed = pphs
+            entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
             vehicle_missions[v_id] = Mission(
                 start=Start(
                     (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
                 ),
+                entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_network),
                 start_time=start_time,
                 vehicle_id=v_id,
