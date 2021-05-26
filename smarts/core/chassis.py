@@ -197,7 +197,7 @@ class BoxChassis(Chassis):
         # linear_velocity in m/s, angular_velocity in rad/s
         vh = radians_to_vec(self.pose.heading)
         if self._speed is not None:
-            linear_velocity = np.array((vh[0] * self._speed, vh[1] * self._speed, 0.0))
+            linear_velocity = np.array((vh[0], vh[1], 0.0)) * self._speed
         else:
             linear_velocity = None
         angular_velocity = np.array((0.0, 0.0, 0.0))

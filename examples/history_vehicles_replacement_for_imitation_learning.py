@@ -14,17 +14,19 @@ from smarts.core.scenario import Mission, Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
+from smarts.core.utils.math import rounder_for_dt
 
 logging.basicConfig(level=logging.INFO)
 
 
 class ReplayCheckerAgent(Agent):
-    """This is just a place holder such the example code here has a real Agent to work with.
+    """This is just a place holder such that the example code here has a real Agent to work with.
     This agent checks that the action space is working 'as expected'.
     In actual use, this would be replaced by an agent based on a trained Imitation Learning model."""
 
     def __init__(self, timestep_sec: float):
         self._timestep_sec = timestep_sec
+        self._rounder = rounder_for_dt(timestep_sec)
 
     def load_data_for_vehicle(
         self, vehicle_id: str, scenario: Scenario, time_offset: float
@@ -41,12 +43,12 @@ class ReplayCheckerAgent(Agent):
 
     def act(self, obs: Observation) -> Tuple[Tuple[float, float, float], float]:
         assert self._data
-        obs_time = round(obs.sim_time + self._time_offset, 1)
+        obs_time = self._rounder(obs.sim_time + self._time_offset)
         data = self._data.get(obs_time, None)
         if not data:
             return ((0.0, 0.0, 0.0), 0.0)
 
-        dtime = round(obs_time - self._timestep_sec, 1)
+        dtime = self._rounder(obs_time - self._timestep_sec)
         exp = self._data.get(dtime, None)
         if exp:
             cur_state = obs.ego_vehicle_state

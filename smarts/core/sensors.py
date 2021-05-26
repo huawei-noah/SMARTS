@@ -222,7 +222,6 @@ class Sensors:
             acceleration_values = vehicle.accelerometer_sensor(
                 ego_vehicle_state.linear_velocity,
                 ego_vehicle_state.angular_velocity,
-                ego_vehicle_state.pose.heading,
             )
             acceleration_params.update(
                 dict(
@@ -1030,7 +1029,7 @@ class AccelerometerSensor(Sensor):
         self.linear_velocities = deque(maxlen=3)
         self.angular_velocities = deque(maxlen=3)
 
-    def __call__(self, linear_velocity, angular_velocity, heading):
+    def __call__(self, linear_velocity, angular_velocity):
         if linear_velocity is not None:
             self.linear_velocities.append(linear_velocity)
         if angular_velocity is not None:

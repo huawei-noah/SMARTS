@@ -25,6 +25,7 @@ from typing import NamedTuple, Set
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Heading, Pose
 from .provider import Provider, ProviderState
+from .utils.math import rounder_for_dt
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -107,9 +108,9 @@ class TrafficHistoryProvider(Provider):
             return ProviderState(vehicles=[])
         vehicles = []
         vehicle_ids = set()
-        dec_digits = len("{}".format(dt)) - 2
-        history_time = round(self._start_time_offset + elapsed_sim_time, dec_digits)
-        prev_time = round(history_time - dt, dec_digits)
+        rounder = rounder_for_dt(dt)
+        history_time = rounder(self._start_time_offset + elapsed_sim_time)
+        prev_time = rounder(history_time - dt)
         rows = self._histories.vehicles_active_between(prev_time, history_time)
         for hr in rows:
             v_id = str(hr.vehicle_id)

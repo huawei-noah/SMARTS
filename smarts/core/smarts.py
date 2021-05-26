@@ -53,6 +53,7 @@ from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
+from .utils.math import rounder_for_dt
 from .utils.id import Id
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
@@ -84,6 +85,7 @@ class SMARTS:
         self._envision: EnvisionClient = envision
         self._visdom: VisdomClient = visdom
         self._timestep_sec = timestep_sec
+        self._rounder = rounder_for_dt(timestep_sec)
         self._traffic_sim = traffic_sim
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
@@ -230,9 +232,7 @@ class SMARTS:
         extras = dict(scores=scores)
 
         # 8. Advance the simulation clock.
-        # round due to FP precision issues, but need to allow arbitrarily-small dt's
-        dec_digits = len("{}".format(self._timestep_sec)) - 2
-        self._elapsed_sim_time = round(self._elapsed_sim_time + dt, dec_digits)
+        self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + dt)
 
         return observations, rewards, dones, extras
 
@@ -962,7 +962,6 @@ class SMARTS:
             for bubble in self._bubble_manager.bubbles
         ]
 
-        dec_digits = len("{}".format(self._timestep_sec)) - 2
         state = envision_types.State(
             traffic=traffic,
             scenario_id=self.scenario.scenario_hash,
@@ -974,7 +973,7 @@ class SMARTS:
             speed=speed,
             heading=heading,
             lane_ids=lane_ids,
-            frame_time=round(self._elapsed_sim_time + self._total_sim_time, dec_digits),
+            frame_time=self._rounder(self._elapsed_sim_time + self._total_sim_time),
         )
         self._envision.send(state)
 
