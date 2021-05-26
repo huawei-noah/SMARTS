@@ -38,6 +38,7 @@ process
 ### Changed
 - Refactored SMARTS class to not inherit from Panda3D's ShowBase; it's aggregated instead. See issue #597.
 - Updated imitation learning examples.
+- Updated some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266.
 ### Fixed
 - Fixed the bug of events such as off_road not registering in observation when off_road is set to false in DoneCriteria
 - Fixed Sumo road network offset bug for shifted maps.  See issue #716.
