@@ -44,7 +44,7 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
             vehicle_types=vehicle_types
         )
 
-        if collected_data and not current_vehicles or smarts.elapsed_sim_time > 60:
+        if collected_data and not current_vehicles:
             print("no more vehicles.  exiting...")
             break
 
