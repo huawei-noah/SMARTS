@@ -43,7 +43,7 @@ class ImitationController:
             return
 
         assert isinstance(action, (list, tuple)) and len(action) == 2
-        # acceleration is vector in m/s^2, angluar_velocity is scalar in rad/s
+        # acceleration is vector in m/s^2, angular_velocity is scalar in rad/s
         acceleration, angular_velocity = action
         target_heading = (vehicle.heading + angular_velocity * dt) % (2 * math.pi)
 

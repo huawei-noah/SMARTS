@@ -119,7 +119,7 @@ class TraverseGoal(Goal):
         return self._road_network.drove_off_map(vehicle.position, vehicle.heading)
 
 
-def default_entry_tactic(default_entry_speed: float = None):
+def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
     return sstudio_types.TrapEntryTactic(
         wait_to_hijack_limit_s=0,
         exclusion_prefixes=tuple(),

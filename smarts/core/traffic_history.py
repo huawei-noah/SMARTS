@@ -24,6 +24,7 @@ from __future__ import (
 from cached_property import cached_property
 from contextlib import nullcontext, closing
 from functools import lru_cache
+import os
 import random
 import sqlite3
 from typing import Dict, Generator, NamedTuple, Set, Tuple, TypeVar
@@ -36,7 +37,7 @@ class TrafficHistory:
 
     @property
     def name(self):
-        return self._db.name[:-4]  # all history files have ".shf" extension
+        return os.path.splitext(self._db.name)[0]
 
     def connect_for_multiple_queries(self):
         """Optional optimization to avoid the overhead of parsing

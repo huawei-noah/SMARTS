@@ -670,7 +670,10 @@ class SMARTS:
         for agent_id, action in actions.items():
             if not agent_controls_vehicles(agent_id):
                 continue
-            pybullet_actions[agent_id] = action
+            if matches_provider_action_spaces(
+                agent_id, self._dynamic_action_spaces
+            ) or matches_no_provider_action_space(agent_id):
+                pybullet_actions[agent_id] = action
 
         if pybullet_actions:
             accumulated_provider_state.merge(

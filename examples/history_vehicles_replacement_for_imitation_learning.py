@@ -39,7 +39,7 @@ class ReplayCheckerAgent(Agent):
         with open(datafile, "rb") as pf:
             self._data = pickle.load(pf)
 
-    def act(self, obs: Observation) -> Union[Tuple[float, float], float]:
+    def act(self, obs: Observation) -> Tuple[Tuple[float, float, float], float]:
         assert self._data
         obs_time = round(obs.sim_time + self._time_offset, 1)
         data = self._data.get(obs_time, None)
