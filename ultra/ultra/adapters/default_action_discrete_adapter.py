@@ -19,12 +19,38 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from typing import Sequence
+
 import gym
+import numpy as np
 
 from smarts.core.controllers import ActionSpaceType
 
 
-gym_space: gym.Space = None  # TODO: Make gym space.
+class DiscreteStrings(gym.Space):
+    def __init__(self, strings: Sequence[str]):
+        assert len(strings) > 0
+        self._strings = strings
+        super(DiscreteStrings, self).__init__((), np.str)
+
+    def sample(self) -> str:
+        index = self.np_random.randint(len(self._strings))
+        return self._strings[index]
+
+    def contains(self, x: str) -> bool:
+        return x in self._strings
+
+    def __repr__(self) -> str:
+        strings_string = ", ".join(self._strings)
+        return f"DiscreteStrings(({strings_string}))"
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, DiscreteStrings) and self._strings == other._strings
+
+
+gym_space: gym.Space = DiscreteStrings(
+    ("keep_lane", "slow_down", "change_lane_left", "change_lane_right")
+)
 required_interface = {"action": ActionSpaceType.Lane}
 
 
