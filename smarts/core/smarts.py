@@ -113,7 +113,7 @@ class SMARTS:
             ActionSpaceType.LaneWithContinuousSpeed,
             ActionSpaceType.Trajectory,
             ActionSpaceType.MPC,
-            ActionSpaceType.Imitation,
+            #ActionSpaceType.Imitation,
         }
 
         # Set up indices
