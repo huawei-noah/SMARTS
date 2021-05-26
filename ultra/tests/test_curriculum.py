@@ -134,7 +134,6 @@ class CurriculumTest(unittest.TestCase):
                 scenario_info=("00-gb", "test_grade1"),
                 policy_classes=policy_classes,
                 num_episodes=6,
-                max_steps=1000,
                 max_episode_steps=2,
                 max_steps=1000,
                 eval_info={
