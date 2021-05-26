@@ -102,15 +102,16 @@ def required_interface_from_types(*adapter_types: AdapterType) -> Dict[str, Any]
         adapter_type_interface = _TYPE_TO_REQUIRED_INTERFACE[adapter_type]
 
         # Ensure current interface requirements don't conflict with previous interface
-        # requirements.
+        # requirements of other adapter types.
         for interface_name, interface_requirement in adapter_type_interface.items():
-            if interface_name in required_interface:
-                if required_interface[interface_name] != interface_requirement:
-                    # The interface for the same interface name is different.
-                    raise Exception(
-                        f"Cannot resolve {interface_requirement} requirement with "
-                        f"existing {required_interface[interface_name]} requirement."
-                    )
+            if (
+                interface_name in required_interface
+                and required_interface[interface_name] != interface_requirement
+            ):
+                raise Exception(
+                    f"Cannot resolve current {interface_requirement} requirement with "
+                    f"existing {required_interface[interface_name]} requirement."
+                )
             else:
                 required_interface[interface_name] = interface_requirement
 

@@ -33,6 +33,9 @@ from ultra.utils.common import get_closest_waypoint, get_path_to_goal, rotate2d_
 
 
 _WAYPOINTS = 20  # Number of waypoints on the path ahead of the ego vehicle.
+_RADIUS = 200.0  # Locate all social vehicles within this radius of the ego vehicle.
+_CAPACITY = 10  # Number of social vehicles we keep in the adapted observation.
+_FEATURES = 4  # Number of features for each social vehicle.
 _SIZE = (
     1  # Speed.
     + 1  # Distance from center.
@@ -51,9 +54,6 @@ _NORMALIZATION_VALUES = {
     "waypoints_lookahead": 10.0,
     "road_speed": 30.0,
 }
-_RADIUS = 200.0  # Locate all social vehicles within this radius of the ego vehicle.
-_CAPACITY = 10  # Number of social vehicles we keep in the adapted observation.
-_FEATURES = 4  # Number of features for each social vehicle.
 
 
 gym_space: gym.Space = gym.spaces.Dict(

@@ -29,8 +29,8 @@ from smarts.core.sensors import Observation
 from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
 
 
-_WAYPOINTS = 20  # TODO: Make this the same as in default observation adapter (or v.v.).
-_RADIUS = 200.0  # TODO: Make this the same as in default observation adapter (or v.v.).
+_WAYPOINTS = 20  # Number of waypoints on the path ahead of the ego vehicle.
+_RADIUS = 200.0  # Locate all social vehicles within this radius of the ego vehicle.
 
 
 required_interface = {
