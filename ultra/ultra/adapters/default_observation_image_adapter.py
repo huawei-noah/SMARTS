@@ -33,7 +33,7 @@ _RESOLUTION = 50 / 64
 
 # The space of the adapted observation.
 gym_space: gym.Space = gym.spaces.Box(
-    low=-1.0, high=1.0, shape=(_HEIGHT, _WIDTH), dtype=np.float32
+    low=0.0, high=1.0, shape=(_HEIGHT, _WIDTH), dtype=np.float32
 )
 # This adapter requires SMARTS to pass the top-down RGB image in the agent's
 # observation.
@@ -57,4 +57,4 @@ def adapt(observation: Observation) -> np.ndarray:
     rgb_image = observation.top_down_rgb.data
     gray_image = np.dot(rgb_image, (0.2125, 0.7154, 0.0721))
     normalized_gray_image = np.divide(gray_image, 255.0)
-    return normalized_gray_image
+    return normalized_gray_image.astype(np.float32)
