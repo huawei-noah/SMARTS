@@ -275,12 +275,13 @@ class NGSIM(_TrajectoryDataset):
     def _cal_speed(self, window):
         p = window[0, :2]
         c = window[1, :2]
+        n = window[2, :2]
         badc = any(np.isnan(c))
-        badp = any(np.isnan(p))
-        if badc or badp:
+        badn = any(np.isnan(n))
+        if badc or badn:
             return None
         # XXX: could try to divide by sim_time delta here instead of assuming .1s
-        return np.linalg.norm(c - p) / 0.1
+        return np.linalg.norm(n - c) / 0.1
 
     def _transform_all_data(self):
         self._log.debug("transforming NGSIM data")
@@ -368,9 +369,9 @@ class NGSIM(_TrajectoryDataset):
             # and so don't match with dPos/dt, which can affect some models.)
             speeds = [
                 self._cal_speed(values)
-                for values in stride(v, (d0 - 1, 2, d1), (s0, s0, s1))
+                for values in stride(v, (d0 - 2, 3, d1), (s0, s0, s1))
             ]
-            df.loc[same_car, "speed_discrete"] = speeds + [speeds[-1]]
+            df.loc[same_car, "speed_discrete"] = speeds + [None, None]
 
         map_width = self._dataset_spec["map_net"].get("width")
         if map_width:
