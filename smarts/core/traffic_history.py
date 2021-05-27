@@ -93,7 +93,7 @@ class TrafficHistory:
         return self._query_val(float, query, params=(vehicle_id,))
 
     def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
-        # For now, limit agent missions to just cars (V.type = 2)
+        # XXX: For now, limit agent missions to just cars (V.type = 2)
         query = """SELECT T.vehicle_id, MIN(T.sim_time)
             FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
             WHERE V.type = 2
@@ -111,7 +111,10 @@ class TrafficHistory:
     def vehicle_ids_active_between(
         self, start_time: float, end_time: float
     ) -> Generator[int, None, None]:
-        query = "SELECT DISTINCT vehicle_id FROM Trajectory WHERE ? <= sim_time AND sim_time <= ?"
+        # XXX: For now, limit agent missions to just cars (V.type = 2)
+        query = """SELECT DISTINCT T.vehicle_id
+                   FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
+                   WHERE ? <= T.sim_time AND T.sim_time <= ? AND V.type = 2"""
         return self._query_list(query, (start_time, end_time))
 
     class VehicleRow(NamedTuple):
