@@ -131,6 +131,7 @@ class Vehicle:
     def __init__(
         self,
         id: str,
+        # XXX: can probably remove pose as a parameter here since it's in chassis now.
         pose: Pose,
         chassis: Chassis,
         # TODO: We should not be leaking SUMO here.
