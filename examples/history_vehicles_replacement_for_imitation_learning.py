@@ -179,8 +179,8 @@ def main(
             # Finally start the simulation loop...
             logger.info(f"starting simulation loop...")
             observations = smarts.reset(scenario)
-            obs_time = rounder(smarts.elapsed_sim_time + history_start_time)
             while not all(done for done in dones.values()):
+                obs_time = rounder(smarts.elapsed_sim_time + history_start_time)
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs, obs_time)
                     for agent_id, agent_obs in observations.items()

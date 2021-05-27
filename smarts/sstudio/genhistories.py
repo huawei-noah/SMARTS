@@ -257,8 +257,8 @@ class NGSIM(_TrajectoryDataset):
         # .22 is a magic number corresponding to roughly 5mph.
         # If the car is going very slowly, heading results
         # get a bit wacky due to precision problems.
-        no_v1 = any(np.isnan(p)) or badc or abs(d1) < 0.22
-        no_v2 = any(np.isnan(n)) or badc or abs(d2) < 0.22
+        no_v1 = any(np.isnan(p)) or badc or d1 < 0.22
+        no_v2 = any(np.isnan(n)) or badc or d2 < 0.22
         if no_v1 and no_v2:
             return self._prev_heading
         elif no_v1:
@@ -270,6 +270,16 @@ class NGSIM(_TrajectoryDataset):
         r = math.atan2(avg[1], avg[0]) % (2 * math.pi)
         self._prev_heading = r - math.pi / 2
         return self._prev_heading
+
+    def _cal_speed(self, window):
+        p = window[0, :2]
+        c = window[1, :2]
+        badc = any(np.isnan(c))
+        badp = any(np.isnan(p))
+        if badc or badp:
+            return None
+        # XXX: could try to divide by sim_time delta here instead of assuming .1s
+        return np.linalg.norm(c - p) / 0.1
 
     def _transform_all_data(self):
         self._log.debug("transforming NGSIM data")
@@ -353,6 +363,14 @@ class NGSIM(_TrajectoryDataset):
                 for values in stride(v, (d0 - 2, 3, d1), (s0, s0, s1))
             ]
             df.loc[same_car, "heading_rad"] = headings + [headings[-1], headings[-1]]
+            # ... and new speeds (based on these smoothed positions)
+            # (This also overcomes problem that NGSIM speeds are "instantaneous"
+            # and so don't match with dPos/dt, which can affect some models.)
+            speeds = [
+                self._cal_speed(values)
+                for values in stride(v, (d0 - 1, 2, d1), (s0, s0, s1))
+            ]
+            df.loc[same_car, "speed_discrete"] = speeds + [speeds[-1]]
 
         return df
 
@@ -362,6 +380,8 @@ class NGSIM(_TrajectoryDataset):
             yield t
 
     def column_val_in_row(self, row, col_name):
+        if col_name == "speed":
+            return row.speed_discrete if row.speed_discrete else row.speed
         return getattr(row, col_name, None)
 
 

@@ -41,7 +41,6 @@ class TrafficHistoryProvider(Provider):
         self._this_step_dones = set()
         self._vehicle_id_prefix = "history-vehicle-"
         self._start_time_offset = 0
-        self._prev_pos = {}
 
     @property
     def start_time(self):
@@ -79,7 +78,6 @@ class TrafficHistoryProvider(Provider):
             self._histories.disconnect()
             self._histories = None
         self._replaced_vehicle_ids = set()
-        self._prev_pos = {}
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -106,28 +104,6 @@ class TrafficHistoryProvider(Provider):
             )
         return "passenger"
 
-    def _compute_speed(
-        self, v_id: str, pos_x: float, pos_y: float, dt: float, default_speed: float
-    ) -> float:
-        # Here we re-compute the speed,
-        # not trusting what was in the original dataset.
-        # The reason is because in the NGSIM dataset,
-        # for example, it is "instantaneous" velocity,
-        # which does not match with dPos/dt.
-        # Since we speed will be dPos/dt in our Imitation action space,
-        # we force that to be the case here.
-        # XXX: speeds could be computed up front when
-        # creating the .shf file to optimize step time.
-        cur_pos = np.array((pos_x, pos_y))
-        prev_pos = self._prev_pos.get(v_id)
-        result = (
-            np.linalg.norm(cur_pos - prev_pos) / dt
-            if prev_pos is not None
-            else default_speed
-        )
-        self._prev_pos[v_id] = cur_pos
-        return result
-
     def step(
         self, provider_actions, dt: float, elapsed_sim_time: float
     ) -> ProviderState:
@@ -148,7 +124,6 @@ class TrafficHistoryProvider(Provider):
             default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
             pos_x = hr.position_x + self._map_location_offset[0]
             pos_y = hr.position_y + self._map_location_offset[1]
-            speed = self._compute_speed(v_id, pos_x, pos_y, dt, hr.speed)
             vehicles.append(
                 VehicleState(
                     vehicle_id=self._vehicle_id_prefix + v_id,
@@ -164,7 +139,7 @@ class TrafficHistoryProvider(Provider):
                         # Note: Neither NGSIM nor INTERACTION provide the vehicle height
                         height=default_dims.height,
                     ),
-                    speed=speed,
+                    speed=hr.speed,
                     source="HISTORY",
                 )
             )
