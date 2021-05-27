@@ -54,10 +54,10 @@ class ReplayCheckerAgent(Agent):
         if exp:
             cur_state = obs.ego_vehicle_state
             assert math.isclose(
-                cur_state.heading, exp["heading"]
+                cur_state.heading, exp["heading"], abs_tol=1e-09
             ), f'vid={self._vehicle_id}: {cur_state.heading} != {exp["heading"]} @ {obs_time}'
             assert math.isclose(
-                cur_state.speed, exp["speed"]
+                cur_state.speed, exp["speed"], abs_tol=1e-09
             ), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
             if not self._first_step:
                 # checking the position at the very first step is iffy because the initial speed can be off sligtly
