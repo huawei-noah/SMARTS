@@ -39,9 +39,7 @@ class ReplayCheckerAgent(Agent):
         with open(datafile, "rb") as pf:
             self._data = pickle.load(pf)
 
-    def act(
-        self, obs: Observation, obs_time: float
-    ) -> Tuple[float, float]:
+    def act(self, obs: Observation, obs_time: float) -> Tuple[float, float]:
         # note: in a real agent, you would not pass "obs_time" to act().
         # we're just doing it here to support this fake agent checking itself.
         assert self._data
