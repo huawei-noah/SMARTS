@@ -239,6 +239,7 @@ class Interaction(_TrajectoryDataset):
         if col_name == "heading_rad":
             # Note: pedestrian track files won't have this
             return float(row.get("psi_rad", 0.0)) - math.pi / 2
+        # XXX: should probably check for and handle x_offset_px here too like in NGSIM
         return None
 
 
@@ -313,7 +314,9 @@ class NGSIM(_TrajectoryDataset):
 
         df["sim_time"] = df["global_time"] - min(df["global_time"])
 
+        # offset of the map from the data...
         x_offset = self._dataset_spec.get("x_offset_px", 0) / self.scale
+        y_offset = self._dataset_spec.get("y_offset_px", 0) / self.scale
 
         df["length"] *= METERS_PER_FOOT
         df["width"] *= METERS_PER_FOOT
@@ -325,11 +328,8 @@ class NGSIM(_TrajectoryDataset):
         df["position_x"] = (
             df["position_x"] * METERS_PER_FOOT - 0.5 * df["length"] - x_offset
         )
-
-        map_width = self._dataset_spec["map_net"].get("width")
-        if map_width:
-            valid_x = (df["position_x"] * self.scale).between(0, map_width)
-            df = df[valid_x]
+        if y_offset:
+            df["position_x"] = df["position_y"] - y_offset
 
         if self._flip_y:
             max_y = self._dataset_spec["map_net"]["max_y"]
@@ -371,6 +371,11 @@ class NGSIM(_TrajectoryDataset):
                 for values in stride(v, (d0 - 1, 2, d1), (s0, s0, s1))
             ]
             df.loc[same_car, "speed_discrete"] = speeds + [speeds[-1]]
+
+        map_width = self._dataset_spec["map_net"].get("width")
+        if map_width:
+            valid_x = (df["position_x"] * self.scale).between(0, map_width)
+            df = df[valid_x]
 
         return df
 
