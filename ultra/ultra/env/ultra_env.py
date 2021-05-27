@@ -58,10 +58,8 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
-        # TODO: Does the ULTRA environment need an ultra_scores? Perhaps the reward
-        #       adapter should be agent-specific. Also, check if ultra_scores is being
-        #       called twice on the same reward... once in step() and then another time
-        #       in generate_logs().
+        # NOTE: Does the ULTRA environment need an ultra_scores? Perhaps the reward
+        #       adapter should be agent-specific.
         self.ultra_scores = adapters.adapter_from_type(
             adapter_type=adapters.AdapterType.DefaultReward
         )
