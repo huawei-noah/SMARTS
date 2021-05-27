@@ -33,13 +33,31 @@ _WAYPOINTS = 20  # Number of waypoints on the path ahead of the ego vehicle.
 _RADIUS = 200.0  # Locate all social vehicles within this radius of the ego vehicle.
 
 
+# This adapter requires SMARTS to pass the next _WAYPOINTS waypoints and all
+# neighborhood vehicles within a radius of _RADIUS meters in the agent's observation.
 required_interface = {
     "waypoints": Waypoints(lookahead=_WAYPOINTS),
     "neighborhood_vehicles": NeighborhoodVehicles(radius=_RADIUS),
 }
 
 
-def adapt(observation: Observation, reward: float):
+def adapt(observation: Observation, reward: float) -> float:
+    """Adapts a raw environment observation and an environment reward to a custom reward
+    of type float.
+
+    The raw observation from the environment must include the ego vehicle's state,
+    events, waypoint paths, and neighborhood vehicles. See smarts.core.sensors for more
+    information on the Observation type.
+
+    Args:
+        observation (Observation): The raw environment observation received from SMARTS.
+        reward (float): The environment reward received from SMARTS.
+
+    Returns:
+        float: The adapted, custom reward which includes aspects of the ego vehicle's
+            state, the ego vehicle's mission progress, and the and neighborhood vehicles
+            around the ego vehicle, in addition to the environment reward.
+    """
     env_reward = reward
     ego_events = observation.events
     ego_observation = observation.ego_vehicle_state

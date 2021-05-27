@@ -74,24 +74,77 @@ _TYPE_TO_REQUIRED_INTERFACE = {
 
 
 def type_from_string(string_type: str) -> AdapterType:
+    """Returns the AdapterType of the given string.
+
+    Args:
+        string_type (str): The string corresponding to a unique adapter type.
+
+    Returns:
+        AdapterType: The respective AdapterType of the input string.
+
+    Raises:
+        Exception: If string_type has no AdapterType.
+    """
     if string_type in _STRING_TO_TYPE:
         return _STRING_TO_TYPE[string_type]
     raise Exception(f"An adapter type is not set for string '{string_type}'.")
 
 
 def space_from_type(adapter_type: AdapterType) -> gym.Space:
+    """Returns the Gym space of the given AdapterType.
+
+    Args:
+        adapter_type (AdapterType): The AdapterType for the desired Gym space.
+
+    Returns:
+        gym.Space: The Gym space of adapter_type.
+
+    Raises:
+        Exception: If adapter_type has no Gym space.
+    """
     if adapter_type in _TYPE_TO_SPACE:
         return _TYPE_TO_SPACE[adapter_type]
     raise Exception(f"A Gym Space is not set for adapter type {adapter_type}.")
 
 
 def adapter_from_type(adapter_type: AdapterType) -> Callable:
+    """Returns the adapter function of the given AdapterType.
+
+    Args:
+        adapter_type (AdapterType): The AdapterType for the desired adapter function.
+
+    Returns:
+        Callable: The adapter function of adapter_type.
+
+    Raises:
+        Exception: If adapter_type has no adapter function.
+    """
     if adapter_type in _TYPE_TO_ADAPTER:
         return _TYPE_TO_ADAPTER[adapter_type]
     raise Exception(f"An adapter function is not set for adapter type {adapter_type}.")
 
 
 def required_interface_from_types(*adapter_types: AdapterType) -> Dict[str, Any]:
+    """Returns the union of the required interfaces for all given AdapterTypes.\
+
+    If multiple given AdapterTypes require the same interface, the interface must be the
+    same among all of all of them. For example, if AdapterType.MyFirstAdapter requires
+    {"waypoints": Waypoints(20)} and AdapterType.MySecondAdapter requires
+    {"waypoints": Waypoints(40)}, this function will raise an exception becaues the
+    waypoints required interface is not the same among given AdapterTypes.
+
+    Args:
+        *adapter_types: A variable length argument list of AdapterTypes used to obtain
+            the desired required interface union.
+
+    Returns:
+        dict: A dictionary containing the required interface.
+
+    Raises:
+        Exception: If an invalid AdapterType is given, or multiple AdapterTypes have the
+            same interface requirement, but the arguments of that interface requirement
+            differ.
+    """
     required_interface = {}
 
     for adapter_type in adapter_types:

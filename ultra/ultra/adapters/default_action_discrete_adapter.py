@@ -48,11 +48,28 @@ class DiscreteStrings(gym.Space):
         return isinstance(other, DiscreteStrings) and self._strings == other._strings
 
 
+# The space of the adapted action.
 gym_space: gym.Space = DiscreteStrings(
     ("keep_lane", "slow_down", "change_lane_left", "change_lane_right")
 )
+# This adapter requires SMARTS to ensure that the agent is provided a "lane" controller,
+# that is, a controller that allows for actions in the form of one of four valid strings
+# that describe the action of the agent. The four valid strings are "keep-lane",
+# "slow_down", "change_lane_left", and "change_lane_right".
 required_interface = {"action": ActionSpaceType.Lane}
 
 
-def adapt(action):
+def adapt(action: str) -> str:
+    """Adapts a given action into an action that SMARTS can understand for a lane
+    controller. This adapter expects that the action is already a valid lane controller
+    action.
+
+    Args:
+        action (str): The action to adapt. The action should be one of four applicable
+            strings, either "slow_down", "keep_lane", "change_lane_left", or
+            "change_lane_right".
+
+    Returns:
+        str: The same action that was passed in.
+    """
     return action

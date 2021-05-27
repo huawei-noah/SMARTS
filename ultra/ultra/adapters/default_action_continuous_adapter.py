@@ -25,13 +25,30 @@ import numpy as np
 from smarts.core.controllers import ActionSpaceType
 
 
+# The space of the adapted action.
 gym_space: gym.Space = gym.spaces.Box(
     low=np.array([0.0, 0.0, -1.0]),
     high=np.array([1.0, 1.0, 1.0]),
     dtype=np.float32,
 )
+# This adapter reqiures SMARTS to ensure that the agent is provided a "continuous"
+# controller, that is, a controller that allows for actions in the form of an array:
+# [throttle, brake, steering].
 required_interface = {"action": ActionSpaceType.Continuous}
 
 
-def adapt(action):
+def adapt(action: np.ndarray) -> np.ndarray:
+    """Adapts a given action into an action that SMARTS can understand for a continuous
+    controller. This adapter expects that the action is already a valid continuous
+    controller action.
+
+    Args:
+        action (numpy.ndarray): The action to adapt. The action should be in the form of
+            [throttle, brake, steering] where each element is a float. The throttle
+            element is in the range [0, 1], the brake element is in the range [0, 1] and
+            the steering element is in the range [-1, 1].
+
+    Returns:
+        np.ndarray: The same action that was passed in.
+    """
     return action

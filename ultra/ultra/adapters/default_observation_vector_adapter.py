@@ -22,7 +22,7 @@
 import collections
 
 from scipy.spatial import distance
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 import gym
 import numpy as np
 
@@ -56,6 +56,7 @@ _NORMALIZATION_VALUES = {
 }
 
 
+# The space of the adapted observation.
 gym_space: gym.Space = gym.spaces.Dict(
     {
         "low_dim_states": gym.spaces.Box(
@@ -66,13 +67,29 @@ gym_space: gym.Space = gym.spaces.Dict(
         ),
     }
 )
+# This adapter requires SMARTS to pass the next _WAYPOINTS waypoints and all
+# neighborhood vehicles within a radius of _RADIUS meters in the agent's observation.
 required_interface = {
     "waypoints": Waypoints(lookahead=_WAYPOINTS),
     "neighborhood_vehicles": NeighborhoodVehicles(radius=_RADIUS),
 }
 
 
-def adapt(observation: Observation):
+def adapt(observation: Observation) -> Dict[str, np.ndarray]:
+    """Adapts a raw environment observation into a dictionary of numpy.ndarrays.
+
+    The raw observation from the environment must include the ego vehicle's state,
+    events, waypoint paths, and neighborhood vehicles. See smarts.core.sensors for more
+    information on the Observation type.
+
+    Args:
+        observation (Observation): The raw environment observation received from SMARTS.
+
+    Returns:
+        dict: A dictionary with two keys, "low_dim_states" and "social_vehicles". The
+            value of "low_dim_states" is a numpy.ndarray with shape (47,), and the value
+            of "social_vehicles" is a numpy.ndarray with shape (10, 4).
+    """
     ego_position = observation.ego_vehicle_state.position
     ego_heading = observation.ego_vehicle_state.heading
     ego_speed = observation.ego_vehicle_state.speed
