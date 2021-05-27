@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import numpy as np
 import sqlite3
 from itertools import cycle
 from typing import NamedTuple, Set
@@ -40,6 +41,7 @@ class TrafficHistoryProvider(Provider):
         self._this_step_dones = set()
         self._vehicle_id_prefix = "history-vehicle-"
         self._start_time_offset = 0
+        self._prev_pos = {}
 
     @property
     def start_time(self):
@@ -77,6 +79,7 @@ class TrafficHistoryProvider(Provider):
             self._histories.disconnect()
             self._histories = None
         self._replaced_vehicle_ids = set()
+        self._prev_pos = {}
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -86,7 +89,7 @@ class TrafficHistoryProvider(Provider):
         # Ignore other sim state
         pass
 
-    def _decode_vehicle_type(self, vehicle_type):
+    def _decode_vehicle_type(self, vehicle_type: int) -> str:
         # Options from NGSIM and INTERACTION currently include:
         #  1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
         if vehicle_type == 1:
@@ -103,7 +106,31 @@ class TrafficHistoryProvider(Provider):
             )
         return "passenger"
 
-    def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
+    def _compute_speed(
+        self, v_id: str, pos_x: float, pos_y: float, dt: float, default_speed: float
+    ) -> float:
+        # Here we re-compute the speed,
+        # not trusting what was in the original dataset.
+        # The reason is because in the NGSIM dataset,
+        # for example, it is "instantaneous" velocity,
+        # which does not match with dPos/dt.
+        # Since we speed will be dPos/dt in our Imitation action space,
+        # we force that to be the case here.
+        # XXX: speeds could be computed up front when
+        # creating the .shf file to optimize step time.
+        cur_pos = np.array((pos_x, pos_y))
+        prev_pos = self._prev_pos.get(v_id)
+        result = (
+            np.linalg.norm(cur_pos - prev_pos) / dt
+            if prev_pos is not None
+            else default_speed
+        )
+        self._prev_pos[v_id] = cur_pos
+        return result
+
+    def step(
+        self, provider_actions, dt: float, elapsed_sim_time: float
+    ) -> ProviderState:
         if not self._histories:
             return ProviderState(vehicles=[])
         vehicles = []
@@ -119,18 +146,14 @@ class TrafficHistoryProvider(Provider):
             vehicle_ids.add(v_id)
             vehicle_type = self._decode_vehicle_type(hr.vehicle_type)
             default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+            pos_x = hr.position_x + self._map_location_offset[0]
+            pos_y = hr.position_y + self._map_location_offset[1]
+            speed = self._compute_speed(v_id, pos_x, pos_y, dt, hr.speed)
             vehicles.append(
                 VehicleState(
                     vehicle_id=self._vehicle_id_prefix + v_id,
                     vehicle_type=vehicle_type,
-                    pose=Pose.from_center(
-                        [
-                            hr.position_x + self._map_location_offset[0],
-                            hr.position_y + self._map_location_offset[1],
-                            0,
-                        ],
-                        Heading(hr.heading_rad),
-                    ),
+                    pose=Pose.from_center((pos_x, pos_y, 0), Heading(hr.heading_rad)),
                     dimensions=BoundingBox(
                         length=hr.vehicle_length
                         if hr.vehicle_length is not None
@@ -141,7 +164,7 @@ class TrafficHistoryProvider(Provider):
                         # Note: Neither NGSIM nor INTERACTION provide the vehicle height
                         height=default_dims.height,
                     ),
-                    speed=hr.speed,
+                    speed=speed,
                     source="HISTORY",
                 )
             )
