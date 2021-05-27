@@ -41,23 +41,23 @@ class ReplayCheckerAgent(Agent):
 
     def act(
         self, obs: Observation, obs_time: float
-    ) -> Tuple[Tuple[float, float, float], float]:
+    ) -> Tuple[float, float]:
         # note: in a real agent, you would not pass "obs_time" to act().
         # we're just doing it here to support this fake agent checking itself.
         assert self._data
         data = self._data.get(obs_time, None)
         if not data:
-            return ((0.0, 0.0, 0.0), 0.0)
+            return (0.0, 0.0)
 
         dtime = self._rounder(obs_time - self._timestep_sec)
         exp = self._data.get(dtime, None)
         if exp:
             cur_state = obs.ego_vehicle_state
             assert math.isclose(
-                cur_state.heading, exp["heading"], abs_tol=1e-09
+                cur_state.heading, exp["heading"], abs_tol=1e-04
             ), f'vid={self._vehicle_id}: {cur_state.heading} != {exp["heading"]} @ {obs_time}'
             assert math.isclose(
-                cur_state.speed, exp["speed"], abs_tol=1e-09
+                cur_state.speed, exp["speed"], abs_tol=1e-04
             ), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
             if not self._first_step:
                 # checking the position at the very first step is iffy because the initial speed can be off sligtly

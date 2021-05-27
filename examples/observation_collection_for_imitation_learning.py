@@ -9,6 +9,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.utils.math import radians_to_vec
 
 logging.basicConfig(level=logging.INFO)
 
@@ -60,8 +61,15 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
             collected_data[car][t]["heading"] = car_state.heading
             collected_data[car][t]["speed"] = car_state.speed
             collected_data[car][t]["angular_velocity"] = car_state.yaw_rate
-            # note: acceleration is a 3-vector...
-            collected_data[car][t]["acceleration"] = car_state.linear_acceleration
+            # note: acceleration is a 3-vector. convert it here to a scalar
+            # keeping only the acceleration in the direction of travel (the heading).
+            # we will miss angular acceleration effects, but hopefully angular velocity
+            # will be enough to "keep things real".  This is simpler than using
+            # the angular acceleration vector because there are less degrees of
+            # freedom in the resulting model.
+            heading_vector = radians_to_vec(car_state.heading)
+            acc_scalar = car_state.linear_acceleration[:2].dot(heading_vector)
+            collected_data[car][t]["acceleration"] = acc_scalar
 
     # an example of how we might save the data per car
     for car, data in collected_data.items():
