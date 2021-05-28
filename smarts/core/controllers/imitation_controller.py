@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import math
 import numpy as np
+from dataclasses import dataclass
 
 from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Pose
@@ -30,9 +31,14 @@ from smarts.core.utils.math import (
 )
 
 
+@dataclass
+class ImitationControllerState:
+    cur_angular_velocity: float
+
+
 class ImitationController:
     @classmethod
-    def perform_action(cls, dt, vehicle, action):
+    def perform_action(cls, dt, vehicle, action, state):
         chassis = vehicle.chassis
         if isinstance(action, (int, float)):
             # special case:  setting the initial speed
@@ -55,7 +61,9 @@ class ImitationController:
         if isinstance(chassis, BoxChassis):
             heading_vec = radians_to_vec(vehicle.heading)
             ortho_vec = radians_to_vec(vehicle.heading + math.pi / 2)
-            dpos = (heading_vec * vehicle.speed + ortho_vec * angular_velocity) * dt
+            dpos = (
+                heading_vec * vehicle.speed + ortho_vec * state.cur_angular_velocity
+            ) * dt
             new_pose = Pose(
                 position=vehicle.position + np.append(dpos, 0.0),
                 orientation=fast_quaternion_from_angle(target_heading),
@@ -82,3 +90,5 @@ class ImitationController:
 
         else:
             raise Exception("unsupported chassis type")
+
+        state.cur_angular_velocity = angular_velocity
