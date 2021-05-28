@@ -69,7 +69,7 @@ class BehavioralDQNPolicy(DQNPolicy):
         if self.action_type != adapters.AdapterType.DefaultActionDiscrete:
             raise Exception(
                 f"BDQN baseline only supports the "
-                f"{adapters.AdapterType.DefaultActionContinuous} action type."
+                f"{adapters.AdapterType.DefaultActionDiscrete} action type."
             )
         if self.observation_type != adapters.AdapterType.DefaultObservationVector:
             raise Exception(

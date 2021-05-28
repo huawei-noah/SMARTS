@@ -49,13 +49,12 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             _scenarios = glob.glob(f"{self.scenarios['train']}")
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
-
         config["scenarios"] = _scenarios
-        # NOTE: Does the ULTRA environment need an ultra_scores? Perhaps the reward
-        #       adapter should be agent-specific.
+
         self.ultra_scores = adapters.adapter_from_type(
             adapter_type=adapters.AdapterType.DefaultReward
         )
+
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:

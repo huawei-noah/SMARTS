@@ -41,8 +41,8 @@ _SIZE = (
     + 1  # Distance from center.
     + 1  # Steering.
     + 1  # Angle error.
-    + 2  # Relative goal position
-    + 2 * _WAYPOINTS  # Waypoints lookahead.
+    + 2  # The x and y values of the goal's relative position.
+    + 2 * _WAYPOINTS  # The x and y values of each waypoint's relative position.
     + 1  # Road speed.
 )
 _NORMALIZATION_VALUES = {
@@ -87,8 +87,9 @@ def adapt(observation: Observation) -> Dict[str, np.ndarray]:
 
     Returns:
         dict: A dictionary with two keys, "low_dim_states" and "social_vehicles". The
-            value of "low_dim_states" is a numpy.ndarray with shape (47,), and the value
-            of "social_vehicles" is a numpy.ndarray with shape (10, 4).
+            value of "low_dim_states" is a numpy.ndarray with shape (_SIZE,), and the
+            value of "social_vehicles" is a numpy.ndarray with shape
+            (_CAPACITY, _FEATURES).
     """
     ego_position = observation.ego_vehicle_state.position
     ego_heading = observation.ego_vehicle_state.heading
