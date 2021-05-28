@@ -34,7 +34,7 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.coordinates import Heading
+from smarts.core.coordinates import Heading, BoundingBox
 from smarts.core.data_model import SocialAgent
 from smarts.core.route import ShortestRoute
 from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -140,6 +140,13 @@ class Via:
 
 
 @dataclass(frozen=True)
+class VehicleSpec:
+    veh_id: str
+    veh_type: str
+    dimensions: BoundingBox
+
+
+@dataclass(frozen=True)
 class Mission:
     start: Start
     goal: Goal
@@ -150,7 +157,8 @@ class Mission:
     entry_tactic: EntryTactic = None
     task: Tuple[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
-    vehicle_id: str = None  # if specified, use this vehicle (for histories)
+    # if specified, will use vehicle_spec to build the vehicle (for histories)
+    vehicle_spec: VehicleSpec = None
 
     @property
     def has_fixed_route(self):
@@ -559,10 +567,10 @@ class Scenario:
             pos_x, pos_y, heading, speed = pphs
             entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
+            veh_type = self._traffic_history.vehicle_type(v_id)
+            veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(v_id)
             # missions start from front bumper, but pos is center of vehicle
-            # vehicle_length, _ = self._traffic_history.vehicle_size(v_id)
-            vehicle_length = 3.68  # TODO: agent vehicles need to be resizable!
-            hhx, hhy = radians_to_vec(heading) * (0.5 * vehicle_length)
+            hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
             vehicle_missions[v_id] = Mission(
                 start=Start(
                     (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
@@ -571,7 +579,11 @@ class Scenario:
                 entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_network),
                 start_time=start_time,
-                vehicle_id=v_id,
+                vehicle_spec=VehicleSpec(
+                    veh_id=v_id,
+                    veh_type=veh_type,
+                    dimensions=BoundingBox(veh_length, veh_width, veh_height),
+                ),
             )
         return vehicle_missions
 

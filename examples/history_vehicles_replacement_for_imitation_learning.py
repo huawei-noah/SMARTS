@@ -52,17 +52,17 @@ class ReplayCheckerAgent(Agent):
         assert math.isclose(
             cur_state.heading, exp["heading"], abs_tol=1e-09
         ), f'vid={self._vehicle_id}: {cur_state.heading} != {exp["heading"]} @ {obs_time}'
-        # Note: the speed check can't be as tight b/c we lose some accuracy (due to angular acceleration)
+        # Note: the other checks can't be as tight b/c we lose some accuracy (due to angular acceleration)
         # by converting the acceleration vector to a scalar in the observation script,
         # which compounds over time throughout the simulation.
         assert math.isclose(
             cur_state.speed, exp["speed"], abs_tol=0.1
         ), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
         assert math.isclose(
-            cur_state.position[0], exp["ego_pos"][0], rel_tol=0.01
+            cur_state.position[0], exp["ego_pos"][0], abs_tol=2
         ), f'vid={self._vehicle_id}: {cur_state.position[0]} != {exp["ego_pos"][0]} @ {obs_time}'
         assert math.isclose(
-            cur_state.position[1], exp["ego_pos"][1], rel_tol=0.01
+            cur_state.position[1], exp["ego_pos"][1], abs_tol=2
         ), f'vid={self._vehicle_id}: {cur_state.position[1]} != {exp["ego_pos"][1]} @ {obs_time}'
 
         # Then get and return the next set of control inputs

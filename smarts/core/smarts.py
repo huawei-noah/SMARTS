@@ -292,7 +292,9 @@ class SMARTS:
 
         # Tell history provide to ignore vehicles if we have assigned mission to them
         self._traffic_history_provider.set_replaced_ids(
-            m.vehicle_id for m in scenario.missions.values() if m and m.vehicle_id
+            m.vehicle_spec.veh_id
+            for m in scenario.missions.values()
+            if m and m.vehicle_spec
         )
 
         self._total_sim_time += self._elapsed_sim_time
