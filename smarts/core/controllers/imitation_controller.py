@@ -53,7 +53,9 @@ class ImitationController:
         target_heading = (vehicle.heading + angular_velocity * dt) % (2 * math.pi)
 
         if isinstance(chassis, BoxChassis):
-            dpos = radians_to_vec(vehicle.heading) * vehicle.speed * dt
+            heading_vec = radians_to_vec(vehicle.heading)
+            ortho_vec = radians_to_vec(vehicle.heading + math.pi / 2)
+            dpos = (heading_vec * vehicle.speed + ortho_vec * angular_velocity) * dt
             new_pose = Pose(
                 position=vehicle.position + np.append(dpos, 0.0),
                 orientation=fast_quaternion_from_angle(target_heading),
