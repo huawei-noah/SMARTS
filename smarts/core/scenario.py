@@ -41,13 +41,14 @@ from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import vec_to_radians
+from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
 
 
+# XXX: consider using smarts.core.coordinates.Pose for this
 @dataclass(frozen=True)
 class Start:
     position: Tuple[int, int]
@@ -119,9 +120,12 @@ class TraverseGoal(Goal):
         return self._road_network.drove_off_map(vehicle.position, vehicle.heading)
 
 
-def default_entry_tactic():
+def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
     return sstudio_types.TrapEntryTactic(
-        wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None
+        wait_to_hijack_limit_s=0,
+        exclusion_prefixes=tuple(),
+        zone=None,
+        default_entry_speed=default_entry_speed,
     )
 
 
@@ -550,14 +554,21 @@ class Scenario:
         map_offset = self._road_network.net_offset
         for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])
-            pph = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
-            assert pph
-            pos_x, pos_y, heading = pph
+            pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
+            assert pphs
+            pos_x, pos_y, heading, speed = pphs
+            entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
+            # missions start from front bumper, but pos is center of vehicle
+            # vehicle_length, _ = self._traffic_history.vehicle_size(v_id)
+            vehicle_length = 3.68  # TODO: agent vehicles need to be resizable!
+            hhx, hhy = radians_to_vec(heading) * (0.5 * vehicle_length)
             vehicle_missions[v_id] = Mission(
                 start=Start(
-                    (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
+                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
+                    Heading(heading),
                 ),
+                entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_network),
                 start_time=start_time,
                 vehicle_id=v_id,
