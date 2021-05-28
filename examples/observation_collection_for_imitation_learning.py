@@ -14,6 +14,26 @@ from smarts.core.utils.math import radians_to_vec
 logging.basicConfig(level=logging.INFO)
 
 
+def _record_data(obs, collected_data, t):
+    # just a hypothetical example of how we might collect some observations to save...
+    for car, car_obs in obs.items():
+        car_state = car_obs.ego_vehicle_state
+        collected_data.setdefault(car, {}).setdefault(t, {})
+        collected_data[car][t]["ego_pos"] = car_state.position
+        collected_data[car][t]["heading"] = car_state.heading
+        collected_data[car][t]["speed"] = car_state.speed
+        collected_data[car][t]["angular_velocity"] = car_state.yaw_rate
+        # note: acceleration is a 3-vector. convert it here to a scalar
+        # keeping only the acceleration in the direction of travel (the heading).
+        # we will miss angular acceleration effects, but hopefully angular velocity
+        # will be enough to "keep things real".  This is simpler than using
+        # the angular acceleration vector because there are less degrees of
+        # freedom in the resulting model.
+        heading_vector = radians_to_vec(car_state.heading)
+        acc_scalar = car_state.linear_acceleration[:2].dot(heading_vector)
+        collected_data[car][t]["acceleration"] = acc_scalar
+
+
 def main(scenarios: Sequence[str], headless: bool, seed: int):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
@@ -32,9 +52,11 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
     )
 
     scenario = next(scenarios_iterator)
-    smarts.reset(scenario)
+    obs = smarts.reset(scenario)
 
     collected_data = {}
+    _record_data(obs, collected_data, smarts.elapsed_sim_time)
+
 
     # could also include "motorcycle" or "truck" in this set if desired
     vehicle_types = frozenset({"car"})
@@ -52,24 +74,7 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
         smarts.attach_sensors_to_vehicles(agent_spec, current_vehicles)
         obs, _, _, dones = smarts.observe_from(current_vehicles)
 
-        # just a hypothetical example of how we might collect some observations to save...
-        for car, car_obs in obs.items():
-            car_state = car_obs.ego_vehicle_state
-            t = smarts.elapsed_sim_time
-            collected_data.setdefault(car, {}).setdefault(t, {})
-            collected_data[car][t]["ego_pos"] = car_state.position
-            collected_data[car][t]["heading"] = car_state.heading
-            collected_data[car][t]["speed"] = car_state.speed
-            collected_data[car][t]["angular_velocity"] = car_state.yaw_rate
-            # note: acceleration is a 3-vector. convert it here to a scalar
-            # keeping only the acceleration in the direction of travel (the heading).
-            # we will miss angular acceleration effects, but hopefully angular velocity
-            # will be enough to "keep things real".  This is simpler than using
-            # the angular acceleration vector because there are less degrees of
-            # freedom in the resulting model.
-            heading_vector = radians_to_vec(car_state.heading)
-            acc_scalar = car_state.linear_acceleration[:2].dot(heading_vector)
-            collected_data[car][t]["acceleration"] = acc_scalar
+        _record_data(obs, collected_data, smarts.elapsed_sim_time)
 
     # an example of how we might save the data per car
     for car, data in collected_data.items():
