@@ -92,6 +92,10 @@ class TrafficHistory:
         query = "SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id = ?"
         return self._query_val(float, query, params=(vehicle_id,))
 
+    def vehicle_size(self, vehicle_id: str) -> Tuple[float, float]:
+        query = "SELECT length, width FROM Vehicle WHERE id = ?"
+        return self._query_val(tuple, query, params=(vehicle_id,))
+
     def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
         # XXX: For now, limit agent missions to just cars (V.type = 2)
         query = """SELECT T.vehicle_id, MIN(T.sim_time)

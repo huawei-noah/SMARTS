@@ -41,13 +41,14 @@ from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import vec_to_radians
+from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
 
 
+# XXX: consider using smarts.core.coordinates.Pose for this
 @dataclass(frozen=True)
 class Start:
     position: Tuple[int, int]
@@ -558,9 +559,14 @@ class Scenario:
             pos_x, pos_y, heading, speed = pphs
             entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
+            # missions start from front bumper, but pos is center of vehicle
+            # vehicle_length, _ = self._traffic_history.vehicle_size(v_id)
+            vehicle_length = 3.68  # TODO: agent vehicles need to be resizable!
+            hhx, hhy = radians_to_vec(heading) * (0.5 * vehicle_length)
             vehicle_missions[v_id] = Mission(
                 start=Start(
-                    (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
+                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
+                    Heading(heading),
                 ),
                 entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_network),

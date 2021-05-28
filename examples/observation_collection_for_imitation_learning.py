@@ -1,12 +1,13 @@
 import logging
 import pickle
-from typing import Sequence
+from typing import Any, Dict, Sequence
 
 from envision.client import Client as Envision
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
+from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.math import radians_to_vec
@@ -14,7 +15,9 @@ from smarts.core.utils.math import radians_to_vec
 logging.basicConfig(level=logging.INFO)
 
 
-def _record_data(obs, collected_data, t):
+def _record_data(
+    t: float, obs: Observation, collected_data: Dict[str, Dict[float, Dict[str, Any]]]
+):
     # just a hypothetical example of how we might collect some observations to save...
     for car, car_obs in obs.items():
         car_state = car_obs.ego_vehicle_state
@@ -55,8 +58,7 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
     obs = smarts.reset(scenario)
 
     collected_data = {}
-    _record_data(obs, collected_data, smarts.elapsed_sim_time)
-
+    _record_data(smarts.elapsed_sim_time, obs, collected_data)
 
     # could also include "motorcycle" or "truck" in this set if desired
     vehicle_types = frozenset({"car"})
@@ -74,7 +76,7 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
         smarts.attach_sensors_to_vehicles(agent_spec, current_vehicles)
         obs, _, _, dones = smarts.observe_from(current_vehicles)
 
-        _record_data(obs, collected_data, smarts.elapsed_sim_time)
+        _record_data(smarts.elapsed_sim_time, obs, collected_data)
 
     # an example of how we might save the data per car
     for car, data in collected_data.items():

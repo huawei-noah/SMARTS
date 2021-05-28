@@ -27,7 +27,6 @@ class ReplayCheckerAgent(Agent):
     def __init__(self, timestep_sec: float):
         self._timestep_sec = timestep_sec
         self._rounder = rounder_for_dt(timestep_sec)
-        self._first_step = True
 
     def load_data_for_vehicle(self, vehicle_id: str, scenario: Scenario):
         self._vehicle_id = vehicle_id  # for debugging
@@ -43,30 +42,32 @@ class ReplayCheckerAgent(Agent):
         # note: in a real agent, you would not pass "obs_time" to act().
         # we're just doing it here to support this fake agent checking itself.
         assert self._data
-        data = self._data.get(obs_time, None)
-        if not data:
+
+        # First, check the observations representing the current state
+        # to see if it matches what we expected from the recorded data.
+        exp = self._data.get(obs_time)
+        if not exp:
             return (0.0, 0.0)
+        cur_state = obs.ego_vehicle_state
+        assert math.isclose(
+            cur_state.heading, exp["heading"], abs_tol=1e-09
+        ), f'vid={self._vehicle_id}: {cur_state.heading} != {exp["heading"]} @ {obs_time}'
+        # Note: the speed check can't be as tight b/c we lose some accuracy (due to angular acceleration)
+        # by converting the acceleration vector to a scalar in the observation script,
+        # which compounds over time throughout the simulation.
+        assert math.isclose(
+            cur_state.speed, exp["speed"], abs_tol=0.1
+        ), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
+        assert math.isclose(
+            cur_state.position[0], exp["ego_pos"][0], rel_tol=0.01
+        ), f'vid={self._vehicle_id}: {cur_state.position[0]} != {exp["ego_pos"][0]} @ {obs_time}'
+        assert math.isclose(
+            cur_state.position[1], exp["ego_pos"][1], rel_tol=0.01
+        ), f'vid={self._vehicle_id}: {cur_state.position[1]} != {exp["ego_pos"][1]} @ {obs_time}'
 
-        dtime = self._rounder(obs_time - self._timestep_sec)
-        exp = self._data.get(dtime, None)
-        if exp:
-            cur_state = obs.ego_vehicle_state
-            assert math.isclose(
-                cur_state.heading, exp["heading"], abs_tol=1e-04
-            ), f'vid={self._vehicle_id}: {cur_state.heading} != {exp["heading"]} @ {obs_time}'
-            assert math.isclose(
-                cur_state.speed, exp["speed"], abs_tol=1e-04
-            ), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
-            if not self._first_step:
-                # checking the position at the very first step is iffy because the initial speed can be off sligtly
-                assert math.isclose(
-                    cur_state.position[0], exp["ego_pos"][0]
-                ), f'vid={self._vehicle_id}: {cur_state.position[0]} != {exp["ego_pos"][0]} @ {obs_time}'
-                assert math.isclose(
-                    cur_state.position[1], exp["ego_pos"][1]
-                ), f'vid={self._vehicle_id}: {cur_state.position[1]} != {exp["ego_pos"][1]} @ {obs_time}'
-                self._first_step = False
-
+        # Then get and return the next set of control inputs
+        atime = self._rounder(obs_time + self._timestep_sec)
+        data = self._data.get(atime, {"acceleration": 0, "angular_velocity": 0})
         return (data["acceleration"], data["angular_velocity"])
 
 
