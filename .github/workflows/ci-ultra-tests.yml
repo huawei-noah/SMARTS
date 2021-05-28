@@ -170,7 +170,7 @@ jobs:
             +extension RENDER \
             -logfile ./xdummy.log \
             -config /etc/X11/xorg.conf :1 &
-      - name: Install ultra-rl via setup.py
+      - name: Install ultra-rl via pypi
         run: |
           cd ultra
           python3.7 -m venv .venv
