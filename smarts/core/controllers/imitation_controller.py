@@ -56,7 +56,7 @@ class ImitationController:
             dpos = radians_to_vec(vehicle.heading) * vehicle.speed * dt
             new_pose = Pose(
                 position=vehicle.position + np.append(dpos, 0.0),
-                orientation=fast_quaternion_from_angle(vehicle.heading),
+                orientation=fast_quaternion_from_angle(target_heading),
             )
             target_speed = vehicle.speed + acceleration * dt
             vehicle.control(new_pose, target_speed, dt)
