@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections
+import copy
 
 from scipy.spatial import distance
 from typing import Dict, List, Tuple
@@ -91,6 +92,7 @@ def adapt(observation: Observation) -> Dict[str, np.ndarray]:
             value of "social_vehicles" is a numpy.ndarray with shape
             (_CAPACITY, _FEATURES).
     """
+    observation = copy.deepcopy(observation)
     ego_position = observation.ego_vehicle_state.position
     ego_heading = observation.ego_vehicle_state.heading
     ego_speed = observation.ego_vehicle_state.speed
