@@ -86,7 +86,7 @@ def profile_vehicles(vehicle_states, save_dir):
 def draw_intersection(
     ego_position,
     goal_path,
-    all_waypoints,
+    all_lanepoints,
     step,
     goal,
     start,
@@ -110,7 +110,7 @@ def draw_intersection(
     fig_mul = 2
     # Create a figure to contain the plot.
     figure = plt.figure(figsize=(20, 10))
-    for point in all_waypoints:
+    for point in all_lanepoints:
         canvas = cv2.circle(
             canvas,
             (
@@ -214,15 +214,15 @@ def draw_intersection(
     return canvas
 
 
-# def visualize_social_safety(ax, all_waypoints, nighbor_bounding_box):
-#     all_waypoints = np.asarray(all_waypoints)
+# def visualize_social_safety(ax, all_lanepoints, nighbor_bounding_box):
+#     all_lanepoints = np.asarray(all_lanepoints)
 
 #     ax.clear()
 #     ax.set_axis_off()
 #     ax.view_init(60, 60)
 #     ax.scatter(
-#         all_waypoints[:, 0],
-#         all_waypoints[:, 1],
+#         all_lanepoints[:, 0],
+#         all_lanepoints[:, 1],
 #         -5.0,
 #         s=100.0,
 #         marker=".",

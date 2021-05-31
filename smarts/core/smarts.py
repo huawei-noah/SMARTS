@@ -59,7 +59,6 @@ from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
-from .waypoints import Waypoints
 
 
 class SMARTSNotSetupError(Exception):
@@ -280,9 +279,7 @@ class SMARTS:
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
-            self._trap_manager.init_traps(
-                scenario.road_network, scenario.waypoints, scenario.missions
-            )
+            self._trap_manager.init_traps(scenario.road_network, scenario.missions)
             self._agent_manager.init_ego_agents(self)
             if self._renderer:
                 self._sync_vehicles_to_renderer()
@@ -292,7 +289,9 @@ class SMARTS:
 
         # Tell history provide to ignore vehicles if we have assigned mission to them
         self._traffic_history_provider.set_replaced_ids(
-            m.vehicle_id for m in scenario.missions.values() if m and m.vehicle_id
+            m.vehicle_spec.veh_id
+            for m in scenario.missions.values()
+            if m and m.vehicle_spec
         )
 
         self._total_sim_time += self._elapsed_sim_time
@@ -464,10 +463,6 @@ class SMARTS:
         return self._traffic_sim
 
     @property
-    def waypoints(self) -> Waypoints:
-        return self.scenario.waypoints
-
-    @property
     def road_network(self) -> SumoRoadNetwork:
         return self.scenario.road_network
 
@@ -608,10 +603,13 @@ class SMARTS:
 
         return provider_state
 
-    def _nondynamic_provider_step(self, agent_actions) -> ProviderState:
+    def _nondynamic_provider_step(
+        self, agent_actions, step_pybullet: bool
+    ) -> ProviderState:
         self._perform_agent_actions(agent_actions)
 
-        self._bullet_client.stepSimulation()
+        if step_pybullet:
+            self._bullet_client.stepSimulation()
 
         self._process_collisions()
 
@@ -718,7 +716,7 @@ class SMARTS:
             )
         if other_actions:
             accumulated_provider_state.merge(
-                self._nondynamic_provider_step(other_actions)
+                self._nondynamic_provider_step(other_actions, bool(pybullet_actions))
             )
 
         for provider in self.providers:

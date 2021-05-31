@@ -69,13 +69,13 @@ class TrapManager:
     def __init__(self, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
         self._traps: Dict[Trap] = defaultdict(None)
-        self.init_traps(scenario.road_network, scenario.waypoints, scenario.missions)
+        self.init_traps(scenario.road_network, scenario.missions)
 
-    def init_traps(self, road_network, waypoints, missions):
+    def init_traps(self, road_network, missions):
         self._traps.clear()
 
         for agent_id, mission in missions.items():
-            mission_planner = MissionPlanner(waypoints, road_network)
+            mission_planner = MissionPlanner(road_network)
             if mission is None:
                 mission = mission_planner.random_endless_mission()
 
@@ -244,7 +244,6 @@ class TrapManager:
     def _hijack_vehicle(sim, vehicle_id, agent_id, mission):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         planner = MissionPlanner(
-            sim.scenario.waypoints,
             sim.scenario.road_network,
             agent_interface.agent_behavior,
         )
@@ -269,7 +268,6 @@ class TrapManager:
     def _make_vehicle(sim, agent_id, mission, initial_speed):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         planner = MissionPlanner(
-            sim.scenario.waypoints,
             sim.scenario.road_network,
             agent_interface.agent_behavior,
         )

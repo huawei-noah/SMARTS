@@ -27,18 +27,18 @@ from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 import numpy as np
 
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
-from smarts.core.mission_planner import MissionPlanner
+from smarts.core.mission_planner import MissionPlanner, Waypoint
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.sstudio.types import CutIn, UTurn
 
-from .coordinates import BoundingBox, Heading
+from .coordinates import BoundingBox, Heading, Pose
 from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
 from .renderer import Renderer
 from .scenario import Mission, Via
-from .waypoints import Waypoint
+from .lanepoints import LanePoint
 
 logger = logging.getLogger(__name__)
 
@@ -172,11 +172,12 @@ class Sensors:
     @staticmethod
     def observe(sim, agent_id, sensor_state, vehicle):
         neighborhood_vehicles = None
+        lanepoints = sim.road_network.lanepoints
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicles = vehicle.neighborhood_vehicles_sensor()
 
             if len(neighborhood_vehicles) > 0:
-                neighborhood_vehicle_wps = sim.waypoints.closest_waypoint_batched(
+                neighborhood_vehicle_lps = lanepoints.closest_lanepoint_batched(
                     [v.pose for v in neighborhood_vehicles],
                     within_radius=vehicle.length,
                     filter_from_count=10,
@@ -188,26 +189,27 @@ class Sensors:
                         bounding_box=v.dimensions,
                         heading=v.pose.heading,
                         speed=v.speed,
-                        edge_id=sim.road_network.edge_by_lane_id(wp.lane_id).getID(),
-                        lane_id=wp.lane_id,
-                        lane_index=wp.lane_index,
+                        edge_id=sim.road_network.edge_by_lane_id(lp.lane_id).getID(),
+                        lane_id=lp.lane_id,
+                        lane_index=lp.lane_index,
                     )
-                    for v, wp in zip(neighborhood_vehicles, neighborhood_vehicle_wps)
+                    for v, lp in zip(neighborhood_vehicles, neighborhood_vehicle_lps)
                 ]
 
         if vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
-            waypoint_paths = sim.waypoints.waypoint_paths_at(
+            waypoint_paths = sensor_state.mission_planner.waypoint_paths_at(
                 vehicle.pose,
                 lookahead=1,
                 within_radius=vehicle.length,
                 filter_from_count=3,  # For calculating distance travelled
+                constrain_to_route=False,
             )
 
-        closest_waypoint = sim.waypoints.closest_waypoint(vehicle.pose)
-        ego_lane_id = closest_waypoint.lane_id
-        ego_lane_index = closest_waypoint.lane_index
+        closest_lanepoint = lanepoints.closest_lanepoint(vehicle.pose)
+        ego_lane_id = closest_lanepoint.lane_id
+        ego_lane_index = closest_lanepoint.lane_index
         ego_edge_id = sim.road_network.edge_by_lane_id(ego_lane_id).getID()
         ego_vehicle_state = vehicle.state
 
@@ -365,6 +367,7 @@ class Sensors:
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
+        # TODO:  the following calls nearest_lanes (expensive) 6 times
         reached_goal = cls._agent_reached_goal(sim, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)
@@ -420,12 +423,12 @@ class Sensors:
 
     @classmethod
     def _vehicle_is_on_shoulder(cls, sim, vehicle):
-        return any(
-            [
-                not sim.scenario.road_network.point_is_within_road(corner_coordinate)
-                for corner_coordinate in vehicle.bounding_box
-            ]
-        )
+        # XXX: this isn't technically right as this would also return True
+        #      for vehicles that are completely off road.
+        for corner_coordinate in vehicle.bounding_box:
+            if not sim.scenario.road_network.point_is_within_road(corner_coordinate):
+                return True
+        return False
 
     @classmethod
     def _vehicle_is_not_moving(cls, sim, vehicle):
@@ -510,14 +513,15 @@ class Sensors:
 
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, lane_id):
-        closest_waypoint = sim.scenario.waypoints.closest_waypoint_on_lane(
+        lanepoints = sim.road_network.lanepoints
+        closest_lanepoint = lanepoints.closest_lanepoint_on_lane(
             vehicle.pose,
             lane_id,
         )
 
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
-            np.fabs(vehicle.pose.heading.relative_to(closest_waypoint.heading))
+            np.fabs(vehicle.pose.heading.relative_to(closest_lanepoint.heading))
             > 0.5 * np.pi
         )
 
@@ -861,8 +865,11 @@ class TripMeterSensor(Sensor):
         self._sim = sim
         self._mission_planner = mission_planner
 
-        waypoint_paths = sim.waypoints.waypoint_paths_at(
-            vehicle.pose, lookahead=1, within_radius=vehicle.length
+        waypoint_paths = mission_planner.waypoint_paths_at(
+            vehicle.pose,
+            lookahead=1,
+            within_radius=vehicle.length,
+            constrain_to_route=False,
         )
         starting_wp = waypoint_paths[0][0]
         self._wps_for_distance = [starting_wp]
@@ -952,7 +959,6 @@ class WaypointsSensor(Sensor):
                 )
 
         return self._mission_planner.waypoint_paths_at(
-            sim=self._sim,
             pose=self._vehicle.pose,
             lookahead=self._lookahead,
         )
@@ -964,13 +970,13 @@ class WaypointsSensor(Sensor):
 class RoadWaypointsSensor(Sensor):
     def __init__(self, vehicle, sim, mission_planner, horizon=32):
         self._vehicle = vehicle
-        self._sim = sim
+        self._road_network = sim.road_network
         self._mission_planner = mission_planner
         self._horizon = horizon
 
     def __call__(self):
-        wp = self._sim.waypoints.closest_waypoint(self._vehicle.pose)
-        road_edges = self._sim.road_network.road_edge_data_for_lane_id(wp.lane_id)
+        lp = self._road_network.lanepoints.closest_lanepoint(self._vehicle.pose)
+        road_edges = self._road_network.road_edge_data_for_lane_id(lp.lane_id)
 
         lane_paths = {}
         for edge in road_edges.forward_edges + road_edges.oncoming_edges:
@@ -983,14 +989,13 @@ class RoadWaypointsSensor(Sensor):
 
     def route_waypoints(self):
         return self._mission_planner.waypoint_paths_at(
-            sim=self._sim,
             pose=self._vehicle.pose,
             lookahead=32,
         )
 
     def paths_for_lane(self, lane, overflow_offset=None):
         if overflow_offset is None:
-            offset = self._sim.road_network.offset_into_lane(
+            offset = self._road_network.offset_into_lane(
                 lane, self._vehicle.position[:2]
             )
             start_offset = offset - self._horizon
@@ -1005,15 +1010,14 @@ class RoadWaypointsSensor(Sensor):
             return paths
         else:
             start_offset = max(0, start_offset)
-            wp_start = self._sim.road_network.world_coord_from_offset(
-                lane, start_offset
-            )
-
+            wp_start = self._road_network.world_coord_from_offset(lane, start_offset)
+            adj_pose = Pose.from_center(wp_start, self._vehicle.heading)
             wps_to_lookahead = self._horizon * 2
-            paths = self._sim.waypoints.waypoint_paths_on_lane_at(
-                point=wp_start,
+            paths = self._mission_planner.waypoint_paths_on_lane_at(
+                pose=adj_pose,
                 lane_id=lane.getID(),
                 lookahead=wps_to_lookahead,
+                constrain_to_route=False,
             )
             return paths
 

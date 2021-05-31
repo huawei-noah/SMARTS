@@ -402,7 +402,6 @@ class AgentManager:
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
         planner = MissionPlanner(
-            scenario.waypoints,
             scenario.road_network,
             agent_behavior=agent_interface.agent_behavior,
         )
@@ -514,9 +513,7 @@ class AgentManager:
             if sv_id in self._vehicle_with_sensors:
                 continue
 
-            mission_planner = MissionPlanner(
-                sim.scenario.waypoints, sim.scenario.road_network
-            )
+            mission_planner = MissionPlanner(sim.scenario.road_network)
 
             mission_planner.plan(mission=None)
 
