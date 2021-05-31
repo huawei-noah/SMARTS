@@ -16,11 +16,15 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
 - Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266.
+- Vehicles with a `BoxChassis` can now use an `AccelerometerSensor` too.
+- When importing NGSIM history data, vehicle speeds are recomputed.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 - Fixed a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
 - Limited the number of workers SMARTS will use to establish remote agents so as to lower memory footprint.
 - Patched a restart of SUMO every 50 resets to avoid rampant memory growth.
+- Fixed bugs in `AccelerometerSensor`.  See PR #878.
+- Ensure that `yaw_rate` is always a scalar in `EgoVehicleObservation`.
 ## Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 

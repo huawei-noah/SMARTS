@@ -24,6 +24,7 @@ from __future__ import (
 from cached_property import cached_property
 from contextlib import nullcontext, closing
 from functools import lru_cache
+import os
 import random
 import sqlite3
 from typing import Dict, Generator, NamedTuple, Set, Tuple, TypeVar
@@ -34,13 +35,17 @@ class TrafficHistory:
         self._db = db
         self._db_cnxn = None
 
+    @property
+    def name(self) -> str:
+        return os.path.splitext(self._db.name)[0]
+
     def connect_for_multiple_queries(self):
         """Optional optimization to avoid the overhead of parsing
         the sqlite file header multiple times for clients that
         will be performing multiple queries.  If used, then
         disconnect() should be called when finished."""
         if not self._db_cnxn:
-            self._db_cnxn = sqlite3.connect(self._db)
+            self._db_cnxn = sqlite3.connect(self._db.path)
 
     def disconnect(self):
         if self._db_cnxn:
@@ -87,8 +92,12 @@ class TrafficHistory:
         query = "SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id = ?"
         return self._query_val(float, query, params=(vehicle_id,))
 
+    def vehicle_size(self, vehicle_id: str) -> Tuple[float, float]:
+        query = "SELECT length, width FROM Vehicle WHERE id = ?"
+        return self._query_val(tuple, query, params=(vehicle_id,))
+
     def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
-        # For now, limit agent missions to just cars (V.type = 2)
+        # XXX: For now, limit agent missions to just cars (V.type = 2)
         query = """SELECT T.vehicle_id, MIN(T.sim_time)
             FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
             WHERE V.type = 2
@@ -98,7 +107,7 @@ class TrafficHistory:
     def vehicle_pose_at_time(
         self, vehicle_id: str, sim_time: float
     ) -> Tuple[float, float, float]:
-        query = """SELECT position_x, position_y, heading_rad
+        query = """SELECT position_x, position_y, heading_rad, speed
                    FROM Trajectory
                    WHERE vehicle_id = ? and sim_time = ?"""
         return self._query_val(tuple, query, params=(int(vehicle_id), float(sim_time)))
@@ -106,7 +115,10 @@ class TrafficHistory:
     def vehicle_ids_active_between(
         self, start_time: float, end_time: float
     ) -> Generator[int, None, None]:
-        query = "SELECT DISTINCT vehicle_id FROM Trajectory WHERE ? <= sim_time AND sim_time <= ?"
+        # XXX: For now, limit agent missions to just cars (V.type = 2)
+        query = """SELECT DISTINCT T.vehicle_id
+                   FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
+                   WHERE ? <= T.sim_time AND T.sim_time <= ? AND V.type = 2"""
         return self._query_list(query, (start_time, end_time))
 
     class VehicleRow(NamedTuple):

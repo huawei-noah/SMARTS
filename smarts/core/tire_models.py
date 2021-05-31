@@ -94,13 +94,14 @@ class TireForces:
             for wheel_id in [2, 4, 5, 6]
         ]
 
+        z_yaw = chassis.velocity_vectors[1][2]
         # 0.1 is the threshold for speed of the center of wheel
         # to activate slip angle caluclation.
         for i in range(4):
             if abs(abs_speed_corners[i]) > 0.1:
 
                 corner_speed = plane_speed_vector + np.cross(
-                    np.array([0, 0, chassis.yaw_rate[2]]), relative_corner_vector[i]
+                    np.array([0, 0, z_yaw]), relative_corner_vector[i]
                 )
                 slip_angles[i] = steering_angles_corners[i] - (
                     (
