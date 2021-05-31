@@ -19,8 +19,8 @@
 # THE SOFTWARE.
 import math
 from math import factorial
-
 import numpy as np
+from typing import Callable
 
 
 def batches(list_, n):
@@ -269,3 +269,22 @@ def inplace_unwrap(wp_array):
     np.copyto(ph_correct, 0, where=abs(dd) < math.pi)
     p[1:] += ph_correct.cumsum(axis=-1)
     return p
+
+
+def round_param_for_dt(dt: float) -> int:
+    """for a given dt, returns what to pass as the second parameter
+    to the `round()` function in order to not lose precision.
+    Note that for whole numbers, like 100, the result will be negative.
+    For example, `round_param_for_dt(100) == -2`,
+    such that `round(190, -2) = 200`."""
+    strep = np.format_float_positional(dt)
+    decimal = strep.find(".")
+    if decimal >= len(strep) - 1:
+        return 1 - decimal
+    return len(strep) - decimal - 1
+
+
+def rounder_for_dt(dt: float) -> Callable[[float], float]:
+    """return a rounding function appropriate for timestepping."""
+    rp = round_param_for_dt(dt)
+    return lambda f: round(f, rp)

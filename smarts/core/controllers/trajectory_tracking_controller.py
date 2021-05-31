@@ -226,8 +226,9 @@ class TrajectoryTrackingController:
 
         # Derivative terms of the controller (use with caution for large time steps>=0.1).
         # Increasing the values will increase the convergence time and reduces the oscillation.
+        z_yaw = vehicle.chassis.velocity_vectors[1][2]
         derivative_term = (
-            +heading_error_derivative_gain * vehicle.chassis.yaw_rate[2]
+            +heading_error_derivative_gain * z_yaw
             + lateral_error_derivative_gain
             * (lateral_error - state.lateral_error)
             / dt_sec

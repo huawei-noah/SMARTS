@@ -131,6 +131,7 @@ class Vehicle:
     def __init__(
         self,
         id: str,
+        # XXX: can probably remove pose as a parameter here since it's in chassis now.
         pose: Pose,
         chassis: Chassis,
         # TODO: We should not be leaking SUMO here.
@@ -306,15 +307,23 @@ class Vehicle:
         controller_filepath,
         initial_speed=None,
     ):
-        # Agents can currently only control passenger vehicles
-        vehicle_type = "passenger"
-        chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+        mission = mission_planner.mission
 
-        if isinstance(mission_planner.mission.task, UTurn):
-            if mission_planner.mission.task.initial_speed:
-                initial_speed = mission_planner.mission.task.initial_speed
+        if mission.vehicle_spec:
+            # mission.vehicle_spec.veh_type will always be "passenger" for now,
+            # but we use that value here in case we ever expand our history functionality.
+            vehicle_type = mission.vehicle_spec.veh_type
+            chassis_dims = mission.vehicle_spec.dimensions
+        else:
+            # non-history agents can currently only control passenger vehicles.
+            vehicle_type = "passenger"
+            chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
 
-        start = mission_planner.mission.start
+        if isinstance(mission.task, UTurn):
+            if mission.task.initial_speed:
+                initial_speed = mission.task.initial_speed
+
+        start = mission.start
         start_pose = Pose.from_front_bumper(
             front_bumper_position=numpy.array(start.position),
             heading=start.heading,
@@ -348,7 +357,11 @@ class Vehicle:
 
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
-        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+        if (
+            agent_interface
+            and agent_interface.action in sim.dynamic_action_spaces
+            and not mission.vehicle_spec
+        ):
             chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,

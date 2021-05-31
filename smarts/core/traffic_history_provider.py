@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import logging
+import numpy as np
 import sqlite3
 from itertools import cycle
 from typing import NamedTuple, Set
@@ -25,6 +25,7 @@ from typing import NamedTuple, Set
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Heading, Pose
 from .provider import Provider, ProviderState
+from .utils.math import rounder_for_dt
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -32,7 +33,6 @@ class TrafficHistoryProvider(Provider):
     def __init__(self):
         self._histories = None
         self._is_setup = False
-        self._log = logging.getLogger(self.__class__.__name__)
         self._map_location_offset = None
         self._replaced_vehicle_ids = set()
         self._last_step_vehicles = set()
@@ -85,49 +85,31 @@ class TrafficHistoryProvider(Provider):
         # Ignore other sim state
         pass
 
-    def _decode_vehicle_type(self, vehicle_type):
-        # Options from NGSIM and INTERACTION currently include:
-        #  1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
-        if vehicle_type == 1:
-            return "motorcycle"
-        elif vehicle_type == 2:
-            return "passenger"
-        elif vehicle_type == 3:
-            return "truck"
-        elif vehicle_type == 4:
-            return "pedestrian"
-        else:
-            self._log.warning(
-                f"unsupported vehicle_type ({vehicle_type}) in history data."
-            )
-        return "passenger"
-
-    def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
+    def step(
+        self, provider_actions, dt: float, elapsed_sim_time: float
+    ) -> ProviderState:
         if not self._histories:
             return ProviderState(vehicles=[])
         vehicles = []
         vehicle_ids = set()
-        history_time = self._start_time_offset + elapsed_sim_time
-        rows = self._histories.vehicles_active_between(history_time - dt, history_time)
+        rounder = rounder_for_dt(dt)
+        history_time = rounder(self._start_time_offset + elapsed_sim_time)
+        prev_time = rounder(history_time - dt)
+        rows = self._histories.vehicles_active_between(prev_time, history_time)
         for hr in rows:
             v_id = str(hr.vehicle_id)
             if v_id in vehicle_ids or v_id in self._replaced_vehicle_ids:
                 continue
             vehicle_ids.add(v_id)
-            vehicle_type = self._decode_vehicle_type(hr.vehicle_type)
+            vehicle_type = self._histories.decode_vehicle_type(hr.vehicle_type)
             default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+            pos_x = hr.position_x + self._map_location_offset[0]
+            pos_y = hr.position_y + self._map_location_offset[1]
             vehicles.append(
                 VehicleState(
                     vehicle_id=self._vehicle_id_prefix + v_id,
                     vehicle_type=vehicle_type,
-                    pose=Pose.from_center(
-                        [
-                            hr.position_x + self._map_location_offset[0],
-                            hr.position_y + self._map_location_offset[1],
-                            0,
-                        ],
-                        Heading(hr.heading_rad),
-                    ),
+                    pose=Pose.from_center((pos_x, pos_y, 0), Heading(hr.heading_rad)),
                     dimensions=BoundingBox(
                         length=hr.vehicle_length
                         if hr.vehicle_length is not None
