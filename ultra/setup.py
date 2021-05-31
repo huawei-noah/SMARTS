@@ -50,6 +50,5 @@ setup(
         "dill",
         "black==20.8b1",
         "ray[rllib]==1.0.1.post1",
-        "opencv-python",
     ],
 )

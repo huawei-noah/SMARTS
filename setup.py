@@ -28,10 +28,14 @@ setup(
         "numpy",
         "rich",
         "rtree",  # Used by sumolib
+        "filelock",
+        "lz4",
+        "networkx",
+        "opencv-python",
         "pandas",
         "psutil",
         "visdom",
-        "pybullet==3.0.6",
+        "pybullet",
         "sklearn",  # KDTree from sklearn is used by waypoints
         "tableprint",
         "trimesh",  # Used for writing .glb files
@@ -67,6 +71,7 @@ setup(
             "pytest",
             "pytest-benchmark",
             "pytest-cov",
+            "ipykernel",
             "pytest-notebook",
             "pytest-xdist",
         ],
