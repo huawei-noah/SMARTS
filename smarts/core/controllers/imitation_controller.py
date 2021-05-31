@@ -31,14 +31,9 @@ from smarts.core.utils.math import (
 )
 
 
-@dataclass
-class ImitationControllerState:
-    cur_angular_velocity: float
-
-
 class ImitationController:
     @classmethod
-    def perform_action(cls, dt, vehicle, action, state):
+    def perform_action(cls, dt, vehicle, action):
         chassis = vehicle.chassis
         if isinstance(action, (int, float)):
             # special case:  setting the initial speed
@@ -59,11 +54,10 @@ class ImitationController:
         target_heading = (vehicle.heading + angular_velocity * dt) % (2 * math.pi)
 
         if isinstance(chassis, BoxChassis):
+            # Since BoxChassis does not use pybullet for force-to-motion computations (only collision detection),
+            # we have to update the position and other state here (instead of pybullet.stepSimulation()).
             heading_vec = radians_to_vec(vehicle.heading)
-            ortho_vec = radians_to_vec(vehicle.heading + math.pi / 2)
-            dpos = (
-                heading_vec * vehicle.speed + ortho_vec * state.cur_angular_velocity
-            ) * dt
+            dpos = heading_vec * vehicle.speed * dt
             new_pose = Pose(
                 position=vehicle.position + np.append(dpos, 0.0),
                 orientation=fast_quaternion_from_angle(target_heading),
@@ -74,6 +68,8 @@ class ImitationController:
         elif isinstance(chassis, AckermannChassis):
             mass = chassis.mass_and_inertia[0]  # in kg
             wheel_radius = chassis.wheel_radius
+            # XXX: should also take wheel inertia into account here
+            # XXX: ... or else we should apply this force directly to the main link point of the chassis.
             if acceleration >= 0:
                 # necessary torque is N*m = kg*m*acceleration
                 torque_ratio = mass / (4 * wheel_radius * chassis.max_torque)
@@ -90,5 +86,3 @@ class ImitationController:
 
         else:
             raise Exception("unsupported chassis type")
-
-        state.cur_angular_velocity = angular_velocity

@@ -610,10 +610,13 @@ class SMARTS:
 
         return provider_state
 
-    def _nondynamic_provider_step(self, agent_actions) -> ProviderState:
+    def _nondynamic_provider_step(
+        self, agent_actions, step_pybullet: bool
+    ) -> ProviderState:
         self._perform_agent_actions(agent_actions)
 
-        self._bullet_client.stepSimulation()
+        if step_pybullet:
+            self._bullet_client.stepSimulation()
 
         self._process_collisions()
 
@@ -720,7 +723,7 @@ class SMARTS:
             )
         if other_actions:
             accumulated_provider_state.merge(
-                self._nondynamic_provider_step(other_actions)
+                self._nondynamic_provider_step(other_actions, bool(pybullet_actions))
             )
 
         for provider in self.providers:

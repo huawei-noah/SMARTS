@@ -268,8 +268,8 @@ class NGSIM(_TrajectoryDataset):
             avg = (c - p) / d1
         else:
             avg = ((n - c) / d2) + ((c - p) / d1)
-        r = math.atan2(avg[1], avg[0]) % (2 * math.pi)
-        self._prev_heading = r - math.pi / 2
+        r = math.atan2(avg[1], avg[0])
+        self._prev_heading = (r - math.pi / 2) % (2 * math.pi)
         return self._prev_heading
 
     def _cal_speed(self, window):
