@@ -24,6 +24,7 @@ from __future__ import (
 from cached_property import cached_property
 from contextlib import nullcontext, closing
 from functools import lru_cache
+import logging
 import os
 import random
 import sqlite3
@@ -32,6 +33,7 @@ from typing import Dict, Generator, NamedTuple, Set, Tuple, TypeVar
 
 class TrafficHistory:
     def __init__(self, db: str):
+        self._log = logging.getLogger(self.__class__.__name__)
         self._db = db
         self._db_cnxn = None
 
@@ -92,9 +94,42 @@ class TrafficHistory:
         query = "SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id = ?"
         return self._query_val(float, query, params=(vehicle_id,))
 
-    def vehicle_size(self, vehicle_id: str) -> Tuple[float, float]:
-        query = "SELECT length, width FROM Vehicle WHERE id = ?"
-        return self._query_val(tuple, query, params=(vehicle_id,))
+    def decode_vehicle_type(self, vehicle_type: int) -> str:
+        # Options from NGSIM and INTERACTION currently include:
+        #  1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
+        if vehicle_type == 1:
+            return "motorcycle"
+        elif vehicle_type == 2:
+            return "passenger"
+        elif vehicle_type == 3:
+            return "truck"
+        elif vehicle_type == 4:
+            return "pedestrian"
+        else:
+            self._log.warning(
+                f"unsupported vehicle_type ({vehicle_type}) in history data."
+            )
+        return "passenger"
+
+    def vehicle_type(self, vehicle_id: str) -> str:
+        query = "SELECT type FROM Vehicle WHERE id = ?"
+        veh_type = self._query_val(int, query, params=(vehicle_id,))
+        return self.decode_vehicle_type(veh_type)
+
+    def vehicle_size(self, vehicle_id: str) -> Tuple[float, float, float]:
+        # do import here to break circular dependency chain
+        from smarts.core.vehicle import VEHICLE_CONFIGS
+
+        query = "SELECT length, width, type FROM Vehicle WHERE id = ?"
+        length, width, veh_type = self._query_val(tuple, query, params=(vehicle_id,))
+        default_dims = VEHICLE_CONFIGS[self.decode_vehicle_type(veh_type)].dimensions
+        if not length:
+            length = default_dims.length
+        if not width:
+            width = default_dims.width
+        # Note: Neither NGSIM nor INTERACTION provide the vehicle height, so use our defaults
+        height = default_dims.height
+        return length, width, height
 
     def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
         # XXX: For now, limit agent missions to just cars (V.type = 2)

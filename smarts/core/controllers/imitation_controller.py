@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import math
 import numpy as np
+from dataclasses import dataclass
 
 from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Pose
@@ -53,24 +54,22 @@ class ImitationController:
         target_heading = (vehicle.heading + angular_velocity * dt) % (2 * math.pi)
 
         if isinstance(chassis, BoxChassis):
-            speed_x, speed_y = radians_to_vec(vehicle.heading) * vehicle.speed
-            new_position = np.array(
-                (
-                    vehicle.position[0] + dt * speed_x,
-                    vehicle.position[1] + dt * speed_y,
-                    vehicle.position[2],
-                )
+            # Since BoxChassis does not use pybullet for force-to-motion computations (only collision detection),
+            # we have to update the position and other state here (instead of pybullet.stepSimulation()).
+            heading_vec = radians_to_vec(vehicle.heading)
+            dpos = heading_vec * vehicle.speed * dt
+            new_pose = Pose(
+                position=vehicle.position + np.append(dpos, 0.0),
+                orientation=fast_quaternion_from_angle(target_heading),
             )
             target_speed = vehicle.speed + acceleration * dt
-            new_pose = Pose(
-                orientation=fast_quaternion_from_angle(target_heading),
-                position=new_position,
-            )
             vehicle.control(new_pose, target_speed, dt)
 
         elif isinstance(chassis, AckermannChassis):
             mass = chassis.mass_and_inertia[0]  # in kg
             wheel_radius = chassis.wheel_radius
+            # XXX: should also take wheel inertia into account here
+            # XXX: ... or else we should apply this force directly to the main link point of the chassis.
             if acceleration >= 0:
                 # necessary torque is N*m = kg*m*acceleration
                 torque_ratio = mass / (4 * wheel_radius * chassis.max_torque)
