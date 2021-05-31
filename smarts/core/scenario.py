@@ -42,7 +42,6 @@ from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import radians_to_vec, vec_to_radians
-from smarts.core.waypoints import Waypoints
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
@@ -235,10 +234,9 @@ class Scenario:
 
         net_file = os.path.join(self._root, "map.net.xml")
         self._road_network = SumoRoadNetwork.from_file(
-            net_file, default_lane_width=default_lane_width
+            net_file, default_lane_width=default_lane_width, lanepoint_spacing=1.0
         )
         self._net_file_hash = file_md5_hash(self._road_network.net_file)
-        self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
 
     def __repr__(self):
@@ -817,10 +815,6 @@ class Scenario:
 
     def unique_sumo_log_file(self):
         return os.path.join(self._log_dir, f"sumo-{str(uuid.uuid4())[:8]}")
-
-    @property
-    def waypoints(self):
-        return self._waypoints
 
     @property
     def road_network(self):

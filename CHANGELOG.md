@@ -15,6 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828 
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space.  See Issue #844.
+- Refactored `Waypoints` into `LanePoints` (static, map-based) and `Waypoints` (dynamic).  See Issue #829.
 - Vehicles with a `BoxChassis` can now use an `AccelerometerSensor` too.
 - When importing NGSIM history data, vehicle speeds are recomputed.
 - Allow custom sizes for agent vehicles in history traffic missions.

@@ -39,6 +39,7 @@ from shapely.ops import snap, triangulate
 from trimesh.exchange import gltf
 
 from .utils.math import rotate_around_point
+from .lanepoints import LanePoints
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
 from sumolib.net.edge import Edge  # isort:skip
@@ -92,7 +93,9 @@ class SumoRoadNetwork:
     # in North America (although US highway lanes are wider at ~3.7m).
     DEFAULT_LANE_WIDTH = 3.2
 
-    def __init__(self, graph, net_file, default_lane_width=None):
+    def __init__(
+        self, graph, net_file, default_lane_width=None, lanepoint_spacing=None
+    ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
         self._net_file = net_file
@@ -101,6 +104,11 @@ class SumoRoadNetwork:
             if default_lane_width is not None
             else SumoRoadNetwork.DEFAULT_LANE_WIDTH
         )
+        self._lanepoints = None
+        if lanepoint_spacing is not None:
+            assert lanepoint_spacing > 0
+            # XXX: this should be last here since LanePoints() calls road_network methods immediately
+            self._lanepoints = LanePoints(self, spacing=lanepoint_spacing)
 
     @staticmethod
     def _check_net_origin(bbox):
@@ -143,7 +151,13 @@ class SumoRoadNetwork:
         return False
 
     @classmethod
-    def from_file(cls, net_file, shift_to_origin=False, default_lane_width=None):
+    def from_file(
+        cls,
+        net_file,
+        shift_to_origin=False,
+        default_lane_width=None,
+        lanepoint_spacing=None,
+    ):
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
@@ -165,7 +179,12 @@ class SumoRoadNetwork:
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
 
-        return cls(G, net_file, default_lane_width)
+        return cls(
+            G,
+            net_file,
+            default_lane_width=default_lane_width,
+            lanepoint_spacing=lanepoint_spacing,
+        )
 
     @property
     def graph(self):
@@ -192,6 +211,10 @@ class SumoRoadNetwork:
     @default_lane_width.setter
     def default_lane_width(self, default_lane_width):
         self._default_lane_width = default_lane_width
+
+    @property
+    def lanepoints(self):
+        return self._lanepoints
 
     def _compute_road_polygons(self):
         lane_to_poly = {}
@@ -406,6 +429,7 @@ class SumoRoadNetwork:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
         x, y = point
+        # XXX: note that this getNeighboringLanes() call is fairly heavy/expensive (as revealed by profiling)
         candidate_lanes = self._graph.getNeighboringLanes(
             x, y, r=radius, includeJunctions=include_junctions, allowFallback=False
         )
@@ -536,17 +560,11 @@ class SumoRoadNetwork:
 
     def point_is_within_road(self, point):
         # XXX: Not robust around junctions (since their shape is quite crude?)
-        # # We use a small radius 10 factor in some forgiveness for crude SUMO distance checks
-        # for lane, dist in self.nearest_lanes(point[:2], radius=10):
-        #     shape = SumoRoadNetwork.buffered_lane_or_edge(lane, lane.getWidth() * 1)
-        #     if sumolib.geomhelper.isWithin(point, shape):
-        #         return True
-        #
-        # return False
-
         radius = max(5, 2 * self._default_lane_width)
-        nearest_lanes = self.nearest_lanes(point[:2], radius=radius)
-        return any(dist < 0.5 * nl.getWidth() + 1e-1 for nl, dist in nearest_lanes)
+        for nl, dist in self.nearest_lanes(point[:2], radius=radius):
+            if dist < 0.5 * nl.getWidth() + 1e-1:
+                return True
+        return False
 
     def drove_off_map(
         self, veh_position: Tuple[float, float, float], veh_heading: float
