@@ -45,6 +45,70 @@ from ultra.utils.episode import episodes
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
+def create_parser():
+    parser = argparse.ArgumentParser("intersection-training")
+    parser.add_argument(
+        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
+    )
+    parser.add_argument(
+        "--level",
+        help="Levels available : [easy, medium, hard, no-traffic]",
+        type=str,
+        default="easy",
+    )
+    parser.add_argument(
+        "--policy",
+        help="Policies available : [ppo, sac, td3, dqn, bdqn]",
+        type=str,
+        default="sac",
+    )
+    parser.add_argument(
+        "--episodes", help="Number of training episodes", type=int, default=1000000
+    )
+    parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=200,
+    )
+    parser.add_argument(
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
+    )
+    parser.add_argument(
+        "--headless",
+        help="Run without envision",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
+    )
+    parser.add_argument(
+        "--eval-rate",
+        help="The number of training episodes to wait before running the evaluation",
+        type=int,
+        default=200,
+    )
+    parser.add_argument(
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
+    )
+    parser.add_argument(
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
+    )
+    parser.add_argument(
+        "--policy-ids",
+        help="Name of each specified policy",
+        default=None,
+        type=str,
+    )
+    return parser
+
+
 def _build_agent(policy_classes, policy_ids, max_episode_steps):
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
@@ -84,6 +148,7 @@ def _build_agent(policy_classes, policy_ids, max_episode_steps):
 
     return agent_ids, agent_classes, agent_specs, agents, etag
 
+
 def _save_agent_metadata(experiment_dir, agent_ids, agent_classes, agent_specs):
     # Save relevant agent metadata.
     if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
@@ -99,6 +164,7 @@ def _save_agent_metadata(experiment_dir, agent_ids, agent_classes, agent_specs):
                 metadata_file,
                 pickle.HIGHEST_PROTOCOL,
             )
+
 
 def train(
     scenario_info,
@@ -138,7 +204,9 @@ def train(
         infos = None
         episode.reset()
 
-        _save_agent_metadata(episode.experiment_dir, agent_ids, agent_classes, agent_specs)
+        _save_agent_metadata(
+            episode.experiment_dir, agent_ids, agent_classes, agent_specs
+        )
 
         evaluation_check(
             agents=agents,
@@ -208,68 +276,10 @@ def train(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("intersection-training")
-    parser.add_argument(
-        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
-    )
-    parser.add_argument(
-        "--level",
-        help="Levels available : [easy, medium, hard, no-traffic]",
-        type=str,
-        default="easy",
-    )
-    parser.add_argument(
-        "--policy",
-        help="Policies available : [ppo, sac, td3, dqn, bdqn]",
-        type=str,
-        default="sac",
-    )
-    parser.add_argument(
-        "--episodes", help="Number of training episodes", type=int, default=1000000
-    )
-    parser.add_argument(
-        "--max-episode-steps",
-        help="Maximum number of steps per episode",
-        type=int,
-        default=200,
-    )
-    parser.add_argument(
-        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
-    )
-    parser.add_argument(
-        "--headless",
-        help="Run without envision",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
-    )
-    parser.add_argument(
-        "--eval-rate",
-        help="The number of training episodes to wait before running the evaluation",
-        type=int,
-        default=200,
-    )
-    parser.add_argument(
-        "--seed",
-        help="Environment seed",
-        default=2,
-        type=int,
-    )
-    parser.add_argument(
-        "--log-dir",
-        help="Log directory location",
-        default="logs",
-        type=str,
-    )
-    parser.add_argument(
-        "--policy-ids",
-        help="Name of each specified policy",
-        default=None,
-        type=str,
-    )
+    parser = create_parser()
     args = parser.parse_args()
 
+    # TODO: What to do with following two statements?
     # Obtain the policy class strings for each specified policy.
     policy_classes = [
         agent_pool_value(agent_name, "policy_class")
