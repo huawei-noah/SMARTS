@@ -96,7 +96,7 @@ Where:
 - `heading_difference` is the heading of the social vehicle minus the heading of the ego vehicle.
 - `social_vehicle_speed` is the speed of the social vehicle in meters per second.
 
-Notice that the social vehicles are sorted by relative distance to the ego vehicle.
+Notice that the social vehicles are sorted by relative distance to the ego vehicle. This was chosen under the assumption that the closest social vehicles are the ones that the ego vehicle should pay attention to. While this is likely true in most situations, this assumption may not be the most accurate in all cases. For example, if all the nearest social vehicles are behind the ego vehicle, the ego vehicle will not observe any social vehicles ahead of itself.
 
 If the observation provided by the environment contains less than 10 social vehicles (that is, there are less than 10 social vehicles in a 200 meter radius around the ego vehicle), this adapter will pad the social vehicle adaptation with zero-vectors for the remaining rows. For example, if there are no social vehicles in the observation from the environment, the social vehicle adaptation would be a `(10, 4)` NumPy array with data: `[[0., 0., 0., 0.], [0., 0., 0., 0.], ..., [0., 0., 0., 0.]]`.
 
