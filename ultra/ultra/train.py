@@ -45,23 +45,7 @@ from ultra.utils.episode import episodes
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-def train(
-    scenario_info,
-    num_episodes,
-    policy_classes,
-    max_episode_steps,
-    eval_info,
-    timestep_sec,
-    headless,
-    seed,
-    log_dir,
-    policy_ids=None,
-):
-    torch.set_num_threads(1)
-    total_step = 0
-    finished = False
-    evaluation_task_ids = dict()
-
+def _build_agent(policy_classes, policy_ids, max_episode_steps):
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
     agent_ids = (
@@ -93,6 +77,50 @@ def train(
         for agent_id, agent_spec in agent_specs.items()
     }
 
+    # Define an 'etag' for this experiment's data directory based off policy_classes.
+    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
+    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+
+    return agent_ids, agent_classes, agent_specs, agents, etag
+
+def _save_agent_metadata(experiment_dir, agent_ids, agent_classes, agent_specs):
+    # Save relevant agent metadata.
+    if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
+        if not os.path.exists(experiment_dir):
+            os.makedirs(experiment_dir)
+        with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
+            dill.dump(
+                {
+                    "agent_ids": agent_ids,
+                    "agent_classes": agent_classes,
+                    "agent_specs": agent_specs,
+                },
+                metadata_file,
+                pickle.HIGHEST_PROTOCOL,
+            )
+
+def train(
+    scenario_info,
+    num_episodes,
+    policy_classes,
+    max_episode_steps,
+    eval_info,
+    timestep_sec,
+    headless,
+    seed,
+    log_dir,
+    policy_ids=None,
+):
+    torch.set_num_threads(1)
+    total_step = 0
+    finished = False
+    evaluation_task_ids = dict()
+
+    agent_ids, agent_classes, agent_specs, agents, etag = _build_agent(
+        policy_classes, policy_ids, max_episode_steps
+    )
+
     # Create the environment.
     env = gym.make(
         "ultra.env:ultra-v0",
@@ -103,35 +131,14 @@ def train(
         seed=seed,
     )
 
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
-
-    old_episode = None
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
-
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
         dones = {"__all__": False}
         infos = None
         episode.reset()
-        experiment_dir = episode.experiment_dir
 
-        # Save relevant agent metadata.
-        if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
-            if not os.path.exists(experiment_dir):
-                os.makedirs(experiment_dir)
-            with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
-                dill.dump(
-                    {
-                        "agent_ids": agent_ids,
-                        "agent_classes": agent_classes,
-                        "agent_specs": agent_specs,
-                    },
-                    metadata_file,
-                    pickle.HIGHEST_PROTOCOL,
-                )
+        _save_agent_metadata(episode.experiment_dir, agent_ids, agent_classes, agent_specs)
 
         evaluation_check(
             agents=agents,
