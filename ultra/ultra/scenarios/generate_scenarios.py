@@ -475,7 +475,7 @@ def build_scenarios(
     manager = Manager()
 
     log_dict = manager.dict()
-
+    root_path = "ultra/"+root_path
     with open(f"{root_path}/{task}/config.yaml", "r") as task_file:
         task_config = yaml.safe_load(task_file)
         print(f"{root_path}/{task}/config.yaml")

@@ -20,10 +20,7 @@
 
 import atexit
 import logging
-<<<<<<< HEAD
 import os
-=======
->>>>>>> f603a900507e2ba8579b3029d85408c197316b13
 import pathlib
 import random
 import subprocess

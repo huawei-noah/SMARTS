@@ -703,7 +703,6 @@ class SMARTS:
                     return False
             return True
 
-<<<<<<< HEAD
         pybullet_actions = {}
         other_actions = {}
         for agent_id, action in actions.items():
@@ -723,8 +722,6 @@ class SMARTS:
                 self._nondynamic_provider_step(other_actions)
             )
 
-=======
->>>>>>> f603a900507e2ba8579b3029d85408c197316b13
         for provider in self.providers:
             provider_state = self._step_provider(provider, actions, dt)
             if provider == self._traffic_sim:

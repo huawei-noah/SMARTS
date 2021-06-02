@@ -364,13 +364,6 @@ class Sensors:
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
-<<<<<<< HEAD
-=======
-        collided = sim.vehicle_did_collide(vehicle.id)
-        is_off_road = cls._vehicle_is_off_road(sim, vehicle)
-        is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
-        is_not_moving = cls._vehicle_is_not_moving(sim, vehicle)
->>>>>>> f603a900507e2ba8579b3029d85408c197316b13
         reached_goal = cls._agent_reached_goal(sim, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)

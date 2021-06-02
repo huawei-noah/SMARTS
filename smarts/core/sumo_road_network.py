@@ -546,7 +546,6 @@ class SumoRoadNetwork:
 
         radius = max(5, 2 * self._default_lane_width)
         nearest_lanes = self.nearest_lanes(point[:2], radius=radius)
-<<<<<<< HEAD
         return any(dist < 0.5 * nl.getWidth() + 1e-1 for nl, dist in nearest_lanes)
 
     def drove_off_map(
@@ -592,9 +591,6 @@ class SumoRoadNetwork:
             ):
                 return True
         return False
-=======
-        return any(0.5 * nl.getWidth() + 1e-1 > dist for nl, dist in nearest_lanes)
->>>>>>> f603a900507e2ba8579b3029d85408c197316b13
 
     def road_nodes_with_triggers(self):
         """Scan the road network for any nodes with ID's that match the form:
