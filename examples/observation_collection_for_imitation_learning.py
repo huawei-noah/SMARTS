@@ -31,18 +31,6 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
 
     smarts.reset(next(scenarios_iterator))
 
-<<<<<<< HEAD
-    # could also include "motorcycle" or "truck" in this set if desired
-    vehicle_types = frozenset({"car"})
-
-    for _ in range(5000):
-        smarts.step({})
-        current_vehicles = smarts.vehicle_index.social_vehicle_ids(
-            vehicle_types=vehicle_types
-        )
-        smarts.attach_sensors_to_vehicles(agent_spec, current_vehicles)
-        obs, _, _, dones = smarts.observe_from(current_vehicles)
-=======
     prev_vehicles = set()
     done_vehicles = set()
     for _ in range(5000):
@@ -64,7 +52,6 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
         # assert not done
         for v in done_vehicles:
             dones[f"Agent-{v}"] = True
->>>>>>> f603a900507e2ba8579b3029d85408c197316b13
         # TODO: save observations for imitation learning
 
     smarts.destroy()
