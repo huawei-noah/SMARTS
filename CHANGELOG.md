@@ -28,6 +28,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Patched a restart of SUMO every 50 resets to avoid rampant memory growth.
 - Fixed bugs in `AccelerometerSensor`.  See PR #878.
 - Ensure that `yaw_rate` is always a scalar in `EgoVehicleObservation`.
+- Fixed the internal holes created at sharp turns due to crude map geometry. See issue #900.
 ## Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 
