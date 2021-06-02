@@ -38,6 +38,13 @@ testzombie: build-all-scenarios
 # ./smarts/contrib - cleared
 # ./smarts/core - suspect
 # ./smarts/env - suspect
+  # ./smarts/env/test_benchmark.py - ALREADY IGNORED
+  # ./smarts/env/test_determinism.py
+  # ./smarts/env/test_highway_env.py
+  # ./smarts/env/test_learning.py - RAY - ALREADY IGNORED
+  # ./smarts/env/test_rllib_hiway_env.py - RAY
+  # ./smarts/env/test_shutdown.py
+  # ./smarts/env/test_social_agent.py
 # ./smarts/sstudio - cleared
 # ./tests - cleared
 
