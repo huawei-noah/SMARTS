@@ -109,7 +109,7 @@ def create_parser():
     return parser
 
 
-def _build_agent(policy_classes, policy_ids, max_episode_steps):
+def build_agent(policy_classes, policy_ids, max_episode_steps):
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
     agent_ids = (
@@ -183,7 +183,7 @@ def train(
     finished = False
     evaluation_task_ids = dict()
 
-    agent_ids, agent_classes, agent_specs, agents, etag = _build_agent(
+    agent_ids, agent_classes, agent_specs, agents, etag = build_agent(
         policy_classes, policy_ids, max_episode_steps
     )
 
@@ -279,7 +279,6 @@ if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
 
-    # TODO: What to do with following two statements?
     # Obtain the policy class strings for each specified policy.
     policy_classes = [
         agent_pool_value(agent_name, "policy_class")
