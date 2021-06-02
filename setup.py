@@ -11,11 +11,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.4.16",
-<<<<<<< HEAD
-    packages=find_packages(exclude=("tests", "examples")),
-=======
     packages=find_packages(exclude="tests"),
->>>>>>> f603a900507e2ba8579b3029d85408c197316b13
     include_package_data=True,
     zip_safe=True,
     python_requires=">=3.7",
