@@ -93,12 +93,7 @@ class RemoteAgentBuffer:
             self._remote_agent_future() for _ in range(self._buffer_size)
         ]
 
-        atexit.register(self.destroy)
-
     def destroy(self):
-        if atexit:
-            atexit.unregister(self.destroy)
-
         # Teardown any remaining remote agents.
         for remote_agent_future in self._agent_buffer:
             try:
