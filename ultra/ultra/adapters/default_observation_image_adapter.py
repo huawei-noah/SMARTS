@@ -26,8 +26,12 @@ from smarts.core.agent_interface import RGB
 from smarts.core.sensors import Observation
 
 
+# The width of the top-down RGB image.
 _WIDTH = 64
+# The height of the top-down RGB image.
 _HEIGHT = 64
+# The resolution of the top-down RGB image. E.g. A 100m x 100m RGB with a 256x256 image
+# representation, needs a resolution of 100 / 256 and equal width and height of 256.
 _RESOLUTION = 50 / 64
 
 
