@@ -8,12 +8,8 @@ from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType, NeighborhoodVehicles, Waypoints
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
-<<<<<<< HEAD
 from ultra.baselines.adapter import BaselineAdapter
 from ultra.baselines.ppo.ppo.policy import PPOPolicy
-=======
-from ultra.ultra.baselines.ppo.ppo import policy
->>>>>>> f603a900507e2ba8579b3029d85408c197316b13
 
 logging.basicConfig(level=logging.INFO)
 
@@ -57,15 +53,10 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
             action=ActionSpaceType.Continuous,
             max_episode_steps=max_episode_steps,
         ),
-<<<<<<< HEAD
         agent_builder=PPOPolicy,
         agent_params={"policy_params": adapter.policy_params},
         observation_adapter=adapter.observation_adapter,
         reward_adapter=adapter.reward_adapter,
-=======
-        # agent_builder=ChaseViaPointsAgent,
-        agent_builder=PPO,
->>>>>>> f603a900507e2ba8579b3029d85408c197316b13
     )
 
     env = gym.make(
