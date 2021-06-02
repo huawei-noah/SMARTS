@@ -452,6 +452,19 @@ class SMARTS:
         return self._renderer is not None
 
     @property
+    def renderer(self):
+        if not self._renderer:
+            self._renderer = Renderer(self._sim_id)
+            if self._scenario:
+                self._renderer.setup(self._scenario)
+                self._vehicle_index.begin_rendering_vehicles(self._renderer)
+        return self._renderer
+
+    @property
+    def is_rendering(self):
+        return self._renderer is not None
+
+    @property
     def road_stiffness(self):
         return self._bullet_client.getDynamicsInfo(self._ground_bullet_id, -1)[9]
 
@@ -690,6 +703,7 @@ class SMARTS:
                     return False
             return True
 
+<<<<<<< HEAD
         pybullet_actions = {}
         other_actions = {}
         for agent_id, action in actions.items():
@@ -709,6 +723,8 @@ class SMARTS:
                 self._nondynamic_provider_step(other_actions)
             )
 
+=======
+>>>>>>> f603a900507e2ba8579b3029d85408c197316b13
         for provider in self.providers:
             provider_state = self._step_provider(provider, actions, dt)
             if provider == self._traffic_sim:

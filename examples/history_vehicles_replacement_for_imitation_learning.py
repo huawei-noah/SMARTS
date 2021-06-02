@@ -19,9 +19,18 @@ from smarts.core.utils.math import min_angles_difference_signed
 logging.basicConfig(level=logging.INFO)
 
 
+<<<<<<< HEAD
 class PlaceholderAgent(Agent):
     """This is just a place holder such the example code here has a real Agent to work with.
     In actual use, this would be replaced by an agent based on a trained Imitation Learning model."""
+=======
+class KeepLaneAgent(Agent):
+    def __init__(self, target_speed=15.0):
+        self._target_speed = target_speed
+
+    def act(self, obs):
+        return (self._target_speed, 0)
+>>>>>>> f603a900507e2ba8579b3029d85408c197316b13
 
     def __init__(self, initial_speed: float = 15.0):
         self._initial_speed = initial_speed
@@ -79,6 +88,7 @@ def main(
         traffic_sim=None,
         envision=None if headless else Envision(),
     )
+<<<<<<< HEAD
     random_seed(seed)
     traffic_history_provider = smarts.get_provider_by_type(TrafficHistoryProvider)
     assert traffic_history_provider
@@ -90,12 +100,26 @@ def main(
         if not veh_missions:
             logger.warning(
                 "no vehicle missions found for scenario {}.".format(scenario.name)
+=======
+    for _ in scenarios:
+        scenario = next(scenarios_iterator)
+        agent_missions = scenario.discover_missions_of_traffic_histories()
+
+        for agent_id, mission in agent_missions.items():
+            agent_spec = AgentSpec(
+                interface=AgentInterface.from_type(
+                    AgentType.LanerWithSpeed, max_episode_steps=None
+                ),
+                agent_builder=KeepLaneAgent,
+                agent_params=scenario.traffic_history_target_speed,
+>>>>>>> f603a900507e2ba8579b3029d85408c197316b13
             )
             continue
         veh_start_times = {
             v_id: mission.start_time for v_id, mission in veh_missions.items()
         }
 
+<<<<<<< HEAD
         k = vehicles_to_replace
         if k > len(veh_missions):
             logger.warning(
@@ -114,6 +138,29 @@ def main(
 
         for episode in range(episodes):
             logger.info(f"starting episode {episode}...")
+=======
+            # Take control of vehicle with corresponding agent_id
+            smarts.switch_ego_agent({agent_id: agent_spec.interface})
+
+            # tell the traffic history provider to start traffic
+            # at the point when this agent enters...
+            traffic_history_provider = smarts.get_provider_by_type(
+                TrafficHistoryProvider
+            )
+            assert traffic_history_provider
+            traffic_history_provider.start_time = mission.start_time
+
+            # agent vehicle will enter right away...
+            modified_mission = replace(mission, start_time=0.0)
+            scenario.set_ego_missions({agent_id: modified_mission})
+
+            observations = smarts.reset(scenario)
+
+            dones = {agent_id: False}
+            while not dones.get(agent_id, True):
+                agent_obs = observations[agent_id]
+                agent_action = agent.act(agent_obs)
+>>>>>>> f603a900507e2ba8579b3029d85408c197316b13
 
             # Pick k vehicle missions to hijack with agent
             # and figure out which one starts the earliest

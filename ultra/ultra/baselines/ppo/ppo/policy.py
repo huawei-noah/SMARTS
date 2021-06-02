@@ -22,19 +22,19 @@
 # some parts of this implementation is inspired by https://github.com/Khrylx/PyTorch-RL
 import torch, os, yaml
 import numpy as np
-from ultra.baselines.ppo.ppo.network import PPONetwork
+from ultra.ultra.baselines.ppo.ppo.network import PPONetwork
 from smarts.core.agent import Agent
 import pathlib
 import os
-from ultra.utils.common import (
+from ultra.ultra.utils.common import (
     compute_sum_aux_losses,
     normalize_im,
     to_3d_action,
     to_2d_action,
 )
-from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
+from ultra.ultra.baselines.common.yaml_loader import load_yaml
+from ultra.ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class PPOPolicy(Agent):

@@ -24,6 +24,7 @@ import math
 import os
 import pickle
 import random
+import sqlite3
 import uuid
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -214,6 +215,7 @@ class Scenario:
         self._log_dir = self._resolve_log_dir(log_dir)
         self._validate_assets_exist()
 
+<<<<<<< HEAD
         if traffic_history:
             self._traffic_history = TrafficHistory(traffic_history)
             default_lane_width = self.traffic_history.lane_width
@@ -221,6 +223,12 @@ class Scenario:
             self._traffic_history = None
             default_lane_width = None
 
+=======
+        self._traffic_history = traffic_history
+        default_lane_width = (
+            self.traffic_history_lane_width if traffic_history else None
+        )
+>>>>>>> f603a900507e2ba8579b3029d85408c197316b13
         net_file = os.path.join(self._root, "map.net.xml")
         self._road_network = SumoRoadNetwork.from_file(
             net_file, default_lane_width=default_lane_width
@@ -542,6 +550,7 @@ class Scenario:
             bubbles = pickle.load(f)
             return bubbles
 
+<<<<<<< HEAD
     def set_ego_missions(self, ego_missions: dict):
         self._missions = ego_missions
 
@@ -566,6 +575,62 @@ class Scenario:
 
     @staticmethod
     def discover_traffic_histories(scenario_root: str):
+=======
+    def set_ego_missions(self, ego_mission):
+        self._missions.update(ego_mission)
+
+    @cached_property
+    def traffic_history_lane_width(self):
+        histories_db = sqlite3.connect(self._traffic_history)
+        cur = histories_db.cursor()
+        cur.execute("SELECT value FROM Spec where key='map_net.lane_width'")
+        row = cur.fetchone()
+        cur.close()
+        histories_db.close()
+        return float(row[0]) if row else None
+
+    @cached_property
+    def traffic_history_target_speed(self):
+        histories_db = sqlite3.connect(self._traffic_history)
+        cur = histories_db.cursor()
+        cur.execute("SELECT value FROM Spec where key='speed_limit_mps'")
+        row = cur.fetchone()
+        cur.close()
+        histories_db.close()
+        return float(row[0]) if row else None
+
+    def discover_missions_of_traffic_histories(self, vehicle_missions={}):
+        histories_db = sqlite3.connect(self._traffic_history)
+        # For now, limit agent missions to just cars (V.type = 2)
+        st_query = """SELECT T.vehicle_id, min(T.sim_time)
+            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
+            WHERE V.type = 2
+            GROUP BY vehicle_id"""
+        p_query = "SELECT position_x, position_y, heading_rad FROM Trajectory WHERE vehicle_id = ? and sim_time = ?"
+        map_offset = self._road_network.net_offset
+        st_cur = histories_db.cursor()
+        for row in st_cur.execute(st_query):
+            vid = str(row[0])
+            start_time = float(row[1])
+            p_cur = histories_db.cursor()
+            vrow = p_cur.execute(p_query, (int(vid), start_time)).fetchone()
+            assert vrow
+            pos_x, pos_y, heading = vrow
+            vehicle_missions[vid] = Mission(
+                start=Start(
+                    (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
+                ),
+                goal=EndlessGoal(),
+                start_time=start_time,
+            )
+            p_cur.close()
+        st_cur.close()
+        histories_db.close()
+        return vehicle_missions
+
+    @staticmethod
+    def discover_traffic_histories(scenario_root):
+>>>>>>> f603a900507e2ba8579b3029d85408c197316b13
         return [
             entry
             for entry in os.scandir(scenario_root)

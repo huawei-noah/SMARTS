@@ -34,6 +34,24 @@ sanity-test: build-all-scenarios
 		./tests/test_examples.py::test_multi_instance_example \
 		./smarts/env/tests/test_social_agent.py::test_social_agents
 
+.PHONY: sanity-test
+sanity-test: build-all-scenarios
+	./tests/test_setup.py
+	PYTHONHASHSEED=42 pytest -v \
+		--doctest-modules \
+		--forked \
+		--dist=loadscope \
+		--junitxml="sanity_test_result.xml" \
+		-n `nproc --ignore 2` \
+		./smarts/core/tests/test_python_version.py::test_python_version \
+		./smarts/core/tests/test_sumo_version.py::test_sumo_version \
+		./smarts/core/tests/test_dynamics_backend.py::test_set_pose \
+		./smarts/core/tests/test_sensors.py::test_waypoints_sensor \
+		./smarts/core/tests/test_smarts.py::test_smarts_doesnt_leak_tasks_after_reset \
+		./tests/test_examples.py::test_examples[multi_agent] \
+		./tests/test_examples.py::test_multi_instance_example \
+		./smarts/env/tests/test_social_agent.py::test_social_agents
+
 .PHONY: test-learning
 test-learning: build-all-scenarios
 	pytest -v -s -o log_cli=1 -o log_cli_level=INFO ./smarts/env/tests/test_learning.py
