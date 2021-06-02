@@ -57,10 +57,6 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
-        self.ultra_scores = adapters.adapter_from_type(
-            adapter_type=adapters.AdapterType.DefaultReward
-        )
-
         super().__init__(
             scenarios=_scenarios,
             agent_specs=agent_specs,
