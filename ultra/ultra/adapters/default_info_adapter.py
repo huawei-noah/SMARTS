@@ -63,9 +63,7 @@ def adapt(
     ego_state = observation.ego_vehicle_state
     start = observation.ego_vehicle_state.mission.start
     goal = observation.ego_vehicle_state.mission.goal
-    path = get_path_to_goal(
-        goal=goal, paths=observation.waypoint_paths, start=start
-    )
+    path = get_path_to_goal(goal=goal, paths=observation.waypoint_paths, start=start)
     closest_wp, _ = get_closest_waypoint(
         num_lookahead=100,
         goal_path=path,
@@ -116,5 +114,3 @@ def adapt(
     )
 
     return info
-
-
