@@ -104,11 +104,11 @@ If there are more than 10 social vehicles, this adapter will truncate the social
 
 ## Reward Adapters
 
-A reward adapter takes an [observation](https://smarts.readthedocs.io/en/latest/sim/observations.html#id1) and the [environment reward](https://smarts.readthedocs.io/en/latest/sim/observations.html#rewards) as arguments from the environment and adapts them, acting as a custom reward function. ULTRA has one default reward adapter that uses elements from the agent's observation, as well as the environment reward to develop a custom reward.
+A reward adapter takes an [observation](https://smarts.readthedocs.io/en/latest/sim/observations.html#id1) and the [environment reward](https://smarts.readthedocs.io/en/latest/sim/observations.html#rewards) as arguments from the environment and adapts them, acting as a custom reward function. ULTRA has one default reward adapter that uses elements from the agent's observation, as well as the environment reward, to develop a custom reward.
 
 ### [ultra.adapters.default_reward_adapter](../ultra/adapters/default_reward_adapter.py)
 
-The default reward adapter requires that the SMARTS environment include the next 20 waypoints in front of the ego vehicle, and all neighborhood (social) vehicles within a radius of 200 meters around the ego vehicle. Therefore, when using this adapter, the [`AgentInterface`](../../smarts/core/agent_interface.py) of your agent needs its `waypoints` parameter to be `Waypoints(lookahead=20)` and its `neighborhood_vehicles` parameter to be `NeighborhoodVehicles(radius=200.0)`. This requirement is outlined in this module's `required_interface`.
+The default reward adapter requires that the SMARTS environment include the next 20 waypoints in front of the ego vehicle in the ego vehicle's observation. Therefore, when using this adapter, the [`AgentInterface`](../../smarts/core/agent_interface.py) of your agent needs its `waypoints` parameter to be `Waypoints(lookahead=20)`. This requirement is outlined in this module's `required_interface`.
 
 This default reward adapter combines elements of the agent's observation along with the environment reward to create a custom reward. This custom reward consists of multiple components:
 ```python
