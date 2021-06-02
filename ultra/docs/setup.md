@@ -4,7 +4,6 @@ ULTRA can be run natively on your machine, or through a Docker container. See in
 
 ## Setup Natively
 
-The following steps can be ignored if you already have the SMARTS environment.
 ```sh
 # 1 - Navigate to the ULTRA directory.
 $ cd <path_to_SMARTS>/SMARTS/ultra
@@ -20,10 +19,6 @@ $ pip install black
 
 # 5 - Install dependencies.
 $ pip install -e .
-```
-Whether you already had the SMARTS environment or not, install dill in your activated environment.
-```sh
-$ pip install dill
 ```
 
 ## Setup with Docker
