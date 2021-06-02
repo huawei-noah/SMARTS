@@ -242,6 +242,7 @@ class Interaction(_TrajectoryDataset):
             return Interaction._lookup_agent_type(row["agent_type"])
         if col_name == "speed":
             if self._next_row:
+                # XXX: could try to divide by sim_time delta here instead of assuming .1s
                 dx = (float(self._next_row["x"]) - float(row["x"])) / 0.1
                 dy = (float(self._next_row["y"]) - float(row["y"])) / 0.1
             else:
