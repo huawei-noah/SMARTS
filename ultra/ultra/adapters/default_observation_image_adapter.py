@@ -47,16 +47,16 @@ required_interface = {"rgb": RGB(width=_WIDTH, height=_HEIGHT, resolution=_RESOL
 def adapt(observation: Observation) -> np.ndarray:
     """Adapts a raw environment observation into a numpy.ndarray.
 
-    The raw observation from the environment must include the top down RGB image. See
+    The raw observation from the environment must include the top-down RGB image. See
     smarts.core.sensors for more information on the Observation type.
 
     Args:
         observation (Observation): The raw environment observation received from SMARTS.
 
     Returns:
-        np.ndarray: A numpy.ndarray of size (64, 64) that is the gray-scale image of the
-            top down RGB image. The gray-scale value for each pixel is calculated as
-            0.2125 * r + 0.7154 * g + 0.0721 * b.
+        np.ndarray: A numpy.ndarray of size (_HEIGHT, _WIDTH) that is the gray-scale
+            image of the top-down RGB image. The gray-scale value for each pixel is
+            calculated as 0.2125 * r + 0.7154 * g + 0.0721 * b.
     """
     rgb_image = observation.top_down_rgb.data
     gray_image = np.dot(rgb_image, (0.2125, 0.7154, 0.0721))
