@@ -94,6 +94,8 @@ def run(args):
             )
             total_step += 1
 
+            observations = next_observations
+
         episode.record_episode()
         episode.record_tensorboard()
 
