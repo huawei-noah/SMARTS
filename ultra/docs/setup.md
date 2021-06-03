@@ -9,11 +9,11 @@ ULTRA can be run natively on your machine, or through a Docker container. See in
 $ cd <path_to_SMARTS>/SMARTS/ultra
 
 # 2 - Install overhead dependencies (python3.7 & sumo)
-./install_deps.sh
+$ ./install_deps.sh
 
 # 3 - verify sumo is >= 1.5.0
 # if you have issues see ./docs/SUMO_TROUBLESHOOTING.md
-sumo
+$ sumo
 
 # 4 - Create a virtual environment.
 $ python3.7 -m venv .venv
