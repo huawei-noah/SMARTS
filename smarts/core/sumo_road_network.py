@@ -283,15 +283,17 @@ class SumoRoadNetwork:
                 continue
             lane_shape = lane_to_poly[lane_id]
             for x, y in lane_shape.exterior.coords:
-                nl = self.nearest_lane(
+                for nl, dist in self.nearest_lanes(
                     (x, y),
                     max(10, 2 * self._default_lane_width),
                     include_junctions=False,
-                )
-                if nl:
-                    nl_shape = lane_to_poly.get(nl.getID())
-                    if nl_shape:
-                        lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
+                ):
+                    if nl:
+                        nl_shape = lane_to_poly.get(nl.getID())
+                        if nl_shape:
+                            lane_shape = Polygon(
+                                snap(lane_shape, nl_shape, snap_threshold)
+                            )
             lane_to_poly[lane_id] = lane_shape
 
     def _snap_external_holes(self, lane_to_poly, snap_threshold=2):
@@ -314,16 +316,16 @@ class SumoRoadNetwork:
 
             lane_shape = lane_to_poly[lane_id]
             for x, y in lane_shape.exterior.coords:
-                nl = self.nearest_lane(
+                for nl, dist in self.nearest_lanes(
                     (x, y),
                     max(10, 2 * self._default_lane_width),
                     include_junctions=False,
-                )
-                if nl and nl.getEdge().isSpecial():
-                    continue
-                nl_shape = lane_to_poly.get(nl.getID())
-                if nl_shape:
-                    lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
+                ):
+                    if nl and nl.getEdge().isSpecial():
+                        continue
+                    nl_shape = lane_to_poly.get(nl.getID())
+                    if nl_shape:
+                        lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
             lane_to_poly[lane_id] = lane_shape
 
     @staticmethod
