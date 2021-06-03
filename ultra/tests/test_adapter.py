@@ -26,7 +26,7 @@ import gym
 import numpy as np
 
 from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface
+from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
 from smarts.core.sensors import Observation
 import ultra.adapters as adapters
 from ultra.env.ultra_env import UltraEnv
@@ -145,6 +145,11 @@ def prepare_test_agent_and_environment(
     required_interface = adapters.required_interface_from_types(
         action_type, observation_type, reward_type
     )
+
+    if "waypoints" not in required_interface:
+        required_interface["waypoints"] = Waypoints(lookahead=20)
+    if "neighborhood_vehicles" not in required_interface:
+        required_interface["neighborhood_vehicles"] = NeighborhoodVehicles(radius=200.0)
 
     agent_spec = AgentSpec(
         interface=AgentInterface(**required_interface),

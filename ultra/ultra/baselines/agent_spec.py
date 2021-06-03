@@ -24,7 +24,7 @@ import numpy as np
 import torch, yaml, os, inspect, dill
 
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface
+from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
 from ultra.baselines.common.yaml_loader import load_yaml
 import ultra.adapters as adapters
 
@@ -103,6 +103,15 @@ class BaselineAgentSpec(AgentSpec):
                 adapter_type=observation_type
             )
             reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
+
+            if "waypoints" not in adapter_interface_requirements:
+                adapter_interface_requirements["waypoints"] = Waypoints(lookahead=20)
+            if "neighborhood_vehicles" not in adapter_interface_requirements:
+                adapter_interface_requirements[
+                    "neighborhood_vehicles"
+                ] = NeighborhoodVehicles(radius=200.0)
+
+            print("requirements:", adapter_interface_requirements)
 
             spec = AgentSpec(
                 interface=AgentInterface(

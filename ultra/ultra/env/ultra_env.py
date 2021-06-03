@@ -62,6 +62,18 @@ class UltraEnv(HiWayEnv):
             adapter_type=adapters.AdapterType.DefaultReward
         )
 
+        # The ULTRA environment requires every agent to have at least Waypoints and
+        # NeighborhoodVehicles as part of its interface.
+        for agent_id, agent_spec in agent_specs.items():
+            if not agent_spec.interface.waypoints:
+                raise Exception(
+                    f"Waypoints is not set in the interface of '{agent_id}'."
+                )
+            if not agent_spec.interface.neighborhood_vehicles:
+                raise Exception(
+                    f"NeighborhoodVehicles is not set in the interface of '{agent_id}'."
+                )
+
         super().__init__(
             scenarios=_scenarios,
             agent_specs=agent_specs,
