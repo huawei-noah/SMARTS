@@ -83,6 +83,7 @@ class TrainTest(unittest.TestCase):
                 policy_classes=policy_classes,
                 num_episodes=1,
                 max_episode_steps=2,
+                max_steps=5,
                 eval_info={
                     "eval_rate": 1000,
                     "eval_episodes": 2,
@@ -119,6 +120,7 @@ class TrainTest(unittest.TestCase):
                 policy_classes=policy_classes,
                 num_episodes=1,
                 max_episode_steps=2,
+                max_steps=5,
                 eval_info={
                     "eval_rate": 1000,
                     "eval_episodes": 2,
