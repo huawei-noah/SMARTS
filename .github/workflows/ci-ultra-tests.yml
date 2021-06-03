@@ -45,10 +45,15 @@ jobs:
           --ignore=./tests/test_rllib_train.py \
           --ignore=./tests/test_tune.py \
           --ignore=./tests/test_train.py
+          --ignore=./tests/test_evaluate.py
           pytest -v \
           ./tests/test_train.py \
           --forked \
-          --durations=0 \
+          --durations=0
+          pytest -v \
+          ./tests/test_evaluate.py \
+          --forked \
+          --durations=0
 
   test-light-base-tests:
     runs-on: ubuntu-18.04
