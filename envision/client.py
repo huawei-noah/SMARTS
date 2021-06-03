@@ -178,7 +178,7 @@ class Client:
 
             ws.send(state)
 
-        def on_close(ws, *args):
+        def on_close(ws, code=None, reason=None):
             self._log.debug("Connection to Envision closed")
 
         def on_error(ws, error):
