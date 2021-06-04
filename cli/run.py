@@ -42,7 +42,7 @@ def run_cli():
     pass
 
 
-@run_cli.command()
+@run_cli.command(name="experiment", help="Run an experiment scenario")
 @click.option(
     "--envision",
     is_flag=True,
