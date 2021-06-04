@@ -37,12 +37,12 @@ def kill_process_group_afterwards():
         os.killpg(0, signal.SIGKILL)
 
 
-@click.group()
+@click.group(name="run")
 def run_cli():
     pass
 
 
-@run_cli.command(name="run")
+@run_cli.command()
 @click.option(
     "--envision",
     is_flag=True,
