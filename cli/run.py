@@ -43,7 +43,7 @@ class DefaultCommandGroup(click.Group):
     def command(self, *args, **kwargs):
         default_command = kwargs.pop("default_command", False)
         if default_command and not args:
-            kwargs["name"] = kwargs.get("name", "<>")
+            kwargs["name"] = kwargs.get("name", "run_experiment")
         decorator = super(DefaultCommandGroup, self).command(*args, **kwargs)
 
         if default_command:
@@ -67,12 +67,12 @@ class DefaultCommandGroup(click.Group):
             return super(DefaultCommandGroup, self).resolve_command(ctx, args)
 
 
-@click.group(name="run", cls=DefaultCommandGroup)
+@click.group()
 def run_cli():
     pass
 
 
-@run_cli.command(default_command=True, help="Run an experiment on a scenario")
+@run_cli.command(help="Run an experiment on a scenario")
 @click.option(
     "--envision",
     is_flag=True,
@@ -83,7 +83,7 @@ def run_cli():
     "script_path", type=click.Path(exists=True), metavar="<script>", required=True
 )
 @click.argument("script_args", nargs=-1, type=click.UNPROCESSED)
-def run_experiment(envision, script_path, script_args):
+def run(envision, script_path, script_args):
     # with kill_process_group_afterwards():
     if envision:
         subprocess.Popen(
@@ -98,4 +98,4 @@ def run_experiment(envision, script_path, script_args):
     script.communicate()
 
 
-run_cli.add_command(run_experiment)
+run_cli.add_command(run)
