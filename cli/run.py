@@ -67,8 +67,8 @@ class DefaultCommandGroup(click.Group):
             return super(DefaultCommandGroup, self).resolve_command(ctx, args)
 
 
-@click.group()
-def run_cli(name="run"):
+@click.group(name="run")
+def run_cli():
     pass
 
 
