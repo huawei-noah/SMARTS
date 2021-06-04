@@ -83,7 +83,7 @@ def run_cli():
     "script_path", type=click.Path(exists=True), metavar="<script>", required=True
 )
 @click.argument("script_args", nargs=-1, type=click.UNPROCESSED)
-def run_experiment(envision, script_path, script_args):
+def run(envision, script_path, script_args):
     # with kill_process_group_afterwards():
     if envision:
         subprocess.Popen(
@@ -98,4 +98,4 @@ def run_experiment(envision, script_path, script_args):
     script.communicate()
 
 
-run_cli.add_command(run_experiment)
+run_cli.add_command(run)
