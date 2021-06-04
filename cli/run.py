@@ -41,13 +41,13 @@ class DefaultCommandGroup(click.Group):
     """allow a default command for a group"""
 
     def command(self, *args, **kwargs):
-        default_command = kwargs.pop('default_command', False)
+        default_command = kwargs.pop("default_command", False)
         if default_command and not args:
-            kwargs['name'] = kwargs.get('name', '<>')
-        decorator = super(
-            DefaultCommandGroup, self).command(*args, **kwargs)
+            kwargs["name"] = kwargs.get("name", "<>")
+        decorator = super(DefaultCommandGroup, self).command(*args, **kwargs)
 
         if default_command:
+
             def new_decorator(f):
                 cmd = decorator(f)
                 self.default_command = cmd.name
@@ -60,13 +60,11 @@ class DefaultCommandGroup(click.Group):
     def resolve_command(self, ctx, args):
         try:
             # test if the command parses
-            return super(
-                DefaultCommandGroup, self).resolve_command(ctx, args)
+            return super(DefaultCommandGroup, self).resolve_command(ctx, args)
         except click.UsageError:
             # command did not parse, assume it is the default command
             args.insert(0, self.default_command)
-            return super(
-                DefaultCommandGroup, self).resolve_command(ctx, args)
+            return super(DefaultCommandGroup, self).resolve_command(ctx, args)
 
 
 @click.group(name="run", cls=DefaultCommandGroup)
@@ -81,7 +79,9 @@ def run_cli():
     default=False,
     help="Start up Envision server when running an experiment",
 )
-@click.argument("script_path", type=click.Path(exists=True), metavar="<script>", required=True)
+@click.argument(
+    "script_path", type=click.Path(exists=True), metavar="<script>", required=True
+)
 @click.argument("script_args", nargs=-1, type=click.UNPROCESSED)
 def run_experiment(envision, script_path, script_args):
     # with kill_process_group_afterwards():
