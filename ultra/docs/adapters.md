@@ -67,8 +67,8 @@ parameter to be `RGB(width=64, height=64, resolution=(50 / 64))`. This requireme
 outlined in this module's `required_interface`.
 
 This default image observation adapter produces a NumPy array of type `float32` and with
-shape `(64, 64)`. Each element of the array is normalized to be in the range `[0, 1]`.
-This observation space is outlined in this module's `gym_space`.
+shape `(1, 64, 64)`. Each element of the array is normalized to be in the range
+`[0, 1]`. This observation space is outlined in this module's `gym_space`.
 
 This adapter receives an observation from the environment that contains a
 `smarts.core.sensors.TopDownRGB` instance in the observation. The `data` attribute of
@@ -77,9 +77,10 @@ converts this array to gray-scale by dotting it with `(0.2125, 0.7154, 0.0721)`,
 resulting in the value of each gray-scale pixel to be a linear combination of the red
 (R), green (G), and blue (B) components of that pixel:
 `0.2125 * R + 0.7154 * G + 0.0721 * B`. The gray-scale image is then normalized by
-dividing the array by `255.0`. The output is a NumPy array of type `float32` and with
-shape `(64, 64)`. The behaviour of this adapter is fully defined in this module's
-`adapt` function.
+dividing the array by `255.0`, and its 0th dimension is 'unsqueezed' to produce a
+3-dimensional array. The output is a NumPy array of type `float32` and with shape
+`(1, 64, 64)`. The behaviour of this adapter is fully defined in this module's `adapt`
+function.
 
 ### [ultra.adapters.default_observation_vector_adapter](../ultra/adapters/default_observation_vector_adapter.py)
 

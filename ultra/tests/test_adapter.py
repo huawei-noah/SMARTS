@@ -89,8 +89,8 @@ class AdapterTest(unittest.TestCase):
         self.assertIsInstance(observations, dict)
         self.assertTrue(AGENT_ID in observations)
         self.assertIsInstance(observations[AGENT_ID], np.ndarray)
-        self.assertTrue(observations[AGENT_ID].dtype, "float32")
-        self.assertTrue(observations[AGENT_ID].shape, (64, 64))
+        self.assertEqual(observations[AGENT_ID].dtype, "float32")
+        self.assertEqual(observations[AGENT_ID].shape, (1, 64, 64))
 
     def test_default_observation_vector_adapter(self):
         agent, environment = prepare_test_agent_and_environment(
