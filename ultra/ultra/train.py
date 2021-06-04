@@ -155,7 +155,7 @@ def build_agent(policy_classes, policy_ids, max_episode_steps):
     return agent_ids, agent_classes, agent_specs, agents, etag
 
 
-def _save_agent_metadata(experiment_dir, agent_ids, agent_classes, agent_specs):
+def save_agent_metadata(experiment_dir, agent_ids, agent_classes, agent_specs):
     # Save relevant agent metadata.
     if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
         if not os.path.exists(experiment_dir):
@@ -211,7 +211,7 @@ def train(
         infos = None
         episode.reset()
 
-        _save_agent_metadata(
+        save_agent_metadata(
             episode.experiment_dir, agent_ids, agent_classes, agent_specs
         )
 

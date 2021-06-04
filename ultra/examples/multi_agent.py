@@ -24,7 +24,7 @@ from argument_parser import argument_parser
 
 from smarts.zoo.registry import make
 
-from ultra.train import build_agent
+from ultra.train import build_agent, save_agent_metadata
 from ultra.utils.common import agent_pool_value
 from ultra.utils.episode import episodes
 
@@ -64,6 +64,10 @@ def run(args):
         observations = env.reset()
         episode.reset()
         dones = {"__all__": False}
+
+        _save_agent_metadata(
+            episode.experiment_dir, agent_ids, agent_classes, agent_specs
+        )
 
         while not dones["__all__"]:
             actions = {
