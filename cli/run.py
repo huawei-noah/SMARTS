@@ -53,21 +53,15 @@ def run_cli():
 @click.argument("script_args", nargs=-1, type=click.UNPROCESSED)
 def run_experiment(envision, script_path, script_args):
     # with kill_process_group_afterwards():
-    stdout_logfile = "/dev/stdout"
-    stderr_logfile = "/dev/stderr"
     # if envision:
     subprocess.Popen(
         ["scl", "envision", "start", "-s", "./scenarios", "-p", "8081"],
-        stdout=stdout_logfile,
-        stderr=stderr_logfile,
     )
     # Just in case: give Envision a bit of time to warm up
     time.sleep(2)
 
     script = subprocess.Popen(
         [sys.executable, script_path, *script_args],
-        stdout=stdout_logfile,
-        stderr=stderr_logfile,
     )
     script.communicate()
 
