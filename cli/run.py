@@ -98,4 +98,4 @@ def run_experiment(envision, script_path, script_args):
     script.communicate()
 
 
-run_cli.add_command(run)
+run_cli.add_command(run_experiment)
