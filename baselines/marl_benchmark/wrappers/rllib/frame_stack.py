@@ -88,7 +88,9 @@ class FrameStack(Wrapper):
         self.info_adapter = config["info_adapter"]
         self.reward_adapter = config["reward_adapter"]
 
-        self.frames = dict.fromkeys(self._agent_keys, deque(maxlen=self.num_stack))
+        self.frames = {
+            agent_id: deque(maxlen=self.num_stack) for agent_id in self._agent_keys
+        }
 
     @staticmethod
     def get_observation_space(observation_space, wrapper_config):
