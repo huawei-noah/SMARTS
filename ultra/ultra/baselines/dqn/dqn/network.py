@@ -39,6 +39,9 @@ class DQNCNN(nn.Module):
         hidden_dim=128,
         activation=nn.ReLU,
     ):
+        # TODO: Ensure state_size is 0. Or, the forward method would have to concatenate
+        #       an image and a low dim states vector. We can maybe just get rid of the
+        #       state_size parameter.
         super(DQNCNN, self).__init__()
         self.im_feature = nn.Sequential(
             nn.Conv2d(n_in_channels, 32, 8, 4),
@@ -69,11 +72,19 @@ class DQNCNN(nn.Module):
             # nn.init.normal_(q_out[-1].weight.data, 0.0, 1e-2)
             nn.init.constant_(q_out[-1].bias.data, 0.0)
 
-    def forward(self, image, state_size):
-        im_feature = self.im_feature(image)
-        x = torch.cat([im_feature, state_size], dim=-1)
+    def forward(self, state, training=False):
+        # NOTE: Comment out the concatenation because we no longer take low_dim_state.
+        #       Should this still have the ability to take states with low_dim_state?
+        # im_feature = self.im_feature(image)
+        # x = torch.cat([im_feature, state_size], dim=-1)
+        x = self.im_feature(state)
         x = [e(x) for e in self.q_outs]
-        return x
+
+        if training:
+            aux_losses = {}
+            return x, aux_losses
+        else:
+            return x
 
 
 class DQNFC(nn.Module):

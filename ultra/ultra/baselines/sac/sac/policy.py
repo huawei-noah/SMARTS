@@ -112,6 +112,7 @@ class SACPolicy(Agent):
         self.memory = ReplayBuffer(
             buffer_size=int(policy_params["replay_buffer"]["buffer_size"]),
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
+            observation_type=self.observation_type,
             device_name=self.device_name,
         )
         self.current_iteration = 0
