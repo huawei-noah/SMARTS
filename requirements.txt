@@ -151,7 +151,6 @@ sklearn==0.0
 smmap==4.0.0
 sniffio==1.2.0
 soupsieve==2.2.1
-supervisor==4.2.2
 tableprint==0.9.1
 tabulate==0.8.9
 tensorboard==2.2.2
