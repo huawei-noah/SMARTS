@@ -111,8 +111,6 @@ class BaselineAgentSpec(AgentSpec):
                     "neighborhood_vehicles"
                 ] = NeighborhoodVehicles(radius=200.0)
 
-            print("requirements:", adapter_interface_requirements)
-
             spec = AgentSpec(
                 interface=AgentInterface(
                     **adapter_interface_requirements,
