@@ -242,11 +242,21 @@ def evaluate_saved_models(
     log_dir: str,
     headless: bool,
     max_episode_steps: int,
-    model_paths: Sequence[str],
+    agents: Sequence[str],
     num_episodes: int,
     scenario_info: Tuple[str, str],
     timestep: float,
+    models_to_evaluate: str,
 ):
+
+    # If no agents are explicitly given then by default all agents are
+    # enabled for evaluation
+    if not agents:
+        agents = os.listdir(os.path.join(experiment_dir, "models"))
+
+    # Model path for each agent id
+    model_paths = [os.path.join(experiment_dir, "models", agent) for agent in agents]
+
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     if not all([os.path.exists(model_path) for model_path in model_paths]):
@@ -291,6 +301,24 @@ def evaluate_saved_models(
         )
         for agent_id in agent_ids
     }
+
+    # If models are explicitly given through the CLI, then their respective checkpoint
+    # directory paths are calculated.
+    if models_to_evaluate:
+        custom_checkpoint_directories = {}
+        # Iterate through each model to be evaluated (models that do not exist will not be included)
+        for model in models_to_evaluate:
+            agent_id = model.split("/")[0]
+            if agent_id in agent_checkpoint_directories.keys():
+                for model_directory in agent_checkpoint_directories[agent_id]:
+                    if model.split("/")[-1] in model_directory.split("/")[-1]:
+                        if agent_id in custom_checkpoint_directories:
+                            custom_checkpoint_directories[agent_id].append(
+                                model_directory
+                            )
+                        else:
+                            custom_checkpoint_directories[agent_id] = [model_directory]
+        agent_checkpoint_directories = custom_checkpoint_directories
 
     # Assert each agent ID has the same number of checkpoints saved.
     directories_iterator = iter(agent_checkpoint_directories.values())
@@ -338,7 +366,7 @@ def evaluate_saved_models(
                     )
                 ]
             )[0]
-            episode.record_tensorboard()
+            episode.record_tensorboard(recording_step=1)
             episode.eval_count += 1
     finally:
         time.sleep(1)
@@ -357,9 +385,10 @@ if __name__ == "__main__":
         default="easy",
     )
     parser.add_argument(
-        "--models",
+        "--agents",
         nargs="+",
-        help="The models in the models/ directory of the experiment to evaluate",
+        default=None,
+        help="Agents to evaluate",
     )
     parser.add_argument(
         "--episodes", help="Number of training episodes", type=int, default=200
@@ -389,6 +418,12 @@ if __name__ == "__main__":
         default="logs",
         type=str,
     )
+    parser.add_argument(
+        "--models-to-evaluate",
+        nargs="+",
+        help="models to be evaluated; <agent_id>/<model>",
+        default=None,
+    )
     args = parser.parse_args()
 
     evaluate_saved_models(
@@ -396,8 +431,9 @@ if __name__ == "__main__":
         log_dir=args.log_dir,
         headless=args.headless,
         max_episode_steps=int(args.max_episode_steps),
-        model_paths=args.models,
+        agents=args.agents,
         num_episodes=int(args.episodes),
         scenario_info=(args.task, args.level),
         timestep=float(args.timestep),
+        models_to_evaluate=args.models_to_evaluate,
     )
