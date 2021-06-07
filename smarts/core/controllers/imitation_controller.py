@@ -19,10 +19,16 @@
 # THE SOFTWARE.
 import math
 import numpy as np
-from dataclasses import replace
+from dataclasses import dataclass
 
 from smarts.core.chassis import AckermannChassis, BoxChassis
-from smarts.core.utils.math import fast_quaternion_from_angle, radians_to_vec
+from smarts.core.coordinates import Pose
+from smarts.core.utils.math import (
+    fast_quaternion_from_angle,
+    min_angles_difference_signed,
+    radians_to_vec,
+    vec_to_radians,
+)
 
 
 class ImitationController:
@@ -32,43 +38,49 @@ class ImitationController:
         if isinstance(action, (int, float)):
             # special case:  setting the initial speed
             if isinstance(chassis, BoxChassis):
-                vehicle.control(vehicle.pose, action)
+                vehicle.control(vehicle.pose, action, dt)
             elif isinstance(chassis, AckermannChassis):
                 chassis.speed = action  # hack that calls control internally
             return
-
         assert isinstance(action, (list, tuple)) and len(action) == 2
-        # acceleration in m/s^2, angluar_velocity in rad/s
+
+        # acceleration is scalar in m/s^2, angular_velocity is scalar in rad/s
+        # acceleration is in the direction of the heading only.
         acceleration, angular_velocity = action
 
+        # Note: we only use angular_velocity (not angular_acceleration) to determine
+        # the new heading and position in this action space.  This sacrifices
+        # some realism/control, but helps simplify the imitation learning model.
+        target_heading = (vehicle.heading + angular_velocity * dt) % (2 * math.pi)
+
         if isinstance(chassis, BoxChassis):
-            target_speed = vehicle.speed + acceleration * dt
-            target_heading = (vehicle.heading + angular_velocity * dt) % (2 * math.pi)
-            speed_x, speed_y = radians_to_vec(target_heading)
-            new_position = [
-                vehicle.position[0] + dt * speed_x * target_speed,
-                vehicle.position[1] + dt * speed_y * target_speed,
-                vehicle.position[2],
-            ]
-            new_pose = replace(
-                vehicle.pose,
+            # Since BoxChassis does not use pybullet for force-to-motion computations (only collision detection),
+            # we have to update the position and other state here (instead of pybullet.stepSimulation()).
+            heading_vec = radians_to_vec(vehicle.heading)
+            dpos = heading_vec * vehicle.speed * dt
+            new_pose = Pose(
+                position=vehicle.position + np.append(dpos, 0.0),
                 orientation=fast_quaternion_from_angle(target_heading),
-                position=new_position,
             )
-            vehicle.control(new_pose, target_speed)
+            target_speed = vehicle.speed + acceleration * dt
+            vehicle.control(new_pose, target_speed, dt)
 
         elif isinstance(chassis, AckermannChassis):
             mass = chassis.mass_and_inertia[0]  # in kg
+            wheel_radius = chassis.wheel_radius
+            # XXX: should also take wheel inertia into account here
+            # XXX: ... or else we should apply this force directly to the main link point of the chassis.
             if acceleration >= 0:
                 # necessary torque is N*m = kg*m*acceleration
-                torque_ratio = mass / (4 * chassis.wheel_radius * chassis.max_torque)
+                torque_ratio = mass / (4 * wheel_radius * chassis.max_torque)
                 throttle = np.clip(acceleration * torque_ratio, 0, 1)
                 brake = 0
             else:
                 throttle = 0
                 # necessary torque is N*m = kg*m*acceleration
-                torque_ratio = mass / (4 * chassis.wheel_radius * chassis.max_btorque)
-                brake = np.clip(-acceleration * torque_ratio, 0, 1)
+                torque_ratio = mass / (4 * wheel_radius * chassis.max_btorque)
+                brake = np.clip(acceleration * torque_ratio, 0, 1)
+
             steering = np.clip(dt * -angular_velocity * chassis.steering_ratio, -1, 1)
             vehicle.control(throttle=throttle, brake=brake, steering=steering)
 

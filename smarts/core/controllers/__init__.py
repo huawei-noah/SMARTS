@@ -131,16 +131,12 @@ class Controllers:
 class ControllerState:
     @staticmethod
     def from_action_space(action_space, vehicle_pose, sim):
-        if action_space == ActionSpaceType.Lane:
+        if action_space in (
+            ActionSpaceType.Lane,
+            ActionSpaceType.LaneWithContinuousSpeed,
+        ):
             # TAI: we should probably be fetching these waypoint through the mission planner
-            target_lane_id = sim.waypoints.closest_waypoint(
-                vehicle_pose, filter_from_count=4
-            ).lane_id
-            return LaneFollowingControllerState(target_lane_id)
-
-        if action_space == ActionSpaceType.LaneWithContinuousSpeed:
-            # TAI: we should probably be fetching these waypoint through the mission planner
-            target_lane_id = sim.waypoints.closest_waypoint(
+            target_lane_id = sim.road_network.lanepoints.closest_lanepoint(
                 vehicle_pose, filter_from_count=4
             ).lane_id
             return LaneFollowingControllerState(target_lane_id)

@@ -64,7 +64,7 @@ cd <project>
 # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
 sumo
 
-# setup virtual environment; presently only Python 3.7.x is officially supported
+# setup virtual environment; presently at least Python 3.7 and higher is officially supported
 python3.7 -m venv .venv
 
 # enter virtual environment to install all dependencies

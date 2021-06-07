@@ -34,20 +34,20 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.coordinates import Heading
+from smarts.core.coordinates import Heading, BoundingBox
 from smarts.core.data_model import SocialAgent
 from smarts.core.route import ShortestRoute
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import vec_to_radians
-from smarts.core.waypoints import Waypoints
+from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
 
 
+# XXX: consider using smarts.core.coordinates.Pose for this
 @dataclass(frozen=True)
 class Start:
     position: Tuple[int, int]
@@ -119,9 +119,12 @@ class TraverseGoal(Goal):
         return self._road_network.drove_off_map(vehicle.position, vehicle.heading)
 
 
-def default_entry_tactic():
+def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
     return sstudio_types.TrapEntryTactic(
-        wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None
+        wait_to_hijack_limit_s=0,
+        exclusion_prefixes=tuple(),
+        zone=None,
+        default_entry_speed=default_entry_speed,
     )
 
 
@@ -136,6 +139,13 @@ class Via:
 
 
 @dataclass(frozen=True)
+class VehicleSpec:
+    veh_id: str
+    veh_type: str
+    dimensions: BoundingBox
+
+
+@dataclass(frozen=True)
 class Mission:
     start: Start
     goal: Goal
@@ -146,7 +156,8 @@ class Mission:
     entry_tactic: EntryTactic = None
     task: Tuple[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
-    vehicle_id: str = None  # if specified, use this vehicle (for histories)
+    # if specified, will use vehicle_spec to build the vehicle (for histories)
+    vehicle_spec: VehicleSpec = None
 
     @property
     def has_fixed_route(self):
@@ -223,10 +234,9 @@ class Scenario:
 
         net_file = os.path.join(self._root, "map.net.xml")
         self._road_network = SumoRoadNetwork.from_file(
-            net_file, default_lane_width=default_lane_width
+            net_file, default_lane_width=default_lane_width, lanepoint_spacing=1.0
         )
         self._net_file_hash = file_md5_hash(self._road_network.net_file)
-        self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
 
     def __repr__(self):
@@ -550,17 +560,28 @@ class Scenario:
         map_offset = self._road_network.net_offset
         for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])
-            pph = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
-            assert pph
-            pos_x, pos_y, heading = pph
+            pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
+            assert pphs
+            pos_x, pos_y, heading, speed = pphs
+            entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
+            veh_type = self._traffic_history.vehicle_type(v_id)
+            veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(v_id)
+            # missions start from front bumper, but pos is center of vehicle
+            hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
             vehicle_missions[v_id] = Mission(
                 start=Start(
-                    (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
+                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
+                    Heading(heading),
                 ),
+                entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_network),
                 start_time=start_time,
-                vehicle_id=v_id,
+                vehicle_spec=VehicleSpec(
+                    veh_id=v_id,
+                    veh_type=veh_type,
+                    dimensions=BoundingBox(veh_length, veh_width, veh_height),
+                ),
             )
         return vehicle_missions
 
@@ -794,10 +815,6 @@ class Scenario:
 
     def unique_sumo_log_file(self):
         return os.path.join(self._log_dir, f"sumo-{str(uuid.uuid4())[:8]}")
-
-    @property
-    def waypoints(self):
-        return self._waypoints
 
     @property
     def road_network(self):
