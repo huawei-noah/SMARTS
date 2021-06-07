@@ -28,6 +28,7 @@ from cli.ultra import ultra_cli
 from cli.zoo import zoo_cli
 from cli.run import run_experiment
 
+
 @click.group()
 def scl():
     pass
