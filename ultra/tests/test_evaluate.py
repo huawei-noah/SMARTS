@@ -198,7 +198,7 @@ class EvaluateTest(unittest.TestCase):
         )[0]
         evaluate_command = (
             f"python ultra/evaluate.py "
-            f"--task 00-multiagent --level eval_test --experiment-dir {experiment_dir} "
+            f"--task 00-multiagent --level eval_test --agents 000 --experiment-dir {experiment_dir} "
             f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
 

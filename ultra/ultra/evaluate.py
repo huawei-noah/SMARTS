@@ -311,7 +311,7 @@ def evaluate_saved_models(
             agent_id = model.split("/")[0]
             if agent_id in agent_checkpoint_directories.keys():
                 for model_directory in agent_checkpoint_directories[agent_id]:
-                    if model.split("/")[-1] in model_directory.split("/")[-1]:
+                    if model.split("/")[-1] == model_directory.split("/")[-1]:
                         if agent_id in custom_checkpoint_directories:
                             custom_checkpoint_directories[agent_id].append(
                                 model_directory
@@ -387,8 +387,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--agents",
         nargs="+",
-        default=None,
         help="Agents to evaluate",
+        default=None,
     )
     parser.add_argument(
         "--episodes", help="Number of training episodes", type=int, default=200
