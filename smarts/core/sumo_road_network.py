@@ -288,12 +288,11 @@ class SumoRoadNetwork:
                     max(10, 2 * self._default_lane_width),
                     include_junctions=False,
                 ):
-                    if nl:
-                        nl_shape = lane_to_poly.get(nl.getID())
-                        if nl_shape:
-                            lane_shape = Polygon(
-                                snap(lane_shape, nl_shape, snap_threshold)
-                            )
+                    if not nl:
+                        continue
+                    nl_shape = lane_to_poly.get(nl.getID())
+                    if nl_shape:
+                        lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
             lane_to_poly[lane_id] = lane_shape
 
     def _snap_external_holes(self, lane_to_poly, snap_threshold=2):
@@ -321,7 +320,7 @@ class SumoRoadNetwork:
                     max(10, 2 * self._default_lane_width),
                     include_junctions=False,
                 ):
-                    if nl and nl.getEdge().isSpecial():
+                    if (not nl) or (nl and nl.getEdge().isSpecial()):
                         continue
                     nl_shape = lane_to_poly.get(nl.getID())
                     if nl_shape:
