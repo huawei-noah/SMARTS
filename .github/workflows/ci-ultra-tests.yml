@@ -48,9 +48,6 @@ jobs:
           --ignore=./tests/test_evaluate.py
           pytest -v \
           ./tests/test_train.py \
-          --forked \
-          --durations=0
-          pytest -v \
           ./tests/test_evaluate.py \
           --forked \
           --durations=0
