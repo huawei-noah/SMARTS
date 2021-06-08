@@ -22,6 +22,7 @@ import time
 import sys
 import signal
 import subprocess
+import webbrowser
 from contextlib import contextmanager
 
 import click
@@ -60,6 +61,7 @@ def run_experiment(envision, script_path, script_args):
             )
             # Just in case: give Envision a bit of time to warm up
             time.sleep(2)
+            webbrowser.open_new_tab("http://localhost:8081")
 
         script = subprocess.Popen(
             [sys.executable, script_path, *script_args],
