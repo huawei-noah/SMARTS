@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
 - Added a `TraverseGoal` goal for imitation learning agents.  See Issue #848.
 - Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828 
+- Added a `FrameStack` wrapper which returns stacked observations for each agent.
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space. See Issue #844.
 - Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266. 
