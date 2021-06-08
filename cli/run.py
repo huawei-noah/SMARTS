@@ -37,7 +37,11 @@ def kill_process_group_afterwards():
         os.killpg(0, signal.SIGKILL)
 
 
-@click.command(name="run", help="Run an experiment on a scenario", context_settings=dict(ignore_unknown_options=True))
+@click.command(
+    name="run",
+    help="Run an experiment on a scenario",
+    context_settings=dict(ignore_unknown_options=True),
+)
 @click.option(
     "--envision",
     is_flag=True,
