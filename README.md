@@ -58,7 +58,7 @@ for _ in range(1000):
 cd <project>
 
 # Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
-./install_deps.sh
+./utils/setup/install_deps.sh
 
 # verify sumo is >= 1.5.0
 # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
@@ -103,7 +103,7 @@ See [./envision/README.md](./envision/README.md) for more information on Envisio
 Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Here's how you can use one of the example scripts with a scenario.
 
 ```bash
-# Update the command=... in ./supervisord.conf
+# Update the command=... in ./examples/supervisord.conf
 #
 # [program:smarts]
 # command=python examples/single_agent.py scenarios/loop
@@ -263,11 +263,11 @@ $ python examples/single_agent.py scenarios/loop
 
 ```bash
 # For this to work, your account needs to be added to the huaweinoah org
-docker login
-
-export VERSION=v0.4.3-pre
-docker build --no-cache -t smarts:$VERSION .
+$ cd /path/to/SMARTS
+export VERSION=v0.4.16
+docker build --no-cache -f ./etc/docker/Dockerfile -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
+docker login
 docker push huaweinoah/smarts:$VERSION
 ```
 

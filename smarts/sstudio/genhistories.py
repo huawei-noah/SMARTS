@@ -193,6 +193,7 @@ class Interaction(_TrajectoryDataset):
     def __init__(self, dataset_spec, output):
         super().__init__(dataset_spec, output)
         assert not self._flip_y
+        self._next_row = None
         # See: https://interaction-dataset.com/details-and-format
         # position and length/width are in meters.
         # Note: track_id will be like "P12" for pedestrian tracks.  (TODO)
@@ -207,8 +208,13 @@ class Interaction(_TrajectoryDataset):
     def rows(self):
         with open(self._path, newline="") as csvfile:
             reader = csv.DictReader(csvfile)
-            for row in reader:
-                yield row
+            last_row = None
+            for self._next_row in reader:
+                if last_row:
+                    yield last_row
+                last_row = self._next_row
+            self._next_row = None
+            yield last_row
 
     @staticmethod
     def _lookup_agent_type(agent_type):
@@ -235,8 +241,21 @@ class Interaction(_TrajectoryDataset):
         if col_name == "type":
             return Interaction._lookup_agent_type(row["agent_type"])
         if col_name == "speed":
-            return np.linalg.norm([float(row["vx"]), float(row["vy"])])
+            if self._next_row:
+                # XXX: could try to divide by sim_time delta here instead of assuming .1s
+                dx = (float(self._next_row["x"]) - float(row["x"])) / 0.1
+                dy = (float(self._next_row["y"]) - float(row["y"])) / 0.1
+            else:
+                dx, dy = float(row["vx"]), float(row["vy"])
+            return np.linalg.norm((dx, dy))
         if col_name == "heading_rad":
+            if self._next_row:
+                dx = float(self._next_row["x"]) - float(row["x"])
+                dy = float(self._next_row["y"]) - float(row["y"])
+                dm = np.linalg.norm((dx, dy))
+                if dm > 0.0:
+                    r = math.atan2(dy / dm, dx / dm)
+                    return (r - math.pi / 2) % (2 * math.pi)
             # Note: pedestrian track files won't have this
             return float(row.get("psi_rad", 0.0)) - math.pi / 2
         # XXX: should probably check for and handle x_offset_px here too like in NGSIM
@@ -249,31 +268,19 @@ class NGSIM(_TrajectoryDataset):
         self._prev_heading = -math.pi / 2
 
     def _cal_heading(self, window):
-        p = window[0, :2]
         c = window[1, :2]
         n = window[2, :2]
-        badc = any(np.isnan(c))
-        d1 = np.linalg.norm(c - p)
-        d2 = np.linalg.norm(n - c)
-        # .22 is a magic number corresponding to roughly 5mph.
-        # If the car is going very slowly, heading results
-        # get a bit wacky due to precision problems.
-        no_v1 = any(np.isnan(p)) or badc or d1 < 0.22
-        no_v2 = any(np.isnan(n)) or badc or d2 < 0.22
-        if no_v1 and no_v2:
+        if any(np.isnan(c)) or any(np.isnan(n)):
             return self._prev_heading
-        elif no_v1:
-            avg = (n - c) / d2
-        elif no_v2:
-            avg = (c - p) / d1
-        else:
-            avg = ((n - c) / d2) + ((c - p) / d1)
-        r = math.atan2(avg[1], avg[0])
+        s = np.linalg.norm(n - c)
+        if s > 0.0:
+            return self._prev_heading
+        vhat = (n - c) / s
+        r = math.atan2(vhat[1], vhat[0])
         self._prev_heading = (r - math.pi / 2) % (2 * math.pi)
         return self._prev_heading
 
     def _cal_speed(self, window):
-        p = window[0, :2]
         c = window[1, :2]
         n = window[2, :2]
         badc = any(np.isnan(c))
