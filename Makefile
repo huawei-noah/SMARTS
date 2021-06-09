@@ -16,40 +16,6 @@ test: build-all-scenarios
 	rm -f .coverage.*
 	rm -f .coverage*
 
-.PHONY: testzombie
-testzombie: build-all-scenarios
-	# sstudio uses hash(...) as part of some of its type IDs. To make the tests
-	# repeatable we fix the seed.
-	PYTHONHASHSEED=42 pytest -v \
-		--cov=smarts \
-		--doctest-modules \
-		--forked \
-		--dist=loadscope \
-		-n `nproc --ignore 2` \
-		./smarts/env  \
-		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
-		--ignore=./smarts/env/tests/test_benchmark.py \
-		--ignore=./smarts/env/tests/test_learning.py \
-		-k 'not test_long_determinism'
-	rm -f .coverage.*
-	rm -f .coverage*
-
-# ./envision - cleared
-# ./smarts/contrib - cleared
-# ./smarts/core - suspect
-# ./smarts/env - suspect
-  # ./smarts/env/test_benchmark.py - ALREADY IGNORED
-  # ./smarts/env/test_determinism.py
-  # ./smarts/env/test_highway_env.py
-  # ./smarts/env/test_learning.py - RAY - ALREADY IGNORED
-  # ./smarts/env/test_rllib_hiway_env.py - RAY
-  # ./smarts/env/test_shutdown.py
-  # ./smarts/env/test_social_agent.py
-# ./smarts/sstudio - cleared
-# ./tests - cleared
-
-
-
 .PHONY: sanity-test
 sanity-test: build-all-scenarios
 	./tests/test_setup.py
