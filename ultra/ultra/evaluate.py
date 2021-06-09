@@ -74,7 +74,7 @@ def evaluation_check(
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
         checkpoint_directory = episode.checkpoint_dir(
-            agent_id, episode.get_itr(agent_id)
+            agent_id, episode.index
         )
         agents[agent_id].save(checkpoint_directory)
 
@@ -138,7 +138,9 @@ def collect_evaluations(evaluation_task_ids: dict):
             episode.eval_train_mode()
 
         episode.info[episode.active_tag] = ray.get(ready_evaluation_task_id)
-        episode.record_tensorboard(recording_step=agent_iteration)
+        episode.record_tensorboard(
+            recording_step=episode.index
+        )  # Record evaluation episodically
         episode.train_mode()
 
     return len(evaluation_task_ids) > 0
@@ -338,7 +340,7 @@ def evaluate_saved_models(
                     )
                 ]
             )[0]
-            episode.record_tensorboard()
+            episode.record_tensorboard(recording_step=1)
             episode.eval_count += 1
     finally:
         time.sleep(1)
