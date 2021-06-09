@@ -28,7 +28,7 @@ from smarts.core import sensors
 
 
 class FrameStack(gym.Wrapper):
-    """ Stacks num_stack (default=3) consecutive frames, in a moving window fashion, and returns it as an agent's observation.
+    """Stacks num_stack (default=3) consecutive frames, in a moving window fashion, and returns it as an agent's observation.
 
     Note:
         Wrapper returns a deepcopy of the stacked observations, which may be expensive for large observations and large num_stack values.
