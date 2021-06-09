@@ -28,14 +28,18 @@ from smarts.core import sensors
 
 
 class FrameStack(gym.Wrapper):
-    """ By default, this wrapper will stack 3 consecutive frames as an agent observation"""
+    """ Stacks num_stack (default=3) consecutive frames, in a moving window fashion, and returns it as an agent's observation.
+
+    Note:
+        Wrapper returns a deepcopy of the stacked observations, which may be expensive for large observations and large num_stack values.
+    """
 
     def __init__(self, env: gym.Env, num_stack: int = 3):
         assert num_stack > 1, f"Expected num_stack > 1, but got {num_stack}."
         super(FrameStack, self).__init__(env)
-        self.num_stack = num_stack
-        self.frames = {
-            key: deque(maxlen=self.num_stack) for key in self.env.agent_specs.keys()
+        self._num_stack = num_stack
+        self._frames = {
+            key: deque(maxlen=self._num_stack) for key in self.env.agent_specs.keys()
         }
 
     def _get_observations(
@@ -46,8 +50,8 @@ class FrameStack(gym.Wrapper):
         new_frames = dict.fromkeys(frame)
 
         for agent_id, observation in frame.items():
-            self.frames[agent_id].append(observation)
-            frames_list = list(self.frames[agent_id])
+            self._frames[agent_id].append(observation)
+            frames_list = list(self._frames[agent_id])
             new_frames[agent_id] = copy.deepcopy(frames_list)
 
         return new_frames
@@ -71,7 +75,7 @@ class FrameStack(gym.Wrapper):
         env_observations = super(FrameStack, self).reset()
         for agent_id, observation in env_observations.items():
             [
-                self.frames[agent_id].append(observation)
-                for _ in range(self.num_stack - 1)
+                self._frames[agent_id].append(observation)
+                for _ in range(self._num_stack - 1)
             ]
         return self._get_observations(env_observations)
