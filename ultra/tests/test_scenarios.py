@@ -125,6 +125,106 @@ class ScenariosTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
+    def test_interface_generate_with_shuffled_missions(self):
+        TASK = "00-multiagent"
+        LEVEL = "shuffle_test"
+        ROOT_DIR = "tests/scenarios"
+        SAVE_DIR = os.path.join(
+            ScenariosTest.OUTPUT_DIRECTORY, "maps/shuffle_test-with-shuffle/"
+        )
+
+        if os.path.exists(SAVE_DIR):
+            shutil.rmtree(SAVE_DIR)
+
+        generate_command = (
+            "python ultra/scenarios/interface.py generate "
+            f"--task {TASK} "
+            f"--level {LEVEL} "
+            f"--root-dir {ROOT_DIR} "
+            f"--save-dir {SAVE_DIR}"
+        )
+
+        # Test generation without the --no-shuffle flag.
+        try:
+            os.system(generate_command)
+        except Exception as error:
+            print(error)
+            self.assertTrue(False)
+
+        first_missions = None
+        num_scenario_missions_that_differ = 0
+
+        for dirpath, _, files in os.walk(SAVE_DIR):
+            if "missions.pkl" in files and "train" in dirpath:
+                with open(os.path.join(dirpath, "missions.pkl"), "rb") as missions_file:
+                    missions = pickle.load(missions_file)
+                if not first_missions:
+                    first_missions = missions
+                # Check to see if this current scenario's missions are in a different
+                # order as the first scenario's missions. That is, that either the start
+                # or end lanes are different.
+                self.assertTrue(len(missions) == len(first_missions))
+                for mission, first_mission in zip(missions, first_missions):
+                    if (
+                        mission.mission.route.begin[0]
+                        != first_mission.mission.route.begin[0]
+                        or mission.mission.route.end[0]
+                        != first_mission.mission.route.end[0]
+                    ):
+                        num_scenario_missions_that_differ += 1
+
+        # Ensure that at least one scenario's mission order differs from the first
+        # scenario's mission order.
+        self.assertTrue(num_scenario_missions_that_differ > 0)
+
+    def test_interface_generate_without_shuffled_missions(self):
+        TASK = "00-multiagent"
+        LEVEL = "shuffle_test"
+        ROOT_DIR = "tests/scenarios"
+        SAVE_DIR = os.path.join(
+            ScenariosTest.OUTPUT_DIRECTORY, "maps/shuffle_test-without-shuffle/"
+        )
+
+        if os.path.exists(SAVE_DIR):
+            shutil.rmtree(SAVE_DIR)
+
+        generate_command = (
+            "python ultra/scenarios/interface.py generate "
+            "--no-mission-shuffle "
+            f"--task {TASK} "
+            f"--level {LEVEL} "
+            f"--root-dir {ROOT_DIR} "
+            f"--save-dir {SAVE_DIR}"
+        )
+
+        # Test generation with the --no-shuffle flag.
+        try:
+            os.system(generate_command)
+        except Exception as error:
+            print(error)
+            self.assertTrue(False)
+
+        first_missions = None
+
+        for dirpath, _, files in os.walk(SAVE_DIR):
+            if "missions.pkl" in files and "train" in dirpath:
+                with open(os.path.join(dirpath, "missions.pkl"), "rb") as missions_file:
+                    missions = pickle.load(missions_file)
+                if not first_missions:
+                    first_missions = missions
+                # Ensure that this current scenario's missions are in the same order as
+                # the first scenario's missions. That is, that their start and end lanes
+                # are the same.
+                self.assertTrue(len(missions) == len(first_missions))
+                for mission, first_mission in zip(missions, first_missions):
+                    self.assertEqual(
+                        mission.mission.route.begin[0],
+                        first_mission.mission.route.begin[0],
+                    )
+                    self.assertEqual(
+                        mission.mission.route.end[0], first_mission.mission.route.end[0]
+                    )
+
     def test_generate_scenarios_with_offset(self):
         save_dir = os.path.join(ScenariosTest.OUTPUT_DIRECTORY, "maps/offset_test/")
         if os.path.exists(save_dir):
