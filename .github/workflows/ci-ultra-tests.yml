@@ -35,6 +35,7 @@ jobs:
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           ./tests/ \
+          --durations=0 \
           --ignore=./tests/test_ultra_package.py \
           --ignore=./tests/test_adapter.py \
           --ignore=./tests/test_env.py \
@@ -43,6 +44,16 @@ jobs:
           --ignore=./tests/test_social_vehicles.py \
           --ignore=./tests/test_rllib_train.py \
           --ignore=./tests/test_tune.py \
+          --ignore=./tests/test_train.py \
+          --ignore=./tests/test_evaluate.py
+          pytest -v \
+          ./tests/test_train.py \
+          --forked \
+          --durations=0
+          pytest -v \
+          ./tests/test_evaluate.py \
+          --forked \
+          --durations=0
 
   test-light-base-tests:
     runs-on: ubuntu-18.04

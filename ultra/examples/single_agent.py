@@ -67,9 +67,7 @@ def run(args):
 
         agent_class = {AGENT_ID: policy_class}
         agent_specs = {AGENT_ID: agent_specs}
-        save_agent_metadata(
-            episode.experiment_dir, AGENT_ID, agent_class, agent_specs
-        )
+        save_agent_metadata(episode.experiment_dir, AGENT_ID, agent_class, agent_specs)
 
         while not dones["__all__"]:
             actions = {AGENT_ID: agent.act(observations[AGENT_ID])}
