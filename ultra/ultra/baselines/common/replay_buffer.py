@@ -175,7 +175,7 @@ class DefaultImageReplayBufferDataset(ReplayBufferDataset):
 
         # Dereference the states.
         state = copy.deepcopy(state)
-        next_state = copy.deepcopy(state)
+        next_state = copy.deepcopy(next_state)
 
         state = torch.from_numpy(state).to(self._device)
         next_state = torch.from_numpy(next_state).to(self._device)
