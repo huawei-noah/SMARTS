@@ -76,5 +76,45 @@ def manager(port):
     zoo_manager.serve(port)
 
 
+@zoo_cli.command(
+    name="install",
+    help="Attempt to install the specified agents from the given paths/url",
+)
+@click.argument(
+    "agent_paths",
+    type=click.Path(exists=True),
+    metavar="<script>",
+    nargs=-1,
+    required=True,
+)
+def install_agents(agent_paths):
+    if not agent_paths:
+        # nargs=-1 in combination with a default value is not supported
+        # if agent_paths is not given, set the known two zoo agent paths as default
+        agent_paths = ["zoo/policies/open-agent", "zoo/policies/rl-agent"]
+
+    for agent_path in agent_paths:
+        pip_install_cmd = [
+            "pip",
+            "install",
+            ".",
+        ]
+
+        goal_dir = os.path.join(os.getcwd(), agent_path)
+        proc = subprocess.Popen(
+            pip_install_cmd,
+            stderr=subprocess.PIPE,
+            cwd=goal_dir,
+        )
+        proc.wait()
+        proc.communicate()
+
+        if proc.returncode != 0:
+            click.echo(f"{agent_path} already installed")
+        else:
+            click.echo(f"Installed {agent_path}")
+
+
 zoo_cli.add_command(build_policy)
 zoo_cli.add_command(manager)
+zoo_cli.add_command(install_agents)
