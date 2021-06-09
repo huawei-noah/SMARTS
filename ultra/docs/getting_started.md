@@ -78,20 +78,26 @@ After training your agent, your models should be saved under `logs/<timestamped_
 - Re-run the evaluation with `ultra/evaluation.py`. Available arguments include:
   - `--task`: The task number to run (default is 1).
   - `--level`: The level of the task (default is easy).
-  - `--models`: The path to the saved model (default is models/).
+  - `--agents`: The ids of agents that you wish to evaluate (default is None; all agents are subject to evaluation).
   - `--episodes`: The number of evaluation episodes (default is 200).
   - `--max-episode-steps`: The option to limit the number of steps per epsiodes (default is 200).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
   - `--headless`: Provide this flag to run evaluation without Envision.
   - `--experiment-dir`: The path to the spec file that includes adapters and policy parameters.
   - `--log-dir`: The log directory location (default is logs/).
+  - `--models-to-evaluate`: Provide this flag if you wish to evaluate agent(s) at desired checkpoint(s)
 
   For example, let's re-run our DQN's evaluation with the following command:
   ```sh
-  $ python ultra/evaluate.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/ --experiment-dir logs/<timestamed_experiment_name>/ --episodes 5
+  $ python ultra/evaluate.py --task 1 --level easy --agents <agent_ids> --experiment-dir logs/<timestamed_experiment_name>/ --episodes 5
   ```
   > This will produce another experiment directory under `logs/` containing the results of the evaluation.
 
+  The `--models-to-evaluate` flag will provide you the functionality to evaluate agent(s) at specific checkpoint(s). The `--models-to-evaluate` flag takes a list of arguments in this format: <agent_id>/<model>. For example, if we want to evaluate an agent with id="000" at checkpoints 0, 33, 87, 120 (these values represent the steps at which the checkpoint was saved) we can run the following command:
+  ```sh
+  $ python ultra/evaluate.py --task 1 --level easy --agents 000 --experiment-dir logs/<timestamed_experiment_name>/ --episodes 5 --models-to-evaluate 000/0 000/33 000/87 000/120
+  ```
+  
 ## View Tensorboard Results
 
 To view the Tensorboard results of this experiment, run the command below:
