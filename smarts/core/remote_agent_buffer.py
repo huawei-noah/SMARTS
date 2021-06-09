@@ -27,7 +27,7 @@ import subprocess
 import sys
 import time
 from concurrent import futures
-from typing import List, Tuple
+import signal
 
 import grpc
 
@@ -92,6 +92,16 @@ class RemoteAgentBuffer:
         self._agent_buffer = [
             self._remote_agent_future() for _ in range(self._buffer_size)
         ]
+
+        # Catch abrupt terminate signals
+        signal.signal(signal.SIGTERM, self._stop_servers)
+
+    def _stop_servers(self, *args):
+        self.destroy()
+        self._log.debug(
+            f"Shutting down zoo manager and zoo workers gracefully due to abrupt process stop."
+        )
+        sys.exit(0)
 
     def destroy(self):
         # Teardown any remaining remote agents.
