@@ -73,9 +73,7 @@ def evaluation_check(
 
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
-        checkpoint_directory = episode.checkpoint_dir(
-            agent_id, episode.index
-        )
+        checkpoint_directory = episode.checkpoint_dir(agent_id, episode.index)
         agents[agent_id].save(checkpoint_directory)
 
         evaluation_train_task_id = evaluate.remote(
