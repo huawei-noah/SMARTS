@@ -29,6 +29,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed bugs in `AccelerometerSensor`.  See PR #878.
 - Ensure that `yaw_rate` is always a scalar in `EgoVehicleObservation`.
 - Fixed an args count error caused by `websocket.on_close()` sending a variable number of args.
+- Caught abrupt terminate signals, in order to shutdown zoo manager and zoo workers gracefully.
 ## Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 
