@@ -73,10 +73,11 @@ shape `(1, 64, 64)`. Each element of the array is normalized to be in the range
 This adapter receives an observation from the environment that contains a
 `smarts.core.sensors.TopDownRGB` instance in the observation. The `data` attribute of
 this class is a NumPy array of type `uint8` and shape `(64, 64, 3)`. The adapter
-converts this array to gray-scale by dotting it with `(0.2125, 0.7154, 0.0721)`,
-resulting in the value of each gray-scale pixel to be a linear combination of the red
-(R), green (G), and blue (B) components of that pixel:
-`0.2125 * R + 0.7154 * G + 0.0721 * B`. The gray-scale image is then normalized by
+converts this array to gray-scale by dotting it with `(0.1, 0.8, 0.1)`, resulting in the
+value of each gray-scale pixel to be a linear combination of the red (R), green (G), and
+blue (B) components of that pixel: `0.1 * R + 0.8 * G + 0.1 * B`. This gray-scale
+weighting was chosen to accentuate the differences in gray values between the ego
+vehicle, social vehicles, and the road. The gray-scale image is then normalized by
 dividing the array by `255.0`, and its 0th dimension is 'unsqueezed' to produce a
 3-dimensional array. The output is a NumPy array of type `float32` and with shape
 `(1, 64, 64)`. The behaviour of this adapter is fully defined in this module's `adapt`

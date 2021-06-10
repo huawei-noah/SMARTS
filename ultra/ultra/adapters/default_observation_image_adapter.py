@@ -52,11 +52,11 @@ def adapt(observation: Observation) -> np.ndarray:
     Returns:
         np.ndarray: A numpy.ndarray of size (1, _HEIGHT, _WIDTH) that is the gray-scale
             image of the top-down RGB image. The gray-scale value for each pixel is
-            calculated as 0.2125 * R + 0.7154 * G + 0.0721 * B, and each value is
-            normalized to be between 0 and 1 inclusive with type float32.
+            calculated as 0.1 * R + 0.8 * G + 0.1 * B, and each value is normalized to
+            be between 0 and 1 inclusive with type float32.
     """
     rgb_image = observation.top_down_rgb.data
-    gray_image = np.dot(rgb_image, (0.2125, 0.7154, 0.0721))
+    gray_image = np.dot(rgb_image, (0.1, 0.8, 0.1))
     gray_image = np.divide(gray_image, 255.0)
     gray_image = np.expand_dims(gray_image, axis=0)
     return gray_image.astype(np.float32)
