@@ -45,24 +45,27 @@ def kill_process_group_afterwards():
 )
 @click.option(
     "--envision",
-    required=True,
-    type=int,
-    default=8081,
+    is_flag=True,
+    default=False,
     help="Start up Envision server at the specified port when running an experiment",
+)
+@click.option(
+    "-p", "--port", type=int, help="Port on which Envision will run.", default=8081
 )
 @click.argument(
     "script_path", type=click.Path(exists=True), metavar="<script>", required=True
 )
 @click.argument("script_args", nargs=-1, type=click.UNPROCESSED)
-def run_experiment(envision, script_path, script_args):
+def run_experiment(envision, port, script_path, script_args):
     with kill_process_group_afterwards():
+        print(envision)
         if envision:
             subprocess.Popen(
-                ["scl", "envision", "start", "-s", "./scenarios", "-p", str(envision)],
+                ["scl", "envision", "start", "-s", "./scenarios", "-p", str(port)],
             )
             # Just in case: give Envision a bit of time to warm up
             time.sleep(2)
-            url = "http://localhost:" + str(envision)
+            url = "http://localhost:" + str(port)
             webbrowser.open_new_tab(url)
 
         script = subprocess.Popen(
