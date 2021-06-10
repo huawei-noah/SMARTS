@@ -101,7 +101,8 @@ def install_agents(agent_paths):
 
     def clean(exec_dir):
         subprocess.check_call(
-            [sys.executable, "setup.py", "clean", "--all"], cwd=exec_dir,
+            [sys.executable, "setup.py", "clean", "--all"],
+            cwd=exec_dir,
         )
 
     for agent_path in agent_paths:
