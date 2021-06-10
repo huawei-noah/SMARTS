@@ -110,11 +110,10 @@ def install_agents(agent_paths):
         stdout, std_err = proc.communicate()
 
         if proc.returncode != 0:
-            err_msg = "%s. Code: %s" % (std_err.strip(), proc.returncode)
-            click.echo(err_msg)
             click.echo(
                 f"{agent_path} may be already installed. Check Error output for more details!"
             )
+            click.echo(std_err)
         else:
             click.echo(f"Installed {agent_path} successfully")
 
