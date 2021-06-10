@@ -103,11 +103,11 @@ sumo-gui: $(scenario)/map.net.xml
 
 .PHONY: header-test
 header-test:
-	bash ./header_test.sh
+	bash ./bin/header_test.sh
 
 .PHONY: gen-header
 gen-header:
-	bash ./gen_header.sh
+	bash ./bin/gen_header.sh
 
 .PHONY: clean
 clean:

@@ -58,7 +58,7 @@ for _ in range(1000):
 cd <project>
 
 # Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
-./install_deps.sh
+./utils/setup/install_deps.sh
 
 # verify sumo is >= 1.5.0
 # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
