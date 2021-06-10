@@ -93,13 +93,13 @@ def install_agents(agent_paths):
         # if agent_paths is not given, set the known two zoo agent paths as default
         agent_paths = ["zoo/policies/open-agent", "zoo/policies/rl-agent"]
 
-    for agent_path in agent_paths:
-        pip_install_cmd = [
-            "pip",
-            "install",
-            ".",
-        ]
+    pip_install_cmd = [
+        "pip",
+        "install",
+        ".",
+    ]
 
+    for agent_path in agent_paths:
         goal_dir = os.path.join(os.getcwd(), agent_path)
         proc = subprocess.Popen(
             pip_install_cmd,
@@ -107,12 +107,16 @@ def install_agents(agent_paths):
             cwd=goal_dir,
         )
         proc.wait()
-        proc.communicate()
+        stdout, std_err = proc.communicate()
 
         if proc.returncode != 0:
-            click.echo(f"{agent_path} already installed")
+            err_msg = "%s. Code: %s" % (std_err.strip(), proc.returncode)
+            click.echo(err_msg)
+            click.echo(
+                f"{agent_path} may be already installed. Check Error output for more details!"
+            )
         else:
-            click.echo(f"Installed {agent_path}")
+            click.echo(f"Installed {agent_path} successfully")
 
 
 zoo_cli.add_command(build_policy)
