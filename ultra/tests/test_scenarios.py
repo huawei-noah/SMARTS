@@ -155,14 +155,16 @@ class ScenariosTest(unittest.TestCase):
         num_scenario_missions_that_differ = 0
 
         for dirpath, _, files in os.walk(SAVE_DIR):
+            # Testing scenarios only contain one mission, therefore there is no need to
+            # test if they are shuffled. Only test the training scenarios.
             if "missions.pkl" in files and "train" in dirpath:
                 with open(os.path.join(dirpath, "missions.pkl"), "rb") as missions_file:
                     missions = pickle.load(missions_file)
                 if not first_missions:
                     first_missions = missions
                 # Check to see if this current scenario's missions are in a different
-                # order as the first scenario's missions. That is, that either the start
-                # or end lanes are different.
+                # order as the first scenario's missions. Check equality of missions by
+                # checking that their start and end lanes are the same.
                 self.assertTrue(len(missions) == len(first_missions))
                 for mission, first_mission in zip(missions, first_missions):
                     if (
@@ -207,14 +209,16 @@ class ScenariosTest(unittest.TestCase):
         first_missions = None
 
         for dirpath, _, files in os.walk(SAVE_DIR):
+            # Testing scenarios only contain one mission, therefore there is no need to
+            # test if they are shuffled. Only test the training scenarios.
             if "missions.pkl" in files and "train" in dirpath:
                 with open(os.path.join(dirpath, "missions.pkl"), "rb") as missions_file:
                     missions = pickle.load(missions_file)
                 if not first_missions:
                     first_missions = missions
                 # Ensure that this current scenario's missions are in the same order as
-                # the first scenario's missions. That is, that their start and end lanes
-                # are the same.
+                # the first scenario's missions. Check equality of missions by checking
+                # that their start and end lanes are the same.
                 self.assertTrue(len(missions) == len(first_missions))
                 for mission, first_mission in zip(missions, first_missions):
                     self.assertEqual(
