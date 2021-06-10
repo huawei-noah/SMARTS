@@ -58,7 +58,6 @@ def kill_process_group_afterwards():
 @click.argument("script_args", nargs=-1, type=click.UNPROCESSED)
 def run_experiment(envision, port, script_path, script_args):
     with kill_process_group_afterwards():
-        print(envision)
         if envision:
             subprocess.Popen(
                 ["scl", "envision", "start", "-s", "./scenarios", "-p", str(port)],
