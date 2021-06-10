@@ -109,7 +109,6 @@ scl run --envision <examples/script_path> <scenarios/path>
 
 Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
 
-Toy
 ## Documentation
 
 Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest)
