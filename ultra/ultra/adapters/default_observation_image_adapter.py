@@ -33,7 +33,7 @@ _RESOLUTION = 50 / 64
 
 # The space of the adapted observation.
 gym_space: gym.Space = gym.spaces.Box(
-    low=0.0, high=1.0, shape=(_HEIGHT, _WIDTH), dtype=np.float32
+    low=0.0, high=1.0, shape=(1, _HEIGHT, _WIDTH), dtype=np.float32
 )
 # This adapter requires SMARTS to pass the top-down RGB image in the agent's
 # observation.
@@ -43,18 +43,20 @@ required_interface = {"rgb": RGB(width=_WIDTH, height=_HEIGHT, resolution=_RESOL
 def adapt(observation: Observation) -> np.ndarray:
     """Adapts a raw environment observation into a numpy.ndarray.
 
-    The raw observation from the environment must include the top down RGB image. See
+    The raw observation from the environment must include the top-down RGB image. See
     smarts.core.sensors for more information on the Observation type.
 
     Args:
         observation (Observation): The raw environment observation received from SMARTS.
 
     Returns:
-        np.ndarray: A numpy.ndarray of size (64, 64) that is the gray-scale image of the
-            top down RGB image. The gray-scale value for each pixel is calculated as
-            0.2125 * r + 0.7154 * g + 0.0721 * b.
+        np.ndarray: A numpy.ndarray of size (1, _HEIGHT, _WIDTH) that is the gray-scale
+            image of the top-down RGB image. The gray-scale value for each pixel is
+            calculated as 0.1 * R + 0.8 * G + 0.1 * B, and each value is normalized to
+            be between 0 and 1 inclusive with type float32.
     """
     rgb_image = observation.top_down_rgb.data
-    gray_image = np.dot(rgb_image, (0.2125, 0.7154, 0.0721))
-    normalized_gray_image = np.divide(gray_image, 255.0)
-    return normalized_gray_image.astype(np.float32)
+    gray_image = np.dot(rgb_image, (0.1, 0.8, 0.1))
+    gray_image = np.divide(gray_image, 255.0)
+    gray_image = np.expand_dims(gray_image, axis=0)
+    return gray_image.astype(np.float32)
