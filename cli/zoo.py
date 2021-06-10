@@ -99,8 +99,14 @@ def install_agents(agent_paths):
         ".",
     ]
 
+    def clean(exec_dir):
+        subprocess.check_call(
+            [sys.executable, "setup.py", "clean", "--all"], cwd=exec_dir,
+        )
+
     for agent_path in agent_paths:
         goal_dir = os.path.join(os.getcwd(), agent_path)
+        clean(goal_dir)
         proc = subprocess.Popen(
             pip_install_cmd,
             stderr=subprocess.PIPE,
