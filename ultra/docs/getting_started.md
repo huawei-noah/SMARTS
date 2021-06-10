@@ -88,7 +88,7 @@ After training your agent, your models should be saved under `logs/<timestamped_
 
   For example, let's re-run our DQN's evaluation with the following command:
   ```sh
-  $ python ultra/evaluate.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/ --experiment-dir logs/<timestamed_experiment_name>/ --episodes 5
+  $ python ultra/evaluate.py --task 1 --level easy --models logs/<timestamped_experiment_name>/models/000/ --experiment-dir logs/<timestamed_experiment_name>/ --episodes 5
   ```
   > This will produce another experiment directory under `logs/` containing the results of the evaluation.
 
