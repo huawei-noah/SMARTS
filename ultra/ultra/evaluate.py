@@ -338,7 +338,7 @@ def evaluate_saved_models(
                     )
                 ]
             )[0]
-            episode.record_tensorboard(recording_step=1)
+            episode.record_tensorboard(recording_step=episode.index)
             episode.eval_count += 1
     finally:
         time.sleep(1)
