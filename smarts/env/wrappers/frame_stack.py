@@ -74,8 +74,7 @@ class FrameStack(gym.Wrapper):
     def reset(self) -> Dict[str, Deque[sensors.Observation]]:
         env_observations = super(FrameStack, self).reset()
         for agent_id, observation in env_observations.items():
-            [
+            for _ in range(self._num_stack - 1):
                 self._frames[agent_id].append(observation)
-                for _ in range(self._num_stack - 1)
-            ]
+
         return self._get_observations(env_observations)
