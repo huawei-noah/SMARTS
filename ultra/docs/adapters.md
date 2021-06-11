@@ -243,11 +243,12 @@ going faster than the speed limit, else `0.0`.
 `0.0`.
 - `ego_step_reward` is
 `0.02 * min(max(0, ego_vehicle_speed / speed_limit), 1) * cos(angle_error)`.
-- `enironment_reward` is `the_environment_reward / 100`.
+- `environment_reward` is `the_environment_reward / 100`.
 
 And `speed_limit` is the speed limit of the nearest waypoint to the ego vehicle in
 meters per second; the `ego_vehicle_speed` is the speed of the ego vehicle in meters per
 second; the `angle_error` is the closest waypoint's heading minus the ego vehicle's
-heading; and the `ego_distance_from_center` is the lateral distance between the center
+heading; the `ego_distance_from_center` is the lateral distance between the center
 of the closest waypoint's lane and the ego vehicle's position, divided by half of that
-lane's width.
+lane's width; and `the_environment_reward` is the raw reward received from the SMARTS
+simulator.
