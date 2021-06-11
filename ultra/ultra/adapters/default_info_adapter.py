@@ -26,12 +26,13 @@ from scipy.spatial import distance
 
 from smarts.core.agent_interface import NeighborhoodVehicles, Waypoints
 from smarts.core.sensors import Observation
+from ultra.adapters.constants import DEFAULT_RADIUS, DEFAULT_WAYPOINTS
 import ultra.adapters.default_reward_adapter as default_reward_adapter
 from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
 
 
-_WAYPOINTS = 20
-_RADIUS = 200.0
+_WAYPOINTS = DEFAULT_WAYPOINTS
+_RADIUS = DEFAULT_RADIUS
 
 
 required_interface = {

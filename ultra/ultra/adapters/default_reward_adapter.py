@@ -26,10 +26,11 @@ from scipy.spatial import distance
 
 from smarts.core.agent_interface import Waypoints
 from smarts.core.sensors import Observation
+from ultra.adapters.constants import DEFAULT_WAYPOINTS
 from ultra.utils.common import get_closest_waypoint, get_path_to_goal
 
 
-_WAYPOINTS = 20  # Number of waypoints on the path ahead of the ego vehicle.
+_WAYPOINTS = DEFAULT_WAYPOINTS
 
 
 # This adapter requires SMARTS to pass the next _WAYPOINTS waypoints in the agent's
