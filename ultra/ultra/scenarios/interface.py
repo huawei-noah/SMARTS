@@ -73,6 +73,11 @@ if __name__ == "__main__":
         help="aggressive/default/slow/blocker/crusher south-west",
         nargs="+",
     )
+    parser_generate_scenarios.add_argument(
+        "--no-mission-shuffle",
+        help="Do not shuffle ego missions.",
+        action="store_false",
+    )
 
     parser_generate_scenarios.set_defaults(which="generate")
 
@@ -140,6 +145,7 @@ if __name__ == "__main__":
             save_dir=args.save_dir,
             root_path=args.root_dir,
             pool_dir=args.pool_dir,
+            shuffle_missions=args.no_mission_shuffle,
         )
     else:
         ray.init()

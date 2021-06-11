@@ -320,6 +320,7 @@ def generate_stopwatcher(
 
 def generate_left_turn_missions(
     missions,
+    shuffle_missions,
     route_distributions,
     route_lanes,
     speed,
@@ -464,7 +465,8 @@ def generate_left_turn_missions(
             for ego_route in ego_routes
         ]
     # Shuffle the missions so agents don't do the same route all the time.
-    random.shuffle(mission_objects)
+    if shuffle_missions:
+        random.shuffle(mission_objects)
     gen_missions(scenario, mission_objects)
 
     if bubbles:
@@ -637,6 +639,7 @@ def generate_social_vehicles(
 def scenario_worker(
     seeds,
     ego_missions,
+    shuffle_missions,
     route_lanes,
     route_distributions,
     map_dir,
@@ -660,6 +663,7 @@ def scenario_worker(
 
         generate_left_turn_missions(
             missions=ego_missions,
+            shuffle_missions=shuffle_missions,
             route_lanes=route_lanes,
             route_distributions=route_distributions,
             map_dir=map_dir,
@@ -686,6 +690,7 @@ def build_scenarios(
     stopwatcher_route,
     save_dir,
     root_path,
+    shuffle_missions=True,
     pool_dir=None,
     dynamic_pattern_func=None,
 ):
@@ -783,6 +788,7 @@ def build_scenarios(
                     args=(
                         temp_seeds,
                         ego_missions,
+                        shuffle_missions,
                         route_lanes,
                         route_distributions,
                         map_dir,
@@ -832,6 +838,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--root-dir", help="directory of maps", type=str, default="ultra/scenarios"
     )
+    parser.add_argument(
+        "--no-mission-shuffle",
+        help="Do not shuffle ego missions.",
+        action="store_false",
+    )
 
     args = parser.parse_args()
 
@@ -847,4 +858,5 @@ if __name__ == "__main__":
         stopwatcher_route=stopwatcher_route,
         save_dir=args.save_dir,
         root_path=args.root_dir,
+        shuffle_missions=args.no_mission_shuffle,
     )
