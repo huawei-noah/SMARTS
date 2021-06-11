@@ -52,19 +52,18 @@ class AdapterTest(unittest.TestCase):
         action_sequence, _, _ = run_experiment(agent, environment)
 
         for action in action_sequence:
-            msg = f"Failed on action '{action}'."
-            self.assertIsInstance(action, np.ndarray, msg=msg)
-            self.assertEqual(action.dtype, "float32", msg=msg)
-            self.assertEqual(action.shape, (3,), msg=msg)
-            self.assertGreaterEqual(action[0], 0.0, msg=msg)
-            self.assertLessEqual(action[0], 1.0, msg=msg)
-            self.assertGreaterEqual(action[1], 0.0, msg=msg)
-            self.assertLessEqual(action[1], 1.0, msg=msg)
-            self.assertGreaterEqual(action[2], -1.0, msg=msg)
-            self.assertLessEqual(action[2], 1.0, msg=msg)
-            self.assertEqual(space.dtype, action.dtype, msg=msg)
-            self.assertEqual(space.shape, action.shape, msg=msg)
-            self.assertTrue(space.contains(action), msg=msg)
+            self.assertIsInstance(action, np.ndarray)
+            self.assertEqual(action.dtype, "float32")
+            self.assertEqual(action.shape, (3,))
+            self.assertGreaterEqual(action[0], 0.0)
+            self.assertLessEqual(action[0], 1.0)
+            self.assertGreaterEqual(action[1], 0.0)
+            self.assertLessEqual(action[1], 1.0)
+            self.assertGreaterEqual(action[2], -1.0)
+            self.assertLessEqual(action[2], 1.0)
+            self.assertEqual(space.dtype, action.dtype)
+            self.assertEqual(space.shape, action.shape)
+            self.assertTrue(space.contains(action))
 
     def test_default_action_discrete_adapter(self):
         ADAPTER_TYPE = adapters.AdapterType.DefaultActionDiscrete
@@ -86,12 +85,11 @@ class AdapterTest(unittest.TestCase):
         action_sequence, _, _ = run_experiment(agent, environment)
 
         for action in action_sequence:
-            msg = f"Failed on action '{action}'."
-            self.assertIsInstance(action, str, msg=msg)
-            self.assertTrue(action in AVAILABLE_ACTIONS, msg=msg)
-            self.assertEqual(space.dtype, type(action), msg=msg)
-            self.assertEqual(space.shape, (), msg=msg)
-            self.assertTrue(space.contains(action), msg=msg)
+            self.assertIsInstance(action, str)
+            self.assertIn(action, AVAILABLE_ACTIONS)
+            self.assertEqual(space.dtype, type(action))
+            self.assertEqual(space.shape, ())
+            self.assertTrue(space.contains(action))
 
     def test_default_observation_image_adapter(self):
         ADAPTER_TYPE = adapters.AdapterType.DefaultObservationImage
@@ -107,7 +105,7 @@ class AdapterTest(unittest.TestCase):
 
         observations = observations_sequence[0]
         self.assertIsInstance(observations, dict)
-        self.assertTrue(AGENT_ID in observations)
+        self.assertIn(AGENT_ID, observations)
         self.assertIsInstance(observations[AGENT_ID], np.ndarray)
         self.assertEqual(observations[AGENT_ID].dtype, "float32")
         self.assertEqual(observations[AGENT_ID].shape, (1, 64, 64))
@@ -129,9 +127,9 @@ class AdapterTest(unittest.TestCase):
 
         observations = observations_sequence[0]
         self.assertIsInstance(observations, dict)
-        self.assertTrue(AGENT_ID in observations)
-        self.assertTrue("low_dim_states" in observations[AGENT_ID])
-        self.assertTrue("social_vehicles" in observations[AGENT_ID])
+        self.assertIn(AGENT_ID, observations)
+        self.assertIn("low_dim_states", observations[AGENT_ID])
+        self.assertIn("social_vehicles", observations[AGENT_ID])
         self.assertIsInstance(observations[AGENT_ID]["low_dim_states"], np.ndarray)
         self.assertIsInstance(observations[AGENT_ID]["social_vehicles"], np.ndarray)
         self.assertEqual(observations[AGENT_ID]["low_dim_states"].dtype, "float32")
