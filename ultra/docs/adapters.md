@@ -49,6 +49,64 @@ without adapting it any further. It expects that the action outputted by the age
 already is one of the four available strings. The behaviour of this adapter is fully
 defined in this module's `adapt` function.
 
+## Info Adapters
+
+An info adapter takes an [observation](https://smarts.readthedocs.io/en/latest/sim/observations.html#id1), reward, and info dictionary from the environment and adapts them to include
+more relevant information about the agent at each step. By default, the ULTRA
+environment includes the ego vehicle's raw observation, and its score in the info
+dictionary.
+```python
+info = {
+    "score": ...,  # A float, the total distance travelled by the ego vehicle.
+    "env_obs": ...,  # A smarts.core.sensors.Observation, the raw observation received by the ego vehicle.
+}
+```
+
+ULTRA has a default info adapter that is used to include more data about the
+agent that can be used to track the agent's learning progress and monitor the agent
+during training and evaluation.
+
+### [ultra.adapters.default_info_adapter](../ultra/adapters/default_info_adapter.py)
+
+The default info adapter requires that the SMARTS environment include the next 20
+waypoints in front of the ego vehicle, and all neighborhood (social) vehicles within a
+radius of 200 meters around the ego vehicle. Therefore, when using this adapter, the
+[AgentInterface](../../smarts/core/agent_interface.py) of your agent needs its
+`waypoints` parameter to be `Waypoints(lookahead=20)` and its `neighborhood_vehicles`
+parameter to be `NeighborhoodVehciles(radius=200.0)`. This requirement is outlined in
+this module's `required_interface`.
+
+The default info adapter modifies the given info dictionary passed to it by the
+environment. Specifically, it adds another key, "logs", to the info dictionary. This
+key's values is another dictionary that contains information about the agent:
+```python
+info = {
+    "score": ...,  # A float, the total distance travelled by the ego vehicle.
+    "env_obs": ...,  # A smarts.core.sensors.Observation, the raw observation received by the ego vehicle.
+    "logs": {
+        "position": ...,  # A np.ndarray with shape (3,), the x, y, z position of the ego vehicle.
+        "speed": ...,  # A float, the speed of the ego vehicle in meters per second.
+        "steering": ...,  # A float, the angle of the front wheels in radians.
+        "heading": ...,  # A smarts.core.coordinates.Heading, the vehicle's heading in radians.
+        "dist_center": ...,  # A float, the distance in meters from the center of the lane of the closest waypoint.
+        "start": ...,  # A smarts.core.scenario.Start, the start of the ego evhicle's mission.
+        "goal": ...,  # A smarts.core.scenario.PositionalGoal, the goal of the ego vehicle's mission.
+        "closest_wp": ...,  # A smarts.core.waypoints.Waypoint, the closest waypoint to the ego vehicle.
+        "events": ...,  # A smarts.core.events.Events, the events of the ego vehicle.
+        "ego_num_violations": ...,  # An int, the number of violations committed by the ego vehicle (see ultra.utils.common.ego_social_safety).
+        "social_num_violations": ...,  # An int, the number of violations committed by social vehicles (see ultra.utils.common.ego_social_safety).
+        "goal_dist": ...,  # A float, the euclidean distance between the ego vehicle and its goal.
+        "linear_jerk": ...,  # A float, the magnitude of the ego vehicle's linear jerk.
+        "angular_jerk": ...,  # A float, the magnitude of the ego vehicle's angular jerk.
+        "env_score": ...,  # A float, the ULTRA environment's reward obtained from the default reward adapter (see ultra.adapters.default_reward_adapter).
+    }
+}
+```
+
+This information contained in logs can ultimately be used by ULTRA's [Episode](../ultra/utils/episode.py)
+object that is used to record this data to Tensorboard and also save this data to a
+serializable object.
+
 ## Observation Adapters
 
 An observation adapter takes an [observation](https://smarts.readthedocs.io/en/latest/sim/observations.html#id1)
