@@ -106,12 +106,12 @@ def install_agents(agent_paths):
         )
 
     for agent_path in agent_paths:
-        goal_dir = os.path.join(os.getcwd(), agent_path)
-        clean(goal_dir)
+        policy_dir = os.path.join(os.getcwd(), agent_path)
+        clean(policy_dir)
         proc = subprocess.Popen(
             pip_install_cmd,
             stderr=subprocess.PIPE,
-            cwd=goal_dir,
+            cwd=policy_dir,
         )
         proc.wait()
         stdout, std_err = proc.communicate()
