@@ -281,7 +281,9 @@ class Episode:
         self.initialize_tb_writer()
 
         for agent_id, agent_info in self.info[self.active_tag].items():
-            agent_itr = recording_step if recording_step else self.get_itr(agent_id)
+            agent_itr = (
+                recording_step if recording_step is not None else self.get_itr(agent_id)
+            )
             data = {}
 
             for key, value in agent_info.data.items():
