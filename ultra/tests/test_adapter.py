@@ -56,19 +56,18 @@ class AdapterTest(unittest.TestCase):
         action_sequence, _, _, _ = run_experiment(agent, environment)
 
         for action in action_sequence:
-            msg = f"Failed on action '{action}'."
-            self.assertIsInstance(action, np.ndarray, msg=msg)
-            self.assertEqual(action.dtype, "float32", msg=msg)
-            self.assertEqual(action.shape, (3,), msg=msg)
-            self.assertGreaterEqual(action[0], 0.0, msg=msg)
-            self.assertLessEqual(action[0], 1.0, msg=msg)
-            self.assertGreaterEqual(action[1], 0.0, msg=msg)
-            self.assertLessEqual(action[1], 1.0, msg=msg)
-            self.assertGreaterEqual(action[2], -1.0, msg=msg)
-            self.assertLessEqual(action[2], 1.0, msg=msg)
-            self.assertEqual(space.dtype, action.dtype, msg=msg)
-            self.assertEqual(space.shape, action.shape, msg=msg)
-            self.assertTrue(space.contains(action), msg=msg)
+            self.assertIsInstance(action, np.ndarray)
+            self.assertEqual(action.dtype, "float32")
+            self.assertEqual(action.shape, (3,))
+            self.assertGreaterEqual(action[0], 0.0)
+            self.assertLessEqual(action[0], 1.0)
+            self.assertGreaterEqual(action[1], 0.0)
+            self.assertLessEqual(action[1], 1.0)
+            self.assertGreaterEqual(action[2], -1.0)
+            self.assertLessEqual(action[2], 1.0)
+            self.assertEqual(space.dtype, action.dtype)
+            self.assertEqual(space.shape, action.shape)
+            self.assertTrue(space.contains(action))
 
     def test_default_action_discrete_adapter(self):
         ADAPTER_TYPE = adapters.AdapterType.DefaultActionDiscrete
@@ -90,12 +89,11 @@ class AdapterTest(unittest.TestCase):
         action_sequence, _, _, _ = run_experiment(agent, environment)
 
         for action in action_sequence:
-            msg = f"Failed on action '{action}'."
-            self.assertIsInstance(action, str, msg=msg)
-            self.assertTrue(action in AVAILABLE_ACTIONS, msg=msg)
-            self.assertEqual(space.dtype, type(action), msg=msg)
-            self.assertEqual(space.shape, (), msg=msg)
-            self.assertTrue(space.contains(action), msg=msg)
+            self.assertIsInstance(action, str)
+            self.assertIn(action, AVAILABLE_ACTIONS)
+            self.assertEqual(space.dtype, type(action))
+            self.assertEqual(space.shape, ())
+            self.assertTrue(space.contains(action))
 
     def test_default_info_adapter(self):
         ADAPTER_TYPE = adapters.AdapterType.DefaultInfo
@@ -110,44 +108,44 @@ class AdapterTest(unittest.TestCase):
 
         infos = infos_sequence[0]
         self.assertIsInstance(infos, dict)
-        self.assertTrue(AGENT_ID in infos)
+        self.assertIn(AGENT_ID, infos)
         self.assertIsInstance(infos[AGENT_ID], dict)
-        self.assertTrue("score" in infos[AGENT_ID])
+        self.assertIn("score", infos[AGENT_ID])
         self.assertIsInstance(infos[AGENT_ID]["score"], float)
-        self.assertTrue("env_obs" in infos[AGENT_ID])
+        self.assertIn("env_obs", infos[AGENT_ID])
         self.assertIsInstance(infos[AGENT_ID]["env_obs"], Observation)
-        self.assertTrue("logs" in infos[AGENT_ID])
+        self.assertIn("logs", infos[AGENT_ID])
         self.assertIsInstance(infos[AGENT_ID]["logs"], dict)
-        self.assertTrue("position" in infos[AGENT_ID]["logs"])
+        self.assertIn("position", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["position"], np.ndarray)
         self.assertEqual(infos[AGENT_ID]["logs"]["position"].shape, (3,))
-        self.assertTrue("speed" in infos[AGENT_ID]["logs"])
+        self.assertIn("speed", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["speed"], float)
-        self.assertTrue("steering" in infos[AGENT_ID]["logs"])
+        self.assertIn("steering", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["steering"], float)
-        self.assertTrue("heading" in infos[AGENT_ID]["logs"])
+        self.assertIn("heading", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["heading"], Heading)
-        self.assertTrue("dist_center" in infos[AGENT_ID]["logs"])
+        self.assertIn("dist_center", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["dist_center"], float)
-        self.assertTrue("start" in infos[AGENT_ID]["logs"])
+        self.assertIn("start", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["start"], Start)
-        self.assertTrue("goal" in infos[AGENT_ID]["logs"])
+        self.assertIn("goal", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["goal"], PositionalGoal)
-        self.assertTrue("closest_wp" in infos[AGENT_ID]["logs"])
+        self.assertIn("closest_wp", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["closest_wp"], Waypoint)
-        self.assertTrue("events" in infos[AGENT_ID]["logs"])
+        self.assertIn("events", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["events"], Events)
-        self.assertTrue("ego_num_violations" in infos[AGENT_ID]["logs"])
+        self.assertIn("ego_num_violations", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["ego_num_violations"], int)
-        self.assertTrue("social_num_violations" in infos[AGENT_ID]["logs"])
+        self.assertIn("social_num_violations", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["social_num_violations"], int)
-        self.assertTrue("goal_dist" in infos[AGENT_ID]["logs"])
+        self.assertIn("goal_dist", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["goal_dist"], float)
-        self.assertTrue("linear_jerk" in infos[AGENT_ID]["logs"])
+        self.assertIn("linear_jerk", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["linear_jerk"], float)
-        self.assertTrue("angular_jerk" in infos[AGENT_ID]["logs"])
+        self.assertIn("angular_jerk", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["angular_jerk"], float)
-        self.assertTrue("env_score" in infos[AGENT_ID]["logs"])
+        self.assertIn("env_score", infos[AGENT_ID]["logs"])
         self.assertIsInstance(infos[AGENT_ID]["logs"]["env_score"], float)
 
     def test_default_observation_image_adapter(self):
@@ -164,7 +162,7 @@ class AdapterTest(unittest.TestCase):
 
         observations = observations_sequence[0]
         self.assertIsInstance(observations, dict)
-        self.assertTrue(AGENT_ID in observations)
+        self.assertIn(AGENT_ID, observations)
         self.assertIsInstance(observations[AGENT_ID], np.ndarray)
         self.assertEqual(observations[AGENT_ID].dtype, "float32")
         self.assertEqual(observations[AGENT_ID].shape, (1, 64, 64))
@@ -186,9 +184,9 @@ class AdapterTest(unittest.TestCase):
 
         observations = observations_sequence[0]
         self.assertIsInstance(observations, dict)
-        self.assertTrue(AGENT_ID in observations)
-        self.assertTrue("low_dim_states" in observations[AGENT_ID])
-        self.assertTrue("social_vehicles" in observations[AGENT_ID])
+        self.assertIn(AGENT_ID, observations)
+        self.assertIn("low_dim_states", observations[AGENT_ID])
+        self.assertIn("social_vehicles", observations[AGENT_ID])
         self.assertIsInstance(observations[AGENT_ID]["low_dim_states"], np.ndarray)
         self.assertIsInstance(observations[AGENT_ID]["social_vehicles"], np.ndarray)
         self.assertEqual(observations[AGENT_ID]["low_dim_states"].dtype, "float32")
@@ -306,12 +304,12 @@ def run_experiment(agent: Agent, environment: UltraEnv, max_steps=30) -> Tuple:
 
     while not dones["__all__"] and len(action_sequence) <= max_steps:
         action = agent.act(observations[AGENT_ID])
-        observations, reward, dones, infos = environment.step({AGENT_ID: action})
+        observations, rewards, dones, infos = environment.step({AGENT_ID: action})
 
         action_sequence.append(action)
         infos_sequence.append(infos)
         observations_sequence.append(observations)
-        rewards_sequence.append(reward)
+        rewards_sequence.append(rewards)
 
     environment.close()
 
