@@ -29,7 +29,11 @@ import numpy as np
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
 from smarts.core.controllers import ActionSpaceType
+from smarts.core.coordinates import Heading
+from smarts.core.events import Events
+from smarts.core.scenario import PositionalGoal, Start
 from smarts.core.sensors import Observation
+from smarts.core.waypoints import Waypoint
 import ultra.adapters as adapters
 from ultra.env.ultra_env import UltraEnv
 
@@ -49,7 +53,7 @@ class AdapterTest(unittest.TestCase):
             required_interface=interface,
             action_adapter=adapter,
         )
-        action_sequence, _, _ = run_experiment(agent, environment)
+        action_sequence, _, _, _ = run_experiment(agent, environment)
 
         for action in action_sequence:
             msg = f"Failed on action '{action}'."
@@ -83,7 +87,7 @@ class AdapterTest(unittest.TestCase):
             required_interface=interface,
             action_adapter=adapter,
         )
-        action_sequence, _, _ = run_experiment(agent, environment)
+        action_sequence, _, _, _ = run_experiment(agent, environment)
 
         for action in action_sequence:
             msg = f"Failed on action '{action}'."
@@ -92,6 +96,59 @@ class AdapterTest(unittest.TestCase):
             self.assertEqual(space.dtype, type(action), msg=msg)
             self.assertEqual(space.shape, (), msg=msg)
             self.assertTrue(space.contains(action), msg=msg)
+
+    def test_default_info_adapter(self):
+        ADAPTER_TYPE = adapters.AdapterType.DefaultInfo
+        adapter = adapters.adapter_from_type(ADAPTER_TYPE)
+        interface = adapters.required_interface_from_types(ADAPTER_TYPE)
+
+        agent, environment = prepare_test_agent_and_environment(
+            required_interface=interface,
+            info_adapter=adapter,
+        )
+        _, infos_sequence, _, _ = run_experiment(agent, environment, max_steps=1)
+
+        infos = infos_sequence[0]
+        self.assertIsInstance(infos, dict)
+        self.assertTrue(AGENT_ID in infos)
+        self.assertIsInstance(infos[AGENT_ID], dict)
+        self.assertTrue("score" in infos[AGENT_ID])
+        self.assertIsInstance(infos[AGENT_ID]["score"], float)
+        self.assertTrue("env_obs" in infos[AGENT_ID])
+        self.assertIsInstance(infos[AGENT_ID]["env_obs"], Observation)
+        self.assertTrue("logs" in infos[AGENT_ID])
+        self.assertIsInstance(infos[AGENT_ID]["logs"], dict)
+        self.assertTrue("position" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["position"], np.ndarray)
+        self.assertEqual(infos[AGENT_ID]["logs"]["position"].shape, (3,))
+        self.assertTrue("speed" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["speed"], float)
+        self.assertTrue("steering" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["steering"], float)
+        self.assertTrue("heading" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["heading"], Heading)
+        self.assertTrue("dist_center" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["dist_center"], float)
+        self.assertTrue("start" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["start"], Start)
+        self.assertTrue("goal" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["goal"], PositionalGoal)
+        self.assertTrue("closest_wp" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["closest_wp"], Waypoint)
+        self.assertTrue("events" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["events"], Events)
+        self.assertTrue("ego_num_violations" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["ego_num_violations"], int)
+        self.assertTrue("social_num_violations" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["social_num_violations"], int)
+        self.assertTrue("goal_dist" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["goal_dist"], float)
+        self.assertTrue("linear_jerk" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["linear_jerk"], float)
+        self.assertTrue("angular_jerk" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["angular_jerk"], float)
+        self.assertTrue("env_score" in infos[AGENT_ID]["logs"])
+        self.assertIsInstance(infos[AGENT_ID]["logs"]["env_score"], float)
 
     def test_default_observation_image_adapter(self):
         ADAPTER_TYPE = adapters.AdapterType.DefaultObservationImage
@@ -103,7 +160,7 @@ class AdapterTest(unittest.TestCase):
             required_interface=interface,
             observation_adapter=adapter,
         )
-        _, observations_sequence, _ = run_experiment(agent, environment, max_steps=1)
+        _, _, observations_sequence, _ = run_experiment(agent, environment, max_steps=1)
 
         observations = observations_sequence[0]
         self.assertIsInstance(observations, dict)
@@ -125,7 +182,7 @@ class AdapterTest(unittest.TestCase):
             required_interface=interface,
             observation_adapter=adapter,
         )
-        _, observations_sequence, _ = run_experiment(agent, environment, max_steps=1)
+        _, _, observations_sequence, _ = run_experiment(agent, environment, max_steps=1)
 
         observations = observations_sequence[0]
         self.assertIsInstance(observations, dict)
@@ -167,7 +224,7 @@ class AdapterTest(unittest.TestCase):
             required_interface=interface,
             reward_adapter=adapter,
         )
-        _, _, rewards_sequence = run_experiment(agent, environment, max_steps=1)
+        _, _, _, rewards_sequence = run_experiment(agent, environment, max_steps=1)
 
         rewards = rewards_sequence[0]
         self.assertIsInstance(rewards, dict)
@@ -201,6 +258,7 @@ class RandomAgent(Agent):
 def prepare_test_agent_and_environment(
     required_interface: Dict[str, Any],
     action_adapter: Callable = lambda action: action,
+    info_adapter: Callable = lambda observation, reward, info: info,
     observation_adapter: Callable = lambda observation: observation,
     reward_adapter: Callable = lambda _, reward: reward,
     headless: bool = True,
@@ -217,6 +275,7 @@ def prepare_test_agent_and_environment(
         agent_builder=RandomAgent,
         agent_params={"action_type": required_interface["action"]},
         action_adapter=action_adapter,
+        info_adapter=info_adapter,
         observation_adapter=observation_adapter,
         reward_adapter=reward_adapter,
     )
@@ -236,6 +295,7 @@ def prepare_test_agent_and_environment(
 
 def run_experiment(agent: Agent, environment: UltraEnv, max_steps=30) -> Tuple:
     action_sequence = []
+    infos_sequence = []
     observations_sequence = []
     rewards_sequence = []
 
@@ -246,12 +306,13 @@ def run_experiment(agent: Agent, environment: UltraEnv, max_steps=30) -> Tuple:
 
     while not dones["__all__"] and len(action_sequence) <= max_steps:
         action = agent.act(observations[AGENT_ID])
-        observations, reward, dones, _ = environment.step({AGENT_ID: action})
+        observations, reward, dones, infos = environment.step({AGENT_ID: action})
 
         action_sequence.append(action)
+        infos_sequence.append(infos)
         observations_sequence.append(observations)
         rewards_sequence.append(reward)
 
     environment.close()
 
-    return action_sequence, observations_sequence, rewards_sequence
+    return action_sequence, infos_sequence, observations_sequence, rewards_sequence
