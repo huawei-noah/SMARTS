@@ -144,7 +144,7 @@ class ScenariosTest(unittest.TestCase):
             f"--save-dir {SAVE_DIR}"
         )
 
-        # Test generation without the --no-shuffle flag.
+        # Test generation without the --no-mission-shuffle flag.
         try:
             os.system(generate_command)
         except Exception as error:
@@ -199,7 +199,7 @@ class ScenariosTest(unittest.TestCase):
             f"--save-dir {SAVE_DIR}"
         )
 
-        # Test generation with the --no-shuffle flag.
+        # Test generation with the --no-mission-shuffle flag.
         try:
             os.system(generate_command)
         except Exception as error:
