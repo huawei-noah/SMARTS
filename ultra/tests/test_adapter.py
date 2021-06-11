@@ -246,11 +246,11 @@ def run_experiment(agent: Agent, environment: UltraEnv, max_steps=30) -> Tuple:
 
     while not dones["__all__"] and len(action_sequence) <= max_steps:
         action = agent.act(observations[AGENT_ID])
-        observations, reward, dones, _ = environment.step({AGENT_ID: action})
+        observations, rewards, dones, _ = environment.step({AGENT_ID: action})
 
         action_sequence.append(action)
         observations_sequence.append(observations)
-        rewards_sequence.append(reward)
+        rewards_sequence.append(rewards)
 
     environment.close()
 
