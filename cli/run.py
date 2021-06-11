@@ -82,7 +82,7 @@ def run_experiment(envision, envision_port, script_path, script_args):
 
         if (not envision) and envision_port:
             click.echo(
-                "Port passed without starting up the envision server. Use the --envision option to start the server first."
+                "Port passed without starting up the envision server. Use the --envision option to start the server along with the --envision port option."
             )
 
         script = subprocess.Popen(
