@@ -349,7 +349,7 @@ class EvaluateTest(unittest.TestCase):
         # do, then the evaluation data is properly saved under the results.pkl
         # and also correctly added to the tensorboard
         for index in evaluation_results[AGENT_ID].keys():
-            self.assertFalse((index) % eval_rate)
+            self.assertEqual((index) % eval_rate, 0)
 
         with open(
             os.path.join(
