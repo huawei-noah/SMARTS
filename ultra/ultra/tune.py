@@ -188,7 +188,7 @@ def tune_train(
 
         # Normalize the data and record this episode on tensorboard.
         episode.record_episode()
-        episode.record_tensorboard()
+        episode.record_tensorboard(recording_step=episode.index)
 
         # Save the agent if we have reached its save rate.
         if (episode.index + 1) % save_rate == 0:

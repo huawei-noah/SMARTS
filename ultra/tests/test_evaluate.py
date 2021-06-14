@@ -313,6 +313,58 @@ class EvaluateTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
+    def test_record_evaluation_at_proper_episode_indices(self):
+        """Due to parallelization, there might arise a situation where the episode
+        object at the beginning of an evaluation would not match the episode
+        object when recording to tensorboard. This test ensures that the evaluation data
+        (for both test and train scenarios) is recorded at the proper episode index.
+        """
+        AGENT_ID = "000"
+        log_dir = os.path.join(
+            EvaluateTest.OUTPUT_DIRECTORY, "output_eval_episode_check_log/"
+        )
+
+        # Arbitary values for evaluation rate and number of training episodes
+        eval_rate = 4
+        num_episodes = 20
+
+        train_command = (
+            "python ultra/train.py "
+            f"--task 00 --level eval_test --policy sac --headless --episodes {num_episodes} "
+            f"--eval-rate {eval_rate} --eval-episodes 2 --max-episode-steps 2 --log-dir {log_dir}"
+        )
+
+        if not os.path.exists(log_dir):
+            os.system(train_command)
+
+        with open(
+            os.path.join(
+                log_dir, os.listdir(log_dir)[0], "pkls/Evaluation/results.pkl"
+            ),
+            "rb",
+        ) as handle:
+            evaluation_results = dill.load(handle)
+
+        # Check if the episode indices are divisible by the evaluation rate. If they
+        # do, then the evaluation data is properly saved under the results.pkl
+        # and also correctly added to the tensorboard
+        for index in evaluation_results[AGENT_ID].keys():
+            self.assertEqual((index) % eval_rate, 0)
+
+        with open(
+            os.path.join(
+                log_dir, os.listdir(log_dir)[0], "pkls/Evaluation_Training/results.pkl"
+            ),
+            "rb",
+        ) as handle:
+            evaluation_training_results = dill.load(handle)
+
+        # Check if the episode indices are divisible by the evaluation rate. If they
+        # do, then the evaluation training data is properly saved under the results.pkl
+        # and also correctly added to the tensorboard
+        for index in evaluation_training_results[AGENT_ID].keys():
+            self.assertEqual((index) % eval_rate, 0)
+
     def test_extract_policy_from_path(self):
         paths = [
             "from.ultra.baselines.sac:sac-v0",

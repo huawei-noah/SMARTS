@@ -4,26 +4,25 @@ ULTRA can be run natively on your machine, or through a Docker container. See in
 
 ## Setup Natively
 
-The following steps can be ignored if you already have the SMARTS environment.
 ```sh
 # 1 - Navigate to the ULTRA directory.
 $ cd <path_to_SMARTS>/SMARTS/ultra
 
-# 2 - Create a virtual environment.
+# 2 - Install overhead dependencies (python3.7 & sumo)
+$ ./install_deps.sh
+
+# 3 - verify sumo is >= 1.5.0
+# if you have issues see ./docs/SUMO_TROUBLESHOOTING.md
+$ sumo
+
+# 4 - Create a virtual environment.
 $ python3.7 -m venv .venv
 
-# 3 - Activate virtual environment to install all dependencies.
+# 5 - Activate virtual environment to install all dependencies.
 $ source .venv/bin/activate
 
-# 4 - Install black for formatting (if you wish to contribute).
-$ pip install black
-
-# 5 - Install dependencies.
+# 6 - Install dependencies.
 $ pip install -e .
-```
-Whether you already had the SMARTS environment or not, install dill in your activated environment.
-```sh
-$ pip install dill
 ```
 
 ## Setup with Docker
