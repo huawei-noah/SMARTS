@@ -70,7 +70,7 @@ def evaluation_check(
         for agent_id in agent_ids
         if eval_after_grade == True
         or (
-            (episode.index + 1) % eval_rate == 0
+            episode.index % eval_rate == 0
             and episode.last_eval_iterations[agent_id] != episode.index
         )
     ]
@@ -279,8 +279,8 @@ def evaluate(
         scenario["density_counter"] = density_counter
         episode.record_scenario_info(agents, scenario)
         episode.record_episode()
-        if eval_mode is True and curriculum_mode is True:
-            episode.record_tensorboard(recording_step=episode.index)
+        # if eval_mode is True and curriculum_mode is True:
+        #     episode.record_tensorboard(recording_step=episode.index)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
