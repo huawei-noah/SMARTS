@@ -24,21 +24,18 @@ import math
 import numpy as np
 from scipy.spatial import distance
 
-from smarts.core.agent_interface import NeighborhoodVehicles, Waypoints
+from smarts.core.agent_interface import Waypoints
 from smarts.core.sensors import Observation
-from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
+from ultra.adapters.constants import DEFAULT_WAYPOINTS
+from ultra.utils.common import get_closest_waypoint, get_path_to_goal
 
 
-_WAYPOINTS = 20  # Number of waypoints on the path ahead of the ego vehicle.
-_RADIUS = 200.0  # Locate all social vehicles within this radius of the ego vehicle.
+_WAYPOINTS = DEFAULT_WAYPOINTS
 
 
-# This adapter requires SMARTS to pass the next _WAYPOINTS waypoints and all
-# neighborhood vehicles within a radius of _RADIUS meters in the agent's observation.
-required_interface = {
-    "waypoints": Waypoints(lookahead=_WAYPOINTS),
-    "neighborhood_vehicles": NeighborhoodVehicles(radius=_RADIUS),
-}
+# This adapter requires SMARTS to pass the next _WAYPOINTS waypoints in the agent's
+# observation.
+required_interface = {"waypoints": Waypoints(lookahead=_WAYPOINTS)}
 
 
 def adapt(observation: Observation, reward: float) -> float:
@@ -46,8 +43,8 @@ def adapt(observation: Observation, reward: float) -> float:
     of type float.
 
     The raw observation from the environment must include the ego vehicle's state,
-    events, waypoint paths, and neighborhood vehicles. See smarts.core.sensors for more
-    information on the Observation type.
+    events, and waypoint paths. See smarts.core.sensors for more information on the
+    Observation type.
 
     Args:
         observation (Observation): The raw environment observation received from SMARTS.
@@ -55,8 +52,8 @@ def adapt(observation: Observation, reward: float) -> float:
 
     Returns:
         float: The adapted, custom reward which includes aspects of the ego vehicle's
-            state, the ego vehicle's mission progress, and the and neighborhood vehicles
-            around the ego vehicle, in addition to the environment reward.
+            state and the ego vehicle's mission progress, in addition to the environment
+            reward.
     """
     env_reward = reward
     ego_events = observation.events
@@ -89,15 +86,16 @@ def adapt(observation: Observation, reward: float) -> float:
     lane_width = closest_wp.lane_width * 0.5
     ego_dist_center = signed_dist_from_center / lane_width
 
-    # number of violations
-    (ego_num_violations, social_num_violations,) = ego_social_safety(
-        observation,
-        d_min_ego=1.0,
-        t_c_ego=1.0,
-        d_min_social=1.0,
-        t_c_social=1.0,
-        ignore_vehicle_behind=True,
-    )
+    # NOTE: This requires the NeighborhoodVehicles interface.
+    # # number of violations
+    # (ego_num_violations, social_num_violations,) = ego_social_safety(
+    #     observation,
+    #     d_min_ego=1.0,
+    #     t_c_ego=1.0,
+    #     d_min_social=1.0,
+    #     t_c_social=1.0,
+    #     ignore_vehicle_behind=True,
+    # )
 
     speed_fraction = max(0, ego_observation.speed / closest_wp.speed_limit)
     ego_step_reward = 0.02 * min(speed_fraction, 1) * np.cos(angle_error)
@@ -114,8 +112,10 @@ def adapt(observation: Observation, reward: float) -> float:
     ego_dist_center_reward = -0.002 * min(1, abs(ego_dist_center))
     ego_angle_error_reward = -0.005 * max(0, np.cos(angle_error))
     ego_reached_goal = 1.0 if ego_events.reached_goal else 0.0
-    ego_safety_reward = -0.02 if ego_num_violations > 0 else 0
-    social_safety_reward = -0.02 if social_num_violations > 0 else 0
+    # NOTE: This requires the NeighborhoodVehicles interface.
+    # ego_safety_reward = -0.02 if ego_num_violations > 0 else 0
+    # NOTE: This requires the NeighborhoodVehicles interface.
+    # social_safety_reward = -0.02 if social_num_violations > 0 else 0
     ego_lat_speed = 0.0  # -0.1 * abs(long_lat_speed[1])
     ego_linear_jerk = -0.0001 * linear_jerk
     ego_angular_jerk = -0.0001 * angular_jerk * math.cos(angle_error)
