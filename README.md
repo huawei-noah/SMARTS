@@ -262,13 +262,13 @@ $ python examples/single_agent.py scenarios/loop
 
 ```bash
 # For this to work, your account needs to be added to the huaweinoah org
-docker login
-
-export VERSION=v0.4.3-pre
-docker build --no-cache -t smarts:$VERSION .
+$ cd /path/to/SMARTS
+export VERSION=v0.4.16
+docker build --no-cache -f ./etc/docker/Dockerfile -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
+docker login
 docker push huaweinoah/smarts:$VERSION
-```
+ ```
 
 ### Troubleshooting
 
