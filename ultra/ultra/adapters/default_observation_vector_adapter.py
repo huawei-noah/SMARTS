@@ -178,14 +178,14 @@ def adapt(observation: Observation) -> Dict[str, np.ndarray]:
             ]
         )
 
-    # Pad with zero vectors if we don't have enough social vehicles.
     if len(social_vehicles) < _CAPACITY:
+        # Pad with zero vectors if we don't have enough social vehicles.
         remain = _CAPACITY - len(social_vehicles)
         empty_social_vehicles = np.zeros(shape=(remain, _FEATURES))
         social_vehicles = np.concatenate((social_vehicles, empty_social_vehicles))
-
-    # Remove extra social vehicles if there were too many in the observation.
-    social_vehicles = social_vehicles[:_CAPACITY]
+    elif len(social_vehicles) > _CAPACITY:
+        # Remove extra social vehicles if there were too many in the observation.
+        social_vehicles = social_vehicles[:_CAPACITY]
 
     vector_observation = {
         "low_dim_states": low_dim_states.astype(np.float32),
