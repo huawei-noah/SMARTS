@@ -95,6 +95,7 @@ def evaluation_check(
         )
 
         if save_model_only == False:
+            print("Scenario info (train):", scenario_info)
             evaluation_train_task_id = evaluate.remote(
                 seed=episode.eval_count,
                 experiment_dir=episode.experiment_dir,
@@ -107,8 +108,12 @@ def evaluation_check(
                 headless=headless,
                 timestep_sec=timestep_sec,
                 log_dir=log_dir,
+                curriculum_metadata=curriculum_metadata,
+                curriculum_mode=curriculum_mode,
+                static_coordinator=static_coordinator,
                 eval_mode=False,
             )
+            print("Scenario info (test):", scenario_info)
             evaluation_task_id = evaluate.remote(
                 seed=episode.eval_count,
                 experiment_dir=episode.experiment_dir,
@@ -121,6 +126,9 @@ def evaluation_check(
                 headless=headless,
                 timestep_sec=timestep_sec,
                 log_dir=log_dir,
+                curriculum_metadata=curriculum_metadata,
+                curriculum_mode=curriculum_mode,
+                static_coordinator=static_coordinator,
                 eval_mode=True,
             )
 

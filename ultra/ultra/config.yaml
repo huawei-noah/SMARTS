@@ -15,14 +15,14 @@ tasks:
       test:  "../tests/task/eval_test_multiagent/test_*"
   task00-curriculum: # unittest
     test_grade1:
-      train: "../tests/curriculum_test/train_*"
-      test:  "../tests/curriculum_test/test_*"
+      train: "../tests/curriculum_test/train_test_grade1*"
+      test:  "../tests/curriculum_test/test_test_grade1*"
     test_grade2:
-      train: "../tests/curriculum_test/train_*"
-      test:  "../tests/curriculum_test/test_*"
+      train: "../tests/curriculum_test/train_test_grade2*"
+      test:  "../tests/curriculum_test/test_test_grade2*"
     test_grade3:
-      train: "../tests/curriculum_test/train_*"
-      test:  "../tests/curriculum_test/test_*"
+      train: "../tests/curriculum_test/train_test_grade3*"
+      test:  "../tests/curriculum_test/test_test_grade3*"
     no-traffic:
       train: "../tests/curriculum_test/train_no-traffic*"
       test: "../tests/curriculum_test/test_no-traffic*"

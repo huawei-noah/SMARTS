@@ -131,7 +131,7 @@ class CurriculumTest(unittest.TestCase):
         try:
             ray.init(ignore_reinit_error=True)
             train(
-                scenario_info=("00-gb", "test_grade1"),
+                scenario_info=("00-curriculum", "test_grade1"),
                 policy_classes=policy_classes,
                 num_episodes=6,
                 max_episode_steps=2,
