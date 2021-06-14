@@ -268,7 +268,7 @@ docker build --no-cache -f ./utils/docker/Dockerfile -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
 docker login
 docker push huaweinoah/smarts:$VERSION
- ```
+```
 
 ### Troubleshooting
 
