@@ -363,7 +363,7 @@ class EvaluateTest(unittest.TestCase):
         # do, then the evaluation training data is properly saved under the results.pkl
         # and also correctly added to the tensorboard
         for index in evaluation_training_results[AGENT_ID].keys():
-            self.assertFalse((index) % eval_rate)
+            self.assertEqual((index) % eval_rate, 0)
 
     def test_extract_policy_from_path(self):
         paths = [
