@@ -40,7 +40,6 @@ setup(
         "pynput",  # Used by HumanKeyboardAgent
         "sh",
         "shapely",
-        "supervisor",
         # HACK: There is a bug where if we only install the base ray dependency here
         #       and ray[rllib] under [train] it  prevents rllib from getting installed.
         #       For simplicity we just install both here. In the future we may want to
