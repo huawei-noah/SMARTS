@@ -86,6 +86,10 @@ setup(
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
         ],
+        "render": [
+            "panda3d",
+            "panda3d-gltf",
+        ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
