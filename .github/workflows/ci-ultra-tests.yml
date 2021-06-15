@@ -38,7 +38,7 @@ jobs:
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           --durations=0 \
-          ./tests/test_analysys.py
+          ./tests/test_analysis.py
           pytest -v \
           --durations=0 \
           --forked \
