@@ -44,6 +44,18 @@ jobs:
           --ignore=./tests/test_social_vehicles.py \
           --ignore=./tests/test_rllib_train.py \
           --ignore=./tests/test_tune.py \
+          --ignore=./tests/test_train.py \
+          --ignore=./tests/test_evaluate.py
+          # To prevent segementation faults and/or termination
+          # signals (i.e. SIGABRT), the train and evaluate tests
+          # are forked into separate subprocesses. Hence, the
+          # heavy tests are divided up into two parts (forked
+          # and unforked)
+          pytest -v \
+          ./tests/test_train.py \
+          ./tests/test_evaluate.py \
+          --forked \
+          --durations=0
 
   test-light-base-tests:
     runs-on: ubuntu-18.04
