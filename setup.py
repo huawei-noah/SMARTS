@@ -25,8 +25,6 @@ setup(
         "cached-property",
         "click",  # used in scl
         "gym",
-        "panda3d",
-        "panda3d-gltf",
         "numpy",
         "rich",
         "rtree",  # Used by sumolib
