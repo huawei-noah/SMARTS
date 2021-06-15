@@ -84,7 +84,7 @@ setup(
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
         ],
-        "render": [
+        "camera-obs": [
             "panda3d",
             "panda3d-gltf",
         ],

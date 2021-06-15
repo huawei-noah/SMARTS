@@ -51,7 +51,7 @@ try:
     # We wrap the following import statements and the ShowBaseInstance class in a try block, because Panda3D and its
     # modules are only required for visualizations and rendering of agent camera observations in SMARTS and hence are
     # removed from the dependencies during installation of SMARTS. So the try block checks whether the user has installed
-    # the [render] dependencies required to use this class for rendering camera observations in simulation, and warns the
+    # the [camera-obs] dependencies required to use this class for rendering camera observations in simulation, and warns the
     # user if not so.
 
     import gltf
@@ -160,8 +160,8 @@ except ImportError:
     class _ShowBaseInstance:
         def __init__(self):
             raise RendererException(
-                f"You may not have installed the [render] dependencies required to render the camera sensor observations. "
-                "Install them first using the command `pip install -e .[render]` at the source directory."
+                f"You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. "
+                "Install them first using the command `pip install -e .[camera-obs]` at the source directory."
             )
 
 

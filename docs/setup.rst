@@ -33,8 +33,8 @@ To setup the simulator, which is called SMARTS, run the following commands,
     # install [train] version of python package with the rllib dependencies
     pip install -e .[train]
 
-    # OPTIONAL: install [render] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
-    pip install -e .[render]
+    # OPTIONAL: install [camera-obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
+    pip install -e .[camera-obs]
 
     # make sure you can run sanity-test (and verify they are passing)
     # if tests fail, check './sanity_test_result.xml' for test report.
