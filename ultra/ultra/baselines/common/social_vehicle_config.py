@@ -19,22 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from ultra.baselines.common.social_vehicle_extraction import *
 from ultra.baselines.common.social_vehicles_encoders.pointnet_encoder import PNEncoder
 from ultra.baselines.common.social_vehicles_encoders.pointnet_encoder_batched import (
     PNEncoderBatched,
 )
-from ultra.baselines.common.social_vehicle_extraction import *
 from ultra.baselines.common.social_vehicles_encoders.precog_encoder import (
     PrecogFeatureExtractor,
 )
-
-social_vehicle_extractors = {
-    "pointnet_encoder": extract_social_vehicle_state_pointnet,
-    "pointnet_encoder_batched": extract_social_vehicle_state_pointnet,
-    "precog_encoder": extract_social_vehicle_state_default,
-    "no_encoder": extract_social_vehicle_state_default,
-}
 
 
 def get_social_vehicle_configs(
@@ -48,15 +39,12 @@ def get_social_vehicle_configs(
 ):
     config = {
         "num_social_features": int(num_social_features),
-        "social_capacity": int(
-            social_capacity
-        ),  # number of social vehicles to consider
-        "social_vehicle_extractor_func": social_vehicle_extractors[encoder_key],
+        "social_capacity": int(social_capacity),  # Max social vehicles to consider.
         "encoder_key": encoder_key,
     }
     if encoder_key == "precog_encoder":
         config["encoder"] = {  # state_size: 18 + social_capacity*output_dim
-            "use_leading_vehicles": None,
+            # "use_leading_vehicles": None,
             "social_feature_encoder_class": PrecogFeatureExtractor,
             "social_feature_encoder_params": {
                 "hidden_units": int(social_policy_hidden_units),
@@ -68,7 +56,7 @@ def get_social_vehicle_configs(
         }
     elif encoder_key == "pointnet_encoder":
         config["encoder"] = {
-            "use_leading_vehicles": None,
+            # "use_leading_vehicles": None,
             "social_feature_encoder_class": PNEncoder,
             "social_feature_encoder_params": {
                 "input_dim": int(num_social_features),
@@ -78,7 +66,7 @@ def get_social_vehicle_configs(
         }
     elif encoder_key == "pointnet_encoder_batched":
         config["encoder"] = {
-            "use_leading_vehicles": None,
+            # "use_leading_vehicles": None,
             "social_feature_encoder_class": PNEncoderBatched,
             "social_feature_encoder_params": {
                 "input_dim": int(num_social_features),
@@ -88,11 +76,11 @@ def get_social_vehicle_configs(
         }
     elif encoder_key == "no_encoder":
         config["encoder"] = {  # state_size: 18 + social_capacity*social_features
-            "use_leading_vehicles": {
-                "social_capacity": int(social_capacity),
-                "max_dist_social_vehicle": 100,
-                "num_social_vehicle_per_lane": 2,
-            },
+            # "use_leading_vehicles": {
+            #     "social_capacity": int(social_capacity),
+            #     "max_dist_social_vehicle": 100,
+            #     "num_social_vehicle_per_lane": 2,
+            # },
             "social_feature_encoder_class": None,  # No Encoder; Examples at the bottom of this page
             "social_feature_encoder_params": {},
         }

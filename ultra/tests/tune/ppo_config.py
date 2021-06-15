@@ -22,7 +22,6 @@
 from ray import tune
 
 config = {
-    "action_size": 2,
     "batch_size": 2048,  # size of batch
     "lr": 3e-5,
     "mini_batch_size": 64,  # 64
@@ -36,15 +35,14 @@ config = {
     "hidden_units": 512,
     "seed": 2,
     "logging_freq": 2,
-    "observation_num_lookahead": 20,
     "social_vehicles": {
         "encoder_key": tune.choice(
             ["no_encoder", "precog_encoder", "pointnet_encoder"]
         ),
         "social_policy_hidden_units": 128,
         "social_policy_init_std": 0.5,
-        "social_capacity": 10,
-        "num_social_features": 4,
-        "seed": 2,
     },
+    "action_type": "default_action_continuous",
+    "observation_type": "default_observation_vector",
+    "reward_type": "default_reward",
 }

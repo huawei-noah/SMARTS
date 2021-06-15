@@ -23,7 +23,7 @@ from itertools import cycle
 import glob, yaml
 from smarts.core.scenario import Scenario
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-from ultra.baselines.adapter import BaselineAdapter
+import ultra.adapters as adapters
 from ultra.baselines.common.yaml_loader import load_yaml
 import numpy as np
 from scipy.spatial import distance
@@ -49,9 +49,12 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             _scenarios = glob.glob(f"{self.scenarios['train']}")
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
-
         config["scenarios"] = _scenarios
-        self.ultra_scores = BaselineAdapter.reward_adapter
+
+        self.ultra_scores = adapters.adapter_from_type(
+            adapter_type=adapters.AdapterType.DefaultReward
+        )
+
         super().__init__(config=config)
 
         if config["ordered_scenarios"]:

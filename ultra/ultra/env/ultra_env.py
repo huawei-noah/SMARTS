@@ -31,12 +31,11 @@ from scipy.spatial import distance
 
 from smarts.core.scenario import Scenario
 from smarts.env.hiway_env import HiWayEnv
-from ultra.baselines.adapter import BaselineAdapter
+import ultra.adapters as adapters
 from ultra.baselines.common.yaml_loader import load_yaml
 from ultra.scenarios.common.distributions import t_patterns, cross_patterns
 
 path.append("./ultra")
-from ultra.utils.common import ego_social_safety, get_closest_waypoint, get_path_to_goal
 
 
 class UltraEnv(HiWayEnv):
@@ -68,8 +67,6 @@ class UltraEnv(HiWayEnv):
             self.scenario_info = scenario_info
             _scenarios = self.get_scenarios(scenario_info)
 
-        self.ultra_scores = BaselineAdapter.reward_adapter
-
         super().__init__(
             scenarios=_scenarios,
             agent_specs=agent_specs,
@@ -96,63 +93,6 @@ class UltraEnv(HiWayEnv):
                 )
             )
 
-    def generate_logs(self, observation, highwayenv_score):
-        ego_state = observation.ego_vehicle_state
-        start = observation.ego_vehicle_state.mission.start
-        goal = observation.ego_vehicle_state.mission.goal
-        path = get_path_to_goal(
-            goal=goal, paths=observation.waypoint_paths, start=start
-        )
-        closest_wp, _ = get_closest_waypoint(
-            num_lookahead=100,
-            goal_path=path,
-            ego_position=ego_state.position,
-            ego_heading=ego_state.heading,
-        )
-        signed_dist_from_center = closest_wp.signed_lateral_error(ego_state.position)
-        lane_width = closest_wp.lane_width * 0.5
-        ego_dist_center = signed_dist_from_center / lane_width
-
-        linear_jerk = np.linalg.norm(ego_state.linear_jerk)
-        angular_jerk = np.linalg.norm(ego_state.angular_jerk)
-
-        # Distance to goal
-        ego_2d_position = ego_state.position[0:2]
-        goal_dist = distance.euclidean(ego_2d_position, goal.position)
-
-        angle_error = closest_wp.relative_heading(
-            ego_state.heading
-        )  # relative heading radians [-pi, pi]
-
-        # number of violations
-        (ego_num_violations, social_num_violations,) = ego_social_safety(
-            observation,
-            d_min_ego=1.0,
-            t_c_ego=1.0,
-            d_min_social=1.0,
-            t_c_social=1.0,
-            ignore_vehicle_behind=True,
-        )
-
-        info = dict(
-            position=ego_state.position,
-            speed=ego_state.speed,
-            steering=ego_state.steering,
-            heading=ego_state.heading,
-            dist_center=abs(ego_dist_center),
-            start=start,
-            goal=goal,
-            closest_wp=closest_wp,
-            events=observation.events,
-            ego_num_violations=ego_num_violations,
-            social_num_violations=social_num_violations,
-            goal_dist=goal_dist,
-            linear_jerk=np.linalg.norm(ego_state.linear_jerk),
-            angular_jerk=np.linalg.norm(ego_state.angular_jerk),
-            env_score=self.ultra_scores(observation, highwayenv_score),
-        )
-        return info
-
     def step(self, agent_actions):
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
@@ -175,7 +115,6 @@ class UltraEnv(HiWayEnv):
             rewards[agent_id] = agent_spec.reward_adapter(observation, reward)
             observations[agent_id] = agent_spec.observation_adapter(observation)
             infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
-            infos[agent_id]["logs"] = self.generate_logs(observation, reward)
 
         for done in agent_dones.values():
             self._dones_registered += 1 if done else 0

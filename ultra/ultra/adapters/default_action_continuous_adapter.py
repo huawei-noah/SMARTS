@@ -19,34 +19,36 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.zoo.registry import register
-from .sac.sac.policy import SACPolicy
-from .ppo.ppo.policy import PPOPolicy
-from .dqn.dqn.policy import DQNPolicy
-from .td3.td3.policy import TD3Policy
-from .bdqn.bdqn.policy import BehavioralDQNPolicy
-from smarts.core.controllers import ActionSpaceType
-from ultra.baselines.agent_spec import BaselineAgentSpec
+import gym
+import numpy as np
 
-register(
-    locator="sac-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=SACPolicy, **kwargs),
+from smarts.core.controllers import ActionSpaceType
+
+
+# The space of the adapted action.
+gym_space: gym.Space = gym.spaces.Box(
+    low=np.array([0.0, 0.0, -1.0]),
+    high=np.array([1.0, 1.0, 1.0]),
+    dtype=np.float32,
 )
-register(
-    locator="ppo-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=PPOPolicy, **kwargs),
-)
-register(
-    locator="td3-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=TD3Policy, **kwargs),
-)
-register(
-    locator="dqn-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=DQNPolicy, **kwargs),
-)
-register(
-    locator="bdqn-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(
-        policy_class=BehavioralDQNPolicy, **kwargs
-    ),
-)
+# This adapter reqiures SMARTS to ensure that the agent is provided a "continuous"
+# controller, that is, a controller that allows for actions in the form of an array:
+# [throttle, brake, steering].
+required_interface = {"action": ActionSpaceType.Continuous}
+
+
+def adapt(action: np.ndarray) -> np.ndarray:
+    """Adapts a given action into an action that SMARTS can understand for a continuous
+    controller. This adapter expects that the action is already a valid continuous
+    controller action.
+
+    Args:
+        action (numpy.ndarray): The action to adapt. The action should be in the form of
+            [throttle, brake, steering] where each element is a float. The throttle
+            element is in the range [0, 1], the brake element is in the range [0, 1] and
+            the steering element is in the range [-1, 1].
+
+    Returns:
+        np.ndarray: The same action that was passed in.
+    """
+    return action

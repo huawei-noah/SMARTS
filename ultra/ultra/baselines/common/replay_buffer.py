@@ -65,9 +65,6 @@ class ReplayBufferDataset(Dataset):
         reward,
         next_state,
         done,
-        social_capacity,
-        observation_num_lookahead,
-        social_vehicle_config,
         prev_action,
         others=None,
     ):
