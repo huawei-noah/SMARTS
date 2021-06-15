@@ -48,6 +48,12 @@ class RendererException(Exception):
 
 
 try:
+    # We wrap the following import statements and the ShowBaseInstance class in a try block, because Panda3D and its
+    # modules are only required for visualizations and rendering of agent camera observations in SMARTS and hence are
+    # removed from the dependencies during installation of SMARTS. So the try block checks whether the user has installed
+    # the [render] dependencies required to use this class for rendering camera observations in simulation, and warns the
+    # user if not so.
+
     import gltf
     from direct.showbase.ShowBase import ShowBase
     from panda3d.core import (
@@ -118,9 +124,6 @@ try:
         def __del__(self):
             self.destroy()
 
-        def test_init(self):
-            return "Successfully imported rendering packages"
-
         def setup_sim_root(self, simid: str):
             root_np = NodePath(simid)
             with self._render_lock:
@@ -155,7 +158,11 @@ try:
 except ImportError:
 
     class _ShowBaseInstance:
-        pass
+        def __init__(self):
+            raise RendererException(
+                f"You may not have installed the [render] dependencies required to render the camera sensor observations. "
+                "Install them first using the command `pip install -e .[render]` at the source directory."
+            )
 
 
 class Renderer:
@@ -169,16 +176,7 @@ class Renderer:
         self._vehicle_nodes = {}
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
-
         self._showbase_instance = _ShowBaseInstance()
-        try:
-            print(self._showbase_instance.test_init())
-        except Exception as e:
-            # Known reasons for this failing:
-            raise AttributeError(
-                f"You may not have installed the [render] dependencies required to render the camera sensor observations. "
-                "Install them first using the command `pip install -e .[render]` at the source directory."
-            ) from e
 
     @property
     def id(self):
