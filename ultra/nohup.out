@@ -1,0 +1,26 @@
+Traceback (most recent call last):
+  File "/home/dikshant/github/SMARTS/ultra/.venv/bin/scl", line 8, in <module>
+    sys.exit(scl())
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/click/core.py", line 1137, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/click/core.py", line 1062, in main
+    rv = self.invoke(ctx)
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/click/core.py", line 1668, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/click/core.py", line 1668, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/click/core.py", line 1404, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/click/core.py", line 763, in invoke
+    return __callback(*args, **kwargs)
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/cli/envision.py", line 50, in start_server
+    run(scenario_dirs=scenarios, max_capacity_mb=max_capacity, port=port)
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/envision/server.py", line 424, in run
+    app.listen(port)
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/tornado/web.py", line 2109, in listen
+    server.listen(port, address)
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/tornado/tcpserver.py", line 151, in listen
+    sockets = bind_sockets(port, address=address)
+  File "/home/dikshant/github/SMARTS/ultra/.venv/lib/python3.7/site-packages/tornado/netutil.py", line 161, in bind_sockets
+    sock.bind(sockaddr)
+OSError: [Errno 98] Address already in use

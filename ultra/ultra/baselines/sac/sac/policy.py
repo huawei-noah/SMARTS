@@ -24,15 +24,15 @@ import torch
 import numpy as np
 import torch.nn as nn
 from sys import path
-from ultra.ultra.baselines.sac.sac.network import SACNetwork
+from ultra.baselines.sac.sac.network import SACNetwork
 import torch.nn.functional as F
 import pathlib, os, yaml, copy
-from ultra.ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
+from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
 from smarts.core.agent import Agent
-from ultra.ultra.baselines.common.replay_buffer import ReplayBuffer
-from ultra.ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.ultra.baselines.common.yaml_loader import load_yaml
-from ultra.ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
+from ultra.baselines.common.replay_buffer import ReplayBuffer
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class SACPolicy(Agent):

@@ -23,8 +23,8 @@ import collections.abc
 import numpy as np
 import torch
 
-from ultra.ultra.baselines.common.state_preprocessor import StatePreprocessor
-from ultra.ultra.utils.common import rotate2d_vector
+from ultra.baselines.common.state_preprocessor import StatePreprocessor
+from ultra.utils.common import rotate2d_vector
 
 
 class BaselineStatePreprocessor(StatePreprocessor):

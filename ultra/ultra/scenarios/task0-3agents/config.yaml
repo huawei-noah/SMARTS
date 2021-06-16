@@ -1,0 +1,75 @@
+levels:
+  no-traffic:  # This is the level name.
+    train:
+      total: 10000  # There will be 10 training scenarios.
+      ego_missions:  # The number of missions determines the number of agents.
+      - start: south-SN  # Turn left going from South to West.
+        end:   west-EW
+      - start: west-WE   # Turn left going from West to North.
+        end:   north-SN
+      - start: north-NS  # Turn left going from North to East.
+        end:   east-WE
+      intersection_types:
+        2lane_c:
+          percent: 1.0  # 100% of these scenarios will be 2 lane, t-intersections.
+          specs: [[50kmh,no-traffic,0.34],[70kmh,no-traffic,0.33],[100kmh,no-traffic,0.33]]
+    test:
+      total: 200  # There will be 2 testing scenarios.
+      ego_missions:  # Testing scenarios currenly only support one agent.
+      - start: south-SN  # Turn left going from South to West.
+        end:   west-EW
+      intersection_types:
+        2lane_c:
+          percent: 1.0  # 100% of these scenarios will be 2 lane, c-intersections.
+          specs: [[50kmh,low-density,0.34],[70kmh,low-density,0.33],[100kmh,low-density,0.33]]
+  easy:
+    train:
+      total: 10000
+      ego_missions:
+      - start: south-SN  # Turn left going from South to West.
+        end:   west-EW
+      - start: west-WE   # Turn left going from West to North.
+        end:   north-SN
+      - start: north-NS  # Turn left going from North to East.
+        end:   east-WE
+      intersection_types:
+        2lane_c:
+          percent: 1 # 0.2
+          specs: [[50kmh,low-density,0.22],[70kmh,low-density,0.21],[100kmh,low-density,0.21], #61%
+                   [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12]] #, 33%,
+                  #  [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                  #  [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+        # 2lane_curvy_t:
+        #    percent: 0.4
+        #    specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+        #            [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
+        #            [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+        #            [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+        # 3lane_t:
+        #    percent: 0.4
+        #    specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+        #            [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
+        #            [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+        #            [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+    test:
+      total: 200
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+        # start_offset: [77, 83]
+        # end_offset:   [40, 40]
+      intersection_types:
+        2lane_c:
+          percent: 1 #0.5
+          specs: [[50kmh,low-density,0.22],[70kmh,low-density,0.21],[100kmh,low-density,0.21], #61%
+                   [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12]] #, 33%
+                  #  [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                  #  [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+        # 3lane_c:
+        #    percent: 0.5
+        #    specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+        #            [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%
+        #            [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+        #            [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+
