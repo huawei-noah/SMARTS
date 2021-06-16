@@ -45,7 +45,6 @@ from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
 from .motion_planner_provider import MotionPlannerProvider
 from .provider import Provider, ProviderState
-from .renderer import Renderer
 from .scenario import Scenario
 from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
@@ -440,10 +439,15 @@ class SMARTS:
     @property
     def renderer(self):
         if not self._renderer:
-            self._renderer = Renderer(self._sim_id)
-            if self._scenario:
-                self._renderer.setup(self._scenario)
-                self._vehicle_index.begin_rendering_vehicles(self._renderer)
+            try:
+                from .renderer import Renderer
+                self._renderer = Renderer(self._sim_id)
+                if self._scenario:
+                    self._renderer.setup(self._scenario)
+                    self._vehicle_index.begin_rendering_vehicles(self._renderer)
+            except Exception as e:
+                self._log.warning("unable to create Renderer:  " + e)
+                self._renderer = None
         return self._renderer
 
     @property
