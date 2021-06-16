@@ -132,9 +132,7 @@ class RendererException(Exception):
     @classmethod
     def required_to(cls, thing):
         return cls(
-            f"""A renderer is required to {thing}.
-               You may not have installed the [camera-obs] dependencies required to render the camera sensor observations.
-               Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
+            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
         )
 
 

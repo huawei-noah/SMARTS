@@ -447,7 +447,7 @@ class SMARTS:
                     self._renderer.setup(self._scenario)
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
             except Exception as e:
-                self._log.warning("unable to create Renderer:  " + e)
+                self._log.warning("unable to create Renderer:  " + repr(e))
                 self._renderer = None
         return self._renderer
 
