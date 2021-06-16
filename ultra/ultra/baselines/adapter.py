@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os
 import numpy as np
 import torch
 from scipy.spatial import distance
@@ -44,8 +45,10 @@ num_lookahead = 100
 
 class BaselineAdapter:
     def __init__(self, agent_name):
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        ultra_dir = os.path.join(current_dir, "../../")
         self.policy_params = load_yaml(
-            f"ultra/baselines/{agent_name}/{agent_name}/params.yaml"
+            f"{ultra_dir}/ultra/baselines/{agent_name}/{agent_name}/params.yaml"
         )
 
         social_vehicle_params = self.policy_params["social_vehicles"]

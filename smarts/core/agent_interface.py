@@ -127,6 +127,37 @@ class AgentType(IntEnum):
     """Controls multiple vehicles"""
     MPCTracker = 10
     """Agent performs trajectory tracking using model predictive control."""
+    Imitation = 11
+    """Agent sees neighbor vehicles and performs actions based on imitation-learned model (acceleration, angular_velocity)."""
+
+
+@dataclass(frozen=True)
+class AgentsListAlive:
+    agents_list: List[str]
+    """The list of agents to check whether they are alive"""
+    minimum_agents_alive_in_list: int
+    """Triggers the agent to be done if the number of alive agents in agents_list falls below the given value"""
+
+
+@dataclass(frozen=True)
+class AgentsAliveDoneCriteria:
+    minimum_ego_agents_alive: Optional[int] = None
+    """If set, triggers the agent to be done if the total number of alive ego agents falls below the given value."""
+    minimum_total_agents_alive: Optional[int] = None
+    """If set, triggers the agent to be done if total number of alive agents falls below the given value."""
+    agent_lists_alive: Optional[List[AgentsListAlive]] = None
+    """A termination criteria based on the ids of agents. If set, triggers the agent to be done if any list of agents fails 
+    to meet its specified minimum number of alive agents.
+    Example: [
+        AgentsListAlive(
+            agents_list=['agent1','agent2'], minimum_agents_alive_in_list=1
+        ),
+        AgentsListAlive(
+            agents_list=['agent3'], minimum_agents_alive_in_list=1
+        ),
+    ]
+    This agent's done event would be triggered if both 'agent1' and 'agent2' is done *or* 'agent3' is done.
+    """
 
 
 @dataclass(frozen=True)
@@ -361,6 +392,12 @@ class AgentInterface:
             interface = AgentInterface(
                 waypoints=True,
                 action=ActionSpaceType.Continuous,
+            )
+        # For testing imitation learners
+        elif requested_type == AgentType.Imitation:
+            interface = AgentInterface(
+                neighborhood_vehicles=True,
+                action=ActionSpaceType.Imitation,
             )
         else:
             raise Exception("Unsupported agent type %s" % requested_type)

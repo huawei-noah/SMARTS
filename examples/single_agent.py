@@ -1,13 +1,16 @@
 import logging
+from smarts.core.controllers import ActionSpaceType
 
 import gym
 
-from examples import default_argument_parser
+from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.agent_interface import AgentInterface, AgentType, NeighborhoodVehicles, Waypoints
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
-from ultra.ultra.baselines.ppo.ppo import policy
+
+from ultra.baselines.adapter import BaselineAdapter
+from ultra.baselines.ppo.ppo.policy import PPOPolicy
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,12 +40,26 @@ class PPO(Agent):
         return '5'
 
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
+    # agent_spec = AgentSpec(
+    #     interface=AgentInterface.from_type(
+    #         AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
+    #     ),
+    #     agent_builder=ChaseViaPointsAgent,
+    # )
+
+    adapter = BaselineAdapter("ppo")
     agent_spec = AgentSpec(
-        interface=AgentInterface.from_type(
-            AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
+        interface=AgentInterface(
+            waypoints=Waypoints(lookahead=20),
+            neighborhood_vehicles=NeighborhoodVehicles(radius=200),
+            action=ActionSpaceType.Continuous,
+            max_episode_steps=max_episode_steps,
         ),
-        # agent_builder=ChaseViaPointsAgent,
-        agent_builder=PPO,
+
+        agent_builder=PPOPolicy,
+        agent_params={"policy_params": adapter.policy_params},
+        observation_adapter=adapter.observation_adapter,
+        reward_adapter=adapter.reward_adapter,
     )
 
     env = gym.make(

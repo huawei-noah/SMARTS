@@ -113,6 +113,7 @@ class SMARTS:
             ActionSpaceType.LaneWithContinuousSpeed,
             ActionSpaceType.Trajectory,
             ActionSpaceType.MPC,
+            ActionSpaceType.Imitation,
         }
 
         # Set up indices
@@ -290,7 +291,9 @@ class SMARTS:
             self.setup(scenario)
 
         # Tell history provide to ignore vehicles if we have assigned mission to them
-        self._traffic_history_provider.set_replaced_ids(scenario.missions.keys())
+        self._traffic_history_provider.set_replaced_ids(
+            m.vehicle_id for m in scenario.missions.values() if m and m.vehicle_id
+        )
 
         self._total_sim_time += self._elapsed_sim_time
         self._elapsed_sim_time = 0
@@ -330,8 +333,8 @@ class SMARTS:
         assert isinstance(provider, Provider)
         self._providers.append(provider)
 
-    def switch_ego_agent(self, agent_interface):
-        self._agent_manager.switch_initial_agent(agent_interface)
+    def switch_ego_agents(self, agent_interfaces):
+        self._agent_manager.switch_initial_agents(agent_interfaces)
         self._is_setup = False
 
     def _setup_bullet_client(self, client: bc.BulletClient):
@@ -431,7 +434,22 @@ class SMARTS:
         )
 
     def observe_from(self, vehicle_ids):
-        return self._agent_manager.observe_from(self, vehicle_ids)
+        return self._agent_manager.observe_from(
+            self, vehicle_ids, self._traffic_history_provider.done_this_step
+        )
+
+    @property
+    def renderer(self):
+        if not self._renderer:
+            self._renderer = Renderer(self._sim_id)
+            if self._scenario:
+                self._renderer.setup(self._scenario)
+                self._vehicle_index.begin_rendering_vehicles(self._renderer)
+        return self._renderer
+
+    @property
+    def is_rendering(self):
+        return self._renderer is not None
 
     @property
     def renderer(self):
@@ -596,6 +614,36 @@ class SMARTS:
 
         return provider_state
 
+    def _nondynamic_provider_step(self, agent_actions) -> ProviderState:
+        self._perform_agent_actions(agent_actions)
+
+        provider_state = ProviderState()
+        nondynamic_agent_ids = {
+            agent_id
+            for agent_id, interface in self._agent_manager.agent_interfaces.items()
+            if interface.action_space not in self._dynamic_action_spaces
+        }
+
+        for vehicle_id in self._vehicle_index.agent_vehicle_ids():
+            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+            if agent_id not in nondynamic_agent_ids:
+                continue
+
+            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+            assert isinstance(vehicle.chassis, BoxChassis)
+            provider_state.vehicles.append(
+                VehicleState(
+                    vehicle_id=vehicle.id,
+                    vehicle_type="passenger",
+                    pose=vehicle.pose,
+                    dimensions=vehicle.chassis.dimensions,
+                    speed=vehicle.speed,
+                    source="OTHER",
+                )
+            )
+
+        return provider_state
+
     @property
     def vehicle_index(self):
         return self._vehicle_index
@@ -648,14 +696,12 @@ class SMARTS:
             interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
             return interface.action_space in action_spaces
 
-        # PyBullet
-        pybullet_actions = {
-            agent_id: action
-            for agent_id, action in actions.items()
-            if agent_controls_vehicles(agent_id)
-            and matches_provider_action_spaces(agent_id, self._dynamic_action_spaces)
-        }
-        accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions))
+        def matches_no_provider_action_space(agent_id):
+            interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            for provider in self.providers:
+                if interface.action_space in provider.action_spaces:
+                    return False
+            return True
 
         for provider in self.providers:
             provider_state = self._step_provider(provider, actions, dt)
@@ -879,7 +925,7 @@ class SMARTS:
                 position[agent_id] = v.pose.position[:2]
                 heading[agent_id] = v.pose.heading
                 if (
-                    len(vehicle_obs.waypoint_paths) > 0
+                    vehicle_obs.waypoint_paths
                     and len(vehicle_obs.waypoint_paths[0]) > 0
                 ):
                     lane_ids[agent_id] = vehicle_obs.waypoint_paths[0][0].lane_id
