@@ -12,7 +12,7 @@ Task 1 Training Scenario|Task 1 Testing Scenario
 
 - If you have not yet generated the maps used by the ULTRA scenarios (available in `ultra/scenarios/pool/`), run the following command:
   ```sh
-  $ scl scenario build-all ultra/scenarios/pool
+  $ scl scenario build-all ultra/scenarios/pool/experiment_pool/
   ```
   > Maps are descriptions of the roads used in the scenarios and only need to be compiled once. They only need to be compiled again if they have been modified.
 - Now we can generate the scenarios for Task 1. Each task has a `config.yaml` file describing the levels of the task:
