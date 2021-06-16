@@ -441,6 +441,7 @@ class SMARTS:
         if not self._renderer:
             try:
                 from .renderer import Renderer
+
                 self._renderer = Renderer(self._sim_id)
                 if self._scenario:
                     self._renderer.setup(self._scenario)
