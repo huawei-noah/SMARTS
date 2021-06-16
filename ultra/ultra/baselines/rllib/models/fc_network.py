@@ -24,7 +24,6 @@ from torch import nn
 from torch.distributions.normal import Normal
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFCNet
-from ultra.baselines.common.state_preprocessor import *
 
 
 class CustomFCModel(TorchModelV2, nn.Module):
@@ -48,13 +47,20 @@ class CustomFCModel(TorchModelV2, nn.Module):
         )
         nn.Module.__init__(self)
 
-        if "adapter" in model_config["custom_model_config"]:
-            adapter = model_config["custom_model_config"]["adapter"]
+        if "social_vehicle_config" in model_config["custom_model_config"]:
+            social_vehicle_config = model_config["custom_model_config"][
+                "social_vehicle_config"
+            ]
         else:
-            adapter = customized_model_kwargs["adapter"]
+            social_vehicle_config = customized_model_kwargs["social_vehicle_config"]
 
-        social_feature_encoder_class = adapter.social_feature_encoder_class
-        social_feature_encoder_params = adapter.social_feature_encoder_params
+        social_vehicle_encoder_config = social_vehicle_config["encoder"]
+        social_feature_encoder_class = social_vehicle_encoder_config[
+            "social_feature_encoder_class"
+        ]
+        social_feature_encoder_params = social_vehicle_encoder_config[
+            "social_feature_encoder_params"
+        ]
         self.social_feature_encoder = (
             social_feature_encoder_class(**social_feature_encoder_params)
             if social_feature_encoder_class
@@ -66,7 +72,6 @@ class CustomFCModel(TorchModelV2, nn.Module):
         )
 
     def forward(self, input_dict, state, seq_lens):
-
         low_dim_state = input_dict["obs"]["low_dim_states"]
         social_vehicles_state = input_dict["obs"]["social_vehicles"]
 

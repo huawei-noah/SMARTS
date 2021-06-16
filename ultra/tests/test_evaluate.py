@@ -406,11 +406,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
     agent_ids = ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(num_agents)]
     agent_classes = {agent_id: "ultra.baselines.sac:sac-v0" for agent_id in agent_ids}
     agent_specs = {
-        agent_id: BaselineAgentSpec(
-            action_type=ActionSpaceType.Continuous,
-            policy_class=SACPolicy,
-            max_episode_steps=2,
-        )
+        agent_id: BaselineAgentSpec(policy_class=SACPolicy, max_episode_steps=2)
         for agent_id in agent_ids
     }
 
