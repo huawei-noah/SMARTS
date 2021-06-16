@@ -38,7 +38,7 @@ def agent_specs():
         "AGENT_"
         + agent_id: AgentSpec(
             interface=AgentInterface(
-                rgb=True,
+                rgb=RGB(),
                 action=ActionSpaceType.Lane,
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
@@ -77,12 +77,12 @@ def test_frame_stack(env, agent_specs, num_stack):
         agent_id: agent_spec.build_agent()
         for agent_id, agent_spec in agent_specs.items()
     }
-    rgb = RGB()
 
     # Test whether env.reset returns stacked duplicated observations
     obs = env.reset()
     assert len(obs) == len(agents)
-    for _, agent_obs in obs.items():
+    for agent_id, agent_obs in obs.items():
+        rgb = agent_specs[agent_id].interface.rgb
         agent_obs = np.asarray(agent_obs)
         assert agent_obs.shape == (num_stack, rgb.width, rgb.height, 3)
         for i in range(1, num_stack):
@@ -94,7 +94,8 @@ def test_frame_stack(env, agent_specs, num_stack):
     }
     obs, _, _, _ = env.step(actions)
     assert len(obs) == len(agents)
-    for _, agent_obs in obs.items():
+    for agent_id, agent_obs in obs.items():
+        rgb = agent_specs[agent_id].interface.rgb
         agent_obs = np.asarray(agent_obs)
         assert agent_obs.shape == (num_stack, rgb.width, rgb.height, 3)
         for i in range(1, num_stack - 1):
