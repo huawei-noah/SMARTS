@@ -694,8 +694,6 @@ def build_scenarios(
     pool_dir=None,
     dynamic_pattern_func=None,
 ):
-    _DEFAULT_POOL_DIR = "ultra/scenarios/pool/experiment_pool"
-
     print("Generating Scenario ...")
     manager = Manager()
 
@@ -708,9 +706,7 @@ def build_scenarios(
     level_config = task_config["levels"][level_name]
     scenarios_dir = os.path.dirname(os.path.realpath(__file__))
     task_dir = f"{scenarios_dir}/{task}"
-
-    if pool_dir is None:
-        pool_dir = _DEFAULT_POOL_DIR
+    pool_dir = f"{scenarios_dir}/pool/experiment_pool" if pool_dir is None else pool_dir
 
     train_total, test_total = (
         int(level_config["train"]["total"]),
