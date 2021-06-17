@@ -45,7 +45,7 @@ from ultra.utils.episode import episodes
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-def create_parser():
+def create_argument_parser():
     parser = argparse.ArgumentParser("intersection-training")
     parser.add_argument(
         "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
@@ -115,7 +115,7 @@ def create_parser():
     return parser
 
 
-def build_agent(policy_classes, policy_ids, max_episode_steps):
+def build_agents(policy_classes, policy_ids, max_episode_steps):
     # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
     # or use the provided policy_ids if available.
     agent_ids = (
@@ -157,19 +157,18 @@ def build_agent(policy_classes, policy_ids, max_episode_steps):
 
 def _save_agent_metadata(experiment_dir, agent_ids, agent_classes, agent_specs):
     # Save relevant agent metadata.
-    if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
-        if not os.path.exists(experiment_dir):
-            os.makedirs(experiment_dir)
-        with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
-            dill.dump(
-                {
-                    "agent_ids": agent_ids,
-                    "agent_classes": agent_classes,
-                    "agent_specs": agent_specs,
-                },
-                metadata_file,
-                pickle.HIGHEST_PROTOCOL,
-            )
+    if not os.path.exists(experiment_dir):
+        os.makedirs(experiment_dir)
+    with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
+        dill.dump(
+            {
+                "agent_ids": agent_ids,
+                "agent_classes": agent_classes,
+                "agent_specs": agent_specs,
+            },
+            metadata_file,
+            pickle.HIGHEST_PROTOCOL,
+        )
 
 
 def train(
@@ -190,7 +189,7 @@ def train(
     finished = False
     evaluation_task_ids = dict()
 
-    agent_ids, agent_classes, agent_specs, agents, etag = build_agent(
+    agent_ids, agent_classes, agent_specs, agents, etag = build_agents(
         policy_classes, policy_ids, max_episode_steps
     )
 
@@ -211,9 +210,10 @@ def train(
         infos = None
         episode.reset()
 
-        _save_agent_metadata(
-            episode.experiment_dir, agent_ids, agent_classes, agent_specs
-        )
+        if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
+            _save_agent_metadata(
+                episode.experiment_dir, agent_ids, agent_classes, agent_specs
+            )
 
         evaluation_check(
             agents=agents,
@@ -283,7 +283,7 @@ def train(
 
 
 if __name__ == "__main__":
-    parser = create_parser()
+    parser = create_argument_parser()
     args = parser.parse_args()
 
     # Obtain the policy class strings for each specified policy.
