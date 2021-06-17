@@ -8,14 +8,20 @@ from pathlib import Path
 from typing import Dict
 
 import numpy as np
-from ray import tune
-from ray.rllib.agents.callbacks import DefaultCallbacks
-from ray.rllib.env.base_env import BaseEnv
-from ray.rllib.evaluation.episode import MultiAgentEpisode
-from ray.rllib.evaluation.rollout_worker import RolloutWorker
-from ray.rllib.policy.policy import Policy
-from ray.rllib.utils.typing import PolicyID
-from ray.tune.schedulers import PopulationBasedTraining
+
+try:
+    from ray import tune
+    from ray.rllib.agents.callbacks import DefaultCallbacks
+    from ray.rllib.env.base_env import BaseEnv
+    from ray.rllib.evaluation.episode import MultiAgentEpisode
+    from ray.rllib.evaluation.rollout_worker import RolloutWorker
+    from ray.rllib.policy.policy import Policy
+    from ray.rllib.utils.typing import PolicyID
+    from ray.tune.schedulers import PopulationBasedTraining
+except Exception as e:
+    from examples import RayException
+
+    raise RayException.required_to("rllib.py")
 
 import smarts
 from examples.rllib_agent import TrainingModel, rllib_agent
