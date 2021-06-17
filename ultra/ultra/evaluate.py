@@ -322,19 +322,6 @@ def evaluate_saved_models(
         # specified agents
         agent_checkpoint_directories = custom_checkpoint_directories
 
-    # TODO : Discuss with ULTRA team if it is still necessary to assert the length of models
-    # of all agents with the new structure
-    # Assert each agent ID has the same number of checkpoints saved.
-    # directories_iterator = iter(agent_checkpoint_directories.values())
-    # number_of_checkpoints = len(next(directories_iterator))
-    # assert all(
-    #     len(checkpoint_directory) == number_of_checkpoints
-    #     for checkpoint_directory in directories_iterator
-    # ), "Not all agents have the same number of checkpoints saved"
-
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a {"000": "ultra.baselines.dqn:dqn-v0", "001": "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes dict, transform it to an etag of "dqn-v0:ppo-v0-evaluation".
     etag = (
         ":".join([policy_classes[agent_id].split(":")[-1] for agent_id in agent_ids])
         + "-evaluation"

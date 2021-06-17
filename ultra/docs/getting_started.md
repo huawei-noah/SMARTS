@@ -67,7 +67,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   > This will train our DQN on 10 episodes and evaluate its performance every 5 episodes by running the agent in 2 evaluation episodes. You will notice that it will switch between training episodes and evaluation episodes.
 - During training, a folder `logs/<timestamped_experiment_name>` is produced. It contains:
   - A tensorboard log (`events.out.tfevents.<...>`)
-  - Models at different observation steps (`models/000/<observation_number>/online.pth`, `models/000/<observation_number>/target.pth`)
+  - Models at different observation episodes (`models/000/<observation_number>/online.pth`, `models/000/<observation_number>/target.pth`)
   - Pickled metadata of your agent (`agent_metadata.pkl`), and
   - Pickled results from training and evaluation (`pkls/Evaluation/resuts.pkl`, `pkls/Evaluation_Training/results.pkl`, and `pkls/Train/results.pkl`).
 
@@ -93,7 +93,7 @@ After training your agent, your models should be saved under `logs/<timestamped_
   ```
   > This will produce another experiment directory under `logs/` containing the results of the evaluation.
 
-  The `--models-to-evaluate` flag will provide you the functionality to evaluate agent(s) at specific checkpoint(s). The `--models-to-evaluate` flag takes a list of arguments in this format: <agent_id>/<model>. For example, if we want to evaluate an agent with id="000" at checkpoints 0, 33, 87, 120 (these values represent the steps at which the checkpoint was saved) we can run the following command:
+  The `--models-to-evaluate` flag will provide you the functionality to evaluate agent(s) at specific checkpoint(s). The `--models-to-evaluate` flag takes a list of arguments in this format: <agent_id>/<model>. For example, if we want to evaluate an agent with id="000" at checkpoints 0, 33, 87, 120 (these values represent the episodes at which the checkpoint was saved) we can run the following command:
   ```sh
   $ python ultra/evaluate.py --task 1 --level easy --agents 000 --experiment-dir logs/<timestamed_experiment_name>/ --episodes 5 --models-to-evaluate 000/0 000/33 000/87 000/120
   ```
