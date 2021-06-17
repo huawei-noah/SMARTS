@@ -92,6 +92,9 @@ def train(
     observation_space = adapters.space_from_type(adapter_type=observation_type)
 
     action_adapter = adapters.adapter_from_type(adapter_type=action_type)
+    info_adapter = adapters.adapter_from_type(
+        adapter_type=adapters.AdapterType.DefaultInfo
+    )
     observation_adapter = adapters.adapter_from_type(adapter_type=observation_type)
     reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
 
@@ -145,6 +148,7 @@ def train(
             agent_params={},
             agent_builder=None,
             action_adapter=action_adapter,
+            info_adapter=info_adapter,
             observation_adapter=observation_adapter,
             reward_adapter=reward_adapter,
         )

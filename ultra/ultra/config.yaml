@@ -20,6 +20,9 @@ tasks:
     bubbles:
       train: "scenarios/taskX/train_bubbles*"
       test:  "scenarios/taskX/test_bubbles*"
+    intersection-specific:
+      train: "scenarios/taskX/train_intersection-specific*"
+      test:  "scenarios/taskX/test_intersection-specific*"
   task0:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
@@ -37,6 +40,9 @@ tasks:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
       test:  "scenarios/task1/test_no-traffic*"
+    simple:
+      train: "scenarios/task1/train_simple*"
+      test:  "scenarios/task1/test_simple*"
     easy:
       train: "scenarios/task1/train_easy*"
       test:  "scenarios/task1/test_easy*"

@@ -50,6 +50,7 @@ def train(
     num_episodes,
     policy_classes,
     max_episode_steps,
+    max_steps,
     eval_info,
     timestep_sec,
     headless,
@@ -148,8 +149,8 @@ def train(
         collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
         while not dones["__all__"]:
-            # Break if any of the agent's step counts is 1000000 or greater.
-            if any([episode.get_itr(agent_id) >= 1000000 for agent_id in agents]):
+            # Break if any of the agent's step counts is max_steps (default is 1000000) or greater.
+            if any([episode.get_itr(agent_id) >= max_steps for agent_id in agents]):
                 finished = True
                 break
             # Request and perform actions on each agent that received an observation.
@@ -188,7 +189,7 @@ def train(
             observations = next_observations
 
         episode.record_episode()
-        episode.record_tensorboard()
+        episode.record_tensorboard(recording_step=episode.index)
 
         if finished:
             break
@@ -225,6 +226,12 @@ if __name__ == "__main__":
         help="Maximum number of steps per episode",
         type=int,
         default=200,
+    )
+    parser.add_argument(
+        "--max-steps",
+        help="Maximum total number of training steps",
+        type=int,
+        default=1000000,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
@@ -277,6 +284,7 @@ if __name__ == "__main__":
         scenario_info=(args.task, args.level),
         num_episodes=int(args.episodes),
         max_episode_steps=int(args.max_episode_steps),
+        max_steps=int(args.max_steps),
         eval_info={
             "eval_rate": float(args.eval_rate),
             "eval_episodes": int(args.eval_episodes),
