@@ -72,7 +72,7 @@
     - `--stopwatcher`: Include a stopwatcher (a vehicle that records the number of steps taken to do the left turn) in the scenarios.
     - `--save-dir`: The directory for saving the completed scenarios (completed scenarios will be put in the task directory if not specified).
     - `--root-dir`: The directory containing the task to be created (default is ultra/scenarios).
-    - `--pool-dir`: The directory containing the maps for the scenarios (default is pool/experiment_pool).
+    - `--pool-dir`: The directory containing the maps for the scenarios (default is ultra/scenarios/pool/experiment_pool).
     > Each scenario generates a `metadata.json` file to show the routes, number of vehicles, and types of vehicles that are used in that scenario.
 4. Do the analysis:
    - **Analyze scenarios**:
