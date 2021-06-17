@@ -12,6 +12,23 @@ This directory contains the scenarios, training environment, and agents used in 
 - `evaluate.py`: The evaluation program
 - `run.py`: Executes multi-agent training
 
+## Setup
+```bash
+# git clone ...
+cd <projec/baseline/marl_benchmark>
+
+# setup virtual environment; presently at least Python 3.7 and higher is officially supported
+python3.7 -m venv .venv
+
+# enter virtual environment to install all dependencies
+source .venv/bin/activate
+
+# upgrade pip, a recent version of pip is needed for the version of tensorflow we depend on
+pip install --upgrade pip
+
+# install the current version of python package with the rllib dependencies
+pip install -e .
+
 ## Running
 
 If you have not already, it is suggested you checkout the benchmark branch.
