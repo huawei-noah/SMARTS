@@ -126,11 +126,19 @@ class UltraEnv(HiWayEnv):
         return observations, rewards, agent_dones, infos
 
     def reset(self):
-        observations = super().reset()
+        scenario = next(self._scenarios_iterator)
+
+        self._dones_registered = 0
+        simulator_observations = self._smarts.reset(scenario)
 
         for _ in range(_STACK_SIZE):
-            self.observations_stack.append(copy.deepcopy(observations))
-        observations = self._stack_top_down_rgbs(observations)
+            self.observations_stack.append(copy.deepcopy(simulator_observations))
+        observations = self._stack_top_down_rgbs(simulator_observations)
+
+        observations = {
+            agent_id: self._agent_specs[agent_id].observation_adapter(obs)
+            for agent_id, obs in simulator_observations.items()
+        }
 
         return observations
 

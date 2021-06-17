@@ -165,7 +165,7 @@ class AdapterTest(unittest.TestCase):
         self.assertIn(AGENT_ID, observations)
         self.assertIsInstance(observations[AGENT_ID], np.ndarray)
         self.assertEqual(observations[AGENT_ID].dtype, "float32")
-        self.assertEqual(observations[AGENT_ID].shape, (1, 64, 64))
+        self.assertEqual(observations[AGENT_ID].shape, (4, 64, 64))
         self.assertEqual(space.dtype, observations[AGENT_ID].dtype)
         self.assertEqual(space.shape, observations[AGENT_ID].shape)
         self.assertTrue(space.contains(observations[AGENT_ID]))
