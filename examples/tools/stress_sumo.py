@@ -1,4 +1,9 @@
-import ray
+try:
+    import ray
+except Exception as e:
+    from examples import RayException
+
+    raise RayException.required_to("stress_sumo.py")
 
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
