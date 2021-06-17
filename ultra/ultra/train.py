@@ -210,7 +210,7 @@ def train(
         infos = None
         episode.reset()
 
-        if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
+        if not os.path.exists(f"{episode.experiment_dir}/agent_metadata.pkl"):
             _save_agent_metadata(
                 episode.experiment_dir, agent_ids, agent_classes, agent_specs
             )
