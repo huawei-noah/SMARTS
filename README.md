@@ -58,7 +58,7 @@ for _ in range(1000):
 cd <project>
 
 # Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
-./utils/setup/install_deps.sh
+bash utils/setup/install_deps.sh
 
 # verify sumo is >= 1.5.0
 # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
@@ -86,29 +86,28 @@ make sanity-test
 
 ## Running
 
-We use [supervisord](http://supervisord.org/introduction.html) to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and start supervisord:
+We use the `scl` command line to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and run the following command:
 
 ```bash
 # build scenarios/loop
 scl scenario build --clean scenarios/loop
 
-# start supervisord
-supervisord
+# run an experiment 
+scl run --envision examples/single_agent.py scenarios/loop 
 ```
 
-With `supervisord` running, visit http://localhost:8081/ in your browser to view your experiment.
+You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment. See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
 
-See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
+After executing the above command, visit http://localhost:8081/ in your browser to view your experiment.
 
-Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Here's how you can use one of the example scripts with a scenario.
+
+Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
 ```bash
-# Update the command=... in ./examples/supervisord.conf
-#
-# [program:smarts]
-# command=python examples/single_agent.py scenarios/loop
-# ...
+scl run --envision <examples/script_path> <scenarios/path> 
 ```
+
+Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
 
 ## Documentation
 
@@ -265,7 +264,7 @@ $ python examples/single_agent.py scenarios/loop
 # For this to work, your account needs to be added to the huaweinoah org
 $ cd /path/to/SMARTS
 export VERSION=v0.4.16
-docker build --no-cache -f ./etc/docker/Dockerfile -t smarts:$VERSION .
+docker build --no-cache -f ./utils/docker/Dockerfile -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
 docker login
 docker push huaweinoah/smarts:$VERSION

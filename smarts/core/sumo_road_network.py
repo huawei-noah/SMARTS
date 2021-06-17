@@ -230,7 +230,12 @@ class SumoRoadNetwork:
 
                 lane_to_poly[lane.getID()] = shape
 
+        # Remove holes created at tight junctions due to crude map geometry
+        self._snap_internal_holes(lane_to_poly)
+        self._snap_external_holes(lane_to_poly)
+        # Remove break in visible lane connections created when lane enters an intersection
         self._snap_internal_edges(lane_to_poly)
+
         polys = list(lane_to_poly.values())
 
         for node in self._graph.getNodes():
@@ -268,6 +273,59 @@ class SumoRoadNetwork:
             if outgoing_shape:
                 lane_shape = Polygon(snap(lane_shape, outgoing_shape, snap_threshold))
                 lane_to_poly[lane_id] = lane_shape
+
+    def _snap_internal_holes(self, lane_to_poly, snap_threshold=2):
+        for lane_id in lane_to_poly:
+            lane = self.lane_by_id(lane_id)
+
+            # Only do snapping for internal edge lane holes
+            if not lane.getEdge().isSpecial():
+                continue
+            lane_shape = lane_to_poly[lane_id]
+            for x, y in lane_shape.exterior.coords:
+                for nl, dist in self.nearest_lanes(
+                    (x, y),
+                    max(10, 2 * self._default_lane_width),
+                    include_junctions=False,
+                ):
+                    if not nl:
+                        continue
+                    nl_shape = lane_to_poly.get(nl.getID())
+                    if nl_shape:
+                        lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
+            lane_to_poly[lane_id] = lane_shape
+
+    def _snap_external_holes(self, lane_to_poly, snap_threshold=2):
+        for lane_id in lane_to_poly:
+            lane = self.lane_by_id(lane_id)
+
+            # Only do snapping for external edge lane holes
+            if lane.getEdge().isSpecial():
+                continue
+
+            incoming = self.lane_by_id(lane_id).getIncoming()
+            if incoming and incoming[0].getEdge().isSpecial():
+                continue
+
+            outgoing = self.lane_by_id(lane_id).getOutgoing()
+            if outgoing:
+                outgoing_lane = outgoing[0].getToLane()
+                if outgoing_lane.getEdge().isSpecial():
+                    continue
+
+            lane_shape = lane_to_poly[lane_id]
+            for x, y in lane_shape.exterior.coords:
+                for nl, dist in self.nearest_lanes(
+                    (x, y),
+                    max(10, 2 * self._default_lane_width),
+                    include_junctions=False,
+                ):
+                    if (not nl) or (nl and nl.getEdge().isSpecial()):
+                        continue
+                    nl_shape = lane_to_poly.get(nl.getID())
+                    if nl_shape:
+                        lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
+            lane_to_poly[lane_id] = lane_shape
 
     @staticmethod
     def _triangulate(polygon):
