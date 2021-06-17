@@ -30,11 +30,12 @@ import numpy as np
 from smarts.core.coordinates import Heading
 from smarts.core.sensors import Observation, VehicleObservation
 from smarts.core.agent_interface import NeighborhoodVehicles, Waypoints
+from ultra.adapters.constants import DEFAULT_RADIUS, DEFAULT_WAYPOINTS
 from ultra.utils.common import get_closest_waypoint, get_path_to_goal, rotate2d_vector
 
 
-_WAYPOINTS = 20  # Number of waypoints on the path ahead of the ego vehicle.
-_RADIUS = 200.0  # Locate all social vehicles within this radius of the ego vehicle.
+_WAYPOINTS = DEFAULT_WAYPOINTS
+_RADIUS = DEFAULT_RADIUS
 _CAPACITY = 10  # Number of social vehicles we keep in the adapted observation.
 _FEATURES = 4  # Number of features for each social vehicle.
 _SIZE = (
@@ -177,14 +178,14 @@ def adapt(observation: Observation) -> Dict[str, np.ndarray]:
             ]
         )
 
-    # Pad with zero vectors if we don't have enough social vehicles.
     if len(social_vehicles) < _CAPACITY:
+        # Pad with zero vectors if we don't have enough social vehicles.
         remain = _CAPACITY - len(social_vehicles)
         empty_social_vehicles = np.zeros(shape=(remain, _FEATURES))
         social_vehicles = np.concatenate((social_vehicles, empty_social_vehicles))
-
-    # Remove extra social vehicles if there were too many in the observation.
-    social_vehicles = social_vehicles[:_CAPACITY]
+    elif len(social_vehicles) > _CAPACITY:
+        # Remove extra social vehicles if there were too many in the observation.
+        social_vehicles = social_vehicles[:_CAPACITY]
 
     vector_observation = {
         "low_dim_states": low_dim_states.astype(np.float32),

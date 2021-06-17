@@ -270,7 +270,7 @@ def train(
             observations = next_observations
 
         episode.record_episode()
-        episode.record_tensorboard()
+        episode.record_tensorboard(recording_step=episode.index)
 
         if finished:
             break

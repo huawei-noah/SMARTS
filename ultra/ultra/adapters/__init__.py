@@ -26,6 +26,7 @@ import gym
 
 import ultra.adapters.default_action_continuous_adapter as default_action_continuous_adapter
 import ultra.adapters.default_action_discrete_adapter as default_action_discrete_adapter
+import ultra.adapters.default_info_adapter as default_info_adapter
 import ultra.adapters.default_observation_image_adapter as default_observation_image_adapter
 import ultra.adapters.default_observation_vector_adapter as default_observation_vector_adapter
 import ultra.adapters.default_reward_adapter as default_reward_adapter
@@ -35,6 +36,9 @@ class AdapterType(enum.Enum):
     # Action adapters.
     DefaultActionContinuous = enum.auto()
     DefaultActionDiscrete = enum.auto()
+
+    # Info adapters.
+    DefaultInfo = enum.auto()
 
     # Observation adapters.
     DefaultObservationVector = enum.auto()
@@ -47,6 +51,7 @@ class AdapterType(enum.Enum):
 _STRING_TO_TYPE = {
     "default_action_continuous": AdapterType.DefaultActionContinuous,
     "default_action_discrete": AdapterType.DefaultActionDiscrete,
+    "default_info": AdapterType.DefaultInfo,
     "default_observation_image": AdapterType.DefaultObservationImage,
     "default_observation_vector": AdapterType.DefaultObservationVector,
     "default_reward": AdapterType.DefaultReward,
@@ -60,6 +65,7 @@ _TYPE_TO_SPACE = {
 _TYPE_TO_ADAPTER = {
     AdapterType.DefaultActionContinuous: default_action_continuous_adapter.adapt,
     AdapterType.DefaultActionDiscrete: default_action_discrete_adapter.adapt,
+    AdapterType.DefaultInfo: default_info_adapter.adapt,
     AdapterType.DefaultObservationImage: default_observation_image_adapter.adapt,
     AdapterType.DefaultObservationVector: default_observation_vector_adapter.adapt,
     AdapterType.DefaultReward: default_reward_adapter.adapt,
@@ -67,6 +73,7 @@ _TYPE_TO_ADAPTER = {
 _TYPE_TO_REQUIRED_INTERFACE = {
     AdapterType.DefaultActionContinuous: default_action_continuous_adapter.required_interface,
     AdapterType.DefaultActionDiscrete: default_action_discrete_adapter.required_interface,
+    AdapterType.DefaultInfo: default_info_adapter.required_interface,
     AdapterType.DefaultObservationImage: default_observation_image_adapter.required_interface,
     AdapterType.DefaultObservationVector: default_observation_vector_adapter.required_interface,
     AdapterType.DefaultReward: default_reward_adapter.required_interface,
