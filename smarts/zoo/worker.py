@@ -67,9 +67,13 @@ for mod in modules:
         importlib.import_module(mod)
     except ImportError:
         if mod == "ray":
-            print("You need to install the ray dependency using pip install -e .[train] first")
+            print(
+                "You need to install the ray dependency using pip install -e .[train] first"
+            )
         if mod == "panda3d":
-            print("You need to install the panda3d dependency using pip install -e .[camera-obs] first")
+            print(
+                "You need to install the panda3d dependency using pip install -e .[camera-obs] first"
+            )
         pass
 
 
