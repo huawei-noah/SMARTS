@@ -64,7 +64,7 @@ class UltraEnv(HiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
 
-        self.observations_stack = deque(maxlen=_STACK_SIZE)
+        self.smarts_observations_stack = deque(maxlen=_STACK_SIZE)
 
         super().__init__(
             scenarios=_scenarios,
@@ -97,11 +97,12 @@ class UltraEnv(HiWayEnv):
             for agent_id, action in agent_actions.items()
         }
 
-        observations, rewards, agent_dones, extras = self._smarts.step(agent_actions)
+        smarts_observations, rewards, agent_dones, extras = self._smarts.step(
+            agent_actions
+        )
 
-        # TODO: Stack observations here that need to be stacked.
-        self.observations_stack.append(copy.deepcopy(observations))
-        observations = self._stack_top_down_rgbs(observations)
+        self.smarts_observations_stack.append(copy.deepcopy(smarts_observations))
+        observations = self._adapt_smarts_observations(smarts_observations)
 
         infos = {
             agent_id: {"score": value, "env_obs": observations[agent_id]}
@@ -129,15 +130,15 @@ class UltraEnv(HiWayEnv):
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
-        simulator_observations = self._smarts.reset(scenario)
+        smarts_observations = self._smarts.reset(scenario)
 
         for _ in range(_STACK_SIZE):
-            self.observations_stack.append(copy.deepcopy(simulator_observations))
-        observations = self._stack_top_down_rgbs(simulator_observations)
+            self.smarts_observations_stack.append(copy.deepcopy(smarts_observations))
+        observations = self._adapt_smarts_observations(smarts_observations)
 
         observations = {
             agent_id: self._agent_specs[agent_id].observation_adapter(obs)
-            for agent_id, obs in simulator_observations.items()
+            for agent_id, obs in observations.items()
         }
 
         return observations
@@ -162,41 +163,21 @@ class UltraEnv(HiWayEnv):
             "headless": self.headless,
         }
 
-    # TODO: Should this return an observation or mutate the given observation?
-    def _stack_top_down_rgbs(
+    def _adapt_smarts_observations(
         self, current_observations: Dict[str, Observation]
-    ) -> Observation:
-        """For every observation in current_observations with a non-None top_down_rgb
-        attribute, this method replaces the TopDownRGB attribute of the observation with
-        a TopDownRGB instance whose data attribute is a NumPy array of stacked
-        TopDownRGB data of the current observation and previous observations.
+    ) -> Dict[str, Observation]:
+        """Adapts the observations received from the SMARTS simulator.
 
-        For each agent with an observation, if they have a TopDownRGB in their
-        observation, stack the data of the TopDownRGB with previous TopDownRGB data in
-        the observations stack. If the agent does not have previous TopDownRGB data in
-        the observations stack, copy the current TopDownRGB data to fill the stack.
-
-        Note: This method expects that current_observations is in
-            self.stacked_observations as the rightmost element.
-
-        Note: This can be extended to stack other parts of the observations such as the
-            drivable area grid map, lidar, occupancy grid map, etc.
-
-        Note: This has not been tested with a multi-agent scenario.
-
-        Note: This is like an environment observation adapter.
-
-        Example:
-            For a 64x64 TopDownRGB image received from SMARTS, the data component of the
-            TopDownRGB is a NumPy array with shape (64, 64, 3). Stack this current data
-            with data from the previous observations to make the current TopDownRGB data
-            to be an array with shape (_STACK_SIZE, 64, 64, 3).
+        The ULTRA environment slightly adapts the simulator observations by:
+        - Stacking the TopDownRGB component's data of each observation if the TopDownRGB
+          component of the observation is not None.
 
         Args:
-            current_observation (Observation): The environment observation.
+            current_observations (Dict[str, Observation]): The current simulator
+                observations.
 
         Returns:
-            Observation: The environment observation with stacked TopDownRGB data.
+            Dict[str, Observation]: The adapted current observations.
         """
         for agent_id, current_observation in current_observations.items():
             if current_observation.top_down_rgb:
@@ -204,7 +185,7 @@ class UltraEnv(HiWayEnv):
                 current_top_down_rgb = current_observation.top_down_rgb
 
                 top_down_rgb_data = []
-                for observations in self.observations_stack:
+                for observations in self.smarts_observations_stack:
                     if agent_id in observations:
                         top_down_rgb_data.append(
                             observations[agent_id].top_down_rgb.data
@@ -222,4 +203,5 @@ class UltraEnv(HiWayEnv):
                 )
 
                 current_observations[agent_id].top_down_rgb = stacked_top_down_rgb
+
         return current_observations

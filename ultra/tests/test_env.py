@@ -120,15 +120,15 @@ class EnvTest(unittest.TestCase):
         )
 
         def check_environment_observations_stack(environment):
-            self.assertIsInstance(environment.observations_stack, deque)
+            self.assertIsInstance(environment.smarts_observations_stack, deque)
             self.assertEqual(
-                len(environment.observations_stack), ENVIRONMENT_STACK_SIZE
+                len(environment.smarts_observations_stack), ENVIRONMENT_STACK_SIZE
             )
-            self.assertIsInstance(environment.observations_stack[0], dict)
+            self.assertIsInstance(environment.smarts_observations_stack[0], dict)
             self.assertTrue(
                 all(
-                    str(environment.observations_stack[0]) == str(observations)
-                    for observations in environment.observations_stack
+                    str(environment.smarts_observations_stack[0]) == str(observations)
+                    for observations in environment.smarts_observations_stack
                 )
             )
 
@@ -138,7 +138,9 @@ class EnvTest(unittest.TestCase):
             self.assertIsInstance(observations[AGENT_ID].top_down_rgb, TopDownRGB)
             self.assertEqual(
                 observations[AGENT_ID].top_down_rgb.metadata,
-                environment.observations_stack[-1][AGENT_ID].top_down_rgb.metadata,
+                environment.smarts_observations_stack[-1][
+                    AGENT_ID
+                ].top_down_rgb.metadata,
             )
             self.assertEqual(
                 observations[AGENT_ID].top_down_rgb.data.shape,
@@ -153,7 +155,7 @@ class EnvTest(unittest.TestCase):
                         observations[AGENT_ID].top_down_rgb.data[i],
                     )
                     for i, observations_from_stack in enumerate(
-                        environment.observations_stack
+                        environment.smarts_observations_stack
                     )
                 )
             )
