@@ -120,7 +120,10 @@ def train(
                     agent_params=dict(agent_params, model_path=model_path)
                 )
 
-                evaluation_process = Process(target=evaluate, args=(eval_agent_spec, evaluation_scenarios, headless, seed))
+                evaluation_process = Process(
+                    target=evaluate,
+                    args=(eval_agent_spec, evaluation_scenarios, headless, seed),
+                )
                 evaluation_process.start()
                 evaluation_process.join()
                 # # Remove the call to ray.wait if you want evaluation to run
@@ -170,7 +173,17 @@ def main(
     num_episodes,
     seed,
 ):
-    training_process = Process(target=train, args=(training_scenarios, evaluation_scenarios, sim_name, headless, num_episodes, seed))
+    training_process = Process(
+        target=train,
+        args=(
+            training_scenarios,
+            evaluation_scenarios,
+            sim_name,
+            headless,
+            num_episodes,
+            seed,
+        ),
+    )
     training_process.start()
     training_process.join()
     # ray.init()
