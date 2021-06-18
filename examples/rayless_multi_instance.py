@@ -6,13 +6,6 @@ import numpy as np
 import torch
 from multiprocessing import Process
 
-# try:
-#     import ray
-# except Exception as e:
-#     from examples import RayException
-#
-#     raise RayException.required_to("multi_instance.py")
-
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
@@ -72,7 +65,6 @@ def observation_adapter(env_obs):
     )
 
 
-# @ray.remote
 def train(
     training_scenarios, evaluation_scenarios, sim_name, headless, num_episodes, seed
 ):
@@ -126,20 +118,10 @@ def train(
                 )
                 evaluation_process.start()
                 evaluation_process.join()
-                # # Remove the call to ray.wait if you want evaluation to run
-                # # in parallel with training
-                # ray.wait(
-                #     [
-                #         evaluate.remote(
-                #             eval_agent_spec, evaluation_scenarios, headless, seed
-                #         )
-                #     ]
-                # )
 
     env.close()
 
 
-# @ray.remote
 def evaluate(agent_spec, evaluation_scenarios, headless, seed):
     env = gym.make(
         "smarts.env:hiway-v0",
@@ -186,19 +168,6 @@ def main(
     )
     training_process.start()
     training_process.join()
-    # ray.init()
-    # ray.wait(
-    #     [
-    #         train.remote(
-    #             training_scenarios,
-    #             evaluation_scenarios,
-    #             sim_name,
-    #             headless,
-    #             num_episodes,
-    #             seed,
-    #         )
-    #     ]
-    # )
 
 
 if __name__ == "__main__":
