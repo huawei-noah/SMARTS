@@ -44,8 +44,6 @@ from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
-_AGENT_METADATA_FILENAME = "agent_metadata.pkl"
-
 
 def create_argument_parser():
     parser = argparse.ArgumentParser("intersection-training")
