@@ -44,6 +44,8 @@ from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
+_AGENT_METADATA_FILENAME = "agent_metadata.pkl"
+
 
 def create_argument_parser():
     parser = argparse.ArgumentParser("intersection-training")
@@ -155,11 +157,13 @@ def build_agents(policy_classes, policy_ids, max_episode_steps):
     return agent_ids, agent_classes, agent_specs, agents, etag
 
 
-def _save_agent_metadata(experiment_dir, agent_ids, agent_classes, agent_specs):
+def _save_agent_metadata(
+    experiment_dir, filename, agent_ids, agent_classes, agent_specs
+):
     # Save relevant agent metadata.
     if not os.path.exists(experiment_dir):
         os.makedirs(experiment_dir)
-    with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
+    with open(os.path.join(experiment_dir, filename), "wb") as metadata_file:
         dill.dump(
             {
                 "agent_ids": agent_ids,
@@ -210,9 +214,16 @@ def train(
         infos = None
         episode.reset()
 
-        if not os.path.exists(f"{episode.experiment_dir}/agent_metadata.pkl"):
+        experiment_dir = episode.experiment_dir
+        # Name of agent metadata pickle file
+        filename = "agent_metadata.pkl"
+        if not os.path.exists(os.path.join(experiment_dir, filename)):
             _save_agent_metadata(
-                episode.experiment_dir, agent_ids, agent_classes, agent_specs
+                experiment_dir,
+                filename,
+                agent_ids,
+                agent_classes,
+                agent_specs,
             )
 
         evaluation_check(
