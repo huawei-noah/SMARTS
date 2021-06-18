@@ -27,64 +27,16 @@ import ultra.adapters as adapters
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 
 
-def _print(*args, verbose=False, **kwargs):
-    if verbose:
-        print(*args, **kwargs)
-
-
 class ReplayBufferTest(unittest.TestCase):
     def test_image_replay_buffer(self):
-        TRANSITIONS = 64
-        STACK_SIZE = 3
-        ACTION_SIZE = 3
-        IMAGE_WIDTH = 64
-        IMAGE_HEIGHT = 64
-        BUFFER_SIZE = 64
-        BATCH_SIZE = 32
-        NUM_SAMPLES = 10
-
-        # TRANSITIONS = 4
-        # STACK_SIZE = 2
-        # ACTION_SIZE = 3
-        # IMAGE_WIDTH = 4
-        # IMAGE_HEIGHT = 4
-        # BUFFER_SIZE = 4
-        # BATCH_SIZE = 2
-        # NUM_SAMPLES = 1
-
-        states = np.random.uniform(
-            low=0.0, high=1.0, size=(TRANSITIONS, STACK_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH)
-        ).astype(np.float32)
-        next_states = np.concatenate(
-            (
-                states[1:],
-                np.random.uniform(
-                    low=0.0, high=1.0, size=(1, STACK_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH)
-                ).astype(np.float32),
-            )
-        )
-        previous_actions = np.random.uniform(
-            low=-1.0, high=1.0, size=(TRANSITIONS, ACTION_SIZE)
-        ).astype(np.float32)
-        actions = np.concatenate(
-            (
-                previous_actions[1:],
-                np.random.uniform(low=-1.0, high=1.0, size=(1, ACTION_SIZE)).astype(
-                    np.float32
-                ),
-            )
-        )
-        rewards = np.random.uniform(low=-10.0, high=10.0, size=(TRANSITIONS,)).astype(
-            np.float32
-        )
-        dones = np.random.choice([True, False], size=(TRANSITIONS,))
-
-        _print("states:", states)
-        _print("next_states:", next_states)
-        _print("actions:", actions)
-        _print("previous_actions:", previous_actions)
-        _print("rewards:", rewards)
-        _print("dones:", dones)
+        TRANSITIONS = 1024  # The number of transitions to save in the replay buffer.
+        STACK_SIZE = 4  # The stack size of the images.
+        ACTION_SIZE = 3  # The size of each action.
+        IMAGE_WIDTH = 64  # The width of each image.
+        IMAGE_HEIGHT = 64  # The height of each image.
+        BUFFER_SIZE = 1024  # The size of the replay buffer.
+        BATCH_SIZE = 128  # Batch size of each sample from the replay buffer.
+        NUM_SAMPLES = 10  # Number of times to sample from the replay buffer.
 
         replay_buffer = ReplayBuffer(
             buffer_size=BUFFER_SIZE,
@@ -93,16 +45,20 @@ class ReplayBufferTest(unittest.TestCase):
             device_name="cpu",
         )
 
+        (
+            states,
+            next_states,
+            previous_actions,
+            actions,
+            rewards,
+            dones,
+        ) = generate_image_transitions(
+            TRANSITIONS, STACK_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH, ACTION_SIZE
+        )
+
         for state, next_state, action, previous_action, reward, done in zip(
             states, next_states, actions, previous_actions, rewards, dones
         ):
-            _print("state:", state)
-            _print("next_state:", next_state)
-            _print("action:", action)
-            _print("previous_action:", previous_action)
-            _print("reward:", reward)
-            _print("done:", done)
-
             replay_buffer.add(
                 state=state,
                 next_state=next_state,
@@ -111,8 +67,6 @@ class ReplayBufferTest(unittest.TestCase):
                 reward=reward,
                 done=done,
             )
-
-        _print(">>> Asserting.")
 
         for _ in range(NUM_SAMPLES):
             sample = replay_buffer.sample()
@@ -129,13 +83,6 @@ class ReplayBufferTest(unittest.TestCase):
                     if np.array_equal(original_state, state):
                         index_of_state = index
                         break
-                _print("index_of_state:", index_of_state, verbose=True)
-
-                _print("state:", state)
-                _print("next_state:", next_state)
-                _print("action:", action)
-                _print("reward:", reward)
-                _print("done:", done)
 
                 self.assertIn(state, states)
                 self.assertIn(next_state, next_states)
@@ -349,13 +296,46 @@ class ReplayBufferTest(unittest.TestCase):
     #             # print("-----------------------------------------")
 
 
-def generate_vector_state(low_dim_states_size, social_capacity, social_features):
-    state = {
-        "low_dim_states": np.random.uniform(
-            low=-1.0, high=1.0, size=(low_dim_states_size,)
-        ).astype(np.float32),
-        "social_vehicles": np.random.uniform(
-            low=-1.0, high=1.0, size=(social_capacity, social_features)
-        ).astype(np.float32),
-    }
-    return state
+def generate_image_transitions(
+    num_transitions, stack_size, image_height, image_width, action_size
+):
+    states = np.random.uniform(
+        low=0.0, high=1.0, size=(num_transitions, stack_size, image_height, image_width)
+    ).astype(np.float32)
+    next_states = np.concatenate(
+        (
+            states[1:],
+            np.random.uniform(
+                low=0.0, high=1.0, size=(1, stack_size, image_height, image_width)
+            ).astype(np.float32),
+        )
+    )
+    previous_actions = np.random.uniform(
+        low=-1.0, high=1.0, size=(num_transitions, action_size)
+    ).astype(np.float32)
+    actions = np.concatenate(
+        (
+            previous_actions[1:],
+            np.random.uniform(low=-1.0, high=1.0, size=(1, action_size)).astype(
+                np.float32
+            ),
+        )
+    )
+    rewards = np.random.uniform(low=-10.0, high=10.0, size=(num_transitions,)).astype(
+        np.float32
+    )
+    dones = np.random.choice([True, False], size=(num_transitions,))
+
+    return states, next_states, previous_actions, actions, rewards, dones
+
+
+# def generate_vector_state(low_dim_states_size, social_capacity, social_features):
+#     state = {
+#         "low_dim_states": np.random.uniform(
+#             low=-1.0, high=1.0, size=(low_dim_states_size,)
+#         ).astype(np.float32),
+#         "social_vehicles": np.random.uniform(
+#             low=-1.0, high=1.0, size=(social_capacity, social_features)
+#         ).astype(np.float32),
+#     }
+#     return state
