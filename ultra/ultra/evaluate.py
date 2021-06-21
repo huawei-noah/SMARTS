@@ -309,15 +309,30 @@ def evaluate_saved_models(
         # Iterate through each model to be evaluated (models that do not exist will not be included)
         for model in models_to_evaluate:
             agent_id = model.split("/")[0]
+            model_observation_number = model.split("/")[-1]
             if agent_id in agent_checkpoint_directories.keys():
-                for model_directory in agent_checkpoint_directories[agent_id]:
-                    if model.split("/")[-1] == model_directory.split("/")[-1]:
-                        if agent_id in custom_checkpoint_directories:
-                            custom_checkpoint_directories[agent_id].append(
-                                model_directory
-                            )
-                        else:
-                            custom_checkpoint_directories[agent_id] = [model_directory]
+                model_directories = {
+                    model_directory.split("/")[-1]: model_directory
+                    for model_directory in agent_checkpoint_directories[agent_id]
+                }
+                if model_observation_number in model_directories:
+                    if agent_id in custom_checkpoint_directories:
+                        custom_checkpoint_directories[agent_id].append(
+                            model_directories[model_observation_number]
+                        )
+                    else:
+                        custom_checkpoint_directories[agent_id] = [
+                            model_directories[model_observation_number]
+                        ]
+                else:
+                    raise Exception(
+                        f"The agent with id: {agent_id} does not contain the provided observation number: {model_observation_number}"
+                    )
+            else:
+                raise Exception(
+                    f"The agent id: {agent_id} is not in the specified agent IDs"
+                )
+
         # Agent checkpoint directories contains the specified model directories for the
         # specified agents
         agent_checkpoint_directories = custom_checkpoint_directories
