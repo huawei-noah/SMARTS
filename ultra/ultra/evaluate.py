@@ -392,7 +392,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--agents",
         nargs="+",
-        help="Agents to evaluate",
+        help="Agent IDs to evaluate",
         default=None,
     )
     parser.add_argument(
