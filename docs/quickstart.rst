@@ -63,7 +63,7 @@ This is done by implementing the :class:`smarts.core.agent.Agent` interface:
            # Here we've computed the pose we want to hold given our target
            # speed and the distance to the target waypoint.
            target_pose_at_t = np.array(
-               [*target_wp.pos, target_wp.heading, target_time]
+               [*target_wp.pose.position, target_wp.pose.heading, target_time]
            )
 
            # The generated motion planner trajectory is compatible
@@ -126,7 +126,7 @@ We can run this agent with "scenarios/loop", one of the scenarios packaged with 
            # Here we've computed the pose we want to hold given our target
            # speed and the distance to the target waypoint.
            target_pose_at_t = np.array(
-               [*target_wp.pos, target_wp.heading, target_time]
+               [*target_wp.pose.position, target_wp.pose.heading, target_time]
            )
 
            # The generated motion planner trajectory is compatible

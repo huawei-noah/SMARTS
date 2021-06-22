@@ -23,7 +23,7 @@ from itertools import cycle
 from typing import NamedTuple, Set
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Heading, Pose
+from .coordinates import Dimensions, Heading, Pose
 from .provider import Provider, ProviderState
 from .utils.math import rounder_for_dt
 from .vehicle import VEHICLE_CONFIGS, VehicleState
@@ -103,6 +103,7 @@ class TrafficHistoryProvider(Provider):
             vehicle_ids.add(v_id)
             vehicle_type = self._histories.decode_vehicle_type(hr.vehicle_type)
             default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+            # TODO:  shift map to origin on import
             pos_x = hr.position_x + self._map_location_offset[0]
             pos_y = hr.position_y + self._map_location_offset[1]
             vehicles.append(
@@ -110,7 +111,7 @@ class TrafficHistoryProvider(Provider):
                     vehicle_id=self._vehicle_id_prefix + v_id,
                     vehicle_type=vehicle_type,
                     pose=Pose.from_center((pos_x, pos_y, 0), Heading(hr.heading_rad)),
-                    dimensions=BoundingBox(
+                    dimensions=Dimensions(
                         length=hr.vehicle_length
                         if hr.vehicle_length is not None
                         else default_dims.length,

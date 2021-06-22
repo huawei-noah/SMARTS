@@ -317,7 +317,7 @@ class BaseAnalysis:
                     metadata = json.load(metadata_rd)
                 visited_scenario.add(scenario_path)
                 all_lanepoints = [
-                    [linked_lp.lp.pos[0], linked_lp.lp.pos[1]]
+                    [linked_lp.lp.pose.position[0], linked_lp.lp.pose.position[1]]
                     for linked_lp in env._smarts.lanepoints._linked_lanepoints
                 ]
                 dones = {"__all__": False}
@@ -391,7 +391,7 @@ class BaseAnalysis:
                                 all_lanepoints=all_lanepoints,
                                 step=step,
                                 lookaheads_positions=[
-                                    waypoint.pos for waypoint in path
+                                    waypoint.pose.position for waypoint in path
                                 ],
                                 goal=goal.position[0:2],
                                 start=start.position[0:2],

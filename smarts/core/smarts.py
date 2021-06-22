@@ -46,9 +46,9 @@ from .controllers import ActionSpaceType, Controllers
 from .motion_planner_provider import MotionPlannerProvider
 from .provider import Provider, ProviderState
 from .renderer import Renderer
+from .road_map import RoadMap
 from .scenario import Scenario
 from .sensors import Collision
-from .sumo_road_network import SumoRoadNetwork
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .trap_manager import TrapManager
@@ -279,7 +279,7 @@ class SMARTS:
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
-            self._trap_manager.init_traps(scenario.road_network, scenario.missions)
+            self._trap_manager.init_traps(scenario.road_map, scenario.missions)
             self._agent_manager.init_ego_agents(self)
             if self._renderer:
                 self._sync_vehicles_to_renderer()
@@ -314,7 +314,7 @@ class SMARTS:
     def setup(self, scenario: Scenario):
         self._scenario = scenario
 
-        self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_network)
+        self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
         self._trap_manager = TrapManager(scenario)
 
         if self._renderer:
@@ -359,10 +359,8 @@ class SMARTS:
         plane_path = self._scenario.plane_filepath
 
         # 1e6 is the default value for plane length and width.
-        plane_scale = (
-            max(self._scenario.map_bounding_box[0], self._scenario.map_bounding_box[1])
-            / 1e6
-        )
+        mapbb = self._scenario.map_bounding_box
+        plane_scale = max(mapbb[0], mapbb[1]) / 1e6
         if not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
@@ -370,7 +368,7 @@ class SMARTS:
         self._ground_bullet_id = client.loadURDF(
             plane_path,
             useFixedBase=True,
-            basePosition=self._scenario.map_bounding_box[2],
+            basePosition=mapbb[2],
             globalScaling=1.1 * plane_scale,
         )
 
@@ -463,8 +461,8 @@ class SMARTS:
         return self._traffic_sim
 
     @property
-    def road_network(self) -> SumoRoadNetwork:
-        return self.scenario.road_network
+    def road_map(self) -> RoadMap:
+        return self.scenario.road_map
 
     @property
     def bc(self):
@@ -898,7 +896,7 @@ class SMARTS:
                     mission_route_geometry = (
                         self._vehicle_index.sensor_state_for_vehicle_id(
                             v.vehicle_id
-                        ).mission_planner.route.geometry
+                        ).planner.route.geometry
                     )
                 else:
                     actor_type = envision_types.TrafficActorType.SocialAgent

@@ -28,4 +28,4 @@ class NonInteractiveAgent(Agent):
                 wp = waypoints[:5][-1]
                 break
         dist_to_wp = wp.dist_to(obs.ego_vehicle_state.position)
-        return np.array([*wp.pos, wp.heading, dist_to_wp / self.speed])
+        return np.array([*wp.pose.position, wp.pose.heading, dist_to_wp / self.speed])

@@ -174,7 +174,7 @@ def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp
             key=lambda tup: np.linalg.norm(tup[0].pos - vec_2d(v.position)),
         )
 
-        if np.linalg.norm(nearest_wp.pos - vec_2d(v.position)) > 2:
+        if np.linalg.norm(nearest_wp.pose.position - vec_2d(v.position)) > 2:
             # this vehicle is not close enough to the path, this can happen
             # if the vehicle is behind the ego, or ahead past the end of
             # the waypoints
@@ -187,16 +187,16 @@ def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp
         relative_speed_m_per_s = (ego.speed - v.speed) * 1000 / 3600
         if abs(relative_speed_m_per_s) < 1e-5:
             relative_speed_m_per_s = 1e-5
-        dist_wp_vehicle_vector = vec_2d(v.position) - vec_2d(nearest_wp.pos)
+        dist_wp_vehicle_vector = vec_2d(v.position) - vec_2d(nearest_wp.pose.position)
         # take into account the position of the car instead of its nearest waypoint
         direction_vector = np.array(
             [
-                math.cos(nearest_wp.heading),
-                math.sin(nearest_wp.heading),
+                math.cos(nearest_wp.pose.heading),
+                math.sin(nearest_wp.pose.heading),
             ]
         ).dot(dist_wp_vehicle_vector)
         dist_to_vehicle = lane_dist + sign(direction_vector) * (
-            np.linalg.norm(vec_2d(nearest_wp.pos) - vec_2d(v.position))
+            np.linalg.norm(vec_2d(nearest_wp.pose.position) - vec_2d(v.position))
         )
         ttc = dist_to_vehicle / relative_speed_m_per_s
         ttc = ttc / 10

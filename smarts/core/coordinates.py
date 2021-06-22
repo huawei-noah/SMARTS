@@ -20,7 +20,7 @@
 import enum
 import math
 from dataclasses import dataclass
-from typing import Optional, Sequence, SupportsFloat, Type, Union
+from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
 from typing_extensions import SupportsIndex
@@ -33,7 +33,7 @@ from smarts.core.utils.math import (
 
 
 @dataclass(frozen=True)
-class BoundingBox:
+class Dimensions:
     length: float
     width: float
     height: float
@@ -41,6 +41,51 @@ class BoundingBox:
     @property
     def as_lwh(self):
         return (self.length, self.width, self.height)
+
+
+@dataclass(frozen=True)
+class Point(NamedTuple):
+    x: float
+    y: float
+    z: Optional[float] = 0
+
+
+@dataclass(frozen=True)
+class RefLinePoint(NamedTuple):
+    # See the Reference Line coordinate system in OpenDRIVE here:
+    #   https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems
+    s: float  # offset along lane from start of lane
+    t: Optional[float] = 0  # horizontal displacement from center of lane
+    h: Optional[float] = 0  # vertical displacement from surface of lane
+
+
+@dataclass(frozen=True)
+class BoundingBox:
+    min_pt: Point
+    max_pt: Point
+
+    @property
+    def length(self):
+        return max_pt.x - min_pt.x
+
+    @property
+    def width(self):
+        return max_pt.y - min_pt.y
+
+    @property
+    def height(self):
+        return max_pt.z - min_pt.z
+
+    @property
+    def center(self):
+        return Point(
+            x=(mix_pt.x + max_pt.x) / 2,
+            y=(min_pt.y + max_pt.y) / 2,
+            z=(min_pt.z + max_pt.z) / 2,
+        )
+
+    def as_dimensions(self):
+        return Dimensions(length=self.length, width=self.width, height=self.height)
 
 
 class Heading(float):
@@ -131,6 +176,16 @@ class Pose:
     position: Sequence  # [x, y, z]
     orientation: Sequence  # [a, b, c, d] -> a + bi + cj + dk = 0
     heading_: Optional[Heading] = None  # cached heading to avoid recomputing
+
+    def __eq__(self, other):
+        if not isinstance(other, Pose):
+            return False
+        return (self.position == other.position).all() and (
+            self.orientation == other.orientation
+        ).all()
+
+    def __hash__(self):
+        return hash((*self.position, *self.orientation))
 
     @classmethod
     def from_front_bumper(cls, front_bumper_position, heading, length):

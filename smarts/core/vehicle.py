@@ -31,7 +31,7 @@ from smarts.sstudio.types import UTurn
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
-from .coordinates import BoundingBox, Heading, Pose
+from .coordinates import Dimensions, Heading, Pose
 from .renderer import Renderer, RendererException
 from .sensors import (
     AccelerometerSensor,
@@ -54,7 +54,7 @@ class VehicleState:
     vehicle_id: str
     vehicle_type: str
     pose: Pose
-    dimensions: BoundingBox
+    dimensions: Dimensions
     speed: float = 0
     steering: float = None
     yaw_rate: float = None
@@ -67,7 +67,7 @@ class VehicleState:
 class VehicleConfig:
     vehicle_type: str
     color: tuple
-    dimensions: BoundingBox
+    dimensions: Dimensions
     glb_model: str
 
 
@@ -79,43 +79,43 @@ VEHICLE_CONFIGS = {
     "passenger": VehicleConfig(
         vehicle_type="car",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=3.68, width=1.47, height=1.4),
+        dimensions=Dimensions(length=3.68, width=1.47, height=1.4),
         glb_model="simple_car.glb",
     ),
     "bus": VehicleConfig(
         vehicle_type="bus",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=7, width=2.25, height=3),
+        dimensions=Dimensions(length=7, width=2.25, height=3),
         glb_model="bus.glb",
     ),
     "coach": VehicleConfig(
         vehicle_type="coach",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=8, width=2.4, height=3.5),
+        dimensions=Dimensions(length=8, width=2.4, height=3.5),
         glb_model="coach.glb",
     ),
     "truck": VehicleConfig(
         vehicle_type="truck",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=5, width=1.91, height=1.89),
+        dimensions=Dimensions(length=5, width=1.91, height=1.89),
         glb_model="truck.glb",
     ),
     "trailer": VehicleConfig(
         vehicle_type="trailer",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=10, width=2.5, height=4),
+        dimensions=Dimensions(length=10, width=2.5, height=4),
         glb_model="trailer.glb",
     ),
     "pedestrian": VehicleConfig(
         vehicle_type="pedestrian",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=0.5, width=0.5, height=1.6),
+        dimensions=Dimensions(length=0.5, width=0.5, height=1.6),
         glb_model="pedestrian.glb",
     ),
     "motorcycle": VehicleConfig(
         vehicle_type="motorcycle",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=2.5, width=1, height=1.4),
+        dimensions=Dimensions(length=2.5, width=1, height=1.4),
         glb_model="motorcycle.glb",
     ),
 }
@@ -299,7 +299,7 @@ class Vehicle:
         sim,
         vehicle_id,
         agent_interface,
-        mission_planner,
+        planner,
         vehicle_filepath,
         tire_filepath,
         trainable,
@@ -307,7 +307,7 @@ class Vehicle:
         controller_filepath,
         initial_speed=None,
     ):
-        mission = mission_planner.mission
+        mission = planner.mission
 
         if mission.vehicle_spec:
             # mission.vehicle_spec.veh_type will always be "passenger" for now,
@@ -403,14 +403,14 @@ class Vehicle:
         )
 
     @staticmethod
-    def attach_sensors_to_vehicle(sim, vehicle, agent_interface, mission_planner):
+    def attach_sensors_to_vehicle(sim, vehicle, agent_interface, planner):
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
         vehicle.attach_trip_meter_sensor(
             TripMeterSensor(
                 vehicle=vehicle,
                 sim=sim,
-                mission_planner=mission_planner,
+                planner=planner,
             )
         )
 
@@ -440,7 +440,7 @@ class Vehicle:
                 WaypointsSensor(
                     sim=sim,
                     vehicle=vehicle,
-                    mission_planner=mission_planner,
+                    planner=planner,
                     lookahead=agent_interface.waypoints.lookahead,
                 )
             )
@@ -450,7 +450,7 @@ class Vehicle:
                 RoadWaypointsSensor(
                     vehicle=vehicle,
                     sim=sim,
-                    mission_planner=mission_planner,
+                    planner=planner,
                     horizon=agent_interface.road_waypoints.horizon,
                 )
             )
@@ -503,7 +503,7 @@ class Vehicle:
         vehicle.attach_via_sensor(
             ViaSensor(
                 vehicle=vehicle,
-                mission_planner=mission_planner,
+                planner=planner,
                 lane_acquisition_range=40,
                 speed_accuracy=1.5,
             )
@@ -577,7 +577,6 @@ class Vehicle:
             "trip_meter_sensor",
             "drivable_area_grid_map_sensor",
             "neighborhood_vehicles_sensor",
-            "mission_planner_sensor",
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",

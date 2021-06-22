@@ -175,7 +175,7 @@ def _ttc_by_path(env_observation):
             wps_on_lane, key=lambda tup: np.linalg.norm(tup[0].pos - vec_2d(v.position))
         )
 
-        if np.linalg.norm(nearest_wp.pos - vec_2d(v.position)) > 2:
+        if np.linalg.norm(nearest_wp.pose.position - vec_2d(v.position)) > 2:
             # this vehicle is not close enough to the path, this can happen
             # if the vehicle is behind the ego, or ahead past the end of
             # the waypoints

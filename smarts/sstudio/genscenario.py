@@ -112,6 +112,8 @@ def gen_scenario(
         gen_friction_map(scenario=output_dir, surface_patches=scenario.friction_maps)
 
     if scenario.traffic_histories:
+        # TODO:  pass in Sumo graph offset and use to offset history coordinates
+        #    if sumo_road_network._graph._shifted_by_smarts: sumo_road_network._graph.getLocationOffset()
         gen_traffic_histories(
             scenario=output_dir,
             histories_datasets=scenario.traffic_histories,
@@ -359,6 +361,7 @@ def _gen_missions(
 
 
 def _resolve_task(task, generator):
+    # XXX: is this still used?
     if isinstance(task, types.CutIn):
         if isinstance(task.complete_on_edge_id, types.JunctionEdgeIDResolver):
             task = replace(

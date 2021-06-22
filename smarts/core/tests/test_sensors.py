@@ -27,7 +27,6 @@ from helpers.scenario import temp_scenario
 
 from smarts.core.agent_interface import AgentBehavior, AgentInterface
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.mission_planner import MissionPlanner
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import DrivenPathSensor, WaypointsSensor
 from smarts.sstudio import gen_scenario
@@ -90,11 +89,11 @@ def test_waypoints_sensor(scenarios):
         heading_=Heading(0),
     )
 
-    mission_planner = MissionPlanner(scenario.road_network)
+    planner = scenario.planner
     mission = scenario.missions[AGENT_ID]
-    mission_planner.plan(mission)
+    planner.plan(mission)
 
-    sensor = WaypointsSensor(sim, vehicle, mission_planner)
+    sensor = WaypointsSensor(sim, vehicle, planner)
     waypoints = sensor()
 
     assert len(waypoints) == 3
@@ -143,14 +142,12 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
         orientation=[0, 0, 0, 0],
         heading_=Heading(0),
     )
-    mission_planner = MissionPlanner(
-        scenario.road_network, AgentBehavior(aggressiveness=3)
-    )
+    planner = scenario.planner_with_param(AgentBehavior(aggressiveness=3))
     mission = scenario.missions[AGENT_ID]
-    mission_planner.plan(mission)
-    mission_planner._task_is_triggered = True
+    planner.plan(mission)
+    planner._task_is_triggered = True
 
-    sensor = WaypointsSensor(sim, vehicle, mission_planner)
+    sensor = WaypointsSensor(sim, vehicle, planner)
     waypoints = sensor()
 
     assert len(waypoints) == 1
@@ -201,13 +198,11 @@ def test_waypoints_sensor_with_cut_in_task(cut_in_scenarios):
         heading_=Heading(0),
     )
 
-    mission_planner = MissionPlanner(
-        scenario.road_network, AgentBehavior(aggressiveness=3)
-    )
+    planner = scenario.planner_with_param(AgentBehavior(aggressiveness=3))
     mission = scenario.missions[AGENT_ID]
-    mission_planner.plan(mission)
+    planner.plan(mission)
 
-    sensor = WaypointsSensor(sim, vehicle, mission_planner)
+    sensor = WaypointsSensor(sim, vehicle, planner)
     waypoints = sensor()
 
     assert len(waypoints) == 1

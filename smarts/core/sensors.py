@@ -27,18 +27,17 @@ from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 import numpy as np
 
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
-from smarts.core.mission_planner import MissionPlanner, Waypoint
-from smarts.core.utils.math import squared_dist, vec_2d
+from smarts.core.planner import Planner, Waypoint
+from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
 from smarts.sstudio.types import CutIn, UTurn
 
-from .coordinates import BoundingBox, Heading, Pose
+from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
 from .renderer import Renderer
 from .scenario import Mission, Via
-from .lanepoints import LanePoint
 
 logger = logging.getLogger(__name__)
 
@@ -46,24 +45,24 @@ logger = logging.getLogger(__name__)
 class VehicleObservation(NamedTuple):
     id: str
     position: Tuple[float, float, float]
-    bounding_box: BoundingBox
+    bounding_box: Dimensions
     heading: Heading
     speed: float
-    edge_id: int
-    lane_id: int
+    road_id: str
+    lane_id: str
     lane_index: int
 
 
 class EgoVehicleObservation(NamedTuple):
     id: str
     position: Tuple[float, float, float]
-    bounding_box: BoundingBox
+    bounding_box: Dimensions
     heading: Heading
     speed: float
     steering: float
     yaw_rate: float
-    edge_id: int
-    lane_id: int
+    road_id: str
+    lane_id: str
     lane_index: int
     mission: Mission
     linear_velocity: np.ndarray
@@ -113,7 +112,7 @@ class DrivableAreaGridMap(NamedTuple):
 class ViaPoint:
     position: Tuple[float, float]
     lane_index: float
-    edge_id: str
+    road_id: str
     required_speed: float
 
 
@@ -172,45 +171,39 @@ class Sensors:
     @staticmethod
     def observe(sim, agent_id, sensor_state, vehicle):
         neighborhood_vehicles = None
-        lanepoints = sim.road_network.lanepoints
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
-            neighborhood_vehicles = vehicle.neighborhood_vehicles_sensor()
-
-            if len(neighborhood_vehicles) > 0:
-                neighborhood_vehicle_lps = lanepoints.closest_lanepoint_batched(
-                    [v.pose for v in neighborhood_vehicles],
-                    within_radius=vehicle.length,
-                    filter_from_count=10,
+            neighborhood_vehicles = []
+            for nv in vehicle.neighborhood_vehicles_sensor():
+                nv_lane = sim.road_map.nearest_lane(
+                    nv.pose.position, within_radius=vehicle.length
                 )
-                neighborhood_vehicles = [
+                neighborhood_vehicles.append(
                     VehicleObservation(
                         id=v.vehicle_id,
                         position=v.pose.position,
                         bounding_box=v.dimensions,
                         heading=v.pose.heading,
                         speed=v.speed,
-                        edge_id=sim.road_network.edge_by_lane_id(lp.lane_id).getID(),
-                        lane_id=lp.lane_id,
-                        lane_index=lp.lane_index,
+                        road_id=nv_lane.road.road_id,
+                        lane_id=nv_lane.lane_id,
+                        lane_index=nv_lane.index,
                     )
-                    for v, lp in zip(neighborhood_vehicles, neighborhood_vehicle_lps)
-                ]
+                )
 
         if vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
-            waypoint_paths = sensor_state.mission_planner.waypoint_paths_at(
-                vehicle.pose,
+            waypoint_paths = sensor_state.planner.waypoint_paths(
+                vehicle,
                 lookahead=1,
                 within_radius=vehicle.length,
-                filter_from_count=3,  # For calculating distance travelled
                 constrain_to_route=False,
             )
 
-        closest_lanepoint = lanepoints.closest_lanepoint(vehicle.pose)
-        ego_lane_id = closest_lanepoint.lane_id
-        ego_lane_index = closest_lanepoint.lane_index
-        ego_edge_id = sim.road_network.edge_by_lane_id(ego_lane_id).getID()
+        closest_lane = sim.road_map.nearest_lane(vehicle.pose.position)
+        ego_lane_id = closest_lane.lane_id
+        ego_lane_index = closest_lane.index
+        ego_road_id = (closest_lane.road.road_id,)
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
@@ -246,10 +239,10 @@ class Sensors:
             speed=ego_vehicle_state.speed,
             steering=ego_vehicle_state.steering,
             yaw_rate=ego_vehicle_state.yaw_rate,
-            edge_id=ego_edge_id,
+            road_id=ego_road_id,
             lane_id=ego_lane_id,
             lane_index=ego_lane_index,
-            mission=sensor_state.mission_planner.mission,
+            mission=sensor_state.planner.mission,
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,
             **acceleration_params,
@@ -411,22 +404,19 @@ class Sensors:
     def _agent_reached_goal(cls, sim, vehicle):
         sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
         distance_travelled = vehicle.trip_meter_sensor()
-        mission = sensor_state.mission_planner.mission
+        mission = sensor_state.planner.mission
         return mission.is_complete(vehicle, distance_travelled)
 
     @classmethod
     def _vehicle_is_off_road(cls, sim, vehicle):
-        if sim.scenario.road_network.point_is_within_road(vehicle.position):
-            return False
-
-        return True
+        return not sim.scenario.road_map.road_with_point(Point(*vehicle.position))
 
     @classmethod
     def _vehicle_is_on_shoulder(cls, sim, vehicle):
         # XXX: this isn't technically right as this would also return True
         #      for vehicles that are completely off road.
         for corner_coordinate in vehicle.bounding_box:
-            if not sim.scenario.road_network.point_is_within_road(corner_coordinate):
+            if not sim.scenario.road_map.road_with_point(Point(*corner_coordinate)):
                 return True
         return False
 
@@ -463,20 +453,15 @@ class Sensors:
         """
 
         sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-        route_edges = sensor_state.mission_planner.route.edges
+        route_roads = sensor_state.planner.route.roads
 
-        vehicle_pos = vehicle.position[:2]
+        vehicle_pos = Point(*vehicle.position)
         vehicle_minimum_radius_bounds = (
             np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
         )
         # Check that center of vehicle is still close to route
-        # Most lanes are around 3.2 meters wide
-        radius = vehicle_minimum_radius_bounds + max(
-            5, sim.scenario.road_network.default_lane_width
-        )
-        nearest_lanes = sim.scenario.road_network.nearest_lanes(
-            vehicle_pos, radius=radius
-        )
+        radius = vehicle_minimum_radius_bounds + 5
+        nearest_lanes = sim.scenario.road_map.nearest_lanes(vehicle_pos, radius=radius)
 
         # No road nearby.
         if not nearest_lanes:
@@ -485,106 +470,101 @@ class Sensors:
         nearest_lane, _ = nearest_lanes[0]
 
         # Route is endless
-        if not route_edges:
+        if not route_roads:
             is_wrong_way = cls._check_wrong_way_event(nearest_lane, sim, vehicle)
             return (False, is_wrong_way)
 
-        closest_edges = []
-        used_edges = set()
+        closest_roads = []
+        used_roads = set()
         for lane, _ in nearest_lanes:
-            edge = lane.getEdge()
-            if edge in used_edges:
+            road = lane.road
+            if road in used_roads:
                 continue
-            used_edges.add(edge)
-            closest_edges.append(edge)
+            used_roads.add(roads)
+            closest_roads.append(roads)
 
-        # TODO: Narrow down the route edges to check using distance travelled.
-        is_off_route, route_edge_or_oncoming = cls._vehicle_off_route_info(
-            sim.scenario.root_filepath, tuple(route_edges), tuple(closest_edges)
+        # TODO: Narrow down the route roads to check using distance travelled.
+        is_off_route, route_road_or_oncoming = cls._vehicle_off_route_info(
+            sim.scenario.root_filepath, tuple(route_roads), tuple(closest_roads)
         )
         is_wrong_way = False
-        if route_edge_or_oncoming:
-            # Lanes from an edge are parallel so any lane from the edge will do for direction check
-            # but the innermost lane will be the last lane in the edge and usually the closest.
-            lane_to_check = route_edge_or_oncoming.getLanes()[-1]
+        if route_road_or_oncoming:
+            # Lanes from a road are parallel so any lane from the road will do for direction check
+            # but the innermost lane will be the last lane in the road and usually the closest.
+            lane_to_check = route_road_or_oncoming.getLanes()[-1]
             is_wrong_way = cls._check_wrong_way_event(lane_to_check, sim, vehicle)
 
         return (is_off_route, is_wrong_way)
 
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, lane_id):
-        lanepoints = sim.road_network.lanepoints
-        closest_lanepoint = lanepoints.closest_lanepoint_on_lane(
-            vehicle.pose,
-            lane_id,
-        )
-
+        closest_lane = sim.road_map.lane_from_id(lane_id)
+        target_pose = closest_lane.target_pose_at_point(Point(*vehicle.pose.position))
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
-            np.fabs(vehicle.pose.heading.relative_to(closest_lanepoint.heading))
-            > 0.5 * np.pi
+            np.fabs(vehicle.pose.heading.relative_to(target_pose.heading)) > 0.5 * np.pi
         )
 
     @classmethod
     def _check_wrong_way_event(cls, lane_to_check, sim, vehicle):
         # When the vehicle is in an intersection, turn off the `wrong way` check to avoid
         # false positive `wrong way` events.
-        if lane_to_check.getEdge().isSpecial():
+        if lane_to_check.in_junction:
             return False
 
-        return cls._vehicle_is_wrong_way(sim, vehicle, lane_to_check.getID())
+        return cls._vehicle_is_wrong_way(sim, vehicle, lane_to_check.lane_id)
 
     @classmethod
     @lru_cache(maxsize=32)
-    def _vehicle_off_route_info(cls, instance_id, route_edges, closest_edges):
-        for route_edge in route_edges:
-            for index_of_edge in range(len(closest_edges)):
-                if route_edge != closest_edges[index_of_edge]:
+    def _vehicle_off_route_info(cls, instance_id, route_roads, closest_roads):
+        for route_road in route_roads:
+            for index_of_road in range(len(closest_roads)):
+                if route_road != closest_roads[index_of_road]:
                     continue
-                closest_edge = cls._edge_or_closer_oncoming(
-                    instance_id, index_of_edge, closest_edges
+                closest_road = cls._road_or_closer_oncoming(
+                    instance_id, index_of_road, closest_roads
                 )
-                return (False, closest_edge)
+                return (False, closest_road)
 
         # Check to see if actor is in the oncoming traffic lane.
-        for close_edge in closest_edges:
+        for close_road in closest_roads:
             # Forgive the actor if it is in an intersection
-            if close_edge.isSpecial():
-                return (False, close_edge)
+            if close_road.isSpecial():
+                return (False, close_road)
 
-            oncoming_edge = cls._oncoming_traffic_edge(instance_id, close_edge)
+            oncoming_road = cls._oncoming_traffic_road(instance_id, close_road)
 
-            if not oncoming_edge:
+            if not oncoming_road:
                 continue
 
-            for close_edge in route_edges:
-                if oncoming_edge != close_edge:
+            for close_road in route_roads:
+                if oncoming_road != close_road:
                     continue
                 # Actor is in the oncoming traffic lane.
-                return (False, oncoming_edge)
+                return (False, oncoming_road)
 
         return (True, None)
 
     @classmethod
-    def _edge_or_closer_oncoming(cls, instance_id, on_route_edge_index, closest_edges):
-        """Check backward to find if the oncoming edge is closer."""
-        oncoming_edge = cls._oncoming_traffic_edge(
-            instance_id, closest_edges[on_route_edge_index]
+    def _road_or_closer_oncoming(cls, instance_id, on_route_road_index, closest_roads):
+        """Check backward to find if the oncoming road is closer."""
+        oncoming_road = cls._oncoming_traffic_road(
+            instance_id, closest_roads[on_route_road_index]
         )
         if (
-            oncoming_edge
-            and oncoming_edge in closest_edges[: max(0, on_route_edge_index - 1)]
+            oncoming_road
+            and oncoming_road in closest_roads[: max(0, on_route_road_index - 1)]
         ):
-            # oncoming edge was closer
-            return oncoming_edge
-        # or the route edge we already found
-        return closest_edges[on_route_edge_index]
+            # oncoming road was closer
+            return oncoming_road
+        # or the route road we already found
+        return closest_roads[on_route_road_index]
 
     @staticmethod
     @lru_cache(maxsize=128)
-    def _oncoming_traffic_edge(instance_id, edge):
-        from_node = edge.getFromNode()
-        to_node = edge.getToNode()
+    def _oncoming_traffic_road(instance_id, road):
+        from_node = road.getFromNode()
+        to_node = road.getToNode()
 
         for candidate in to_node.getOutgoing():
             if candidate.getToNode() == from_node:
@@ -594,7 +574,7 @@ class Sensors:
 
     @classmethod
     def clean_up(cls):
-        cls._oncoming_traffic_edge.cache_clear()
+        cls._oncoming_traffic_road.cache_clear()
         cls._vehicle_off_route_info.cache_clear()
 
 
@@ -604,9 +584,9 @@ class Sensor:
 
 
 class SensorState:
-    def __init__(self, max_episode_steps, mission_planner):
+    def __init__(self, max_episode_steps, planner):
         self._max_episode_steps = max_episode_steps
-        self._mission_planner = mission_planner
+        self._planner = planner
         self._step = 0
 
     def step(self):
@@ -620,8 +600,8 @@ class SensorState:
         return self._step >= self._max_episode_steps
 
     @property
-    def mission_planner(self):
-        return self._mission_planner
+    def planner(self):
+        return self._planner
 
     @property
     def steps_completed(self):
@@ -860,13 +840,13 @@ class TripMeterSensor(Sensor):
     off-route are not counted as part of the total.
     """
 
-    def __init__(self, vehicle, sim, mission_planner):
+    def __init__(self, vehicle, sim, planner):
         self._vehicle = vehicle
         self._sim = sim
-        self._mission_planner = mission_planner
+        self._planner = planner
 
-        waypoint_paths = mission_planner.waypoint_paths_at(
-            vehicle.pose,
+        waypoint_paths = planner.waypoint_paths(
+            vehicle,
             lookahead=1,
             within_radius=vehicle.length,
             constrain_to_route=False,
@@ -884,18 +864,19 @@ class TripMeterSensor(Sensor):
         most_recent_wp = self._wps_for_distance[-1]
         self._last_dist_travelled = self._dist_travelled
 
-        wp_edge = self._sim.road_network.edge_by_lane_id(new_wp.lane_id)
+        wp_road = self._sim.road_map.lane_by_id(new_wp.lane_id).road.road_id
 
         should_count_wp = (
             # if we do not have a fixed route, we count all waypoints we accumulate
-            not self._mission_planner.mission.has_fixed_route
+            not self._planner.mission.has_fixed_route
             # if we have a route to follow, only count wps on route
-            or wp_edge in self._mission_planner.route.edges
+            or wp_road in self._planner.route.roads
         )
 
         threshold_for_counting_wp = 0.5  # meters from last tracked waypoint
         if (
-            np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
+            np.linalg.norm(new_wp.pose.position - most_recent_wp.pose.position)
+            > threshold_for_counting_wp
             and should_count_wp
         ):
             self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
@@ -905,8 +886,8 @@ class TripMeterSensor(Sensor):
 
     @staticmethod
     def _compute_additional_dist_travelled(recent_wp, waypoint):
-        heading_vec = recent_wp.heading.direction_vector()
-        disp_vec = waypoint.pos - recent_wp.pos
+        heading_vec = recent_wp.pose.heading.direction_vector()
+        disp_vec = waypoint.pose.position - recent_wp.pose.position
         direction = np.sign(np.dot(heading_vec, disp_vec))
         distance = np.linalg.norm(disp_vec)
         return direction * distance
@@ -941,26 +922,17 @@ class NeighborhoodVehiclesSensor(Sensor):
 
 
 class WaypointsSensor(Sensor):
-    def __init__(self, sim, vehicle, mission_planner: MissionPlanner, lookahead=32):
+    def __init__(self, sim, vehicle, planner: Planner, lookahead=32):
         self._sim = sim
         self._vehicle = vehicle
-        self._mission_planner = mission_planner
+        self._planner = planner
         self._lookahead = lookahead
 
     def __call__(self):
-        if self._mission_planner.mission.task is not None:
-            if isinstance(self._mission_planner.mission.task, UTurn):
-                return self._mission_planner.uturn_waypoints(
-                    self._sim, self._vehicle.pose, self._vehicle
-                )
-            elif isinstance(self._mission_planner.mission.task, CutIn):
-                return self._mission_planner.cut_in_waypoints(
-                    self._sim, self._vehicle.pose, self._vehicle
-                )
-
-        return self._mission_planner.waypoint_paths_at(
-            pose=self._vehicle.pose,
+        return self._planner.waypoint_paths(
+            vehicle=self._vehicle,
             lookahead=self._lookahead,
+            context=self._sim,
         )
 
     def teardown(self):
@@ -968,41 +940,38 @@ class WaypointsSensor(Sensor):
 
 
 class RoadWaypointsSensor(Sensor):
-    def __init__(self, vehicle, sim, mission_planner, horizon=32):
+    def __init__(self, vehicle, sim, planner, horizon=32):
         self._vehicle = vehicle
-        self._road_network = sim.road_network
-        self._mission_planner = mission_planner
+        self._road_map = sim.road_map
+        self._planner = planner
         self._horizon = horizon
 
     def __call__(self):
-        lp = self._road_network.lanepoints.closest_lanepoint(self._vehicle.pose)
-        road_edges = self._road_network.road_edge_data_for_lane_id(lp.lane_id)
-
+        lane = self._road_map.nearest_lane(self._vehicle.pose.position)
+        road = lane.road
         lane_paths = {}
-        for edge in road_edges.forward_edges + road_edges.oncoming_edges:
-            for lane in edge.getLanes():
-                lane_paths[lane.getID()] = self.paths_for_lane(lane)
+        for road in [road] + road.parallel_roads + road.oncoming_roads:
+            for lane in road.lanes:
+                lane_paths[lane.lane_id] = self.paths_for_lane(lane)
 
         route_waypoints = self.route_waypoints()
 
         return RoadWaypoints(lanes=lane_paths, route_waypoints=route_waypoints)
 
     def route_waypoints(self):
-        return self._mission_planner.waypoint_paths_at(
-            pose=self._vehicle.pose,
+        return self._planner.waypoint_paths(
+            vehicle=self._vehicle,
             lookahead=32,
         )
 
     def paths_for_lane(self, lane, overflow_offset=None):
         if overflow_offset is None:
-            offset = self._road_network.offset_into_lane(
-                lane, self._vehicle.position[:2]
-            )
+            offset = lane.offset_along_lane(Point(*self._vehicle.position))
             start_offset = offset - self._horizon
         else:
             start_offset = lane.getLength() + overflow_offset
 
-        incoming_lanes = lane.getIncoming(onlyDirect=True)
+        incoming_lanes = lane.incoming_lanes  # XXX: was "getIncoming(onlyDirect=True)"
         if start_offset < 0 and len(incoming_lanes) > 0:
             paths = []
             for lane in incoming_lanes:
@@ -1010,12 +979,12 @@ class RoadWaypointsSensor(Sensor):
             return paths
         else:
             start_offset = max(0, start_offset)
-            wp_start = self._road_network.world_coord_from_offset(lane, start_offset)
+            wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
             adj_pose = Pose.from_center(wp_start, self._vehicle.heading)
             wps_to_lookahead = self._horizon * 2
-            paths = self._mission_planner.waypoint_paths_on_lane_at(
+            paths = self._planner.waypoint_paths_on_lane_at(
                 pose=adj_pose,
-                lane_id=lane.getID(),
+                lane_id=lane_lane_id,
                 lookahead=wps_to_lookahead,
                 constrain_to_route=False,
             )
@@ -1068,18 +1037,16 @@ class AccelerometerSensor(Sensor):
 
 
 class ViaSensor(Sensor):
-    def __init__(
-        self, vehicle, mission_planner, lane_acquisition_range, speed_accuracy
-    ):
+    def __init__(self, vehicle, planner, lane_acquisition_range, speed_accuracy):
         self._consumed_via_points = set()
-        self._mission_planner: MissionPlanner = mission_planner
+        self._planner: Planner = planner
         self._acquisition_range = lane_acquisition_range
         self._vehicle = vehicle
         self._speed_accuracy = speed_accuracy
 
     @property
     def _vias(self) -> Iterable[Via]:
-        return self._mission_planner.mission.via
+        return self._planner.mission.via
 
     def __call__(self):
         near_points: List[ViaPoint] = list()
@@ -1088,7 +1055,8 @@ class ViaSensor(Sensor):
 
         @lru_cache()
         def closest_point_on_lane(position, lane_id):
-            return self._mission_planner.closest_point_on_lane(position, lane_id)
+            lane = self._planner.road_map.lane_by_id(lane_id)
+            return lane.center_at_point(position)
 
         for via in self._vias:
             closest_position_on_lane = closest_point_on_lane(
@@ -1103,7 +1071,7 @@ class ViaSensor(Sensor):
             point = ViaPoint(
                 tuple(via.position),
                 lane_index=via.lane_index,
-                edge_id=via.edge_id,
+                road_id=via.road_id,
                 required_speed=via.required_speed,
             )
 

@@ -51,7 +51,7 @@ from smarts.zoo import worker_pb2_grpc, worker_servicer
 modules = [
     "smarts.core.utils.pybullet",
     "smarts.core.utils.sumo",
-    "smarts.core.sumo_road_network",
+    "smarts.core.road_map",
     "numpy",
     "sklearn",
     "shapely",

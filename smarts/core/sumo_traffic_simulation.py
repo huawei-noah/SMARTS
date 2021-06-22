@@ -216,7 +216,7 @@ class SumoTrafficSimulation(Provider):
     def _base_sumo_load_params(self):
         load_params = [
             "--num-clients=%d" % self._num_clients,
-            "--net-file=%s" % self._scenario.road_network.net_file,
+            "--net-file=%s" % self._scenario.road_map.source,
             "--quit-on-end",
             "--log=%s" % self._log_file,
             "--error-log=%s" % self._log_file,
@@ -255,7 +255,7 @@ class SumoTrafficSimulation(Provider):
         # restart sumo process only when map file changes
         restart_sumo = (
             not self._scenario
-            or self._scenario.net_file_hash != next_scenario.net_file_hash
+            or self._scenario.road_map_hash != next_scenario.road_map_hash
             or self._current_reload_count >= self._reload_count
         )
         self._current_reload_count = self._current_reload_count % self._reload_count + 1
@@ -644,7 +644,7 @@ class SumoTrafficSimulation(Provider):
         self._log.debug(
             f"Teleporting {vehicle_id} to lane_offset={lane_offset} route={route}"
         )
-        spawn_edge = self._scenario.road_network.graph.getEdge(route[0])
+        spawn_edge = self._scenario.road_map._graph.getEdge(route[0])
         lane_index = random.randint(0, len(spawn_edge.getLanes()) - 1)
         self._emit_vehicle_by_route(vehicle_id, route, lane_index, lane_offset, type_id)
 
@@ -662,8 +662,8 @@ class SumoTrafficSimulation(Provider):
                 continue
 
             # Check if these edges forms a loop.
-            from_edge = self._scenario.road_network.graph.getEdge(route_edges[-1])
-            to_edge = self._scenario.road_network.graph.getEdge(route_edges[0])
+            from_edge = self._scenario.road_map._graph.getEdge(route_edges[-1])
+            to_edge = self._scenario.road_map._graph.getEdge(route_edges[0])
             next_edges = from_edge.getOutgoing().keys()
             if to_edge not in next_edges:
                 # Reroute only if it's loop, otherwise, teleport the vehicle.

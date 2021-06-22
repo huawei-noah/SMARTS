@@ -30,9 +30,9 @@ from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
 
 from smarts.core.data_model import SocialAgent
-from smarts.core.mission_planner import Mission, MissionPlanner, Start
+from smarts.core.planner import Mission, Start
+from smarts.core.road_map import RoadMap
 from smarts.core.scenario import PositionalGoal
-from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
 from smarts.core.vehicle import Vehicle, VehicleState
@@ -61,8 +61,8 @@ class Bubble:
     internal Bubble-related business logic).
     """
 
-    def __init__(self, bubble: SSBubble, sumo_road_network: SumoRoadNetwork):
-        geometry = bubble.zone.to_geometry(sumo_road_network)
+    def __init__(self, bubble: SSBubble, road_map: RoadMap):
+        geometry = bubble.zone.to_geometry(road_map)
 
         bubble_limit = (
             bubble.limit or BubbleLimits()
@@ -306,11 +306,11 @@ class Cursor:
 
 
 class BubbleManager:
-    def __init__(self, bubbles: Sequence[SSBubble], road_network: SumoRoadNetwork):
+    def __init__(self, bubbles: Sequence[SSBubble], road_map: RoadMap):
         self._log = logging.getLogger(self.__class__.__name__)
         self._cursors = set()
         self._last_vehicle_index = VehicleIndex.identity()
-        self._bubbles = [Bubble(b, road_network) for b in bubbles]
+        self._bubbles = [Bubble(b, road_map) for b in bubbles]
 
     @property
     def bubbles(self) -> Sequence[Bubble]:
@@ -548,13 +548,13 @@ class BubbleManager:
     def _prepare_sensors_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, bubble
     ):
-        mission_planner = MissionPlanner(sim.scenario.road_network)
+        planner = sim.scenario.planner
         vehicle = sim.vehicle_index.start_agent_observation(
             sim,
             vehicle_id,
             agent_id,
             agent_interface,
-            mission_planner,
+            planner,
             boid=bubble.is_boid,
         )
 
@@ -562,9 +562,9 @@ class BubbleManager:
         route = sim.traffic_sim.vehicle_route(vehicle_id=vehicle.id)
         mission = Mission(
             start=Start(vehicle.position[:2], vehicle.heading),
-            goal=PositionalGoal.fromedge(route[-1], sim.scenario.road_network),
+            goal=PositionalGoal.fromedge(route[-1], sim.scenario.road_map),
         )
-        mission_planner.plan(mission=mission)
+        planner.plan(mission=mission)
 
     def _start_social_agent(
         self, sim, agent_id, social_agent, social_agent_actor, bubble

@@ -26,7 +26,6 @@ from envision.types import format_actor_id
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
-from smarts.core.mission_planner import MissionPlanner
 from smarts.core.remote_agent_buffer import RemoteAgentBuffer
 from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
@@ -401,10 +400,7 @@ class AgentManager:
 
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
-        planner = MissionPlanner(
-            scenario.road_network,
-            agent_behavior=agent_interface.agent_behavior,
-        )
+        planner = scenario.planner_with_param(agent_interface.agent_behavior)
         planner.plan(mission)
 
         vehicle = sim.vehicle_index.build_agent_vehicle(
@@ -513,14 +509,13 @@ class AgentManager:
             if sv_id in self._vehicle_with_sensors:
                 continue
 
-            mission_planner = MissionPlanner(sim.scenario.road_network)
-
-            mission_planner.plan(mission=None)
+            planner = sim.scenario.planner
+            planner.plan(mission=None)
 
             agent_id = f"Agent-{sv_id}"
             self._vehicle_with_sensors[sv_id] = agent_id
             self._agent_interfaces[agent_id] = agent_interface
 
             sim.vehicle_index.attach_sensors_to_vehicle(
-                sim, sv_id, agent_interface, mission_planner
+                sim, sv_id, agent_interface, planner
             )
