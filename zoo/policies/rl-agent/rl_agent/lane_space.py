@@ -124,7 +124,7 @@ def get_observation_adapter(
         for wp_path in wp_paths:
             merge_waypoint_paths += wp_path
 
-        wp_poses = np.array([wp.pose.position for wp in merge_waypoint_paths])
+        wp_poses = np.array([wp.pos for wp in merge_waypoint_paths])
 
         # compute goal closest wp
         goal_wp_distance = np.linalg.norm(goal_position - wp_poses, axis=1)
@@ -132,7 +132,7 @@ def get_observation_adapter(
         goal_ego_distance = np.linalg.norm(goal_position - ego.position[:2])
 
         goal_closest_wp = merge_waypoint_paths[goal_closest_wp_index]
-        goal_ego_heading = abs(ego.heading - goal_closest_wp.pose.heading)
+        goal_ego_heading = abs(ego.heading - goal_closest_wp.heading)
 
         if goal_ego_distance > goal_is_nearby_threshold or goal_ego_heading > np.pi / 4:
             goal_lane_index = -1
@@ -199,7 +199,7 @@ def get_observation_adapter(
             # calculate waypoints distance to ego car along the routes
             wps_with_lane_dist_list = []
             for wp_path in wp_paths:
-                path_wp_poses = np.array([wp.pose.position for wp in wp_path])
+                path_wp_poses = np.array([wp.pos for wp in wp_path])
                 wp_poses_shift = np.roll(path_wp_poses, 1, axis=0)
                 wps_with_lane_dist = np.linalg.norm(
                     path_wp_poses - wp_poses_shift, axis=1
@@ -400,7 +400,7 @@ def get_observation_adapter(
 
                 line_heading = line_heading[ego_closest_its_nv_index]
                 ego_to_line_heading = (
-                    heading_to_degree(ego_closest_wp.pose.heading) - line_heading
+                    heading_to_degree(ego_closest_wp.heading) - line_heading
                 ) % 360
 
                 ego_closest_its_nv_speed = its_nv_speed[ego_closest_its_nv_index]

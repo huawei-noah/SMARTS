@@ -274,8 +274,7 @@ def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
             waypoints_lookahead.append(waypoints_lookahead[-1])
     else:
         waypoints_lookahead = [
-            get_relative_pos(closest_wp.pose.position, ego_position)
-            for i in range(num_lookahead)
+            get_relative_pos(closest_wp.pos, ego_position) for i in range(num_lookahead)
         ]
 
     waypoints_lookahead = rotate2d_vector(waypoints_lookahead, -ego_heading)
@@ -283,10 +282,7 @@ def get_closest_waypoint(ego_position, ego_heading, num_lookahead, goal_path):
 
 
 def get_relative_pos(waypoint, ego_pos):
-    return [
-        waypoint.pose.position[0] - ego_pos[0],
-        waypoint.pose.position[1] - ego_pos[1],
-    ]
+    return [waypoint.pos[0] - ego_pos[0], waypoint.pos[1] - ego_pos[1]]
 
 
 def get_dist_to_center(env_observation, closest_waypoint):

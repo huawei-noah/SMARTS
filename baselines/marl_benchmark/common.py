@@ -329,7 +329,7 @@ class CalObs:
                 wps_on_lane,
                 key=lambda tup: np.linalg.norm(tup[0].pos - vec_2d(v.position)),
             )
-            if np.linalg.norm(nearest_wp.pose.position - vec_2d(v.position)) > 2:
+            if np.linalg.norm(nearest_wp.pos - vec_2d(v.position)) > 2:
                 # this vehicle is not close enough to the path, this can happen
                 # if the vehicle is behind the ego, or ahead past the end of
                 # the waypoints
@@ -337,18 +337,16 @@ class CalObs:
 
             # relative_speed_m_per_s = (ego.speed - v.speed) * 1000 / 3600
             # relative_speed_m_per_s = max(abs(relative_speed_m_per_s), 1e-5)
-            dist_wp_vehicle_vector = vec_2d(v.position) - vec_2d(
-                nearest_wp.pose.position
-            )
+            dist_wp_vehicle_vector = vec_2d(v.position) - vec_2d(nearest_wp.pos)
             direction_vector = np.array(
                 [
-                    math.cos(math.radians(nearest_wp.pose.heading)),
-                    math.sin(math.radians(nearest_wp.pose.heading)),
+                    math.cos(math.radians(nearest_wp.heading)),
+                    math.sin(math.radians(nearest_wp.heading)),
                 ]
             ).dot(dist_wp_vehicle_vector)
 
             dist_to_vehicle = lane_dist + np.sign(direction_vector) * (
-                np.linalg.norm(vec_2d(nearest_wp.pose.position) - vec_2d(v.position))
+                np.linalg.norm(vec_2d(nearest_wp.position) - vec_2d(v.position))
             )
             lane_dist = dist_to_vehicle / 100.0
 
@@ -438,7 +436,7 @@ class CalObs:
         for wp_path in wp_paths:
             merge_waypoint_paths += wp_path
 
-        wp_poses = np.array([wp.pose.position for wp in merge_waypoint_paths])
+        wp_poses = np.array([wp.pos for wp in merge_waypoint_paths])
 
         # compute neighbour vehicle closest wp
         nv_poses = np.array([nv.position for nv in neighborhood_vehicle_states])
@@ -478,7 +476,7 @@ class CalObs:
             # calculate waypoints distance to ego car along the routes
             wps_with_lane_dist_list = []
             for wp_path in wp_paths:
-                path_wp_poses = np.array([wp.pose.position for wp in wp_path])
+                path_wp_poses = np.array([wp.pos for wp in wp_path])
                 wp_poses_shift = np.roll(path_wp_poses, 1, axis=0)
                 wps_with_lane_dist = np.linalg.norm(
                     path_wp_poses - wp_poses_shift, axis=1
@@ -676,7 +674,7 @@ class CalObs:
 
                 line_heading = line_heading[ego_closest_its_nv_index]
                 ego_to_line_heading = (
-                    heading_to_degree(ego_closest_wp.pose.heading) - line_heading
+                    heading_to_degree(ego_closest_wp.heading) - line_heading
                 ) % 360
 
                 ego_closest_its_nv_speed = its_nv_speed[ego_closest_its_nv_index]

@@ -201,12 +201,8 @@ def test_observations(env, agent_spec):
             first_wp = path[0]
             last_wp = path[-1]
 
-            first_wp_pos = np.array(
-                [first_wp.pose.position[0], first_wp.pose.position[1], 0]
-            )
-            last_wp_pos = np.array(
-                [last_wp.pose.position[0], last_wp.pose.position[1], 0]
-            )
+            first_wp_pos = np.array([first_wp.pos[0], first_wp.pos[1], 0])
+            last_wp_pos = np.array([last_wp.pos[0], last_wp.pos[1], 0])
 
             rgb_first_wp_x, rgb_first_wp_y = project_2d(
                 lens, rgb.metadata, first_wp_pos

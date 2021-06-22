@@ -45,16 +45,18 @@ class Waypoint:
 
     # XXX: consider renaming lane_id, lane_index, lane_width
     #      to nearest_lane_id, nearest_lane_index, nearest_lane_width
-    pose: Pose
-    lane_id: int
-    lane_width: float
-    speed_limit: float
-    lane_index: int
+    pos: np.ndarray  # Point positioned on center of lane
+    heading: Heading  # Heading angle of lane at this point (radians)
+    lane_id: str  # ID of lane under lanepoint
+    lane_width: float  # Width of lane at this point (meters)
+    speed_limit: float  # Lane speed in m/s
+    lane_index: int  # Index of the lane this lanepoint is over. 0 is the outer(right) most lane
 
     @classmethod
-    def from_pose_in_lane(cls, pose: Pose, lane: RoadMap.Lane):
+    def from_pose_in_lane(cls, pos: np.ndarray, heading: Heading, lane: RoadMap.Lane):
         return cls(
-            pose=pose,
+            pos=pos,
+            heading=heading,
             lane_width=lane.width,
             speed_limit=lane.speed_limit,
             lane_id=lane.lane_id,
@@ -65,8 +67,8 @@ class Waypoint:
         if not isinstance(other, Waypoint):
             return False
         return (
-            (self.pose.position == other.pose.position).all()
-            and self.pose.heading == other.pose.heading
+            (self.pos == other.pos).all()
+            and self.heading == other.heading
             and self.lane_width == other.lane_width
             and self.speed_limit == other.speed_limit
             and self.lane_id == other.lane_id
@@ -76,8 +78,8 @@ class Waypoint:
     def __hash__(self):
         return hash(
             (
-                *self.pose.position,
-                self.pose.heading,
+                *self.pos,
+                self.heading,
                 self.lane_width,
                 self.speed_limit,
                 self.lane_id,
@@ -96,7 +98,7 @@ class Waypoint:
         ), "Heading h ({}) must be an instance of smarts.core.coordinates.Heading".format(
             type(h)
         )
-        return self.pose.heading.relative_to(h)
+        return self.heading.relative_to(h)
 
     def signed_lateral_error(self, p) -> float:
         """Returns the signed lateral distance from the given point to the
@@ -104,13 +106,11 @@ class Waypoint:
 
         Negative signals right of line and Positive left of line.
         """
-        return signed_dist_to_line(
-            p, self.pose.position, self.pose.heading.direction_vector()
-        )
+        return signed_dist_to_line(p, self.pos, self.heading.direction_vector())
 
     def dist_to(self, p) -> float:
         """Calculates straight line distance to the given 2D point"""
-        return np.linalg.norm(self.pose.position - p[: len(self.pose.position)])
+        return np.linalg.norm(self.pos - p[: len(self.pos)])
 
 
 class Planner:

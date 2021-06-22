@@ -85,9 +85,9 @@ export default function Waypoints({
           } else {
             wp_ = egoWaypointModel.createInstance("ego-wp");
           }
-          wp_.position.x = waypoint.pose.position[0];
+          wp_.position.x = waypoint.pos[0];
           wp_.position.y = 0.15;
-          wp_.position.z = waypoint.pose.position[1];
+          wp_.position.z = waypoint.pos[1];
           newWaypointGeometries.push(wp_);
         }
       }

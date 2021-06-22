@@ -90,7 +90,7 @@ class LaneFollowingController:
         for wp_a, wp_b in reversed(list(zip(wp_path, wp_path[1:]))):
             ewma_road_curviness = lerp(
                 ewma_road_curviness,
-                math.degrees(abs(wp_a.relative_heading(wp_b.pose.heading))),
+                math.degrees(abs(wp_a.relative_heading(wp_b.heading))),
                 0.03,
             )
 
@@ -101,9 +101,9 @@ class LaneFollowingController:
         # Number of trajectory point used for curvature calculation.
         num_trajectory_points = min([10, len(wp_path)])
         trajectory = [
-            [wp_path[i].pose.position[0] for i in range(num_trajectory_points)],
-            [wp_path[i].pose.position[1] for i in range(num_trajectory_points)],
-            [wp_path[i].pose.heading for i in range(num_trajectory_points)],
+            [wp_path[i].pos[0] for i in range(num_trajectory_points)],
+            [wp_path[i].pos[1] for i in range(num_trajectory_points)],
+            [wp_path[i].heading for i in range(num_trajectory_points)],
         ]
         # The following calculates the radius of curvature for the 4th
         # waypoints in the waypoint list. Value 4 is chosen to ensure
@@ -120,8 +120,8 @@ class LaneFollowingController:
         # min_curvature.
         if look_ahead_curvature <= min_curvature:
             state.min_curvature_location = (
-                wp_path[4].pose.position[0],
-                wp_path[4].pose.position[1],
+                wp_path[4].pos[0],
+                wp_path[4].pos[1],
             )
 
         # LOOK AHEAD ERROR SETTING
@@ -141,7 +141,7 @@ class LaneFollowingController:
 
         look_ahead_wp_num = min(look_ahead_wp_num, len(wp_path) - 1)
 
-        reference_heading = wp_path[0].pose.heading
+        reference_heading = wp_path[0].heading
         look_ahead_wp = wp_path[look_ahead_wp_num]
         look_ahead_dist = look_ahead_wp.dist_to(vehicle.position)
         vehicle_look_ahead_pt = [
@@ -205,7 +205,7 @@ class LaneFollowingController:
             (vehicle.position[0] - state.min_curvature_location[0]) ** 2
             + (vehicle.position[1] - state.min_curvature_location[1]) ** 2
         ) < 2:
-            reference_heading = wp_path[look_ahead_wp_num].pose.heading
+            reference_heading = wp_path[look_ahead_wp_num].heading
 
         # Desired closed loop poles of the lateral dynamics
         # The higher the absolute value, the closed loop response will
@@ -351,7 +351,7 @@ class LaneFollowingController:
     @staticmethod
     def find_current_lane(wp_paths, vehicle_position):
         relative_distant_lane = [
-            np.linalg.norm(wp_paths[idx][0].pose.position - vehicle_position[0:2])
+            np.linalg.norm(wp_paths[idx][0].pos - vehicle_position[0:2])
             for idx in range(len(wp_paths))
         ]
         return np.argmin(relative_distant_lane)

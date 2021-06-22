@@ -475,9 +475,9 @@ class OpEnAgent(Agent):
         # )
         num_trajectory_points = len(wps)
         trajectory = [
-            [wps[i].pose.position[0] for i in range(num_trajectory_points)],
-            [wps[i].pose.position[1] for i in range(num_trajectory_points)],
-            [wps[i].pose.heading for i in range(num_trajectory_points)],
+            [wps[i].pos[0] for i in range(num_trajectory_points)],
+            [wps[i].pos[1] for i in range(num_trajectory_points)],
+            [wps[i].heading for i in range(num_trajectory_points)],
         ]
         curvature = abs(
             TrajectoryTrackingController.curvature_calculation(
@@ -545,11 +545,7 @@ class OpEnAgent(Agent):
         flat_wps = [
             wp_param
             for wp in wps
-            for wp_param in [
-                wp.pose.position[0],
-                wp.pose.position[1],
-                float(wp.pose.heading) + math.pi * 0.5,
-            ]
+            for wp_param in [wp.pos[0], wp.pos[1], float(wp.heading) + math.pi * 0.5]
         ]
         if self.SV_N == 0:
             flat_svs = []
@@ -644,8 +640,8 @@ class OpEnAgent(Agent):
         subplot.clear()
 
         self.plt.plot(xs, ys, "o-", color="xkcd:crimson", label="trajectory")
-        wp_x = [wp.pose.position[0] for wp in wps]
-        wp_y = [wp.pose.position[1] for wp in wps]
+        wp_x = [wp.pos[0] for wp in wps]
+        wp_y = [wp.pos[1] for wp in wps]
         self.plt.scatter(wp_x, wp_y, color="red", label="waypoint")
 
         sv_x = [sv_x for sv_x in flat_svs[:: VehicleModel.DOF]]

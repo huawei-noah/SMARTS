@@ -859,8 +859,7 @@ class TripMeterSensor(Sensor):
 
         threshold_for_counting_wp = 0.5  # meters from last tracked waypoint
         if (
-            np.linalg.norm(new_wp.pose.position - most_recent_wp.pose.position)
-            > threshold_for_counting_wp
+            np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
             and should_count_wp
         ):
             self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
@@ -870,8 +869,8 @@ class TripMeterSensor(Sensor):
 
     @staticmethod
     def _compute_additional_dist_travelled(recent_wp, waypoint):
-        heading_vec = recent_wp.pose.heading.direction_vector()
-        disp_vec = waypoint.pose.position - recent_wp.pose.position
+        heading_vec = recent_wp.heading.direction_vector()
+        disp_vec = waypoint.pos - recent_wp.pos
         direction = np.sign(np.dot(heading_vec, disp_vec))
         distance = np.linalg.norm(disp_vec)
         return direction * distance

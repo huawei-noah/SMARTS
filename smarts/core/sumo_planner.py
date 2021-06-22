@@ -32,7 +32,6 @@ from .sumo_lanepoints import LanePoint, LinkedLanePoint
 from .sumo_road_network import SumoRoadNetwork
 from .utils.math import (
     evaluate_bezier as bezier,
-    fast_quaternion_from_angle,
     inplace_unwrap,
     radians_to_vec,
     vec_2d,
@@ -237,9 +236,8 @@ class SumoPlanner(Planner):
             width = lane.width
 
             wp = Waypoint(
-                pose=Pose(
-                    position=pos, orientation=fast_quaternion_from_angle(heading)
-                ),
+                posn=pos,
+                heading=heading,
                 lane_width=width,
                 speed_limit=speed_limit,
                 lane_id=lane_id,
@@ -417,9 +415,8 @@ class SumoPlanner(Planner):
             width = lane.width
 
             wp = Waypoint(
-                pose=Pose(
-                    position=pos, orientation=fast_quaternion_from_angle(heading)
-                ),
+                pos=pos,
+                heading=heading,
                 lane_width=width,
                 speed_limit=speed_limit,
                 lane_id=lane_id,
@@ -623,23 +620,18 @@ class SumoPlanner(Planner):
             ref_lanepoints_coordinates["headings"]
         )
         first_lp_heading = ref_lanepoints_coordinates["headings"][0]
-        lp_position = np.array([*path[0].lp.pose.position, 0])
-        vehicle_pos = np.array([point[0], point[1], 0])
-        heading_vector = np.array(
-            [
-                *radians_to_vec(first_lp_heading),
-                0,
-            ]
-        )
+        lp_position = path[0].lp.pose.position[:2]
+        vehicle_pos = np.array(point[:2])
+        heading_vec = np.array(radians_to_vec(first_lp_heading))
         projected_distant_lp_vehicle = np.inner(
-            (vehicle_pos - lp_position), heading_vector
+            (vehicle_pos - lp_position), heading_vec
         )
 
         ref_lanepoints_coordinates["positions_x"][0] = (
-            lp_position[0] + projected_distant_lp_vehicle * heading_vector[0]
+            lp_position[0] + projected_distant_lp_vehicle * heading_vec[0]
         )
         ref_lanepoints_coordinates["positions_y"][0] = (
-            lp_position[1] + projected_distant_lp_vehicle * heading_vector[1]
+            lp_position[1] + projected_distant_lp_vehicle * heading_vec[1]
         )
         # To ensure that the distance between waypoints are equal, we used
         # interpolation approach inspired by:
@@ -652,7 +644,10 @@ class SumoPlanner(Planner):
         )
 
         if len(cumulative_path_dist) <= 1:
-            return [Waypoint.from_LanePoint(path[0].lp)]
+            lp = path[0].lp
+            return [
+                Waypoint.from_pose_in_lane(lp.pose.position, lp.pose.heading, lp.lane)
+            ]
 
         evenly_spaced_cumulative_path_dist = np.linspace(
             0, cumulative_path_dist[-1], len(path)
@@ -685,17 +680,13 @@ class SumoPlanner(Planner):
         for idx in range(len(path)):
             equally_spaced_path.append(
                 Waypoint(
-                    pose=Pose(
-                        position=np.array(
-                            [
-                                evenly_spaced_coordinates["positions_x"][idx],
-                                evenly_spaced_coordinates["positions_y"][idx],
-                            ]
-                        ),
-                        orientation=fast_quaternion_from_angle(
-                            Heading(evenly_spaced_coordinates["headings"][idx])
-                        ),
+                    pos=np.array(
+                        [
+                            evenly_spaced_coordinates["positions_x"][idx],
+                            evenly_spaced_coordinates["positions_y"][idx],
+                        ]
                     ),
+                    heading=Heading(evenly_spaced_coordinates["headings"][idx]),
                     lane_width=evenly_spaced_coordinates["lane_width"][idx],
                     speed_limit=evenly_spaced_coordinates["speed_limit"][idx],
                     lane_id=evenly_spaced_coordinates["lane_id"][idx],
