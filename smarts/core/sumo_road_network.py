@@ -96,8 +96,7 @@ class SumoRoadNetwork(RoadMap):
         )
         self._lanes = {}
         self._roads = {}
-        self._junctions = {}
-        self._lanepoint_spacing = lanepoint_spacing
+        self.lanepoint_spacing = lanepoint_spacing
         self.lanepoints = None
         if lanepoint_spacing is not None:
             assert lanepoint_spacing > 0
@@ -199,11 +198,6 @@ class SumoRoadNetwork(RoadMap):
         # map units per meter
         return self._default_lane_width / DEFAULT_ENTRY_TACTIC
 
-    @property
-    def lanepoint_spacing(self) -> float:
-        """ if spacing isn't fixed, will return None """
-        return self._lanepoint_spacing
-
     def to_glb(self, at_path):
         """ build a glb file for camera rendering and envision """
         polys = self._compute_road_polygons()
@@ -217,7 +211,6 @@ class SumoRoadNetwork(RoadMap):
             self._map = road_map
             self._road = road_map.road_by_id(sumo_lane.getEdge().getID())
             self._road_dir = None
-            self._junction = road_map.junction_by_id(sumo_lane.getEdge().getID())
             assert self._road or self._junction
 
         @property
@@ -244,8 +237,7 @@ class SumoRoadNetwork(RoadMap):
             """Note: left is defined as 90 degrees clockwise relative to the lane heading.
             Second result is True if lane is in the same direction as this one.
             May return None for lanes in junctions."""
-            road = self._road or self._junction
-            lanes = road.lanes_by_direction(self.road_dir)
+            lanes = self._road.lanes_by_direction(self.road_dir)
             index = self.index + 1
             return (lanes[index], True) if index < len(lanes) else (None, True)
 
@@ -254,8 +246,7 @@ class SumoRoadNetwork(RoadMap):
             """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
             Second result is True if lane is in the same direction as this one.
             May return None for lanes in junctions."""
-            road = self._road or self._junction
-            lanes = road.lanes_by_direction(self.road_dir)
+            lanes = self._road.lanes_by_direction(self.road_dir)
             index = self.index - 1
             return (lanes[index], True) if index >= 0 else (None, True)
 
@@ -272,9 +263,9 @@ class SumoRoadNetwork(RoadMap):
             return self._sumo_lane.getWidth()
 
         @property
-        def in_junction(self) -> RoadMap.Junction:
+        def in_junction(self) -> bool:
             """ will return None if not in a junction"""
-            return self._junction
+            return self._road.is_junction
 
         @property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
@@ -329,7 +320,7 @@ class SumoRoadNetwork(RoadMap):
             offset = self.offset_along_lane(point)
             position = self.from_lane_coord(RefLinePoint(s=offset))
             desired_vector = self.vector_at_offset(offset)
-            orientation = fast_quaternion_from_angle(vec_to_radians(desired_vector))
+            orientation = fast_quaternion_from_angle(vec_to_radians(desired_vector[:2]))
             return Pose(position=position, orientation=orientation)
 
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
@@ -383,6 +374,10 @@ class SumoRoadNetwork(RoadMap):
             self._sumo_edge = sumo_edge
             self._map = road_map
             self._lanes = []
+
+        @property
+        def is_junction(self) -> bool:
+            return self._sumo_edge.isSpecial()
 
         @property
         def length(self) -> int:
@@ -480,75 +475,11 @@ class SumoRoadNetwork(RoadMap):
         if road:
             return road
         sumo_edge = self._graph.getEdge(road_id)
-        if not sumo_edge or sumo_edge.isSpecial():
+        if not sumo_edge:
             return None
         road = SumoRoadNetwork.Road(road_id, sumo_edge, self)
         self._roads[road_id] = road
         return road
-
-    class Junction(RoadMap.Junction):
-        def __init__(self, junction_id: str, sumo_edge: Edge, road_map):
-            self._junction_id = junction_id
-            self._sumo_edge = sumo_edge
-            self._map = road_map
-            self._lanes = []
-
-        @property
-        def junction_id(self) -> str:
-            return self._junction_id
-
-        @property
-        def road_id(self) -> str:
-            return self._junction_id
-
-        @property
-        def lanes(self) -> List[RoadMap.Lane]:
-            # Note:  all SUMO Lanes for an Edge go in the same direction.
-            if not self._lanes:
-                self._lanes = [
-                    self._map.lane_by_id(sumo_lane.getID())
-                    for sumo_lane in self._sumo_edge.getLanes()
-                ]
-            return self._lanes
-
-        def lane_at_index(self, index: int, direction: bool = True) -> RoadMap.Lane:
-            assert (
-                direction  # Note:  all SUMO Lanes for an Edge go in the same direction.
-            )
-            return self.lanes_by_direction(direction)[index]
-
-        def lanes_by_direction(self, direction: bool) -> List[RoadMap.Lane]:
-            if not self._lanes and direction:
-                self._lanes = [
-                    self._map.lane_by_id(sumo_lane.getID())
-                    for sumo_lane in self._sumo_edge.getLanes()
-                ]
-            return self._lanes
-
-        def point_on_road(self, point: Point) -> bool:
-            for lane in self.lanes:
-                if lane.point_in_lane(point):
-                    return True
-            return False
-
-        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            _, right_edge = self.lanes[0].edges_at_point(point)
-            left_edge, _ = self.lanes[-1].edges_at_point(point)
-            return left_edge, right_edge
-
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
-            return SumoRoadNetwork._buffered_shape(self._sumo_edge.getShape(), width)
-
-    def junction_by_id(self, junction_id: str) -> RoadMap.Junction:
-        junction = self._junctions.get(junction_id)
-        if junction:
-            return junction
-        sumo_edge = self._graph.getEdge(junction_id)
-        if not sumo_edge or not sumo_edge.isSpecial():
-            return None
-        junction = SumoRoadNetwork.Junction(junction_id, sumo_edge, self)
-        self._junctions[junction_id] = junction
-        return junction
 
     def nearest_lanes(
         self, point: Point, radius: float = None, include_junctions=True
@@ -615,7 +546,7 @@ class SumoRoadNetwork(RoadMap):
         max_to_gen: int = None,
     ) -> List[RoadMap.Route]:
         assert max_to_gen == 1, "multiple route generation not yet supported for Sumo"
-        newroute = Route()
+        newroute = SumoRoadNetwork.Route()
         result = [newroute]
 
         roads = [start_road]
@@ -646,17 +577,17 @@ class SumoRoadNetwork(RoadMap):
             newroute.add_road(self.road_by_id(edges[0].getID()))
             return result
 
-        edges = []
+        used_edges = []
         edge_ids = []
         adjacent_edge_pairs = zip(edges, edges[1:])
         for cur_edge, next_edge in adjacent_edge_pairs:
             internal_routes = self._internal_routes_between(cur_edge, next_edge)
             for internal_route in internal_routes:
-                edges.extend(internal_route)
+                used_edges.extend(internal_route)
                 edge_ids.extend([edge.getID() for edge in internal_route])
         _, indices = np.unique(edge_ids, return_index=True)
         for idx in sorted(indices):
-            newroute.add_road(road_by_id(edges[idx].getID()))
+            newroute.add_road(self.road_by_id(used_edges[idx].getID()))
 
         return result
 
@@ -676,7 +607,7 @@ class SumoRoadNetwork(RoadMap):
             # we need to follow these to eventually leave the junction.
             via_lane_id = connection.getViaLaneID()
             while via_lane_id:
-                via_lane = self._road_map.lane_by_id(via_lane_id)
+                via_lane = self.lane_by_id(via_lane_id)
                 via_road = via_lane.road
                 via_edge = via_road._sumo_edge
 
@@ -697,9 +628,9 @@ class SumoRoadNetwork(RoadMap):
         return routes
 
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
-        route = Rount()
+        route = SumoRoadNetwork.Route()
         next_edges = self._graph.getEdges(False)
-        while next_edges and len(route) < max_route_len:
+        while next_edges and len(route.roads) < max_route_len:
             cur_edge = random.choice(next_edges)
             route.add_road(self.road_by_id(cur_edge.getID()))
             next_edges = list(cur_edge.getOutgoing().keys())
@@ -709,7 +640,9 @@ class SumoRoadNetwork(RoadMap):
         lane_to_poly = {}
         for edge in self._graph.getEdges():
             for lane in edge.getLanes():
-                shape = SumoRoadNetwork._buffered_shape(lane, lane.getWidth())
+                shape = SumoRoadNetwork._buffered_shape(
+                    lane.getShape(), lane.getWidth()
+                )
                 # Check if "shape" is just a point.
                 if len(set(shape.exterior.coords)) == 1:
                     logging.debug(
@@ -877,7 +810,7 @@ class SumoRoadNetwork(RoadMap):
         return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
 
     @staticmethod
-    def _buffered_shape(self, shape: Union[Edge, Lane], width: float = 1.0) -> Polygon:
+    def _buffered_shape(shape, width: float = 1.0) -> Polygon:
         ls = LineString(shape).buffer(
             width / 2,
             1,

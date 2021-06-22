@@ -32,7 +32,7 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
-from shapely.ops import unary_union
+from shapely.ops import split, unary_union
 
 from smarts.core import gen_id
 from smarts.core.coordinates import RefLinePoint
@@ -552,9 +552,10 @@ class MapZone(Zone):
         def split_lane_shape_at_offset(
             lane_shape: Polygon, lane: RoadMap.Lane, offset: float
         ):
+            # XXX: generalize to n-dim
             width_2 = lane.width
-            point = np.array(lane.from_lane_coord(RefLinePoint(offset)))
-            lane_vec = lane.vector_at_offset(offset)
+            point = np.array(lane.from_lane_coord(RefLinePoint(offset)))[:2]
+            lane_vec = lane.vector_at_offset(offset)[:2]
 
             perp_vec_right = rotate_around_point(lane_vec, np.pi / 2, origin=(0, 0))
             perp_vec_right = (
@@ -569,7 +570,7 @@ class MapZone(Zone):
             )
 
             split_line = LineString([perp_vec_left, perp_vec_right])
-            return ops.split(lane_shape, split_line)
+            return split(lane_shape, split_line)
 
         lane_shapes = []
         road_id, lane_idx, offset = self.start
@@ -609,7 +610,7 @@ class MapZone(Zone):
             if lane_shape is None:
                 continue
 
-            lane_shape = road_network.split_lane_shape_at_offset(
+            lane_shape = split_lane_shape_at_offset(
                 lane_shape,
                 lane,
                 max_cut,

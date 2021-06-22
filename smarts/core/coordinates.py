@@ -64,22 +64,22 @@ class BoundingBox:
 
     @property
     def length(self):
-        return max_pt.x - min_pt.x
+        return self.max_pt.x - self.min_pt.x
 
     @property
     def width(self):
-        return max_pt.y - min_pt.y
+        return self.max_pt.y - self.min_pt.y
 
     @property
     def height(self):
-        return max_pt.z - min_pt.z
+        return self.max_pt.z - self.min_pt.z
 
     @property
     def center(self):
         return Point(
-            x=(mix_pt.x + max_pt.x) / 2,
-            y=(min_pt.y + max_pt.y) / 2,
-            z=(min_pt.z + max_pt.z) / 2,
+            x=(self.min_pt.x + self.max_pt.x) / 2,
+            y=(self.min_pt.y + self.max_pt.y) / 2,
+            z=(self.min_pt.z + self.max_pt.z) / 2,
         )
 
     def as_dimensions(self):

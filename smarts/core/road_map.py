@@ -50,11 +50,6 @@ class RoadMap:
         # map units per meter
         raise NotImplementedError()
 
-    @property
-    def lanepoint_spacing(self) -> float:
-        """ if spacing isn't fixed, will return None """
-        raise NotImplementedError()
-
     def to_glb(self, at_path):
         """ build a glb file for camera rendering and envision """
         raise NotImplementedError()
@@ -63,9 +58,6 @@ class RoadMap:
         raise NotImplementedError()
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
-        raise NotImplementedError()
-
-    def junction_by_id(self, junction_id: str) -> RoadMap.Junction:
         raise NotImplementedError()
 
     def nearest_lanes(
@@ -141,8 +133,7 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def in_junction(self) -> RoadMap.Junction:
-            """ will return None if not in a junction"""
+        def in_junction(self) -> bool:
             raise NotImplementedError()
 
         @property
@@ -202,6 +193,10 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
+        def is_junction(self) -> bool:
+            raise NotImplementedError()
+
+        @property
         def length(self) -> int:
             raise NotImplementedError()
 
@@ -246,13 +241,6 @@ class RoadMap:
 
         def buffered_shape(self, width: float = 1.0) -> Polygon:
             raise NotImplementedError()
-
-    class Junction(Road):
-        @property
-        def junction_id(self) -> str:
-            raise NotImplementedError()
-
-        # TODO:  right-of-way
 
     class Feature:
         @property

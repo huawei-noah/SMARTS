@@ -25,7 +25,7 @@ import numpy as np
 
 from .agent_interface import AgentBehavior
 from .coordinates import Heading, Pose
-from .planner import Planner
+from .planner import Planner, Waypoint
 from .road_map import RoadMap
 from .scenario import Mission
 from .sumo_lanepoints import LanePoint, LinkedLanePoint
@@ -42,14 +42,12 @@ from .vehicle import Vehicle
 
 
 class SumoPlanner(Planner):
-    def __init__(
-        self, mission: Mission, road_map: RoadMap, agent_behavior: AgentBehavior = None
-    ):
+    def __init__(self, road_map: RoadMap, agent_behavior: AgentBehavior = None):
         super().__init__(road_map, agent_behavior)
         assert isinstance(self._road_map, SumoRoadNetwork)
         self._log = logging.getLogger(self.__class__.__name__)
-        self._lanepoints = self._road_map._lanepoints
-        self._waypoints_cache = MissionPlanner._WaypointsCache()
+        self._lanepoints = self._road_map.lanepoints
+        self._waypoints_cache = SumoPlanner._WaypointsCache()
         self._task_is_triggered = False
         # TODO: These variables should be put in an appropriate place.
         self._uturn_initial_heading = 0
@@ -576,7 +574,7 @@ class SumoPlanner(Planner):
             lanepoint, lookahead, filter_edge_ids
         )
         result = [
-            MissionPlanner._equally_spaced_path(path, point) for path in lanepoint_paths
+            SumoPlanner._equally_spaced_path(path, point) for path in lanepoint_paths
         ]
 
         self._waypoints_cache.update(

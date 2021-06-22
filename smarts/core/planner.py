@@ -24,7 +24,7 @@ from typing import List, Optional
 import numpy as np
 
 from .agent_interface import AgentBehavior
-from .coordinates import Heading, Pose
+from .coordinates import Heading, Pose, RefLinePoint
 from .road_map import RoadMap
 from .scenario import EndlessGoal, Mission, Start
 from .utils.math import signed_dist_to_line
@@ -114,9 +114,7 @@ class Waypoint:
 
 
 class Planner:
-    def __init__(
-        self, mission: Mission, road_map: RoadMap, agent_behavior: AgentBehavior = None
-    ):
+    def __init__(self, road_map: RoadMap, agent_behavior: AgentBehavior = None):
         self._road_map = road_map
         self._agent_behavior = agent_behavior or AgentBehavior(aggressiveness=5)
         self._mission = None
@@ -154,7 +152,7 @@ class Planner:
         coord = n_lane.from_lane_coord(RefLinePoint(offset))
         target_pose = n_lane.target_pose_at_point(coord)
         return Mission(
-            start=Start(tuple(nearest_lp.pos), target_pose.heading),
+            start=Start(target_pose.position, target_pose.heading),
             goal=EndlessGoal(),
             entry_tactic=None,
         )
@@ -181,11 +179,10 @@ class Planner:
             end_road = end_lane.road
 
             via_roads = [
-                self._road_map.road_by_id(via.road_id)
-                for via in self._mission.route_vias
+                self._road_map.road_by_id(via) for via in self._mission.route_vias
             ]
 
-            self._route = self._road_map.generate_route(
+            self._route = self._road_map.generate_routes(
                 start_road, end_road, via_roads, 1
             )[0]
 
