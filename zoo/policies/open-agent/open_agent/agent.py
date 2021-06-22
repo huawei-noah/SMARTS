@@ -475,9 +475,9 @@ class OpEnAgent(Agent):
         # )
         num_trajectory_points = len(wps)
         trajectory = [
-            [wps[i].pos[0] for i in range(num_trajectory_points)],
-            [wps[i].pos[1] for i in range(num_trajectory_points)],
-            [wps[i].heading for i in range(num_trajectory_points)],
+            [wps[i].pose.position[0] for i in range(num_trajectory_points)],
+            [wps[i].pose.position[1] for i in range(num_trajectory_points)],
+            [wps[i].pose.heading for i in range(num_trajectory_points)],
         ]
         curvature = abs(
             TrajectoryTrackingController.curvature_calculation(

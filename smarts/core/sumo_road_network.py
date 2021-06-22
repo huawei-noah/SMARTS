@@ -317,7 +317,7 @@ class SumoRoadNetwork(RoadMap):
             end_offset = start_offset + add_offset  # a little further down the lane
             length = self._sumo_lane.getLength()
             if end_offset > length + add_offset:
-                raise ValueError(
+                self._map._log.warning(
                     f"Offset={end_offset} goes out further than the end of lane=({self.lane_id}, length={length})"
                 )
             p1 = self.from_lane_coord(RefLinePoint(s=start_offset))
