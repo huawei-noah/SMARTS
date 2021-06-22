@@ -487,7 +487,7 @@ class SumoLanePoints:
                 for next_lp in path[-1].nexts:
                     # TODO: This could be a problem. What about internal lanes?
                     # Filter only the edges we're interested in
-                    edge_id = next_lp.lp.lane.road_id
+                    edge_id = next_lp.lp.lane.road.road_id
                     if filter_edge_ids and edge_id not in filter_edge_ids:
                         continue
                     new_path = path + [next_lp]

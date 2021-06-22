@@ -325,7 +325,7 @@ class Vehicle:
 
         start = mission.start
         start_pose = Pose.from_front_bumper(
-            front_bumper_position=numpy.array(start.position),
+            front_bumper_position=numpy.array(start.position[:2]),
             heading=start.heading,
             length=chassis_dims.length,
         )

@@ -75,6 +75,7 @@ class SumoPlanner(Planner):
             elif isinstance(self._mission.task, CutIn):
                 return self._cut_in_waypoints(vehicle, context)
 
+        pose = vehicle.pose
         if constrain_to_route:
             assert (
                 self._did_plan
@@ -85,7 +86,7 @@ class SumoPlanner(Planner):
                     pose.position, lookahead, road_ids
                 )
 
-        return self._waypoint_paths_at(vehicle.pose, lookahead, within_radius)
+        return self._waypoint_paths_at(pose, lookahead, within_radius)
 
     def waypoint_paths_on_lane_at(
         self, pose: Pose, lane_id: str, lookahead: int, constrain_to_route: bool = True
@@ -469,9 +470,7 @@ class SumoPlanner(Planner):
         lookahead: int,
         within_radius: int = 5,
     ) -> List[List[Waypoint]]:
-        closest_lane = self._road_map.nearest_lane(
-            pose.position, within_radius=within_radius
-        )
+        closest_lane = self._road_map.nearest_lane(pose.position, radius=within_radius)
         waypoint_paths = []
         for lane in closest_lane.road.lanes:
             waypoint_paths += self._waypoint_paths_on_lane_at(
@@ -499,10 +498,9 @@ class SumoPlanner(Planner):
         closest_lane = closest_linked_lp.lp.lane
 
         waypoint_paths = []
-        for lane in closest_lane.getEdge().getLanes():
-            lane_id = lane.getID()
+        for lane in closest_lane.road.lanes:
             waypoint_paths += self._waypoint_paths_on_lane_at(
-                point, lane_id, lookahead, route
+                point, lane.lane_id, lookahead, route
             )
 
         sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)

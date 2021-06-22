@@ -480,8 +480,8 @@ class Sensors:
             road = lane.road
             if road in used_roads:
                 continue
-            used_roads.add(roads)
-            closest_roads.append(roads)
+            used_roads.add(road)
+            closest_roads.append(road)
 
         # TODO: Narrow down the route roads to check using distance travelled.
         is_off_route, route_road_or_oncoming = cls._vehicle_off_route_info(
@@ -563,6 +563,7 @@ class Sensors:
     @staticmethod
     @lru_cache(maxsize=128)
     def _oncoming_traffic_road(instance_id, road):
+        # TODO SUMO
         from_node = road.getFromNode()
         to_node = road.getToNode()
 

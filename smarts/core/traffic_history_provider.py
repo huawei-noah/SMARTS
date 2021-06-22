@@ -57,7 +57,7 @@ class TrafficHistoryProvider(Provider):
         self._histories = scenario.traffic_history
         if self._histories:
             self._histories.connect_for_multiple_queries()
-        self._map_location_offset = scenario.road_network.net_offset
+        self._map_location_offset = scenario.road_map.net_offset
         self._is_setup = True
         return ProviderState()
 
