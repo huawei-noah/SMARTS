@@ -584,7 +584,7 @@ class MapZone(Zone):
             if geom_length > lane_length:
                 logging.debug(
                     f"Geometry is too long={geom_length} with offset={offset} for "
-                    f"lane={lane.getID()}, using length={lane_length} instead"
+                    f"lane={lane.lane_id}, using length={lane_length} instead"
                 )
                 geom_length = lane_length
 

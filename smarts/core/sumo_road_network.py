@@ -561,7 +561,7 @@ class SumoRoadNetwork(RoadMap):
 
         edges = []
         for cur_road, next_road in zip(roads, roads[1:] + [None]):
-            if next_road is None:
+            if not next_road:
                 edges.append(cur_road._sumo_edge)
                 break
             sub_route = (
@@ -572,7 +572,7 @@ class SumoRoadNetwork(RoadMap):
             )
             assert (
                 len(sub_route) >= 2
-            ), f"Unable to find valid path (len={len(sub_route)}) between {(cur_road, next_road)}"
+            ), f"Unable to find valid path (len={len(sub_route)}) between {(cur_road.road_id, next_road.road_id)}"
             # The sub route includes the boundary roads (cur_road, next_road).
             # We clip the latter to prevent duplicates
             edges.extend(sub_route[:-1])

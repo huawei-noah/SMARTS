@@ -194,7 +194,7 @@ class Sensors:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
             waypoint_paths = sensor_state.planner.waypoint_paths(
-                vehicle,
+                vehicle.pose,
                 lookahead=1,
                 within_radius=vehicle.length,
                 constrain_to_route=False,
@@ -830,7 +830,7 @@ class TripMeterSensor(Sensor):
         self._planner = planner
 
         waypoint_paths = planner.waypoint_paths(
-            vehicle,
+            vehicle.pose,
             lookahead=1,
             within_radius=vehicle.length,
             constrain_to_route=False,
@@ -913,9 +913,8 @@ class WaypointsSensor(Sensor):
 
     def __call__(self):
         return self._planner.waypoint_paths(
-            vehicle=self._vehicle,
+            self._vehicle.pose,
             lookahead=self._lookahead,
-            context=self._sim,
         )
 
     def teardown(self):
@@ -943,7 +942,7 @@ class RoadWaypointsSensor(Sensor):
 
     def route_waypoints(self):
         return self._planner.waypoint_paths(
-            vehicle=self._vehicle,
+            self._vehicle.pose,
             lookahead=32,
         )
 
@@ -965,7 +964,7 @@ class RoadWaypointsSensor(Sensor):
             wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
             adj_pose = Pose.from_center(wp_start, self._vehicle.heading)
             wps_to_lookahead = self._horizon * 2
-            paths = self._planner.waypoint_paths_on_lane_at(
+            paths = self._planner.waypoint_paths_on_lane_at_point(
                 pose=adj_pose,
                 lane_id=lane.lane_id,
                 lookahead=wps_to_lookahead,

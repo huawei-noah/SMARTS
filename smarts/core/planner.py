@@ -182,6 +182,7 @@ class Planner:
                 self._road_map.road_by_id(via) for via in self._mission.route_vias
             ]
 
+            print("STEVE", self._mission.start, self._mission.goal)
             self._route = self._road_map.generate_routes(
                 start_road, end_road, via_roads, 1
             )[0]
@@ -199,26 +200,35 @@ class Planner:
 
     def waypoint_paths(
         self,
-        vehicle,
+        pose: Pose,
         lookahead: int,
         within_radius: float = 5,
         constrain_to_route: bool = True,
-        context=None,
     ) -> List[List[Waypoint]]:
         """Computes equally-spaced Waypoints for all lane paths
         up to lookahead waypoints ahead, starting on the Edge containing
-        the nearest Lane to the vehicle's pose within within_radius meters.
+        the nearest Lane aligned with the vehicle's pose within within_radius meters.
         Constrains paths to your (possibly-inferred) route only if constrain_to_route.
         Route inference assumes you're on the correct route already;
         we do not presently "replan" in case the route has changed."""
         raise NotImplementedError()
 
-    def waypoint_paths_on_lane_at(
+    def waypoint_paths_on_lane_at_point(
         self, pose: Pose, lane_id: str, lookahead: int, constrain_to_route: bool = True
     ) -> List[List[Waypoint]]:
         """Computes equally-spaced Waypoints for all lane paths
         up to lookahead waypoints ahead, starting at Lane lane_id
-        (or a nearby Lane aligned with the vehicle's pose if lane_id isn't specified).
+        Constrains paths to your (possibly-inferred) route only if constrain_to_route.
+        Route inference assumes you're on the correct route already;
+        we do not presently "replan" in case the route has changed.
+        """
+        raise NotImplementedError()
+
+    def waypoint_paths_on_lane_at_offset(
+        self, lane: RoadMap.Lane, offset: float, lookahead: int = 30
+    ) -> List[List[Waypoint]]:
+        """Computes equally-spaced Waypoints for all lane paths
+        up to lookahead waypoints ahead, starting offset into lane.
         Constrains paths to your (possibly-inferred) route only if constrain_to_route.
         Route inference assumes you're on the correct route already;
         we do not presently "replan" in case the route has changed.
