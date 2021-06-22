@@ -398,14 +398,14 @@ class SumoRoadNetwork(RoadMap):
         @cached_property
         def incoming_roads(self) -> Dict[str, RoadMap.Road]:
             return {
-                edgeId: self._map.edge_by_id(edgeId)
+                edgeId: self._map.road_by_id(edgeId)
                 for edgeId in self._sumo_edge.getIncoming().keys()
             }
 
         @cached_property
         def outgoing_roads(self) -> Dict[str, RoadMap.Road]:
             return {
-                edgeId: self._map.edge_by_id(edgeId)
+                edgeId: self._map.road_by_id(edgeId)
                 for edgeId in self._sumo_edge.getOutgoing().keys()
             }
 
