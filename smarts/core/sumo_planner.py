@@ -68,7 +68,7 @@ class SumoPlanner(Planner):
         constrain_to_route: bool = True,
         context=None,
     ) -> List[List[Waypoint]]:
-        if self._mission.task is not None:
+        if self._mission and self._mission.task:
             if isinstance(self._mission.task, UTurn):
                 return self._uturn_waypoints(vehicle, context)
             elif isinstance(self._mission.task, CutIn):
