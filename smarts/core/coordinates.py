@@ -43,14 +43,12 @@ class Dimensions:
         return (self.length, self.width, self.height)
 
 
-@dataclass(frozen=True)
 class Point(NamedTuple):
     x: float
     y: float
     z: Optional[float] = 0
 
 
-@dataclass(frozen=True)
 class RefLinePoint(NamedTuple):
     # See the Reference Line coordinate system in OpenDRIVE here:
     #   https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems

@@ -98,7 +98,7 @@ class SumoLanePoints:
         self._lanepoints_by_lane_id = defaultdict(list)
         self._lanepoints_by_edge_id = defaultdict(list)
         for linked_lp in self._linked_lanepoints:
-            lp_edge_id = linked_lp.lp.lane.road_id
+            lp_edge_id = linked_lp.lp.lane.road.road_id
             self._lanepoints_by_lane_id[linked_lp.lp.lane.lane_id].append(linked_lp)
             self._lanepoints_by_edge_id[lp_edge_id].append(linked_lp)
 
@@ -296,7 +296,7 @@ class SumoLanePoints:
 
             first_lanepoint = LinkedLanePoint(
                 lp=LanePoint(
-                    lane=self._road_map.lane_from_id(lane.getID()),
+                    lane=self._road_map.lane_by_id(lane.getID()),
                     pose=Pose(position=lane_shape[0], orientation=orientation),
                 ),
                 nexts=[],
@@ -319,7 +319,7 @@ class SumoLanePoints:
                 orientation_ = fast_quaternion_from_angle(heading_)
                 linked_lanepoint = LinkedLanePoint(
                     lp=LanePoint(
-                        lane=self._road_map.lane_from_id(lane.getID()),
+                        lane=self._road_map.lane_by_id(lane.getID()),
                         pose=Pose(position=p1, orientation=orientation_),
                     ),
                     nexts=[],

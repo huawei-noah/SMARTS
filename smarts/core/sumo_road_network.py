@@ -216,10 +216,8 @@ class SumoRoadNetwork(RoadMap):
             self._sumo_lane = sumo_lane
             self._map = road_map
             self._road = road_map.road_by_id(sumo_lane.getEdge().getID())
-            self._road_dir = True
-            if self._road:
-                self._road_dir = self._road.lanes[self.index].lane_id == lane_id
-            self._junction = road_map.junction_by_id(sumo_lane.getEdge())
+            self._road_dir = None
+            self._junction = road_map.junction_by_id(sumo_lane.getEdge().getID())
             assert self._road or self._junction
 
         @property
@@ -229,6 +227,12 @@ class SumoRoadNetwork(RoadMap):
         @property
         def road(self) -> RoadMap.Road:
             return self._road
+
+        @property
+        def road_dir(self) -> bool:
+            if self._road_dir is None and self._road:
+                self._road_dir = self._road.lanes[self.index].lane_id == lane_id
+            return self._road_dir
 
         @property
         def index(self) -> int:
@@ -241,7 +245,7 @@ class SumoRoadNetwork(RoadMap):
             Second result is True if lane is in the same direction as this one.
             May return None for lanes in junctions."""
             road = self._road or self._junction
-            lanes = road.lanes_by_direction(self._road_dir)
+            lanes = road.lanes_by_direction(self.road_dir)
             index = self.index + 1
             return (lanes[index], True) if index < len(lanes) else (None, True)
 
@@ -251,7 +255,7 @@ class SumoRoadNetwork(RoadMap):
             Second result is True if lane is in the same direction as this one.
             May return None for lanes in junctions."""
             road = self._road or self._junction
-            lanes = road.lanes_by_direction(self._road_dir)
+            lanes = road.lanes_by_direction(self.road_dir)
             index = self.index - 1
             return (lanes[index], True) if index >= 0 else (None, True)
 
@@ -265,7 +269,7 @@ class SumoRoadNetwork(RoadMap):
 
         @property
         def width(self) -> float:
-            raise self._sumo_lane.getWidth()
+            return self._sumo_lane.getWidth()
 
         @property
         def in_junction(self) -> RoadMap.Junction:
@@ -542,7 +546,7 @@ class SumoRoadNetwork(RoadMap):
         sumo_edge = self._graph.getEdge(junction_id)
         if not sumo_edge or not sumo_edge.isSpecial():
             return None
-        junction = SumoRoadNetwork.junction(junction_id, sumo_edge, self)
+        junction = SumoRoadNetwork.Junction(junction_id, sumo_edge, self)
         self._junctions[junction_id] = junction
         return junction
 

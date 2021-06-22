@@ -678,9 +678,9 @@ class Scenario:
             road = road_map.road_by_id(road_id)
             lane = road.lane_at_index(lane_index)  # XXX: bidirectional roads?
             offset = resolve_offset(offset, lane.length)
-            position = lane.from_lane_coord(RefLinePoint(offset))
+            position = lane.from_lane_coord(RefLinePoint(s=offset))
             lane_vector = lane.vector_at_offset(offset)
-            heading = vec_to_radians(lane_vector)
+            heading = vec_to_radians(lane_vector[:2])
             return position, Heading(heading)
 
         def to_scenario_via(
