@@ -9,7 +9,7 @@ ULTRA supports multi-agent experiments for independently learning agents.
 The following steps will show how to create a multi-agent task with 4 agents.
 1. Generate the maps used by the ULTRA scenarios (if this has not been done already):
    ```sh
-   $ scl scenario build-all ultra/scenarios/pool/
+   $ scl scenario build-all ultra/scenarios/pool/experiment_pool/
    ```
 2. Create a multi-agent task:
    ```sh

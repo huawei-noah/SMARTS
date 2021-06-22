@@ -65,7 +65,7 @@ if __name__ == "__main__":
         "--pool-dir",
         help="directory for locating maps",
         type=str,
-        default=None,
+        default="ultra/scenarios/pool/experiment_pool",
     )
     parser_generate_scenarios.add_argument("--level", help="easy/medium/hard", type=str)
     parser_generate_scenarios.add_argument(
