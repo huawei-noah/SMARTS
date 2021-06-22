@@ -175,15 +175,15 @@ class Sensors:
             neighborhood_vehicles = []
             for nv in vehicle.neighborhood_vehicles_sensor():
                 nv_lane = sim.road_map.nearest_lane(
-                    nv.pose.position, within_radius=vehicle.length
+                    nv.pose.position, radius=vehicle.length
                 )
                 neighborhood_vehicles.append(
                     VehicleObservation(
-                        id=v.vehicle_id,
-                        position=v.pose.position,
-                        bounding_box=v.dimensions,
-                        heading=v.pose.heading,
-                        speed=v.speed,
+                        id=nv.vehicle_id,
+                        position=nv.pose.position,
+                        bounding_box=nv.dimensions,
+                        heading=nv.pose.heading,
+                        speed=nv.speed,
                         road_id=nv_lane.road.road_id,
                         lane_id=nv_lane.lane_id,
                         lane_index=nv_lane.index,
@@ -491,14 +491,14 @@ class Sensors:
         if route_road_or_oncoming:
             # Lanes from a road are parallel so any lane from the road will do for direction check
             # but the innermost lane will be the last lane in the road and usually the closest.
-            lane_to_check = route_road_or_oncoming.getLanes()[-1]
+            lane_to_check = route_road_or_oncoming.lanes[-1]
             is_wrong_way = cls._check_wrong_way_event(lane_to_check, sim, vehicle)
 
         return (is_off_route, is_wrong_way)
 
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, lane_id):
-        closest_lane = sim.road_map.lane_from_id(lane_id)
+        closest_lane = sim.road_map.lane_by_id(lane_id)
         target_pose = closest_lane.target_pose_at_point(Point(*vehicle.pose.position))
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
@@ -532,50 +532,33 @@ class Sensors:
             if close_road.isSpecial():
                 return (False, close_road)
 
-            oncoming_road = cls._oncoming_traffic_road(instance_id, close_road)
-
-            if not oncoming_road:
+            oncoming_roads = close_road.oncoming_roads
+            if not oncoming_roads:
                 continue
 
             for close_road in route_roads:
-                if oncoming_road != close_road:
+                if oncoming_roads[0] != close_road:
                     continue
                 # Actor is in the oncoming traffic lane.
-                return (False, oncoming_road)
+                return (False, oncoming_roads[0])
 
         return (True, None)
 
     @classmethod
     def _road_or_closer_oncoming(cls, instance_id, on_route_road_index, closest_roads):
         """Check backward to find if the oncoming road is closer."""
-        oncoming_road = cls._oncoming_traffic_road(
-            instance_id, closest_roads[on_route_road_index]
-        )
+        oncoming_roads = closest_roads[on_route_road_index].oncoming_roads
         if (
-            oncoming_road
-            and oncoming_road in closest_roads[: max(0, on_route_road_index - 1)]
+            oncoming_roads
+            and oncoming_roads[0] in closest_roads[: max(0, on_route_road_index - 1)]
         ):
             # oncoming road was closer
-            return oncoming_road
+            return oncoming_roads[0]
         # or the route road we already found
         return closest_roads[on_route_road_index]
 
-    @staticmethod
-    @lru_cache(maxsize=128)
-    def _oncoming_traffic_road(instance_id, road):
-        # TODO SUMO
-        from_node = road.getFromNode()
-        to_node = road.getToNode()
-
-        for candidate in to_node.getOutgoing():
-            if candidate.getToNode() == from_node:
-                return candidate
-
-        return None
-
     @classmethod
     def clean_up(cls):
-        cls._oncoming_traffic_road.cache_clear()
         cls._vehicle_off_route_info.cache_clear()
 
 
@@ -970,7 +953,7 @@ class RoadWaypointsSensor(Sensor):
             offset = lane.offset_along_lane(Point(*self._vehicle.position))
             start_offset = offset - self._horizon
         else:
-            start_offset = lane.getLength() + overflow_offset
+            start_offset = lane.length + overflow_offset
 
         incoming_lanes = lane.incoming_lanes  # XXX: was "getIncoming(onlyDirect=True)"
         if start_offset < 0 and len(incoming_lanes) > 0:
@@ -985,7 +968,7 @@ class RoadWaypointsSensor(Sensor):
             wps_to_lookahead = self._horizon * 2
             paths = self._planner.waypoint_paths_on_lane_at(
                 pose=adj_pose,
-                lane_id=lane_lane_id,
+                lane_id=lane.lane_id,
                 lookahead=wps_to_lookahead,
                 constrain_to_route=False,
             )

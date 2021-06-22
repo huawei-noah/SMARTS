@@ -114,7 +114,7 @@ class SumoPlanner(Planner):
             # the closest heading. This way we get the lanepoint on our lane instead of
             # a potentially closer lane that is on a different junction connection.
             closest_lps = self._lanepoints.closest_lanepoints(
-                poases=[pose], within_radius=None, maximum_count=10
+                poses=[pose], within_radius=None, maximum_count=10
             )
             closest_lps = sorted(
                 closest_lps, key=lambda lp: abs(pose.heading - lp.pose.heading)

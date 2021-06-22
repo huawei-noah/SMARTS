@@ -23,7 +23,6 @@ import os
 import random
 import re
 from dataclasses import dataclass
-from functools import lru_cache
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
 from typing import Dict, List, NamedTuple, Sequence, Tuple, Union
@@ -116,7 +115,7 @@ class SumoRoadNetwork(RoadMap):
         return os.path.join(net_file_folder, cls.shifted_net_file_name)
 
     @classmethod
-    @lru_cache(maxsize=1)
+    @cached_property
     def _shift_coordinates(cls, net_file_path, shifted_path):
         assert shifted_path != net_file_path
         logger = logging.getLogger(cls.__name__)
@@ -194,8 +193,7 @@ class SumoRoadNetwork(RoadMap):
         """ This is the net file (*.net.xml) that corresponds with our possibly-offset coordinates. """
         return self._net_file
 
-    @property
-    @lru_cache(maxsize=1)
+    @cached_property
     def bounding_box(self) -> BoundingBox:
         # maps are assumed to start at the origin
         bb = self._graph.getBoundary()  # 2D bbox in format (xmin, ymin, xmax, ymax)
@@ -277,17 +275,17 @@ class SumoRoadNetwork(RoadMap):
             """ will return None if not in a junction"""
             return self._road.is_junction
 
-        @property
+        @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
             return [
-                self._map.lane_by_id[incoming.getID()]
+                self._map.lane_by_id(incoming.getID())
                 for incoming in self._sumo_lane.getIncoming()
             ]
 
-        @property
+        @cached_property
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
             return [
-                self._map.lane_by_id[outgoing.getID()]
+                self._map.lane_by_id(outgoing.getID())
                 for outgoing in self._sumo_lane.getOutgoing()
             ]
 
@@ -397,33 +395,31 @@ class SumoRoadNetwork(RoadMap):
         def road_id(self) -> str:
             return self._road_id
 
-        @property
+        @cached_property
         def incoming_roads(self) -> Dict[str, RoadMap.Road]:
             return {
                 edgeId: self._map.edge_by_id(edgeId)
                 for edgeId in self._sumo_edge.getIncoming().keys()
             }
 
-        @property
+        @cached_property
         def outgoing_roads(self) -> Dict[str, RoadMap.Road]:
             return {
                 edgeId: self._map.edge_by_id(edgeId)
                 for edgeId in self._sumo_edge.getOutgoing().keys()
             }
 
-        @property
+        @cached_property
         def oncoming_roads(self) -> List[RoadMap.Road]:
-            from_node, to_node = (
-                self._sumo_edge.getFromNode(),
-                self._sumo_edge.getToNode(),
-            )
+            from_node = self._sumo_edge.getFromNode()
+            to_node = self._sumo_edge.getToNode()
             return [
                 self._map.road_by_id(edge.getID())
                 for edge in to_node.getOutgoing()
                 if edge.getToNode().getID() == from_node.getID()
             ]
 
-        @property
+        @cached_property
         def parallel_roads(self) -> List[RoadMap.Road]:
             from_node, to_node = (
                 self._sumo_edge.getFromNode(),
@@ -540,8 +536,7 @@ class SumoRoadNetwork(RoadMap):
             self._length += road.length
             self._roads.append(road)
 
-        @property
-        @lru_cache(maxsize=1)
+        @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [
                 road.buffered_shape(sum([lane.width for lane in road.lanes]))

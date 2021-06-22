@@ -96,7 +96,7 @@ class Waypoint:
         ), "Heading h ({}) must be an instance of smarts.core.coordinates.Heading".format(
             type(h)
         )
-        return self.heading.relative_to(h)
+        return self.pose.heading.relative_to(h)
 
     def signed_lateral_error(self, p) -> float:
         """Returns the signed lateral distance from the given point to the
@@ -105,7 +105,7 @@ class Waypoint:
         Negative signals right of line and Positive left of line.
         """
         return signed_dist_to_line(
-            p, self.pose.position, self.heading.direction_vector()
+            p, self.pose.position, self.pose.heading.direction_vector()
         )
 
     def dist_to(self, p) -> float:

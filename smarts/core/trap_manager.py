@@ -141,7 +141,7 @@ class TrapManager:
             sorted_vehicle_ids = sorted(
                 list(social_vehicle_ids),
                 key=lambda v: squared_dist(
-                    vehicles[v].position[:2], trap.mission.start.position
+                    vehicles[v].position, trap.mission.start.position
                 ),
             )
             for v_id in sorted_vehicle_ids:
@@ -196,12 +196,15 @@ class TrapManager:
                 mission = trap.mission
                 if len(agent_vehicle_comp) > 0:
                     agent_vehicle_comp.sort(
-                        key=lambda v: squared_dist(v[0], mission.start.position)
+                        key=lambda v: squared_dist(v[0], mission.start.position[:2])
                     )
 
                     # Make sure there is not an agent vehicle in the same location
                     pos, largest_dimension, _ = agent_vehicle_comp[0]
-                    if squared_dist(pos, mission.start.position) < largest_dimension:
+                    if (
+                        squared_dist(pos, mission.start.position[:2])
+                        < largest_dimension
+                    ):
                         continue
 
                 vehicle = TrapManager._make_vehicle(
