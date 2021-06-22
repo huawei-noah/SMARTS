@@ -135,7 +135,8 @@ function App({ client }) {
             <SimulationGroup
               client={client}
               simulationIds={simulationIds}
-              showControls={showControls}
+              controlModes={controlModes}
+              playingMode={playingMode}
               egoView={egoView}
             />
           </Route>
@@ -166,7 +167,6 @@ function App({ client }) {
                       canvasRef={simulationCanvasRef}
                       client={client}
                       simulationId={matchedSimulationId}
-                      showControls={showControls}
                       controlModes={controlModes}
                       egoView={egoView}
                       onElapsedTimesChanged={(current, total) => {
