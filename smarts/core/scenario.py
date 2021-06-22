@@ -278,7 +278,9 @@ class Scenario:
             self._traffic_history = None
             default_lane_width = None
 
-        self._road_map = Scenario.create_road_map(self._root, map_source, 1.0, default_lane_width)
+        self._road_map = Scenario.create_road_map(
+            self._root, map_source, 1.0, default_lane_width
+        )
         self._road_map_hash = file_md5_hash(self._road_map.source)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
 

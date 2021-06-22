@@ -61,7 +61,9 @@ class RandomRouteGenerator:
         from smarts.core.scenario import Scenario
 
         # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
-        road_network = Scenario.create_road_map(map_source=net_file, lanepoint_spacing=2.0)
+        road_network = Scenario.create_road_map(
+            map_source=net_file, lanepoint_spacing=2.0
+        )
         return cls(road_network)
 
     def __iter__(self):
