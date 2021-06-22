@@ -164,13 +164,10 @@ class DQNPolicy(Agent):
             stack_size = observation_space.shape[0]
             image_shape = (observation_space.shape[1], observation_space.shape[2])
 
-            state_size = 0
-
             network_class = DQNCNN
             network_params = {
-                "n_in_channels": stack_size,  # TODO: The stack size.
+                "n_in_channels": stack_size,
                 "image_dim": image_shape,
-                "state_size": state_size,
                 "num_actions": self.num_actions,
             }
         else:
