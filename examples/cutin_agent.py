@@ -77,7 +77,7 @@ class CutInAgent(Agent):
             miss._mission.start.position,
             include_junctions=False,
         )
-:
+
         if len(neighborhood_vehicles) != 0:
             nvpos = neighborhood_vehicles[0].pose
             target_p = nvpos.position[2]

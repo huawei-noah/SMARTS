@@ -97,7 +97,7 @@ class SumoPlanner(Planner):
             lookahead=lookahead,
         )
 
-    def _road_ids(self, pose: Pose, lane_id: str = None):
+    def _road_ids(self, pose: Pose, lane_id: str = None) -> List[str]:
         if self._mission.has_fixed_route:
             return [road.road_id for road in self._route.roads]
 
@@ -137,10 +137,10 @@ class SumoPlanner(Planner):
         point: Sequence,
         lane_id: str,
         lookahead: int,
-        filter_edge_ids: Sequence[str] = None,
+        filter_road_ids: Sequence[str] = None,
     ) -> List[List[Waypoint]]:
         """computes equally-spaced Waypoints for all lane paths
-        up to lookahead waypoints ahead, constrained to filter_edge_ids if specified,
+        up to lookahead waypoints ahead, constrained to filter_road_ids if specified,
         starting at the nearest LanePoint to point within lane lane_id."""
         closest_linked_lp = self._lanepoints.closest_linked_lanepoint_on_lane_to_point(
             point, lane_id
@@ -148,7 +148,7 @@ class SumoPlanner(Planner):
         return self._waypoints_starting_at_lanepoint(
             closest_linked_lp,
             lookahead,
-            tuple(filter_edge_ids) if filter_edge_ids else (),
+            tuple(filter_road_ids) if filter_road_ids else (),
             tuple(point),
         )
 
@@ -158,27 +158,31 @@ class SumoPlanner(Planner):
         lookahead: int,
         within_radius: int = 5,
     ) -> List[List[Waypoint]]:
-        closest_lane = self._road_map.nearest_lane(pose.point, radius=within_radius)
+        closest_lps = self._lanepoints.closest_lanepoints(
+            [pose], within_radius=within_radius
+        )
+        closest_lane = closest_lps[0].lane
+        # TAI: the above lines could be replaced by:
+        # closest_lane = self._road_map.nearest_lane(pose.point, radius=within_radius)
         waypoint_paths = []
         for lane in closest_lane.road.lanes:
             waypoint_paths += self._waypoint_paths_on_lane_at(
                 pose.position, lane.lane_id, lookahead
             )
-        sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
-        return sorted_wps
+        return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
 
     def _waypoint_paths_along_route(
-        self, point, lookahead: int, route
+        self, point, lookahead: int, route: Sequence[str]
     ) -> List[List[Waypoint]]:
         """finds the closest lane to vehicle's position that is on its route,
         then gets waypoint paths from all lanes in its edge there."""
-        assert len(route) > 0, f"Expected at least 1 edge in the route, got: {route}"
-        closest_llp_on_each_route_edge = [
-            self._lanepoints.closest_linked_lanepoint_on_edge(point, edge)
-            for edge in route
+        assert len(route) > 0, f"Expected at least 1 road in the route, got: {route}"
+        closest_llp_on_each_route_road = [
+            self._lanepoints.closest_linked_lanepoint_on_road(point, road)
+            for road in route
         ]
         closest_linked_lp = min(
-            closest_llp_on_each_route_edge,
+            closest_llp_on_each_route_road,
             key=lambda l_lp: np.linalg.norm(
                 vec_2d(l_lp.lp.pose.position) - vec_2d(point)
             ),
@@ -190,37 +194,35 @@ class SumoPlanner(Planner):
             waypoint_paths += self._waypoint_paths_on_lane_at(
                 point, lane.lane_id, lookahead, route
             )
-
-        sorted_wps = sorted(waypoint_paths, key=lambda p: p[0].lane_index)
-        return sorted_wps
+        return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
 
     class _WaypointsCache:
         def __init__(self):
             self.lookahead = 0
             self.point = (0, 0, 0)
-            self.filter_edge_ids = ()
+            self.filter_road_ids = ()
             self._starts = {}
 
-        def _match(self, lookahead, point, filter_edge_ids) -> bool:
+        def _match(self, lookahead, point, filter_road_ids) -> bool:
             return (
                 lookahead <= self.lookahead
                 and point[0] == self.point[0]
                 and point[1] == self.point[1]
-                and filter_edge_ids == self.filter_edge_ids
+                and filter_road_ids == self.filter_road_ids
             )
 
         def update(
             self,
             lookahead: int,
             point: Tuple[float, float, float],
-            filter_edge_ids: tuple,
+            filter_road_ids: tuple,
             llp: LinkedLanePoint,
             paths: List[List[Waypoint]],
         ):
-            if not self._match(lookahead, point, filter_edge_ids):
+            if not self._match(lookahead, point, filter_road_ids):
                 self.lookahead = lookahead
                 self.point = point
-                self.filter_edge_ids = filter_edge_ids
+                self.filter_road_ids = filter_road_ids
                 self._starts = {}
             self._starts[llp.lp.lane.index] = paths
 
@@ -228,10 +230,10 @@ class SumoPlanner(Planner):
             self,
             lookahead: int,
             point: Tuple[float, float, float],
-            filter_edge_ids: tuple,
+            filter_road_ids: tuple,
             llp: LinkedLanePoint,
         ) -> List[List[Waypoint]]:
-            if self._match(lookahead, point, filter_edge_ids):
+            if self._match(lookahead, point, filter_road_ids):
                 hit = self._starts.get(llp.lp.lane.index, None)
                 if hit:
                     # consider just returning all of them (not slicing)?
@@ -242,29 +244,29 @@ class SumoPlanner(Planner):
         self,
         lanepoint: LinkedLanePoint,
         lookahead: int,
-        filter_edge_ids: tuple,
+        filter_road_ids: tuple,
         point: Tuple[float, float, float],
     ) -> List[List[Waypoint]]:
         """computes equally-spaced Waypoints for all lane paths starting at lanepoint
-        up to lookahead waypoints ahead, constrained to filter_edge_ids if specified."""
+        up to lookahead waypoints ahead, constrained to filter_road_ids if specified."""
 
         # The following acts sort of like lru_cache(1), but it allows
         # for lookahead to be <= to the cached value...
         cache_paths = self._waypoints_cache.query(
-            lookahead, point, filter_edge_ids, lanepoint
+            lookahead, point, filter_road_ids, lanepoint
         )
         if cache_paths:
             return cache_paths
 
         lanepoint_paths = self._lanepoints.paths_starting_at_lanepoint(
-            lanepoint, lookahead, filter_edge_ids
+            lanepoint, lookahead, filter_road_ids
         )
         result = [
             SumoPlanner._equally_spaced_path(path, point) for path in lanepoint_paths
         ]
 
         self._waypoints_cache.update(
-            lookahead, point, filter_edge_ids, lanepoint, result
+            lookahead, point, filter_road_ids, lanepoint, result
         )
 
         return result

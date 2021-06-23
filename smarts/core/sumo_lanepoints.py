@@ -468,11 +468,11 @@ class SumoLanePoints:
             [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
 
-    def closest_linked_lanepoint_on_edge(self, point, edge_id: str) -> LinkedLanePoint:
+    def closest_linked_lanepoint_on_road(self, point, road_id: str) -> LinkedLanePoint:
         return SumoLanePoints._closest_linked_lp_in_kd_tree_batched(
             [point],
-            self._lanepoints_by_edge_id[edge_id],
-            self._lanepoints_kd_tree_by_edge_id[edge_id],
+            self._lanepoints_by_edge_id[road_id],
+            self._lanepoints_kd_tree_by_edge_id[road_id],
         )[0][0]
 
     @lru_cache(maxsize=32)

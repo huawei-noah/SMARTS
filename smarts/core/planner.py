@@ -143,7 +143,7 @@ class Planner:
         road = self._road_map.random_route(1).roads[0]
         n_lane = random.choice(road.lanes)
 
-        # XXX: The ends of the edge are not as useful as starting mission locations.
+        # XXX: The ends of the road are not as useful as starting mission locations.
         #      Sumo complains if we get too close to 0 or `lane_length`.
         offset = random.random() * min_range_along_lane + (
             max_range_along_lane - min_range_along_lane
@@ -205,7 +205,7 @@ class Planner:
         constrain_to_route: bool = True,
     ) -> List[List[Waypoint]]:
         """Computes equally-spaced Waypoints for all lane paths
-        up to lookahead waypoints ahead, starting on the Edge containing
+        up to lookahead waypoints ahead, starting on the Road containing
         the nearest Lane aligned with the vehicle's pose within within_radius meters.
         Constrains paths to your (possibly-inferred) route only if constrain_to_route.
         Route inference assumes you're on the correct route already;
