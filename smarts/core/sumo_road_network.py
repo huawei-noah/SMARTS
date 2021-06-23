@@ -557,7 +557,8 @@ class SumoRoadNetwork(RoadMap):
         roads = [start_road]
         if via:
             roads += via
-        roads.append(end_road)
+        if end_road != start_road:
+            roads.append(end_road)
 
         edges = []
         for cur_road, next_road in zip(roads, roads[1:] + [None]):

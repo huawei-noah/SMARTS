@@ -182,7 +182,6 @@ class Planner:
                 self._road_map.road_by_id(via) for via in self._mission.route_vias
             ]
 
-            print("STEVE", self._mission.start, self._mission.goal)
             self._route = self._road_map.generate_routes(
                 start_road, end_road, via_roads, 1
             )[0]
