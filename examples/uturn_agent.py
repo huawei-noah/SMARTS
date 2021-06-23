@@ -62,8 +62,7 @@ class UTurnAgent(Agent):
         )
         pose = vehicle.pose
 
-        position = pose.position[:2]
-        lane = road_map.nearest_lane(position)
+        lane = road_map.nearest_lane(pose.point)
 
         def vehicle_control_commands(
             fff, des_speed, look_ahead_wp_num, look_ahead_dist
@@ -138,8 +137,9 @@ class UTurnAgent(Agent):
 
             offset = start_lane.offset_along_lane(pose.position[:2])
             oncoming_offset = max(0, target_lane.length - offset)
-            target_p = neighborhood_vehicles[0].pose.position[0:2]
-            target_l = road_map.nearest_lane(target_p)
+            nvpose = neighborhood_vehicles[0].pose
+            target_l = road_map.nearest_lane(nvpose.point)
+            target_p = nvpose.position[:2]
             target_offset = target_l.offset_along_lane(target_p)
             fq = target_lane.length - offset - target_offset
 
@@ -185,8 +185,9 @@ class UTurnAgent(Agent):
 
             offset = start_lane.offset_along_lane(pose.position[:2])
             oncoming_offset = max(0, target_lane.length - offset)
-            target_p = neighborhood_vehicles[0].pose.position[0:2]
-            target_l = road_map.nearest_lane(target_p)
+            nvpose = neighborhood_vehicles[0].pose
+            target_l = road_map.nearest_lane(nvpose.point)
+            target_p = nvpose.position[:2]
             target_offset = target_l.offset_along_lane(target_p)
             fq = target_l.length - offset - target_offset
 

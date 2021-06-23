@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import enum
 import math
+from cached_property import cached_property
 from dataclasses import dataclass
 from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
@@ -184,6 +185,10 @@ class Pose:
 
     def __hash__(self):
         return hash((*self.position, *self.orientation))
+
+    @cached_property
+    def point(self) -> Point:
+        return Point(*self.position)
 
     @classmethod
     def from_front_bumper(cls, front_bumper_position, heading, length):

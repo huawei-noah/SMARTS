@@ -175,7 +175,7 @@ class Sensors:
             neighborhood_vehicles = []
             for nv in vehicle.neighborhood_vehicles_sensor():
                 nv_lane = sim.road_map.nearest_lane(
-                    nv.pose.position, radius=vehicle.length
+                    nv.pose.point, radius=vehicle.length
                 )
                 neighborhood_vehicles.append(
                     VehicleObservation(
@@ -200,7 +200,7 @@ class Sensors:
                 constrain_to_route=False,
             )
 
-        closest_lane = sim.road_map.nearest_lane(vehicle.pose.position)
+        closest_lane = sim.road_map.nearest_lane(vehicle.pose.point)
         ego_lane_id = closest_lane.lane_id
         ego_lane_index = closest_lane.index
         ego_road_id = (closest_lane.road.road_id,)
@@ -529,7 +529,7 @@ class Sensors:
         # Check to see if actor is in the oncoming traffic lane.
         for close_road in closest_roads:
             # Forgive the actor if it is in an intersection
-            if close_road.isSpecial():
+            if close_road.is_junction:
                 return (False, close_road)
 
             oncoming_roads = close_road.oncoming_roads
@@ -929,7 +929,7 @@ class RoadWaypointsSensor(Sensor):
         self._horizon = horizon
 
     def __call__(self):
-        lane = self._road_map.nearest_lane(self._vehicle.pose.position)
+        lane = self._road_map.nearest_lane(self._vehicle.pose.point)
         road = lane.road
         lane_paths = {}
         for road in [road] + road.parallel_roads + road.oncoming_roads:

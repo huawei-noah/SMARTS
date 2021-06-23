@@ -71,18 +71,17 @@ class CutInAgent(Agent):
         )
         pose = vehicle.pose
 
-        position = pose.position[:2]
-        lane = road_map.nearest_lane(position)
+        lane = road_map.nearest_lane(pose.point)
 
         start_lane = road_map.nearest_lane(
             miss._mission.start.position,
             include_junctions=False,
         )
-
+:
         if len(neighborhood_vehicles) != 0:
-
-            target_p = neighborhood_vehicles[0].pose.position[0:2]
-            target_l = road_map.nearest_lane(target_p)
+            nvpos = neighborhood_vehicles[0].pose
+            target_p = nvpos.position[2]
+            target_l = road_map.nearest_lane(nvpose.point)
 
         def vehicle_control_commands(
             fff,
@@ -128,7 +127,7 @@ class CutInAgent(Agent):
             if len(neighborhood_vehicles) != 0:
                 for nv in neighborhood_vehicles:
                     nv_lane = road_map.nearest_lane(
-                        nv.pose.position[:2], include_junctions=False
+                        nv.pose.point, include_junctions=False
                     )
                     if lane == nv_lane:
                         nv_offset = nv_lane.offset_along_lane(nv.pose.position[:2])

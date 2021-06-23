@@ -53,6 +53,10 @@ class Start:
     position: Tuple[int, int]
     heading: Heading
 
+    @property
+    def point(self):
+        return Point(*self.position)
+
 
 @dataclass(frozen=True)
 class Goal:
@@ -122,7 +126,7 @@ class TraverseGoal(Goal):
         self, veh_position: Tuple[float, float, float], veh_heading: float
     ) -> bool:
         # try to determine if the vehicle "exited" the map by driving beyond the end of a dead-end lane.
-        nearest_lanes = self._road_map.nearest_lanes(Point(*veh_position))
+        nearest_lanes = self._road_map.nearest_lanes(veh_position)
         if not nearest_lanes:
             return False  # we can't tell anything here
         nl, dist = nearest_lanes[0]

@@ -23,6 +23,7 @@ import os
 import random
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
 from typing import List, NamedTuple, Sequence, Tuple, Union
@@ -235,12 +236,12 @@ class SumoRoadNetwork(RoadMap):
                 self._road_dir = self._road.lanes[self.index].lane_id == lane_id
             return self._road_dir
 
-        @property
+        @cached_property
         def index(self) -> int:
             """ 0 is outer / right-most (relative to lane heading) lane on road. """
             return self._sumo_lane.getIndex()
 
-        @property
+        @cached_property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: left is defined as 90 degrees clockwise relative to the lane heading.
             Second result is True if lane is in the same direction as this one.
@@ -249,7 +250,7 @@ class SumoRoadNetwork(RoadMap):
             index = self.index + 1
             return (lanes[index], True) if index < len(lanes) else (None, True)
 
-        @property
+        @cached_property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
             Second result is True if lane is in the same direction as this one.
@@ -258,15 +259,15 @@ class SumoRoadNetwork(RoadMap):
             index = self.index - 1
             return (lanes[index], True) if index >= 0 else (None, True)
 
-        @property
+        @cached_property
         def speed_limit(self) -> float:
             return self._sumo_lane.getSpeed()
 
-        @property
+        @cached_property
         def length(self) -> float:
             return self._sumo_lane.getLength()
 
-        @property
+        @cached_property
         def width(self) -> float:
             return self._sumo_lane.getWidth()
 
@@ -289,22 +290,25 @@ class SumoRoadNetwork(RoadMap):
                 for outgoing in self._sumo_lane.getOutgoing()
             ]
 
-        @property
+        @cached_property
         def oncoming_lanes(self) -> List[RoadMap.Lane]:
             result = []
             for oncr in self.road.oncoming_roads:
                 result += oncr.lanes
             return result
 
+        @lru_cache(maxsize=8)
         def point_in_lane(self, point: Point) -> bool:
             lane_point = self.to_lane_coord(point)
             width = self._sumo_lane.getWidth()
             return abs(lane_point.t) <= width / 2
 
+        @lru_cache(maxsize=8)
         def center_at_point(self, point: Point) -> Point:
             offset = self.offset_along_lane(point)
             return self.from_lane_coord(RefLinePoint(s=offset))
 
+        @lru_cache(maxsize=8)
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             offset = self.offset_along_lane(point)
             width = self._sumo_lane.getWidth()
@@ -312,6 +316,7 @@ class SumoRoadNetwork(RoadMap):
             right_edge = RefLanePoint(s=offset, t=-width / 2)
             return (self.from_lane_coord(left_edge), self.from_lane_coord(right_edge))
 
+        @lru_cache(maxsize=8)
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
             add_offset = 1
             end_offset = start_offset + add_offset  # a little further down the lane
@@ -324,6 +329,7 @@ class SumoRoadNetwork(RoadMap):
             p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
             return np.array(p2) - np.array(p1)
 
+        @lru_cache(maxsize=8)
         def target_pose_at_point(self, point: Point) -> Pose:
             offset = self.offset_along_lane(point)
             position = self.from_lane_coord(RefLinePoint(s=offset))
@@ -331,6 +337,7 @@ class SumoRoadNetwork(RoadMap):
             orientation = fast_quaternion_from_angle(vec_to_radians(desired_vector[:2]))
             return Pose(position=position, orientation=orientation)
 
+        @lru_cache(maxsize=8)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             s = self.offset_along_lane(point)
             vector = self.vector_at_offset(s)
@@ -341,11 +348,13 @@ class SumoRoadNetwork(RoadMap):
             t = np.linalg.norm(offcenter_vector) * t_sign
             return RefLinePoint(s=u, t=t)
 
+        @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             shape = self._sumo_lane.getShape(False)
             x, y = sumolib.geomhelper.positionAtShapeOffset(shape, lane_point.s)
             return Point(x=x, y=y)
 
+        @lru_cache(maxsize=8)
         def offset_along_lane(self, world_point: Point) -> float:
             shape = self._sumo_lane.getShape(False)
             point = world_point[:2]
@@ -383,11 +392,11 @@ class SumoRoadNetwork(RoadMap):
             self._map = road_map
             self._lanes = []
 
-        @property
+        @cached_property
         def is_junction(self) -> bool:
             return self._sumo_edge.isSpecial()
 
-        @property
+        @cached_property
         def length(self) -> int:
             return self._sumo_edge.getLength()
 
@@ -443,9 +452,8 @@ class SumoRoadNetwork(RoadMap):
             return self._lanes
 
         def lane_at_index(self, index: int, direction: bool = True) -> RoadMap.Lane:
-            assert (
-                direction  # Note:  all SUMO Lanes for an Edge go in the same direction.
-            )
+            # Note:  all SUMO Lanes for an Edge go in the same direction.
+            assert direction
             return self.lanes_by_direction(direction)[index]
 
         def lanes_by_direction(self, direction: bool) -> List[RoadMap.Lane]:
@@ -461,12 +469,14 @@ class SumoRoadNetwork(RoadMap):
                 ]
             return self._lanes
 
+        @lru_cache(maxsize=8)
         def point_on_road(self, point: Point) -> bool:
             for lane in self.lanes:
                 if lane.point_in_lane(point):
                     return True
             return False
 
+        @lru_cache(maxsize=8)
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             lanes = self.lanes
             _, right_edge = lanes[0].edges_at_point(point)
@@ -487,6 +497,7 @@ class SumoRoadNetwork(RoadMap):
         self._roads[road_id] = road
         return road
 
+    @lru_cache(maxsize=16)
     def nearest_lanes(
         self, point: Point, radius: float = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
@@ -508,6 +519,7 @@ class SumoRoadNetwork(RoadMap):
         candidate_lanes.sort(key=lambda lane_dist_tup: lane_dist_tup[1])
         return [(self.lane_by_id(lane.getID()), dist) for lane, dist in candidate_lanes]
 
+    @lru_cache(maxsize=16)
     def road_with_point(self, point: Point) -> RoadMap.Road:
         radius = max(5, 2 * self._default_lane_width)
         x, y = point[:2]
@@ -712,7 +724,7 @@ class SumoRoadNetwork(RoadMap):
             lane_shape = lane_to_poly[lane_id]
             for x, y in lane_shape.exterior.coords:
                 for nl, dist in self.nearest_lanes(
-                    (x, y),
+                    Point(x, y),
                     include_junctions=False,
                 ):
                     if not nl:
@@ -743,7 +755,7 @@ class SumoRoadNetwork(RoadMap):
             lane_shape = lane_to_poly[lane_id]
             for x, y in lane_shape.exterior.coords:
                 for nl, dist in self.nearest_lanes(
-                    (x, y),
+                    Point(x, y),
                     include_junctions=False,
                 ):
                     if (not nl) or (nl and nl.in_junction):

@@ -304,11 +304,11 @@ class TrapManager:
         n_lane = None
 
         if default_entry_speed is None:
-            n_lane = road_map.nearest_lane(mission.start.position)
+            n_lane = road_map.nearest_lane(mission.start.point)
             default_entry_speed = n_lane.speed_limit
 
         if zone is None:
-            n_lane = n_lane or road_map.nearest_lane(mission.start.position)
+            n_lane = n_lane or road_map.nearest_lane(mission.start.point)
             lane_speed = n_lane.speed_limit
             start_road_id = n_lane.road.road_id
             start_lane = n_lane.index

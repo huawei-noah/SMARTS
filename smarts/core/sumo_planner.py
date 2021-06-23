@@ -158,7 +158,7 @@ class SumoPlanner(Planner):
         lookahead: int,
         within_radius: int = 5,
     ) -> List[List[Waypoint]]:
-        closest_lane = self._road_map.nearest_lane(pose.position, radius=within_radius)
+        closest_lane = self._road_map.nearest_lane(pose.point, radius=within_radius)
         waypoint_paths = []
         for lane in closest_lane.road.lanes:
             waypoint_paths += self._waypoint_paths_on_lane_at(

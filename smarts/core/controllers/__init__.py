@@ -135,7 +135,7 @@ class ControllerState:
             ActionSpaceType.Lane,
             ActionSpaceType.LaneWithContinuousSpeed,
         ):
-            target_lane_id = sim.road_map.nearest_lane(vehicle_pose.position).lane_id
+            target_lane_id = sim.road_map.nearest_lane(vehicle_pose.point).lane_id
             return LaneFollowingControllerState(target_lane_id)
 
         if action_space == ActionSpaceType.ActuatorDynamic:

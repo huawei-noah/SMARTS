@@ -167,7 +167,7 @@ class Planner:
             self._route = RoadMap.Route()
         else:
             start_lane = self._road_map.nearest_lane(
-                self._mission.start.position,
+                self._mission.start.point,
                 include_junctions=False,
             )
             start_road = start_lane.road
