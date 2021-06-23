@@ -22,7 +22,6 @@ import math
 import os
 import random
 import re
-from dataclasses import dataclass
 from functools import lru_cache
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
@@ -219,8 +218,8 @@ class SumoRoadNetwork(RoadMap):
             self._sumo_lane = sumo_lane
             self._map = road_map
             self._road = road_map.road_by_id(sumo_lane.getEdge().getID())
+            assert self._road
             self._road_dir = None
-            assert self._road or self._junction
 
         @property
         def lane_id(self) -> str:

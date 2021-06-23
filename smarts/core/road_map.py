@@ -48,7 +48,7 @@ class RoadMap:
     @property
     def scale_factor(self) -> float:
         # map units per meter
-        raise NotImplementedError()
+        return 1.0
 
     def to_glb(self, at_path):
         """ build a glb file for camera rendering and envision """
@@ -252,7 +252,7 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def position(self) -> Point:
+        def geometry(self) -> List[Point]:
             raise NotImplementedError()
 
         def type_to_str(self, type_int: int) -> str:
@@ -266,7 +266,7 @@ class RoadMap:
 
         @property
         def road_length(self) -> float:
-            raise 0
+            return 0
 
         @property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
