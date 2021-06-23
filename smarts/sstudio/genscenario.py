@@ -361,12 +361,11 @@ def _gen_missions(
 
 
 def _resolve_task(task, generator):
-    # XXX: is this still used?
     if isinstance(task, types.CutIn):
-        if isinstance(task.complete_on_edge_id, types.JunctionEdgeIDResolver):
+        if isinstance(task.complete_on_road_id, types.JunctionEdgeIDResolver):
             task = replace(
                 task,
-                complete_on_edge_id=task.complete_on_edge_id.to_edge(
+                complete_on_road_id=task.complete_on_road_id.to_edge(
                     generator.road_network
                 ),
             )
