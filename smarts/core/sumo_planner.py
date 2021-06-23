@@ -123,7 +123,7 @@ class SumoPlanner(Planner):
         road = lane.road
         road_ids = [road.road_id]
 
-        next_roads = list(road.outgoing_roads.keys())
+        next_roads = road.outgoing_roads
         assert (
             len(next_roads) <= 1
         ), "A junction is expected to have <= 1 outgoing roads"

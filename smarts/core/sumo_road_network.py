@@ -25,7 +25,7 @@ import re
 from dataclasses import dataclass
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
-from typing import Dict, List, NamedTuple, Sequence, Tuple, Union
+from typing import List, NamedTuple, Sequence, Tuple, Union
 
 import numpy as np
 import trimesh
@@ -396,18 +396,18 @@ class SumoRoadNetwork(RoadMap):
             return self._road_id
 
         @cached_property
-        def incoming_roads(self) -> Dict[str, RoadMap.Road]:
-            return {
-                edgeId: self._map.road_by_id(edgeId)
-                for edgeId in self._sumo_edge.getIncoming().keys()
-            }
+        def incoming_roads(self) -> List[RoadMap.Road]:
+            return [
+                self._map.road_by_id(edge.getID())
+                for edge in self._sumo_edge.getIncoming().keys()
+            ]
 
         @cached_property
-        def outgoing_roads(self) -> Dict[str, RoadMap.Road]:
-            return {
-                edgeId: self._map.road_by_id(edgeId)
-                for edgeId in self._sumo_edge.getOutgoing().keys()
-            }
+        def outgoing_roads(self) -> List[RoadMap.Road]:
+            return [
+                self._map.road_by_id(edge.getID())
+                for edge in self._sumo_edge.getOutgoing().keys()
+            ]
 
         @cached_property
         def oncoming_roads(self) -> List[RoadMap.Road]:

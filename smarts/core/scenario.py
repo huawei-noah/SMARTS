@@ -754,7 +754,7 @@ class Scenario:
 
             travel_road = road_map.road_by_id(start_road_id)
             if start_road_id == end_road_id:
-                travel_road = list(travel_road.outgoing_roads)[0]
+                travel_road = travel_road.outgoing_roads[0]
 
             end_road = road_map.road_by_id(end_road_id)
             via_roads = [road_map.road_by_id(r) for r in mission.route.via]

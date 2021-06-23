@@ -20,7 +20,7 @@
 from __future__ import (  # to allow for typing to refer to class being defined (RoadMap)
     annotations,
 )
-from typing import Dict, NamedTuple, List, Sequence
+from typing import NamedTuple, List, Sequence
 
 from shapely.geometry import Polygon
 
@@ -201,11 +201,11 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def incoming_roads(self) -> Dict[str, RoadMap.Road]:
+        def incoming_roads(self) -> List[RoadMap.Road]:
             raise NotImplementedError()
 
         @property
-        def outgoing_roads(self) -> Dict[str, RoadMap.Road]:
+        def outgoing_roads(self) -> List[RoadMap.Road]:
             raise NotImplementedError()
 
         @property
