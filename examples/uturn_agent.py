@@ -54,7 +54,7 @@ class UTurnAgent(Agent):
         road_map = miss.road_map
 
         start_lane = road_map.nearest_lane(
-            miss._mission.start.position,
+            miss._mission.start.point,
             include_junctions=False,
         )
         neighborhood_vehicles = self.sim.neighborhood_vehicles_around_vehicle(
