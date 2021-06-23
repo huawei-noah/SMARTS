@@ -103,10 +103,11 @@ class _ShowBaseInstance(ShowBase):
         except Exception as e:
             # Known reasons for this failing:
             raise RendererException(
-                f"Error in initializing framework for opening graphical display and creating scene graph. "
-                "A typical reason is display not found. Try running with different configurations of "
-                "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "
-                "the documentation.\nException was: {e}"
+                f"Error in initializing framework for opening graphical display and "
+                f"creating scene graph. A typical reason is display not found. Try "
+                f"running with different configurations of `export DISPLAY=` using "
+                f"`:0`, `:1`... . If this does not work please consult the "
+                f"documentation.\nException was: {e}"
             ) from e
 
     def destroy(self):
