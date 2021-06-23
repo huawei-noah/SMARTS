@@ -83,7 +83,6 @@ function App({ client }) {
       }
       setSimulationIds(ids);
     })();
-
   }, [totalSimIds]);
 
   async function onStartRecording() {
