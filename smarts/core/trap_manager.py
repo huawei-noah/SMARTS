@@ -141,7 +141,7 @@ class TrapManager:
             sorted_vehicle_ids = sorted(
                 list(social_vehicle_ids),
                 key=lambda v: squared_dist(
-                    vehicles[v].position, trap.mission.start.position
+                    vehicles[v].position[:2], trap.mission.start.position
                 ),
             )
             for v_id in sorted_vehicle_ids:

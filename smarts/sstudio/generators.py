@@ -218,7 +218,7 @@ class TrafficGenerator:
                 resolved_routes[route] = self.resolve_route(route)
 
             for route in set(resolved_routes.values()):
-                doc.stag("route", id=route.id, edges=" ".join(route.edges))
+                doc.stag("route", id=route.id, edges=" ".join(route.roads))
 
             # We don't de-dup flows since defining the same flow multiple times should
             # create multiple traffic flows. Since IDs can't be reused, we also unique
