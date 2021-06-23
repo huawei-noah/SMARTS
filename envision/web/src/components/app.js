@@ -61,6 +61,13 @@ function App({ client }) {
   const recorderRef = useRef(null);
   const { addToast } = useToasts();
   const history = useHistory();
+  const [totalSimIds, setTotalSimIds] = useState(0);
+
+  let getSimIdsLength = async () => {
+    let ids = await client.fetchSimulationIds();
+    setTotalSimIds(ids.length);
+  };
+  setInterval(getSimIdsLength, 3000);
 
   // also includes all
   const routeMatch = useRouteMatch("/:simulation");
@@ -77,10 +84,7 @@ function App({ client }) {
       setSimulationIds(ids);
     })();
 
-    // checks if there is new simulation running every 3 seconds.
-    // const interval = setInterval(fetchRunningSim, 3000);
-    // return () => clearInterval(interval);
-  }, ["all"]);
+  }, [totalSimIds]);
 
   async function onStartRecording() {
     recorderRef.current = new RecordRTCPromisesHandler(
