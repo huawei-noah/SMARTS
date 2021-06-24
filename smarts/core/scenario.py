@@ -43,7 +43,7 @@ from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, pa
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import CutIn, EntryTactic, UTurn
+from smarts.sstudio.types import EntryTactic
 from smarts.sstudio.types import Via as SSVia
 
 
@@ -204,7 +204,6 @@ class Mission:
     via: Tuple[Via, ...] = ()
     # if specified, will use vehicle_spec to build the vehicle (for histories)
     vehicle_spec: VehicleSpec = None
-    task: Tuple[CutIn, UTurn] = None
 
     @property
     def has_fixed_route(self):
@@ -735,7 +734,6 @@ class Scenario:
                 goal=goal,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                task=mission.task,
                 via=to_scenario_via(mission.via, road_map),
             )
         elif isinstance(mission, sstudio_types.EndlessMission):

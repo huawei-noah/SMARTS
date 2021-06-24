@@ -332,10 +332,6 @@ def _gen_missions(
         if route:
             kwargs["route"] = generator.resolve_route(route)
 
-        task = getattr(mission, "task", None)
-        if task:
-            kwargs["task"] = _resolve_task(task, generator=generator)
-
         via = getattr(mission, "via", ())
         if via is not ():
             kwargs["via"] = _resolve_vias(via, generator=generator)
@@ -358,19 +354,6 @@ def _gen_missions(
     ]
     with open(output_path, "wb") as f:
         pickle.dump(missions, f)
-
-
-def _resolve_task(task, generator):
-    if isinstance(task, types.CutIn):
-        if isinstance(task.complete_on_road_id, types.JunctionEdgeIDResolver):
-            task = replace(
-                task,
-                complete_on_road_id=task.complete_on_road_id.to_edge(
-                    generator.road_network
-                ),
-            )
-
-    return task
 
 
 def _resolve_vias(via: Tuple[types.Via], generator):

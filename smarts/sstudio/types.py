@@ -382,32 +382,6 @@ class TrapEntryTactic(EntryTactic):
 
 
 @dataclass(frozen=True)
-class UTurn:
-    trigger_radius: int = 100
-    """This task will be triggered if any vehicles within this radius"""
-    initial_speed: float = None
-    """This is the initial speed for the vehicle before it starts u-turn maneuver"""
-    target_lane_index: int = 0
-
-    @property
-    def name(self):
-        return "uturn"
-
-
-@dataclass(frozen=True)
-class CutIn:
-    trigger_radius: int = 30
-    """This task will be triggered if any vehicles within this radius"""
-
-    complete_on_road_id: Union[str, JunctionEdgeIDResolver] = None
-    """The road this task will be completed on"""
-
-    @property
-    def name(self):
-        return "cut_in"
-
-
-@dataclass(frozen=True)
 class Mission:
     """The descriptor for an actor's mission."""
 
@@ -424,9 +398,6 @@ class Mission:
 
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
-
-    task: Tuple[CutIn, UTurn] = None
-    """A task for the actor to accomplish."""
 
 
 @dataclass(frozen=True)

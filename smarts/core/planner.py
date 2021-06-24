@@ -23,7 +23,6 @@ from typing import List, Optional
 
 import numpy as np
 
-from .agent_interface import AgentBehavior
 from .coordinates import Heading, Pose, RefLinePoint
 from .road_map import RoadMap
 from .scenario import EndlessGoal, Mission, Start
@@ -114,12 +113,10 @@ class Waypoint:
 
 
 class Planner:
-    def __init__(self, road_map: RoadMap, agent_behavior: AgentBehavior = None):
+    def __init__(self, road_map: RoadMap):
         self._road_map = road_map
-        self._agent_behavior = agent_behavior or AgentBehavior(aggressiveness=5)
         self._mission = None
         self._route = None
-        self._did_plan = False
 
     @property
     def route(self) -> RoadMap.Route:
@@ -162,9 +159,6 @@ class Planner:
 
         if not self._mission.has_fixed_route:
             self._route = RoadMap.Route()
-        elif self._mission.task is not None:
-            # TODO: ensure there is a default route
-            self._route = RoadMap.Route()
         else:
             start_lane = self._road_map.nearest_lane(
                 self._mission.start.point,
@@ -194,7 +188,6 @@ class Planner:
                     "after a junction.".format(start_road.road_id, end_road.road_id)
                 )
 
-        self._did_plan = True
         return self._mission
 
     def waypoint_paths(

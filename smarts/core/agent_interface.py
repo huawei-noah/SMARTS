@@ -185,16 +185,6 @@ class DoneCriteria:
 
 
 @dataclass
-class AgentBehavior:
-    """Agent behavior configuration."""
-
-    aggressiveness: int = 0
-    """The aggressiveness affects the waypoints of a mission task, in terms of
-    the trigger timing.
-    """
-
-
-@dataclass
 class AgentInterface:
     """
     Configure the interface between an Agent and the Environment.

@@ -23,7 +23,6 @@ from typing import List, Sequence, Tuple
 
 import numpy as np
 
-from .agent_interface import AgentBehavior
 from .coordinates import Heading, Pose
 from .planner import Planner, Waypoint
 from .road_map import RoadMap
@@ -35,24 +34,12 @@ from .vehicle import Vehicle
 
 
 class SumoPlanner(Planner):
-    def __init__(self, road_map: RoadMap, agent_behavior: AgentBehavior = None):
-        super().__init__(road_map, agent_behavior)
+    def __init__(self, road_map: RoadMap):
+        super().__init__(road_map)
         assert isinstance(self._road_map, SumoRoadNetwork)
         self._log = logging.getLogger(self.__class__.__name__)
         self._lanepoints = self._road_map.lanepoints
         self._waypoints_cache = SumoPlanner._WaypointsCache()
-        self._task_is_triggered = False
-        # TODO: These variables should be put in an appropriate place.
-        self._uturn_initial_heading = 0
-        self._uturn_initial_distant = 0
-        self._uturn_initial_velocity = 0
-        self._uturn_initial_height = 0
-        self._insufficient_initial_distant = False
-        self._uturn_initial_position = 0
-        self._uturn_is_initialized = False
-        self._prev_kyber_x_position = None
-        self._prev_kyber_y_position = None
-        self._first_uturn = True
 
     def waypoint_paths(
         self,
@@ -62,9 +49,7 @@ class SumoPlanner(Planner):
         constrain_to_route: bool = True,
     ) -> List[List[Waypoint]]:
         if constrain_to_route:
-            assert (
-                self._did_plan
-            ), "Must call plan(...) before being able to use a route."
+            assert self._route, "Must call plan(...) before being able to use a route."
             road_ids = self._road_ids(pose)
             if road_ids:
                 return self._waypoint_paths_along_route(
@@ -78,9 +63,7 @@ class SumoPlanner(Planner):
     ) -> List[List[Waypoint]]:
         road_ids = None
         if constrain_to_route:
-            assert (
-                self._did_plan
-            ), "Must call plan(...) before being able to use a route."
+            assert self._route, "Must call plan(...) before being able to use a route."
             road_ids = self._road_ids(pose, lane_id)
 
         return self._waypoint_paths_on_lane_at(

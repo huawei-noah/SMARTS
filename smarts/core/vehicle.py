@@ -26,8 +26,6 @@ from functools import lru_cache
 import numpy
 import yaml
 
-from smarts.sstudio.types import UTurn
-
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
@@ -318,10 +316,6 @@ class Vehicle:
             # non-history agents can currently only control passenger vehicles.
             vehicle_type = "passenger"
             chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
-
-        if isinstance(mission.task, UTurn):
-            if mission.task.initial_speed:
-                initial_speed = mission.task.initial_speed
 
         start = mission.start
         start_pose = Pose.from_front_bumper(

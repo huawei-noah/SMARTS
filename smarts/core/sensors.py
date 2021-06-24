@@ -29,7 +29,6 @@ import numpy as np
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
 from smarts.core.planner import Planner, Waypoint
 from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
-from smarts.sstudio.types import CutIn, UTurn
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .events import Events
