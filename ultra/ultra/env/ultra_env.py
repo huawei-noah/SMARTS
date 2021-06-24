@@ -154,11 +154,11 @@ class UltraEnv(HiWayEnv):
             2. Change the filename patterns from relative to absolute path
             3. Depending on the evaluation mode, we can provide glob.glob with
                the appropriate filename pattern to return a list of scenario dirs
-               
+
         Args:
             scenario_info Tuple[str, str]: The first index represents
             task id and second index represents task's level
-        
+
         Returns:
             List[str]: Absolute path of scenarios
         """
