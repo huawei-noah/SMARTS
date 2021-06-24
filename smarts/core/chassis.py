@@ -138,6 +138,10 @@ class Chassis:
     def step(self, current_simulation_time):
         raise NotImplementedError
 
+    def state_override(self, force_pose: Pose):
+        self._bullet_constraint.move_to(force_pose)
+        # TODO: other state too...
+
 
 class BoxChassis(Chassis):
     """Control a vehicle by setting its absolute position and heading. The collision

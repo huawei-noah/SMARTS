@@ -75,6 +75,7 @@ class SMARTS:
         timestep_sec=0.1,
         reset_agents_only=False,
         zoo_addrs=None,
+        external_state_access=False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim_id = Id.new("smarts")
@@ -100,6 +101,7 @@ class SMARTS:
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
         self._imitation_learning_mode = False
 
+        self._external_state_access = external_state_access
         self._elapsed_sim_time = 0
         self._total_sim_time = 0
 
@@ -129,6 +131,23 @@ class SMARTS:
         self._trap_manager: TrapManager = None
 
         self._ground_bullet_id = None
+
+    def external_state_update(self, external_time: float, vehicle_states: Sequence[VehicleState]):
+        if not self._external_state_access:
+            raise Exception("Cannot directly update SMARTS states without initializing with `external_state_access=True`.")
+        # TODO update sim_time
+        for state in vehicle_states:
+            vehicle = self._vehicle_index.vehicle_by_id(state.vehicle_id)
+            vehicle.update_state(state)
+
+    def external_state_query(self) -> List[VehicleState]:
+        if not self._external_state_access:
+            raise Exception("Cannot directly querye SMARTS states without initializing with `external_state_access=True`.")
+        result = []
+        for vehicle in self._vehicle_index.vehicles:
+            result.append(vehicle.state)
+        # TODO: include done, events and reward (if agent)?
+        return result
 
     def step(self, agent_actions):
         if not self._is_setup:

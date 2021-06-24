@@ -246,6 +246,10 @@ class Vehicle:
             angular_velocity=self._chassis.velocity_vectors[1],
         )
 
+    def update_state(self, state: VehicleState):
+        self._chassis.state_override(state.pose)
+        # TODO: state.dimensions, state.speed, state.linear_velocity, state.angular_velocity
+
     @property
     def action_space(self):
         self._assert_initialized()
