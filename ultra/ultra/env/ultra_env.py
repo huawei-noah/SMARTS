@@ -36,6 +36,7 @@ from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")
 
+_CONFIG_FILE = "config.yaml"
 
 class UltraEnv(HiWayEnv):
     def __init__(
@@ -48,21 +49,22 @@ class UltraEnv(HiWayEnv):
         eval_mode=False,
         ordered_scenarios=False,
     ):
-        self.timestep_sec = timestep_sec
-        self.headless = headless
+        self.agent_specs = agent_specs
         self.scenario_info = scenario_info
-        self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
-        if not eval_mode:
-            _scenarios = glob.glob(f"{self.scenarios['train']}")
-        else:
-            _scenarios = glob.glob(f"{self.scenarios['test']}")
+        self.headless = headless
+        self.timestep_sec = timestep_sec
+        self.seed = seed
+        self.eval_mode = eval_mode
+        self.ordered_scenarios = ordered_scenarios
+
+        self.scenarios = self.get_scenarios(scenario_info)
 
         super().__init__(
-            scenarios=_scenarios,
-            agent_specs=agent_specs,
-            headless=headless,
-            timestep_sec=timestep_sec,
-            seed=seed,
+            scenarios=self.scenarios,
+            agent_specs=self.agent_specs,
+            headless=self.headless,
+            timestep_sec=self.timestep_sec,
+            seed=self.seed,
             visdom=False,
         )
 
@@ -112,17 +114,26 @@ class UltraEnv(HiWayEnv):
 
         return observations, rewards, agent_dones, infos
 
-    def get_task(self, task_id, task_level):
+    def get_scenarios(self, scenario_info):
+        # scenario_info[0]: task, scenario_info[1]: level
+        task_id, task_level = scenario_info[0], scenario_info[1]
+        
         base_dir = os.path.join(os.path.dirname(__file__), "../")
-        config_path = os.path.join(base_dir, "config.yaml")
+        config_path = os.path.join(base_dir, _CONFIG_FILE)
 
         with open(config_path, "r") as task_file:
-            scenarios = yaml.safe_load(task_file)["tasks"]
-            task = scenarios[f"task{task_id}"][task_level]
+            tasks = yaml.safe_load(task_file)["tasks"]
+            scenario_paths = tasks[f"task{task_id}"][task_level]
 
-        task["train"] = os.path.join(base_dir, task["train"])
-        task["test"] = os.path.join(base_dir, task["test"])
-        return task
+        scenario_paths["train"] = os.path.join(base_dir, scenario_paths["train"])
+        scenario_paths["test"] = os.path.join(base_dir, scenario_paths["test"])
+
+        if not self.eval_mode:
+            _scenarios = glob.glob(f"{scenario_paths["train"]}")
+        else:
+            _scenarios = glob.glob(f"{scenario_paths["test"]}")
+
+        return _scenarios
 
     @property
     def info(self):
