@@ -160,9 +160,9 @@ class UltraEnv(HiWayEnv):
         scenario_paths["test"] = os.path.join(base_dir, scenario_paths["test"])
 
         if not self.eval_mode:
-            _scenarios = glob.glob(f"{scenario_paths["train"]}")
+            _scenarios = glob.glob(f"{scenario_paths['train']}")
         else:
-            _scenarios = glob.glob(f"{scenario_paths["test"]}")
+            _scenarios = glob.glob(f"{scenario_paths['test']}")
 
         return _scenarios
 
