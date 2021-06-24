@@ -138,7 +138,7 @@ class TrainTest(unittest.TestCase):
             ray.shutdown()
 
     def test_train_baselines(self):
-        '''Ensure that all baselines are trainable'''
+        """Ensure that all baselines are trainable"""
         BASELINES = ["bdqn", "dqn", "ppo", "sac", "td3"]
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         for baseline in BASELINES:
