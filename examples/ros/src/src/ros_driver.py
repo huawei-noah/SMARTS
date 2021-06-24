@@ -64,22 +64,6 @@ class ROSDriver:
         with self._state_lock:
             self._latest_state = entities
 
-    @staticmethod
-    def _vector_to_xyz(v, xyz):
-        xyz.x, xyz.y, xyz.z = v[0], v[1], v[2]
-
-    @staticmethod
-    def _vector_to_xyzw(v, xyz):
-        xyz.x, xyz.y, xyz.z, xyz.w = v[0], v[1], v[2], v[3]
-
-    @staticmethod
-    def _xyz_to_vector(xyz):
-        return (xyz.x, xyz.y, xyz.z)
-
-    @staticmethod
-    def _xyzw_to_vector(xyz):
-        return (xyz.x, xyz.y, xyz.z, xyz.w)
-
     def _update_smarts_state(self):
         with self._state_lock:
             state_to_send = self._latest_state
@@ -110,6 +94,14 @@ class ROSDriver:
         sim_time = time.time()
         self._smarts.external_state_update(sim_time, entities)
         return True
+
+    @staticmethod
+    def _vector_to_xyz(v, xyz):
+        xyz.x, xyz.y, xyz.z = v[0], v[1], v[2]
+
+    @staticmethod
+    def _vector_to_xyzw(v, xyz):
+        xyz.x, xyz.y, xyz.z, xyz.w = v[0], v[1], v[2], v[3]
 
     def _publish_state(self):
         smarts_state = self._smarts.external_state_query()
