@@ -128,12 +128,6 @@ class UltraEnv(HiWayEnv):
 
         return observations, rewards, agent_dones, infos
 
-<<<<<<< HEAD
-    def get_scenarios(self, scenario_info):
-        # scenario_info[0]: task, scenario_info[1]: level
-        task_id, task_level = scenario_info[0], scenario_info[1]
-        
-=======
     def reset(self):
         scenario = next(self._scenarios_iterator)
 
@@ -151,8 +145,10 @@ class UltraEnv(HiWayEnv):
 
         return observations
 
-    def get_task(self, task_id, task_level):
->>>>>>> 165f8fb45f131cb27de6f8b16ad6ad6845e4121b
+    def get_scenarios(self, scenario_info):
+        # scenario_info[0]: task, scenario_info[1]: level
+        task_id, task_level = scenario_info[0], scenario_info[1]
+        
         base_dir = os.path.join(os.path.dirname(__file__), "../")
         config_path = os.path.join(base_dir, _CONFIG_FILE)
 
