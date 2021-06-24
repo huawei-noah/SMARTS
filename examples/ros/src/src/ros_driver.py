@@ -14,7 +14,6 @@ from smarts.core.smarts import SMARTS
 from smarts.core.vehicle import VehicleState
 
 
-
 class ROSDriver:
     """Wraps SMARTS as a ROS (v1) node.
     See the README.md in `examples/ros` for
@@ -38,10 +37,14 @@ class ROSDriver:
 
     def setup_ros(self, node_name="SMARTS", namespace="SMARTS", pub_queue_size=10):
         assert not self._publisher
-        rospy.init_node(node_name, anonymous=False)  # enforce only one SMARTS instance per ROS network
+        rospy.init_node(
+            node_name, anonymous=False
+        )  # enforce only one SMARTS instance per ROS network
 
         out_topic = f"{namespace}/entities_out"
-        self._publisher = rospy.Publisher(out_topic, EntitiesStamped, queue_size=pub_queue_size)
+        self._publisher = rospy.Publisher(
+            out_topic, EntitiesStamped, queue_size=pub_queue_size
+        )
 
         self._state_topic = f"{namespace}/entities_in"
         rospy.Subscriber(self._state_topic, EntitiesStamped, self._entities_callback)
@@ -49,7 +52,12 @@ class ROSDriver:
 
     def setup_smarts(self, scenarios: str, headless: bool, seed: int):
         assert not self._smarts
-        self._smarts = SMARTS(agent_interfaces={}, traffic_sim=None, envision=None if headless else Envision(), external_state_access=True)
+        self._smarts = SMARTS(
+            agent_interfaces={},
+            traffic_sim=None,
+            envision=None if headless else Envision(),
+            external_state_access=True,
+        )
         self._scenarios_iterator = Scenario.scenario_variations(scenarios, list([]))
         self._reset_smarts = True
 
@@ -68,7 +76,9 @@ class ROSDriver:
         with self._state_lock:
             state_to_send = self._latest_state
         if not state_to_send:
-            rospy.loginfo(f"No messages received on topic {self._state_topic} yet to send to SMARTS.")
+            rospy.loginfo(
+                f"No messages received on topic {self._state_topic} yet to send to SMARTS."
+            )
             return False
         entities = []
         for entity in state_to_send.entities:
@@ -138,6 +148,7 @@ class ROSDriver:
 
 def _parse_args():
     from examples.argument_parser import default_argument_parser
+
     parser = default_argument_parser()
     parser.add_argument(
         "--node-name",

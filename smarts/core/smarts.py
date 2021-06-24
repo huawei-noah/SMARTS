@@ -132,9 +132,13 @@ class SMARTS:
 
         self._ground_bullet_id = None
 
-    def external_state_update(self, external_time: float, vehicle_states: Sequence[VehicleState]):
+    def external_state_update(
+        self, external_time: float, vehicle_states: Sequence[VehicleState]
+    ):
         if not self._external_state_access:
-            raise Exception("Cannot directly update SMARTS states without initializing with `external_state_access=True`.")
+            raise Exception(
+                "Cannot directly update SMARTS states without initializing with `external_state_access=True`."
+            )
         # TODO update sim_time
         for state in vehicle_states:
             vehicle = self._vehicle_index.vehicle_by_id(state.vehicle_id)
@@ -142,7 +146,9 @@ class SMARTS:
 
     def external_state_query(self) -> List[VehicleState]:
         if not self._external_state_access:
-            raise Exception("Cannot directly querye SMARTS states without initializing with `external_state_access=True`.")
+            raise Exception(
+                "Cannot directly querye SMARTS states without initializing with `external_state_access=True`."
+            )
         result = []
         for vehicle in self._vehicle_index.vehicles:
             result.append(vehicle.state)

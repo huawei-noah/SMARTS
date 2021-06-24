@@ -10,6 +10,7 @@ def default_argument_parser(program: str = None):
     """
     if not program:
         from pathlib import Path
+
         program = Path(__file__).stem
 
     parser = argparse.ArgumentParser(program)
