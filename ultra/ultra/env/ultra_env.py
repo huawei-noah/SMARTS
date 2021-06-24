@@ -26,7 +26,7 @@ import math
 import os
 from itertools import cycle
 from sys import path
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import numpy as np
 import yaml, inspect
@@ -145,8 +145,23 @@ class UltraEnv(HiWayEnv):
 
         return observations
 
-    def get_scenarios(self, scenario_info):
-        # scenario_info[0]: task, scenario_info[1]: level
+    def get_scenarios(self, scenario_info: Tuple[str, str]) -> List[str]:
+        """Finds all of the scenarios from the given scenario information
+
+        To obtain the path of scenarios:
+            1. Get the filename patterns of the train and test scenarios from
+               ultra/config.yaml from the given task and level.
+            2. Change the filename patterns from relative to absolute path
+            3. Depending on the evaluation mode, we can provide glob.glob with
+               the appropriate filename pattern to return a list of scenario dirs
+               
+        Args:
+            scenario_info Tuple[str, str]: The first index represents
+            task id and second index represents task's level
+        
+        Returns:
+            List[str]: Absolute path of scenarios
+        """
         task_id, task_level = scenario_info[0], scenario_info[1]
 
         base_dir = os.path.join(os.path.dirname(__file__), "../")
