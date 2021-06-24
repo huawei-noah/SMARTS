@@ -28,4 +28,4 @@ def entrypoint():
         )
 
 
-register(locator="cross_rl_agent-v0", entry_point=entrypoint)
+register(locator="cross_rl_agent-v1", entry_point=entrypoint)

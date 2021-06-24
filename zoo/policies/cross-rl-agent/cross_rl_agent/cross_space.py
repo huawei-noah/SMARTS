@@ -254,7 +254,7 @@ class SocMtActorNetwork:
         self.features_per_head = 64
         initial_learning_rate = self.config.lra
         global_step = tf.Variable(0, trainable=False)
-        self.learning_rate = tf.train.exponential_decay(
+        self.learning_rate = tf.compat.v1.train.exponential_decay(
             initial_learning_rate,
             global_step=global_step,
             decay_steps=200000,
@@ -279,7 +279,7 @@ class SocMtActorNetwork:
         self.action_gradients = tf.compat.v1.placeholder(
             tf.float32, [None, self.action_size], name="action_gradients"
         )
-        self.actor_gradients = tf.compat.v1.gradients(
+        self.actor_gradients = tf.gradients(
             self.action, self.actor_variables, -self.action_gradients
         )
         self.optimize = self.optimizer.apply_gradients(
@@ -343,57 +343,57 @@ class SocMtActorNetwork:
             )
             ego_state, npc_state, mask, task = self.split_input(state_inputs)
             # ego
-            ego_encoder_1 = tf.layers.dense(
+            ego_encoder_1 = tf.compat.v1.layers.dense(
                 inputs=ego_state,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="ego_encoder_1",
             )
-            ego_encoder_2 = tf.layers.dense(
+            ego_encoder_2 = tf.compat.v1.layers.dense(
                 inputs=ego_encoder_1,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="ego_encoder_2",
             )
-            task_encoder_1 = tf.layers.dense(
+            task_encoder_1 = tf.compat.v1.layers.dense(
                 inputs=task,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="task_encoder_1",
             )
-            task_encoder_2 = tf.layers.dense(
+            task_encoder_2 = tf.compat.v1.layers.dense(
                 inputs=task_encoder_1,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="task_encoder_2",
             )
             ego_encoder_3 = tf.concat(
                 [ego_encoder_2, task_encoder_2], axis=2, name="ego_encoder_3"
             )  # Dims: batch, 1, 128
-            ego_encoder_4 = tf.layers.dense(
+            ego_encoder_4 = tf.compat.v1.layers.dense(
                 inputs=ego_encoder_3,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="ego_encoder_4",
             )
             # npc
-            npc_encoder_1 = tf.layers.dense(
+            npc_encoder_1 = tf.compat.v1.layers.dense(
                 inputs=npc_state,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="npc_encoder_1",
             )
-            npc_encoder_2 = tf.layers.dense(
+            npc_encoder_2 = tf.compat.v1.layers.dense(
                 inputs=npc_encoder_1,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="npc_encoder_2",
             )  # Dims: batch, entities, 64
             all_encoder = tf.concat(
@@ -401,25 +401,25 @@ class SocMtActorNetwork:
             )  # Dims: batch, npcs_entities + 1, 64
 
             # attention layer
-            query_ego = tf.layers.dense(
+            query_ego = tf.compat.v1.layers.dense(
                 inputs=ego_encoder_4,
                 units=64,
                 use_bias=None,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="query_ego",
             )
-            key_all = tf.layers.dense(
+            key_all = tf.compat.v1.layers.dense(
                 inputs=all_encoder,
                 units=64,
                 use_bias=None,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="key_all",
             )
-            value_all = tf.layers.dense(
+            value_all = tf.compat.v1.layers.dense(
                 inputs=all_encoder,
                 units=64,
                 use_bias=None,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="value_all",
             )
             # Dimensions: Batch, entity, head, feature_per_head
@@ -458,11 +458,11 @@ class SocMtActorNetwork:
                 [-1, self.features_per_head * self.feature_head],
                 name="att_result",
             )
-            att_combine = tf.layers.dense(
+            att_combine = tf.compat.v1.layers.dense(
                 inputs=att_result,
                 units=64,
                 use_bias=None,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="attention_combine",
             )
             att_with_task = tf.concat(
@@ -472,32 +472,32 @@ class SocMtActorNetwork:
             )
 
             # action output layer
-            action_1 = tf.layers.dense(
+            action_1 = tf.compat.v1.layers.dense(
                 inputs=att_with_task,
                 units=256,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="action_1",
             )
-            action_2 = tf.layers.dense(
+            action_2 = tf.compat.v1.layers.dense(
                 inputs=action_1,
                 units=256,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="action_2",
             )
-            speed_up = tf.layers.dense(
+            speed_up = tf.compat.v1.layers.dense(
                 inputs=action_2,
                 units=1,
                 activation=tf.nn.sigmoid,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="speed_up",
             )
-            slow_down = tf.layers.dense(
+            slow_down = tf.compat.v1.layers.dense(
                 inputs=action_2,
                 units=1,
                 activation=tf.nn.sigmoid,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="slow_down",
             )
             action = tf.concat([speed_up, slow_down], axis=1, name="action")
@@ -584,7 +584,7 @@ class SocMtCriticNetwork:
 
         initial_learning_rate = self.config.lrc
         global_step = tf.Variable(0, trainable=False)
-        self.learning_rate = tf.train.exponential_decay(
+        self.learning_rate = tf.compat.v1.train.exponential_decay(
             initial_learning_rate,
             global_step=global_step,
             decay_steps=200000,
@@ -669,18 +669,18 @@ class SocMtCriticNetwork:
             ego_state, npc_state, mask, task = self.split_input(state_inputs)
             ego_state = tf.squeeze(ego_state, axis=1)
             # calculate q-value
-            encoder_1 = tf.layers.dense(
+            encoder_1 = tf.compat.v1.layers.dense(
                 inputs=npc_state,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="encoder_1",
             )
-            encoder_2 = tf.layers.dense(
+            encoder_2 = tf.compat.v1.layers.dense(
                 inputs=encoder_1,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="encoder_2",
             )
             concat = tf.concat(
@@ -689,44 +689,44 @@ class SocMtCriticNetwork:
                 name="concat",
             )
             # task fc
-            task_encoder = tf.layers.dense(
+            task_encoder = tf.compat.v1.layers.dense(
                 inputs=task,
                 units=64,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="task_encoder",
             )
             # converge
             fc_1 = tf.concat([ego_state, concat, task_encoder], axis=1, name="fc_1")
-            fc_2 = tf.layers.dense(
+            fc_2 = tf.compat.v1.layers.dense(
                 inputs=fc_1,
                 units=256,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="fc_2",
             )
             # state+action merge
-            action_fc = tf.layers.dense(
+            action_fc = tf.compat.v1.layers.dense(
                 inputs=action_inputs,
                 units=256,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="action_fc",
             )
             merge = tf.concat([fc_2, action_fc], axis=1, name="merge")
-            merge_fc = tf.layers.dense(
+            merge_fc = tf.compat.v1.layers.dense(
                 inputs=merge,
                 units=256,
                 activation=tf.nn.tanh,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="merge_fc",
             )
             # q value output
-            q_value = tf.layers.dense(
+            q_value = tf.compat.v1.layers.dense(
                 inputs=merge_fc,
                 units=self.config.task_size,
                 activation=None,
-                kernel_initializer=tf.variance_scaling_initializer(),
+                kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                 name="q_value",
             )
         critic_variables = tf.compat.v1.get_collection(
