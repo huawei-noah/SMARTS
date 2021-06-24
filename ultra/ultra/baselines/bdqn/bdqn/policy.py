@@ -23,7 +23,6 @@ import torch
 from torch import nn
 import numpy as np
 import ultra.adapters as adapters
-from ultra.baselines.bdqn.bdqn.network import *
 from smarts.core.agent import Agent
 from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
 import pathlib, os, copy
