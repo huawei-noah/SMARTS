@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 This changelog is to adhere to the format given at [keepachangelog](keepachangelog.com/en/1.0.0/) 
 and should maintain [semantic versioning](semver.org).
 
-All text added must be human readable. 
+All text added must be human-readable. 
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
@@ -25,6 +25,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - When importing NGSIM history data, vehicle speeds are recomputed.
 - Allow custom sizes for agent vehicles in history traffic missions.
 - Refactored the top level of the SMARTS module to make it easier to navigate the project and understand its structure. See issue #776.
+- Made Panda3D and its modules optional as a requirement/dependencies to setup SMARTS. See Issue #883.
 - Updated the `Tensorflow` version to `2.2.1` for rl-agent and bump up its version to `1.0`. See Issue #211.
 - Made `Ray` and its module `Ray[rllib]` optional as a requirement/dependency to setup SMARTS. See Issue #917.
 ### Fixed
@@ -36,6 +37,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Ensure that `yaw_rate` is always a scalar in `EgoVehicleObservation`.
 - Fixed the internal holes created at sharp turns due to crude map geometry. See issue #900.
 - Fixed an args count error caused by `websocket.on_close()` sending a variable number of args.
+- Fixed the multi-instance display of `envision`. See Issue #784.
 ## Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.

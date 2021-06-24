@@ -30,7 +30,7 @@ jobs:
           pip install --upgrade pip
           pip install wheel
           pip install -r requirements.txt
-          pip install -e .[train,test]
+          pip install -e .[train,test,camera-obs]
       - name: SMARTS benchmark
         run: |
           cd $GITHUB_WORKSPACE
@@ -40,6 +40,6 @@ jobs:
           scl scenario build-all --clean ./scenarios
           pytest --benchmark-save=previous --benchmark-min-rounds=10 --benchmark-timer=time.process_time ./smarts/env/tests/test_benchmark.py
           git checkout -
-          pip install -e .[train,test]
+          pip install -e .[train,test,camera-obs]
           scl scenario build-all --clean ./scenarios
           pytest --benchmark-compare=0001_previous --benchmark-compare-fail=mean:10% --benchmark-min-rounds=10 --benchmark-timer=time.process_time ./smarts/env/tests/test_benchmark.py

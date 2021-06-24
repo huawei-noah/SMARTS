@@ -61,13 +61,20 @@ function App({ client }) {
   const recorderRef = useRef(null);
   const { addToast } = useToasts();
   const history = useHistory();
+  const [totalSimIds, setTotalSimIds] = useState(0);
+
+  let getSimIdsLength = async () => {
+    let ids = await client.fetchSimulationIds();
+    setTotalSimIds(ids.length);
+  };
+  setInterval(getSimIdsLength, 3000);
 
   // also includes all
   const routeMatch = useRouteMatch("/:simulation");
   const matchedSimulationId = routeMatch ? routeMatch.params.simulation : null;
 
   useEffect(() => {
-    const fetchRunningSim = async () => {
+    (async () => {
       let ids = await client.fetchSimulationIds();
       if (ids.length > 0) {
         if (!matchedSimulationId || !ids.includes(matchedSimulationId)) {
@@ -75,12 +82,8 @@ function App({ client }) {
         }
       }
       setSimulationIds(ids);
-    };
-
-    // checks if there is new simulation running every 3 seconds.
-    const interval = setInterval(fetchRunningSim, 3000);
-    return () => clearInterval(interval);
-  }, [matchedSimulationId]);
+    })();
+  }, [totalSimIds]);
 
   async function onStartRecording() {
     recorderRef.current = new RecordRTCPromisesHandler(
@@ -135,7 +138,8 @@ function App({ client }) {
             <SimulationGroup
               client={client}
               simulationIds={simulationIds}
-              showControls={showControls}
+              controlModes={controlModes}
+              playingMode={playingMode}
               egoView={egoView}
             />
           </Route>
@@ -166,7 +170,6 @@ function App({ client }) {
                       canvasRef={simulationCanvasRef}
                       client={client}
                       simulationId={matchedSimulationId}
-                      showControls={showControls}
                       controlModes={controlModes}
                       egoView={egoView}
                       onElapsedTimesChanged={(current, total) => {
