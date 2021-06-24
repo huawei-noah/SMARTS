@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 from helpers.scenario import temp_scenario
 
-from smarts.core.agent_interface import AgentBehavior, AgentInterface
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import DrivenPathSensor, WaypointsSensor

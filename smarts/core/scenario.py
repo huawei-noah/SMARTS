@@ -829,20 +829,15 @@ class Scenario:
 
     @property
     def planner(self):
-        return self.planner_with_param(None)
-
-    def planner_with_param(self, param=None):
-        if not self._planner or (
-            param is not None and param != self._last_planner_param
-        ):
+        if not self._planner:
             if isinstance(self.road_map, SumoRoadNetwork):
                 from smarts.core.sumo_planner import SumoPlanner
 
-                self._planner = SumoPlanner(self.road_map, param)
+                self._planner = SumoPlanner(self.road_map)
             else:
                 from smarts.core.planner import Planner
 
-                self._planner = Planner(self.road_map, param)
+                self._planner = Planner(self.road_map)
         return self._planner
 
     @property

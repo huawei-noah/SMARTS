@@ -400,7 +400,7 @@ class AgentManager:
 
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
-        planner = scenario.planner_with_param(agent_interface.agent_behavior)
+        planner = scenario.planner
         planner.plan(mission)
 
         vehicle = sim.vehicle_index.build_agent_vehicle(

@@ -251,11 +251,6 @@ class AgentInterface:
     Enable acceleration and jerk observations.
     """
 
-    agent_behavior: AgentBehavior = None
-    """
-    The behavior configuration of the agent.
-    """
-
     def __post_init__(self):
         self.neighborhood_vehicles = AgentInterface._resolve_config(
             self.neighborhood_vehicles, NeighborhoodVehicles
