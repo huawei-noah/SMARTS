@@ -76,6 +76,9 @@ pip install --upgrade pip
 # install [train] version of python package with the rllib dependencies
 pip install -e .[train]
 
+# OPTIONAL: install [camera-obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
+pip install -e .[camera-obs]  
+
 # make sure you can run sanity-test (and verify they are passing)
 # if tests fail, check './sanity_test_result.xml' for test report. 
 pip install -e .[test]
@@ -126,6 +129,7 @@ Commands:
 * envision
 * scenario
 * zoo
+* run
 
 Subcommands of scenario:
 * build-all: Generate all scenarios under the given directories
@@ -137,6 +141,9 @@ Subcommands of envision:
 
 Subcommands of zoo:
 * zoo: Build an agent, used for submitting to the agent-zoo
+
+Subcommands of run:
+No subcommands of `run`. You can directly use `run` to simulate an experiment as mentioned in the example above.
 
 ### Examples:
 
@@ -273,7 +280,7 @@ docker push huaweinoah/smarts:$VERSION
 ### Troubleshooting
 
 #### General
-In many cases additinal run logs are located at '~/.smarts'. These can sometimes be helpful.
+In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
 
 #### SUMO
 SUMO can have some problems in setup. Please look through the following for support for SUMO:

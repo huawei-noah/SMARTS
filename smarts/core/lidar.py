@@ -22,11 +22,10 @@ import random
 
 import numpy as np
 import psutil
-from panda3d.core import Quat
 
 from .lidar_sensor_params import SensorParams
 from .utils import pybullet
-from .utils.math import batches
+from .utils.math import batches, rotate_quat
 from .utils.pybullet import bullet_client as bc
 
 
@@ -90,8 +89,10 @@ class Lidar:
             for yaw, roll in itertools.product(yaws, rolls):
                 rot = pybullet.getQuaternionFromEuler((roll, 0, yaw))
                 origin = np.array([0, 0, 0])
-                direction = np.array(
-                    Quat(rot).xform((0, self._sensor_params.max_distance, 0))
+
+                direction = rotate_quat(
+                    np.asarray(rot, dtype=float),
+                    np.asarray((0, self._sensor_params.max_distance, 0), dtype=float),
                 )
                 self._base_rays.append((origin, direction))
 

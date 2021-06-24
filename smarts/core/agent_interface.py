@@ -331,14 +331,14 @@ class AgentInterface:
                 waypoints=True,
                 action=ActionSpaceType.LaneWithContinuousSpeed,
             )
-        # The trajectory tracking agent wich recieves a series of reference trajectory
+        # The trajectory tracking agent which receives a series of reference trajectory
         # points and speeds to follow
         elif requested_type == AgentType.Tracker:
             interface = AgentInterface(
                 waypoints=True,
                 action=ActionSpaceType.Trajectory,
             )
-        # The MPC based trajectory tracking agent wich recieves a series of
+        # The MPC based trajectory tracking agent which receives a series of
         # reference trajectory points and speeds and computes the optimal
         # steering action.
         elif requested_type == AgentType.MPCTracker:
