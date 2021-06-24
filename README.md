@@ -280,7 +280,7 @@ docker push huaweinoah/smarts:$VERSION
 ### Troubleshooting
 
 #### General
-In many cases additional run logs are located at `~/.smarts`. These can sometimes be helpful.
+In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
 
 #### SUMO
 SUMO can have some problems in setup. Please look through the following for support for SUMO:
