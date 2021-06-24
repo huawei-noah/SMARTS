@@ -148,7 +148,7 @@ class UltraEnv(HiWayEnv):
     def get_scenarios(self, scenario_info):
         # scenario_info[0]: task, scenario_info[1]: level
         task_id, task_level = scenario_info[0], scenario_info[1]
-        
+
         base_dir = os.path.join(os.path.dirname(__file__), "../")
         config_path = os.path.join(base_dir, _CONFIG_FILE)
 
