@@ -1,13 +1,13 @@
 import numpy as np
 import tensorflow as tf
-from config import hyperParameters
+from config import HyperParameters
 from utils import OU
 
 
 class SocMtActorNetwork:
     def __init__(self, name):
         # learning params
-        self.config = hyperParameters()
+        self.config = HyperParameters()
         self.all_state_size = self.config.all_state_size
         self.action_size = self.config.action_size
         self.tau = self.config.tau
@@ -340,7 +340,7 @@ class SocMtActorNetwork:
 
 class SocMtCriticNetwork:
     def __init__(self, name):
-        self.config = hyperParameters()
+        self.config = HyperParameters()
         self.all_state_size = self.config.all_state_size
         self.action_size = self.config.action_size
         self.tau = self.config.tau

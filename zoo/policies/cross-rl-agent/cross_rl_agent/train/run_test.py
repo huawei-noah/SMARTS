@@ -14,7 +14,7 @@ from adapters import (
     observation_adapter,
     reward_adapter,
 )
-from config import hyperParameters
+from config import HyperParameters
 from soc_mt_ac_network import SocMtActorNetwork, SocMtCriticNetwork
 
 from smarts.core.agent import AgentSpec
@@ -37,7 +37,7 @@ def init_tensorflow():
 
 
 def test(test_scenarios, sim_name, headless, num_episodes, seed):
-    config = hyperParameters()
+    config = HyperParameters()
     configProto = init_tensorflow()
     # init env
     agent_spec = AgentSpec(

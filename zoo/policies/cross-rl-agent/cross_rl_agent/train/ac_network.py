@@ -1,12 +1,12 @@
 import numpy as np
 import tensorflow as tf
-from config import hyperParameters
+from config import HyperParameters
 from utils import OU
 
 
 class ActorNetwork:
     def __init__(self, name):
-        self.config = hyperParameters()
+        self.config = HyperParameters()
         self.all_state_size = self.config.all_state_size
         self.action_size = self.config.action_size
         self.tau = self.config.tau
@@ -218,7 +218,7 @@ class ActorNetwork:
 
 class CriticNetwork:
     def __init__(self, name):
-        self.config = hyperParameters()
+        self.config = HyperParameters()
         self.all_state_size = self.config.all_state_size
         self.action_size = self.config.action_size
         self.tau = self.config.tau

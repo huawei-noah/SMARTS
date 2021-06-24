@@ -1,4 +1,4 @@
-class hyperParameters(object):
+class HyperParameters(object):
     """Hyperparameters for RL agent"""
 
     def __init__(self):

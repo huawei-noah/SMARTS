@@ -9,7 +9,7 @@ from smarts.core.controllers import ActionSpaceType
 """ a series of params"""
 
 
-class hyperParameters(object):
+class HyperParameters(object):
     def __init__(self):
         # Env parameters
         self.ego_feature_num = 4
@@ -38,7 +38,7 @@ class hyperParameters(object):
         self.gamma = 0.99  # Discounting rate
 
 
-""" Adaptets"""
+""" Adapters"""
 
 
 def observation_adapter(env_obs):
@@ -244,7 +244,7 @@ cross_interface = AgentInterface(
 class SocMtActorNetwork:
     def __init__(self, name):
         # learning params
-        self.config = hyperParameters()
+        self.config = HyperParameters()
         self.all_state_size = self.config.all_state_size
         self.action_size = self.config.action_size
         self.tau = self.config.tau
@@ -577,7 +577,7 @@ class SocMtActorNetwork:
 
 class SocMtCriticNetwork:
     def __init__(self, name):
-        self.config = hyperParameters()
+        self.config = HyperParameters()
         self.all_state_size = self.config.all_state_size
         self.action_size = self.config.action_size
         self.tau = self.config.tau

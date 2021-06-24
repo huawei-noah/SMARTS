@@ -16,7 +16,7 @@ from adapters import (
     observation_adapter,
     reward_adapter,
 )
-from config import hyperParameters
+from config import HyperParameters
 from prioritized_replay import Buffer
 from soc_mt_ac_network import SocMtActorNetwork, SocMtCriticNetwork
 from utils import get_split_batch
@@ -49,7 +49,7 @@ def train(
     session_dir,
 ):
     WITH_SOC_MT = without_soc_mt
-    config = hyperParameters()
+    config = HyperParameters()
     configProto = init_tensorflow()
 
     # init env

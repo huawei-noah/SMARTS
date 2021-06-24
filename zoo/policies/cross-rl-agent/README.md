@@ -1,7 +1,7 @@
 # cross-rl-agent for behavior model
-This provides rl agent for cross scenarios
+This provides rl agent for cross scenarios.
 
-# install
+## Install
 ```bash
 cd cross-rl-agent
 pip install -e .

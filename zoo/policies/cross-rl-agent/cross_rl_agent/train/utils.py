@@ -1,9 +1,6 @@
 import numpy as np
 
 
-# ==============================================================================
-# -- Functions -----------------------------------------------------------------
-# ==============================================================================
 def get_split_batch(batch):
     """memory.sample() returns a batch of experiences, but we want an array
     for each element in the memory (s, a, r, s', done)"""
