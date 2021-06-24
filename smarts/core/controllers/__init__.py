@@ -26,6 +26,7 @@ from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
 )
+from smarts.core.controllers.imitation_controller import ImitationController
 from smarts.core.controllers.lane_following_controller import (
     LaneFollowingController,
     LaneFollowingControllerState,
@@ -47,6 +48,7 @@ class ActionSpaceType(Enum):
     Trajectory = 5
     MultiTargetPose = 6  # for boid control
     MPC = 7
+    Imitation = 8
 
 
 class Controllers:
@@ -116,7 +118,10 @@ class Controllers:
                 perform_lane_following(target_speed=12.5, lane_change=1)
             elif action == "change_lane_right":
                 perform_lane_following(target_speed=12.5, lane_change=-1)
+        elif action_space == ActionSpaceType.Imitation:
+            ImitationController.perform_action(sim.timestep_sec, vehicle, action)
         else:
+            # Note: TargetPose and MultiTargetPose use a MotionPlannerProvider directly
             raise ValueError(
                 f"perform_action(action_space={action_space}, ...) has failed "
                 "inside controller"
@@ -126,16 +131,12 @@ class Controllers:
 class ControllerState:
     @staticmethod
     def from_action_space(action_space, vehicle_pose, sim):
-        if action_space == ActionSpaceType.Lane:
+        if action_space in (
+            ActionSpaceType.Lane,
+            ActionSpaceType.LaneWithContinuousSpeed,
+        ):
             # TAI: we should probably be fetching these waypoint through the mission planner
-            target_lane_id = sim.waypoints.closest_waypoint(
-                vehicle_pose, filter_from_count=4
-            ).lane_id
-            return LaneFollowingControllerState(target_lane_id)
-
-        if action_space == ActionSpaceType.LaneWithContinuousSpeed:
-            # TAI: we should probably be fetching these waypoint through the mission planner
-            target_lane_id = sim.waypoints.closest_waypoint(
+            target_lane_id = sim.road_network.lanepoints.closest_lanepoint(
                 vehicle_pose, filter_from_count=4
             ).lane_id
             return LaneFollowingControllerState(target_lane_id)

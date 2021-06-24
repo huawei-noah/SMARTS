@@ -35,14 +35,14 @@ from traci.exceptions import FatalTraCIError, TraCIException
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import ProviderState
+from smarts.core.provider import Provider, ProviderState
 from smarts.core.utils import networking
-from smarts.core.utils.logging import suppress_stdout
+from smarts.core.utils.logging import suppress_output
 from smarts.core.utils.sumo import SUMO_PATH, traci
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class SumoTrafficSimulation:
+class SumoTrafficSimulation(Provider):
     """
     Args:
         net_file:
@@ -106,6 +106,12 @@ class SumoTrafficSimulation:
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
 
+        # TODO: remove when SUMO fixes SUMO reset memory growth bug.
+        # `sumo-gui` memory growth is faster.
+        self._reload_count = 50
+        self._current_reload_count = 0
+        # /TODO
+
     def __repr__(self):
         return f"""SumoTrafficSim(
   _scenario={repr(self._scenario)},
@@ -129,6 +135,10 @@ class SumoTrafficSimulation:
             return
         self._sumo_proc.terminate()
         self._sumo_proc.wait()
+
+    @property
+    def headless(self):
+        return self._headless
 
     def _initialize_traci_conn(self, num_retries=5):
         # TODO: inline sumo or process pool
@@ -159,7 +169,7 @@ class SumoTrafficSimulation:
             )
             time.sleep(0.05)  # give SUMO time to start
             try:
-                with suppress_stdout():
+                with suppress_output(stdout=False):
                     self._traci_conn = traci.connect(
                         sumo_port,
                         numRetries=100,
@@ -206,7 +216,7 @@ class SumoTrafficSimulation:
     def _base_sumo_load_params(self):
         load_params = [
             "--num-clients=%d" % self._num_clients,
-            "--net-file=%s" % self._scenario.net_filepath,
+            "--net-file=%s" % self._scenario.road_network.net_file,
             "--quit-on-end",
             "--log=%s" % self._log_file,
             "--error-log=%s" % self._log_file,
@@ -236,20 +246,22 @@ class SumoTrafficSimulation:
 
         return load_params
 
-    def setup(self, scenario) -> ProviderState:
+    def setup(self, next_scenario) -> ProviderState:
         self._log.debug("Setting up SumoTrafficSim %s" % self)
         assert not self._is_setup, (
             "Can't setup twice, %s, see teardown()" % self._is_setup
         )
 
         # restart sumo process only when map file changes
-        if self._scenario and self._scenario.net_file_hash == scenario.net_file_hash:
-            restart_sumo = False
-        else:
-            restart_sumo = True
+        restart_sumo = (
+            not self._scenario
+            or self._scenario.net_file_hash != next_scenario.net_file_hash
+            or self._current_reload_count >= self._reload_count
+        )
+        self._current_reload_count = self._current_reload_count % self._reload_count + 1
 
-        self._scenario = scenario
-        self._log_file = scenario.unique_sumo_log_file()
+        self._scenario = next_scenario
+        self._log_file = next_scenario.unique_sumo_log_file()
 
         if restart_sumo:
             self._initialize_traci_conn()
@@ -479,7 +491,9 @@ class SumoTrafficSimulation:
         )
 
         # TODO: Vehicle Id should not be using prefixes this way
-        if vehicle_id.startswith("social-agent"):
+        if vehicle_id.startswith("social-agent") or vehicle_id.startswith(
+            "history-vehicle"
+        ):
             # This is based on ID convention
             vehicle_color = SumoTrafficSimulation._social_agent_vehicle_color()
         else:
@@ -593,10 +607,6 @@ class SumoTrafficSimulation:
             speed = sumo_vehicle[tc.VAR_SPEED]
             vehicle_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
             dimensions = VEHICLE_CONFIGS[vehicle_type].dimensions
-            # adjust sumo vehicle location with map location offset
-            assert len(self._scenario.mapLocationOffset) == 2
-            front_bumper_pos[0] += self._scenario.mapLocationOffset[0]
-            front_bumper_pos[1] += self._scenario.mapLocationOffset[1]
             provider_vehicles.append(
                 VehicleState(
                     # XXX: In the case of the SUMO traffic provider, the vehicle ID is
@@ -717,34 +727,5 @@ class SumoTrafficSimulation:
             typeID=type_id,
             departPos=lane_offset,
             departLane=lane_index,
-        )
-        return vehicle_id
-
-    def _emit_vehicle_near_position(self, position, vehicle_id=None) -> str:
-        wp = self._scenario.waypoints.closest_waypoint(position)
-        lane = self._scenario.road_network.lane_by_id(wp.lane_id)
-        offset_in_lane = self._scenario.road_network.offset_into_lane(
-            lane, tuple(wp.pos)
-        )
-
-        if not vehicle_id:
-            vehicle_id = self._unique_id()
-
-        # XXX: Do not give this a route or it will crash on `moveTo` calls
-        self._traci_conn.vehicle.add(
-            vehicle_id,
-            "",
-            departPos=offset_in_lane,
-            departLane=wp.lane_index,
-        )
-
-        self._traci_conn.vehicle.moveToXY(
-            vehID=vehicle_id,
-            edgeID="",  # let sumo choose the edge
-            lane=-1,  # let sumo choose the lane
-            x=position[0],
-            y=position[1],
-            # angle=sumo_heading,  # only used for visualizing in sumo-gui
-            keepRoute=0b000,  # On lane
         )
         return vehicle_id

@@ -24,7 +24,7 @@ import os
 import pickle
 import re
 import shutil
-import sys
+import time
 import unittest
 
 import dill
@@ -34,7 +34,7 @@ import ray
 from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.sac.sac.policy import SACPolicy
-from ultra.evaluate import evaluate, evaluation_check
+from ultra.evaluate import evaluate, evaluation_check, collect_evaluations
 from ultra.utils.episode import episodes
 
 seed = 2
@@ -54,21 +54,21 @@ class EvaluateTest(unittest.TestCase):
         generate_command = (
             "python ultra/scenarios/interface.py generate "
             "--task 00 --level eval_test --root-dir tests/scenarios "
-            " --save-dir tests/task/eval_test/eval"
+            " --save-dir tests/task/eval_test/"
         )
         multiagent_generate_command = (
             "python ultra/scenarios/interface.py generate "
             "--task 00-multiagent --level eval_test --root-dir tests/scenarios "
-            "--save-dir tests/task/eval_test_multiagent/eval"
+            "--save-dir tests/task/eval_test_multiagent/"
         )
         train_command = (
             "python ultra/train.py "
-            "--task 00 --level eval_test --policy sac --headless True --episodes 1 "
+            "--task 00 --level eval_test --policy sac --headless --episodes 1 "
             f"--eval-rate 1 --eval-episodes 1 --max-episode-steps 2 --log-dir {path}"
         )
         multiagent_train_command = (
             "python ultra/train.py "
-            "--task 00-multiagent --level eval_test --policy sac,dqn,ppo --headless True --episodes 1 "
+            "--task 00-multiagent --level eval_test --policy sac,dqn,ppo --headless --episodes 1 "
             f"--eval-rate 1 --eval-episodes 1 --max-episode-steps 2 --log-dir {multiagent_path}"
         )
 
@@ -170,11 +170,11 @@ class EvaluateTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
         )[0]
-        models = " ".join(glob.glob(os.path.join(experiment_dir, "models/*")))
+        models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00 --level eval_test --models {models} --experiment-dir {experiment_dir} "
-            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless True"
+            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
 
         ray.shutdown()
@@ -202,7 +202,7 @@ class EvaluateTest(unittest.TestCase):
         evaluate_command = (
             f"python ultra/evaluate.py "
             f"--task 00-multiagent --level eval_test --models {models} --experiment-dir {experiment_dir} "
-            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless True"
+            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
 
         ray.shutdown()
@@ -262,6 +262,10 @@ class EvaluateTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
+    # This test performs evaluation on multiple agents, but the test map
+    # that is created can only support one agent. Skip this for now until
+    # we can specify a map to use that supports multiple agents.
+    @unittest.skip
     def test_evaluate_multiagent(self):
         seed = 2
         models_directory = glob.glob(
@@ -374,6 +378,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
 
     total_step = 0
     etag = ":".join([policy_class.split(":")[-1] for policy_class in agent_classes])
+    evaluation_task_ids = dict()
 
     for episode in episodes(1, etag=etag, log_dir=log_dir):
         observations = env.reset()
@@ -406,10 +411,13 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                 max_episode_steps=2,
                 policy_classes=agent_classes,
                 scenario_info=scenario_info,
+                evaluation_task_ids=evaluation_task_ids,
                 timestep_sec=0.1,
                 headless=True,
                 log_dir=log_dir,
             )
+            collect_evaluations(evaluation_task_ids=evaluation_task_ids)
+
             actions = {
                 agent_id: agents[agent_id].act(observation, explore=True)
                 for agent_id, observation in observations.items()
@@ -439,5 +447,9 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
 
             total_step += 1
             observations = next_observations
+
+    # Wait on the remaining evaluations to finish.
+    while collect_evaluations(evaluation_task_ids):
+        time.sleep(0.1)
 
     env.close()

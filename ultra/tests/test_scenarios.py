@@ -37,7 +37,7 @@ class ScenariosTest(unittest.TestCase):
             if os.path.exists(save_dir):
                 shutil.rmtree(save_dir)
             os.system(
-                f"python ultra/scenarios/interface.py generate --task 00 --level easy --root-dir tests/scenarios --save-dir {save_dir}map"
+                f"python ultra/scenarios/interface.py generate --task 00 --level easy --root-dir tests/scenarios --save-dir {save_dir}"
             )
             for dirpath, dirnames, files in os.walk(save_dir):
                 if "traffic" in dirpath:
@@ -101,7 +101,7 @@ class ScenariosTest(unittest.TestCase):
             if os.path.exists(save_dir):
                 shutil.rmtree(save_dir)
             os.system(
-                f"python ultra/scenarios/interface.py generate --task 00-multiagent --level easy --root-dir tests/scenarios --save-dir {save_dir}map"
+                f"python ultra/scenarios/interface.py generate --task 00-multiagent --level easy --root-dir tests/scenarios --save-dir {save_dir}"
             )
             for dirpath, dirnames, files in os.walk(save_dir):
                 if "traffic" in dirpath:
@@ -111,9 +111,9 @@ class ScenariosTest(unittest.TestCase):
                         os.path.join(dirpath, "missions.pkl"), "rb"
                     ) as missions_file:
                         missions = pickle.load(missions_file)
-                    if "0" in dirpath:  # The train scenario.
+                    if "train" in dirpath:  # The train scenario.
                         self.assertTrue(len(missions) == 3)
-                    elif "1" in dirpath:  # The test scenario.
+                    elif "test" in dirpath:  # The test scenario.
                         self.assertTrue(len(missions) == 1)
         except Exception as err:
             print(err)

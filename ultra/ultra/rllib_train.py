@@ -58,12 +58,15 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 def train(
     task,
     num_episodes,
+    max_episode_steps,
+    rollout_fragment_length,
     policy,
     eval_info,
     timestep_sec,
     headless,
     seed,
-    training_batch_size,
+    train_batch_size,
+    sgd_minibatch_size,
     log_dir,
 ):
 
@@ -92,7 +95,7 @@ def train(
                 neighborhood_vehicles=NeighborhoodVehicles(200),
                 action=ActionSpaceType.Continuous,
                 rgb=False,
-                max_episode_steps=600,
+                max_episode_steps=max_episode_steps,
                 debug=True,
             ),
             agent_params={},
@@ -109,7 +112,9 @@ def train(
         "callbacks": Callbacks,
         "framework": "torch",
         "num_workers": 1,
-        "train_batch_size": training_batch_size,  # Debugging value
+        "train_batch_size": train_batch_size,
+        "sgd_minibatch_size": sgd_minibatch_size,
+        "rollout_fragment_length": rollout_fragment_length,
         "in_evaluation": True,
         "evaluation_num_episodes": eval_info["eval_episodes"],
         "evaluation_interval": eval_info[
@@ -176,19 +181,33 @@ if __name__ == "__main__":
         "--episodes", help="number of training episodes", type=int, default=1000000
     )
     parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=200,
+    )
+    parser.add_argument(
+        "--rollout-fragment-length",
+        help="Number of timesteps to use in batch",
+        type=int,
+        default=200,
+    )
+    parser.add_argument(
         "--timestep", help="environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="run without envision", type=bool, default=False
+        "--headless",
+        help="Run without envision",
+        action="store_true",
     )
     parser.add_argument(
         "--eval-episodes", help="number of evaluation episodes", type=int, default=100
     )
     parser.add_argument(
         "--eval-rate",
-        help="run evaluation every 'n' number of iterations",
+        help="The number of training episodes to wait before running the evaluation",
         type=int,
-        default=100,
+        default=200,
     )
     parser.add_argument(
         "--seed",
@@ -197,9 +216,15 @@ if __name__ == "__main__":
         type=int,
     )
     parser.add_argument(
-        "--training-batch-size",
+        "--train-batch-size",
         help="maximum samples for each training iteration",
         default=4000,
+        type=int,
+    )
+    parser.add_argument(
+        "--sgd-minibatch-size",
+        help="maximum samples for each training iteration",
+        default=128,
         type=int,
     )
     parser.add_argument(
@@ -215,6 +240,8 @@ if __name__ == "__main__":
     train(
         task=(args.task, args.level),
         num_episodes=int(args.episodes),
+        max_episode_steps=int(args.max_episode_steps),
+        rollout_fragment_length=int(args.rollout_fragment_length),
         policy=args.policy,
         eval_info={
             "eval_rate": int(args.eval_rate),
@@ -223,7 +250,8 @@ if __name__ == "__main__":
         timestep_sec=float(args.timestep),
         headless=args.headless,
         seed=args.seed,
-        training_batch_size=args.training_batch_size,
+        train_batch_size=args.train_batch_size,
+        sgd_minibatch_size=args.sgd_minibatch_size,
         log_dir=args.log_dir,
     )
 

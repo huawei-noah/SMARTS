@@ -58,13 +58,13 @@ for _ in range(1000):
 cd <project>
 
 # Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
-./install_deps.sh
+bash utils/setup/install_deps.sh
 
 # verify sumo is >= 1.5.0
 # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
 sumo
 
-# setup virtual environment; presently only Python 3.7.x is officially supported
+# setup virtual environment; presently at least Python 3.7 and higher is officially supported
 python3.7 -m venv .venv
 
 # enter virtual environment to install all dependencies
@@ -76,38 +76,38 @@ pip install --upgrade pip
 # install [train] version of python package with the rllib dependencies
 pip install -e .[train]
 
-# make sure you can run tests (and verify they are passing)
+# make sure you can run sanity-test (and verify they are passing)
+# if tests fail, check './sanity_test_result.xml' for test report. 
 pip install -e .[test]
-make test
+make sanity-test
 
 # then you can run a scenario, see following section for more details
 ```
 
 ## Running
 
-We use [supervisord](http://supervisord.org/introduction.html) to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and start supervisord:
+We use the `scl` command line to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and run the following command:
 
 ```bash
 # build scenarios/loop
 scl scenario build --clean scenarios/loop
 
-# start supervisord
-supervisord
+# run an experiment 
+scl run --envision examples/single_agent.py scenarios/loop 
 ```
 
-With `supervisord` running, visit http://localhost:8081/ in your browser to view your experiment.
+You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment. See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
 
-See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
+After executing the above command, visit http://localhost:8081/ in your browser to view your experiment.
 
-Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Here's how you can use one of the example scripts with a scenario.
+
+Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
 ```bash
-# Update the command=... in ./supervisord.conf
-#
-# [program:smarts]
-# command=python examples/single_agent.py scenarios/loop
-# ...
+scl run --envision <examples/script_path> <scenarios/path> 
 ```
+
+Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
 
 ## Documentation
 
@@ -262,11 +262,11 @@ $ python examples/single_agent.py scenarios/loop
 
 ```bash
 # For this to work, your account needs to be added to the huaweinoah org
-docker login
-
-export VERSION=v0.4.3-pre
-docker build --no-cache -t smarts:$VERSION .
+$ cd /path/to/SMARTS
+export VERSION=v0.4.16
+docker build --no-cache -f ./utils/docker/Dockerfile -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
+docker login
 docker push huaweinoah/smarts:$VERSION
 ```
 
@@ -291,9 +291,10 @@ If you use SMARTS in your research, please cite the [paper](https://arxiv.org/ab
 @misc{zhou2020smarts,
       title={SMARTS: Scalable Multi-Agent Reinforcement Learning Training School for Autonomous Driving},
       author={Ming Zhou and Jun Luo and Julian Villella and Yaodong Yang and David Rusu and Jiayu Miao and Weinan Zhang and Montgomery Alban and Iman Fadakar and Zheng Chen and Aurora Chongxi Huang and Ying Wen and Kimia Hassanzadeh and Daniel Graves and Dong Chen and Zhengbang Zhu and Nhat Nguyen and Mohamed Elsayed and Kun Shao and Sanjeevan Ahilan and Baokuan Zhang and Jiannan Wu and Zhengang Fu and Kasra Rezaee and Peyman Yadmellat and Mohsen Rohani and Nicolas Perez Nieves and Yihan Ni and Seyedershad Banijamali and Alexander Cowen Rivers and Zheng Tian and Daniel Palenicek and Haitham bou Ammar and Hongbo Zhang and Wulong Liu and Jianye Hao and Jun Wang},
+      url={https://arxiv.org/abs/2010.09776},
+      primaryClass={cs.MA},
+      booktitle={Proceedings of the 4th Conference on Robot Learning (CoRL)},
       year={2020},
-      eprint={2010.09776},
-      archivePrefix={arXiv},
-      primaryClass={cs.MA}
-}
+      month={11}
+ }
 ```

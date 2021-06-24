@@ -6,7 +6,7 @@ import numpy as np
 import ray
 import torch
 
-from examples import default_argument_parser
+from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
@@ -189,6 +189,6 @@ if __name__ == "__main__":
         evaluation_scenarios=[args.evaluation_scenario],
         sim_name=args.sim_name,
         headless=args.headless,
-        num_episodes=args.num_episodes,
+        num_episodes=args.episodes,
         seed=args.seed,
     )

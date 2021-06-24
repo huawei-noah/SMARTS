@@ -20,10 +20,13 @@
 
 import atexit
 import logging
+import os
+import pathlib
 import random
+import subprocess
+import sys
 import time
 from concurrent import futures
-from multiprocessing import Process
 from typing import List, Tuple
 
 import grpc
@@ -35,7 +38,7 @@ from smarts.zoo import manager_pb2, manager_pb2_grpc
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_manager_addrs=None, buffer_size=3):
+    def __init__(self, zoo_manager_addrs=None, buffer_size=3, max_workers=4):
         """
         Args:
             zoo_manager_addrs:
@@ -85,17 +88,12 @@ class RemoteAgentBuffer:
             conn["channel"], conn["stub"] = get_manager_channel_stub(conn["address"])
 
         self._buffer_size = buffer_size
-        self._replenish_threadpool = futures.ThreadPoolExecutor()
+        self._replenish_threadpool = futures.ThreadPoolExecutor(max_workers=max_workers)
         self._agent_buffer = [
             self._remote_agent_future() for _ in range(self._buffer_size)
         ]
 
-        atexit.register(self.destroy)
-
     def destroy(self):
-        if atexit:
-            atexit.unregister(self.destroy)
-
         # Teardown any remaining remote agents.
         for remote_agent_future in self._agent_buffer:
             try:
@@ -111,7 +109,7 @@ class RemoteAgentBuffer:
         if self._local_zoo_manager:
             self._zoo_manager_conns[0]["channel"].close()
             self._zoo_manager_conns[0]["process"].terminate()
-            self._zoo_manager_conns[0]["process"].join()
+            self._zoo_manager_conns[0]["process"].wait()
 
     def _build_remote_agent(self, zoo_manager_conns):
         # Get a random zoo manager connection.
@@ -185,9 +183,22 @@ class RemoteAgentBuffer:
 
 
 def spawn_local_zoo_manager(port):
-    manager = Process(target=zoo_manager.serve, args=(port,))
-    manager.start()
-    return manager
+    cmd = [
+        sys.executable,  # Path to the current Python binary.
+        str(
+            (pathlib.Path(__file__).parent.parent / "zoo" / "manager.py")
+            .absolute()
+            .resolve()
+        ),
+        "--port",
+        str(port),
+    ]
+
+    manager = subprocess.Popen(cmd)
+    if manager.poll() == None:
+        return manager
+
+    raise RuntimeError("Zoo manager subprocess is not running.")
 
 
 def get_manager_channel_stub(addr):

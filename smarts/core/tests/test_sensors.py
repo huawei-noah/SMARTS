@@ -30,7 +30,6 @@ from smarts.core.coordinates import Heading, Pose
 from smarts.core.mission_planner import MissionPlanner
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import DrivenPathSensor, WaypointsSensor
-from smarts.core.waypoints import Waypoints
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
@@ -91,7 +90,7 @@ def test_waypoints_sensor(scenarios):
         heading_=Heading(0),
     )
 
-    mission_planner = MissionPlanner(scenario.waypoints, scenario.road_network)
+    mission_planner = MissionPlanner(scenario.road_network)
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
 
@@ -145,7 +144,7 @@ def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
         heading_=Heading(0),
     )
     mission_planner = MissionPlanner(
-        scenario.waypoints, scenario.road_network, AgentBehavior(aggressiveness=3)
+        scenario.road_network, AgentBehavior(aggressiveness=3)
     )
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)
@@ -203,7 +202,7 @@ def test_waypoints_sensor_with_cut_in_task(cut_in_scenarios):
     )
 
     mission_planner = MissionPlanner(
-        scenario.waypoints, scenario.road_network, AgentBehavior(aggressiveness=3)
+        scenario.road_network, AgentBehavior(aggressiveness=3)
     )
     mission = scenario.missions[AGENT_ID]
     mission_planner.plan(mission)

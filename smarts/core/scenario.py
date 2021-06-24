@@ -32,21 +32,22 @@ from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
 
 import numpy as np
+from cached_property import cached_property
 
-from smarts.core.coordinates import Heading
+from smarts.core.coordinates import Heading, BoundingBox
 from smarts.core.data_model import SocialAgent
 from smarts.core.route import ShortestRoute
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import vec_to_radians
-from smarts.core.utils.traffic_history_service import Traffic_history_service
-from smarts.core.waypoints import Waypoints
+from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
 
 
+# XXX: consider using smarts.core.coordinates.Pose for this
 @dataclass(frozen=True)
 class Start:
     position: Tuple[int, int]
@@ -96,9 +97,34 @@ class PositionalGoal(Goal):
         return dist <= self.radius
 
 
-def default_entry_tactic():
+@dataclass
+class TraverseGoal(Goal):
+    """A TraverseGoal is satisfied whenever an Agent-driven vehicle
+    successfully finishes traversing a non-closed (acyclical) map
+    It's a way for the vehicle to exit the simulation successfully,
+    for example, driving across from one side to the other on a
+    straight road and then continuing off the map.  This goal is
+    non-specific about *where* the map is exited, save for that
+    the vehicle must be going the correct direction in its lane
+    just prior to doing so."""
+
+    def __init__(self, road_network: SumoRoadNetwork):
+        super().__init__()
+        self._road_network = road_network
+
+    def is_endless(self):
+        return True
+
+    def is_reached(self, vehicle):
+        return self._road_network.drove_off_map(vehicle.position, vehicle.heading)
+
+
+def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
     return sstudio_types.TrapEntryTactic(
-        wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None
+        wait_to_hijack_limit_s=0,
+        exclusion_prefixes=tuple(),
+        zone=None,
+        default_entry_speed=default_entry_speed,
     )
 
 
@@ -113,6 +139,13 @@ class Via:
 
 
 @dataclass(frozen=True)
+class VehicleSpec:
+    veh_id: str
+    veh_type: str
+    dimensions: BoundingBox
+
+
+@dataclass(frozen=True)
 class Mission:
     start: Start
     goal: Goal
@@ -123,6 +156,8 @@ class Mission:
     entry_tactic: EntryTactic = None
     task: Tuple[CutIn, UTurn] = None
     via: Tuple[Via, ...] = ()
+    # if specified, will use vehicle_spec to build the vehicle (for histories)
+    vehicle_spec: VehicleSpec = None
 
     @property
     def has_fixed_route(self):
@@ -188,17 +223,21 @@ class Scenario:
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
         self._log_dir = self._resolve_log_dir(log_dir)
-
         self._validate_assets_exist()
-        self._road_network = SumoRoadNetwork.from_file(self.net_filepath)
-        self._net_file_hash = file_md5_hash(self.net_filepath)
-        self._waypoints = Waypoints(self._road_network, spacing=1.0)
-        self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
-        self._traffic_history_service = Traffic_history_service(traffic_history)
 
-    @property
-    def mapLocationOffset(self):
-        return self._road_network.netOffset
+        if traffic_history:
+            self._traffic_history = TrafficHistory(traffic_history)
+            default_lane_width = self.traffic_history.lane_width
+        else:
+            self._traffic_history = None
+            default_lane_width = None
+
+        net_file = os.path.join(self._root, "map.net.xml")
+        self._road_network = SumoRoadNetwork.from_file(
+            net_file, default_lane_width=default_lane_width, lanepoint_spacing=1.0
+        )
+        self._net_file_hash = file_md5_hash(self._road_network.net_file)
+        self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
 
     def __repr__(self):
         return f"""Scenario(
@@ -284,7 +323,7 @@ class Scenario:
                 concrete_route,
                 concrete_agent_missions,
                 concrete_social_agents,
-                conrete_traffic_history,
+                concrete_traffic_history,
             ) in product(
                 np.roll(routes, roll_routes, 0),
                 np.roll(agent_missions, roll_agent_missions, 0),
@@ -315,7 +354,7 @@ class Scenario:
                     },
                     social_agents=concrete_social_agents,
                     surface_patches=surface_patches,
-                    traffic_history=conrete_traffic_history,
+                    traffic_history=concrete_traffic_history,
                 )
 
     @staticmethod
@@ -513,28 +552,46 @@ class Scenario:
             bubbles = pickle.load(f)
             return bubbles
 
-    def set_ego_missions(self, ego_mission):
-        self._missions.update(ego_mission)
+    def set_ego_missions(self, ego_missions: dict):
+        self._missions = ego_missions
 
-    def discover_missions_of_traffic_histories(self, vehicle_missions={}):
-        return Traffic_history_service.fetch_agent_missions(
-            self._traffic_history_service.history_file_path,
-            self._root,
-            self.mapLocationOffset,
-        )
+    def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
+        vehicle_missions = {}
+        map_offset = self._road_network.net_offset
+        for row in self._traffic_history.first_seen_times():
+            start_time = float(row[1])
+            pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
+            assert pphs
+            pos_x, pos_y, heading, speed = pphs
+            entry_tactic = default_entry_tactic(speed)
+            v_id = str(row[0])
+            veh_type = self._traffic_history.vehicle_type(v_id)
+            veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(v_id)
+            # missions start from front bumper, but pos is center of vehicle
+            hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
+            vehicle_missions[v_id] = Mission(
+                start=Start(
+                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
+                    Heading(heading),
+                ),
+                entry_tactic=entry_tactic,
+                goal=TraverseGoal(self.road_network),
+                start_time=start_time,
+                vehicle_spec=VehicleSpec(
+                    veh_id=v_id,
+                    veh_type=veh_type,
+                    dimensions=BoundingBox(veh_length, veh_width, veh_height),
+                ),
+            )
+        return vehicle_missions
 
     @staticmethod
-    def discover_traffic_histories(scenario_root):
-        path = os.path.join(scenario_root, "traffic_histories.pkl")
-        if not os.path.exists(path):
-            return []
-
-        traffic_histories = []
-        with open(path, "rb") as f:
-            files = pickle.load(f)
-            traffic_histories = [os.path.join(scenario_root, f) for f in files]
-
-        return traffic_histories
+    def discover_traffic_histories(scenario_root: str):
+        return [
+            entry
+            for entry in os.scandir(scenario_root)
+            if entry.is_file() and entry.path.endswith(".shf")
+        ]
 
     @staticmethod
     def _extract_mission(mission, road_network):
@@ -718,10 +775,6 @@ class Scenario:
         return self._surface_patches
 
     @property
-    def net_filepath(self):
-        return os.path.join(self._root, "map.net.xml")
-
-    @property
     def net_file_hash(self):
         return self._net_file_hash
 
@@ -764,10 +817,6 @@ class Scenario:
         return os.path.join(self._log_dir, f"sumo-{str(uuid.uuid4())[:8]}")
 
     @property
-    def waypoints(self):
-        return self._waypoints
-
-    @property
     def road_network(self):
         return self._road_network
 
@@ -794,16 +843,11 @@ class Scenario:
 
     def _validate_assets_exist(self):
         assert Scenario.is_valid_scenario(self._root)
-
         os.makedirs(self._log_dir, exist_ok=True)
 
     @property
-    def traffic_history_service(self):
-        return self._traffic_history_service
-
-    @traffic_history_service.setter
-    def traffic_history_service(self, traffic_history_service: Traffic_history_service):
-        self._traffic_history_service = traffic_history_service
+    def traffic_history(self):
+        return self._traffic_history
 
     @property
     def scenario_hash(self):
