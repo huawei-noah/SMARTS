@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 This changelog is to adhere to the format given at [keepachangelog](keepachangelog.com/en/1.0.0/) 
 and should maintain [semantic versioning](semver.org).
 
-All text added must be human readable. 
+All text added must be human-readable. 
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
@@ -34,6 +34,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Ensure that `yaw_rate` is always a scalar in `EgoVehicleObservation`.
 - Fixed the internal holes created at sharp turns due to crude map geometry. See issue #900.
 - Fixed an args count error caused by `websocket.on_close()` sending a variable number of args.
+- Fixed the multi-instance display of `envision`. See Issue #784.
 ## Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.
