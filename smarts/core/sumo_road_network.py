@@ -190,7 +190,7 @@ class SumoRoadNetwork(RoadMap):
 
     @property
     def source(self) -> str:
-        """ This is the net file (*.net.xml) that corresponds with our possibly-offset coordinates. """
+        """ This is the net file (\*.net.xml) that corresponds with our possibly-offset coordinates. """
         return self._net_file
 
     @cached_property
