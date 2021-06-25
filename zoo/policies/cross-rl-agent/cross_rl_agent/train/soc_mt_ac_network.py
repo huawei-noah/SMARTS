@@ -24,6 +24,8 @@ import tensorflow as tf
 from config import HyperParameters
 from utils import OU
 
+tf.compat.v1.disable_eager_execution()
+
 
 class SocMtActorNetwork:
     def __init__(self, name):

@@ -27,6 +27,9 @@ import tensorflow as tf
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 
+
+tf.compat.v1.disable_eager_execution()
+
 """ a series of params"""
 
 

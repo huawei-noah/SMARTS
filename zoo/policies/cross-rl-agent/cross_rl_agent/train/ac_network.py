@@ -25,6 +25,9 @@ from config import HyperParameters
 from utils import OU
 
 
+tf.compat.v1.disable_eager_execution()
+
+
 class ActorNetwork:
     def __init__(self, name):
         self.config = HyperParameters()
