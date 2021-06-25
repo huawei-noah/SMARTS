@@ -355,6 +355,8 @@ def _gen_missions(
     with open(output_path, "wb") as f:
         pickle.dump(missions, f)
 
+    return True
+
 
 def _resolve_vias(via: Tuple[types.Via], generator):
     vias = [*via]
