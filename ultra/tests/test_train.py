@@ -137,25 +137,6 @@ class TrainTest(unittest.TestCase):
             self.assertTrue(False)
             ray.shutdown()
 
-    def test_train_baselines(self):
-        """Ensure that all baselines are trainable"""
-        BASELINES = ["bdqn", "dqn", "ppo", "sac", "td3"]
-        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
-        for baseline in BASELINES:
-            try:
-                os.system(
-                    f"python ultra/train.py --policy {baseline} --task 00 --level easy --episodes 1 --eval-episodes 0 "
-                    f"--max-episode-steps 2 --log-dir {log_dir} --headless"
-                )
-            except Exception as err:
-                print(err)
-                self.assertTrue(False)
-
-            if not os.path.exists(log_dir):
-                self.assertTrue(False)
-            else:
-                shutil.rmtree(log_dir)
-
     def test_check_agents_from_pool(self):
         seed = 2
         policy = ""
