@@ -17,6 +17,7 @@ def entrypoint(
         "rate": 1,
     },
     debug=False,
+    aggressiveness=0,
     max_episode_steps=None,
 ):
     from .agent import OpEnAgent

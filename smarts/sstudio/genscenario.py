@@ -267,8 +267,8 @@ def gen_group_laps(
             The amount of laps before finishing
     """
 
-    start_edge_id, start_lane, start_offset = begin
-    end_edge_id, end_lane, end_offset = end
+    start_road_id, start_lane, start_offset = begin
+    end_road_id, end_lane, end_offset = end
 
     missions = []
     for i in range(vehicle_count):
@@ -277,11 +277,11 @@ def gen_group_laps(
             types.LapMission(
                 types.Route(
                     begin=(
-                        start_edge_id,
+                        start_road_id,
                         s_lane,
                         start_offset - grid_offset * i,
                     ),
-                    end=(end_edge_id, (end_lane + i) % used_lanes, end_offset),
+                    end=(end_road_id, (end_lane + i) % used_lanes, end_offset),
                 ),
                 num_laps=num_laps,
                 # route_length=route_length,
@@ -360,8 +360,8 @@ def _resolve_vias(via: Tuple[types.Via], generator):
     vias = [*via]
     for i in range(len(vias)):
         v = vias[i]
-        if isinstance(v.edge_id, types.JunctionEdgeIDResolver):
-            vias[i] = replace(v, edge_id=v.edge_id.to_edge(generator.road_network))
+        if isinstance(v.road_id, types.JunctionEdgeIDResolver):
+            vias[i] = replace(v, road_id=v.road_id.to_edge(generator.road_network))
     return tuple(vias)
 
 
