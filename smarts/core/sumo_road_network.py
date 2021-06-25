@@ -296,63 +296,13 @@ class SumoRoadNetwork(RoadMap):
                 result += oncr.lanes
             return result
 
+        def buffered_shape(self, width: float = 1.0) -> Polygon:
+            return SumoRoadNetwork._buffered_shape(self._sumo_lane.getShape(), width)
+
         @lru_cache(maxsize=8)
         def point_in_lane(self, point: Point) -> bool:
             lane_point = self.to_lane_coord(point)
             return abs(lane_point.t) <= self._width / 2
-
-        @lru_cache(maxsize=8)
-        def center_at_point(self, point: Point) -> Point:
-            offset = self.offset_along_lane(point)
-            return self.from_lane_coord(RefLinePoint(s=offset))
-
-        def width_at_offset(self, offset: float) -> float:
-            return self._width
-
-        @lru_cache(maxsize=8)
-        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            offset = self.offset_along_lane(point)
-            left_edge = RefLanePoint(s=offset, t=self._width / 2)
-            right_edge = RefLanePoint(s=offset, t=-self._width / 2)
-            return (self.from_lane_coord(left_edge), self.from_lane_coord(right_edge))
-
-        @lru_cache(maxsize=8)
-        def vector_at_offset(self, start_offset: float) -> np.ndarray:
-            add_offset = 1
-            end_offset = start_offset + add_offset  # a little further down the lane
-            length = self._sumo_lane.getLength()
-            if end_offset > length + add_offset:
-                self._map._log.warning(
-                    f"Offset={end_offset} goes out further than the end of lane=({self.lane_id}, length={length})"
-                )
-            p1 = self.from_lane_coord(RefLinePoint(s=start_offset))
-            p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
-            return np.array(p2) - np.array(p1)
-
-        @lru_cache(maxsize=8)
-        def target_pose_at_point(self, point: Point) -> Pose:
-            offset = self.offset_along_lane(point)
-            position = self.from_lane_coord(RefLinePoint(s=offset))
-            desired_vector = self.vector_at_offset(offset)
-            orientation = fast_quaternion_from_angle(vec_to_radians(desired_vector[:2]))
-            return Pose(position=position, orientation=orientation)
-
-        @lru_cache(maxsize=8)
-        def to_lane_coord(self, world_point: Point) -> RefLinePoint:
-            s = self.offset_along_lane(point)
-            vector = self.vector_at_offset(s)
-            normal = np.array([-vector[1], vector[0]])
-            center_at_s = self.from_lane_coord(RefLinePoint(s=s))
-            offcenter_vector = np.array(world_point) - center_at_s
-            t_sign = np.sign(np.dot(offcenter_vector, normal))
-            t = np.linalg.norm(offcenter_vector) * t_sign
-            return RefLinePoint(s=u, t=t)
-
-        @lru_cache(maxsize=8)
-        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            shape = self._sumo_lane.getShape(False)
-            x, y = sumolib.geomhelper.positionAtShapeOffset(shape, lane_point.s)
-            return Point(x=x, y=y)
 
         @lru_cache(maxsize=8)
         def offset_along_lane(self, world_point: Point) -> float:
@@ -371,8 +321,33 @@ class SumoRoadNetwork(RoadMap):
                 offset += sumolib.geomhelper.distance(shape[i], shape[i + 1])
             return offset
 
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
-            return SumoRoadNetwork._buffered_shape(self._sumo_lane.getShape(), width)
+        def width_at_offset(self, offset: float) -> float:
+            return self._width
+
+        @lru_cache(maxsize=8)
+        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
+            shape = self._sumo_lane.getShape(False)
+            x, y = sumolib.geomhelper.positionAtShapeOffset(shape, lane_point.s)
+            return Point(x=x, y=y)
+
+        @lru_cache(maxsize=8)
+        def to_lane_coord(self, world_point: Point) -> RefLinePoint:
+            return super().to_lane_coord(world_point)
+
+        @lru_cache(maxsize=8)
+        def center_at_point(self, point: Point) -> Point:
+            return super().center_at_point(point)
+
+        @lru_cache(8)
+        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+            return super().edges_at_point(point)
+
+        def vector_at_offset(self, start_offset: float) -> np.ndarray:
+            return super().vector_at_offset(start_offset)
+
+        @lru_cache(maxsize=8)
+        def target_pose_at_point(self, point: Point) -> Pose:
+            return super().target_pose_at_point(point)
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)

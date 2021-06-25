@@ -22,9 +22,11 @@ from __future__ import (  # to allow for typing to refer to class being defined 
 )
 from typing import NamedTuple, List, Sequence
 
+import numpy as np
 from shapely.geometry import Polygon
 
 from .coordinates import BoundingBox, Point, Pose, RefLinePoint
+from .utils.math import fast_quaternion_from_angle, vec_to_radians
 
 
 # TODO:
@@ -144,40 +146,62 @@ class RoadMap:
         def features(self) -> List[RoadMap.Feature]:
             raise NotImplementedError()
 
-        def point_in_lane(self, point: Point) -> bool:
-            raise NotImplementedError()
-
-        def center_at_point(self, point: Point) -> Point:
-            raise NotImplementedError()
-
-        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            raise NotImplementedError()
-
-        def width_at_offset(self, offset: float) -> float:
-            raise NotImplementedError()
-
-        def vector_at_offset(self, start_offset: float) -> np.ndarray:
-            raise NotImplementedError()
-
-        def target_pose_at_point(self, point: Point) -> Pose:
-            raise NotImplementedError()
-
-        def to_lane_coord(self, world_point: Point) -> RefLinePoint:
-            raise NotImplementedError()
-
-        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            raise NotImplementedError()
-
-        def offset_along_lane(self, world_point: Point) -> float:
-            raise NotImplementedError()
-
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
             raise NotImplementedError()
 
         def buffered_shape(self, width: float = 1.0) -> Polygon:
             raise NotImplementedError()
 
-        # TODO:  neeed to access geometry?  or encapsulate in subclasses?
+        def point_in_lane(self, point: Point) -> bool:
+            raise NotImplementedError()
+
+        def offset_along_lane(self, world_point: Point) -> float:
+            raise NotImplementedError()
+
+        def width_at_offset(self, offset: float) -> float:
+            raise NotImplementedError()
+
+        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
+            raise NotImplementedError()
+
+        ## The next 5 methods are "reference" implementations for convenience.
+        ## Derived classes may want to extend as well as add a cache.
+
+        def to_lane_coord(self, world_point: Point) -> RefLinePoint:
+            s = self.offset_along_lane(point)
+            vector = self.vector_at_offset(s)
+            normal = np.array([-vector[1], vector[0]])
+            center_at_s = self.from_lane_coord(RefLinePoint(s=s))
+            offcenter_vector = np.array(world_point) - center_at_s
+            t_sign = np.sign(np.dot(offcenter_vector, normal))
+            t = np.linalg.norm(offcenter_vector) * t_sign
+            return RefLinePoint(s=u, t=t)
+
+        def center_at_point(self, point: Point) -> Point:
+            offset = self.offset_along_lane(point)
+            return self.from_lane_coord(RefLinePoint(s=offset))
+
+        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+            offset = self.offset_along_lane(point)
+            width = self.width_at_offset(offset)
+            left_edge = RefLanePoint(s=offset, t=width / 2)
+            right_edge = RefLanePoint(s=offset, t=-width / 2)
+            return (self.from_lane_coord(left_edge), self.from_lane_coord(right_edge))
+
+        def vector_at_offset(self, start_offset: float) -> np.ndarray:
+            add_offset = 1  # a little further down the lane
+            end_offset = start_offset + add_offset
+            # assert end_offset <= self.length + add_offset, f"Offset={end_offset} goes out further than the end of lane=({self.lane_id}, length={length})"
+            p1 = self.from_lane_coord(RefLinePoint(s=start_offset))
+            p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
+            return np.array(p2) - np.array(p1)
+
+        def target_pose_at_point(self, point: Point) -> Pose:
+            offset = self.offset_along_lane(point)
+            position = self.from_lane_coord(RefLinePoint(s=offset))
+            desired_vector = self.vector_at_offset(offset)
+            orientation = fast_quaternion_from_angle(vec_to_radians(desired_vector[:2]))
+            return Pose(position=position, orientation=orientation)
 
     class Road:
         """This is akin to a 'road segment' in real life.
