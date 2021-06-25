@@ -30,5 +30,5 @@ setup(
         "cross_rl_agent",
     ],
     include_package_data=True,
-    install_requires=["tensorflow==2.21", "smarts"],
+    install_requires=["tensorflow==2.2.1", "smarts"],
 )
