@@ -77,16 +77,14 @@ jobs:
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           --durations=0 \
+          --forked \
           ./tests/test_adapter.py \
+          ./tests/test_env.py \
           ./tests/test_episode.py \
           ./tests/test_rllib_train.py \
+          ./tests/test_scenarios.py \
           ./tests/test_social_vehicles.py \
           ./tests/test_tune.py
-          pytest -v \
-          --durations=0 \
-          --forked \
-          ./tests/test_env.py \
-          ./tests/test_scenarios.py
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
