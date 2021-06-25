@@ -35,11 +35,10 @@ class ROSDriver:
         with self._state_lock:
             self._latest_state = None
 
-    def setup_ros(self, node_name="SMARTS", namespace="SMARTS", pub_queue_size=10):
+    def setup_ros(self, node_name: str = "SMARTS", namespace: str = "SMARTS", pub_queue_size: int = 10):
         assert not self._publisher
-        rospy.init_node(
-            node_name, anonymous=False
-        )  # enforce only one SMARTS instance per ROS network
+        # enforce only one SMARTS instance per ROS network...
+        rospy.init_node(node_name, anonymous=False)
 
         out_topic = f"{namespace}/entities_out"
         self._publisher = rospy.Publisher(
@@ -64,7 +63,7 @@ class ROSDriver:
     def _reset_callback(self, param):
         self._reset_smarts = param.data
 
-    def _entities_callback(self, entities):
+    def _entities_callback(self, entities: EntitiesStamped):
         # Here we just only keep the latest msg.
         # In the future, we may want to buffer them so that
         # when we update the SMARTS state we can do something clever
@@ -72,7 +71,7 @@ class ROSDriver:
         with self._state_lock:
             self._latest_state = entities
 
-    def _update_smarts_state(self):
+    def _update_smarts_state(self) -> bool:
         with self._state_lock:
             state_to_send = self._latest_state
         if not state_to_send:
@@ -122,10 +121,12 @@ class ROSDriver:
             entity.length = vehicle.dimensions.length
             entity.width = vehicle.dimensions.width
             entity.height = vehicle.dimensions.height
-            ROSDriver._vector_to_xyz(vehicle.pose.position, entity.pose.position)
-            ROSDriver._vector_to_xyzw(vehicle.pose.orientation, entity.pose.orientation)
+            ROSDriver._vector_to_xyz(vehicle.pose.position, entity.pose.pose.position)
+            ROSDriver._vector_to_xyzw(vehicle.pose.orientation, entity.pose.pose.orientation)
             ROSDriver._vector_to_xyz(vehicle.linear_velocity, entity.velocity.linear)
             ROSDriver._vector_to_xyz(vehicle.angular_velocity, entity.velocity.angular)
+            #ROSDriver._vector_to_xyz(vehicle.linear_acceleration, entity.acceleration.linear)
+            #ROSDriver._vector_to_xyz(vehicle.angular_acceleration, entity.acceleration.angular)
             # TODO:  done, events, rewards
             entities.entities.append(entity)
         self._publisher.publish(entities)
