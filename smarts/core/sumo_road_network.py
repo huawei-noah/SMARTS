@@ -115,7 +115,7 @@ class SumoRoadNetwork(RoadMap):
         return os.path.join(net_file_folder, cls.shifted_net_file_name)
 
     @classmethod
-    @cached_property
+    @lru_cache(maxsize=1)
     def _shift_coordinates(cls, net_file_path, shifted_path):
         assert shifted_path != net_file_path
         logger = logging.getLogger(cls.__name__)
