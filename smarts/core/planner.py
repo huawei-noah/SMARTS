@@ -51,17 +51,6 @@ class Waypoint:
     speed_limit: float  # Lane speed in m/s
     lane_index: int  # Index of the lane this lanepoint is over. 0 is the outer(right) most lane
 
-    @classmethod
-    def from_pose_in_lane(cls, pos: np.ndarray, heading: Heading, lane: RoadMap.Lane):
-        return cls(
-            pos=pos,
-            heading=heading,
-            lane_width=lane.width,
-            speed_limit=lane.speed_limit,
-            lane_id=lane.lane_id,
-            lane_index=lane.index,
-        )
-
     def __eq__(self, other):
         if not isinstance(other, Waypoint):
             return False

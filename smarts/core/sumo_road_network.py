@@ -190,7 +190,7 @@ class SumoRoadNetwork(RoadMap):
 
     @property
     def source(self) -> str:
-        """ This is the net file (\*.net.xml) that corresponds with our possibly-offset coordinates. """
+        """ This is the net.xml file that corresponds with our possibly-offset coordinates. """
         return self._net_file
 
     @cached_property
@@ -267,7 +267,7 @@ class SumoRoadNetwork(RoadMap):
             return self._sumo_lane.getLength()
 
         @cached_property
-        def width(self) -> float:
+        def _width(self) -> float:
             return self._sumo_lane.getWidth()
 
         @property
@@ -299,20 +299,21 @@ class SumoRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def point_in_lane(self, point: Point) -> bool:
             lane_point = self.to_lane_coord(point)
-            width = self._sumo_lane.getWidth()
-            return abs(lane_point.t) <= width / 2
+            return abs(lane_point.t) <= self._width / 2
 
         @lru_cache(maxsize=8)
         def center_at_point(self, point: Point) -> Point:
             offset = self.offset_along_lane(point)
             return self.from_lane_coord(RefLinePoint(s=offset))
 
+        def width_at_offset(self, offset: float) -> float:
+            return self._width
+
         @lru_cache(maxsize=8)
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             offset = self.offset_along_lane(point)
-            width = self._sumo_lane.getWidth()
-            left_edge = RefLanePoint(s=offset, t=width / 2)
-            right_edge = RefLanePoint(s=offset, t=-width / 2)
+            left_edge = RefLanePoint(s=offset, t=self._width / 2)
+            right_edge = RefLanePoint(s=offset, t=-self._width / 2)
             return (self.from_lane_coord(left_edge), self.from_lane_coord(right_edge))
 
         @lru_cache(maxsize=8)
@@ -521,13 +522,9 @@ class SumoRoadNetwork(RoadMap):
     @lru_cache(maxsize=16)
     def road_with_point(self, point: Point) -> RoadMap.Road:
         radius = max(5, 2 * self._default_lane_width)
-        x, y = point[:2]
-        candidate_lanes = self._graph.getNeighboringLanes(
-            x, y, r=radius, includeJunctions=True, allowFallback=False
-        )
-        for nl, dist in candidate_lanes:
-            if dist < 0.5 * nl.getWidth() + 1e-1:
-                return self.road_by_id(nl.getEdge().getID())
+        for nl, dist in self.nearest_lanes(point, radius):
+            if dist < 0.5 * nl._width + 1e-1:
+                return nl.road
         return None
 
     class Route(RoadMap.Route):
@@ -550,7 +547,7 @@ class SumoRoadNetwork(RoadMap):
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [
-                road.buffered_shape(sum([lane.width for lane in road.lanes]))
+                road.buffered_shape(sum([lane._width for lane in road.lanes]))
                 for road in self.roads
             ]
 

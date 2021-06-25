@@ -524,7 +524,7 @@ class MapZone(Zone):
             lane_shape: Polygon, lane: RoadMap.Lane, offset: float
         ):
             # XXX: generalize to n-dim
-            width_2 = lane.width
+            width_2 = lane.width_at_offset(offset)
             point = np.array(lane.from_lane_coord(RefLinePoint(offset)))[:2]
             lane_vec = lane.vector_at_offset(offset)[:2]
 
@@ -561,10 +561,12 @@ class MapZone(Zone):
 
             assert geom_length > 0  # Geom length is negative
 
-            lane_shape = lane.buffered_shape(lane.width + 0.3)
-
             lane_offset = resolve_offset(offset, geom_length, lane_length)
             lane_offset += buffer_from_ends
+
+            width = lane.width_at_offset(lane_offset)
+            lane_shape = lane.buffered_shape(width + 0.3)
+
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
 

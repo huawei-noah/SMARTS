@@ -130,6 +130,7 @@ class TraverseGoal(Goal):
         if not nearest_lanes:
             return False  # we can't tell anything here
         nl, dist = nearest_lanes[0]
+        # TODO STEVE:  nl.width_at_offset!
         if nl.outgoing_lanes or dist < 0.5 * nl.width + 1e-1:
             return False  # the last lane it was in was not a dead-end, or it's still in a lane
         end_node = nl.road.getToNode()  # TODO SUMO road_network
@@ -695,8 +696,9 @@ class Scenario:
             for via in vias:
                 road = road_map.road_by_id(via.road_id)
                 lane = road.lane_at_index(via.lane_index)  # XXX: bidirectional roads?
+                lane_width = lane.width_at_offset(via.lane_offset)
                 hit_distance = (
-                    via.hit_distance if via.hit_distance > 0 else lane.width / 2
+                    via.hit_distance if via.hit_distance > 0 else lane_width / 2
                 )
                 via_position = lane.from_lane_coord(RefLinePoint(via.lane_offset))
 

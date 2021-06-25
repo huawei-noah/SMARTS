@@ -287,7 +287,7 @@ class SumoPlanner(Planner):
             )
             ref_lanepoints_coordinates["lane_id"].append(lanepoint.lp.lane.lane_id)
             ref_lanepoints_coordinates["lane_index"].append(lanepoint.lp.lane.index)
-            ref_lanepoints_coordinates["lane_width"].append(lanepoint.lp.lane.width)
+            ref_lanepoints_coordinates["lane_width"].append(lanepoint.lp.lane._width)
             ref_lanepoints_coordinates["speed_limit"].append(
                 lanepoint.lp.lane.speed_limit
             )
@@ -322,7 +322,14 @@ class SumoPlanner(Planner):
         if len(cumulative_path_dist) <= 1:
             lp = path[0].lp
             return [
-                Waypoint.from_pose_in_lane(lp.pose.position, lp.pose.heading, lp.lane)
+                Waypoint(
+                    pos=lp.pose.position,
+                    heading=lp.pose.heading,
+                    lane_width=lp.lane._width,
+                    speed_limit=lp.lane.speed_limit,
+                    lane_id=lp.lane.lane_id,
+                    lane_index=lp.lane.index,
+                )
             ]
 
         evenly_spaced_cumulative_path_dist = np.linspace(

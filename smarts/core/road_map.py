@@ -129,10 +129,6 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def width(self) -> float:
-            raise NotImplementedError()
-
-        @property
         def in_junction(self) -> bool:
             raise NotImplementedError()
 
@@ -155,6 +151,9 @@ class RoadMap:
             raise NotImplementedError()
 
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+            raise NotImplementedError()
+
+        def width_at_offset(self, offset: float) -> float:
             raise NotImplementedError()
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:

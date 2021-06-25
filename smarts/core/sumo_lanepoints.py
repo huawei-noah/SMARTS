@@ -231,7 +231,7 @@ class SumoLanePoints:
 
             heading = vec_to_radians(lane_seg_vec)
             orientation = fast_quaternion_from_angle(heading)
-            lane_width = lerp(shape_lp.lp.lane.width, next_shape_lp.lp.lane.width, p)
+            lane_width = lerp(shape_lp.lp.lane._width, next_shape_lp.lp.lane._width, p)
             speed_limit = lerp(
                 shape_lp.lp.lane.speed_limit, next_shape_lp.lp.lane.speed_limit, p
             )
