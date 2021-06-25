@@ -32,18 +32,6 @@ def test_multi_instance_example():
     )
 
 
-def test_rayless_multi_instance_example():
-    main = importlib.import_module("examples.rayless_multi_instance").main
-    main(
-        training_scenarios=["scenarios/loop"],
-        evaluation_scenarios=["scenarios/loop"],
-        sim_name=None,
-        headless=True,
-        num_episodes=1,
-        seed=42,
-    )
-
-
 def test_rllib_example():
     main = importlib.import_module("examples.rllib").main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
