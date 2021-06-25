@@ -70,7 +70,7 @@ process
 - Running imitation learning will now create a cached `history_mission.pkl` file in scenario folder that stores 
 the missions for all agents.
 - Added ijson as a dependency. 
-- Added `cached_property` as a dependency.
+- Added `cached-property` as a dependency.
 ### Changed
 - Lowered CPU cost of waypoint generation. This will result in a small increase in memory usage.
 - Set the number of processes used in `make test` to ignore 2 CPUs if possible.

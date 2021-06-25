@@ -72,11 +72,11 @@ class RandomRouteGenerator:
     def __next__(self):
         """Provides the next random route."""
 
-        def random_lane_index(road_id):
+        def random_lane_index(road_id: str) -> int:
             lanes = self._road_map.road_by_id(road_id).lanes
             return random.randint(0, len(lanes) - 1)
 
-        def random_lane_offset(road_id, lane_idx):
+        def random_lane_offset(road_id: str, lane_idx: int) -> float:
             lane = self._road_map.road_by_id(road_id).lanes[lane_idx]
             return random.uniform(0, lane.length)
 
@@ -88,17 +88,17 @@ class RandomRouteGenerator:
             if len(route.roads) < 2:
                 continue
 
-            start_road_id = route.roads[0]
+            start_road_id = route.roads[0].road_id
             start_lane_index = random_lane_index(start_road_id)
             start_lane_offset = random_lane_offset(start_road_id, start_lane_index)
 
-            end_road_id = route.roads[-1]
+            end_road_id = route.roads[-1].road_id
             end_lane_index = random_lane_index(end_road_id)
             end_lane_offset = random_lane_offset(end_road_id, end_lane_index)
 
             return types.Route(
                 begin=(start_road_id, start_lane_index, start_lane_offset),
-                via=tuple(route.roads[1:-1]),
+                via=tuple(road.road_id for road in route.roads[1:-1]),
                 end=(end_road_id, end_lane_index, end_lane_offset),
             )
 

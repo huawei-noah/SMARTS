@@ -93,8 +93,8 @@ def gen_scenario(
     if scenario.social_agent_missions:
         for name, (actors, missions) in scenario.social_agent_missions.items():
             if not (
-                isinstance(actors, collections.Sequence)
-                and isinstance(missions, collections.Sequence)
+                isinstance(actors, collections.abc.Sequence)
+                and isinstance(missions, collections.abc.Sequence)
             ):
                 raise ValueError("Actors and missions must be sequences")
 
@@ -173,7 +173,7 @@ def gen_social_agent_missions(
 
     # For backwards compatibility we support both a single value and a sequence
     actors = social_agent_actor
-    if not isinstance(actors, collections.Sequence):
+    if not isinstance(actors, collections.abc.Sequence):
         actors = [actors]
 
     # This doesn't support BoidAgentActor. Here we make that explicit
