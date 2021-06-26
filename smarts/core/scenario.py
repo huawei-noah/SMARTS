@@ -36,6 +36,7 @@ from cached_property import cached_property
 
 from smarts.core.coordinates import Heading, Dimensions, Point, RefLinePoint
 from smarts.core.data_model import SocialAgent
+from smarts.core.default_map_factory import create_road_map
 from smarts.core.road_map import RoadMap
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_history import TrafficHistory
@@ -260,7 +261,6 @@ class Scenario:
         log_dir: str = None,
         surface_patches: list = None,
         traffic_history: str = None,
-        map_source: str = None,
     ):
 
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -282,10 +282,9 @@ class Scenario:
             self._traffic_history = None
             default_lane_width = None
 
-        self._road_map = Scenario.create_road_map(
-            self._root, map_source, 1.0, default_lane_width
+        self._road_map, self._road_map_hash = create_road_map(
+            self._root, 1.0, default_lane_width
         )
-        self._road_map_hash = file_md5_hash(self._road_map.source)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
 
     def __repr__(self):
@@ -294,27 +293,6 @@ class Scenario:
   _route={self._route},
   _missions={self._missions},
 )"""
-
-    @staticmethod
-    def create_road_map(
-        scenario_root: str = None,
-        map_source: str = None,
-        lanepoint_spacing: float = None,
-        default_lane_width: float = None,
-    ):
-        # TODO SUMO: use config file in scenario_root?  look for map file there?
-        if not map_source or os.path.exists(map_source):
-            # TODO: look at other supported file extensions too
-            if not map_source:
-                map_source = os.path.join(scenario_root, "map.net.xml")
-            road_map = SumoRoadNetwork.from_file(
-                map_source,
-                default_lane_width=default_lane_width,
-                lanepoint_spacing=lanepoint_spacing,
-            )
-            return road_map
-        else:
-            raise NotImplementedError()  # TODO: Huawei maps
 
     @staticmethod
     def scenario_variations(
@@ -447,7 +425,7 @@ class Scenario:
         len(missions)`. In this case a list of one dictionary is returned.
         """
 
-        road_map = Scenario.create_road_map(scenario_root)
+        road_map, _ = create_road_map(scenario_root)
 
         missions = []
         missions_file = os.path.join(scenario_root, "missions.pkl")
@@ -513,7 +491,7 @@ class Scenario:
         scenario_root = (
             scenario.root_filepath if isinstance(scenario, Scenario) else scenario
         )
-        road_map = Scenario.create_road_map(scenario_root)
+        road_map, _ = create_road_map(scenario_root)
 
         social_agents_path = os.path.join(scenario_root, "social_agents")
         if not os.path.exists(social_agents_path):
@@ -807,7 +785,7 @@ class Scenario:
                 return False
 
         # make sure we can load the map
-        road_map = Scenario.create_road_map(scenario_root)
+        road_map, _ = create_road_map(scenario_root)
         if road_map is None:
             return False
 

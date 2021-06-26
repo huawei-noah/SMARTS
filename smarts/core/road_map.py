@@ -30,8 +30,8 @@ from .utils.math import fast_quaternion_from_angle, vec_to_radians
 
 
 # TODO:
-# - also consider Esri and Google Maps
-# - look at how Huawei and OpenDrive encode lane direction
+# - also consider Esri, QGIS and Google Maps formats
+# - look at how OpenDrive encodes lane direction
 #    -https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09
 
 
@@ -282,7 +282,6 @@ class RoadMap:
         @property
         def geometry(self) -> List[Point]:
             raise NotImplementedError()
-
 
     class Route:
         @property
