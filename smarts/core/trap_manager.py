@@ -131,7 +131,7 @@ class TrapManager:
             if trap is None:
                 continue
 
-            trap.step_trigger(sim.timestep_sec)
+            trap.step_trigger(sim.last_dt)
 
             if not trap.ready:
                 continue

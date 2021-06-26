@@ -88,6 +88,9 @@ class SumoTrafficSimulation(Provider):
         self._debug = debug
         self._scenario = None
         self._log_file = None
+        assert (
+            time_resolution
+        ), "cannot use SUMO traffic simulation with variable time deltas"
         self._time_resolution = time_resolution
         self._headless = headless
         self._cumulative_sim_seconds = 0

@@ -127,6 +127,8 @@ class Vias:
 
 @dataclass
 class Observation:
+    step_count: int
+    elapsed_sim_time: float
     events: Events
     ego_vehicle_state: EgoVehicleObservation
     neighborhood_vehicle_states: List[VehicleObservation]
@@ -303,6 +305,8 @@ class Sensors:
 
         return (
             Observation(
+                step_count=sim.step_count,
+                elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle_observation,
                 neighborhood_vehicle_states=neighborhood_vehicles,
@@ -1027,7 +1031,7 @@ class RoadWaypointsSensor(Sensor):
 
 class AccelerometerSensor(Sensor):
     def __init__(self, vehicle, sim):
-        self._dt = sim.timestep_sec
+        self._dt = sim.last_dt
         self.linear_velocities = deque(maxlen=3)
         self.angular_velocities = deque(maxlen=3)
 

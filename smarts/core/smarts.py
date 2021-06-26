@@ -61,6 +61,9 @@ from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
 
 
+MAX_PYBULLET_FREQ = 240
+
+
 class SMARTSNotSetupError(Exception):
     pass
 
@@ -72,10 +75,10 @@ class SMARTS:
         traffic_sim: SumoTrafficSimulation,
         envision: EnvisionClient = None,
         visdom: VisdomClient = None,
-        timestep_sec=0.1,
-        reset_agents_only=False,
+        fixed_timestep_sec: float = None,
+        reset_agents_only: bool = False,
         zoo_addrs=None,
-        external_state_access=False,
+        external_state_access: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim_id = Id.new("smarts")
@@ -84,8 +87,6 @@ class SMARTS:
         self._renderer = None
         self._envision: EnvisionClient = envision
         self._visdom: VisdomClient = visdom
-        self._timestep_sec = timestep_sec
-        self._rounder = rounder_for_dt(timestep_sec)
         self._traffic_sim = traffic_sim
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
@@ -102,8 +103,14 @@ class SMARTS:
         self._imitation_learning_mode = False
 
         self._external_state_access = external_state_access
+
+        assert fixed_timestep_sec is None or fixed_timestep_sec > 0
+        self.fixed_timestep_sec = fixed_timestep_sec
+        self._last_dt = fixed_timestep_sec
+
         self._elapsed_sim_time = 0
         self._total_sim_time = 0
+        self._setep_count = 0
 
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
@@ -132,14 +139,17 @@ class SMARTS:
 
         self._ground_bullet_id = None
 
-    def external_state_update(
-        self, external_time: float, vehicle_states: Sequence[VehicleState]
-    ):
+    def external_state_update(self, vehicle_states: Sequence[VehicleState]):
         if not self._external_state_access:
             raise Exception(
                 "Cannot directly update SMARTS states without initializing with `external_state_access=True`."
             )
-        # TODO update sim_time
+        # Ideally, for better precision, we might set the external state and then step pybullet
+        # by an appropriate amount based on the difference between the next step's time_delta_since_last_step
+        # and this update's time_delta_since_last_step, since we can't assume external state is updated
+        # in sync with our steps.  (The bigger this difference, the worse things are.)
+        # However, this is very complicated because we we've *already* simulated this time period,
+        # so we just "eat it".
         for state in vehicle_states:
             vehicle = self._vehicle_index.vehicle_by_id(state.vehicle_id)
             vehicle.update_state(state)
@@ -155,12 +165,16 @@ class SMARTS:
         # TODO: include done, events and reward (if agent)?
         return result
 
-    def step(self, agent_actions):
+    def step(self, agent_actions, time_delta_since_last_step: float = None):
+        """Note the time_delta_since_last_step param is in (nominal) seconds."""
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
+        assert (
+            not self._fixed_timestep_sec or not time_delta_since_last_step
+        ), "cannot switch from fixed- to variable-time steps mid-simulation"
 
         try:
-            return self._step(agent_actions)
+            return self._step(agent_actions, time_delta_since_last_step)
         except (KeyboardInterrupt, SystemExit):
             # ensure we clean-up if the user exits the simulation
             self._log.info("Simulation was interrupted by the user.")
@@ -181,7 +195,7 @@ class SMARTS:
                     f"Attempted to perform actions on non-existing agent, {agent_id} "
                 )
 
-    def _step(self, agent_actions):
+    def _step(self, agent_actions, time_delta_since_last_step: float = None):
         """Steps through the simulation while applying the given agent actions.
         Returns the observations, rewards, and done signals.
         """
@@ -204,9 +218,11 @@ class SMARTS:
         # consistently with one step of latencey and the agent will observe consistent
         # data.
 
-        # The following is simultated to happen in dt seconds.
-        # This isn't a realtime simulation though.
-        dt = self._timestep_sec
+        # 0. Advance the simulation clock.
+        # It's been this long since our last step.
+        self._last_dt = time_delta_since_last_step or self._fixed_timestep_sec or 0.1
+        if self._step_count > 0:
+            self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + dt)
 
         # 1. Fetch agent actions
         all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
@@ -255,8 +271,7 @@ class SMARTS:
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
 
-        # 8. Advance the simulation clock.
-        self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + dt)
+        self._step_count += 1
 
         return observations, rewards, dones, extras
 
@@ -321,6 +336,7 @@ class SMARTS:
 
         self._total_sim_time += self._elapsed_sim_time
         self._elapsed_sim_time = 0
+        self._step_count = 0
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
         observations, _, _, _ = self._agent_manager.observe(self)
@@ -371,9 +387,17 @@ class SMARTS:
         # Attempting to get around this we set the number of substeps so that
         # timestep * substeps = 240Hz. Bullet (C++) does something to this effect as
         # well (https://git.io/Jvf0M), but PyBullet does not expose it.
+        # But if our timestep is variable (due to being externally driven)
+        # then we will step pybullet multiple times ourselves as necessary
+        # to account for the time delta on each SMARTS step.
+        self._pybullet_period = (
+            self._fixed_timestep_sec
+            if self._fixed_timestep_sec
+            else 1 / MAX_PYBULLET_FREQ
+        )
         client.setPhysicsEngineParameter(
-            fixedTimeStep=self._timestep_sec,
-            numSubSteps=int(self._timestep_sec * 240),
+            fixedTimeStep=self._pybullet_period,
+            numSubSteps=int(self._pybullet_period * MAX_PYBULLET_FREQ),
             numSolverIterations=10,
             solverResidualThreshold=0.001,
             # warmStartingFactor=0.99
@@ -500,7 +524,11 @@ class SMARTS:
         return self._envision
 
     @property
-    def elapsed_sim_time(self):
+    def step_count(self) -> int:
+        return self._step_count
+
+    @property
+    def elapsed_sim_time(self) -> float:
         return self._elapsed_sim_time
 
     def teardown_agents_without_vehicles(self, agent_ids: Sequence):
@@ -571,7 +599,7 @@ class SMARTS:
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                     assert isinstance(pybullet_vehicle.chassis, BoxChassis)
                     pybullet_vehicle.control(
-                        pose=vehicle.pose, speed=vehicle.speed, dt=self._timestep_sec
+                        pose=vehicle.pose, speed=vehicle.speed, dt=self._last_dt
                     )
             else:
                 # This vehicle is a social vehicle
@@ -591,13 +619,14 @@ class SMARTS:
                     )
                 # Update the social vehicle avatar to match the vehicle state
                 social_vehicle.control(
-                    pose=vehicle.pose, speed=vehicle.speed, dt=self._timestep_sec
+                    pose=vehicle.pose, speed=vehicle.speed, dt=self._last_dt
                 )
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:
         self._perform_agent_actions(agent_actions)
 
-        self._bullet_client.stepSimulation()
+        for _ in range(round(self._last_dt / self._pybullet_period)):
+            self._bullet_client.stepSimulation()
 
         self._process_collisions()
 
@@ -795,8 +824,32 @@ class SMARTS:
         return self._traffic_sim
 
     @property
-    def timestep_sec(self):
-        return self._timestep_sec
+    def timestep_sec(self) -> float:
+        warnings.warn(
+            "SMARTS timestep_sec property has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        return self.fixed_timestep_sec
+
+    @property
+    def fixed_timestep_sec(self) -> float:
+        # May be None if time deltas are externally driven
+        return self._fixed_timestep_sec
+
+    @fixed_timestep_sec.setter
+    def fixed_timestep_sec(self, fixed_timestep_sec: float):
+        if not fixed_timestep_sec:
+            # This is the fastest we could possibly run given constraints from pybullet
+            self._rounder = rounder_for_dt(round(1 / MAX_PYBULLET_FREQ, 6))
+        else:
+            self._rounder = rounder_for_dt(fixed_timestep_sec)
+        self._fixed_timestep_sec = fixed_timestep_sec
+        self._is_setup = False  # need to re-setup pybullet
+
+    @property
+    def last_dt(self) -> float:
+        assert self._last_dt > 0
+        return self._last_dt
 
     @property
     def road_stiffness(self):

@@ -80,6 +80,7 @@ class ROSDriver:
     def _update_smarts_state(self) -> bool:
         with self._state_lock:
             state_to_send = self._latest_state
+            self._latest_state = None  # ensure we don't resend same one later
         if not state_to_send:
             rospy.loginfo(
                 f"No messages received on topic {self._state_topic} yet to send to SMARTS."
@@ -105,9 +106,8 @@ class ROSDriver:
                 angular_velocity=angular_velocity,
             )
             entities.append(vs)
-        # TODO sim_time / real_time, etc.
-        sim_time = time.time()
-        self._smarts.external_state_update(sim_time, entities)
+        # time_delta_since_last_step = (rospy.get_rostime() - state_to_send.header.stamp).to_sec()
+        self._smarts.external_state_update(entities)
         return True
 
     @staticmethod
@@ -121,6 +121,7 @@ class ROSDriver:
     def _publish_state(self):
         smarts_state = self._smarts.external_state_query()
         entities = EntitiesStamped()
+        entities.header.stamp = rospy.Time.now()
         for vehicle in smarts_state:
             entity = EntityState()
             entity.entity_id = vehicle.vehicle_id
@@ -154,7 +155,13 @@ class ROSDriver:
         while not rospy.is_shutdown():
             self._check_reset()
             self._update_smarts_state()
-            self._smarts.step({})
+            time_delta = (
+                (rospy.get_time() - self._last_step_time)
+                if self._last_step_time
+                else None
+            )
+            self._smarts.step({}, time_delta)
+            self._last_step_time = rospy.get_ime()
             self._publish_state()
         self._reset()
 

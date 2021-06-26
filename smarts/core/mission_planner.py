@@ -283,8 +283,8 @@ class MissionPlanner:
 
         velocity_vector = np.array(
             [
-                (-self._prev_kyber_x_position + target_position[0]) / sim.timestep_sec,
-                (-self._prev_kyber_y_position + target_position[1]) / sim.timestep_sec,
+                (-self._prev_kyber_x_position + target_position[0]) / sim.last_dt,
+                (-self._prev_kyber_y_position + target_position[1]) / sim.last_dt,
             ]
         )
         target_velocity = np.dot(

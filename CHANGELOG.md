@@ -16,6 +16,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a new utility experiment file `cli/run.py` to replace the context given by `supervisord.conf`. See PR #911.
 - Added `scl zoo install` command to install zoo policy agents at the specified paths. See Issue #603.
 - Added a `FrameStack` wrapper which returns stacked observations for each agent.
+- Added a ROS wrapper/driver example to wrap SMARTS in a ROS (v1) node.
+- Added the ability to pass an optional `time_delta_since_last_step` to SMARTS' `step()` function
+  to support variable timesteps for co-simulation.
+- Added the ability to externally update SMARTS state via a new privileged-access method `external_state_update()`.
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space. See Issue #844.
 - Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266. 
@@ -25,6 +29,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Allow custom sizes for agent vehicles in history traffic missions.
 - Refactored the top level of the SMARTS module to make it easier to navigate the project and understand its structure. See issue #776.
 - Updated the `Tensorflow` version to `2.2.1` for rl-agent and bump up its version to `1.0`. See Issue #211.
+### Deprecated
+– The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
+  for clarity since we are adding the ability to have variable time steps.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 - Fixed a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
@@ -103,3 +110,4 @@ using the original coordinate system.  See Issue #325.
 – Note any features that have been deleted and removed from the software.
 ### Security
 – Invite users to upgrade and avoid fixed software vulnerabilities.
+

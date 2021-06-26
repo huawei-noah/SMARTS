@@ -24,9 +24,9 @@ class ReplayCheckerAgent(Agent):
     This agent checks that the action space is working 'as expected'.
     In actual use, this would be replaced by an agent based on a trained Imitation Learning model."""
 
-    def __init__(self, timestep_sec: float):
-        self._timestep_sec = timestep_sec
-        self._rounder = rounder_for_dt(timestep_sec)
+    def __init__(self, fixed_timestep_sec: float):
+        self._fixed_timestep_sec = fixed_timestep_sec
+        self._rounder = rounder_for_dt(fixed_timestep_sec)
 
     def load_data_for_vehicle(self, vehicle_id: str, scenario: Scenario):
         self._vehicle_id = vehicle_id  # for debugging
@@ -66,7 +66,7 @@ class ReplayCheckerAgent(Agent):
         ), f'vid={self._vehicle_id}: {cur_state.position[1]} != {exp["ego_pos"][1]} @ {obs_time}'
 
         # Then get and return the next set of control inputs
-        atime = self._rounder(obs_time + self._timestep_sec)
+        atime = self._rounder(obs_time + self._fixed_timestep_sec)
         data = self._data.get(atime, {"acceleration": 0, "angular_velocity": 0})
         return (data["acceleration"], data["angular_velocity"])
 
@@ -92,7 +92,7 @@ def main(
         envision=None if headless else Envision(),
     )
     random_seed(seed)
-    rounder = rounder_for_dt(smarts.timestep_sec)
+    rounder = rounder_for_dt(smarts.fixed_timestep_sec)
     traffic_history_provider = smarts.get_provider_by_type(TrafficHistoryProvider)
     assert traffic_history_provider
 
@@ -122,7 +122,7 @@ def main(
         agent_spec = AgentSpec(
             interface=AgentInterface.from_type(AgentType.Imitation),
             agent_builder=ReplayCheckerAgent,
-            agent_params=smarts.timestep_sec,
+            agent_params=smarts.fixed_timestep_sec,
         )
 
         for episode in range(episodes):
