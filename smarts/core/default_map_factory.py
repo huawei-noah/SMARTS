@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import os
+from typing import Tuple
 from smarts.core.road_map import RoadMap
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.file import file_md5_hash
@@ -46,7 +47,7 @@ def create_road_map(
     assert map_source, "a map source must be specified"
 
     map_path = map_source
-    if not os.path.exists(map_path):
+    if not os.path.isfile(map_path):
         map_path = os.path.join(map_source, "map.net.xml")
         if not os.path.exists(map_path):
             raise Exception(f"Unable to find map in map_source={map_source}.")
