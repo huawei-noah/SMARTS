@@ -27,8 +27,7 @@ import numpy as np
 from shapely.geometry import Point, Polygon
 
 from smarts.core.coordinates import Point as MapPoint
-from smarts.core.planner import Mission
-from smarts.core.scenario import Start, default_entry_tactic
+from smarts.core.planner import default_entry_tactic, Mission, Start
 from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic

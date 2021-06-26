@@ -31,7 +31,8 @@ from smarts.core.agent_interface import (
     NeighborhoodVehicles,
 )
 from smarts.core.coordinates import Heading
-from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
+from smarts.core.planner import EndlessGoal, Mission, Start
+from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 

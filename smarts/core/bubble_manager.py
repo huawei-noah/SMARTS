@@ -30,9 +30,8 @@ from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
 
 from smarts.core.data_model import SocialAgent
-from smarts.core.planner import Mission, Start
+from smarts.core.planner import Mission, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
-from smarts.core.scenario import PositionalGoal
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
 from smarts.core.vehicle import Vehicle, VehicleState

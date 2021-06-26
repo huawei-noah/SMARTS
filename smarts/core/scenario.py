@@ -25,7 +25,6 @@ import os
 import pickle
 import random
 import uuid
-from dataclasses import dataclass, field
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
@@ -34,9 +33,21 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.coordinates import Heading, Dimensions, Point, RefLinePoint
+from smarts.core.coordinates import Heading, Dimensions, RefLinePoint
 from smarts.core.data_model import SocialAgent
-from smarts.core.default_map_factory import create_road_map
+from smarts.core.default_map_factory import create_road_map, create_map_planner
+from smarts.core.planner import (
+    default_entry_tactic,
+    EndlessGoal,
+    LapMission,
+    Mission,
+    Planner,
+    PositionalGoal,
+    Start,
+    TraverseGoal,
+    VehicleSpec,
+    Via,
+)
 from smarts.core.road_map import RoadMap
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_history import TrafficHistory
@@ -44,199 +55,7 @@ from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, pa
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic
 from smarts.sstudio.types import Via as SSVia
-
-
-# XXX: consider using smarts.core.coordinates.Pose for this
-@dataclass(frozen=True)
-class Start:
-    position: Tuple[int, int]
-    heading: Heading
-
-    @property
-    def point(self):
-        return Point(*self.position)
-
-
-@dataclass(frozen=True)
-class Goal:
-    def is_endless(self):
-        return True
-
-    def is_reached(self, vehicle):
-        return False
-
-
-@dataclass(frozen=True)
-class EndlessGoal(Goal):
-    pass
-
-
-@dataclass(frozen=True)
-class PositionalGoal(Goal):
-    position: Point
-    # target_heading: Heading
-    radius: float
-
-    @classmethod
-    def fromedge(cls, road_id, road_map, lane_index=0, lane_offset=None, radius=1):
-        road = road_map.road_by_id(road_id)
-        lane = road.lane_at_index(lane_index)  # XXX: bidirectional roads?
-
-        if lane_offset is None:
-            # Default to the midpoint safely ensuring we are on the lane and not
-            # bordering another
-            lane_offset = lane.length * 0.5
-
-        position = lane.from_lane_coord(RefLinePoint(lane_offset))
-        return cls(position=position, radius=radius)
-
-    def is_endless(self):
-        return False
-
-    def is_reached(self, vehicle):
-        a = vehicle.position
-        b = self.position
-        dist = math.sqrt((a[0] - b.x) ** 2 + (a[1] - b.y) ** 2)
-        return dist <= self.radius
-
-
-@dataclass
-class TraverseGoal(Goal):
-    """A TraverseGoal is satisfied whenever an Agent-driven vehicle
-    successfully finishes traversing a non-closed (acyclical) map
-    It's a way for the vehicle to exit the simulation successfully,
-    for example, driving across from one side to the other on a
-    straight road and then continuing off the map.  This goal is
-    non-specific about *where* the map is exited, save for that
-    the vehicle must be going the correct direction in its lane
-    just prior to doing so."""
-
-    def __init__(self, road_map: RoadMap):
-        super().__init__()
-        self._road_map = road_map
-
-    def is_endless(self):
-        return True
-
-    def is_reached(self, vehicle):
-        return self._drove_off_map(vehicle.position, vehicle.heading)
-
-    def _drove_off_map(
-        self, veh_position: Tuple[float, float, float], veh_heading: float
-    ) -> bool:
-        # try to determine if the vehicle "exited" the map by driving beyond the end of a dead-end lane.
-        nearest_lanes = self._road_map.nearest_lanes(veh_position)
-        if not nearest_lanes:
-            return False  # we can't tell anything here
-        nl, dist = nearest_lanes[0]
-        # TODO STEVE:  nl.width_at_offset!
-        if nl.outgoing_lanes or dist < 0.5 * nl.width + 1e-1:
-            return False  # the last lane it was in was not a dead-end, or it's still in a lane
-        end_node = nl.road.getToNode()  # TODO SUMO road_network
-        end_point = end_node.getCoord()
-        dist = math.sqrt(
-            (veh_position[0] - end_point[0]) ** 2
-            + (veh_position[1] - end_point[1]) ** 2
-        )
-        if dist > 2 * nl.width:
-            return False  # it's no where near the end of the lane
-        # now check its heading to ensure it was going in roughly the right direction for this lane
-        end_shape = end_node.getShape()
-        veh_heading %= 2 * math.pi
-        tolerance = math.pi / 4
-        for p in range(1, len(end_shape)):
-            num = end_shape[p][1] - end_shape[p - 1][1]
-            den = end_shape[p][0] - end_shape[p - 1][0]
-            crossing_heading = math.atan(-den / num)
-            if den < 0:
-                crossing_heading += math.pi
-            elif num < 0:
-                crossing_heading -= math.pi
-            crossing_heading -= math.pi / 2
-            # we allow for it to be going either way since it's a pain to determine which side of the edge it's on
-            if (
-                abs(veh_heading - crossing_heading % (2 * math.pi)) < tolerance
-                or abs(
-                    (veh_heading + math.pi) % (2 * math.pi)
-                    - crossing_heading % (2 * math.pi)
-                )
-                < tolerance
-            ):
-                return True
-        return False
-
-
-def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
-    return sstudio_types.TrapEntryTactic(
-        wait_to_hijack_limit_s=0,
-        exclusion_prefixes=tuple(),
-        zone=None,
-        default_entry_speed=default_entry_speed,
-    )
-
-
-@dataclass(frozen=True)
-class Via:
-    lane_id: str
-    edge_id: str
-    lane_index: int
-    position: Tuple[float, float]
-    hit_distance: float
-    required_speed: float
-
-
-@dataclass(frozen=True)
-class VehicleSpec:
-    veh_id: str
-    veh_type: str
-    dimensions: Dimensions
-
-
-@dataclass(frozen=True)
-class Mission:
-    start: Start
-    goal: Goal
-    # An optional list of edge IDs between the start and end goal that we want to
-    # ensure the mission includes
-    route_vias: Tuple[str] = field(default_factory=tuple)
-    start_time: float = 0.1
-    entry_tactic: EntryTactic = None
-    via: Tuple[Via, ...] = ()
-    # if specified, will use vehicle_spec to build the vehicle (for histories)
-    vehicle_spec: VehicleSpec = None
-
-    @property
-    def has_fixed_route(self):
-        return not self.goal.is_endless()
-
-    def is_complete(self, vehicle, distance_travelled):
-        return self.goal.is_reached(vehicle)
-
-
-@dataclass(frozen=True)
-class LapMission:
-    start: Start
-    goal: Goal
-    route_length: float
-    num_laps: int = None  # None means infinite # of laps
-    # An optional list of edge IDs between the start and end goal that we want to
-    # ensure the mission includes
-    route_vias: Tuple[str] = field(default_factory=tuple)
-    start_time: float = 0.1
-    entry_tactic: EntryTactic = None
-    via_points: Tuple[Via, ...] = ()
-
-    @property
-    def has_fixed_route(self):
-        return True
-
-    def is_complete(self, vehicle, distance_travelled):
-        return (
-            self.goal.is_reached(vehicle)
-            and distance_travelled > self.route_length * self.num_laps
-        )
 
 
 class Scenario:
@@ -266,7 +85,6 @@ class Scenario:
         self._logger = logging.getLogger(self.__class__.__name__)
         self._root = scenario_root
         self._route = route
-        self._planner = None
         self._last_planner_param = None
         self._missions = missions or {}
         self._bubbles = Scenario._discover_bubbles(scenario_root)
@@ -807,18 +625,9 @@ class Scenario:
     def root_filepath(self):
         return self._root
 
-    @property
-    def planner(self):
-        if not self._planner:
-            if isinstance(self.road_map, SumoRoadNetwork):
-                from smarts.core.sumo_planner import SumoPlanner
-
-                self._planner = SumoPlanner(self.road_map)
-            else:
-                from smarts.core.planner import Planner
-
-                self._planner = Planner(self.road_map)
-        return self._planner
+    @cached_property
+    def planner(self) -> Planner:
+        return create_map_planner(self.road_map)
 
     @property
     def surface_patches(self):

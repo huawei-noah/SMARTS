@@ -24,13 +24,11 @@ from typing import List, Sequence, Tuple
 import numpy as np
 
 from .coordinates import Heading, Pose
-from .planner import Planner, Waypoint
+from .planner import Mission, Planner, Waypoint
 from .road_map import RoadMap
-from .scenario import Mission
 from .sumo_lanepoints import LanePoint, LinkedLanePoint
 from .sumo_road_network import SumoRoadNetwork
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
-from .vehicle import Vehicle
 
 
 class SumoPlanner(Planner):

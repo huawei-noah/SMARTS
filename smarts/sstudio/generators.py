@@ -25,7 +25,6 @@ import tempfile
 import sh
 from yattag import Doc, indent
 
-from smarts.core.default_map_factory import create_road_map
 from smarts.core.road_map import RoadMap
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
@@ -59,7 +58,7 @@ class RandomRouteGenerator:
         Args:
             net_file: The path to a '\\*.net.xml' file (generally 'map.net.xml')
         """
-        from smarts.core.scenario import Scenario
+        from smarts.core.default_map_factory import create_road_map
 
         # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
         road_map, _ = create_road_map(net_file, lanepoint_spacing=2.0)
