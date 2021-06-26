@@ -216,6 +216,10 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
+        def type_as_str(self) -> str:
+            raise NotImplementedError()
+
+        @property
         def is_junction(self) -> bool:
             raise NotImplementedError()
 
@@ -259,9 +263,6 @@ class RoadMap:
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             raise NotImplementedError()
 
-        def type_to_str(self, type_int: int) -> str:
-            raise NotImplementedError()
-
         def buffered_shape(self, width: float = 1.0) -> Polygon:
             raise NotImplementedError()
 
@@ -275,11 +276,13 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
+        def type_as_str(self) -> str:
+            raise NotImplementedError()
+
+        @property
         def geometry(self) -> List[Point]:
             raise NotImplementedError()
 
-        def type_to_str(self, type_int: int) -> str:
-            raise NotImplementedError()
 
     class Route:
         @property
