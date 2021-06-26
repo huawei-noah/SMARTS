@@ -28,14 +28,19 @@ class ROSDriver:
         if self._smarts:
             self._smarts.destroy()
         self._smarts = None
-        self._reset_smarts = False
         self._scenarios_iterator = None
         self._state_topic = None
         self._publisher = None
         with self._state_lock:
+            self._reset_smarts = False
             self._latest_state = None
 
-    def setup_ros(self, node_name: str = "SMARTS", namespace: str = "SMARTS", pub_queue_size: int = 10):
+    def setup_ros(
+        self,
+        node_name: str = "SMARTS",
+        namespace: str = "SMARTS",
+        pub_queue_size: int = 10,
+    ):
         assert not self._publisher
         # enforce only one SMARTS instance per ROS network...
         rospy.init_node(node_name, anonymous=False)
@@ -61,7 +66,8 @@ class ROSDriver:
         self._reset_smarts = True
 
     def _reset_callback(self, param):
-        self._reset_smarts = param.data
+        with self._state_lock:
+            self._reset_smarts = param.data
 
     def _entities_callback(self, entities: EntitiesStamped):
         # Here we just only keep the latest msg.
@@ -122,14 +128,23 @@ class ROSDriver:
             entity.width = vehicle.dimensions.width
             entity.height = vehicle.dimensions.height
             ROSDriver._vector_to_xyz(vehicle.pose.position, entity.pose.pose.position)
-            ROSDriver._vector_to_xyzw(vehicle.pose.orientation, entity.pose.pose.orientation)
+            ROSDriver._vector_to_xyzw(
+                vehicle.pose.orientation, entity.pose.pose.orientation
+            )
             ROSDriver._vector_to_xyz(vehicle.linear_velocity, entity.velocity.linear)
             ROSDriver._vector_to_xyz(vehicle.angular_velocity, entity.velocity.angular)
-            #ROSDriver._vector_to_xyz(vehicle.linear_acceleration, entity.acceleration.linear)
-            #ROSDriver._vector_to_xyz(vehicle.angular_acceleration, entity.acceleration.angular)
+            # ROSDriver._vector_to_xyz(vehicle.linear_acceleration, entity.acceleration.linear)
+            # ROSDriver._vector_to_xyz(vehicle.angular_acceleration, entity.acceleration.angular)
             # TODO:  done, events, rewards
             entities.entities.append(entity)
         self._publisher.publish(entities)
+
+    def _check_reset(self):
+        with self._state_lock:
+            if self._reset_smarts:
+                rospy.loginfo(f"resetting SMARTS")
+                self._smarts.reset(next(self._scenarios_iterator))
+                self._reset_smarts = False
 
     def run_forever(self):
         if not self._publisher:
@@ -137,10 +152,7 @@ class ROSDriver:
         if not self._smarts or not self._scenarios_iterator:
             raise Exception("must call setup_smarts() first.")
         while not rospy.is_shutdown():
-            if self._reset_smarts:
-                rospy.loginfo(f"resetting SMARTS")
-                self._smarts.reset(next(self._scenarios_iterator))
-                self._reset_smarts = False
+            self._check_reset()
             self._update_smarts_state()
             self._smarts.step({})
             self._publish_state()
