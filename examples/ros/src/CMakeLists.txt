@@ -51,7 +51,6 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    EntityState.msg
-   EntityEvents.msg
    EntitiesStamped.msg
  )
 

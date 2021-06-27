@@ -180,6 +180,12 @@ class SMARTS:
             )
         result = []
         for vehicle in self._vehicle_index.vehicles:
+            if vehicle.subscribed_to_accelerometer_sensor:
+                linear_acc, angular_acc, _, _ = vehicle.accelerometer_sensor(
+                    vehicle.state.linear_velocity,
+                    vehicle.state.angular_velocity,
+                    self.last_dt,
+                )
             result.append(vehicle.state)
         # TODO: include done, events and reward (if agent)?
         return result

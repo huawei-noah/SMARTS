@@ -8,8 +8,3 @@ float64 length        # in meters
 float64 width         # in meters
 float64 height        # in meters (can be 0)
 
-float64 reward
-
-bool done            # will no longer be updated if True
-
-EntityEvents events

@@ -61,6 +61,8 @@ class VehicleState:
     source: str = None  # the source of truth for this vehicle state
     linear_velocity: numpy.ndarray = None
     angular_velocity: numpy.ndarray = None
+    linear_acceleration: numpy.ndarray = None
+    angular_acceleration: numpy.ndarray = None
 
 
 @dataclass(frozen=True)
@@ -428,12 +430,7 @@ class Vehicle:
             )
 
         if agent_interface.accelerometer:
-            vehicle.attach_accelerometer_sensor(
-                AccelerometerSensor(
-                    vehicle=vehicle,
-                    sim=sim,
-                )
-            )
+            vehicle.attach_accelerometer_sensor(AccelerometerSensor(vehicle=vehicle))
 
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
@@ -537,6 +534,7 @@ class Vehicle:
             self._log.warning(
                 f"unable to change a vehicle's dimensions via external_state_update()"
             )
+        # XXX:  any way to update acceleration in pybullet?
         self._chassis.state_override(dt, state.pose, linear_velocity, angular_velocity)
 
     def create_renderer_node(self, renderer):

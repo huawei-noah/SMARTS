@@ -2,7 +2,7 @@
 
 import rospy
 import std_msgs
-from smarts_ros.msg import EntitiesStamped, EntityState, EntityEvents
+from smarts_ros.msg import EntitiesStamped, EntityState
 
 import time
 from threading import Lock
@@ -96,6 +96,10 @@ class ROSDriver:
             linear_velocity = np.array((vv.x, vv.y, vv.z))
             av = entity.velocity.angular
             angular_velocity = np.array((av.x, av.y, av.z))
+            lacc = entity.acceleration.linear
+            linear_acc = np.array((lacc.x, lacc.y, lacc.z))
+            aacc = entity.acceleration.angular
+            angular_acc = np.array((aacc.x, aacc.y, aacc.z))
             vs = VehicleState(
                 source="EXTERNAL",
                 vehicle_id=entity.entity_id,
@@ -105,6 +109,8 @@ class ROSDriver:
                 speed=np.linalg.norm(linear_velocity),
                 linear_velocity=linear_velocity,
                 angular_velocity=angular_velocity,
+                linear_acceleration=linear_acc,
+                angular_acceleration=angular_acc,
             )
             entities.append(vs)
         staleness = (rospy.get_rostime() - state_to_send.header.stamp).to_sec()
@@ -135,9 +141,12 @@ class ROSDriver:
             )
             ROSDriver._vector_to_xyz(vehicle.linear_velocity, entity.velocity.linear)
             ROSDriver._vector_to_xyz(vehicle.angular_velocity, entity.velocity.angular)
-            # ROSDriver._vector_to_xyz(vehicle.linear_acceleration, entity.acceleration.linear)
-            # ROSDriver._vector_to_xyz(vehicle.angular_acceleration, entity.acceleration.angular)
-            # TODO:  done, events, rewards
+            ROSDriver._vector_to_xyz(
+                vehicle.linear_acceleration, entity.acceleration.linear
+            )
+            ROSDriver._vector_to_xyz(
+                vehicle.angular_acceleration, entity.acceleration.angular
+            )
             entities.entities.append(entity)
         self._publisher.publish(entities)
 
