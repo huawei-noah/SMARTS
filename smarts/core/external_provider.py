@@ -30,7 +30,8 @@ from .vehicle import VehicleState
 
 
 class ExternalProvider(Provider):
-    def __init__(self):
+    def __init__(self, sim):
+        self._sim = sim
         self.reset()
 
     def reset(self):
@@ -80,7 +81,7 @@ class ExternalProvider(Provider):
     @property
     def all_vehicle_states(self) -> List[VehicleState]:
         result = []
-        for vehicle in self._vehicle_index.vehicles:
+        for vehicle in self._sim.vehicle_index.vehicles:
             if vehicle.subscribed_to_accelerometer_sensor:
                 linear_acc, angular_acc, _, _ = vehicle.accelerometer_sensor(
                     vehicle.state.linear_velocity,
