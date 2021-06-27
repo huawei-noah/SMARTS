@@ -207,7 +207,7 @@ class SMARTS:
         all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
 
         # 2. Step all providers and harmonize state
-        provider_state = self._step_providers(all_agent_actions, self._last_dt)
+        provider_state = self._step_providers(all_agent_actions)
         self._check_if_acting_on_active_agents(agent_actions)
 
         # 3. Step bubble manager and trap manager
@@ -564,6 +564,7 @@ class SMARTS:
         self._teardown_vehicles_and_agents(exited_vehicles)
 
         # Update our pybullet world given this provider state
+        dt = provider_state.dt or self._last_dt
         for vehicle in provider_state.vehicles:
             vehicle_id = vehicle.vehicle_id
             # either this is a pybullet agent vehicle, or it is a social vehicle
@@ -581,7 +582,9 @@ class SMARTS:
                     # XXX: this needs to be disentangled from pybullet.
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                     assert isinstance(pybullet_vehicle.chassis, BoxChassis)
-                    pybullet_vehicle.update_state(vehicle, dt=self._last_dt)
+                    if not pybullet_vehicle.updated:
+                        pybullet_vehicle.update_state(vehicle, dt=dt)
+                        pybullet_vehicle.updated = True
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
@@ -599,7 +602,9 @@ class SMARTS:
                         vehicle_config_type=vehicle.vehicle_config_type,
                     )
                 # Update the social vehicle avatar to match the vehicle state
-                social_vehicle.update_state(vehicle, dt=self._last_dt)
+                if not vehicle.updated:
+                    social_vehicle.update_state(vehicle, dt=dt)
+                    vehicle.updated = True
 
     def _step_pybullet(self):
         for _ in range(round(self._last_dt / self._pybullet_period)):
@@ -718,7 +723,7 @@ class SMARTS:
         for provider in self.providers:
             provider.reset()
 
-    def _step_providers(self, actions, dt) -> List[VehicleState]:
+    def _step_providers(self, actions) -> List[VehicleState]:
         accumulated_provider_state = ProviderState()
 
         def agent_controls_vehicles(agent_id):
@@ -756,7 +761,7 @@ class SMARTS:
             )
 
         for provider in self.providers:
-            provider_state = self._step_provider(provider, actions, dt)
+            provider_state = self._step_provider(provider, actions)
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
                 provider_state.filter(self._vehicle_index.agent_vehicle_ids())
@@ -765,7 +770,7 @@ class SMARTS:
         self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
 
-    def _step_provider(self, provider, actions, dt):
+    def _step_provider(self, provider, actions):
         def agent_controls_vehicles(agent_id):
             vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
             return len(vehicles) > 0
@@ -793,7 +798,9 @@ class SMARTS:
                     assert len(vehicle_ids) == 1
                     provider_actions[vehicle_ids[0]] = action
 
-        provider_state = provider.step(provider_actions, dt, self._elapsed_sim_time)
+        provider_state = provider.step(
+            provider_actions, self._last_dt, self._elapsed_sim_time
+        )
         return provider_state
 
     @property

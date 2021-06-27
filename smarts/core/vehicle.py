@@ -49,7 +49,7 @@ from .sensors import (
 from .utils.math import rotate_around_point
 
 
-@dataclass(frozen=True)
+@dataclass
 class VehicleState:
     vehicle_id: str
     pose: Pose
@@ -57,6 +57,7 @@ class VehicleState:
     vehicle_type: str = None
     vehicle_config_type: str = None  # key into VEHICLE_CONFIGS
     privileged: bool = False  # use with caution (most should be False)
+    updated: bool = False
     speed: float = 0
     steering: float = None
     yaw_rate: float = None

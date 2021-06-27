@@ -36,13 +36,15 @@ class ExternalProvider(Provider):
 
     def reset(self):
         self._ext_vehicle_states = []
-        self._last_time_delta = None
+        self._sent_states = None
+        self._last_step_delta = None
         self._staleness = None
+        self._last_fresh_step = self._sim.elapsed_sim_time
 
     def state_update(
         self,
         vehicle_states: Sequence[VehicleState],
-        time_delta: float,
+        step_delta: float,
         staleness: float,
     ):
         # The bigger 'staleness', the more out of date this state is.
@@ -50,24 +52,28 @@ class ExternalProvider(Provider):
         # by an appropriate amount based on staleness, since we can't assume external state
         # is updated in sync with our steps.  However, this is very complicated because we
         # we've *already* simulated this time period.  So we just "eat it" for now!
-        assert not time_delta or staleness <= time_delta
+        assert not step_delta or staleness <= step_delta
         self._ext_vehicle_states = vehicle_states
-        self._last_time_delta = time_delta
+        self._last_step_delta = step_delta
         self._staleness = staleness
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return {}
 
-    def _compute_provider_state(self):
-        # TAI: consider deep copying these?
-        return ProviderState(vehicles=self._ext_vehicle_states)
+    @property
+    def _provider_state(self):
+        dt = self._sim.elapsed_sim_time - self._last_fresh_step
+        if self._ext_vehicle_states != self._sent_states:
+            self._last_fresh_step = self._sim.elapsed_sim_time
+            self._sent_states = self._ext_vehicle_states
+        return ProviderState(vehicles=self._ext_vehicle_states, dt=dt)
 
     def setup(self, scenario: Scenario) -> ProviderState:
-        return self._compute_provider_state()
+        return self._provider_state
 
-    def step(self, actions, dt, elapsed_sim_time) -> ProviderState:
-        return self._compute_provider_state()
+    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+        return self.__provider_state
 
     def sync(self, provider_state: ProviderState):
         pass
