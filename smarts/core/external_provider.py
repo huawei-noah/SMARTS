@@ -55,7 +55,6 @@ class ExternalProvider(Provider):
         assert not step_delta or staleness <= step_delta
         self._ext_vehicle_states = vehicle_states
         self._last_step_delta = step_delta
-        self._staleness = staleness
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -73,7 +72,7 @@ class ExternalProvider(Provider):
         return self._provider_state
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
-        return self.__provider_state
+        return self._provider_state
 
     def sync(self, provider_state: ProviderState):
         pass
