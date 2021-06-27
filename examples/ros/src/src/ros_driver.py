@@ -61,8 +61,9 @@ class ROSDriver:
             agent_interfaces={},
             traffic_sim=None,
             envision=None if headless else Envision(),
-            external_state_access=True,
+            external_provider=True,
         )
+        assert self._smarts.external_provider
         self._scenarios_iterator = Scenario.scenario_variations(scenarios, list([]))
         self._last_step_time = None
         self._reset_smarts = True
@@ -106,6 +107,7 @@ class ROSDriver:
                 source="EXTERNAL",
                 vehicle_id=entity.entity_id,
                 vehicle_config_type="passenger",
+                privileged=True,
                 pose=Pose(pos, qt),
                 dimensions=BoundingBox(entity.length, entity.width, entity.height),
                 speed=np.linalg.norm(linear_velocity),
@@ -119,7 +121,7 @@ class ROSDriver:
         rospy.logdebug(
             f"sending state to SMARTS w/ time_delta={time_delta}, staleness={staleness}..."
         )
-        self._smarts.external_state_update(entities, time_delta, staleness)
+        self._smarts.external_provider.state_update(entities, time_delta, staleness)
         return True
 
     @staticmethod
@@ -131,7 +133,7 @@ class ROSDriver:
         xyz.x, xyz.y, xyz.z, xyz.w = v[0], v[1], v[2], v[3]
 
     def _publish_state(self):
-        smarts_state = self._smarts.external_state_query()
+        smarts_state = self._smarts.external_provider.all_vehicle_states
         entities = EntitiesStamped()
         entities.header.stamp = rospy.Time.now()
         for vehicle in smarts_state:

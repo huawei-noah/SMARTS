@@ -43,6 +43,7 @@ from .agent_manager import AgentManager
 from .bubble_manager import BubbleManager
 from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
+from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
 from .provider import Provider, ProviderState
 from .renderer import Renderer
@@ -78,7 +79,7 @@ class SMARTS:
         fixed_timestep_sec: float = None,
         reset_agents_only: bool = False,
         zoo_addrs=None,
-        external_state_access: bool = False,
+        external_provider: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim_id = Id.new("smarts")
@@ -88,6 +89,7 @@ class SMARTS:
         self._envision: EnvisionClient = envision
         self._visdom: VisdomClient = visdom
         self._traffic_sim = traffic_sim
+        self._external_provider = None
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
         self._providers = [
@@ -96,13 +98,14 @@ class SMARTS:
         ]
         if self._traffic_sim:
             self._providers.insert(0, self._traffic_sim)
+        if external_provider:
+            self._external_provider = ExternalProvider(self)
+            self._providers.insert(0, self._external_provider)
 
         # We buffer provider state between steps to compensate for TRACI's timestep delay
         self._last_provider_state = None
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
         self._imitation_learning_mode = False
-
-        self._external_state_access = external_state_access
 
         assert fixed_timestep_sec is None or fixed_timestep_sec > 0
         self.fixed_timestep_sec = fixed_timestep_sec
@@ -138,57 +141,6 @@ class SMARTS:
         self._trap_manager: TrapManager = None
 
         self._ground_bullet_id = None
-
-    # In the future, we will support passing more than just VehicleStates here.
-    def external_state_update(
-        self,
-        vehicle_states: Sequence[VehicleState],
-        time_delta: float,
-        staleness: float = 0,
-    ):
-        if not self._external_state_access:
-            raise Exception(
-                "Cannot directly update SMARTS states without initializing with `external_state_access=True`."
-            )
-        # The bigger 'staleness', the more out of date this state is.
-        assert not time_delta or staleness <= time_delta
-        # Ideally, for better precision, we might set the external state and then step pybullet
-        # by an appropriate amount based on staleness, since we can't assume external state
-        # is updated in sync with our steps.  However, this is very complicated because we
-        # we've *already* simulated this time period.  So we just "eat it" for now!
-        for state in vehicle_states:
-            vehicle = self._vehicle_index.vehicle_by_id(state.vehicle_id)
-            if not vehicle:
-                self._log.info(
-                    "adding new vehicle via external_state_update() with id=f{state.vehicle_id}"
-                )
-                vehicle = self._vehicle_index.build_social_vehicle(
-                    sim=self,
-                    vehicle_state=state,
-                    actor_id=state.vehicle_id,
-                    vehicle_id=state.vehicle_id,
-                    vehicle_config_type=state.vehicle_config_type,
-                )
-            # note: can't use self._last_dt here since this happens before step()
-            vehicle.update_state(state, time_delta)
-
-    # In the future, we will support returning more than just VehicleStates here.
-    def external_state_query(self) -> List[VehicleState]:
-        if not self._external_state_access:
-            raise Exception(
-                "Cannot directly querye SMARTS states without initializing with `external_state_access=True`."
-            )
-        result = []
-        for vehicle in self._vehicle_index.vehicles:
-            if vehicle.subscribed_to_accelerometer_sensor:
-                linear_acc, angular_acc, _, _ = vehicle.accelerometer_sensor(
-                    vehicle.state.linear_velocity,
-                    vehicle.state.angular_velocity,
-                    self.last_dt,
-                )
-            result.append(vehicle.state)
-        # TODO: include done, events and reward (if agent)?
-        return result
 
     def step(self, agent_actions, time_delta_since_last_step: float = None):
         """Note the time_delta_since_last_step param is in (nominal) seconds."""
@@ -539,6 +491,10 @@ class SMARTS:
         return self._traffic_sim
 
     @property
+    def external_provider(self) -> ExternalProvider:
+        return self._external_provider
+
+    @property
     def road_network(self) -> SumoRoadNetwork:
         return self.scenario.road_network
 
@@ -625,9 +581,7 @@ class SMARTS:
                     # XXX: this needs to be disentangled from pybullet.
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                     assert isinstance(pybullet_vehicle.chassis, BoxChassis)
-                    pybullet_vehicle.control(
-                        pose=vehicle.pose, speed=vehicle.speed, dt=self._last_dt
-                    )
+                    pybullet_vehicle.update_state(vehicle, dt=self._last_dt)
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
@@ -645,15 +599,16 @@ class SMARTS:
                         vehicle_config_type=vehicle.vehicle_config_type,
                     )
                 # Update the social vehicle avatar to match the vehicle state
-                social_vehicle.control(
-                    pose=vehicle.pose, speed=vehicle.speed, dt=self._last_dt
-                )
+                social_vehicle.update_state(vehicle, dt=self._last_dt)
+
+    def _step_pybullet(self):
+        for _ in range(round(self._last_dt / self._pybullet_period)):
+            self._bullet_client.stepSimulation()
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:
         self._perform_agent_actions(agent_actions)
 
-        for _ in range(round(self._last_dt / self._pybullet_period)):
-            self._bullet_client.stepSimulation()
+        self._step_pybullet()
 
         self._process_collisions()
 
@@ -690,7 +645,7 @@ class SMARTS:
         self._perform_agent_actions(agent_actions)
 
         if step_pybullet:
-            self._bullet_client.stepSimulation()
+            self._step_pybullet()
 
         self._process_collisions()
 
@@ -805,7 +760,6 @@ class SMARTS:
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
                 provider_state.filter(self._vehicle_index.agent_vehicle_ids())
-
             accumulated_provider_state.merge(provider_state)
 
         self._harmonize_providers(accumulated_provider_state)

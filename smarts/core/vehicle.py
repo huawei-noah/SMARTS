@@ -56,6 +56,7 @@ class VehicleState:
     dimensions: BoundingBox
     vehicle_type: str = None
     vehicle_config_type: str = None  # key into VEHICLE_CONFIGS
+    privileged: bool = False  # use with caution (most should be False)
     speed: float = 0
     steering: float = None
     yaw_rate: float = None
@@ -515,10 +516,13 @@ class Vehicle:
         self._chassis.control(*args, **kwargs)
 
     def update_state(self, state: VehicleState, dt: float):
-        """update_state() is like control() on a BoxChassis, except that it
-        should work directly (bypass force application) for any chassis type.
-        Conceptually, this is playing 'god' with physics and should only be used
-        to defer to a co-simulator's states."""
+        if not state.privileged:
+            assert isinstance(self._chassis, BoxChassis)
+            self.control(pose=state.pose, speed=state.speed, dt=dt)
+            return
+        # "Privileged" means we can work directly (bypass force application).
+        # Conceptually, this is playing 'god' with physics and should only be used
+        # to defer to a co-simulator's states.
         linear_velocity, angular_velocity = None, None
         if not np.allclose(
             self._chassis.velocity_vectors[0], state.linear_velocity
