@@ -63,6 +63,7 @@ class ROSDriver:
             external_state_access=True,
         )
         self._scenarios_iterator = Scenario.scenario_variations(scenarios, list([]))
+        self._last_step_time = None
         self._reset_smarts = True
 
     def _reset_callback(self, param):
@@ -171,7 +172,7 @@ class ROSDriver:
             )
             self._update_smarts_state(time_delta)
             self._smarts.step({}, time_delta)
-            self._last_step_time = rospy.get_ime()
+            self._last_step_time = rospy.get_time()
             self._publish_state()
         self._reset()
 
