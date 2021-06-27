@@ -389,7 +389,7 @@ class Vehicle:
         return vehicle
 
     @staticmethod
-    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_type) -> Vehicle:
+    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_type):
         return Vehicle(
             id=vehicle_id,
             pose=vehicle_state.pose,
