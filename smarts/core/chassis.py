@@ -195,13 +195,14 @@ class BoxChassis(Chassis):
             self._last_heading = self._pose.heading
         self._last_dt = dt
         self._pose = force_pose
-        if linear_velocity or angular_velocity:
-            assert linear_velocity and angular_velocity
+        if linear_velocity is not None or angular_velocity is not None:
+            assert linear_velocity is not None
+            assert angular_velocity is not None
             self._speed = np.linalg.norm(linear_velocity)
             self._client.resetBaseVelocity(
-                self._bullet_id,
-                linear_velocity=linear_velocity,
-                angular_velocity=angular_velocity,
+                self.bullet_id,
+                linearVelocity=linear_velocity,
+                angularVelocity=angular_velocity,
             )
         self._bullet_constraint.move_to(force_pose)
 
@@ -640,12 +641,13 @@ class AckermannChassis(Chassis):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioural or performance consequences."""
         self.set_pose(force_pose)
-        if linear_velocity or angular_velocity:
-            assert linear_velocity and angular_velocity
+        if linear_velocity is not None or angular_velocity is not None:
+            assert linear_velocity is not None
+            assert angular_velocity is not None
             self._client.resetBaseVelocity(
                 self._bullet_id,
-                linear_velocity=linear_velocity,
-                angular_velocity=angular_velocity,
+                linearVelocity=linear_velocity,
+                angularVelocity=angular_velocity,
             )
 
     def _apply_throttle(self, throttle_list):
