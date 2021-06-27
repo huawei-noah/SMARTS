@@ -107,7 +107,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES smarts_ros
-#  CATKIN_DEPENDS other_catkin_pkg
+ CATKIN_DEPENDS geometry_msgs
 #  DEPENDS system_lib
 )
 
