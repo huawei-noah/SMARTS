@@ -241,13 +241,15 @@ class SMARTS:
         # It's been this long since our last step.
         self._last_dt = time_delta_since_last_step or self._fixed_timestep_sec or 0.1
         if self._step_count > 0:
-            self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + dt)
+            self._elapsed_sim_time = self._rounder(
+                self._elapsed_sim_time + self._last_dt
+            )
 
         # 1. Fetch agent actions
         all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
 
         # 2. Step all providers and harmonize state
-        provider_state = self._step_providers(all_agent_actions, dt)
+        provider_state = self._step_providers(all_agent_actions, self._last_dt)
         self._check_if_acting_on_active_agents(agent_actions)
 
         # 3. Step bubble manager and trap manager
