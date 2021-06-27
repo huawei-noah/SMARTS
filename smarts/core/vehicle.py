@@ -52,9 +52,10 @@ from .utils.math import rotate_around_point
 @dataclass(frozen=True)
 class VehicleState:
     vehicle_id: str
-    vehicle_type: str
     pose: Pose
     dimensions: BoundingBox
+    vehicle_type: str = None
+    vehicle_config_type: str = None  # key into VEHICLE_CONFIGS
     speed: float = 0
     steering: float = None
     yaw_rate: float = None
@@ -133,21 +134,16 @@ class Vehicle:
     def __init__(
         self,
         id: str,
-        # XXX: can probably remove pose as a parameter here since it's in chassis now.
-        pose: Pose,
         chassis: Chassis,
-        # TODO: We should not be leaking SUMO here.
-        sumo_vehicle_type="passenger",
+        vehicle_config_type: str = "passenger",
         color=None,
         action_space=None,
     ):
-        assert isinstance(pose, Pose)
-
         self._log = logging.getLogger(self.__class__.__name__)
         self._id = id
 
         self._chassis = chassis
-        self._sumo_vehicle_type = sumo_vehicle_type
+        self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
         self._speed = None
 
@@ -157,7 +153,7 @@ class Vehicle:
         # Color override
         self._color = color
         if self._color is None:
-            config = VEHICLE_CONFIGS[sumo_vehicle_type]
+            config = VEHICLE_CONFIGS[vehicle_config_type]
             self._color = config.color
 
         self._renderer = None
@@ -238,6 +234,7 @@ class Vehicle:
         return VehicleState(
             vehicle_id=self.id,
             vehicle_type=self.vehicle_type,
+            vehicle_config_type=None,  # it's hard to invert
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
@@ -294,7 +291,7 @@ class Vehicle:
 
     @property
     def vehicle_type(self):
-        return VEHICLE_CONFIGS[self._sumo_vehicle_type].vehicle_type
+        return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
 
     @staticmethod
     def build_agent_vehicle(
@@ -312,14 +309,14 @@ class Vehicle:
         mission = mission_planner.mission
 
         if mission.vehicle_spec:
-            # mission.vehicle_spec.veh_type will always be "passenger" for now,
+            # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
             # but we use that value here in case we ever expand our history functionality.
-            vehicle_type = mission.vehicle_spec.veh_type
+            vehicle_config_type = mission.vehicle_spec.veh_config_type
             chassis_dims = mission.vehicle_spec.dimensions
         else:
             # non-history agents can currently only control passenger vehicles.
-            vehicle_type = "passenger"
-            chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+            vehicle_config_type = "passenger"
+            chassis_dims = VEHICLE_CONFIGS[vehicle_config_type].dimensions
 
         if isinstance(mission.task, UTurn):
             if mission.task.initial_speed:
@@ -383,7 +380,6 @@ class Vehicle:
 
         vehicle = Vehicle(
             id=vehicle_id,
-            pose=start_pose,
             chassis=chassis,
             color=vehicle_color,
         )
@@ -391,17 +387,22 @@ class Vehicle:
         return vehicle
 
     @staticmethod
-    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_type):
-        return Vehicle(
-            id=vehicle_id,
+    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_config_type):
+        dims = vehicle_state.dimensions
+        if not dims.length or dims.length == -1:
+            dims.length = VEHICLE_CONFIGS[vehicle_config_type].dimensions.length
+        if not dims.width or dims.width == -1:
+            dims.width = VEHICLE_CONFIGS[vehicle_config_type].dimensions.width
+        if not dims.height or dims.height == -1:
+            dims.width = VEHICLE_CONFIGS[vehicle_config_type].dimensions.height
+        chassis = BoxChassis(
             pose=vehicle_state.pose,
-            chassis=BoxChassis(
-                pose=vehicle_state.pose,
-                speed=vehicle_state.speed,
-                dimensions=vehicle_state.dimensions,
-                bullet_client=sim.bc,
-            ),
-            sumo_vehicle_type=vehicle_type,
+            speed=vehicle_state.speed,
+            dimensions=dims,
+            bullet_client=sim.bc,
+        )
+        return Vehicle(
+            id=vehicle_id, chassis=chassis, vehicle_config_type=vehicle_config_type
         )
 
     @staticmethod
@@ -540,7 +541,7 @@ class Vehicle:
     def create_renderer_node(self, renderer):
         assert not self._renderer
         self._renderer = renderer
-        config = VEHICLE_CONFIGS[self._sumo_vehicle_type]
+        config = VEHICLE_CONFIGS[self._vehicle_config_type]
         self._renderer.create_vehicle_node(
             config.glb_model, self._id, self.vehicle_color, self.pose
         )

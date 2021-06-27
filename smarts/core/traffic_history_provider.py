@@ -101,14 +101,14 @@ class TrafficHistoryProvider(Provider):
             if v_id in vehicle_ids or v_id in self._replaced_vehicle_ids:
                 continue
             vehicle_ids.add(v_id)
-            vehicle_type = self._histories.decode_vehicle_type(hr.vehicle_type)
-            default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+            vehicle_config_type = self._histories.decode_vehicle_type(hr.vehicle_type)
+            default_dims = VEHICLE_CONFIGS[vehicle_config_type].dimensions
             pos_x = hr.position_x + self._map_location_offset[0]
             pos_y = hr.position_y + self._map_location_offset[1]
             vehicles.append(
                 VehicleState(
                     vehicle_id=self._vehicle_id_prefix + v_id,
-                    vehicle_type=vehicle_type,
+                    vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_center((pos_x, pos_y, 0), Heading(hr.heading_rad)),
                     dimensions=BoundingBox(
                         length=hr.vehicle_length

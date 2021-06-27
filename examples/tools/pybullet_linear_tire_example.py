@@ -248,7 +248,6 @@ if __name__ == "__main__":
             pose = pose = Pose.from_center((0, 0, 0), Heading(0))
             vehicle = Vehicle(
                 "hello",
-                pose=pose,
                 chassis=AckermannChassis(
                     pose=pose,
                     bullet_client=client,

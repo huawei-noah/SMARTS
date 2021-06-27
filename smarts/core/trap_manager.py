@@ -225,7 +225,7 @@ class TrapManager:
                     provider.create_vehicle(
                         VehicleState(
                             vehicle_id=vehicle.id,
-                            vehicle_type="passenger",
+                            vehicle_config_type="passenger",
                             pose=vehicle.pose,
                             dimensions=vehicle.chassis.dimensions,
                             speed=vehicle.speed,

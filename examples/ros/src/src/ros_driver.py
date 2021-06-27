@@ -104,7 +104,7 @@ class ROSDriver:
             vs = VehicleState(
                 source="EXTERNAL",
                 vehicle_id=entity.entity_id,
-                vehicle_type="car",
+                vehicle_config_type="passenger",
                 pose=Pose(pos, qt),
                 dimensions=BoundingBox(entity.length, entity.width, entity.height),
                 speed=np.linalg.norm(linear_velocity),

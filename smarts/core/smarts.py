@@ -167,7 +167,7 @@ class SMARTS:
                     vehicle_state=state,
                     actor_id=state.vehicle_id,
                     vehicle_id=state.vehicle_id,
-                    vehicle_type=state.vehicle_type,
+                    vehicle_config_type=state.vehicle_config_type,
                 )
             # note: can't use self._last_dt here since this happens before step()
             vehicle.update_state(state, time_delta)
@@ -642,7 +642,7 @@ class SMARTS:
                         vehicle_state=vehicle,
                         actor_id=vehicle_id,
                         vehicle_id=vehicle_id,
-                        vehicle_type=vehicle.vehicle_type,
+                        vehicle_config_type=vehicle.vehicle_config_type,
                     )
                 # Update the social vehicle avatar to match the vehicle state
                 social_vehicle.control(
@@ -674,7 +674,7 @@ class SMARTS:
             provider_state.vehicles.append(
                 VehicleState(
                     vehicle_id=vehicle.id,
-                    vehicle_type="passenger",
+                    vehicle_config_type="passenger",
                     pose=vehicle.pose,
                     dimensions=vehicle.chassis.dimensions,
                     speed=vehicle.speed,
@@ -712,7 +712,7 @@ class SMARTS:
             provider_state.vehicles.append(
                 VehicleState(
                     vehicle_id=vehicle.id,
-                    vehicle_type="passenger",
+                    vehicle_config_type="passenger",
                     pose=vehicle.pose,
                     dimensions=vehicle.chassis.dimensions,
                     speed=vehicle.speed,
@@ -1052,9 +1052,12 @@ class SMARTS:
                     lane_ids[agent_id] = vehicle_obs.waypoint_paths[0][0].lane_id
             elif v.vehicle_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
+                veh_type = (
+                    v.vehicle_config_type if v.vehicle_config_type else v.vehicle_type
+                )
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     actor_type=envision_types.TrafficActorType.SocialVehicle,
-                    vehicle_type=v.vehicle_type,
+                    vehicle_type=veh_type,
                     position=list(v.pose.position),
                     heading=v.pose.heading,
                     speed=v.speed,

@@ -435,6 +435,7 @@ class AgentManager:
                 VehicleState(
                     vehicle_id=vehicle.id,
                     vehicle_type=vehicle.vehicle_type,
+                    vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
                     pose=vehicle.pose,
                     dimensions=vehicle.chassis.dimensions,
                     source="NEW-AGENT",
