@@ -1046,8 +1046,10 @@ class AccelerometerSensor(Sensor):
         linear_jerk = np.array((0.0, 0.0, 0.0))
         angular_jerk = np.array((0.0, 0.0, 0.0))
 
+        if not dt:
+            return (linear_acc, angular_acc, linear_jerk, angular_jerk)
+
         if len(self.linear_velocities) >= 2:
-            assert dt
             linear_acc = (self.linear_velocities[-1] - self.linear_velocities[-2]) / dt
             if len(self.linear_velocities) >= 3:
                 last_linear_acc = (
@@ -1055,7 +1057,6 @@ class AccelerometerSensor(Sensor):
                 ) / dt
                 linear_jerk = linear_acc - last_linear_acc
         if len(self.angular_velocities) >= 2:
-            assert dt
             angular_acc = (
                 self.angular_velocities[-1] - self.angular_velocities[-2]
             ) / dt
