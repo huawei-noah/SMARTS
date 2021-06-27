@@ -235,7 +235,7 @@ class BoxChassis(Chassis):
         else:
             linear_velocity = None
         angular_velocity = np.array((0.0, 0.0, 0.0))
-        if self._last_dt > 0:
+        if self._last_dt and self._last_dt > 0:
             angular_velocity = vh - radians_to_vec(self._last_heading)
             angular_velocity = np.append(angular_velocity / self._last_dt, 0.0)
         return (linear_velocity, angular_velocity)
@@ -255,7 +255,7 @@ class BoxChassis(Chassis):
     @property
     def yaw_rate(self) -> float:
         # in rad/s
-        if self._last_dt > 0:
+        if self._last_dt and self._last_dt > 0:
             delta = min_angles_difference_signed(self._pose.heading, self._last_heading)
             return delta / self._last_dt
         return None

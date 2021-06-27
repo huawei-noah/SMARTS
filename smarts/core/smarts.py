@@ -151,7 +151,7 @@ class SMARTS:
                 "Cannot directly update SMARTS states without initializing with `external_state_access=True`."
             )
         # The bigger 'staleness', the more out of date this state is.
-        assert staleness <= time_delta
+        assert not time_delta or staleness <= time_delta
         # Ideally, for better precision, we might set the external state and then step pybullet
         # by an appropriate amount based on staleness, since we can't assume external state
         # is updated in sync with our steps.  However, this is very complicated because we
@@ -875,7 +875,7 @@ class SMARTS:
 
     @property
     def last_dt(self) -> float:
-        assert self._last_dt > 0
+        assert not self._last_dt or self._last_dt > 0
         return self._last_dt
 
     @property

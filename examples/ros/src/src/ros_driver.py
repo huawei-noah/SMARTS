@@ -5,6 +5,7 @@ import std_msgs
 from smarts_ros.msg import EntitiesStamped, EntityState
 
 import time
+import numpy as np
 from threading import Lock
 
 from envision.client import Client as Envision
@@ -83,16 +84,16 @@ class ROSDriver:
             state_to_send = self._latest_state
             self._latest_state = None  # ensure we don't resend same one later
         if not state_to_send:
-            rospy.loginfo(
+            rospy.logdebug(
                 f"No messages received on topic {self._state_topic} yet to send to SMARTS."
             )
             return False
         entities = []
         for entity in state_to_send.entities:
             pos = entity.pose.position
-            pos = (pos.x, pos.y, pos.z)
+            pos = np.array((pos.x, pos.y, pos.z))
             qt = entity.pose.orientation
-            qt = (qt.x, qt.y, qt.z, qt.w)
+            qt = np.array((qt.x, qt.y, qt.z, qt.w))
             vv = entity.velocity.linear
             linear_velocity = np.array((vv.x, vv.y, vv.z))
             av = entity.velocity.angular
@@ -114,7 +115,7 @@ class ROSDriver:
                 angular_acceleration=angular_acc,
             )
             entities.append(vs)
-        staleness = (rospy.get_rostime() - state_to_send.header.stamp).to_sec()
+        staleness = (rospy.get_rostime() - state_toj_send.header.stamp).to_sec()
         self._smarts.external_state_update(entities, time_delta, staleness)
         return True
 
@@ -136,18 +137,18 @@ class ROSDriver:
             entity.length = vehicle.dimensions.length
             entity.width = vehicle.dimensions.width
             entity.height = vehicle.dimensions.height
-            ROSDriver._vector_to_xyz(vehicle.pose.position, entity.pose.pose.position)
-            ROSDriver._vector_to_xyzw(
-                vehicle.pose.orientation, entity.pose.pose.orientation
-            )
+            ROSDriver._vector_to_xyz(vehicle.pose.position, entity.pose.position)
+            ROSDriver._vector_to_xyzw(vehicle.pose.orientation, entity.pose.orientation)
             ROSDriver._vector_to_xyz(vehicle.linear_velocity, entity.velocity.linear)
             ROSDriver._vector_to_xyz(vehicle.angular_velocity, entity.velocity.angular)
-            ROSDriver._vector_to_xyz(
-                vehicle.linear_acceleration, entity.acceleration.linear
-            )
-            ROSDriver._vector_to_xyz(
-                vehicle.angular_acceleration, entity.acceleration.angular
-            )
+            if vehicle.linear_acceleration:
+                ROSDriver._vector_to_xyz(
+                    vehicle.linear_acceleration, entity.acceleration.linear
+                )
+            if vehicle.angular_acceleration:
+                ROSDriver._vector_to_xyz(
+                    vehicle.angular_acceleration, entity.acceleration.angular
+                )
             entities.entities.append(entity)
         self._publisher.publish(entities)
 
