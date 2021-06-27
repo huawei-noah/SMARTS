@@ -115,7 +115,10 @@ class ROSDriver:
                 angular_acceleration=angular_acc,
             )
             entities.append(vs)
-        staleness = (rospy.get_rostime() - state_toj_send.header.stamp).to_sec()
+        staleness = (rospy.get_rostime() - state_to_send.header.stamp).to_sec()
+        rospy.logdebug(
+            f"sending state to SMARTS w/ time_delta={time_delta}, staleness={staleness}..."
+        )
         self._smarts.external_state_update(entities, time_delta, staleness)
         return True
 
@@ -171,9 +174,9 @@ class ROSDriver:
                 if self._last_step_time
                 else None
             )
+            self._last_step_time = rospy.get_time()
             self._update_smarts_state(time_delta)
             self._smarts.step({}, time_delta)
-            self._last_step_time = rospy.get_time()
             self._publish_state()
         self._reset()
 

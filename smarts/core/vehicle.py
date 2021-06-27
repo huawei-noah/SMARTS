@@ -23,7 +23,7 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache
 
-import numpy
+import numpy as np
 import yaml
 
 from smarts.sstudio.types import UTurn
@@ -60,10 +60,10 @@ class VehicleState:
     steering: float = None
     yaw_rate: float = None
     source: str = None  # the source of truth for this vehicle state
-    linear_velocity: numpy.ndarray = None
-    angular_velocity: numpy.ndarray = None
-    linear_acceleration: numpy.ndarray = None
-    angular_acceleration: numpy.ndarray = None
+    linear_velocity: np.ndarray = None
+    angular_velocity: np.ndarray = None
+    linear_acceleration: np.ndarray = None
+    angular_acceleration: np.ndarray = None
 
 
 @dataclass(frozen=True)
@@ -277,8 +277,8 @@ class Vehicle:
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
         origin = self.position[:2]
-        dimensions = numpy.array([self.width, self.length])
-        corners = numpy.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
+        dimensions = np.array([self.width, self.length])
+        corners = np.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
         heading = self.heading
         return [
             rotate_around_point(
@@ -324,7 +324,7 @@ class Vehicle:
 
         start = mission.start
         start_pose = Pose.from_front_bumper(
-            front_bumper_position=numpy.array(start.position),
+            front_bumper_position=np.array(start.position),
             heading=start.heading,
             length=chassis_dims.length,
         )
@@ -528,9 +528,9 @@ class Vehicle:
                 state.angular_velocity,
             )
         if (
-            state.length != self.length
-            or state.width != self.width
-            or state.height != self.height
+            state.dimensions.length != self.length
+            or state.dimensions.width != self.width
+            or state.dimensions.height != self.height
         ):
             self._log.warning(
                 f"unable to change a vehicle's dimensions via external_state_update()"
