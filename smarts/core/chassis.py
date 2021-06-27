@@ -138,9 +138,16 @@ class Chassis:
     def step(self, current_simulation_time):
         raise NotImplementedError
 
-    def state_override(self, force_pose: Pose):
-        self._bullet_constraint.move_to(force_pose)
-        # TODO: other state too...
+    def state_override(
+        self,
+        dt: float,
+        force_pose: Pose,
+        linear_velocity: np.ndarray = None,
+        angular_velocity: np.ndarray = None,
+    ):
+        """Use with care!  In essence, this is tinkering with the physics of the world,
+        and may have unintended behavioural or performance consequences."""
+        raise NotImplementedError
 
 
 class BoxChassis(Chassis):
@@ -174,6 +181,29 @@ class BoxChassis(Chassis):
         self._pose = pose
         self._speed = speed
         self._bullet_constraint.move_to(pose)
+
+    def state_override(
+        self,
+        dt: float,
+        force_pose: Pose,
+        linear_velocity: np.ndarray = None,
+        angular_velocity: np.ndarray = None,
+    ):
+        """Use with care!  In essence, this is tinkering with the physics of the world,
+        and may have unintended behavioural or performance consequences."""
+        if self._pose:
+            self._last_heading = self._pose.heading
+        self._last_dt = dt
+        self._pose = force_pose
+        if linear_velocity or angular_velocity:
+            assert linear_velocity and angular_velocity
+            self._speed = np.linalg.norm(linear_velocity)
+            self._client.resetBaseVelocity(
+                self._bullet_id,
+                linear_velocity=linear_velocity,
+                angular_velocity=angular_velocity,
+            )
+        self._bullet_constraint.move_to(force_pose)
 
     @property
     def dimensions(self) -> BoundingBox:
@@ -599,6 +629,24 @@ class AckermannChassis(Chassis):
             return
         self._apply_throttle(throttle_list)
         self._apply_brake(brake)
+
+    def state_override(
+        self,
+        dt: float,
+        force_pose: Pose,
+        linear_velocity: np.ndarray = None,
+        angular_velocity: np.ndarray = None,
+    ):
+        """Use with care!  In essence, this is tinkering with the physics of the world,
+        and may have unintended behavioural or performance consequences."""
+        self.set_pose(force_pose)
+        if linear_velocity or angular_velocity:
+            assert linear_velocity and angular_velocity
+            self._client.resetBaseVelocity(
+                self._bullet_id,
+                linear_velocity=linear_velocity,
+                angular_velocity=angular_velocity,
+            )
 
     def _apply_throttle(self, throttle_list):
         self._client.setJointMotorControlArray(

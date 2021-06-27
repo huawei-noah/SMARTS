@@ -246,10 +246,6 @@ class Vehicle:
             angular_velocity=self._chassis.velocity_vectors[1],
         )
 
-    def update_state(self, state: VehicleState):
-        self._chassis.state_override(state.pose)
-        # TODO: state.dimensions, state.speed, state.linear_velocity, state.angular_velocity
-
     @property
     def action_space(self):
         self._assert_initialized()
@@ -393,7 +389,7 @@ class Vehicle:
         return vehicle
 
     @staticmethod
-    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_type):
+    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_type) -> Vehicle:
         return Vehicle(
             id=vehicle_id,
             pose=vehicle_state.pose,
@@ -519,6 +515,29 @@ class Vehicle:
 
     def control(self, *args, **kwargs):
         self._chassis.control(*args, **kwargs)
+
+    def update_state(self, state: VehicleState, dt: float):
+        """update_state() is like control() on a BoxChassis, except that it
+        should work directly (bypass force application) for any chassis type.
+        Conceptually, this is playing 'god' with physics and should only be used
+        to defer to a co-simulator's states."""
+        linear_velocity, angular_velocity = None, None
+        if not np.allclose(
+            self._chassis.velocity_vectors[0], state.linear_velocity
+        ) or not np.allclose(self._chassis.velocity_vectors[1], state.angular_velocity):
+            linear_velocity, angular_velocity = (
+                state.linear_velocity,
+                state.angular_velocity,
+            )
+        if (
+            state.length != self.length
+            or state.width != self.width
+            or state.height != self.height
+        ):
+            self._log.warning(
+                f"unable to change a vehicle's dimensions via external_state_update()"
+            )
+        self._chassis.state_override(dt, state.pose, linear_velocity, angular_velocity)
 
     def create_renderer_node(self, renderer):
         assert not self._renderer

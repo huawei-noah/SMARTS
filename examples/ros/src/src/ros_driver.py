@@ -77,7 +77,7 @@ class ROSDriver:
         with self._state_lock:
             self._latest_state = entities
 
-    def _update_smarts_state(self) -> bool:
+    def _update_smarts_state(self, time_delta: float) -> bool:
         with self._state_lock:
             state_to_send = self._latest_state
             self._latest_state = None  # ensure we don't resend same one later
@@ -99,6 +99,7 @@ class ROSDriver:
             vs = VehicleState(
                 source="EXTERNAL",
                 vehicle_id=entity.entity_id,
+                vehicle_type="car",
                 pose=Pose(pos, qt),
                 dimensions=BoundingBox(entity.length, entity.width, entity.height),
                 speed=np.linalg.norm(linear_velocity),
@@ -106,8 +107,8 @@ class ROSDriver:
                 angular_velocity=angular_velocity,
             )
             entities.append(vs)
-        # time_delta_since_last_step = (rospy.get_rostime() - state_to_send.header.stamp).to_sec()
-        self._smarts.external_state_update(entities)
+        staleness = (rospy.get_rostime() - state_to_send.header.stamp).to_sec()
+        self._smarts.external_state_update(entities, time_delta, staleness)
         return True
 
     @staticmethod
@@ -154,12 +155,12 @@ class ROSDriver:
             raise Exception("must call setup_smarts() first.")
         while not rospy.is_shutdown():
             self._check_reset()
-            self._update_smarts_state()
             time_delta = (
                 (rospy.get_time() - self._last_step_time)
                 if self._last_step_time
                 else None
             )
+            self._update_smarts_state(time_delta)
             self._smarts.step({}, time_delta)
             self._last_step_time = rospy.get_ime()
             self._publish_state()

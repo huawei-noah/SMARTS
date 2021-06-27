@@ -139,21 +139,40 @@ class SMARTS:
 
         self._ground_bullet_id = None
 
-    def external_state_update(self, vehicle_states: Sequence[VehicleState]):
+    # In the future, we will support passing more than just VehicleStates here.
+    def external_state_update(
+        self,
+        vehicle_states: Sequence[VehicleState],
+        time_delta: float,
+        staleness: float = 0,
+    ):
         if not self._external_state_access:
             raise Exception(
                 "Cannot directly update SMARTS states without initializing with `external_state_access=True`."
             )
+        # The bigger 'staleness', the more out of date this state is.
+        assert staleness <= time_delta
         # Ideally, for better precision, we might set the external state and then step pybullet
-        # by an appropriate amount based on the difference between the next step's time_delta_since_last_step
-        # and this update's time_delta_since_last_step, since we can't assume external state is updated
-        # in sync with our steps.  (The bigger this difference, the worse things are.)
-        # However, this is very complicated because we we've *already* simulated this time period,
-        # so we just "eat it".
+        # by an appropriate amount based on staleness, since we can't assume external state
+        # is updated in sync with our steps.  However, this is very complicated because we
+        # we've *already* simulated this time period.  So we just "eat it" for now!
         for state in vehicle_states:
             vehicle = self._vehicle_index.vehicle_by_id(state.vehicle_id)
-            vehicle.update_state(state)
+            if not vehicle:
+                self._log.info(
+                    "adding new vehicle via external_state_update() with id=f{state.vehicle_id}"
+                )
+                vehicle = self._vehicle_index.build_social_vehicle(
+                    sim=self,
+                    vehicle_state=state,
+                    actor_id=state.vehicle_id,
+                    vehicle_id=state.vehicle_id,
+                    vehicle_type=state.vehicle_type,
+                )
+            # note: can't use self._last_dt here since this happens before step()
+            vehicle.update_state(state, time_delta)
 
+    # In the future, we will support returning more than just VehicleStates here.
     def external_state_query(self) -> List[VehicleState]:
         if not self._external_state_access:
             raise Exception(
