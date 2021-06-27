@@ -34,6 +34,7 @@ class ProviderState:
         our_vehicles = {v.vehicle_id for v in self.vehicles}
         other_vehicles = {v.vehicle_id for v in other.vehicles}
         assert our_vehicles.isdisjoint(other_vehicles)
+
         self.vehicles += other.vehicles
 
     def filter(self, vehicle_ids):

@@ -161,7 +161,7 @@ class HiWayEnv(gym.Env):
 
         scenario = self._smarts.scenario
         return {
-            "fixed_timestep_sec": self._smarts.fixedtimestep_sec,
+            "fixed_timestep_sec": self._smarts.fixed_timestep_sec,
             "scenario_map": scenario.name,
             "scenario_routes": scenario.route or "",
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
