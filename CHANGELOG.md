@@ -19,7 +19,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a ROS wrapper/driver example to wrap SMARTS in a ROS (v1) node.
 - Added the ability to pass an optional `time_delta_since_last_step` to SMARTS' `step()` function
   to support variable timesteps for co-simulation.
-- Added the ability to externally update SMARTS state via a new privileged-access method `external_state_update()`.
+- Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space. See Issue #844.
 - Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266. 
