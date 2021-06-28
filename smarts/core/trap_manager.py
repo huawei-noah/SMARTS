@@ -87,7 +87,7 @@ class TrapManager:
             ):
                 continue
 
-            plan = scenario.road_map.create_plan_for_mission(mission)
+            plan = road_map.create_plan_for_mission(mission)
 
             trap = self._mission2trap(road_map, plan.mission)
             self.add_trap_for_agent_id(agent_id, trap)
