@@ -400,8 +400,7 @@ class AgentManager:
 
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
-        plan = scenario.road_map.create_plan()
-        plan.create_route(mission)
+        plan = scenario.road_map.create_plan_for_mission(mission)
 
         vehicle = sim.vehicle_index.build_agent_vehicle(
             sim,
@@ -509,8 +508,7 @@ class AgentManager:
             if sv_id in self._vehicle_with_sensors:
                 continue
 
-            plan = sim.road_map.create_plan()
-            plan.create_route(mission=None)
+            plan = sim.road_map.create_plan_for_mission(None)
 
             agent_id = f"Agent-{sv_id}"
             self._vehicle_with_sensors[sv_id] = agent_id

@@ -32,8 +32,8 @@ from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
 
 
 class SumoPlan(Plan):
-    def __init__(self, road_map: RoadMap):
-        super().__init__(road_map)
+    def __init__(self, road_map: RoadMap, mission: Mission, find_route: bool = True):
+        super().__init__(road_map, mission, find_route)
         assert isinstance(self._road_map, SumoRoadNetwork)
         self._log = logging.getLogger(self.__class__.__name__)
         self._lanepoints = self._road_map.lanepoints

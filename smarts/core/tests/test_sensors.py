@@ -89,9 +89,8 @@ def test_waypoints_sensor(scenarios):
         heading_=Heading(0),
     )
 
-    plan = scenario.road_map.create_plan()
     mission = scenario.missions[AGENT_ID]
-    plan.create_route(mission)
+    plan = scenario.road_map.create_plan_for_mission(mission)
 
     sensor = WaypointsSensor(vehicle, plan)
     waypoints = sensor()

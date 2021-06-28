@@ -284,7 +284,7 @@ class RoadMap:
         def geometry(self) -> List[Point]:
             raise NotImplementedError()
 
-    def create_plan(self):  # -> Plan
+    def create_plan_for_mission(self, mission, find_route: bool = True):  # -> Plan
         raise NotImplementedError()
 
     class Route:

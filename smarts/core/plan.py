@@ -324,10 +324,14 @@ class Waypoint:
 
 
 class Plan:
-    def __init__(self, road_map: RoadMap):
+    def __init__(
+        self, road_map: RoadMap, mission: Mission = None, find_route: bool = True
+    ):
         self._road_map = road_map
-        self._mission = None
+        self._mission = mission
         self._route = None
+        if find_route:
+            self.create_route(mission)
 
     @property
     def route(self) -> RoadMap.Route:
@@ -341,7 +345,7 @@ class Plan:
     def road_map(self) -> RoadMap:
         return self._road_map
 
-    def create_route(self, mission=None):  # -> Mission
+    def create_route(self, mission) -> Mission:
         assert not self._route, "already called plan"
         self._mission = mission or Mission.random_endless_mission(self._road_map)
 

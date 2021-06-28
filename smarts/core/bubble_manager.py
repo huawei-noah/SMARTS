@@ -547,7 +547,7 @@ class BubbleManager:
     def _prepare_sensors_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, bubble
     ):
-        plan = sim.road_map.create_plan()
+        plan = sim.road_map.create_plan_for_mission(None, find_route=False)
         vehicle = sim.vehicle_index.start_agent_observation(
             sim,
             vehicle_id,
@@ -563,7 +563,7 @@ class BubbleManager:
             start=Start(vehicle.position[:2], vehicle.heading),
             goal=PositionalGoal.from_edge(route[-1], sim.scenario.road_map),
         )
-        plan.create_route(mission=mission)
+        plan.create_route(mission)
 
     def _start_social_agent(
         self, sim, agent_id, social_agent, social_agent_actor, bubble

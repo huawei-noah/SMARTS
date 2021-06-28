@@ -502,10 +502,10 @@ class SumoRoadNetwork(RoadMap):
                 return nl.road
         return None
 
-    def create_plan(self):  # -> Plan
+    def create_plan_for_mission(self, mission, find_route: bool = True):  # -> Plan
         from .sumo_plan import SumoPlan
 
-        return SumoPlan(self)
+        return SumoPlan(self, mission, find_route)
 
     class Route(RoadMap.Route):
         def __init__(self):
