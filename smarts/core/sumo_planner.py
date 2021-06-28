@@ -74,7 +74,7 @@ class SumoPlanner(Planner):
         wp_start = lane.from_lane_coord(RefLinePoint(offset))
         return self._waypoint_paths_on_lane_at(
             point=wp_start,
-            lane_id=lane.getID(),
+            lane_id=lane.lane_id,
             lookahead=lookahead,
         )
 

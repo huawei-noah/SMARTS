@@ -432,7 +432,6 @@ class Vehicle:
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
                 WaypointsSensor(
-                    sim=sim,
                     vehicle=vehicle,
                     planner=planner,
                     lookahead=agent_interface.waypoints.lookahead,

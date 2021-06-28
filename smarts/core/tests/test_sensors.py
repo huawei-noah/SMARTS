@@ -93,7 +93,7 @@ def test_waypoints_sensor(scenarios):
     mission = scenario.missions[AGENT_ID]
     planner.plan(mission)
 
-    sensor = WaypointsSensor(sim, vehicle, planner)
+    sensor = WaypointsSensor(vehicle, planner)
     waypoints = sensor()
 
     assert len(waypoints) == 3

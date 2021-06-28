@@ -904,8 +904,7 @@ class NeighborhoodVehiclesSensor(Sensor):
 
 
 class WaypointsSensor(Sensor):
-    def __init__(self, sim, vehicle, planner: Planner, lookahead=32):
-        self._sim = sim
+    def __init__(self, vehicle, planner: Planner, lookahead=32):
         self._vehicle = vehicle
         self._planner = planner
         self._lookahead = lookahead
@@ -931,8 +930,8 @@ class RoadWaypointsSensor(Sensor):
         lane = self._road_map.nearest_lane(self._vehicle.pose.point)
         road = lane.road
         lane_paths = {}
-        for road in [road] + road.parallel_roads + road.oncoming_roads:
-            for lane in road.lanes:
+        for croad in [road] + road.parallel_roads + road.oncoming_roads:
+            for lane in croad.lanes:
                 lane_paths[lane.lane_id] = self.paths_for_lane(lane)
 
         route_waypoints = self.route_waypoints()
@@ -942,10 +941,11 @@ class RoadWaypointsSensor(Sensor):
     def route_waypoints(self):
         return self._planner.waypoint_paths(
             self._vehicle.pose,
-            lookahead=32,
+            lookahead=self._horizon,
         )
 
     def paths_for_lane(self, lane, overflow_offset=None):
+        # XXX: the following assumes waypoint spacing is 1m
         if overflow_offset is None:
             offset = lane.offset_along_lane(Point(*self._vehicle.position))
             start_offset = offset - self._horizon
