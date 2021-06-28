@@ -60,6 +60,7 @@ class ROSDriver:
         self._smarts = SMARTS(
             agent_interfaces={},
             traffic_sim=None,
+            fixed_time_step=None,
             envision=None if headless else Envision(),
             external_provider=True,
         )

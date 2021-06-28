@@ -76,7 +76,7 @@ class SMARTS:
         traffic_sim: SumoTrafficSimulation,
         envision: EnvisionClient = None,
         visdom: VisdomClient = None,
-        fixed_timestep_sec: float = None,
+        fixed_timestep_sec: float = 0.1,
         reset_agents_only: bool = False,
         zoo_addrs=None,
         external_provider: bool = False,
@@ -570,20 +570,20 @@ class SMARTS:
             vehicle_id = vehicle.vehicle_id
             # either this is a pybullet agent vehicle, or it is a social vehicle
             if vehicle_id in self._vehicle_index.agent_vehicle_ids():
-                # this is an agent vehicle
-                agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-                agent_interface = self._agent_manager.agent_interface_for_agent_id(
-                    agent_id
-                )
-                agent_action_space = agent_interface.action_space
-                if agent_action_space not in self._dynamic_action_spaces:
-                    # This is not a pybullet agent, but it has an avatar in this world
-                    # to make it's observations. Update the avatar to match the new
-                    # state of this vehicle
-                    # XXX: this needs to be disentangled from pybullet.
-                    pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-                    assert isinstance(pybullet_vehicle.chassis, BoxChassis)
-                    if not pybullet_vehicle.updated:
+                if not vehicle.updated:
+                    # this is an agent vehicle
+                    agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+                    agent_interface = self._agent_manager.agent_interface_for_agent_id(
+                        agent_id
+                    )
+                    agent_action_space = agent_interface.action_space
+                    if agent_action_space not in self._dynamic_action_spaces:
+                        # This is not a pybullet agent, but it has an avatar in this world
+                        # to make it's observations. Update the avatar to match the new
+                        # state of this vehicle
+                        # XXX: this needs to be disentangled from pybullet.
+                        pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+                        assert isinstance(pybullet_vehicle.chassis, BoxChassis)
                         pybullet_vehicle.update_state(vehicle, dt=dt)
                         pybullet_vehicle.updated = True
             else:
