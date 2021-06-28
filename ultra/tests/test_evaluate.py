@@ -170,13 +170,11 @@ class EvaluateTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
         )[0]
-        models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
         evaluate_command = (
             f"python ultra/evaluate.py "
-            f"--task 00 --level eval_test --models {models} --experiment-dir {experiment_dir} "
+            f"--task 00 --level eval_test --experiment-dir {experiment_dir} "
             f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
-
         ray.shutdown()
         try:
             os.system(evaluate_command)
@@ -198,10 +196,9 @@ class EvaluateTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*")
         )[0]
-        models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
         evaluate_command = (
             f"python ultra/evaluate.py "
-            f"--task 00-multiagent --level eval_test --models {models} --experiment-dir {experiment_dir} "
+            f"--task 00-multiagent --level eval_test --agents 000 --experiment-dir {experiment_dir} "
             f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
 
