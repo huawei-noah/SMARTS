@@ -127,6 +127,8 @@ class AgentType(IntEnum):
     """Controls multiple vehicles"""
     MPCTracker = 10
     """Agent performs trajectory tracking using model predictive control."""
+    TrajectoryInterpolator = 11
+    """Agent performs linear trajectory interpolation."""
     Imitation = 11
     """Agent sees neighbor vehicles and performs actions based on imitation-learned model (acceleration, angular_velocity)."""
 
@@ -338,7 +340,11 @@ class AgentInterface:
                 waypoints=True,
                 action=ActionSpaceType.Trajectory,
             )
-        # The MPC based trajectory tracking agent which receives a series of
+        # The trajectory interpolation agent which recieves a with-time-trajectory and move vehicle
+        # with linear time interpolation
+        elif requested_type == AgentType.TrajectoryInterpolator:
+            interface = AgentInterface(action=ActionSpaceType.TrajectoryWithTime)
+        # The MPC based trajectory tracking agent wich recieves a series of
         # reference trajectory points and speeds and computes the optimal
         # steering action.
         elif requested_type == AgentType.MPCTracker:

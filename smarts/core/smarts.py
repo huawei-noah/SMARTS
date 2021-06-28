@@ -44,6 +44,7 @@ from .bubble_manager import BubbleManager
 from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
 from .motion_planner_provider import MotionPlannerProvider
+from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .provider import Provider, ProviderState
 from .scenario import Scenario
 from .sensors import Collision
@@ -87,9 +88,11 @@ class SMARTS:
         self._traffic_sim = traffic_sim
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
+        self._trajectory_interpolation_provider = TrajectoryInterpolationProvider()
         self._providers = [
             self._motion_planner_provider,
             self._traffic_history_provider,
+            self._trajectory_interpolation_provider,
         ]
         if self._traffic_sim:
             self._providers.insert(0, self._traffic_sim)
