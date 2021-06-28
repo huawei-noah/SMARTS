@@ -28,8 +28,16 @@ import uuid
 
 import numpy as np
 
+_current_seed = None
+
+
+def current_seed():
+    return _current_seed
+
 
 def seed(a):
+    global _current_seed
+    _current_seed = a
     random.seed(a)
     np.random.seed(a)
 

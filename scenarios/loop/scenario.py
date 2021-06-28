@@ -1,8 +1,11 @@
 import random
 from pathlib import Path
 
+from smarts.core import seed
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
+
+seed(42)
 
 traffic = t.Traffic(
     flows=[
