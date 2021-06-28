@@ -35,13 +35,12 @@ from cached_property import cached_property
 
 from smarts.core.coordinates import Heading, Dimensions, RefLinePoint
 from smarts.core.data_model import SocialAgent
-from smarts.core.default_map_factory import create_road_map, create_map_planner
-from smarts.core.planner import (
+from smarts.core.default_map_factory import create_road_map
+from smarts.core.plan import (
     default_entry_tactic,
     EndlessGoal,
     LapMission,
     Mission,
-    Planner,
     PositionalGoal,
     Start,
     TraverseGoal,
@@ -85,7 +84,6 @@ class Scenario:
         self._logger = logging.getLogger(self.__class__.__name__)
         self._root = scenario_root
         self._route = route
-        self._last_planner_param = None
         self._missions = missions or {}
         self._bubbles = Scenario._discover_bubbles(scenario_root)
         self._social_agents = social_agents or {}
@@ -624,10 +622,6 @@ class Scenario:
     @property
     def root_filepath(self):
         return self._root
-
-    @cached_property
-    def planner(self) -> Planner:
-        return create_map_planner(self.road_map)
 
     @property
     def surface_patches(self):

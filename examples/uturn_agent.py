@@ -19,7 +19,7 @@ from smarts.core.utils.math import (
     signed_dist_to_line,
     vec_to_radians,
 )
-from smarts.core.planner import Waypoint
+from smarts.core.plan import Waypoint
 
 
 logging.basicConfig(level=logging.INFO)
@@ -49,7 +49,7 @@ class UTurnAgent(Agent):
 
         vehicle = self.sim._vehicle_index.vehicles_by_actor_id("Agent-007")[0]
 
-        miss = self.sim._vehicle_index.sensor_state_for_vehicle_id(vehicle.id).planner
+        miss = self.sim._vehicle_index.sensor_state_for_vehicle_id(vehicle.id).plan
 
         road_map = miss.road_map
 

@@ -19,9 +19,8 @@
 # THE SOFTWARE.
 
 
-from __future__ import (  # to allow for typing to refer to class being defined (Renderer)
-    annotations,
-)
+# to allow for typing to refer to class being defined (Renderer)
+from __future__ import annotations
 
 import importlib.resources as pkg_resources
 import logging

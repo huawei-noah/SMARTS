@@ -27,7 +27,7 @@ import numpy as np
 from shapely.geometry import Point, Polygon
 
 from smarts.core.coordinates import Point as MapPoint
-from smarts.core.planner import default_entry_tactic, Mission, Start
+from smarts.core.plan import default_entry_tactic, Mission, Start
 from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic
@@ -69,7 +69,7 @@ class TrapManager:
     def __init__(self, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
         self._traps: Dict[Trap] = defaultdict(None)
-        self._planner = scenario.planner
+        self._plan = scenario.road_map.create_plan()
         self.init_traps(scenario.road_map, scenario.missions)
 
     def init_traps(self, road_map, missions):
@@ -77,7 +77,7 @@ class TrapManager:
 
         for agent_id, mission in missions.items():
             if mission is None:
-                mission = self._planner.random_endless_mission()
+                mission = Mission.random_endless_mission(road_map)
 
             if not mission.entry_tactic:
                 mission = replace(mission, entry_tactic=default_entry_tactic())
@@ -88,7 +88,7 @@ class TrapManager:
             ):
                 continue
 
-            mission = self._planner.plan(mission)
+            mission = self._plan.create_route(mission)
 
             trap = self._mission2trap(road_map, mission)
             self.add_trap_for_agent_id(agent_id, trap)
@@ -246,12 +246,12 @@ class TrapManager:
     @staticmethod
     def _hijack_vehicle(sim, vehicle_id, agent_id, mission):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        planner = sim.scenario.planner
-        planner.plan(mission=mission)
+        plan = sim.road_map.create_plan()
+        plan.create_route(mission=mission)
 
         # Apply agent vehicle association.
         sim.vehicle_index.start_agent_observation(
-            sim, vehicle_id, agent_id, agent_interface, planner
+            sim, vehicle_id, agent_id, agent_interface, plan
         )
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         vehicle = sim.vehicle_index.switch_control_to_agent(
@@ -267,14 +267,14 @@ class TrapManager:
     @staticmethod
     def _make_vehicle(sim, agent_id, mission, initial_speed):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        planner = sim.scenario.planner
-        planner.plan(mission=mission)
+        plan = sim.road_map.create_plan()
+        plan.create_route(mission=mission)
         # 3. Apply agent vehicle association.
         vehicle = sim.vehicle_index.build_agent_vehicle(
             sim,
             agent_id,
             agent_interface,
-            planner,
+            plan,
             sim.scenario.vehicle_filepath,
             sim.scenario.tire_parameters_filepath,
             True,

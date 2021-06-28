@@ -17,6 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+# to allow for typing to refer to class being defined (Mission)...
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 import math
 import random
@@ -67,7 +71,7 @@ class PositionalGoal(Goal):
     radius: float
 
     @classmethod
-    def fromedge(cls, road_id, road_map, lane_index=0, lane_offset=None, radius=1):
+    def from_edge(cls, road_id, road_map, lane_index=0, lane_offset=None, radius=1):
         road = road_map.road_by_id(road_id)
         lane = road.lane_at_index(lane_index)  # XXX: bidirectional roads?
 
@@ -201,6 +205,31 @@ class Mission:
     def is_complete(self, vehicle, distance_travelled: float) -> bool:
         return self.goal.is_reached(vehicle)
 
+    @staticmethod
+    def random_endless_mission(
+        road_map: RoadMap, min_range_along_lane=0.3, max_range_along_lane=0.9
+    ) -> Mission:
+        assert min_range_along_lane > 0  # Need to start further than beginning of lane
+        assert max_range_along_lane < 1  # Cannot start past end of lane
+        assert min_range_along_lane < max_range_along_lane  # Min must be less than max
+
+        road = road_map.random_route(1).roads[0]
+        n_lane = random.choice(road.lanes)
+
+        # XXX: The ends of the road are not as useful as starting mission locations.
+        #      Sumo complains if we get too close to 0 or `lane_length`.
+        offset = random.random() * min_range_along_lane + (
+            max_range_along_lane - min_range_along_lane
+        )
+        offset *= n_lane.length
+        coord = n_lane.from_lane_coord(RefLinePoint(offset))
+        target_pose = n_lane.target_pose_at_point(coord)
+        return Mission(
+            start=Start(target_pose.position, target_pose.heading),
+            goal=EndlessGoal(),
+            entry_tactic=None,
+        )
+
 
 @dataclass(frozen=True)
 class LapMission:
@@ -294,7 +323,7 @@ class Waypoint:
         return np.linalg.norm(self.pos - p[: len(self.pos)])
 
 
-class Planner:
+class Plan:
     def __init__(self, road_map: RoadMap):
         self._road_map = road_map
         self._mission = None
@@ -312,63 +341,39 @@ class Planner:
     def road_map(self) -> RoadMap:
         return self._road_map
 
-    def random_endless_mission(
-        self, min_range_along_lane=0.3, max_range_along_lane=0.9
-    ) -> Mission:
-        assert min_range_along_lane > 0  # Need to start further than beginning of lane
-        assert max_range_along_lane < 1  # Cannot start past end of lane
-        assert min_range_along_lane < max_range_along_lane  # Min must be less than max
-
-        road = self._road_map.random_route(1).roads[0]
-        n_lane = random.choice(road.lanes)
-
-        # XXX: The ends of the road are not as useful as starting mission locations.
-        #      Sumo complains if we get too close to 0 or `lane_length`.
-        offset = random.random() * min_range_along_lane + (
-            max_range_along_lane - min_range_along_lane
-        )
-        offset *= n_lane.length
-        coord = n_lane.from_lane_coord(RefLinePoint(offset))
-        target_pose = n_lane.target_pose_at_point(coord)
-        return Mission(
-            start=Start(target_pose.position, target_pose.heading),
-            goal=EndlessGoal(),
-            entry_tactic=None,
-        )
-
-    def plan(self, mission=None):  # -> Mission
-        self._mission = mission or self.random_endless_mission()
+    def create_route(self, mission=None):  # -> Mission
+        assert not self._route, "already called plan"
+        self._mission = mission or Mission.random_endless_mission(self._road_map)
 
         if not self._mission.has_fixed_route:
             self._route = RoadMap.Route()
-        else:
-            start_lane = self._road_map.nearest_lane(
-                self._mission.start.point,
-                include_junctions=False,
+            return self._mission
+
+        start_lane = self._road_map.nearest_lane(
+            self._mission.start.point,
+            include_junctions=False,
+        )
+        start_road = start_lane.road
+
+        end_lane = self._road_map.nearest_lane(
+            self._mission.goal.position,
+            include_junctions=False,
+        )
+        end_road = end_lane.road
+
+        via_roads = [self._road_map.road_by_id(via) for via in self._mission.route_vias]
+
+        self._route = self._road_map.generate_routes(
+            start_road, end_road, via_roads, 1
+        )[0]
+
+        if len(self._route.roads) == 0:
+            raise PlanningError(
+                "Unable to find a route between start={} and end={}. If either of "
+                "these are junctions (not well supported today) please switch to "
+                "roads and ensure there is a > 0 offset into the road if it's "
+                "after a junction.".format(start_road.road_id, end_road.road_id)
             )
-            start_road = start_lane.road
-
-            end_lane = self._road_map.nearest_lane(
-                self._mission.goal.position,
-                include_junctions=False,
-            )
-            end_road = end_lane.road
-
-            via_roads = [
-                self._road_map.road_by_id(via) for via in self._mission.route_vias
-            ]
-
-            self._route = self._road_map.generate_routes(
-                start_road, end_road, via_roads, 1
-            )[0]
-
-            if len(self._route.roads) == 0:
-                raise PlanningError(
-                    "Unable to find a route between start={} and end={}. If either of "
-                    "these are junctions (not well supported today) please switch to "
-                    "roads and ensure there is a > 0 offset into the road if it's "
-                    "after a junction.".format(start_road.road_id, end_road.road_id)
-                )
 
         return self._mission
 

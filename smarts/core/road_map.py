@@ -17,9 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from __future__ import (  # to allow for typing to refer to class being defined (RoadMap)
-    annotations,
-)
+
+# to allow for typing to refer to class being defined (RoadMap)
+from __future__ import annotations
+
 from typing import NamedTuple, List, Sequence
 
 import numpy as np
@@ -282,6 +283,9 @@ class RoadMap:
         @property
         def geometry(self) -> List[Point]:
             raise NotImplementedError()
+
+    def create_plan(self):  # -> Plan
+        raise NotImplementedError()
 
     class Route:
         @property

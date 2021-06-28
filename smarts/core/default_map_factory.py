@@ -20,9 +20,7 @@
 
 import os
 from typing import Tuple
-from smarts.core.planner import Planner
 from smarts.core.road_map import RoadMap
-from smarts.core.sumo_planner import SumoPlanner
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.file import file_md5_hash
 
@@ -35,9 +33,6 @@ from smarts.core.utils.file import file_md5_hash
 # map formats (by extending the RoadMap base class) can replace this
 # file with their own version and whouldn't have to change much else.
 #
-# Similarly, if a Planner is associated with the specific map format,
-# the base Planner class can be extended and the create_map_planner()
-# factory method below can be replaced.
 
 
 def create_road_map(
@@ -67,8 +62,3 @@ def create_road_map(
     road_map_hash = file_md5_hash(road_map.source)
 
     return road_map, road_map_hash
-
-
-def create_map_planner(road_map: RoadMap) -> Planner:
-    assert isinstance(road_map, SumoRoadNetwork)
-    return SumoPlanner(road_map)

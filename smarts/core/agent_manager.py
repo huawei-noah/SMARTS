@@ -400,14 +400,14 @@ class AgentManager:
 
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
-        planner = scenario.planner
-        planner.plan(mission)
+        plan = scenario.road_map.create_plan()
+        plan.create_route(mission)
 
         vehicle = sim.vehicle_index.build_agent_vehicle(
             sim,
             agent_id,
             agent_interface,
-            planner,
+            plan,
             scenario.vehicle_filepath,
             scenario.tire_parameters_filepath,
             trainable,
@@ -509,13 +509,13 @@ class AgentManager:
             if sv_id in self._vehicle_with_sensors:
                 continue
 
-            planner = sim.scenario.planner
-            planner.plan(mission=None)
+            plan = sim.road_map.create_plan()
+            plan.create_route(mission=None)
 
             agent_id = f"Agent-{sv_id}"
             self._vehicle_with_sensors[sv_id] = agent_id
             self._agent_interfaces[agent_id] = agent_interface
 
             sim.vehicle_index.attach_sensors_to_vehicle(
-                sim, sv_id, agent_interface, planner
+                sim, sv_id, agent_interface, plan
             )

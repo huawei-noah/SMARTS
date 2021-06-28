@@ -297,7 +297,7 @@ class Vehicle:
         sim,
         vehicle_id,
         agent_interface,
-        planner,
+        plan,
         vehicle_filepath,
         tire_filepath,
         trainable,
@@ -305,7 +305,7 @@ class Vehicle:
         controller_filepath,
         initial_speed=None,
     ):
-        mission = planner.mission
+        mission = plan.mission
 
         if mission.vehicle_spec:
             # mission.vehicle_spec.veh_type will always be "passenger" for now,
@@ -397,14 +397,14 @@ class Vehicle:
         )
 
     @staticmethod
-    def attach_sensors_to_vehicle(sim, vehicle, agent_interface, planner):
+    def attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan):
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
         vehicle.attach_trip_meter_sensor(
             TripMeterSensor(
                 vehicle=vehicle,
                 sim=sim,
-                planner=planner,
+                plan=plan,
             )
         )
 
@@ -433,7 +433,7 @@ class Vehicle:
             vehicle.attach_waypoints_sensor(
                 WaypointsSensor(
                     vehicle=vehicle,
-                    planner=planner,
+                    plan=plan,
                     lookahead=agent_interface.waypoints.lookahead,
                 )
             )
@@ -443,7 +443,7 @@ class Vehicle:
                 RoadWaypointsSensor(
                     vehicle=vehicle,
                     sim=sim,
-                    planner=planner,
+                    plan=plan,
                     horizon=agent_interface.road_waypoints.horizon,
                 )
             )
@@ -496,7 +496,7 @@ class Vehicle:
         vehicle.attach_via_sensor(
             ViaSensor(
                 vehicle=vehicle,
-                planner=planner,
+                plan=plan,
                 lane_acquisition_range=40,
                 speed_accuracy=1.5,
             )

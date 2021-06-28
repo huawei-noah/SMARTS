@@ -27,7 +27,7 @@ from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 import numpy as np
 
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
-from smarts.core.planner import Planner, Waypoint
+from smarts.core.plan import Plan, Waypoint
 from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
@@ -35,7 +35,7 @@ from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
-from .planner import Mission, Via
+from .plan import Mission, Via
 from .renderer import Renderer
 
 logger = logging.getLogger(__name__)
@@ -73,8 +73,8 @@ class EgoVehicleObservation(NamedTuple):
 
 
 class RoadWaypoints(NamedTuple):
-    lanes: Dict[str, List[Waypoint]]
-    route_waypoints: List[Waypoint]
+    lanes: Dict[str, List[List[Waypoint]]]
+    route_waypoints: List[List[Waypoint]]
 
 
 class GridMapMetadata(NamedTuple):
@@ -192,7 +192,7 @@ class Sensors:
         if vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
-            waypoint_paths = sensor_state.planner.waypoint_paths(
+            waypoint_paths = sensor_state.plan.waypoint_paths(
                 vehicle.pose,
                 lookahead=1,
                 within_radius=vehicle.length,
@@ -241,7 +241,7 @@ class Sensors:
             road_id=ego_road_id,
             lane_id=ego_lane_id,
             lane_index=ego_lane_index,
-            mission=sensor_state.planner.mission,
+            mission=sensor_state.plan.mission,
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,
             **acceleration_params,
@@ -403,7 +403,7 @@ class Sensors:
     def _agent_reached_goal(cls, sim, vehicle):
         sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
         distance_travelled = vehicle.trip_meter_sensor()
-        mission = sensor_state.planner.mission
+        mission = sensor_state.plan.mission
         return mission.is_complete(vehicle, distance_travelled)
 
     @classmethod
@@ -452,7 +452,7 @@ class Sensors:
         """
 
         sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-        route_roads = sensor_state.planner.route.roads
+        route_roads = sensor_state.plan.route.roads
 
         vehicle_pos = Point(*vehicle.position)
         vehicle_minimum_radius_bounds = (
@@ -567,9 +567,9 @@ class Sensor:
 
 
 class SensorState:
-    def __init__(self, max_episode_steps, planner):
+    def __init__(self, max_episode_steps, plan):
         self._max_episode_steps = max_episode_steps
-        self._planner = planner
+        self._plan = plan
         self._step = 0
 
     def step(self):
@@ -583,8 +583,8 @@ class SensorState:
         return self._step >= self._max_episode_steps
 
     @property
-    def planner(self):
-        return self._planner
+    def plan(self):
+        return self._plan
 
     @property
     def steps_completed(self):
@@ -823,12 +823,12 @@ class TripMeterSensor(Sensor):
     off-route are not counted as part of the total.
     """
 
-    def __init__(self, vehicle, sim, planner):
+    def __init__(self, vehicle, sim, plan):
         self._vehicle = vehicle
         self._sim = sim
-        self._planner = planner
+        self._plan = plan
 
-        waypoint_paths = planner.waypoint_paths(
+        waypoint_paths = plan.waypoint_paths(
             vehicle.pose,
             lookahead=1,
             within_radius=vehicle.length,
@@ -851,9 +851,9 @@ class TripMeterSensor(Sensor):
 
         should_count_wp = (
             # if we do not have a fixed route, we count all waypoints we accumulate
-            not self._planner.mission.has_fixed_route
+            not self._plan.mission.has_fixed_route
             # if we have a route to follow, only count wps on route
-            or wp_road in self._planner.route.roads
+            or wp_road in self._plan.route.roads
         )
 
         threshold_for_counting_wp = 0.5  # meters from last tracked waypoint
@@ -904,13 +904,13 @@ class NeighborhoodVehiclesSensor(Sensor):
 
 
 class WaypointsSensor(Sensor):
-    def __init__(self, vehicle, planner: Planner, lookahead=32):
+    def __init__(self, vehicle, plan: Plan, lookahead=32):
         self._vehicle = vehicle
-        self._planner = planner
+        self._plan = plan
         self._lookahead = lookahead
 
     def __call__(self):
-        return self._planner.waypoint_paths(
+        return self._plan.waypoint_paths(
             self._vehicle.pose,
             lookahead=self._lookahead,
         )
@@ -920,10 +920,10 @@ class WaypointsSensor(Sensor):
 
 
 class RoadWaypointsSensor(Sensor):
-    def __init__(self, vehicle, sim, planner, horizon=32):
+    def __init__(self, vehicle, sim, plan, horizon=32):
         self._vehicle = vehicle
         self._road_map = sim.road_map
-        self._planner = planner
+        self._plan = plan
         self._horizon = horizon
 
     def __call__(self):
@@ -939,7 +939,7 @@ class RoadWaypointsSensor(Sensor):
         return RoadWaypoints(lanes=lane_paths, route_waypoints=route_waypoints)
 
     def route_waypoints(self):
-        return self._planner.waypoint_paths(
+        return self._plan.waypoint_paths(
             self._vehicle.pose,
             lookahead=self._horizon,
         )
@@ -963,7 +963,7 @@ class RoadWaypointsSensor(Sensor):
             wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
             adj_pose = Pose.from_center(wp_start, self._vehicle.heading)
             wps_to_lookahead = self._horizon * 2
-            paths = self._planner.waypoint_paths_on_lane_at_point(
+            paths = self._plan.waypoint_paths_on_lane_at_point(
                 pose=adj_pose,
                 lane_id=lane.lane_id,
                 lookahead=wps_to_lookahead,
@@ -1018,16 +1018,16 @@ class AccelerometerSensor(Sensor):
 
 
 class ViaSensor(Sensor):
-    def __init__(self, vehicle, planner, lane_acquisition_range, speed_accuracy):
+    def __init__(self, vehicle, plan, lane_acquisition_range, speed_accuracy):
         self._consumed_via_points = set()
-        self._planner: Planner = planner
+        self._plan: Plan = plan
         self._acquisition_range = lane_acquisition_range
         self._vehicle = vehicle
         self._speed_accuracy = speed_accuracy
 
     @property
     def _vias(self) -> Iterable[Via]:
-        return self._planner.mission.via
+        return self._plan.mission.via
 
     def __call__(self):
         near_points: List[ViaPoint] = list()
@@ -1036,7 +1036,7 @@ class ViaSensor(Sensor):
 
         @lru_cache()
         def closest_point_on_lane(position, lane_id):
-            lane = self._planner.road_map.lane_by_id(lane_id)
+            lane = self._plan.road_map.lane_by_id(lane_id)
             return lane.center_at_point(position)
 
         for via in self._vias:

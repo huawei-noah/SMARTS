@@ -17,9 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from __future__ import (  # to allow for typing to refer to class being defined (LinkedLanePoint)
-    annotations,
-)
+
+# to allow for typing to refer to class being defined (LinkedLanePoint)
+from __future__ import annotations
 
 import math
 import queue
