@@ -52,7 +52,6 @@ class ExternalProvider(Provider):
         # by an appropriate amount based on staleness, since we can't assume external state
         # is updated in sync with our steps.  However, this is very complicated because we
         # we've *already* simulated this time period.  So we just "eat it" for now!
-        assert not step_delta or staleness <= step_delta
         self._ext_vehicle_states = vehicle_states
         self._last_step_delta = step_delta
 
@@ -63,7 +62,7 @@ class ExternalProvider(Provider):
     @property
     def _provider_state(self):
         dt = self._sim.elapsed_sim_time - self._last_fresh_step
-        if self._ext_vehicle_states != self._sent_states:
+        if id(self._ext_vehicle_states) != id(self._sent_states):
             self._last_fresh_step = self._sim.elapsed_sim_time
             self._sent_states = self._ext_vehicle_states
         return ProviderState(vehicles=self._ext_vehicle_states, dt=dt)
@@ -91,7 +90,7 @@ class ExternalProvider(Provider):
                 linear_acc, angular_acc, _, _ = vehicle.accelerometer_sensor(
                     vehicle.state.linear_velocity,
                     vehicle.state.angular_velocity,
-                    self._last_time_delta,
+                    self._last_step_delta,
                 )
             result.append(vehicle.state)
         # TODO: include done, events and reward (if agent)?

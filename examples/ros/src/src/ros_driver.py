@@ -119,7 +119,7 @@ class ROSDriver:
             entities.append(vs)
         staleness = (rospy.get_rostime() - state_to_send.header.stamp).to_sec()
         rospy.logdebug(
-            f"sending state to SMARTS w/ time_delta={time_delta}, staleness={staleness}..."
+            f"sending state to SMARTS w/ step_delta={step_delta}, staleness={staleness}..."
         )
         self._smarts.external_provider.state_update(entities, step_delta, staleness)
         return True
