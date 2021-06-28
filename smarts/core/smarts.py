@@ -90,6 +90,15 @@ class SMARTS:
         self._visdom: VisdomClient = visdom
         self._traffic_sim = traffic_sim
         self._external_provider = None
+
+        assert fixed_timestep_sec is None or fixed_timestep_sec > 0
+        self.fixed_timestep_sec = fixed_timestep_sec
+        self._last_dt = fixed_timestep_sec
+
+        self._elapsed_sim_time = 0
+        self._total_sim_time = 0
+        self._setep_count = 0
+
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
         self._providers = [
@@ -106,14 +115,6 @@ class SMARTS:
         self._last_provider_state = None
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
         self._imitation_learning_mode = False
-
-        assert fixed_timestep_sec is None or fixed_timestep_sec > 0
-        self.fixed_timestep_sec = fixed_timestep_sec
-        self._last_dt = fixed_timestep_sec
-
-        self._elapsed_sim_time = 0
-        self._total_sim_time = 0
-        self._setep_count = 0
 
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
