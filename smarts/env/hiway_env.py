@@ -132,6 +132,10 @@ class HiWayEnv(gym.Env):
         )
 
     @property
+    def agent_specs(self):
+        return self._agent_specs
+
+    @property
     def scenario_log(self):
         """Simulation step logs.
 

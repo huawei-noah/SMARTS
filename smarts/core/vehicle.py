@@ -25,7 +25,6 @@ from functools import lru_cache
 
 import numpy
 import yaml
-from direct.showbase.ShowBase import ShowBase
 
 from smarts.sstudio.types import UTurn
 
@@ -33,7 +32,6 @@ from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
-from .masks import RenderMasks
 from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
@@ -75,6 +73,7 @@ class VehicleConfig:
 # A mapping between SUMO's vehicle types and our internal vehicle config.
 # TODO: Don't leak SUMO's types here.
 # XXX: The GLB's dimensions must match the specified dimensions here.
+# TODO: for traffic histories, vehicle (and road) dimensions are set by the dataset
 VEHICLE_CONFIGS = {
     "passenger": VehicleConfig(
         vehicle_type="car",
@@ -106,6 +105,18 @@ VEHICLE_CONFIGS = {
         dimensions=BoundingBox(length=10, width=2.5, height=4),
         glb_model="trailer.glb",
     ),
+    "pedestrian": VehicleConfig(
+        vehicle_type="pedestrian",
+        color=SceneColors.SocialVehicle.value,
+        dimensions=BoundingBox(length=0.5, width=0.5, height=1.6),
+        glb_model="pedestrian.glb",
+    ),
+    "motorcycle": VehicleConfig(
+        vehicle_type="motorcycle",
+        color=SceneColors.SocialVehicle.value,
+        dimensions=BoundingBox(length=2.5, width=1, height=1.4),
+        glb_model="motorcycle.glb",
+    ),
 }
 
 # TODO: Replace VehicleConfigs w/ the VehicleGeometry class
@@ -115,12 +126,22 @@ class VehicleGeometry:
         pass
 
 
+class RendererException(Exception):
+    """An exception raised if a renderer is required but not available."""
+
+    @classmethod
+    def required_to(cls, thing):
+        return cls(
+            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
+        )
+
+
 class Vehicle:
     def __init__(
         self,
         id: str,
+        # XXX: can probably remove pose as a parameter here since it's in chassis now.
         pose: Pose,
-        showbase: ShowBase,
         chassis: Chassis,
         # TODO: We should not be leaking SUMO here.
         sumo_vehicle_type="passenger",
@@ -133,7 +154,6 @@ class Vehicle:
         self._id = id
 
         self._chassis = chassis
-        self._showbase = showbase
         self._sumo_vehicle_type = sumo_vehicle_type
         self._action_space = action_space
         self._speed = None
@@ -141,32 +161,19 @@ class Vehicle:
         self._meta_create_sensor_functions()
         self._sensors = {}
 
-        config = VEHICLE_CONFIGS[sumo_vehicle_type]
-
         # Color override
         self._color = color
         if self._color is None:
+            config = VEHICLE_CONFIGS[sumo_vehicle_type]
             self._color = config.color
 
-        # TODO: Move this into the VehicleGeometry class
-        self._np = self._build_model(pose, config, showbase)
+        self._renderer = None
+
         self._initialized = True
         self._has_stepped = False
 
     def _assert_initialized(self):
         assert self._initialized, f"Vehicle({self.id}) is not initialized"
-
-    def _build_model(self, pose: Pose, config: VehicleConfig, showbase):
-        with pkg_resources.path(models, config.glb_model) as path:
-            node_path = showbase.loader.loadModel(str(path.absolute()))
-
-        node_path.setName("vehicle-%s" % self._id)
-        node_path.setColor(self._color)
-        pos, heading = pose.as_panda3d()
-        node_path.setPosHpr(*pos, heading, 0, 0)
-        node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
-
-        return node_path
 
     def __repr__(self):
         return f"""Vehicle({self.id},
@@ -218,15 +225,14 @@ class Vehicle:
         self._assert_initialized()
         return self._sensors
 
+    @property
+    def renderer(self):
+        return self._renderer
+
     # # TODO: See issue #898 This is a currently a no-op
     # @speed.setter
     # def speed(self, speed):
     #     self._chassis.speed = speed
-
-    @property
-    def np(self):
-        self._assert_initialized()
-        return self._np
 
     @property
     def vehicle_color(self):
@@ -280,15 +286,15 @@ class Vehicle:
         self._assert_initialized()
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
-        half_length = self.length / 2
-        half_width = self.width / 2
-        corners = [(-1, 1), (1, 1), (1, -1), (-1, -1)]
+        origin = self.position[:2]
+        dimensions = numpy.array([self.width, self.length])
+        corners = numpy.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
+        heading = self.heading
         return [
             rotate_around_point(
-                point=self.position[:2]
-                + numpy.array(corner) * numpy.array([half_width, half_length]),
-                radians=self.heading,
-                origin=self.position[:2],
+                point=origin + corner * dimensions,
+                radians=heading,
+                origin=origin,
             )
             for corner in corners
         ]
@@ -310,15 +316,23 @@ class Vehicle:
         controller_filepath,
         initial_speed=None,
     ):
-        # Agents can currently only control passenger vehicles
-        vehicle_type = "passenger"
-        chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+        mission = mission_planner.mission
 
-        if isinstance(mission_planner.mission.task, UTurn):
-            if mission_planner.mission.task.initial_speed:
-                initial_speed = mission_planner.mission.task.initial_speed
+        if mission.vehicle_spec:
+            # mission.vehicle_spec.veh_type will always be "passenger" for now,
+            # but we use that value here in case we ever expand our history functionality.
+            vehicle_type = mission.vehicle_spec.veh_type
+            chassis_dims = mission.vehicle_spec.dimensions
+        else:
+            # non-history agents can currently only control passenger vehicles.
+            vehicle_type = "passenger"
+            chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
 
-        start = mission_planner.mission.start
+        if isinstance(mission.task, UTurn):
+            if mission.task.initial_speed:
+                initial_speed = mission.task.initial_speed
+
+        start = mission.start
         start_pose = Pose.from_front_bumper(
             front_bumper_position=numpy.array(start.position),
             heading=start.heading,
@@ -352,7 +366,11 @@ class Vehicle:
 
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
-        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+        if (
+            agent_interface
+            and agent_interface.action in sim.dynamic_action_spaces
+            and not mission.vehicle_spec
+        ):
             chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
@@ -373,7 +391,6 @@ class Vehicle:
         vehicle = Vehicle(
             id=vehicle_id,
             pose=start_pose,
-            showbase=sim,
             chassis=chassis,
             color=vehicle_color,
         )
@@ -385,7 +402,6 @@ class Vehicle:
         return Vehicle(
             id=vehicle_id,
             pose=vehicle_state.pose,
-            showbase=sim,
             chassis=BoxChassis(
                 pose=vehicle_state.pose,
                 speed=vehicle_state.speed,
@@ -449,36 +465,39 @@ class Vehicle:
             )
 
         if agent_interface.drivable_area_grid_map:
+            if not sim.renderer:
+                raise RendererException.required_to("add a drivable_area_grid_map")
             vehicle.attach_drivable_area_grid_map_sensor(
                 DrivableAreaGridMapSensor(
                     vehicle=vehicle,
                     width=agent_interface.drivable_area_grid_map.width,
                     height=agent_interface.drivable_area_grid_map.height,
                     resolution=agent_interface.drivable_area_grid_map.resolution,
-                    scene_np=sim.np,
-                    showbase=sim,
+                    renderer=sim.renderer,
                 )
             )
         if agent_interface.ogm:
+            if not sim.renderer:
+                raise RendererException.required_to("add an OGM")
             vehicle.attach_ogm_sensor(
                 OGMSensor(
                     vehicle=vehicle,
                     width=agent_interface.ogm.width,
                     height=agent_interface.ogm.height,
                     resolution=agent_interface.ogm.resolution,
-                    scene_np=sim.np,
-                    showbase=sim,
+                    renderer=sim.renderer,
                 )
             )
         if agent_interface.rgb:
+            if not sim.renderer:
+                raise RendererException.required_to("add an RGB camera")
             vehicle.attach_rgb_sensor(
                 RGBSensor(
                     vehicle=vehicle,
                     width=agent_interface.rgb.width,
                     height=agent_interface.rgb.height,
                     resolution=agent_interface.rgb.resolution,
-                    scene_np=sim.np,
-                    showbase=sim,
+                    renderer=sim.renderer,
                 )
             )
         if agent_interface.lidar:
@@ -486,7 +505,6 @@ class Vehicle:
                 LidarSensor(
                     vehicle=vehicle,
                     bullet_client=sim.bc,
-                    showbase=sim,
                     sensor_params=agent_interface.lidar.sensor_params,
                 )
             )
@@ -507,9 +525,17 @@ class Vehicle:
     def control(self, *args, **kwargs):
         self._chassis.control(*args, **kwargs)
 
-    def sync_to_panda3d(self):
-        pos, heading = self._chassis.pose.as_panda3d()
-        self._np.setPosHpr(*pos, heading, 0, 0)
+    def create_renderer_node(self, renderer):
+        assert not self._renderer
+        self._renderer = renderer
+        config = VEHICLE_CONFIGS[self._sumo_vehicle_type]
+        self._renderer.create_vehicle_node(
+            config.glb_model, self._id, self.vehicle_color, self.pose
+        )
+
+    def sync_to_renderer(self):
+        assert self._renderer
+        self._renderer.update_vehicle_node(self._id, self.pose)
 
     @lru_cache(maxsize=1)
     def _warn_AckermannChassis_set_pose(self):
@@ -546,7 +572,8 @@ class Vehicle:
 
         if not exclude_chassis:
             self._chassis.teardown()
-        self._np.removeNode()
+        if self._renderer:
+            self._renderer.remove_vehicle_node(self._id)
         self._initialized = False
 
     def _meta_create_sensor_functions(self):

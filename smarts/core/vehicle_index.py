@@ -21,7 +21,7 @@ import logging
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from typing import NamedTuple
+from typing import FrozenSet, NamedTuple
 
 import numpy as np
 import tableprint as tp
@@ -164,11 +164,15 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
-    def social_vehicle_ids(self):
+    def social_vehicle_ids(self, vehicle_types: FrozenSet[str] = None):
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Social
         ]["vehicle_id"]
-        vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
+        vehicle_ids = [
+            self._2id_to_id[id_]
+            for id_ in vehicle_ids
+            if not vehicle_types or self._vehicles[id_].vehicle_type in vehicle_types
+        ]
         return set(vehicle_ids)
 
     @cache
@@ -601,7 +605,9 @@ class VehicleIndex:
         Vehicle.attach_sensors_to_vehicle(
             sim, vehicle, agent_interface, sensor_state.mission_planner
         )
-        vehicle.np.reparentTo(sim.vehicles_np)
+        if sim.is_rendering:
+            vehicle.create_renderer_node(sim.renderer)
+            sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=True)
 
         vehicle_id = _2id(vehicle.id)
         agent_id = _2id(original_agent_id)
@@ -635,7 +641,9 @@ class VehicleIndex:
         )
 
         vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id)
-        vehicle.np.reparentTo(sim._root_np)
+        if sim.is_rendering:
+            vehicle.create_renderer_node(sim.renderer)
+            sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=False)
 
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
@@ -651,6 +659,14 @@ class VehicleIndex:
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
         return vehicle
+
+    def begin_rendering_vehicles(self, renderer):
+        agent_ids = self.agent_vehicle_ids()
+        for vehicle in self._vehicles.values():
+            if not vehicle.renderer:
+                vehicle.create_renderer_node(renderer)
+                is_agent = vehicle.id in agent_ids
+                renderer.begin_rendering_vehicle(vehicle.id, is_agent)
 
     def sensor_states_items(self):
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._sensor_states.items())
