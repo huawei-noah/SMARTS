@@ -97,7 +97,7 @@ class SMARTS:
 
         self._elapsed_sim_time = 0
         self._total_sim_time = 0
-        self._setep_count = 0
+        self._step_count = 0
 
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
@@ -199,10 +199,7 @@ class SMARTS:
         # 0. Advance the simulation clock.
         # It's been this long since our last step.
         self._last_dt = time_delta_since_last_step or self._fixed_timestep_sec or 0.1
-        if self._step_count > 0:
-            self._elapsed_sim_time = self._rounder(
-                self._elapsed_sim_time + self._last_dt
-            )
+        self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + self._last_dt)
 
         # 1. Fetch agent actions
         all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
@@ -324,6 +321,7 @@ class SMARTS:
 
         # Visualization
         self._try_emit_visdom_obs(observations)
+
         if len(self._agent_manager.ego_agent_ids):
             while len(observations_for_ego) < 1:
                 observations_for_ego, _, _, _ = self.step({})
