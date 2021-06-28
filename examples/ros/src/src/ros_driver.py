@@ -81,6 +81,48 @@ class ROSDriver:
         with self._state_lock:
             self._latest_state = entities
 
+    def _decode_entity_type(self, entity_type: int) -> str:
+        if entity_type == EntityState.ENTITY_TYPE_CAR:
+            return "passenger"
+        if entity_type == EntityState.ENTITY_TYPE_TRUCK:
+            return "truck"
+        if entity_type == EntityState.ENTITY_TYPE_TRAILER:
+            return "trailer"
+        if entity_type == EntityState.ENTITY_TYPE_BUS:
+            return "bus"
+        if entity_type == EntityState.ENTITY_TYPE_COACH:
+            return "coach"
+        if entity_type == EntityState.ENTITY_TYPE_PEDESTRIAN:
+            return "pedestrian"
+        if entity_type == EntityState.ENTITY_TYPE_MOTORCYCLE:
+            return "motorcycle"
+        if entity_type == EntityState.ENTITY_TYPE_UNSPECIFIED:
+            return "passenger"
+        rospy.logwarn(
+            f"unsupported entity_type {entity_type}. defaulting to passenger car."
+        )
+        return "passenger"
+
+    def _encode_entity_type(self, entity_type: str) -> int:
+        if entity_type in ["passenger", "car"]:
+            return EntityState.ENTITY_TYPE_CAR
+        if entity_type == "truck":
+            return EntityState.ENTITY_TYPE_TRUCK
+        if entity_type == "trailer":
+            return EntityState.ENTITY_TYPE_TRAILER
+        if entity_type == "bus":
+            return EntityState.ENTITY_TYPE_BUS
+        if entity_type == "coach":
+            return EntityState.ENTITY_TYPE_COACH
+        if entity_type == "pedestrian":
+            return EntityState.ENTITY_TYPE_PEDESTRIAN
+        if entity_type == "motorcycle":
+            return EntityState.ENTITY_TYPE_MOTORCYCLE
+        if entity_type is None:
+            return EntityState.ENTITY_TYPE_UNSPECIFIED
+        rospy.logwarn(f"unsupported entity_type {entity_type}. defaulting to 'car'.")
+        return EntityState.ENTITY_TYPE_CAR
+
     def _update_smarts_state(self, step_delta: float) -> bool:
         with self._state_lock:
             state_to_send = self._latest_state
@@ -104,10 +146,11 @@ class ROSDriver:
             linear_acc = np.array((lacc.x, lacc.y, lacc.z))
             aacc = entity.acceleration.angular
             angular_acc = np.array((aacc.x, aacc.y, aacc.z))
+            vehicle_type = self._decode_entity_type(entity.entity_type)
             vs = VehicleState(
                 source="EXTERNAL",
                 vehicle_id=entity.entity_id,
-                vehicle_config_type="passenger",
+                vehicle_config_type=vehicle_type,
                 privileged=True,
                 pose=Pose(pos, qt),
                 dimensions=BoundingBox(entity.length, entity.width, entity.height),
@@ -140,6 +183,7 @@ class ROSDriver:
         for vehicle in smarts_state:
             entity = EntityState()
             entity.entity_id = vehicle.vehicle_id
+            entity.entity_type = self._encode_entity_type(vehicle.vehicle_type)
             entity.length = vehicle.dimensions.length
             entity.width = vehicle.dimensions.width
             entity.height = vehicle.dimensions.height
