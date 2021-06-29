@@ -60,9 +60,7 @@ bubbles = [
     t.Bubble(
         zone=t.MapZone(start=("edge-west-WE", 0, 50), length=10, n_lanes=1),
         margin=2,
-        actor=t.SocialAgentActor(
-            name="zoo-agent",
-            agent_locator=f"{agent_prefabs}:zoo-agent-v0",
+        actor=zoo_agent_actor,
         ),
     ),
     t.Bubble(
