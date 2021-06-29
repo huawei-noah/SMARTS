@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import rospy
 import std_msgs
 import sys
@@ -50,44 +51,62 @@ class ROSDriver:
     def setup_ros(
         self,
         node_name: str = "SMARTS",
-        namespace: str = "SMARTS",
-        target_freq: float = None,
+        def_namespace: str = "SMARTS/",
         buffer_size: int = 3,
+        target_freq: float = None,
+        time_ratio: float = 1.0,
         pub_queue_size: int = 10,
     ):
         assert not self._publisher
         # enforce only one SMARTS instance per ROS network...
+        # NOTE: The node name specified here may be overridden by ROS
+        # remapping arguments from the command line invocation.
         rospy.init_node(node_name, anonymous=False)
 
-        out_topic = f"{namespace}/entities_out"
+        # If the namespace is aready set in the environment, we use it,
+        # otherwise we use our default.
+        namespace = def_namespace if not os.environ.get("ROS_NAMESPACE") else ""
+
         self._publisher = rospy.Publisher(
-            out_topic, EntitiesStamped, queue_size=pub_queue_size
+            f"{namespace}entities_out", EntitiesStamped, queue_size=pub_queue_size
         )
 
-        self._state_topic = f"{namespace}/entities_in"
+        self._state_topic = f"{namespace}entities_in"
         rospy.Subscriber(self._state_topic, EntitiesStamped, self._entities_callback)
+
         rospy.Subscriber(
-            f"{namespace}/control", SmartsControl, self._smarts_control_callback
+            f"{namespace}control", SmartsControl, self._smarts_control_callback
         )
 
-        buffer_size = rospy.get_param(f"{namespace}/buffer_size", buffer_size)
+        buffer_size = rospy.get_param("~buffer_size", buffer_size)
         if buffer_size and buffer_size != self._recent_state.maxlen:
             assert buffer_size > 0
             self._recent_state = deque(maxlen=buffer_size)
 
         # If target_freq is not specified, SMARTS is allowed to
         # run as quickly as it can with no delay between steps.
-        target_freq = rospy.get_param(f"{namespace}/target_freq", target_freq)
+        target_freq = rospy.get_param("~target_freq", target_freq)
         if target_freq:
             assert target_freq > 0.0
-            if target_freq > SMART_MAX_FREQ:
+            if target_freq > SMARTS_MAX_FREQ:
                 rospy.logwarn(
                     f"specified target frequency of {target_freq} Hz cannot be guaranteed by SMARTS."
                 )
             self._target_freq = target_freq
 
-    def setup_smarts(self, headless: bool, seed: int):
+    def setup_smarts(
+        self, headless: bool = True, seed: int = 42, time_ratio: float = 1.0
+    ):
         assert not self._smarts
+        if not self._publisher:
+            raise Exception("must call setup_ros() first.")
+
+        headless = rospy.get_param("~headless", headless)
+        seed = rospy.get_param("~seed", seed)
+        time_ratio = rospy.get_param("~time_ratio", time_ratio)
+        assert time_ratio > 0.0
+        self._time_ratio = time_ratio
+
         self._smarts = SMARTS(
             agent_interfaces={},
             traffic_sim=None,
@@ -323,44 +342,11 @@ class ROSDriver:
         self._reset()
 
 
-def _parse_args():
-    from examples.argument_parser import default_argument_parser
-
-    parser = default_argument_parser()
-    parser.add_argument(
-        "--node-name",
-        help="The name to use for this ROS node.",
-        type=str,
-        default="SMARTS",
-    )
-    parser.add_argument(
-        "--namespace",
-        help="The ROS namespace to use for published/subscribed toipc names.",
-        type=str,
-        default="SMARTS",
-    )
-    parser.add_argument(
-        "--buffer_size",
-        help="The number of entity messages to buffer to use for smoothing/extrapolation.",
-        type=int,
-        choices=range(1, 100),
-        default=3,
-    )
-    parser.add_argument(
-        "--target_freq",
-        help="The target frequencey in Hz.  If not specified, go as quickly as SMARTS permits.",
-        type=float,
-        default=None,
-    )
-    return parser.parse_args()
-
-
 if __name__ == "__main__":
-    args = _parse_args()
-    if args.scenarios:
-        print("scenarios should be passed in via the SMARTS/control ROS topic.")
-        sys.exit(-1)
     driver = ROSDriver()
-    driver.setup_ros(args.node_name, args.namespace, args.target_freq, args.buffer_size)
-    driver.setup_smarts(args.headless, args.seed)
-    driver.run_forever()
+    driver.setup_ros()
+    driver.setup_smarts()
+    try:
+        driver.run_forever()
+    except rospy.ROSInterruptException:
+        pass
