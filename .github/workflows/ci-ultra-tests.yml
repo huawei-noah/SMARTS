@@ -29,21 +29,21 @@ jobs:
           pip install --upgrade -e .
           pip install --upgrade numpy
       - name: Run ultra tests (heavy)
+        # To prevent segmentation faults and/or termination signals (i.e. SIGABRT), the
+        # train and evaluate tests are forked into separate subprocesses. Hence, the
+        # heavy tests are divided up into two parts (forked and unforked).
         run: |
           cd ultra
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          ./tests/ \
           --durations=0 \
-          --ignore=./tests/test_ultra_package.py \
-          --ignore=./tests/test_adapter.py \
-          --ignore=./tests/test_env.py \
-          --ignore=./tests/test_episodes.py \
-          --ignore=./tests/test_scenarios.py \
-          --ignore=./tests/test_social_vehicles.py \
-          --ignore=./tests/test_rllib_train.py \
-          --ignore=./tests/test_tune.py \
+          ./tests/test_analysis.py
+          pytest -v \
+          --durations=0 \
+          --forked \
+          ./tests/test_train.py \
+          ./tests/test_evaluate.py
 
   test-light-base-tests:
     runs-on: ubuntu-18.04
@@ -76,12 +76,15 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          ./tests/ \
           --durations=0 \
-          --ignore=./tests/test_ultra_package.py \
-          --ignore=./tests/test_train.py \
-          --ignore=./tests/test_evaluate.py \
-          --ignore=./tests/test_analysis.py \
+          --forked \
+          ./tests/test_adapter.py \
+          ./tests/test_env.py \
+          ./tests/test_episode.py \
+          ./tests/test_rllib_train.py \
+          ./tests/test_scenarios.py \
+          ./tests/test_social_vehicles.py \
+          ./tests/test_tune.py
 
   test-package-via-setup:
     runs-on: ubuntu-18.04

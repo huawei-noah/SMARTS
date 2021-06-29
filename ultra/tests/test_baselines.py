@@ -19,34 +19,30 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.zoo.registry import register
-from .sac.sac.policy import SACPolicy
-from .ppo.ppo.policy import PPOPolicy
-from .dqn.dqn.policy import DQNPolicy
-from .td3.td3.policy import TD3Policy
-from .bdqn.bdqn.policy import BehavioralDQNPolicy
-from smarts.core.controllers import ActionSpaceType
-from ultra.baselines.agent_spec import BaselineAgentSpec
+import unittest
+import os, shutil
 
-register(
-    locator="sac-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=SACPolicy, **kwargs),
-)
-register(
-    locator="ppo-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=PPOPolicy, **kwargs),
-)
-register(
-    locator="td3-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=TD3Policy, **kwargs),
-)
-register(
-    locator="dqn-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=DQNPolicy, **kwargs),
-)
-register(
-    locator="bdqn-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(
-        policy_class=BehavioralDQNPolicy, **kwargs
-    ),
-)
+
+class BaselinesTest(unittest.TestCase):
+    # Put generated files and folders in this directory.
+    OUTPUT_DIRECTORY = "tests/baselines_test/"
+
+    def test_train_evaluate_baselines(self):
+        """Ensure that all baselines are trainable and testable. Evaluating
+        the baselines will test their save() and load() methods"""
+        BASELINES = ["bdqn", "dqn", "ppo", "sac", "td3"]
+        log_dir = os.path.join(BaselinesTest.OUTPUT_DIRECTORY, "logs/")
+        for baseline in BASELINES:
+            try:
+                os.system(
+                    f"python ultra/train.py --policy {baseline} --task 00 --level easy --episodes 1 --eval-episodes 2 "
+                    f"--max-episode-steps 2 --log-dir {log_dir} --headless"
+                )
+            except Exception as err:
+                print(err)
+                self.assertTrue(False)
+
+            if not os.path.exists(log_dir):
+                self.assertTrue(False)
+            else:
+                shutil.rmtree(log_dir)

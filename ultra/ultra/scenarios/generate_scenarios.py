@@ -320,6 +320,7 @@ def generate_stopwatcher(
 
 def generate_left_turn_missions(
     missions,
+    shuffle_missions,
     route_distributions,
     route_lanes,
     speed,
@@ -464,7 +465,8 @@ def generate_left_turn_missions(
             for ego_route in ego_routes
         ]
     # Shuffle the missions so agents don't do the same route all the time.
-    random.shuffle(mission_objects)
+    if shuffle_missions:
+        random.shuffle(mission_objects)
     gen_missions(scenario, mission_objects)
 
     if bubbles:
@@ -637,6 +639,7 @@ def generate_social_vehicles(
 def scenario_worker(
     seeds,
     ego_missions,
+    shuffle_missions,
     route_lanes,
     route_distributions,
     map_dir,
@@ -660,6 +663,7 @@ def scenario_worker(
 
         generate_left_turn_missions(
             missions=ego_missions,
+            shuffle_missions=shuffle_missions,
             route_lanes=route_lanes,
             route_distributions=route_distributions,
             map_dir=map_dir,
@@ -686,6 +690,7 @@ def build_scenarios(
     stopwatcher_route,
     save_dir,
     root_path,
+    shuffle_missions=True,
     pool_dir=None,
     dynamic_pattern_func=None,
 ):
@@ -701,11 +706,7 @@ def build_scenarios(
     level_config = task_config["levels"][level_name]
     scenarios_dir = os.path.dirname(os.path.realpath(__file__))
     task_dir = f"{scenarios_dir}/{task}"
-
-    if pool_dir is None:
-        pool_path = os.path.join(scenarios_dir, "pool/experiment_pool")
-    else:
-        pool_path = os.path.join(scenarios_dir, pool_dir)
+    pool_dir = f"{scenarios_dir}/pool/experiment_pool" if pool_dir is None else pool_dir
 
     train_total, test_total = (
         int(level_config["train"]["total"]),
@@ -756,7 +757,7 @@ def build_scenarios(
                 reverse=True,
             )
             seed_count = 0
-            map_dir = f"{pool_path}/{intersection_type}"
+            map_dir = f"{pool_dir}/{intersection_type}"
             with open(f"{map_dir}/info.json") as jsonfile:
                 map_metadata = json.load(jsonfile)
                 route_lanes = map_metadata["num_lanes"]
@@ -783,6 +784,7 @@ def build_scenarios(
                     args=(
                         temp_seeds,
                         ego_missions,
+                        shuffle_missions,
                         route_lanes,
                         route_distributions,
                         map_dir,
@@ -815,36 +817,3 @@ def build_scenarios(
     for process in jobs:
         process.join()
     print("*** time took:", time.time() - start)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser("generate scenarios")
-    parser.add_argument("--task", help="type a task id [0, 1, 2, 3, X]", type=str)
-    parser.add_argument("--level", help="easy/medium/hard, low-high/high-low", type=str)
-    parser.add_argument(
-        "--stopwatcher",
-        help="all/aggressive/default/slow/blocker/crusher south-west",
-        nargs="+",
-    )
-    parser.add_argument(
-        "--save-dir", help="directory for saving maps", type=str, default=None
-    )
-    parser.add_argument(
-        "--root-dir", help="directory of maps", type=str, default="ultra/scenarios"
-    )
-
-    args = parser.parse_args()
-
-    stopwatcher_behavior, stopwatcher_route = None, None
-    if args.stopwatcher:
-        stopwatcher_behavior, stopwatcher_route = args.stopwatcher
-
-    print("starting ...")
-    build_scenarios(
-        task=f"task{args.task}",
-        level_name=args.level,
-        stopwatcher_behavior=stopwatcher_behavior,
-        stopwatcher_route=stopwatcher_route,
-        save_dir=args.save_dir,
-        root_path=args.root_dir,
-    )

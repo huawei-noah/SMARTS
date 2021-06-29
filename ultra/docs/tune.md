@@ -10,7 +10,7 @@ ULTRA's tune is based off of [Ray Tune](https://docs.ray.io/en/latest/tune/index
 
 1. Generate the maps used by the ULTRA scenarios (if this has not been done already):
    ```sh
-   $ scl scenario build-all ultra/scenarios/pool/
+   $ scl scenario build-all ultra/scenarios/pool/experiment_pool/
    ```
 2. Generate the scenarios to tune on (e.g. Task 1's easy level):
    ```sh

@@ -22,25 +22,18 @@
 import json
 import numpy as np
 import torch, yaml, os, inspect, dill
-from smarts.core.controllers import ActionSpaceType
-from smarts.core.agent_interface import (
-    AgentInterface,
-    AgentType,
-    OGM,
-    Waypoints,
-    NeighborhoodVehicles,
-)
 
-from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
-from ultra.baselines.adapter import BaselineAdapter
+from smarts.core.agent_interface import AgentInterface
+from ultra.baselines.common.yaml_loader import load_yaml
+import ultra.adapters as adapters
 
 
 class BaselineAgentSpec(AgentSpec):
     def __init__(
         self,
         policy_class,
-        action_type,
+        # action_type,
         policy_params=None,
         checkpoint_dir=None,
         task=None,
@@ -52,10 +45,10 @@ class BaselineAgentSpec(AgentSpec):
     def __new__(
         self,
         policy_class,
-        action_type,
+        # action_type,
         policy_params=None,
         checkpoint_dir=None,
-        task=None,
+        # task=None,
         max_episode_steps=1200,
         experiment_dir=None,
         agent_id="",
@@ -77,12 +70,13 @@ class BaselineAgentSpec(AgentSpec):
                     agent_builder=spec.policy_builder,
                     observation_adapter=spec.observation_adapter,
                     reward_adapter=spec.reward_adapter,
+                    info_adapter=spec.info_adapter,
                 )
 
                 spec = new_spec
         else:
-            # If policy_params is None, then there must be a params.yaml file in the same
-            # directory as the policy_class module.
+            # If policy_params is None, then there must be a params.yaml file in the
+            # same directory as the policy_class module.
             if not policy_params:
                 policy_class_module_file = inspect.getfile(policy_class)
                 policy_class_module_directory = os.path.dirname(
@@ -92,21 +86,41 @@ class BaselineAgentSpec(AgentSpec):
                     os.path.join(policy_class_module_directory, "params.yaml")
                 )
 
-            adapter = BaselineAdapter(policy_params=policy_params)
+            action_type = adapters.type_from_string(
+                string_type=policy_params["action_type"]
+            )
+            observation_type = adapters.type_from_string(
+                string_type=policy_params["observation_type"]
+            )
+            reward_type = adapters.type_from_string(
+                string_type=policy_params["reward_type"]
+            )
+            info_type = adapters.AdapterType.DefaultInfo
+
+            adapter_interface_requirements = adapters.required_interface_from_types(
+                action_type, observation_type, reward_type, info_type
+            )
+            action_adapter = adapters.adapter_from_type(adapter_type=action_type)
+            observation_adapter = adapters.adapter_from_type(
+                adapter_type=observation_type
+            )
+            reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
+            info_adapter = adapters.adapter_from_type(adapter_type=info_type)
+
             spec = AgentSpec(
                 interface=AgentInterface(
-                    waypoints=Waypoints(lookahead=20),
-                    neighborhood_vehicles=NeighborhoodVehicles(200),
-                    action=action_type,
-                    rgb=False,
+                    **adapter_interface_requirements,
                     max_episode_steps=max_episode_steps,
                     debug=True,
                 ),
                 agent_params=dict(
-                    policy_params=adapter.policy_params, checkpoint_dir=checkpoint_dir
+                    policy_params=policy_params, checkpoint_dir=checkpoint_dir
                 ),
                 agent_builder=policy_class,
-                observation_adapter=adapter.observation_adapter,
-                reward_adapter=adapter.reward_adapter,
+                action_adapter=action_adapter,
+                observation_adapter=observation_adapter,
+                reward_adapter=reward_adapter,
+                info_adapter=info_adapter,
             )
+
         return spec
