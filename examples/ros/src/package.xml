@@ -38,7 +38,6 @@
   <!--   <build_depend>roscpp</build_depend> -->
   <!--   <exec_depend>roscpp</exec_depend> -->
   <depend>rospy</depend>
-  <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <!-- Use build_depend for packages you need at compile time: -->
   <build_depend>message_generation</build_depend>

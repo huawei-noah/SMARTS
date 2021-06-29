@@ -9,7 +9,6 @@ project(smarts_ros)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
     rospy
-    std_msgs
     geometry_msgs
     message_generation
 )
@@ -52,6 +51,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    EntityState.msg
    EntitiesStamped.msg
+   SmartsControl.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -71,7 +71,6 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  std_msgs
   geometry_msgs
 )
 
@@ -107,7 +106,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES smarts_ros
- CATKIN_DEPENDS std_msgs geometry_msgs message_runtime
+ CATKIN_DEPENDS geometry_msgs message_runtime
 #  DEPENDS system_lib
 )
 

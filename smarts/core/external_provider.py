@@ -38,20 +38,13 @@ class ExternalProvider(Provider):
         self._ext_vehicle_states = []
         self._sent_states = None
         self._last_step_delta = None
-        self._staleness = None
         self._last_fresh_step = self._sim.elapsed_sim_time
 
     def state_update(
         self,
         vehicle_states: Sequence[VehicleState],
         step_delta: float,
-        staleness: float,
     ):
-        # The bigger 'staleness', the more out of date this state is.
-        # Ideally, for better precision, we might set the external state and then step pybullet
-        # by an appropriate amount based on staleness, since we can't assume external state
-        # is updated in sync with our steps.  However, this is very complicated because we
-        # we've *already* simulated this time period.  So we just "eat it" for now!
         self._ext_vehicle_states = vehicle_states
         self._last_step_delta = step_delta
 

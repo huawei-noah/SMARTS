@@ -2,17 +2,23 @@
 
 import rospy
 import std_msgs
-from smarts_ros.msg import EntitiesStamped, EntityState
+from smarts_ros.msg import EntitiesStamped, EntityState, SmartsControl
 
-import time
+from collections import deque
 import numpy as np
+import time
 from threading import Lock
+from typing import Any, List, Sequence
 
 from envision.client import Client as Envision
 from smarts.core.coordinates import BoundingBox, Heading, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.vehicle import VehicleState
+
+
+# Don't expect SMARTS to be able to reliably maintain rates faster than this!
+SMARTS_MAX_FREQ = 60.0
 
 
 class ROSDriver:
@@ -22,6 +28,7 @@ class ROSDriver:
 
     def __init__(self):
         self._state_lock = Lock()
+        self._control_lock = Lock()
         self._smarts = None
         self._reset()
 
@@ -29,17 +36,21 @@ class ROSDriver:
         if self._smarts:
             self._smarts.destroy()
         self._smarts = None
-        self._scenarios_iterator = None
+        self._target_freq = None
         self._state_topic = None
         self._publisher = None
         with self._state_lock:
+            self._recent_state = deque(maxlen=3)
+        with self._control_lock:
+            self._scenario_path = None
             self._reset_smarts = False
-            self._latest_state = None
 
     def setup_ros(
         self,
         node_name: str = "SMARTS",
         namespace: str = "SMARTS",
+        target_freq: float = None,
+        buffer_size: int = 3,
         pub_queue_size: int = 10,
     ):
         assert not self._publisher
@@ -53,9 +64,27 @@ class ROSDriver:
 
         self._state_topic = f"{namespace}/entities_in"
         rospy.Subscriber(self._state_topic, EntitiesStamped, self._entities_callback)
-        rospy.Subscriber(f"{namespace}/reset", std_msgs.msg.Bool, self._reset_callback)
+        rospy.Subscriber(
+            f"{namespace}/control", SmartsControl, self._smarts_control_callback
+        )
 
-    def setup_smarts(self, scenarios: str, headless: bool, seed: int):
+        buffer_size = rospy.get_param(f"{namespace}/buffer_size", buffer_size)
+        if buffer_size and buffer_size != self._recent_state.maxlen:
+            assert buffer_size > 0
+            self._recent_state = deque(maxlen=buffer_size)
+
+        # If target_freq is not specified, SMARTS is allowed to
+        # run as quickly as it can with no delay between steps.
+        target_freq = rospy.get_param(f"{namespace}/target_freq", target_freq)
+        if target_freq:
+            assert target_freq > 0.0
+            if target_freq > SMART_MAX_FREQ:
+                rospy.logwarn(
+                    f"specified target frequency of {target_freq} Hz cannot be guaranteed by SMARTS."
+                )
+            self._target_freq = target_freq
+
+    def setup_smarts(self, headless: bool, seed: int):
         assert not self._smarts
         self._smarts = SMARTS(
             agent_interfaces={},
@@ -65,21 +94,22 @@ class ROSDriver:
             external_provider=True,
         )
         assert self._smarts.external_provider
-        self._scenarios_iterator = Scenario.scenario_variations(scenarios, list([]))
         self._last_step_time = None
-        self._reset_smarts = True
+        with self._control_lock:
+            self._scenario_path = None
+            self._reset_smarts = False
 
-    def _reset_callback(self, param):
-        with self._state_lock:
-            self._reset_smarts = param.data
+    def _smarts_control_callback(self, control):
+        with self._control_lock:
+            self._scenario_path = control.reset_with_scenario_path
+            self._reset_smarts = True
 
     def _entities_callback(self, entities: EntitiesStamped):
-        # Here we just only keep the latest msg.
-        # In the future, we may want to buffer them so that
-        # when we update the SMARTS state we can do something clever
-        # like smooth/interpolate-over/extrapolate-from them.
+        # note: push/pop is thread safe on a deque but
+        # in our smoothing we are accessing all elements
+        # so we still need to protect it.
         with self._state_lock:
-            self._latest_state = entities
+            self._recent_state.append(entities)
 
     def _decode_entity_type(self, entity_type: int) -> str:
         if entity_type == EntityState.ENTITY_TYPE_CAR:
@@ -123,49 +153,97 @@ class ROSDriver:
         rospy.logwarn(f"unsupported entity_type {entity_type}. defaulting to 'car'.")
         return EntityState.ENTITY_TYPE_CAR
 
+    @staticmethod
+    def _get_nested_attr(obj: Any, dotname: str) -> Any:
+        props = dotname.split(".")
+        for prop in props:
+            obj = obj.getattr(prop)
+        return obj
+
+    @staticmethod
+    def _extrapolate_to_now(
+        state_name: str, states: Sequence[float], veh_id: str, staleness: float
+    ) -> np.ndarray:
+        # Here, we just do some straightforward/basic smoothing using a moving average,
+        # and then extrapolate to the current time.
+        dt = 0.0
+        last_time = None
+        avg = np.array((0.0, 0.0, 0.0))
+        for state in states:
+            for entity in state.entities:
+                if entity.vehicle_id != veh_id:
+                    continue
+                vector = ROSDriver._get_nested_attr(state, state_name)
+                assert vector
+                if hasattr(vector, "w"):
+                    avg += np.array((vector.x, vector.y, vector.z, vector.w))
+                else:
+                    avg += np.array((vector.x, vector.y, vector.z))
+                stamp = state.header.stamp.get_sec()
+                if last_time:
+                    dt += stamp - last_time
+                last_time = stamp
+                last_vect = vector
+                break
+        avg /= len(states)
+        return staleness * (last_vect - avg) / dt
+
     def _update_smarts_state(self, step_delta: float) -> bool:
         with self._state_lock:
-            state_to_send = self._latest_state
-            self._latest_state = None  # ensure we don't resend same one later
-        if not state_to_send:
-            rospy.logdebug(
-                f"No messages received on topic {self._state_topic} yet to send to SMARTS."
-            )
-            return False
+            if not self._recent_state:
+                rospy.logdebug(
+                    f"No messages received on topic {self._state_topic} yet to send to SMARTS."
+                )
+                return False
+            states = [s for s in self._recent_state]
+
         entities = []
-        for entity in state_to_send.entities:
-            pos = entity.pose.position
-            pos = np.array((pos.x, pos.y, pos.z))
-            qt = entity.pose.orientation
-            qt = np.array((qt.x, qt.y, qt.z, qt.w))
-            vv = entity.velocity.linear
-            linear_velocity = np.array((vv.x, vv.y, vv.z))
-            av = entity.velocity.angular
-            angular_velocity = np.array((av.x, av.y, av.z))
-            lacc = entity.acceleration.linear
-            linear_acc = np.array((lacc.x, lacc.y, lacc.z))
-            aacc = entity.acceleration.angular
-            angular_acc = np.array((aacc.x, aacc.y, aacc.z))
-            vehicle_type = self._decode_entity_type(entity.entity_type)
-            vs = VehicleState(
-                source="EXTERNAL",
-                vehicle_id=entity.entity_id,
-                vehicle_config_type=vehicle_type,
-                privileged=True,
-                pose=Pose(pos, qt),
-                dimensions=BoundingBox(entity.length, entity.width, entity.height),
-                speed=np.linalg.norm(linear_velocity),
-                linear_velocity=linear_velocity,
-                angular_velocity=angular_velocity,
-                linear_acceleration=linear_acc,
-                angular_acceleration=angular_acc,
+        most_recent_state = states[-1]
+        staleness = (rospy.get_rostime() - most_recent_state.header.stamp).to_sec()
+        for entity in most_recent_state.entities:
+            veh_id = entity.entity_id
+            veh_type = self._decode_entity_type(entity.entity_type)
+            veh_dims = BoundingBox(entity.length, entity.width, entity.height)
+
+            pos = ROSDriverextrapolate_to_now(
+                "pose.position", states, veh_id, staleness
             )
-            entities.append(vs)
-        staleness = (rospy.get_rostime() - state_to_send.header.stamp).to_sec()
+            orientation = ROSDriverextrapolate_to_now(
+                "pose.orientation", states, veh_id, staleness
+            )
+            lin_vel = ROSDriverextrapolate_to_now(
+                "velocity.linear", states, veh_id, staleness
+            )
+            ang_vel = ROSDriverextrapolate_to_now(
+                "velocity.angular", states, veh_id, staleness
+            )
+            lin_acc = ROSDriverextrapolate_to_now(
+                "acceleration.linear", states, veh_id, staleness
+            )
+            ang_acc = ROSDriverextrapolate_to_now(
+                "acceleration.angular", states, veh_id, staleness
+            )
+
+            entities.append(
+                VehicleState(
+                    source="EXTERNAL",
+                    vehicle_id=veh_id,
+                    vehicle_config_type=veh_type,
+                    privileged=True,
+                    pose=Pose(pos, orientation),
+                    dimensions=veh_dims,
+                    speed=np.linalg.norm(lin_vel),
+                    linear_velocity=lin_vel,
+                    angular_velocity=ang_vel,
+                    linear_acceleration=lin_acc,
+                    angular_acceleration=ang_acc,
+                )
+            )
+
         rospy.logdebug(
             f"sending state to SMARTS w/ step_delta={step_delta}, staleness={staleness}..."
         )
-        self._smarts.external_provider.state_update(entities, step_delta, staleness)
+        self._smarts.external_provider.state_update(entities, step_delta)
         return True
 
     @staticmethod
@@ -203,26 +281,33 @@ class ROSDriver:
         self._publisher.publish(entities)
 
     def _check_reset(self):
-        with self._state_lock:
+        with self._control_lock:
             if self._reset_smarts:
-                rospy.loginfo(f"resetting SMARTS")
-                self._smarts.reset(next(self._scenarios_iterator))
+                rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
+                self._smarts.reset(self._scenario_path)
                 self._reset_smarts = False
+                self._last_step_time = None
 
     def run_forever(self):
         if not self._publisher:
             raise Exception("must call setup_ros() first.")
-        if not self._smarts or not self._scenarios_iterator:
+        if not self._smarts:
             raise Exception("must call setup_smarts() first.")
         step_delta = None
+        if self._target_freq:
+            rate = rospy.Rate(self._target_freq)
         while not rospy.is_shutdown():
             self._check_reset()
+            if not self._scenario_path:
+                continue
             if self._last_step_time:
                 step_delta = rospy.get_time() - self._last_step_time
             self._last_step_time = rospy.get_time()
             self._update_smarts_state(step_delta)
             self._smarts.step({}, step_delta)
             self._publish_state()
+            if self._target_freq:
+                rate.sleep()
         self._reset()
 
 
@@ -242,12 +327,28 @@ def _parse_args():
         type=str,
         default="SMARTS",
     )
+    parser.add_argument(
+        "--buffer_size",
+        help="The number of entity messages to buffer to use for smoothing/extrapolation.",
+        type=int,
+        choices=range(1, 100),
+        default=3,
+    )
+    parser.add_argument(
+        "--target_freq",
+        help="The target frequencey in Hz.  If not specified, go as quickly as SMARTS permits.",
+        type=float,
+        default=None,
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = _parse_args()
+    if args.scenarios:
+        print("scenarios should be passed in via the SMARTS/control ROS topic.")
+        sys.exit(-1)
     driver = ROSDriver()
-    driver.setup_ros(args.node_name, args.namespace)
-    driver.setup_smarts(args.scenarios, args.headless, args.seed)
+    driver.setup_ros(args.node_name, args.namespace, args.target_freq, args.buffer_size)
+    driver.setup_smarts(args.headless, args.seed)
     driver.run_forever()
