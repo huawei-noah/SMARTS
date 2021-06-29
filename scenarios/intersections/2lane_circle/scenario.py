@@ -14,6 +14,28 @@ buddha_agent = SocialAgentActor(
     agent_locator="scenarios.intersections.2lane_circle.agent_prefabs:buddha-agent-v0",
 )
 
+# Replace the above lines with the code below if you want to replay the agent actions and inputs
+# laner_agent = t.SocialAgentActor(
+#     name="laner-agent",
+#     agent_locator="zoo.policies:replay-agent-v0",
+#     policy_kwargs={
+#         "save_directory": "./replay",
+#         "id": "agent_la",
+#         "wrapped_agent_locator": "scenarios.intersections.2lane_circle.agent_prefabs:laner-agent-v0",
+#     },
+# )
+
+
+# buddha_agent = t.SocialAgentActor(
+#     name="buddha-agent",
+#     agent_locator="zoo.policies:replay-agent-v0",
+#     policy_kwargs={
+#         "save_directory": "./replay",
+#         "id": "agent_ba",
+#         "wrapped_agent_locator": "scenarios.intersections.2lane_circle.agent_prefabs:buddha-agent-v0",
+#     },
+# )
+
 gen_social_agent_missions(
     scenario,
     social_agent_actor=laner_agent,
