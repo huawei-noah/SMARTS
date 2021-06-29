@@ -61,7 +61,6 @@ bubbles = [
         zone=t.MapZone(start=("edge-west-WE", 0, 50), length=10, n_lanes=1),
         margin=2,
         actor=zoo_agent_actor,
-        ),
     ),
     t.Bubble(
         zone=t.PositionalZone(pos=(100, 100), size=(20, 20)),

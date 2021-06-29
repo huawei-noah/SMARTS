@@ -16,6 +16,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a new utility experiment file `cli/run.py` to replace the context given by `supervisord.conf`. See PR #911.
 - Added `scl zoo install` command to install zoo policy agents at the specified paths. See Issue #603.
 - Added a `FrameStack` wrapper which returns stacked observations for each agent.
+- Added a "ReplayAgent" wrapper to allow users to rerun an agent previously run by saving its configurations and inputs. See Issue #971.
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space. See Issue #844.
 - Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266. 
