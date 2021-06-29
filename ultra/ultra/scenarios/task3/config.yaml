@@ -39,7 +39,7 @@ levels:
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
            stops: null
-  two-four:
+  medium:
     # generalizing from 2 lanes to 4 lanes (Same density config)
     train:
       total: 10000
@@ -79,7 +79,7 @@ levels:
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
            stops: null
-  two-five:
+  hard:
     # generalizing from 2 lanes to 5 lanes (Same density config)
     train:
       total: 10000
