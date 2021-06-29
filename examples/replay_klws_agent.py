@@ -12,6 +12,14 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
+def copy_scenarios(save_dir, scenarios):
+    for i in range(len(scenarios)):
+        new_scenario_location = os.path.join(save_dir, scenarios[i])
+        if not os.path.exists(new_scenario_location):
+            copytree(scenarios[i], new_scenario_location)
+        scenarios[i] = new_scenario_location
+
+
 def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write):
     from zoo import policies
 
@@ -28,13 +36,11 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
         wrapped_agent_locator="zoo.policies:keep-left-with-speed-agent-v0",
         wrapped_agent_params={"speed": speed},
     )
-    new_scenario_location = os.path.join(save_dir, scenarios)
-    if not os.path.exists(new_scenario_location):
-        copytree(scenarios, new_scenario_location)
+    copy_scenarios(save_dir, scenarios)
 
     env = gym.make(
         "smarts.env:hiway-v0",
-        scenarios=new_scenario_location,
+        scenarios=scenarios,
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
