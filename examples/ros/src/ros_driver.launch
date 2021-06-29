@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="smarts_ros" name="smarts_ros_driver" type="ros_driver.py" output="screen">
+    <param name="~buffer_size" value="3" />
+    <param name="~time_ratio" value="1" />
+  </node>
+</launch>
