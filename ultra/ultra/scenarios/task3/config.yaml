@@ -2,26 +2,20 @@ levels:
   easy:
     # generalizing from 2 lanes to 3 lanes (Same density config)
     two-three:
-      total: 800
+      total: 10000
       ego_missions:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
       intersection_types:
         2lane_t:
-           percent: 0.3
-           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
-                   [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
-                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
-           stops: null
-        2lane_curvy_t:
-           percent: 0.3
+           percent: 0.5
            specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
            stops: null
         2lane_c:
-           percent: 0.4
+           percent: 0.5
            specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
@@ -48,26 +42,20 @@ levels:
   two-four:
     # generalizing from 2 lanes to 4 lanes (Same density config)
     train:
-      total: 800
+      total: 10000
       ego_missions:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
       intersection_types:
         2lane_t:
-           percent: 0.3
-           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
-                   [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
-                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
-           stops: null
-        2lane_curvy_t:
-           percent: 0.3
+           percent: 0.5
            specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
            stops: null
         2lane_c:
-           percent: 0.4
+           percent: 0.5
            specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
@@ -92,28 +80,22 @@ levels:
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
            stops: null
   two-five:
-    # generalizing from 2 lanes to 4 lanes (Same density config)
+    # generalizing from 2 lanes to 5 lanes (Same density config)
     train:
-      total: 800
+      total: 10000
       ego_missions:
         # left turn from south to west
       - start: south-SN
         end:   west-EW
       intersection_types:
         2lane_t:
-           percent: 0.3
-           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
-                   [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
-                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
-           stops: null
-        2lane_curvy_t:
-           percent: 0.3
+           percent: 0.5
            specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
            stops: null
         2lane_c:
-           percent: 0.4
+           percent: 0.5
            specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
                    [50kmh,mid-density,0.12],[70kmh,mid-density,0.12],[100kmh,mid-density,0.12], #36%
                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
