@@ -170,7 +170,7 @@ class ROSDriver:
         # and then extrapolate to the current time.
         dt = 0.0
         last_time = None
-        avg = np.array((0.0, 0.0, 0.0))
+        avg = np.array((0.0, 0.0, 0.0, 0.0))
         for state in states:
             for entity in state.entities:
                 if entity.entity_id != veh_id:
