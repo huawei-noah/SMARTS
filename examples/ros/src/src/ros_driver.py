@@ -2,6 +2,7 @@
 
 import rospy
 import std_msgs
+import sys
 from smarts_ros.msg import EntitiesStamped, EntityState, SmartsControl
 
 from collections import deque
@@ -39,6 +40,7 @@ class ROSDriver:
         self._target_freq = None
         self._state_topic = None
         self._publisher = None
+        self._most_recent_state_sent = None
         with self._state_lock:
             self._recent_state = deque(maxlen=3)
         with self._control_lock:
@@ -89,7 +91,7 @@ class ROSDriver:
         self._smarts = SMARTS(
             agent_interfaces={},
             traffic_sim=None,
-            fixed_time_step=None,
+            fixed_timestep_sec=None,
             envision=None if headless else Envision(),
             external_provider=True,
         )
@@ -157,7 +159,7 @@ class ROSDriver:
     def _get_nested_attr(obj: Any, dotname: str) -> Any:
         props = dotname.split(".")
         for prop in props:
-            obj = obj.getattr(prop)
+            obj = getattr(obj, prop)
         return obj
 
     @staticmethod
@@ -171,26 +173,30 @@ class ROSDriver:
         avg = np.array((0.0, 0.0, 0.0))
         for state in states:
             for entity in state.entities:
-                if entity.vehicle_id != veh_id:
+                if entity.entity_id != veh_id:
                     continue
-                vector = ROSDriver._get_nested_attr(state, state_name)
+                vector = ROSDriver._get_nested_attr(entity, state_name)
                 assert vector
                 if hasattr(vector, "w"):
-                    avg += np.array((vector.x, vector.y, vector.z, vector.w))
+                    vector = np.array((vector.x, vector.y, vector.z, vector.w))
                 else:
-                    avg += np.array((vector.x, vector.y, vector.z))
-                stamp = state.header.stamp.get_sec()
+                    vector = np.array((vector.x, vector.y, vector.z))
+                avg[: len(vector)] += vector
+                stamp = state.header.stamp.to_sec()
                 if last_time:
                     dt += stamp - last_time
                 last_time = stamp
                 last_vect = vector
                 break
         avg /= len(states)
-        return staleness * (last_vect - avg) / dt
+        return last_vect + staleness * 2 * (last_vect - avg[: len(last_vect)]) / dt
 
     def _update_smarts_state(self, step_delta: float) -> bool:
         with self._state_lock:
-            if not self._recent_state:
+            if (
+                not self._recent_state
+                or self._most_recent_state_sent == self._recent_state[-1]
+            ):
                 rospy.logdebug(
                     f"No messages received on topic {self._state_topic} yet to send to SMARTS."
                 )
@@ -205,22 +211,22 @@ class ROSDriver:
             veh_type = self._decode_entity_type(entity.entity_type)
             veh_dims = BoundingBox(entity.length, entity.width, entity.height)
 
-            pos = ROSDriverextrapolate_to_now(
+            pos = ROSDriver._extrapolate_to_now(
                 "pose.position", states, veh_id, staleness
             )
-            orientation = ROSDriverextrapolate_to_now(
+            orientation = ROSDriver._extrapolate_to_now(
                 "pose.orientation", states, veh_id, staleness
             )
-            lin_vel = ROSDriverextrapolate_to_now(
+            lin_vel = ROSDriver._extrapolate_to_now(
                 "velocity.linear", states, veh_id, staleness
             )
-            ang_vel = ROSDriverextrapolate_to_now(
+            ang_vel = ROSDriver._extrapolate_to_now(
                 "velocity.angular", states, veh_id, staleness
             )
-            lin_acc = ROSDriverextrapolate_to_now(
+            lin_acc = ROSDriver._extrapolate_to_now(
                 "acceleration.linear", states, veh_id, staleness
             )
-            ang_acc = ROSDriverextrapolate_to_now(
+            ang_acc = ROSDriver._extrapolate_to_now(
                 "acceleration.angular", states, veh_id, staleness
             )
 
@@ -244,6 +250,7 @@ class ROSDriver:
             f"sending state to SMARTS w/ step_delta={step_delta}, staleness={staleness}..."
         )
         self._smarts.external_provider.state_update(entities, step_delta)
+        self._most_recent_state_sent = most_recent_state
         return True
 
     @staticmethod
@@ -284,7 +291,7 @@ class ROSDriver:
         with self._control_lock:
             if self._reset_smarts:
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
-                self._smarts.reset(self._scenario_path)
+                self._smarts.reset(Scenario(self._scenario_path))
                 self._reset_smarts = False
                 self._last_step_time = None
 
@@ -293,12 +300,17 @@ class ROSDriver:
             raise Exception("must call setup_ros() first.")
         if not self._smarts:
             raise Exception("must call setup_smarts() first.")
+        warned_scenario = False
         step_delta = None
         if self._target_freq:
             rate = rospy.Rate(self._target_freq)
+        rospy.loginfo(f"starting to spin")
         while not rospy.is_shutdown():
             self._check_reset()
             if not self._scenario_path:
+                if warned_scenario:
+                    rospy.loginfo("waiting for scenario on control channel...")
+                    warned_scenario = True
                 continue
             if self._last_step_time:
                 step_delta = rospy.get_time() - self._last_step_time
