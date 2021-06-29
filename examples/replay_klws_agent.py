@@ -1,9 +1,9 @@
 import logging
 import sys
-
+import os
 import gym
 
-from examples.argument_parser import default_argument_parser
+from examples.argument_parser import default_argument_parser, copytree
 from smarts.core.utils.episodes import episodes
 from smarts.zoo.registry import make as zoo_make
 
@@ -15,8 +15,12 @@ AGENT_ID = "Agent-007"
 def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write):
     from zoo import policies
 
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
     policies.replay_save_dir = save_dir
     policies.replay_read = not write
+
     agent_spec = zoo_make(
         "zoo.policies:replay-agent-v0",
         save_directory=save_dir,
@@ -24,10 +28,13 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
         wrapped_agent_locator="zoo.policies:keep-left-with-speed-agent-v0",
         wrapped_agent_params={"speed": speed},
     )
+    new_scenario_location = os.path.join(save_dir, scenarios)
+    if not os.path.exists(new_scenario_location):
+        copytree(scenarios, new_scenario_location)
 
     env = gym.make(
         "smarts.env:hiway-v0",
-        scenarios=scenarios,
+        scenarios=new_scenario_location,
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
