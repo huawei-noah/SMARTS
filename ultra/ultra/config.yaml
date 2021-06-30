@@ -59,3 +59,13 @@ tasks:
     high-low:
       train: "scenarios/task2/train_high-low*"
       test:  "scenarios/task2/test_high-low*"
+  task3:
+    easy:
+      train: "scenarios/task3/train_easy*"
+      test:  "scenarios/task3/test_easy*"
+    medium:
+      train: "scenarios/task3/train_medium*"
+      test:  "scenarios/task3/test_medium*"
+    hard:
+      train: "scenarios/task3/train_hard*"
+      test:  "scenarios/task3/test_hard*"
