@@ -71,7 +71,7 @@ class UltraEnv(HiWayEnv):
 
         super().__init__(
             scenarios=self.scenarios,
-            agent_specs=self.agent_specs,
+            agent_specs=agent_specs,
             headless=self.headless,
             timestep_sec=self.timestep_sec,
             seed=self.seed,
