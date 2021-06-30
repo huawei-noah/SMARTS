@@ -33,7 +33,7 @@ Build the Docker images and run the container.
 $ cd <path_to_SMARTS>/SMARTS/ultra
 
 # 2 - Build the Docker images.
-$ docker build -t <container_name> --network=host .
+$ docker build -t <image_name> --network=host .
 
 # 3 - Create the Docker container.
 $ docker run \
@@ -47,6 +47,6 @@ $ docker run \
         --runtime=nvidia \
         --device /dev/dri \
         --volume=<path_to_SMARTS>:/SMARTS \
-        --name=ultra \
-        <container_name>
+        --name=<container_name> \
+        <image_name>
 ```
