@@ -56,13 +56,14 @@ class UltraEnv(HiWayEnv):
         eval_mode=False,
         ordered_scenarios=False,
     ):
-        self.agent_specs = agent_specs
         self.scenario_info = scenario_info
         self.headless = headless
         self.timestep_sec = timestep_sec
         self.seed = seed
         self.eval_mode = eval_mode
-        self.ordered_scenarios = ordered_scenarios
+
+        agent_specs = agent_specs
+        ordered_scenarios = ordered_scenarios
 
         self.scenarios = self.get_scenarios(scenario_info)
 
@@ -157,7 +158,7 @@ class UltraEnv(HiWayEnv):
 
         Args:
             scenario_info Tuple[str, str]: The first index represents
-            task id and second index represents task's level
+                task id and second index represents task's level
 
         Returns:
             List[str]: Absolute path of scenarios
