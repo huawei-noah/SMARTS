@@ -129,7 +129,7 @@ class AgentType(IntEnum):
     """Agent performs trajectory tracking using model predictive control."""
     TrajectoryInterpolator = 11
     """Agent performs linear trajectory interpolation."""
-    Imitation = 11
+    Imitation = 12
     """Agent sees neighbor vehicles and performs actions based on imitation-learned model (acceleration, angular_velocity)."""
 
 
