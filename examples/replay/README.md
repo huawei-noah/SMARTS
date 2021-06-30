@@ -24,7 +24,7 @@ Checkout `examples/replay/replay_klws_agent.py` on an example on how you can wri
         wrapped_agent_params={"speed": speed},
     )
     # copy the scenarios to the replay directory to make sure its not changed while replaying the agent actions
-    copy_scenarios(save_dir, scenarios)
+    copy_scenarios.copy_scenarios(save_dir, scenarios)
 
 ```
 You may also need to wrap the social agent used in the `scenario.py` file of the scenario on which you run your experiment.
