@@ -10,7 +10,7 @@ do
     if [[ -d $TEMP_DIR ]]; then
         rm -r $TEMP_DIR
     fi
-    PYTHONHASHSEED=42 python3.7 examples/replay_klws_agent.py scenarios/loop --speed ${SPEED} --save-dir $TEMP_DIR --max-steps $MAX_STEPS --write --headless
+    python3.7 examples/replay_klws_agent.py scenarios/loop --speed ${SPEED} --save-dir $TEMP_DIR --max-steps $MAX_STEPS --write --headless
     STEPS=$?
     if (( $STEPS < $BEST_STEPS )); then
         echo $STEPS > ${TEMP_DIR}/steps.txt
