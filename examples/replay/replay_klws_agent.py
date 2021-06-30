@@ -3,21 +3,14 @@ import sys
 import os
 import gym
 
-from examples.argument_parser import default_argument_parser, copytree
+from examples.argument_parser import default_argument_parser
 from smarts.core.utils.episodes import episodes
 from smarts.zoo.registry import make as zoo_make
+from examples.replay import copy_scenarios
 
 logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "Agent-007"
-
-
-def copy_scenarios(save_dir, scenarios):
-    for i in range(len(scenarios)):
-        new_scenario_location = os.path.join(save_dir, scenarios[i])
-        if not os.path.exists(new_scenario_location):
-            copytree(scenarios[i], new_scenario_location)
-        scenarios[i] = new_scenario_location
 
 
 def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write):
@@ -29,6 +22,8 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
     policies.replay_save_dir = save_dir
     policies.replay_read = not write
 
+    # This is how you can wrap an agent in replay-agent-v0 wrapper to store and load its inputs and actions
+    # and replay it
     agent_spec = zoo_make(
         "zoo.policies:replay-agent-v0",
         save_directory=save_dir,
@@ -36,6 +31,7 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
         wrapped_agent_locator="zoo.policies:keep-left-with-speed-agent-v0",
         wrapped_agent_params={"speed": speed},
     )
+    # copy the scenarios to the replay directory to make sure its not changed
     copy_scenarios(save_dir, scenarios)
 
     env = gym.make(
@@ -50,6 +46,7 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
         seed=seed,
     )
 
+    # Carry out the experiment
     episode = next(episodes(n=1))
     agent = agent_spec.build_agent()
     observations = env.reset()
@@ -80,13 +77,23 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("single-agent-example")
+    parser = default_argument_parser("klws-agent-example")
     parser.add_argument(
         "--speed",
         help="The speed param for the vehicle.",
         type=int,
         default=1,
     )
+
+    parser.add_argument(
+        "--max-steps",
+        help="The maximum number of steps.",
+        type=int,
+        default=1500,
+    )
+
+    # Along with any additional arguments these two arguments need to be added  to pass the directory where the agent
+    # inputs and actions will be store and whether to replay the agent or write out its action to the directory
     parser.add_argument(
         "--save-dir",
         help="The save directory location.",
@@ -97,12 +104,6 @@ if __name__ == "__main__":
         "--write",
         help="Replay the agent else write the agent actions out to directory.",
         action="store_true",
-    )
-    parser.add_argument(
-        "--max-steps",
-        help="The maximum number of steps.",
-        type=int,
-        default=1500,
     )
 
     args = parser.parse_args()
