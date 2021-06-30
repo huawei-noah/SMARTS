@@ -324,29 +324,29 @@ class ROSDriver:
         if self._target_freq:
             rate = rospy.Rate(self._target_freq)
         rospy.loginfo(f"starting to spin")
-        while not rospy.is_shutdown():
-            self._check_reset()
-            if not self._scenario_path:
-                if warned_scenario:
-                    rospy.loginfo("waiting for scenario on control channel...")
-                    warned_scenario = True
-                continue
-            if self._last_step_time:
-                step_delta = rospy.get_time() - self._last_step_time
-            self._last_step_time = rospy.get_time()
-            self._update_smarts_state(step_delta)
-            self._smarts.step({}, step_delta)
-            self._publish_state()
-            if self._target_freq:
-                rate.sleep()
-        self._reset()
+        try:
+            while not rospy.is_shutdown():
+                self._check_reset()
+                if not self._scenario_path:
+                    if warned_scenario:
+                        rospy.loginfo("waiting for scenario on control channel...")
+                        warned_scenario = True
+                    continue
+                if self._last_step_time:
+                    step_delta = rospy.get_time() - self._last_step_time
+                self._last_step_time = rospy.get_time()
+                self._update_smarts_state(step_delta)
+                self._smarts.step({}, step_delta)
+                self._publish_state()
+                if self._target_freq:
+                    rate.sleep()
+        except rospy.ROSInterruptException:
+            pass
+        self._reset()  # cleans up the SMARTS instance...
 
 
 if __name__ == "__main__":
     driver = ROSDriver()
     driver.setup_ros()
     driver.setup_smarts()
-    try:
-        driver.run_forever()
-    except rospy.ROSInterruptException:
-        pass
+    driver.run_forever()
