@@ -1,21 +1,23 @@
 tasks:
+  # task00 and task00-multiagent are for unit testing purpose only
+  task00: # unittest
+    easy:
+      train: "../tests/task/train_mock*"
+      test:  "../tests/task/test_mock*"
+    eval_test:
+      train: "../tests/task/eval_test/train_*"
+      test:  "../tests/task/eval_test/test_*"
+  task00-multiagent: # unittest
+    easy:
+      train: "../tests/task/train_multiagent_mock*"
+      test:  "../tests/task/test_multiagent_mock*"
+    eval_test:
+      train: "../tests/task/eval_test_multiagent/train_*"
+      test:  "../tests/task/eval_test_multiagent/test_*"
+      
   # Format of generated scenario directory:
   #   train: <path_to_train_scenarios>/train_<task_id>_<level_id>*
   #   test: <path_to_test_scenarios>/train_<task_id>_<level_id>*
-  task00: # unittest
-    easy:
-      train: "../tests/task/train_task00_easy*"
-      test:  "../tests/task/test_task00_easy*"
-    eval_test:
-      train: "../tests/task/eval_test/train_task00_eval_test*"
-      test:  "../tests/task/eval_test/test_task00_eval_test*"
-  task00-multiagent: # unittest
-    easy:
-      train: "../tests/task/train_task00-multiagent_easy*"
-      test:  "../tests/task/test_task00-multiagent_easy*"
-    eval_test:
-      train: "../tests/task/eval_test_multiagent/train_task00-multiagent_eval_test*"
-      test:  "../tests/task/eval_test_multiagent/test_task00-multiagent_eval_test*"
   taskX:
     road-blocks:
       train: "scenarios/taskX/train_taskX_road-blocks*"
