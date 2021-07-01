@@ -34,6 +34,10 @@ source devel/setup.bash
 
 From the main SMARTS repo folder:
 ```bash
+roslaunch smarts_ros launch/ros_driver.launch
+```
+or:
+```bash
 rosrun smarts_ros ros_driver.py
 ```
 Or if you prefer (or if required due to the python version issues desribed above):
@@ -41,7 +45,7 @@ Or if you prefer (or if required due to the python version issues desribed above
 python3 exmples/src/src/ros_wrapper.py
 ```
 
-These may require you to explicitly start `rosmaster` node first
+These latter 2 may require you to explicitly start `rosmaster` node first
 if you don't already have an instance running, like:
 ```bash
 roscore &
@@ -49,19 +53,11 @@ roscore &
 which will run one in the background.
 
 Alternatively, if you have parameters that you want to override on a regular basis,
-create a [roslaunch](http://wiki.ros.org/roslaunch) file in your package folder like:
-```xml
-<launch>
-  <node pkg="smarts_ros" name="SMARTS" type="ros_driver.py" output="screen">
-    <param name="~buffer_size" value="3" />
-    <param name="~target_freq" value="30" />
-    <param name="~time_ratio" value="1" />
-  </node>
-</launch>
-```
-And then, if you called it `ros_driver.launch`:
+create a custom [roslaunch](http://wiki.ros.org/roslaunch) file in your package's launch folder,
+like the one in [examples/src/ros/launch/ros_driver.launch](examples/src/ros/launch/ros_driver.launch).
+And then, if you called it `my_ros_driver.launch`:
 ```bash
-roslaunch smarts_ros ros_driver.launch
+roslaunch smarts_ros launch/my_ros_driver.launch
 ```
 (This approach will automatically start the `rosmaster` node.)
 

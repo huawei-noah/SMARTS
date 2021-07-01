@@ -1,0 +1,13 @@
+<launch>
+  <arg name="buffer_size" default="3" doc="The number of entity messages to buffer to use for smoothing/extrapolation.  Must be a positive integer." />
+  <arg name="headless" default="true" doc="Controls whether SMARTS should also emit its state to an Envision server." />
+  <arg name="seed" default="42" doc="Seed to use when initializing SMARTS' random number generator(s)." />
+  <arg name="target_freq" default="0" doc="The target frequencey in Hz.  If not specified, the node will publish as quickly as SMARTS permits." />
+
+  <node pkg="smarts_ros" name="SMARTS" type="ros_driver.py" output="screen">
+    <param name="target_freq" type="double" value="$(arg target_freq)" />
+    <param name="buffer_size" type="int" value="$(arg buffer_size)" />
+    <param name="headless" type="bool" value="$(arg headless)" />
+    <param name="seed" type="int" value="$(arg seed)" />
+  </node>
+</launch>
