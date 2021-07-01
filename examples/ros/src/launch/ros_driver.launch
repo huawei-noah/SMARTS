@@ -5,9 +5,9 @@
   <arg name="target_freq" default="0" doc="The target frequencey in Hz.  If not specified, the node will publish as quickly as SMARTS permits." />
 
   <node pkg="smarts_ros" name="SMARTS" type="ros_driver.py" output="screen">
-    <param name="target_freq" type="double" value="$(arg target_freq)" />
-    <param name="buffer_size" type="int" value="$(arg buffer_size)" />
-    <param name="headless" type="bool" value="$(arg headless)" />
-    <param name="seed" type="int" value="$(arg seed)" />
+    <param name="_target_freq" type="double" value="$(arg target_freq)" />
+    <param name="_buffer_size" type="int" value="$(arg buffer_size)" />
+    <param name="_headless" type="bool" value="$(arg headless)" />
+    <param name="_seed" type="int" value="$(arg seed)" />
   </node>
 </launch>

@@ -312,7 +312,8 @@ class ROSDriver:
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
                 self._smarts.reset(Scenario(self._scenario_path))
                 self._reset_smarts = False
-                self._last_step_time = None
+                if self._scenario_path:
+                    self._last_step_time = None
 
     def run_forever(self):
         if not self._publisher:
@@ -328,9 +329,12 @@ class ROSDriver:
             while not rospy.is_shutdown():
                 self._check_reset()
                 if not self._scenario_path:
-                    if warned_scenario:
+                    if not warned_scenario:
                         rospy.loginfo("waiting for scenario on control channel...")
                         warned_scenario = True
+                    elif self._last_step_time:
+                        rospy.loginfo("no more scenarios.  exiting...")
+                        break
                     continue
                 if self._last_step_time:
                     step_delta = rospy.get_time() - self._last_step_time
