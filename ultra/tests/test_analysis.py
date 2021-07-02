@@ -54,13 +54,14 @@ class AnalysisTest(unittest.TestCase):
                 stopwatcher_route="south-west",
                 root_path="tests/scenarios",
                 save_dir=save_dir,
+                pool_dir="ultra/scenarios/pool/analysis_pool",
             )
 
             if not os.path.exists(output):
                 os.makedirs(output)
 
             os.system(
-                f"python ultra/scenarios/interface.py analyze --scenarios {save_dir} --max-steps 600 --end-by-stopwatcher --output {output}"
+                f"python ultra/scenarios/interface.py analyze --scenarios {save_dir} --max-steps 600 --end-by-stopwatcher --output {output} --video 1"
             )
             for dirpath, dirnames, files in os.walk(save_dir):
                 if "traffic" in dirpath:
@@ -98,6 +99,7 @@ class AnalysisTest(unittest.TestCase):
             stopwatcher_route="south-west",
             root_path="tests/scenarios",
             save_dir=save_dir,
+            pool_dir="ultra/scenarios/pool/analysis_pool",
         )
         scenarios = glob.glob(f"{save_dir}")
         try:

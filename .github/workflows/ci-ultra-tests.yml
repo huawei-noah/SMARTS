@@ -39,19 +39,21 @@ jobs:
           pip install --upgrade -e .
           pip install --upgrade numpy
       - name: Run ultra tests (heavy)
+        # To prevent segmentation faults and/or termination signals (i.e. SIGABRT), the
+        # train and evaluate tests are forked into separate subprocesses. Hence, the
+        # heavy tests are divided up into two parts (forked and unforked).
         run: |
           cd ultra
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          ./tests/ \
-          --ignore=./tests/test_ultra_package.py \
-          --ignore=./tests/test_adapter.py \
-          --ignore=./tests/test_env.py \
-          --ignore=./tests/test_episodes.py \
-          --ignore=./tests/test_scenarios.py \
-          --ignore=./tests/test_social_vehicles.py \
-          --ignore=./tests/test_rllib_train.py \
+          --durations=0 \
+          ./tests/test_analysis.py
+          pytest -v \
+          --durations=0 \
+          --forked \
+          ./tests/test_train.py \
+          ./tests/test_evaluate.py
 
   test-light-base-tests:
     runs-on: ubuntu-18.04
@@ -84,11 +86,15 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          ./tests/ \
-          --ignore=./tests/test_ultra_package.py \
-          --ignore=./tests/test_train.py \
-          --ignore=./tests/test_evaluate.py \
-          --ignore=./tests/test_analysis.py \
+          --durations=0 \
+          --forked \
+          ./tests/test_adapter.py \
+          ./tests/test_env.py \
+          ./tests/test_episode.py \
+          ./tests/test_rllib_train.py \
+          ./tests/test_scenarios.py \
+          ./tests/test_social_vehicles.py \
+          ./tests/test_tune.py
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
@@ -119,7 +125,9 @@ jobs:
           cd ultra
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
-          pytest -v ./tests/test_ultra_package.py
+          pytest -v \
+          --durations=0 \
+          ./tests/test_ultra_package.py \
 
   test-package-via-wheel:
     runs-on: ubuntu-18.04
@@ -155,33 +163,35 @@ jobs:
           cd ultra
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
-          pytest -v ./tests/test_ultra_package.py
+          pytest -v \
+          --durations=0 \
+          ./tests/test_ultra_package.py \
 
-  # test-package-via-pypi:
-  #   runs-on: ubuntu-18.04
-  #   if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-  #   container: huaweinoah/smarts:v0.4.13-minimal
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #     - name: Setup X11
-  #       run: |
-  #         /usr/bin/Xorg \
-  #           -noreset \
-  #           +extension GLX \
-  #           +extension RANDR \
-  #           +extension RENDER \
-  #           -logfile ./xdummy.log \
-  #           -config /etc/X11/xorg.conf :1 &
-  #     - name: Install ultra-rl via setup.py
-  #       run: |
-  #         cd ultra
-  #         python3.7 -m venv .venv
-  #         . .venv/bin/activate
-  #         pip install ultra-rl
-  #     - name: Run test
-  #       run: |
-  #         cd ultra
-  #         . .venv/bin/activate
-  #         scl scenario build-all ultra/scenarios/pool
-  #         pytest -v ./tests/test_ultra_package.py
+  test-package-via-pypi:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.4.13-minimal
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup X11
+        run: |
+          /usr/bin/Xorg \
+            -noreset \
+            +extension GLX \
+            +extension RANDR \
+            +extension RENDER \
+            -logfile ./xdummy.log \
+            -config /etc/X11/xorg.conf :1 &
+      - name: Install ultra-rl via pypi
+        run: |
+          cd ultra
+          python3.7 -m venv .venv
+          . .venv/bin/activate
+          pip install ultra-rl
+      - name: Run test
+        run: |
+          cd ultra
+          . .venv/bin/activate
+          scl scenario build-all ultra/scenarios/pool
+          pytest -v ./tests/test_ultra_package.py

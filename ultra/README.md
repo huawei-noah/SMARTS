@@ -32,7 +32,7 @@ For a longer introduction to ULTRA, including its purpose, concepts, and benchma
 If you use ULTRA in your research, you can use the following citation.
 ```
 @misc{elsayed20_ultra,
-  author          = {Elsayed, Mohamed and Hassanzadeh, Kimia and Nguyen, Nhat M,
+  author          = {Elsayed, Mohamed and Hassanzadeh, Kimia and Nguyen, Nhat M.
                   and Alban, Montgomery and Zhu, Xiru and Graves, Daniel and
                   Luo, Jun},
   journal         = {Machine Learning for Autonomous Driving Workshop, Neural
