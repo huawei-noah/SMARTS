@@ -256,7 +256,9 @@ def train(
             for agent_id, agent_spec in agent_specs.items()
         }
         # Define an 'etag' for this experiment's data directory based off policy_classes.
-        etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+        etag = ":".join(
+            [policy_class.split(":")[-1] for policy_class in policy_classes]
+        )
     else:
         agent_ids, agent_classes, agent_specs, agents, etag = build_agents(
             policy_classes, policy_ids, max_episode_steps
