@@ -25,8 +25,6 @@ setup(
         "cached-property",
         "click",  # used in scl
         "gym",
-        "panda3d",
-        "panda3d-gltf",
         "numpy",
         "rich",
         "rtree",  # Used by sumolib
@@ -85,6 +83,10 @@ setup(
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
+        ],
+        "camera-obs": [
+            "panda3d",
+            "panda3d-gltf",
         ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},

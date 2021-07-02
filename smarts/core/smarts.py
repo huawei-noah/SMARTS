@@ -44,8 +44,8 @@ from .bubble_manager import BubbleManager
 from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
 from .motion_planner_provider import MotionPlannerProvider
+from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .provider import Provider, ProviderState
-from .renderer import Renderer
 from .scenario import Scenario
 from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
@@ -88,9 +88,11 @@ class SMARTS:
         self._traffic_sim = traffic_sim
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
+        self._trajectory_interpolation_provider = TrajectoryInterpolationProvider()
         self._providers = [
             self._motion_planner_provider,
             self._traffic_history_provider,
+            self._trajectory_interpolation_provider,
         ]
         if self._traffic_sim:
             self._providers.insert(0, self._traffic_sim)
@@ -440,10 +442,16 @@ class SMARTS:
     @property
     def renderer(self):
         if not self._renderer:
-            self._renderer = Renderer(self._sim_id)
-            if self._scenario:
-                self._renderer.setup(self._scenario)
-                self._vehicle_index.begin_rendering_vehicles(self._renderer)
+            try:
+                from .renderer import Renderer
+
+                self._renderer = Renderer(self._sim_id)
+                if self._scenario:
+                    self._renderer.setup(self._scenario)
+                    self._vehicle_index.begin_rendering_vehicles(self._renderer)
+            except Exception as e:
+                self._log.warning("unable to create Renderer:  " + repr(e))
+                self._renderer = None
         return self._renderer
 
     @property
