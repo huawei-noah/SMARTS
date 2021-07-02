@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
+import glob
 
 from ultra.utils.ray import default_ray_kwargs
 
@@ -103,12 +104,71 @@ def create_argument_parser():
         type=str,
     )
     parser.add_argument(
+        "--experiment-dir",
+        help="Path to the base dir of trained model",
+        default=None,
+        type=str,
+    )
+    parser.add_argument(
         "--policy-ids",
         help="Name of each specified policy",
         default=None,
         type=str,
     )
     return parser
+
+
+def load_model(experiment_dir):
+    # Load relevant agent metadata.
+    with open(
+        os.path.join(experiment_dir, "agent_metadata.pkl"), "rb"
+    ) as metadata_file:
+        agent_metadata = pickle.load(metadata_file)
+
+    for key in agent_metadata.keys():
+        assert key in ["agent_ids", "agent_classes", "agent_specs"]
+
+    # Extract the agent IDs and policy classes from the metadata and given models.
+    agent_ids = [agent_id for agent_id in agent_metadata["agent_ids"]]
+
+    agent_classes = {
+        agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
+    }
+
+    agent_checkpoint_directories = {
+        agent_id: sorted(
+            glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
+            key=lambda x: int(x.split("/")[-1]),
+        )
+        for agent_id in agent_ids
+    }
+
+    # Confined to single agent experimens only
+    assert len(agent_ids) == 1, "Cannot load model from multi-agent experiments."
+
+    length_dir = len(agent_checkpoint_directories[agent_ids[0]])
+    if length_dir > 1:
+        print(
+            f"\nThere are {length_dir} models inside in the experiment dir. Only the latest model >>> {agent_checkpoint_directories[agent_ids[0]][length_dir-1]} <<< will be trained\n"
+        )
+
+    current_checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][
+        length_dir - 1
+    ]
+
+    # Create the agent specifications matched with their associated ID and corresponding
+    # checkpoint directory
+    agent_specs = {
+        agent_id: make(
+            locator=agent_classes[agent_id],
+            checkpoint_dir=current_checkpoint_directory,
+            experiment_dir=experiment_dir,
+            agent_id=agent_id,
+        )
+        for agent_id in agent_ids
+    }
+
+    return agent_ids, agent_classes, agent_specs
 
 
 def build_agents(policy_classes, policy_ids, max_episode_steps):
@@ -180,6 +240,7 @@ def train(
     headless,
     seed,
     log_dir,
+    experiment_dir=None,
     policy_ids=None,
 ):
     torch.set_num_threads(1)
@@ -187,9 +248,19 @@ def train(
     finished = False
     evaluation_task_ids = dict()
 
-    agent_ids, agent_classes, agent_specs, agents, etag = build_agents(
-        policy_classes, policy_ids, max_episode_steps
-    )
+    if experiment_dir:
+        agent_ids, agent_classes, agent_specs = load_model(experiment_dir)
+        # Create the agents matched with their associated ID.
+        agents = {
+            agent_id: agent_spec.build_agent()
+            for agent_id, agent_spec in agent_specs.items()
+        }
+        # Define an 'etag' for this experiment's data directory based off policy_classes.
+        etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+    else:
+        agent_ids, agent_classes, agent_specs, agents, etag = build_agents(
+            policy_classes, policy_ids, max_episode_steps
+        )
 
     # Create the environment.
     env = gym.make(
