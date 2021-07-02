@@ -30,13 +30,29 @@ class ChaseViaPointsAgent(Agent):
             1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
         )
 
+class CheckLaneOrderAgent(Agent):
+    def act(self, obs: Observation):
+        longest_val = 0
+        longest_index = 0
+        for i in range(len(obs.waypoint_paths)):
+            wpp = obs.waypoint_paths[i]
+            print(f"End path is: {wpp[-1].lane_id}")
+            if len() > longest_val:
+                longest_val=len(wpp)
+                longest_index=i
+        return ( 
+            1, 
+            1 if longest_index > obs.ego_vehicle_state.lane_index 
+            else (-1 if longest_index < obs.ego_vehicle_state.lane_index else 0)
+        )
+
 
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
         ),
-        agent_builder=ChaseViaPointsAgent,
+        agent_builder=CheckLaneOrderAgent,
     )
 
     env = gym.make(
