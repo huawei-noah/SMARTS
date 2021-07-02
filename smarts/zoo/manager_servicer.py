@@ -94,5 +94,5 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
         workers_to_kill = list(self._workers.values())
         for worker in workers_to_kill:
             if worker.poll() == None:
-                worker.terminate()  # removes from self._workers dict
+                worker.terminate()
                 worker.wait()

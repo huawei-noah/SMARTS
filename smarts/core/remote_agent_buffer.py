@@ -101,7 +101,7 @@ class RemoteAgentBuffer:
     def _stop_servers(self, *args):
         self.destroy()
         self._log.debug(
-            f"Shutting down zoo manager and zoo workers gracefully due to abrupt process stop."
+            f"Shutting down zoo manager and zoo workers due to abrupt process stop."
         )
         sys.exit(0)
 
