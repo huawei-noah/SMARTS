@@ -107,7 +107,7 @@ levels:
 
   easy:
     train:
-      total: 10000
+      total: 10
       ego_missions:
         # left turn from south to west
       - start: south-SN
@@ -130,7 +130,7 @@ levels:
            stops: null
            bubbles: null
     test:
-      total: 200
+      total: 1
       ego_missions:
         # left turn from south to west
       - start: south-SN

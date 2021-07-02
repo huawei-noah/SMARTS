@@ -39,8 +39,8 @@ from ultra.scenarios.common.begin_time_init_funcs import *
 # -----------------------------------------
 
 
-prob_easy = 0.02
-prob_medium = 0.04
+prob_easy = 0.04
+prob_medium = 0.06
 prob_heavy = 0.08
 behavior_distribution = {
     "default": 0.70,
@@ -775,7 +775,24 @@ cross_patterns = {
             },
             "west-east": None,
             "west-north": None,  # blocking
-            "west-south": None,
+            "west-south": {
+                "vehicles": 100,
+                "start_end_on_different_lanes_probability": 0.0,
+                "distribution": {
+                    "default": 0.2,
+                    "aggressive": 0.8,
+                },
+                "begin_time_init": {
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 1),
+                        "time_between_cluster": (20, 30),
+                        "time_for_each_cluster": 1,
+                    },
+                },
+                "has_turn": True,
+                "deadlock_optimization": True,
+            },
             "east-west": None,
             "east-north": None,  # blocking
             "east-south": None,
@@ -859,7 +876,24 @@ cross_patterns = {
             "east-west": None,
             "east-north": None,  # blocking
             "east-south": None,
-            "west-south": None,
+            "west-south": {
+                "vehicles": 100,
+                "start_end_on_different_lanes_probability": 0.0,
+                "distribution": {
+                    "default": 0.2,
+                    "aggressive": 0.8,
+                },
+                "begin_time_init": {
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 1),
+                        "time_between_cluster": (20, 30),
+                        "time_for_each_cluster": 1,
+                    },
+                },
+                "has_turn": True,
+                "deadlock_optimization": True,
+            },
             "north-south": {
                 "vehicles": 1000,
                 "start_end_on_different_lanes_probability": 0.0,
@@ -954,7 +988,24 @@ cross_patterns = {
                 "deadlock_optimization": True,
             },
             "west-north": None,  # blocking
-            "west-south": None,  # blocking
+            "west-south": {
+                "vehicles": 100,
+                "start_end_on_different_lanes_probability": 0.0,
+                "distribution": {
+                    "default": 0.2,
+                    "aggressive": 0.8,
+                },
+                "begin_time_init": {
+                    "func": burst_begin_time_init_func,
+                    "params": {
+                        "vehicle_cluster_size": (1, 1),
+                        "time_between_cluster": (20, 30),
+                        "time_for_each_cluster": 1,
+                    },
+                },
+                "has_turn": True,
+                "deadlock_optimization": True,
+            },
             "east-west": None,
             "west-east": None,
             "east-north": None,  # blocking

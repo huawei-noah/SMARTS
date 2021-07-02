@@ -23,6 +23,15 @@ tasks:
     intersection-specific:
       train: "scenarios/taskX/train_intersection-specific*"
       test:  "scenarios/taskX/test_intersection-specific*"
+    low-density:
+      train: "scenarios/taskX/train_low-density*"
+      train: "scenarios/taskX/test_low-density*"
+    mid-density:
+      train: "scenarios/taskX/train_mid-density*"
+      train: "scenarios/taskX/test_mid-density*"
+    high-density:
+      train: "scenarios/taskX/train_high-density*"
+      train: "scenarios/taskX/test_high-density*"
   task0:
     no-traffic:
       train: "scenarios/task1/train_no-traffic*"
