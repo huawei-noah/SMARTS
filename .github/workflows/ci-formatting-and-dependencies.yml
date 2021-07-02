@@ -34,4 +34,4 @@ jobs:
       - name: Test pip packages
         run: |
           cd $GITHUB_WORKSPACE
-          ./test_pip_packages.sh
+          . ./utils/setup/test_pip_packages.sh

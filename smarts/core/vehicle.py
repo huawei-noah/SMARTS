@@ -32,7 +32,6 @@ from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
-from .renderer import Renderer, RendererException
 from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
@@ -127,10 +126,21 @@ class VehicleGeometry:
         pass
 
 
+class RendererException(Exception):
+    """An exception raised if a renderer is required but not available."""
+
+    @classmethod
+    def required_to(cls, thing):
+        return cls(
+            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
+        )
+
+
 class Vehicle:
     def __init__(
         self,
         id: str,
+        # XXX: can probably remove pose as a parameter here since it's in chassis now.
         pose: Pose,
         chassis: Chassis,
         # TODO: We should not be leaking SUMO here.
@@ -276,15 +286,15 @@ class Vehicle:
         self._assert_initialized()
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
-        half_length = self.length / 2
-        half_width = self.width / 2
-        corners = [(-1, 1), (1, 1), (1, -1), (-1, -1)]
+        origin = self.position[:2]
+        dimensions = numpy.array([self.width, self.length])
+        corners = numpy.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
+        heading = self.heading
         return [
             rotate_around_point(
-                point=self.position[:2]
-                + numpy.array(corner) * numpy.array([half_width, half_length]),
-                radians=self.heading,
-                origin=self.position[:2],
+                point=origin + corner * dimensions,
+                radians=heading,
+                origin=origin,
             )
             for corner in corners
         ]
@@ -306,15 +316,23 @@ class Vehicle:
         controller_filepath,
         initial_speed=None,
     ):
-        # Agents can currently only control passenger vehicles
-        vehicle_type = "passenger"
-        chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+        mission = mission_planner.mission
 
-        if isinstance(mission_planner.mission.task, UTurn):
-            if mission_planner.mission.task.initial_speed:
-                initial_speed = mission_planner.mission.task.initial_speed
+        if mission.vehicle_spec:
+            # mission.vehicle_spec.veh_type will always be "passenger" for now,
+            # but we use that value here in case we ever expand our history functionality.
+            vehicle_type = mission.vehicle_spec.veh_type
+            chassis_dims = mission.vehicle_spec.dimensions
+        else:
+            # non-history agents can currently only control passenger vehicles.
+            vehicle_type = "passenger"
+            chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
 
-        start = mission_planner.mission.start
+        if isinstance(mission.task, UTurn):
+            if mission.task.initial_speed:
+                initial_speed = mission.task.initial_speed
+
+        start = mission.start
         start_pose = Pose.from_front_bumper(
             front_bumper_position=numpy.array(start.position),
             heading=start.heading,
@@ -348,7 +366,11 @@ class Vehicle:
 
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
-        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+        if (
+            agent_interface
+            and agent_interface.action in sim.dynamic_action_spaces
+            and not mission.vehicle_spec
+        ):
             chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,

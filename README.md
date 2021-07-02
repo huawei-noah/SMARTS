@@ -58,13 +58,13 @@ for _ in range(1000):
 cd <project>
 
 # Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
-./install_deps.sh
+bash utils/setup/install_deps.sh
 
 # verify sumo is >= 1.5.0
 # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
 sumo
 
-# setup virtual environment; presently only Python 3.7.x is officially supported
+# setup virtual environment; presently at least Python 3.7 and higher is officially supported
 python3.7 -m venv .venv
 
 # enter virtual environment to install all dependencies
@@ -76,6 +76,9 @@ pip install --upgrade pip
 # install [train] version of python package with the rllib dependencies
 pip install -e .[train]
 
+# OPTIONAL: install [camera-obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
+pip install -e .[camera-obs]  
+
 # make sure you can run sanity-test (and verify they are passing)
 # if tests fail, check './sanity_test_result.xml' for test report. 
 pip install -e .[test]
@@ -86,29 +89,28 @@ make sanity-test
 
 ## Running
 
-We use [supervisord](http://supervisord.org/introduction.html) to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and start supervisord:
+We use the `scl` command line to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and run the following command:
 
 ```bash
 # build scenarios/loop
 scl scenario build --clean scenarios/loop
 
-# start supervisord
-supervisord
+# run an experiment 
+scl run --envision examples/single_agent.py scenarios/loop 
 ```
 
-With `supervisord` running, visit http://localhost:8081/ in your browser to view your experiment.
+You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment. See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
 
-See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
+After executing the above command, visit http://localhost:8081/ in your browser to view your experiment.
 
-Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Here's how you can use one of the example scripts with a scenario.
+
+Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
 ```bash
-# Update the command=... in ./supervisord.conf
-#
-# [program:smarts]
-# command=python examples/single_agent.py scenarios/loop
-# ...
+scl run --envision <examples/script_path> <scenarios/path> 
 ```
+
+Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
 
 ## Documentation
 
@@ -127,6 +129,7 @@ Commands:
 * envision
 * scenario
 * zoo
+* run
 
 Subcommands of scenario:
 * build-all: Generate all scenarios under the given directories
@@ -138,6 +141,9 @@ Subcommands of envision:
 
 Subcommands of zoo:
 * zoo: Build an agent, used for submitting to the agent-zoo
+
+Subcommands of run:
+No subcommands of `run`. You can directly use `run` to simulate an experiment as mentioned in the example above.
 
 ### Examples:
 
@@ -263,18 +269,18 @@ $ python examples/single_agent.py scenarios/loop
 
 ```bash
 # For this to work, your account needs to be added to the huaweinoah org
-docker login
-
-export VERSION=v0.4.3-pre
-docker build --no-cache -t smarts:$VERSION .
+$ cd /path/to/SMARTS
+export VERSION=v0.4.17
+docker build --no-cache -f ./utils/docker/Dockerfile -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
+docker login
 docker push huaweinoah/smarts:$VERSION
 ```
 
 ### Troubleshooting
 
 #### General
-In many cases additinal run logs are located at '~/.smarts'. These can sometimes be helpful.
+In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
 
 #### SUMO
 SUMO can have some problems in setup. Please look through the following for support for SUMO:

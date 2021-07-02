@@ -29,10 +29,10 @@ import torch.nn.functional as F
 import pathlib, os, yaml, copy
 from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
 from smarts.core.agent import Agent
+import ultra.adapters as adapters
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class SACPolicy(Agent):
@@ -55,35 +55,46 @@ class SACPolicy(Agent):
         self.tau = float(policy_params["tau"])
         self.initial_alpha = float(policy_params["initial_alpha"])
         self.logging_freq = int(policy_params["logging_freq"])
-        self.action_size = int(policy_params["action_size"])
+        self.action_size = 2
         self.prev_action = np.zeros(self.action_size)
+        self.action_type = adapters.type_from_string(policy_params["action_type"])
+        self.observation_type = adapters.type_from_string(
+            policy_params["observation_type"]
+        )
+        self.reward_type = adapters.type_from_string(policy_params["reward_type"])
 
-        # state preprocessing
+        if self.action_type != adapters.AdapterType.DefaultActionContinuous:
+            raise Exception(
+                f"SAC baseline only supports the "
+                f"{adapters.AdapterType.DefaultActionContinuous} action type."
+            )
+        if self.observation_type != adapters.AdapterType.DefaultObservationVector:
+            raise Exception(
+                f"SAC baseline only supports the "
+                f"{adapters.AdapterType.DefaultObservationVector} observation type."
+            )
+
+        self.observation_space = adapters.space_from_type(self.observation_type)
+        self.low_dim_states_size = self.observation_space["low_dim_states"].shape[0]
+        self.social_capacity = self.observation_space["social_vehicles"].shape[0]
+        self.num_social_features = self.observation_space["social_vehicles"].shape[1]
+
+        self.encoder_key = policy_params["social_vehicles"]["encoder_key"]
         self.social_policy_hidden_units = int(
             policy_params["social_vehicles"].get("social_policy_hidden_units", 0)
-        )
-        self.social_capacity = int(
-            policy_params["social_vehicles"].get("social_capacity", 0)
-        )
-        self.observation_num_lookahead = int(
-            policy_params.get("observation_num_lookahead", 0)
         )
         self.social_policy_init_std = int(
             policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
-        self.num_social_features = int(
-            policy_params["social_vehicles"].get("num_social_features", 0)
-        )
         self.social_vehicle_config = get_social_vehicle_configs(
-            **policy_params["social_vehicles"]
+            encoder_key=self.encoder_key,
+            num_social_features=self.num_social_features,
+            social_capacity=self.social_capacity,
+            seed=self.seed,
+            social_policy_hidden_units=self.social_policy_hidden_units,
+            social_policy_init_std=self.social_policy_init_std,
         )
-
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.state_description = BaselineStatePreprocessor.get_state_description(
-            policy_params["social_vehicles"],
-            policy_params["observation_num_lookahead"],
-            self.action_size,
-        )
         self.social_feature_encoder_class = self.social_vehicle_encoder[
             "social_feature_encoder_class"
         ]
@@ -101,6 +112,7 @@ class SACPolicy(Agent):
         self.memory = ReplayBuffer(
             buffer_size=int(policy_params["replay_buffer"]["buffer_size"]),
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
+            observation_type=self.observation_type,
             device_name=self.device_name,
         )
         self.current_iteration = 0
@@ -112,7 +124,7 @@ class SACPolicy(Agent):
     @property
     def state_size(self):
         # Adjusting state_size based on number of features (ego+social)
-        size = sum(self.state_description["low_dim_states"].values())
+        size = self.low_dim_states_size
         if self.social_feature_encoder_class:
             size += self.social_feature_encoder_class(
                 **self.social_feature_encoder_params
@@ -180,9 +192,6 @@ class SACPolicy(Agent):
             reward=reward,
             next_state=next_state,
             done=float(done),
-            social_capacity=self.social_capacity,
-            observation_num_lookahead=self.observation_num_lookahead,
-            social_vehicle_config=self.social_vehicle_config,
             prev_action=self.prev_action,
         )
         self.steps += 1

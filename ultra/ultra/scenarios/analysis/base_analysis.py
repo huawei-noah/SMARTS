@@ -316,9 +316,9 @@ class BaseAnalysis:
                 with open(f"{scenario_path}/metadata.json", "r") as metadata_rd:
                     metadata = json.load(metadata_rd)
                 visited_scenario.add(scenario_path)
-                all_waypoints = [
-                    [linked_wp.wp.pos[0], linked_wp.wp.pos[1]]
-                    for linked_wp in env._smarts.waypoints._linked_waypoints
+                all_lanepoints = [
+                    [linked_lp.lp.pos[0], linked_lp.lp.pos[1]]
+                    for linked_lp in env._smarts.lanepoints._linked_lanepoints
                 ]
                 dones = {"__all__": False}
                 intersection_name, intersection_tag = (
@@ -388,7 +388,7 @@ class BaseAnalysis:
                                 ego_position=agent_obs.ego_vehicle_state.position,
                                 social_vehicle_states=agent_obs.neighborhood_vehicle_states,
                                 goal_path=path,
-                                all_waypoints=all_waypoints,
+                                all_lanepoints=all_lanepoints,
                                 step=step,
                                 lookaheads_positions=[
                                     waypoint.pos for waypoint in path

@@ -127,6 +127,10 @@ class AgentType(IntEnum):
     """Controls multiple vehicles"""
     MPCTracker = 10
     """Agent performs trajectory tracking using model predictive control."""
+    TrajectoryInterpolator = 11
+    """Agent performs linear trajectory interpolation."""
+    Imitation = 12
+    """Agent sees neighbor vehicles and performs actions based on imitation-learned model (acceleration, angular_velocity)."""
 
 
 @dataclass(frozen=True)
@@ -215,6 +219,7 @@ class AgentInterface:
     waypoints: Union[Waypoints, bool] = False
     """Enable the Waypoint Paths sensor, a list of valid waypoint paths along the current mission."""
 
+    # XXX: consider making this return LanePoints instead?
     road_waypoints: Union[RoadWaypoints, bool] = False
     """
     Enable the Road Waypoints sensor, waypoints along all lanes (oncoming included) of the road the
@@ -328,13 +333,17 @@ class AgentInterface:
                 waypoints=True,
                 action=ActionSpaceType.LaneWithContinuousSpeed,
             )
-        # The trajectory tracking agent wich recieves a series of reference trajectory
+        # The trajectory tracking agent which receives a series of reference trajectory
         # points and speeds to follow
         elif requested_type == AgentType.Tracker:
             interface = AgentInterface(
                 waypoints=True,
                 action=ActionSpaceType.Trajectory,
             )
+        # The trajectory interpolation agent which recieves a with-time-trajectory and move vehicle
+        # with linear time interpolation
+        elif requested_type == AgentType.TrajectoryInterpolator:
+            interface = AgentInterface(action=ActionSpaceType.TrajectoryWithTime)
         # The MPC based trajectory tracking agent wich recieves a series of
         # reference trajectory points and speeds and computes the optimal
         # steering action.
@@ -361,6 +370,12 @@ class AgentInterface:
             interface = AgentInterface(
                 waypoints=True,
                 action=ActionSpaceType.Continuous,
+            )
+        # For testing imitation learners
+        elif requested_type == AgentType.Imitation:
+            interface = AgentInterface(
+                neighborhood_vehicles=True,
+                action=ActionSpaceType.Imitation,
             )
         else:
             raise Exception("Unsupported agent type %s" % requested_type)

@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import json
 import math
 import os
 import random
@@ -35,6 +36,17 @@ from skimage.transform import resize
 import ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
 import math, datetime
+
+
+def agent_pool_value(agent_name, value_name):
+    base_dir = os.path.dirname(__file__)
+    pool_path = os.path.join(base_dir, "../agent_pool.json")
+    with open(pool_path, "r") as f:
+        data = json.load(f)
+    data = data["agents"]
+    if value_name == "policy_class":
+        return data[agent_name]["path"] + ":" + data[agent_name]["locator"]
+    return data[agent_name][value_name]
 
 
 def gen_experiment_name():

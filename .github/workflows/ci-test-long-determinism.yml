@@ -34,7 +34,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -e .[train,test]
+          pip install -e .[train,test,camera-obs]
       - name: Verify long determinism
         run: |
           cd $GITHUB_WORKSPACE

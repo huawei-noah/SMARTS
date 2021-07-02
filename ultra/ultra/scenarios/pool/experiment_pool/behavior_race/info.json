@@ -1,0 +1,4 @@
+{
+  "routes" : [["east-EW","west-EW"]],
+  "num_lanes": {"east-EW":10, "west-EW":10}
+}

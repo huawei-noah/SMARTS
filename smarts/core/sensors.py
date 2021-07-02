@@ -27,18 +27,17 @@ from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 import numpy as np
 
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
-from smarts.core.mission_planner import MissionPlanner
+from smarts.core.mission_planner import MissionPlanner, Waypoint
 from smarts.core.utils.math import squared_dist, vec_2d
 from smarts.sstudio.types import CutIn, UTurn
 
-from .coordinates import BoundingBox, Heading
+from .coordinates import BoundingBox, Heading, Pose
 from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
-from .renderer import Renderer
 from .scenario import Mission, Via
-from .waypoints import Waypoint
+from .lanepoints import LanePoint
 
 logger = logging.getLogger(__name__)
 
@@ -172,11 +171,12 @@ class Sensors:
     @staticmethod
     def observe(sim, agent_id, sensor_state, vehicle):
         neighborhood_vehicles = None
+        lanepoints = sim.road_network.lanepoints
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicles = vehicle.neighborhood_vehicles_sensor()
 
             if len(neighborhood_vehicles) > 0:
-                neighborhood_vehicle_wps = sim.waypoints.closest_waypoint_batched(
+                neighborhood_vehicle_lps = lanepoints.closest_lanepoint_batched(
                     [v.pose for v in neighborhood_vehicles],
                     within_radius=vehicle.length,
                     filter_from_count=10,
@@ -188,26 +188,27 @@ class Sensors:
                         bounding_box=v.dimensions,
                         heading=v.pose.heading,
                         speed=v.speed,
-                        edge_id=sim.road_network.edge_by_lane_id(wp.lane_id).getID(),
-                        lane_id=wp.lane_id,
-                        lane_index=wp.lane_index,
+                        edge_id=sim.road_network.edge_by_lane_id(lp.lane_id).getID(),
+                        lane_id=lp.lane_id,
+                        lane_index=lp.lane_index,
                     )
-                    for v, wp in zip(neighborhood_vehicles, neighborhood_vehicle_wps)
+                    for v, lp in zip(neighborhood_vehicles, neighborhood_vehicle_lps)
                 ]
 
         if vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
-            waypoint_paths = sim.waypoints.waypoint_paths_at(
+            waypoint_paths = sensor_state.mission_planner.waypoint_paths_at(
                 vehicle.pose,
                 lookahead=1,
                 within_radius=vehicle.length,
                 filter_from_count=3,  # For calculating distance travelled
+                constrain_to_route=False,
             )
 
-        closest_waypoint = sim.waypoints.closest_waypoint(vehicle.pose)
-        ego_lane_id = closest_waypoint.lane_id
-        ego_lane_index = closest_waypoint.lane_index
+        closest_lanepoint = lanepoints.closest_lanepoint(vehicle.pose)
+        ego_lane_id = closest_lanepoint.lane_id
+        ego_lane_index = closest_lanepoint.lane_index
         ego_edge_id = sim.road_network.edge_by_lane_id(ego_lane_id).getID()
         ego_vehicle_state = vehicle.state
 
@@ -219,7 +220,8 @@ class Sensors:
         }
         if vehicle.subscribed_to_accelerometer_sensor:
             acceleration_values = vehicle.accelerometer_sensor(
-                ego_vehicle_state.linear_velocity, ego_vehicle_state.angular_velocity
+                ego_vehicle_state.linear_velocity,
+                ego_vehicle_state.angular_velocity,
             )
             acceleration_params.update(
                 dict(
@@ -364,11 +366,12 @@ class Sensors:
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
 
+        # TODO:  the following calls nearest_lanes (expensive) 6 times
+        reached_goal = cls._agent_reached_goal(sim, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)
         is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
         is_not_moving = cls._vehicle_is_not_moving(sim, vehicle)
-        reached_goal = cls._agent_reached_goal(sim, vehicle)
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
             sim, vehicle
@@ -419,12 +422,12 @@ class Sensors:
 
     @classmethod
     def _vehicle_is_on_shoulder(cls, sim, vehicle):
-        return any(
-            [
-                not sim.scenario.road_network.point_is_within_road(corner_coordinate)
-                for corner_coordinate in vehicle.bounding_box
-            ]
-        )
+        # XXX: this isn't technically right as this would also return True
+        #      for vehicles that are completely off road.
+        for corner_coordinate in vehicle.bounding_box:
+            if not sim.scenario.road_network.point_is_within_road(corner_coordinate):
+                return True
+        return False
 
     @classmethod
     def _vehicle_is_not_moving(cls, sim, vehicle):
@@ -482,7 +485,7 @@ class Sensors:
 
         # Route is endless
         if not route_edges:
-            is_wrong_way = cls._vehicle_is_wrong_way(sim, vehicle, nearest_lane.getID())
+            is_wrong_way = cls._check_wrong_way_event(nearest_lane, sim, vehicle)
             return (False, is_wrong_way)
 
         closest_edges = []
@@ -503,24 +506,32 @@ class Sensors:
             # Lanes from an edge are parallel so any lane from the edge will do for direction check
             # but the innermost lane will be the last lane in the edge and usually the closest.
             lane_to_check = route_edge_or_oncoming.getLanes()[-1]
-            is_wrong_way = cls._vehicle_is_wrong_way(
-                sim, vehicle, lane_to_check.getID()
-            )
+            is_wrong_way = cls._check_wrong_way_event(lane_to_check, sim, vehicle)
 
         return (is_off_route, is_wrong_way)
 
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, lane_id):
-        closest_waypoint = sim.scenario.waypoints.closest_waypoint_on_lane(
+        lanepoints = sim.road_network.lanepoints
+        closest_lanepoint = lanepoints.closest_lanepoint_on_lane(
             vehicle.pose,
             lane_id,
         )
 
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
-            np.fabs(vehicle.pose.heading.relative_to(closest_waypoint.heading))
+            np.fabs(vehicle.pose.heading.relative_to(closest_lanepoint.heading))
             > 0.5 * np.pi
         )
+
+    @classmethod
+    def _check_wrong_way_event(cls, lane_to_check, sim, vehicle):
+        # When the vehicle is in an intersection, turn off the `wrong way` check to avoid
+        # false positive `wrong way` events.
+        if lane_to_check.getEdge().isSpecial():
+            return False
+
+        return cls._vehicle_is_wrong_way(sim, vehicle, lane_to_check.getID())
 
     @classmethod
     @lru_cache(maxsize=32)
@@ -620,7 +631,7 @@ class CameraSensor(Sensor):
     def __init__(
         self,
         vehicle,
-        renderer: Renderer,
+        renderer,  # type Renderer or None
         name: str,
         mask: int,
         width: int,
@@ -656,7 +667,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        renderer: Renderer,
+        renderer,  # type Renderer or None
     ):
         super().__init__(
             vehicle,
@@ -698,7 +709,7 @@ class OGMSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        renderer: Renderer,
+        renderer,  # type Renderer or None
     ):
         super().__init__(
             vehicle,
@@ -740,7 +751,7 @@ class RGBSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        renderer: Renderer,
+        renderer,  # type Renderer or None
     ):
         super().__init__(
             vehicle, renderer, "rgb", RenderMasks.RGB_HIDE, width, height, resolution
@@ -853,8 +864,11 @@ class TripMeterSensor(Sensor):
         self._sim = sim
         self._mission_planner = mission_planner
 
-        waypoint_paths = sim.waypoints.waypoint_paths_at(
-            vehicle.pose, lookahead=1, within_radius=vehicle.length
+        waypoint_paths = mission_planner.waypoint_paths_at(
+            vehicle.pose,
+            lookahead=1,
+            within_radius=vehicle.length,
+            constrain_to_route=False,
         )
         starting_wp = waypoint_paths[0][0]
         self._wps_for_distance = [starting_wp]
@@ -944,7 +958,6 @@ class WaypointsSensor(Sensor):
                 )
 
         return self._mission_planner.waypoint_paths_at(
-            sim=self._sim,
             pose=self._vehicle.pose,
             lookahead=self._lookahead,
         )
@@ -956,13 +969,13 @@ class WaypointsSensor(Sensor):
 class RoadWaypointsSensor(Sensor):
     def __init__(self, vehicle, sim, mission_planner, horizon=32):
         self._vehicle = vehicle
-        self._sim = sim
+        self._road_network = sim.road_network
         self._mission_planner = mission_planner
         self._horizon = horizon
 
     def __call__(self):
-        wp = self._sim.waypoints.closest_waypoint(self._vehicle.pose)
-        road_edges = self._sim.road_network.road_edge_data_for_lane_id(wp.lane_id)
+        lp = self._road_network.lanepoints.closest_lanepoint(self._vehicle.pose)
+        road_edges = self._road_network.road_edge_data_for_lane_id(lp.lane_id)
 
         lane_paths = {}
         for edge in road_edges.forward_edges + road_edges.oncoming_edges:
@@ -975,14 +988,13 @@ class RoadWaypointsSensor(Sensor):
 
     def route_waypoints(self):
         return self._mission_planner.waypoint_paths_at(
-            sim=self._sim,
             pose=self._vehicle.pose,
             lookahead=32,
         )
 
     def paths_for_lane(self, lane, overflow_offset=None):
         if overflow_offset is None:
-            offset = self._sim.road_network.offset_into_lane(
+            offset = self._road_network.offset_into_lane(
                 lane, self._vehicle.position[:2]
             )
             start_offset = offset - self._horizon
@@ -997,15 +1009,14 @@ class RoadWaypointsSensor(Sensor):
             return paths
         else:
             start_offset = max(0, start_offset)
-            wp_start = self._sim.road_network.world_coord_from_offset(
-                lane, start_offset
-            )
-
+            wp_start = self._road_network.world_coord_from_offset(lane, start_offset)
+            adj_pose = Pose.from_center(wp_start, self._vehicle.heading)
             wps_to_lookahead = self._horizon * 2
-            paths = self._sim.waypoints.waypoint_paths_on_lane_at(
-                point=wp_start,
+            paths = self._mission_planner.waypoint_paths_on_lane_at(
+                pose=adj_pose,
                 lane_id=lane.getID(),
                 lookahead=wps_to_lookahead,
+                constrain_to_route=False,
             )
             return paths
 
@@ -1015,25 +1026,39 @@ class RoadWaypointsSensor(Sensor):
 
 class AccelerometerSensor(Sensor):
     def __init__(self, vehicle, sim):
-        self.linear_accelerations = deque(maxlen=3)
-        self.angular_accelerations = deque(maxlen=3)
+        self._dt = sim.timestep_sec
+        self.linear_velocities = deque(maxlen=3)
+        self.angular_velocities = deque(maxlen=3)
 
     def __call__(self, linear_velocity, angular_velocity):
         if linear_velocity is not None:
-            self.linear_accelerations.append(linear_velocity)
+            self.linear_velocities.append(linear_velocity)
         if angular_velocity is not None:
-            self.angular_accelerations.append(angular_velocity)
+            self.angular_velocities.append(angular_velocity)
 
-        if len(self.linear_accelerations) < 3 or len(self.angular_accelerations) < 3:
-            return (0.0, 0.0, 0.0, 0.0)
+        linear_acc = np.array((0.0, 0.0, 0.0))
+        angular_acc = np.array((0.0, 0.0, 0.0))
+        linear_jerk = np.array((0.0, 0.0, 0.0))
+        angular_jerk = np.array((0.0, 0.0, 0.0))
 
-        linear_acc = self.linear_accelerations[0] - self.linear_accelerations[1]
-        last_linear_acc = self.linear_accelerations[1] - self.linear_accelerations[2]
-        angular_acc = self.angular_accelerations[0] - self.angular_accelerations[1]
-        last_angular_acc = self.angular_accelerations[1] - self.angular_accelerations[2]
-
-        linear_jerk = linear_acc - last_linear_acc
-        angular_jerk = angular_acc - last_angular_acc
+        if len(self.linear_velocities) >= 2:
+            linear_acc = (
+                self.linear_velocities[-1] - self.linear_velocities[-2]
+            ) / self._dt
+            if len(self.linear_velocities) >= 3:
+                last_linear_acc = (
+                    self.linear_velocities[-2] - self.linear_velocities[-3]
+                ) / self._dt
+                linear_jerk = linear_acc - last_linear_acc
+        if len(self.angular_velocities) >= 2:
+            angular_acc = (
+                self.angular_velocities[-1] - self.angular_velocities[-2]
+            ) / self._dt
+            if len(self.angular_velocities) >= 3:
+                last_angular_acc = (
+                    self.angular_velocities[-2] - self.angular_velocities[-3]
+                ) / self._dt
+                angular_jerk = angular_acc - last_angular_acc
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)
 

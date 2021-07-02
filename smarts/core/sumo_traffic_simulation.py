@@ -106,6 +106,12 @@ class SumoTrafficSimulation(Provider):
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
 
+        # TODO: remove when SUMO fixes SUMO reset memory growth bug.
+        # `sumo-gui` memory growth is faster.
+        self._reload_count = 50
+        self._current_reload_count = 0
+        # /TODO
+
     def __repr__(self):
         return f"""SumoTrafficSim(
   _scenario={repr(self._scenario)},
@@ -240,20 +246,22 @@ class SumoTrafficSimulation(Provider):
 
         return load_params
 
-    def setup(self, scenario) -> ProviderState:
+    def setup(self, next_scenario) -> ProviderState:
         self._log.debug("Setting up SumoTrafficSim %s" % self)
         assert not self._is_setup, (
             "Can't setup twice, %s, see teardown()" % self._is_setup
         )
 
         # restart sumo process only when map file changes
-        if self._scenario and self._scenario.net_file_hash == scenario.net_file_hash:
-            restart_sumo = False
-        else:
-            restart_sumo = True
+        restart_sumo = (
+            not self._scenario
+            or self._scenario.net_file_hash != next_scenario.net_file_hash
+            or self._current_reload_count >= self._reload_count
+        )
+        self._current_reload_count = self._current_reload_count % self._reload_count + 1
 
-        self._scenario = scenario
-        self._log_file = scenario.unique_sumo_log_file()
+        self._scenario = next_scenario
+        self._log_file = next_scenario.unique_sumo_log_file()
 
         if restart_sumo:
             self._initialize_traci_conn()
@@ -483,7 +491,9 @@ class SumoTrafficSimulation(Provider):
         )
 
         # TODO: Vehicle Id should not be using prefixes this way
-        if vehicle_id.startswith("social-agent"):
+        if vehicle_id.startswith("social-agent") or vehicle_id.startswith(
+            "history-vehicle"
+        ):
             # This is based on ID convention
             vehicle_color = SumoTrafficSimulation._social_agent_vehicle_color()
         else:
@@ -717,34 +727,5 @@ class SumoTrafficSimulation(Provider):
             typeID=type_id,
             departPos=lane_offset,
             departLane=lane_index,
-        )
-        return vehicle_id
-
-    def _emit_vehicle_near_position(self, position, vehicle_id=None) -> str:
-        wp = self._scenario.waypoints.closest_waypoint(position)
-        lane = self._scenario.road_network.lane_by_id(wp.lane_id)
-        offset_in_lane = self._scenario.road_network.offset_into_lane(
-            lane, tuple(wp.pos)
-        )
-
-        if not vehicle_id:
-            vehicle_id = self._unique_id()
-
-        # XXX: Do not give this a route or it will crash on `moveTo` calls
-        self._traci_conn.vehicle.add(
-            vehicle_id,
-            "",
-            departPos=offset_in_lane,
-            departLane=wp.lane_index,
-        )
-
-        self._traci_conn.vehicle.moveToXY(
-            vehID=vehicle_id,
-            edgeID="",  # let sumo choose the edge
-            lane=-1,  # let sumo choose the lane
-            x=position[0],
-            y=position[1],
-            # angle=sumo_heading,  # only used for visualizing in sumo-gui
-            keepRoute=0b000,  # On lane
         )
         return vehicle_id

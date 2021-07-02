@@ -2,7 +2,9 @@ from os import path
 from setuptools import setup, find_packages
 
 this_dir = path.abspath(path.dirname(__file__))
-with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
+with open(
+    path.join(this_dir, "utils", "setup", "README.pypi.md"), encoding="utf-8"
+) as f:
     long_description = f.read()
 
 setup(
@@ -10,8 +12,8 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.4.16",
-    packages=find_packages(exclude="tests"),
+    version="0.4.17",
+    packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
     python_requires=">=3.7",
@@ -23,26 +25,19 @@ setup(
         "cached-property",
         "click",  # used in scl
         "gym",
-        "panda3d",
-        "panda3d-gltf",
         "numpy",
         "rich",
         "rtree",  # Used by sumolib
-        "filelock",
-        "lz4",
-        "networkx",
-        "opencv-python",
         "pandas",
         "psutil",
         "visdom",
-        "pybullet",
+        "pybullet==3.0.6",
         "sklearn",  # KDTree from sklearn is used by waypoints
         "tableprint",
         "trimesh",  # Used for writing .glb files
         "pynput",  # Used by HumanKeyboardAgent
         "sh",
         "shapely",
-        "supervisor",
         # HACK: There is a bug where if we only install the base ray dependency here
         #       and ray[rllib] under [train] it  prevents rllib from getting installed.
         #       For simplicity we just install both here. In the future we may want to
@@ -71,7 +66,6 @@ setup(
             "pytest",
             "pytest-benchmark",
             "pytest-cov",
-            "ipykernel",
             "pytest-notebook",
             "pytest-xdist",
         ],
@@ -89,6 +83,10 @@ setup(
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
+        ],
+        "camera-obs": [
+            "panda3d",
+            "panda3d-gltf",
         ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},

@@ -44,8 +44,8 @@ from .bubble_manager import BubbleManager
 from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
 from .motion_planner_provider import MotionPlannerProvider
+from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .provider import Provider, ProviderState
-from .renderer import Renderer
 from .scenario import Scenario
 from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
@@ -53,12 +53,12 @@ from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
+from .utils.math import rounder_for_dt
 from .utils.id import Id
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
-from .waypoints import Waypoints
 
 
 class SMARTSNotSetupError(Exception):
@@ -84,12 +84,15 @@ class SMARTS:
         self._envision: EnvisionClient = envision
         self._visdom: VisdomClient = visdom
         self._timestep_sec = timestep_sec
+        self._rounder = rounder_for_dt(timestep_sec)
         self._traffic_sim = traffic_sim
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
+        self._trajectory_interpolation_provider = TrajectoryInterpolationProvider()
         self._providers = [
             self._motion_planner_provider,
             self._traffic_history_provider,
+            self._trajectory_interpolation_provider,
         ]
         if self._traffic_sim:
             self._providers.insert(0, self._traffic_sim)
@@ -113,6 +116,7 @@ class SMARTS:
             ActionSpaceType.LaneWithContinuousSpeed,
             ActionSpaceType.Trajectory,
             ActionSpaceType.MPC,
+            # ActionSpaceType.Imitation,
         }
 
         # Set up indices
@@ -229,9 +233,7 @@ class SMARTS:
         extras = dict(scores=scores)
 
         # 8. Advance the simulation clock.
-        # round due to FP precision issues, but need to allow arbitrarily-small dt's
-        dec_digits = len("{}".format(self._timestep_sec)) - 2
-        self._elapsed_sim_time = round(self._elapsed_sim_time + dt, dec_digits)
+        self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + dt)
 
         return observations, rewards, dones, extras
 
@@ -279,9 +281,7 @@ class SMARTS:
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
-            self._trap_manager.init_traps(
-                scenario.road_network, scenario.waypoints, scenario.missions
-            )
+            self._trap_manager.init_traps(scenario.road_network, scenario.missions)
             self._agent_manager.init_ego_agents(self)
             if self._renderer:
                 self._sync_vehicles_to_renderer()
@@ -290,7 +290,11 @@ class SMARTS:
             self.setup(scenario)
 
         # Tell history provide to ignore vehicles if we have assigned mission to them
-        self._traffic_history_provider.set_replaced_ids(scenario.missions.keys())
+        self._traffic_history_provider.set_replaced_ids(
+            m.vehicle_spec.veh_id
+            for m in scenario.missions.values()
+            if m and m.vehicle_spec
+        )
 
         self._total_sim_time += self._elapsed_sim_time
         self._elapsed_sim_time = 0
@@ -330,8 +334,8 @@ class SMARTS:
         assert isinstance(provider, Provider)
         self._providers.append(provider)
 
-    def switch_ego_agent(self, agent_interface):
-        self._agent_manager.switch_initial_agent(agent_interface)
+    def switch_ego_agents(self, agent_interfaces):
+        self._agent_manager.switch_initial_agents(agent_interfaces)
         self._is_setup = False
 
     def _setup_bullet_client(self, client: bc.BulletClient):
@@ -431,15 +435,23 @@ class SMARTS:
         )
 
     def observe_from(self, vehicle_ids):
-        return self._agent_manager.observe_from(self, vehicle_ids)
+        return self._agent_manager.observe_from(
+            self, vehicle_ids, self._traffic_history_provider.done_this_step
+        )
 
     @property
     def renderer(self):
         if not self._renderer:
-            self._renderer = Renderer(self._sim_id)
-            if self._scenario:
-                self._renderer.setup(self._scenario)
-                self._vehicle_index.begin_rendering_vehicles(self._renderer)
+            try:
+                from .renderer import Renderer
+
+                self._renderer = Renderer(self._sim_id)
+                if self._scenario:
+                    self._renderer.setup(self._scenario)
+                    self._vehicle_index.begin_rendering_vehicles(self._renderer)
+            except Exception as e:
+                self._log.warning("unable to create Renderer:  " + repr(e))
+                self._renderer = None
         return self._renderer
 
     @property
@@ -457,10 +469,6 @@ class SMARTS:
     @property
     def traffic_sim(self) -> SumoTrafficSimulation:
         return self._traffic_sim
-
-    @property
-    def waypoints(self) -> Waypoints:
-        return self.scenario.waypoints
 
     @property
     def road_network(self) -> SumoRoadNetwork:
@@ -542,9 +550,12 @@ class SMARTS:
                     # This is not a pybullet agent, but it has an avatar in this world
                     # to make it's observations. Update the avatar to match the new
                     # state of this vehicle
+                    # XXX: this needs to be disentangled from pybullet.
                     pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                     assert isinstance(pybullet_vehicle.chassis, BoxChassis)
-                    pybullet_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
+                    pybullet_vehicle.control(
+                        pose=vehicle.pose, speed=vehicle.speed, dt=self._timestep_sec
+                    )
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
@@ -552,6 +563,8 @@ class SMARTS:
                 else:
                     # It is a new social vehicle we have not seen yet.
                     # Create it's avatar.
+                    # XXX: this needs to be disentangled from pybullet.
+                    # XXX: (adding social vehicles to the vehicle index should not require pybullet to be present)
                     social_vehicle = self._vehicle_index.build_social_vehicle(
                         sim=self,
                         vehicle_state=vehicle,
@@ -560,7 +573,9 @@ class SMARTS:
                         vehicle_type=vehicle.vehicle_type,
                     )
                 # Update the social vehicle avatar to match the vehicle state
-                social_vehicle.control(pose=vehicle.pose, speed=vehicle.speed)
+                social_vehicle.control(
+                    pose=vehicle.pose, speed=vehicle.speed, dt=self._timestep_sec
+                )
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:
         self._perform_agent_actions(agent_actions)
@@ -591,6 +606,44 @@ class SMARTS:
                     dimensions=vehicle.chassis.dimensions,
                     speed=vehicle.speed,
                     source="PYBULLET",
+                )
+            )
+
+        return provider_state
+
+    def _nondynamic_provider_step(
+        self, agent_actions, step_pybullet: bool
+    ) -> ProviderState:
+        self._perform_agent_actions(agent_actions)
+
+        if step_pybullet:
+            self._bullet_client.stepSimulation()
+
+        self._process_collisions()
+
+        provider_state = ProviderState()
+        nondynamic_agent_ids = {
+            agent_id
+            for agent_id, interface in self._agent_manager.agent_interfaces.items()
+            if interface.action_space not in self._dynamic_action_spaces
+        }
+
+        for vehicle_id in self._vehicle_index.agent_vehicle_ids():
+            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+            if agent_id not in nondynamic_agent_ids:
+                continue
+
+            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+            assert isinstance(vehicle.chassis, BoxChassis)
+            vehicle.step(self._elapsed_sim_time)
+            provider_state.vehicles.append(
+                VehicleState(
+                    vehicle_id=vehicle.id,
+                    vehicle_type="passenger",
+                    pose=vehicle.pose,
+                    dimensions=vehicle.chassis.dimensions,
+                    speed=vehicle.speed,
+                    source="OTHER",
                 )
             )
 
@@ -648,14 +701,31 @@ class SMARTS:
             interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
             return interface.action_space in action_spaces
 
-        # PyBullet
-        pybullet_actions = {
-            agent_id: action
-            for agent_id, action in actions.items()
-            if agent_controls_vehicles(agent_id)
-            and matches_provider_action_spaces(agent_id, self._dynamic_action_spaces)
-        }
-        accumulated_provider_state.merge(self._pybullet_provider_step(pybullet_actions))
+        def matches_no_provider_action_space(agent_id):
+            interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            for provider in self.providers:
+                if interface.action_space in provider.action_spaces:
+                    return False
+            return True
+
+        pybullet_actions = {}
+        other_actions = {}
+        for agent_id, action in actions.items():
+            if not agent_controls_vehicles(agent_id):
+                continue
+            if matches_provider_action_spaces(agent_id, self._dynamic_action_spaces):
+                pybullet_actions[agent_id] = action
+            elif matches_no_provider_action_space(agent_id):
+                other_actions[agent_id] = action
+
+        if pybullet_actions:
+            accumulated_provider_state.merge(
+                self._pybullet_provider_step(pybullet_actions)
+            )
+        if other_actions:
+            accumulated_provider_state.merge(
+                self._nondynamic_provider_step(other_actions, bool(pybullet_actions))
+            )
 
         for provider in self.providers:
             provider_state = self._step_provider(provider, actions, dt)
@@ -879,7 +949,7 @@ class SMARTS:
                 position[agent_id] = v.pose.position[:2]
                 heading[agent_id] = v.pose.heading
                 if (
-                    len(vehicle_obs.waypoint_paths) > 0
+                    vehicle_obs.waypoint_paths
                     and len(vehicle_obs.waypoint_paths[0]) > 0
                 ):
                     lane_ids[agent_id] = vehicle_obs.waypoint_paths[0][0].lane_id
@@ -898,7 +968,6 @@ class SMARTS:
             for bubble in self._bubble_manager.bubbles
         ]
 
-        dec_digits = len("{}".format(self._timestep_sec)) - 2
         state = envision_types.State(
             traffic=traffic,
             scenario_id=self.scenario.scenario_hash,
@@ -910,7 +979,7 @@ class SMARTS:
             speed=speed,
             heading=heading,
             lane_ids=lane_ids,
-            frame_time=round(self._elapsed_sim_time + self._total_sim_time, dec_digits),
+            frame_time=self._rounder(self._elapsed_sim_time + self._total_sim_time),
         )
         self._envision.send(state)
 

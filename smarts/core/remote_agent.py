@@ -77,9 +77,6 @@ class RemoteAgent:
         if (self._act_future is not None) and (not self._act_future.done()):
             self._act_future.cancel()
 
-        # Close worker channel
-        self._worker_channel.close()
-
         # Stop the remote worker process
         response = self._manager_stub.stop_worker(
             manager_pb2.Port(num=self._worker_address[1])

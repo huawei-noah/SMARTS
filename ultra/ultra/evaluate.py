@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import os
 import pickle
+from typing import Sequence, Tuple
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -72,9 +73,7 @@ def evaluation_check(
 
     for agent_id in agent_ids_to_evaluate:
         # Get the checkpoint directory for the current agent and save its model.
-        checkpoint_directory = episode.checkpoint_dir(
-            agent_id, episode.get_itr(agent_id)
-        )
+        checkpoint_directory = episode.checkpoint_dir(agent_id, episode.index)
         agents[agent_id].save(checkpoint_directory)
 
         evaluation_train_task_id = evaluate.remote(
@@ -137,7 +136,9 @@ def collect_evaluations(evaluation_task_ids: dict):
             episode.eval_train_mode()
 
         episode.info[episode.active_tag] = ray.get(ready_evaluation_task_id)
-        episode.record_tensorboard(recording_step=agent_iteration)
+        episode.record_tensorboard(
+            recording_step=episode.index
+        )  # Record evaluation episodically
         episode.train_mode()
 
     return len(evaluation_task_ids) > 0
@@ -236,68 +237,41 @@ def evaluate(
     return summary_log
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser("intersection-evaluation")
-    parser.add_argument(
-        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
-    )
-    parser.add_argument(
-        "--level",
-        help="Levels available : [easy, medium, hard, no-traffic]",
-        type=str,
-        default="easy",
-    )
-    parser.add_argument(
-        "--models",
-        nargs="+",
-        help="The models in the models/ directory of the experiment to evaluate",
-    )
-    parser.add_argument(
-        "--episodes", help="Number of training episodes", type=int, default=200
-    )
-    parser.add_argument(
-        "--max-episode-steps",
-        help="Maximum number of steps per episode",
-        type=int,
-        default=200,
-    )
-    parser.add_argument(
-        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
-    )
-    parser.add_argument(
-        "--headless",
-        help="Run without envision",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--experiment-dir",
-        help="Path to the experiment directory",
-        type=str,
-    )
-    parser.add_argument(
-        "--log-dir",
-        help="Log directory location",
-        default="logs",
-        type=str,
-    )
-    args = parser.parse_args()
+def evaluate_saved_models(
+    experiment_dir: str,
+    log_dir: str,
+    headless: bool,
+    max_episode_steps: int,
+    agents: Sequence[str],
+    num_episodes: int,
+    scenario_info: Tuple[str, str],
+    timestep: float,
+    models_to_evaluate: str = None,
+):
 
-    if not os.path.exists(args.log_dir):
-        os.makedirs(args.log_dir)
+    # If no agents are explicitly given then by default all agents are
+    # enabled for evaluation
+    if not agents:
+        agents = os.listdir(os.path.join(experiment_dir, "models"))
 
-    if not all([os.path.exists(model_path) for model_path in args.models]):
+    # Model path for each agent id
+    model_paths = [os.path.join(experiment_dir, "models", agent) for agent in agents]
+
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    if not all([os.path.exists(model_path) for model_path in model_paths]):
         raise "At least one path to a model is invalid"
-
-    if not all([os.listdir(model_path) for model_path in args.models]):
+    if not all([os.listdir(model_path) for model_path in model_paths]):
         raise "There are no models to evaluate in at least one model path"
 
+    # Get agent IDs from the models to be evaluated.
     agent_ids_from_models = [
-        os.path.basename(os.path.normpath(model_path)) for model_path in args.models
+        os.path.basename(os.path.normpath(model_path)) for model_path in model_paths
     ]
 
     # Load relevant agent metadata.
     with open(
-        os.path.join(args.experiment_dir, "agent_metadata.pkl"), "rb"
+        os.path.join(experiment_dir, "agent_metadata.pkl"), "rb"
     ) as metadata_file:
         agent_metadata = pickle.load(metadata_file)
 
@@ -322,60 +296,149 @@ if __name__ == "__main__":
     # }
     agent_checkpoint_directories = {
         agent_id: sorted(
-            glob.glob(os.path.join(args.experiment_dir, "models", agent_id, "*")),
+            glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
             key=lambda x: int(x.split("/")[-1]),
         )
         for agent_id in agent_ids
     }
 
-    # Assert each agent ID has the same number of checkpoints saved.
-    directories_iterator = iter(agent_checkpoint_directories.values())
-    number_of_checkpoints = len(next(directories_iterator))
-    assert all(
-        len(checkpoint_directory) == number_of_checkpoints
-        for checkpoint_directory in directories_iterator
-    ), "Not all agents have the same number of checkpoints saved"
+    # If models are explicitly given through the CLI, then their respective model
+    # directory paths are calculated.
+    if models_to_evaluate:
+        custom_checkpoint_directories = {}
+        # Iterate through each model to be evaluated (models that do not exist will not be included)
+        for model in models_to_evaluate:
+            agent_id = model.split("/")[0]
+            model_observation_number = model.split("/")[-1]
+            if agent_id in agent_checkpoint_directories.keys():
+                model_directories = {
+                    model_directory.split("/")[-1]: model_directory
+                    for model_directory in agent_checkpoint_directories[agent_id]
+                }
+                if model_observation_number in model_directories:
+                    if agent_id in custom_checkpoint_directories:
+                        custom_checkpoint_directories[agent_id].append(
+                            model_directories[model_observation_number]
+                        )
+                    else:
+                        custom_checkpoint_directories[agent_id] = [
+                            model_directories[model_observation_number]
+                        ]
+                else:
+                    raise Exception(
+                        f"The agent with id: {agent_id} does not contain the provided observation number: {model_observation_number}"
+                    )
+            else:
+                raise Exception(
+                    f"The agent id: {agent_id} is not in the specified agent IDs"
+                )
 
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a {"000": "ultra.baselines.dqn:dqn-v0", "001": "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes dict, transform it to an etag of "dqn-v0:ppo-v0-evaluation".
+        # Agent checkpoint directories contains the specified model directories for the
+        # specified agents
+        agent_checkpoint_directories = custom_checkpoint_directories
+
     etag = (
         ":".join([policy_classes[agent_id].split(":")[-1] for agent_id in agent_ids])
         + "-evaluation"
     )
 
-    ray.init()
-    try:
-        for episode in episodes(
-            number_of_checkpoints,
-            etag=etag,
-            log_dir=args.log_dir,
-        ):
-            # Obtain a checkpoint directory for each agent.
-            current_checkpoint_directories = {
-                agent_id: agent_directories[episode.index]
-                for agent_id, agent_directories in agent_checkpoint_directories.items()
-            }
-            episode.eval_mode()
-            episode.info[episode.active_tag] = ray.get(
-                [
-                    evaluate.remote(
-                        experiment_dir=args.experiment_dir,
-                        agent_ids=agent_ids,
-                        policy_classes=policy_classes,
-                        seed=episode.eval_count,
-                        checkpoint_dirs=current_checkpoint_directories,
-                        scenario_info=(args.task, args.level),
-                        num_episodes=int(args.episodes),
-                        max_episode_steps=int(args.max_episode_steps),
-                        timestep_sec=float(args.timestep),
-                        headless=args.headless,
-                        log_dir=args.log_dir,
-                    )
-                ]
-            )[0]
-            episode.record_tensorboard()
-            episode.eval_count += 1
-    finally:
-        time.sleep(1)
-        ray.shutdown()
+    for agent_id, checkpoint_directories in agent_checkpoint_directories.items():
+        num_of_checkpoints = len(checkpoint_directories)
+        ray.init()
+        try:
+            for episode in episodes(
+                num_of_checkpoints,
+                etag=etag,
+                log_dir=log_dir,
+            ):
+                # Obtain a checkpoint directory for each agent.
+                checkpoint_directory = {agent_id: checkpoint_directories[episode.index]}
+                episode.eval_mode()
+                episode.info[episode.active_tag] = ray.get(
+                    [
+                        evaluate.remote(
+                            experiment_dir=experiment_dir,
+                            agent_ids=[agent_id],
+                            policy_classes=policy_classes,
+                            seed=episode.eval_count,
+                            checkpoint_dirs=checkpoint_directory,
+                            scenario_info=scenario_info,
+                            num_episodes=num_episodes,
+                            max_episode_steps=max_episode_steps,
+                            timestep_sec=timestep,
+                            headless=headless,
+                            log_dir=log_dir,
+                        )
+                    ]
+                )[0]
+                episode.record_tensorboard(recording_step=episode.index)
+                episode.eval_count += 1
+        finally:
+            time.sleep(1)
+            ray.shutdown()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("intersection-evaluation")
+    parser.add_argument(
+        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
+    )
+    parser.add_argument(
+        "--level",
+        help="Levels available : [easy, medium, hard, no-traffic]",
+        type=str,
+        default="easy",
+    )
+    parser.add_argument(
+        "--agents",
+        nargs="+",
+        help="Agent IDs to evaluate",
+        default=None,
+    )
+    parser.add_argument(
+        "--episodes", help="Number of training episodes", type=int, default=200
+    )
+    parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=10000,
+    )
+    parser.add_argument(
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
+    )
+    parser.add_argument(
+        "--headless",
+        help="Run without envision",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--experiment-dir",
+        help="Path to the experiment directory",
+        type=str,
+    )
+    parser.add_argument(
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
+    )
+    parser.add_argument(
+        "--models-to-evaluate",
+        nargs="+",
+        help="models to be evaluated; <agent_id>/<model>",
+        default=None,
+    )
+    args = parser.parse_args()
+
+    evaluate_saved_models(
+        experiment_dir=args.experiment_dir,
+        log_dir=args.log_dir,
+        headless=args.headless,
+        max_episode_steps=int(args.max_episode_steps),
+        agents=args.agents,
+        num_episodes=int(args.episodes),
+        scenario_info=(args.task, args.level),
+        timestep=float(args.timestep),
+        models_to_evaluate=args.models_to_evaluate,
+    )
