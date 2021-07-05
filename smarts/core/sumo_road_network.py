@@ -232,7 +232,7 @@ class SumoRoadNetwork:
 
         # Remove holes created at tight junctions due to crude map geometry
         # NOTE: If you don't want snapping of a particular edge, set its type to "ignore_snapping" in
-        # the scenario's map.net.xml file
+        # the scenario's map.net.xml file. See scnenario/ngsim/map.net.xml for example.
         self._snap_internal_holes(lane_to_poly)
         self._snap_external_holes(lane_to_poly)
 
