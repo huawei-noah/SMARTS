@@ -766,7 +766,7 @@ def build_scenarios(
                 inner_part = math.ceil(float(percent) * len(seeds))
 
                 inner_cur_split = inner_prev_split + inner_part
-                name_additions = [mode, level_name, intersection_type, speed]
+                name_additions = [mode, task, level_name, intersection_type, speed]
 
                 if level_name != "no-traffic":
                     name_additions.append(traffic_density)
