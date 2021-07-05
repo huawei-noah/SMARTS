@@ -301,7 +301,10 @@ class SumoRoadNetwork:
             lane = self.lane_by_id(lane_id)
 
             # Only do snapping for external edge lane holes
-            if lane.getEdge().isSpecial() or lane.getEdge().getType() == "ignore_snapping":
+            if (
+                lane.getEdge().isSpecial()
+                or lane.getEdge().getType() == "ignore_snapping"
+            ):
                 continue
 
             incoming = self.lane_by_id(lane_id).getIncoming()
