@@ -282,9 +282,8 @@ class SumoRoadNetwork:
             lane = self.lane_by_id(lane_id)
 
             # Only do snapping for internal edge lane holes
-            if (
-                not lane.getEdge().isSpecial()
-                or lane.getEdge().getType() == "ignore_snapping"
+            if (not lane.getEdge().isSpecial()) or (
+                lane.getEdge().getType() == "ignore_snapping"
             ):
                 continue
             lane_shape = lane_to_poly[lane_id]
