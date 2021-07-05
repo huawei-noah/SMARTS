@@ -45,28 +45,28 @@
 
     <location netOffset="0.00,0.00" convBoundary="-0.03,9.87,310.92,34.78" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
 
-    <edge id="gneE11" from="gneJ24" to="gneJ25" priority="-1">
+    <edge id="gneE11" from="gneJ24" to="gneJ25" priority="-1" type="ignore_snapping">
         <lane id="gneE11_0" index="0" speed="13.89" length="310.91" width="3.6576" shape="-0.00,19.09 310.91,19.07"/>
     </edge>
-    <edge id="gneE12" from="gneJ26" to="gneJ27" priority="-1">
+    <edge id="gneE12" from="gneJ26" to="gneJ27" priority="-1" type="ignore_snapping">
         <lane id="gneE12_0" index="0" speed="13.89" length="310.90" width="3.6576" shape="-0.00,15.40 310.90,15.37"/>
     </edge>
-    <edge id="gneE13" from="gneJ28" to="gneJ29" priority="-1">
+    <edge id="gneE13" from="gneJ28" to="gneJ29" priority="-1" type="ignore_snapping">
         <lane id="gneE13_0" index="0" speed="13.89" length="310.90" width="3.6576" shape="0.00,11.63 310.90,11.60"/>
     </edge>
-    <edge id="gneE14" from="gneJ30" to="gneJ31" priority="-1">
+    <edge id="gneE14" from="gneJ30" to="gneJ31" priority="-1" type="ignore_snapping">
         <lane id="gneE14_0" index="0" speed="13.89" length="310.90" width="3.5814" shape="-0.00,8.26 310.90,8.24"/>
     </edge>
-    <edge id="gneE15" from="gneJ32" to="gneJ33" priority="-1">
+    <edge id="gneE15" from="gneJ32" to="gneJ33" priority="-1" type="ignore_snapping">
         <lane id="gneE15_0" index="0" speed="13.89" length="310.90" width="3.81" shape="0.00,3.90 310.91,3.87"/>
     </edge>
-    <edge id="gneE19" from="gneJ40" to="gneJ41" priority="-1" shape="-0.03,9.87 20.56,10.13 47.84,10.42 79.86,11.38 122.15,13.12 153.22,13.84 271.51,14.30 310.91,14.80">
+    <edge id="gneE19" from="gneJ40" to="gneJ41" priority="-1" shape="-0.03,9.87 20.56,10.13 47.84,10.42 79.86,11.38 122.15,13.12 153.22,13.84 271.51,14.30 310.91,14.80" type="ignore_snapping">
         <lane id="gneE19_0" index="0" speed="13.89" length="311.00" width="4.0386" shape="0.14,-3.38 20.72,-3.11 48.11,-2.82 80.33,-1.87 122.58,-0.13 153.40,0.59 271.62,1.05 311.07,1.55"/>
     </edge>
-    <edge id="gneE20" from="gneJ42" to="gneJ43" priority="-1" shape="0.24,14.34 19.69,14.22 122.01,14.26">
+    <edge id="gneE20" from="gneJ42" to="gneJ43" priority="-1" shape="0.24,14.34 19.69,14.22 122.01,14.26" type="ignore_snapping">
         <lane id="gneE20_0" index="0" speed="13.89" length="121.77" width="3.6576" shape="0.16,2.34 19.65,2.22 122.01,2.26"/>
     </edge>
-    <edge id="gneE5" from="gneJ11" to="gneJ12" priority="-1">
+    <edge id="gneE5" from="gneJ11" to="gneJ12" priority="-1" type="ignore_snapping">
         <lane id="gneE5_0" index="0" speed="13.89" length="310.92" width="3.6576" shape="0.00,22.78 310.92,22.76"/>
     </edge>
 
