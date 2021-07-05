@@ -65,12 +65,12 @@ class UltraEnv(HiWayEnv):
         agent_specs = agent_specs
         ordered_scenarios = ordered_scenarios
 
-        self.scenarios = self.get_scenarios(scenario_info)
+        scenarios = self.get_scenarios(scenario_info)
 
         self.smarts_observations_stack = deque(maxlen=_STACK_SIZE)
 
         super().__init__(
-            scenarios=self.scenarios,
+            scenarios=scenarios,
             agent_specs=agent_specs,
             headless=self.headless,
             timestep_sec=self.timestep_sec,
