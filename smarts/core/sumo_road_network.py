@@ -231,6 +231,8 @@ class SumoRoadNetwork:
                 lane_to_poly[lane.getID()] = shape
 
         # Remove holes created at tight junctions due to crude map geometry
+        # NOTE: If you don't want snapping of a particular edge, set its type to "ignore_snapping" in
+        # the scenario's map.net.xml file
         self._snap_internal_holes(lane_to_poly)
         self._snap_external_holes(lane_to_poly)
 
@@ -280,7 +282,10 @@ class SumoRoadNetwork:
             lane = self.lane_by_id(lane_id)
 
             # Only do snapping for internal edge lane holes
-            if not lane.getEdge().isSpecial():
+            if (
+                not lane.getEdge().isSpecial()
+                or lane.getEdge().getType() == "ignore_snapping"
+            ):
                 continue
             lane_shape = lane_to_poly[lane_id]
             for x, y in lane_shape.exterior.coords:
