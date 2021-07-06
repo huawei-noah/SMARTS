@@ -13,22 +13,22 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-class ChaseViaPointsAgent(Agent):
-    def act(self, obs: Observation):
-        if (
-            len(obs.via_data.near_via_points) < 1
-            or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
-        ):
-            return (obs.waypoint_paths[0][0].speed_limit, 0)
+# class ChaseViaPointsAgent(Agent):
+#     def act(self, obs: Observation):
+#         if (
+#             len(obs.via_data.near_via_points) < 1
+#             or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
+#         ):
+#             return (obs.waypoint_paths[0][0].speed_limit, 0)
 
-        nearest = obs.via_data.near_via_points[0]
-        if nearest.lane_index == obs.ego_vehicle_state.lane_index:
-            return (nearest.required_speed, 0)
+#         nearest = obs.via_data.near_via_points[0]
+#         if nearest.lane_index == obs.ego_vehicle_state.lane_index:
+#             return (nearest.required_speed, 0)
 
-        return (
-            nearest.required_speed,
-            1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
-        )
+#         return (
+#             nearest.required_speed,
+#             1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
+#         )
 
 class CheckLaneOrderAgent(Agent):
     def act(self, obs: Observation):
@@ -36,8 +36,8 @@ class CheckLaneOrderAgent(Agent):
         longest_index = 0
         for i in range(len(obs.waypoint_paths)):
             wpp = obs.waypoint_paths[i]
-            print(f"End path is: {wpp[-1].lane_id}")
-            if len() > longest_val:
+            # print(f"End path is: {wpp[-1].lane_id}")
+            if len(wpp) > longest_val:
                 longest_val=len(wpp)
                 longest_index=i
         return ( 
@@ -55,20 +55,23 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         agent_builder=CheckLaneOrderAgent,
     )
 
+    agent_spec.interface.max_episode_steps = 3
+
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
-        headless=headless,
+        headless=True,
         visdom=False,
         timestep_sec=0.1,
-        sumo_headless=True,
-        seed=seed,
+        sumo_headless=True, #False,
+        seed=42,
         # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.
         # envision_record_data_replay_path="./data_replay",
     )
 
+    num_episodes=2
     for episode in episodes(n=num_episodes):
         agent = agent_spec.build_agent()
         observations = env.reset()
@@ -77,6 +80,12 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         dones = {"__all__": False}
         while not dones["__all__"]:
             agent_obs = observations[AGENT_ID]
+
+            wp_test = agent_obs.waypoint_paths
+            print(f"Len of wp:{len(wp_test)} ---------- ")
+            for index in range(len(wp_test)):
+                print(f"Path:{index}, Len:{len(wp_test[index])}, WayPoint:{wp_test[index][-1].pos}, LaneID:{wp_test[index][-1].lane_id}, LaneIndex:{wp_test[index][-1].lane_index}")
+
             agent_action = agent.act(agent_obs)
             observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
             episode.record_step(observations, rewards, dones, infos)

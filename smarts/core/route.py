@@ -189,9 +189,9 @@ class ShortestRoute(Route):
                 next_via_lane_ids = set(
                     conn.getViaLaneID() for conn in via_edge.getOutgoing()[end_edge]
                 )
-                assert (
-                    len(next_via_lane_ids) == 1
-                ), f"Expected exactly one next via lane id at {via_lane_id}, got: {next_via_lane_ids}"
+                # assert (
+                #     len(next_via_lane_ids) == 1
+                # ), f"Expected exactly one next via lane id at {via_lane_id}, got: {next_via_lane_ids}"
                 via_lane_id = list(next_via_lane_ids)[0]
 
             conn_route.append(end_edge)
