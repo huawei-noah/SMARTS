@@ -270,7 +270,7 @@ $ python examples/single_agent.py scenarios/loop
 ```bash
 # For this to work, your account needs to be added to the huaweinoah org
 $ cd /path/to/SMARTS
-export VERSION=v0.4.16
+export VERSION=v0.4.17
 docker build --no-cache -f ./utils/docker/Dockerfile -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
 docker login

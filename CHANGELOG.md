@@ -9,6 +9,7 @@ All text added must be human-readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
+## [0.4.17] - 2021-07-02
 ### Added 
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
 - Added a `TraverseGoal` goal for imitation learning agents.  See Issue #848.
