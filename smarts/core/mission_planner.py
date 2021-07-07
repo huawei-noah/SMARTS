@@ -200,31 +200,6 @@ class MissionPlanner:
 
             edge_ids = self._edge_ids(pose)
             if edge_ids:
-                dut = self._waypoint_paths_along_route(
-                    pose.position, lookahead, edge_ids)
-
-                print(f"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-                print("edgeIds: ",edge_ids)    
-                print(f"Pose {pose}")
-                print(f"lookahead {lookahead}")
-                print(f"Len of wp:{len(dut)}")
-                for index in range(len(dut)):
-                    print(f"Path:{index}, Len:{len(dut[index])}, LaneID:{dut[index][-1].lane_id}")
-                print(f"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-
-                # edge_ids_temp= ['gneE14', ':gneJ10_9', ':gneJ10_12', 'gneE7_2']
-                # dut = self._waypoint_paths_along_route(
-                #     pose.position, lookahead, edge_ids_temp)
-
-                # print(f"second<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-                # print("edgeIds: ",edge_ids_temp)    
-                # print(f"Pose {pose}")
-                # print(f"lookahead {lookahead}")
-                # print(f"Len of wp:{len(dut)}")
-                # for index in range(len(dut)):
-                #     print(f"Path:{index}, Len:{len(dut[index])}, LaneID:{dut[index][-1].lane_id}")
-                # print(f"second<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-
                 return self._waypoint_paths_along_route(
                     pose.position, lookahead, edge_ids
                 )
