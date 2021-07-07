@@ -87,6 +87,8 @@ class ShortestRoute(Route):
         self._cached_geometry = self._compute_geometry()
         self._cached_length = self._compute_length()
 
+        print("ShortestRoute cached_edges: ", self._cached_edges)
+
     @property
     def edges(self) -> List[Edge]:
         return self._cached_edges
@@ -186,9 +188,18 @@ class ShortestRoute(Route):
 
                 # Sometimes we get the same via lane id multiple times.
                 # We convert to a set to remove duplicates.
+                print("wwwwwwwwwwww ",via_edge.getOutgoing())
                 next_via_lane_ids = set(
-                    conn.getViaLaneID() for conn in via_edge.getOutgoing()[end_edge]
+                    conn.getViaLaneID() for conn in via_edge.getOutgoing()[end_edge]   # Check: Different sequence of edges
                 )
+                print("next_via_lanes_ids: ", next_via_lane_ids , "2222222222222222222")
+
+                from numpy import unique
+                next_via_lane_ids2 = list(unique(
+                    conn.getViaLaneID() for conn in via_edge.getOutgoing()[end_edge]   # Check: Different sequence of edges
+                )[0])
+
+                print("next_via_lanes_ids2: ", next_via_lane_ids2 , "2222222222222222222")
                 # assert (
                 #     len(next_via_lane_ids) == 1
                 # ), f"Expected exactly one next via lane id at {via_lane_id}, got: {next_via_lane_ids}"

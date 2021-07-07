@@ -13,23 +13,6 @@ logging.basicConfig(level=logging.INFO)
 AGENT_ID = "Agent-007"
 
 
-# class ChaseViaPointsAgent(Agent):
-#     def act(self, obs: Observation):
-#         if (
-#             len(obs.via_data.near_via_points) < 1
-#             or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
-#         ):
-#             return (obs.waypoint_paths[0][0].speed_limit, 0)
-
-#         nearest = obs.via_data.near_via_points[0]
-#         if nearest.lane_index == obs.ego_vehicle_state.lane_index:
-#             return (nearest.required_speed, 0)
-
-#         return (
-#             nearest.required_speed,
-#             1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
-#         )
-
 class CheckLaneOrderAgent(Agent):
     def act(self, obs: Observation):
         longest_val = 0
@@ -55,7 +38,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         agent_builder=CheckLaneOrderAgent,
     )
 
-    agent_spec.interface.max_episode_steps = 3
+    agent_spec.interface.max_episode_steps = 2
 
     env = gym.make(
         "smarts.env:hiway-v0",
@@ -71,20 +54,24 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         # envision_record_data_replay_path="./data_replay",
     )
 
-    num_episodes=2
+    num_episodes=1
     for episode in episodes(n=num_episodes):
         agent = agent_spec.build_agent()
+        print(" RESET VVV 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
         observations = env.reset()
         episode.record_scenario(env.scenario_log)
 
         dones = {"__all__": False}
         while not dones["__all__"]:
+            print("AGENT OBS VVV 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
             agent_obs = observations[AGENT_ID]
 
+            print("----------------------------------------------")    
             wp_test = agent_obs.waypoint_paths
-            print(f"Len of wp:{len(wp_test)} ---------- ")
+            print(f"Len of wp:{len(wp_test)}")
             for index in range(len(wp_test)):
-                print(f"Path:{index}, Len:{len(wp_test[index])}, WayPoint:{wp_test[index][-1].pos}, LaneID:{wp_test[index][-1].lane_id}, LaneIndex:{wp_test[index][-1].lane_index}")
+                print(f"Path:{index}, Len:{len(wp_test[index])}, LaneID:{wp_test[index][-1].lane_id}")
+            print("----------------------------------------------")    
 
             agent_action = agent.act(agent_obs)
             observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
