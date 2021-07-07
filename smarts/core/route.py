@@ -190,7 +190,7 @@ class ShortestRoute(Route):
                     conn.getViaLaneID() for conn in via_edge.getOutgoing()[end_edge]
                 )[0]
 
-                # NOTE: The first next_via_lane_id from the sorted list is used
+                # NOTE: The first via lane id from the sorted list is used
                 via_lane_id = next(next_via_lane_ids)
 
             conn_route.append(end_edge)
