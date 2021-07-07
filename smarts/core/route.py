@@ -184,16 +184,14 @@ class ShortestRoute(Route):
 
                 conn_route.append(via_edge)
 
-                # Sometimes we get the same via lane id multiple times.
-                # We convert to a unique list to remove duplicates.
-                next_via_lane_ids = list(
-                    unique(
-                        conn.getViaLaneID() for conn in via_edge.getOutgoing()[end_edge]
-                    )[0]
-                )
+                # Sometimes, same via lane id occurs multiple times.
+                # Hence, convert to a unique sorted list to remove duplicates.
+                next_via_lane_ids = unique(
+                    conn.getViaLaneID() for conn in via_edge.getOutgoing()[end_edge]
+                )[0]
 
                 # NOTE: The first next_via_lane_id from the sorted list is used
-                via_lane_id = list(next_via_lane_ids)[0]
+                via_lane_id = next(next_via_lane_ids)
 
             conn_route.append(end_edge)
             routes.append(conn_route)
