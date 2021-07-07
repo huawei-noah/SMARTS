@@ -68,8 +68,6 @@ setup(
             "pytest-cov",
             "pytest-notebook",
             "pytest-xdist",
-            "panda3d",
-            "panda3d-gltf",
         ],
         "train": [
             "tensorflow==2.2.1",
