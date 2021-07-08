@@ -114,7 +114,7 @@ you can query the SMARTS info service, like:
 import rospy
 from smarts_ros.srv import SmartsInfo
 
-smarts_info_req = rospy.ServiceProxy("SMARTS/SMARTS_service", SmartsInfo)
+smarts_info_req = rospy.ServiceProxy("SMARTS/SMARTS_info", SmartsInfo)
 smarts_info = smarts_info_req()
 
 # Can now use fields like:

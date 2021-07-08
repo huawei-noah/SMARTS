@@ -79,9 +79,7 @@ class ROSDriver:
             f"{namespace}control", SmartsControl, self._smarts_control_callback
         )
 
-        rospy.Service(
-            f"{namespace}{node_name}_service", SmartsInfo, self._get_smarts_info
-        )
+        rospy.Service(f"{namespace}{node_name}_info", SmartsInfo, self._get_smarts_info)
 
         buffer_size = rospy.get_param("~buffer_size", buffer_size)
         if buffer_size and buffer_size != self._recent_state.maxlen:
