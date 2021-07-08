@@ -76,6 +76,8 @@ pip install --upgrade pip
 # install [train] version of python package with the rllib dependencies
 pip install -e .[train]
 
+
+# make sure to install [test] version of python package with the rllib dependencies so that you can run sanity-test (and verify they are passing)
 # OPTIONAL: install [camera-obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
 pip install -e .[camera-obs]  
 
