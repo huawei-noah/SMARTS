@@ -69,11 +69,6 @@ def adapt(observation: Observation, reward: float) -> float:
     ego_2d_position = ego_observation.position[0:2]
     goal_dist = distance.euclidean(ego_2d_position, goal.position)
 
-    # Total distance between start and goal
-    total_dist = distance.euclidean(start.position, goal.position)
-    # print("total distance", total_dist)
-    # print("goal dist", goal_dist)
-
     closest_wp, _ = get_closest_waypoint(
         num_lookahead=_WAYPOINTS,
         goal_path=path,
@@ -88,7 +83,6 @@ def adapt(observation: Observation, reward: float) -> float:
     signed_dist_from_center = closest_wp.signed_lateral_error(
         observation.ego_vehicle_state.position
     )
-    # print("signed_dist_from_center:", signed_dist_from_center)
     lane_width = closest_wp.lane_width * 0.5
     ego_dist_center = signed_dist_from_center / lane_width
 
@@ -116,7 +110,7 @@ def adapt(observation: Observation, reward: float) -> float:
     # ego_goal_reward = 0.0
     # ego_time_out = 0.0
     # ego_dist_center_reward = -0.002 * min(1, abs(ego_dist_center))
-    # ego_angle_error_reward = -0.005 * max(0, np.cos(angle_error))
+    # ego_angle_error_reward = 0.005 * max(0, np.cos(angle_error))
     # ego_reached_goal = 1.0 if ego_events.reached_goal else 0.0
     # # NOTE: This requires the NeighborhoodVehicles interface.
     # # ego_safety_reward = -0.02 if ego_num_violations > 0 else 0
@@ -154,29 +148,42 @@ def adapt(observation: Observation, reward: float) -> float:
     # ~~~~~~~~~~~~~~~~~~~~ NEW REWARD SCHEME ~~~~~~~~~~~~~~~~~~~~~
 
     # Termination rewards
-    ego_reached_goal = 5 if ego_events.reached_goal else 0
+    ego_reached_goal_reward = 5 if ego_events.reached_goal else 0
 
     # Termination penalty
     ego_collision_penalty = -5 if len(ego_events.collisions) > 0 else 0
     ego_off_road_penalty = -5 if ego_events.off_road else 0
-    ego_off_route_penalty = -1 if ego_events.off_route else 0
-    ego_wrong_way_penalty = -1 if ego_events.wrong_way else 0
-    
+    ego_not_moving_penalty = -5 if ego_events.not_moving else 0
+    ego_off_route_penalty = -5 if ego_events.off_route else 0
+    ego_wrong_way_penalty = -5 if ego_events.wrong_way else 0
+
     # Intermediate rewards per step
-    new_ego_dist_center_penalty = -0.01 * min(2, abs(ego_dist_center)) # TODO: Increase penalty
-    ego_speed_penalty = -0.1 if ego_observation.speed > closest_wp.speed_limit else 0 # TODO: Increase penalty
-    ego_timeout_penalty = -1 if ((ego_observation.speed < closest_wp.speed_limit * 0.5) and len(observation.neighborhood_vehicle_states) == 0) else 0
-    
+    new_ego_dist_center_penalty = -0.01 * min(
+        2, abs(ego_dist_center)
+    )  # TODO: Increase penalty
+    ego_speed_penalty = (
+        -0.1 if ego_observation.speed > closest_wp.speed_limit else 0
+    )  # TODO: Increase penalty
+    ego_timeout_penalty = (
+        -1
+        if (
+            (ego_observation.speed < closest_wp.speed_limit * 0.5)
+            and len(observation.neighborhood_vehicle_states) == 0
+        )
+        else 0
+    )
+
     # Environment reward
     env_reward /= 100
 
     new_rewards = sum(
         [
-            ego_reached_goal,
-            ego_collision_reward,
-            ego_off_road_reward,
-            ego_off_route_reward,
-            ego_wrong_way_reward,
+            ego_reached_goal_reward,
+            ego_collision_penalty,
+            ego_off_road_penalty,
+            ego_not_moving_penalty,
+            ego_off_route_penalty,
+            ego_wrong_way_penalty,
             new_ego_dist_center_penalty,
             ego_speed_penalty,
             ego_timeout_penalty,
