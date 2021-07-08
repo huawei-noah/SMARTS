@@ -19,4 +19,7 @@
 # THE SOFTWARE.
 
 # The full version, including alpha/beta/rc tags
-VERSION = "0.4.16"
+import pathlib
+from smarts.core.utils.git import git_version
+
+VERSION = git_version(repo_path=pathlib.Path(__file__).parent.resolve())
