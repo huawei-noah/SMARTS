@@ -5,7 +5,7 @@ import rospy
 import std_msgs
 import sys
 from smarts_ros.msg import EntitiesStamped, EntityState, SmartsControl
-from smarts_ros.srv import SmartsInfo, SmartsInfoResponse
+from smarts_ros.srv import SmartsInfo, SmartsInfoResponse, SmartsInfoRequest
 
 from collections import deque
 import numpy as np
@@ -123,12 +123,12 @@ class ROSDriver:
             self._scenario_path = None
             self._reset_smarts = False
 
-    def _smarts_control_callback(self, control):
+    def _smarts_control_callback(self, control: SmartsControl):
         with self._control_lock:
             self._scenario_path = control.reset_with_scenario_path
             self._reset_smarts = True
 
-    def _get_smarts_info(self, req):
+    def _get_smarts_info(self, req: SmartsInfoRequest) -> SmartsInfoResponse:
         resp = SmartsInfoResponse()
         resp.header.stamp = rospy.Time.now()
         if not self._smarts:
