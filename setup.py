@@ -1,5 +1,6 @@
 from os import path
 from setuptools import setup, find_packages
+from smarts import VERSION
 
 this_dir = path.abspath(path.dirname(__file__))
 with open(
@@ -12,7 +13,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.4.16",
+    version=VERSION,
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,

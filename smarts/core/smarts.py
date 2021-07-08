@@ -36,6 +36,7 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
     from sklearn.metrics.pairwise import euclidean_distances
 
+from smarts import VERSION
 from smarts.core.chassis import AckermannChassis, BoxChassis
 
 from . import models
@@ -512,6 +513,10 @@ class SMARTS:
     @property
     def elapsed_sim_time(self) -> float:
         return self._elapsed_sim_time
+
+    @property
+    def version(self) -> str:
+        return VERSION
 
     def teardown_agents_without_vehicles(self, agent_ids: Sequence):
         """

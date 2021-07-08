@@ -5,6 +5,7 @@ import rospy
 import std_msgs
 import sys
 from smarts_ros.msg import EntitiesStamped, EntityState, SmartsControl
+from smarts_ros.srv import SmartsInfo, SmartsInfoResponse
 
 from collections import deque
 import numpy as np
@@ -78,6 +79,10 @@ class ROSDriver:
             f"{namespace}control", SmartsControl, self._smarts_control_callback
         )
 
+        rospy.Service(
+            f"{namespace}{node_name}_service", SmartsInfo, self._get_smarts_info
+        )
+
         buffer_size = rospy.get_param("~buffer_size", buffer_size)
         if buffer_size and buffer_size != self._recent_state.maxlen:
             assert buffer_size > 0
@@ -124,6 +129,19 @@ class ROSDriver:
         with self._control_lock:
             self._scenario_path = control.reset_with_scenario_path
             self._reset_smarts = True
+
+    def _get_smarts_info(self, req):
+        resp = SmartsInfoResponse()
+        resp.header.stamp = rospy.Time.now()
+        if not self._smarts:
+            rospy.logwarn("get_smarts_info() called before SMARTS set up.")
+            return resp
+        resp.version = self._smarts.version
+        resp.step_count = self._smarts.step_count
+        resp.elapsed_sim_time = self._smarts.elapsed_sim_time
+        if self._smarts.scenario:
+            resp.current_scenario_path = self._smarts.scenario.root_filepath
+        return resp
 
     def _entities_callback(self, entities: EntitiesStamped):
         # note: push/pop is thread safe on a deque but
