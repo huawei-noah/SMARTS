@@ -80,7 +80,7 @@ class UltraEnv(HiWayEnv):
 
         if ordered_scenarios:
             scenario_roots = []
-            for root in _scenarios:
+            for root in scenarios:
                 if Scenario.is_valid_scenario(root):
                     # The case that this is a scenario root
                     scenario_roots.append(root)
@@ -176,11 +176,11 @@ class UltraEnv(HiWayEnv):
         scenario_paths["test"] = os.path.join(base_dir, scenario_paths["test"])
 
         if not self.eval_mode:
-            _scenarios = glob.glob(f"{scenario_paths['train']}")
+            scenarios = glob.glob(f"{scenario_paths['train']}")
         else:
-            _scenarios = glob.glob(f"{scenario_paths['test']}")
+            scenarios = glob.glob(f"{scenario_paths['test']}")
 
-        return _scenarios
+        return scenarios
 
     @property
     def info(self):
