@@ -24,9 +24,13 @@ pip3 install rospkg catkin_pkg
 
 Setup your environment:
 ```bash
+source /opt/ros/kinetic/setup.bash
+```
+```bash
 cd examples/ros
 catkin_make
-source devel/setup.bash
+catkin_make install
+source install/setup.bash
 ```
 
 
@@ -34,7 +38,7 @@ source devel/setup.bash
 
 From the main SMARTS repo folder:
 ```bash
-roslaunch smarts_ros launch/ros_driver.launch
+roslaunch smarts_ros ros_driver.launch
 ```
 or:
 ```bash
@@ -102,3 +106,20 @@ Or you could manually reset SMARTS from the command line with:
 rostopic pub /SMARTS/control smarts_ros/SmartsControl '{ reset_with_scenario_path: /full/path/to/scenario }'
 ```
 
+
+### SMARTS Info service
+If you need to find out basic information about a running SMARTS node,
+you can query the SMARTS info service, like:
+```python
+import rospy
+from smarts_ros.srv import SmartsInfo
+
+smarts_info_req = rospy.ServiceProxy("SMARTS/SMARTS_service", SmartsInfo)
+smarts_info = smarts_info_req()
+
+# Can now use fields like:
+#   smarts_info.version
+#   smarts_info.step_count
+#   smarts_info.elapsed_time
+#   smarts_info.current_scenario_path
+```
