@@ -32,7 +32,7 @@ from smarts.core.utils.math import (
 )
 
 
-@dataclass(frozen=True)
+@dataclass
 class BoundingBox:
     length: float
     width: float

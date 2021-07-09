@@ -396,7 +396,7 @@ class Vehicle:
         if not dims.width or dims.width == -1:
             dims.width = VEHICLE_CONFIGS[vehicle_config_type].dimensions.width
         if not dims.height or dims.height == -1:
-            dims.width = VEHICLE_CONFIGS[vehicle_config_type].dimensions.height
+            dims.height = VEHICLE_CONFIGS[vehicle_config_type].dimensions.height
         chassis = BoxChassis(
             pose=vehicle_state.pose,
             speed=vehicle_state.speed,
