@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 # The full version, including alpha/beta/rc tags
-import pathlib
-from smarts.core.utils.git import git_version
 
-VERSION = git_version(repo_path=pathlib.Path(__file__).parent.resolve())
+import pkg_resources
+
+VERSION = pkg_resources.get_distribution("smarts").version

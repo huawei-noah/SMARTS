@@ -1,6 +1,7 @@
 from os import path
+from pathlib import Path
 from setuptools import setup, find_packages
-from smarts import VERSION
+from smarts.core.utils.git import git_version
 
 this_dir = path.abspath(path.dirname(__file__))
 with open(
@@ -8,12 +9,14 @@ with open(
 ) as f:
     long_description = f.read()
 
+# be sure to tag the git repo with the version tag (e.g., v0.4.17)
+# before creating the pypi package.
 setup(
     name="smarts",
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version=VERSION,
+    version=git_version(Path(__file__).parent.resolve()),
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
