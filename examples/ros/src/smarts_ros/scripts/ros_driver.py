@@ -326,9 +326,9 @@ class ROSDriver:
         with self._control_lock:
             if self._reset_smarts:
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
-                self._smarts.reset(Scenario(self._scenario_path))
                 self._reset_smarts = False
                 if self._scenario_path:
+                    self._smarts.reset(Scenario(self._scenario_path))
                     self._last_step_time = None
 
     def run_forever(self):
