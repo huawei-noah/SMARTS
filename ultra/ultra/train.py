@@ -200,7 +200,6 @@ def train(
         "ultra.env:ultra-v0",
         agent_specs=agent_specs,
         scenario_info=scenario_info,
-        scenarios=scenarios,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
