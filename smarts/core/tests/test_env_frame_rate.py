@@ -98,8 +98,15 @@ def test_env_frame_test(scenarios, seed):
         while not dones["__all__"]:
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
-            with FrameMonitor(40):
+            try:
+                monitor = FrameMonitor(40)
+                monitor.start()
                 observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
+                frame_rate = monitor.stop()
+                print(f"Current Frame Rate: {frame_rate}")
+            except Exception as e:
+                print("The frame rate increased above the desired threshold")
+                pass
             episode.record_step(observations, rewards, dones, infos)
 
     env.close()
