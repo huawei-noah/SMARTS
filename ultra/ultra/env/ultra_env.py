@@ -26,7 +26,7 @@ import math
 import os
 from itertools import cycle
 from sys import path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Sequence
 
 import numpy as np
 import yaml, inspect
@@ -53,6 +53,7 @@ class UltraEnv(HiWayEnv):
         headless,
         timestep_sec,
         seed,
+        scenarios: Sequence[str] = None,
         eval_mode=False,
         ordered_scenarios=False,
     ):
@@ -65,7 +66,8 @@ class UltraEnv(HiWayEnv):
         agent_specs = agent_specs
         ordered_scenarios = ordered_scenarios
 
-        scenarios = self.get_scenarios(scenario_info)
+        if not scenarios:
+            scenarios = self.get_scenarios(scenario_info)
 
         self.smarts_observations_stack = deque(maxlen=_STACK_SIZE)
 
