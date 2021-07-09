@@ -98,7 +98,7 @@ def test_env_frame_test(scenarios, seed):
         while not dones["__all__"]:
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
-            with FrameMonitor(30):
+            with FrameMonitor(40):
                 observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
             episode.record_step(observations, rewards, dones, infos)
 
