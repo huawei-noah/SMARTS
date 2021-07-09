@@ -101,7 +101,9 @@ def test_env_frame_test(scenarios, seed):
             agent_action = agent.act(agent_obs)
             try:
                 with FrameMonitor(40):
-                    observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
+                    observations, rewards, dones, infos = env.step(
+                        {AGENT_ID: agent_action}
+                    )
             except Exception as e:
                 runtime_warnings += 1
                 pass
