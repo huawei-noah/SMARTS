@@ -47,8 +47,10 @@ class FrameMonitor:
 
         now = self._time_now()
         delta = now - self._start_time_ms
+        actual_fps = round(1000 / delta, 2)
         if round(1000 / delta, 2) > self._desired_fps:
             raise RuntimeError(
                 f"The frame rate increased, higher than the desired threshold, \
                 desired: {self._desired_fps} fps, actual: {round(1000 / delta, 2)} fps."
             )
+        return actual_fps
