@@ -147,6 +147,8 @@ def adapt(observation: Observation, reward: float) -> float:
 
     # ~~~~~~~~~~~~~~~~~~~~ NEW REWARD SCHEME ~~~~~~~~~~~~~~~~~~~~~
 
+    speed_fraction = max(0, ego_observation.speed / closest_wp.speed_limit)
+
     # Termination rewards
     ego_reached_goal_reward = 5 if ego_events.reached_goal else 0
 
