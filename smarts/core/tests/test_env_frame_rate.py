@@ -89,6 +89,7 @@ def env_and_spec(scenarios, seed, headless=True, max_episode_steps=None):
 
 def test_env_frame_test(scenarios, seed):
     env, agent_spec = env_and_spec(scenarios, seed)
+    runtime_warnings = 0
     for episode in episodes(n=10):
         agent = agent_spec.build_agent()
         observations = env.reset()
@@ -99,14 +100,11 @@ def test_env_frame_test(scenarios, seed):
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
             try:
-                monitor = FrameMonitor(40)
-                monitor.start()
-                observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
-                frame_rate = monitor.stop()
-                print(f"Current Frame Rate: {frame_rate}")
+                with FrameMonitor(40):
+                    observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
             except Exception as e:
-                print("The frame rate increased above the desired threshold")
+                runtime_warnings += 1
                 pass
             episode.record_step(observations, rewards, dones, infos)
-
     env.close()
+    assert runtime_warnings > 0
