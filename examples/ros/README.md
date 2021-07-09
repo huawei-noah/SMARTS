@@ -10,7 +10,7 @@ First, see [wiki.ros.org](http://wiki.ros.org) for instructions about installing
 
 Note that SMARTS uses **python3**, whereas ROS verions `1.*` (kinetic, lunar, melodic, or noetic) were designed for **python2**.
 
-The example node in `src/src/ros_wrapper.py` was created for the "_kinetic_" ROS distribution and may not work with a ROS `2.*` distribution.
+The example node in `src/ros_driver/scripts/ros_driver.py` was created for the "_kinetic_" ROS distribution and may not work with a ROS `2.*` distribution.
 Therefore, you may need to tweak your ROS and/or python environment(s) slightly to get things to work.
 
 The exact tweaks/workarounds to get python3 code running correctly with ROS version `1.*` will depend upon your local setup.
@@ -46,7 +46,7 @@ rosrun smarts_ros ros_driver.py
 ```
 Or if you prefer (or if required due to the python version issues desribed above):
 ```bash
-python3 exmples/src/src/ros_wrapper.py
+python3 exmples/ros/src/ros_driver/scripts/ros_driver.py
 ```
 
 These latter 2 may require you to explicitly start `rosmaster` node first
@@ -58,7 +58,7 @@ which will run one in the background.
 
 Alternatively, if you have parameters that you want to override on a regular basis,
 create a custom [roslaunch](http://wiki.ros.org/roslaunch) file in your package's launch folder,
-like the one in [examples/src/ros/launch/ros_driver.launch](examples/src/ros/launch/ros_driver.launch).
+like the one in [examples/ros/src/ros_driver/launch/ros_driver.launch](examples/ros/src/ros_driver/launch/ros_driver.launch).
 And then, if you called it `my_ros_driver.launch`:
 ```bash
 roslaunch smarts_ros launch/my_ros_driver.launch
