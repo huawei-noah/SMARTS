@@ -9,6 +9,8 @@ All text added must be human-readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
+### Added
+- Added Minimum FrameRate tests to ensure minimum of 30 fps for `smart.step()` method. See Issue #455.
 ## [0.4.17] - 2021-07-02
 ### Added 
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
