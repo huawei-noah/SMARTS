@@ -323,12 +323,16 @@ class AgentManager:
         self.setup_social_agents(sim)
         self.start_keep_alive_boid_agents(sim)
 
+    def add_ego_agent(self, agent_id: str, agent_interface: AgentInterface):
+        # TODO: Remove `pending_agent_ids`
+        self.pending_agent_ids.add(agent_id)
+        self._ego_agent_ids.add(agent_id)
+        self.agent_interfaces[agent_id] = agent_interface
+        # agent will now be given vehicle by trap manager when appropriate
+
     def init_ego_agents(self, sim):
         for agent_id, agent_interface in self._initial_interfaces.items():
-            # TODO: Remove `pending_agent_ids`
-            self.pending_agent_ids.add(agent_id)
-            self._ego_agent_ids.add(agent_id)
-            self.agent_interfaces[agent_id] = agent_interface
+            self.add_ego_agent(agent_id, agent_interface)
 
     def setup_social_agents(self, sim):
         social_agents = sim.scenario.social_agents

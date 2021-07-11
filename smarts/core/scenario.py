@@ -34,7 +34,7 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.coordinates import Heading, BoundingBox
+from smarts.core.coordinates import Heading, BoundingBox, Pose
 from smarts.core.data_model import SocialAgent
 from smarts.core.route import ShortestRoute
 from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -52,6 +52,10 @@ from smarts.sstudio.types import Via as SSVia
 class Start:
     position: Tuple[int, int]
     heading: Heading
+
+    def from_pose(pose: Pose):
+        self.position = pose.position[:2]
+        self.heading = pose.heading
 
 
 @dataclass(frozen=True)

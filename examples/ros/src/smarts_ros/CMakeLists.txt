@@ -51,6 +51,9 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    EntityState.msg
    EntitiesStamped.msg
+   AgentSpec.msg
+   AgentReport.msg
+   AgentsStamped.msg
    SmartsControl.msg
  )
 

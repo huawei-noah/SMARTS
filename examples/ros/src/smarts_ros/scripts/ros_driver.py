@@ -1,23 +1,41 @@
 #!/usr/bin/env python3
 
 import os
+import json
 import rospy
 import std_msgs
 import sys
-from smarts_ros.msg import EntitiesStamped, EntityState, SmartsControl
+from smarts_ros.msg import (
+    AgentReport,
+    AgentSpec,
+    AgentsStamped,
+    EntitiesStamped,
+    EntityState,
+    SmartsControl,
+)
 from smarts_ros.srv import SmartsInfo, SmartsInfoResponse, SmartsInfoRequest
 
 from collections import deque
 import numpy as np
 import time
 from threading import Lock
-from typing import Any, List, Sequence
+from typing import Any, Dict, List, Sequence
 
 from envision.client import Client as Envision
+from smarts.core.agent import Agent
 from smarts.core.coordinates import BoundingBox, Heading, Pose
-from smarts.core.scenario import Scenario
+from smarts.core.scenario import (
+    default_entry_tactic,
+    Mission,
+    PositionalGoal,
+    Scenario,
+    Start,
+    VehicleSpec,
+)
+from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.vehicle import VehicleState
+import smarts.zoo.registry
 
 
 # Don't expect SMARTS to be able to reliably maintain rates faster than this!
@@ -41,13 +59,15 @@ class ROSDriver:
         self._smarts = None
         self._target_freq = None
         self._state_topic = None
-        self._publisher = None
+        self._state_publisher = None
+        self._agents_publisher = None
         self._most_recent_state_sent = None
         with self._state_lock:
             self._recent_state = deque(maxlen=3)
         with self._control_lock:
             self._scenario_path = None
             self._reset_smarts = False
+            self._agents = {}
 
     def setup_ros(
         self,
@@ -58,7 +78,7 @@ class ROSDriver:
         time_ratio: float = 1.0,
         pub_queue_size: int = 10,
     ):
-        assert not self._publisher
+        assert not self._state_publisher
         # enforce only one SMARTS instance per ROS network...
         # NOTE: The node name specified here may be overridden by ROS
         # remapping arguments from the command line invocation.
@@ -68,18 +88,23 @@ class ROSDriver:
         # otherwise we use our default.
         namespace = def_namespace if not os.environ.get("ROS_NAMESPACE") else ""
 
-        self._publisher = rospy.Publisher(
+        self._state_publisher = rospy.Publisher(
             f"{namespace}entities_out", EntitiesStamped, queue_size=pub_queue_size
         )
+        self._agents_publisher = rospy.Publisher(
+            f"{namespace}agents_out", AgentsStamped, queue_size=pub_queue_size
+        )
 
-        self._state_topic = f"{namespace}entities_in"
-        rospy.Subscriber(self._state_topic, EntitiesStamped, self._entities_callback)
+        rospy.Service(f"{namespace}{node_name}_info", SmartsInfo, self._get_smarts_info)
 
         rospy.Subscriber(
             f"{namespace}control", SmartsControl, self._smarts_control_callback
         )
 
-        rospy.Service(f"{namespace}{node_name}_info", SmartsInfo, self._get_smarts_info)
+        self._state_topic = f"{namespace}entities_in"
+        rospy.Subscriber(self._state_topic, EntitiesStamped, self._entities_callback)
+
+        rospy.Subscriber(f"{namespace}agent_spec", AgentSpec, self._agent_spec_callback)
 
         buffer_size = rospy.get_param("~buffer_size", buffer_size)
         if buffer_size and buffer_size != self._recent_state.maxlen:
@@ -101,7 +126,7 @@ class ROSDriver:
         self, headless: bool = True, seed: int = 42, time_ratio: float = 1.0
     ):
         assert not self._smarts
-        if not self._publisher:
+        if not self._state_publisher:
             raise Exception("must call setup_ros() first.")
 
         headless = rospy.get_param("~headless", headless)
@@ -122,11 +147,13 @@ class ROSDriver:
         with self._control_lock:
             self._scenario_path = None
             self._reset_smarts = False
+            self._agents = {}
 
     def _smarts_control_callback(self, control: SmartsControl):
         with self._control_lock:
             self._scenario_path = control.reset_with_scenario_path
             self._reset_smarts = True
+            self._agents = {}
 
     def _get_smarts_info(self, req: SmartsInfoRequest) -> SmartsInfoResponse:
         resp = SmartsInfoResponse()
@@ -189,6 +216,61 @@ class ROSDriver:
             return EntityState.ENTITY_TYPE_UNSPECIFIED
         rospy.logwarn(f"unsupported entity_type {entity_type}. defaulting to 'car'.")
         return EntityState.ENTITY_TYPE_CAR
+
+    def _decode_vehicle_type(self, vehicle_type: int) -> str:
+        if vehicle_type == AgentSpec.VEHICLE_TYPE_CAR:
+            return "passenger"
+        if vehicle_type == AgentSpec.VEHICLE_TYPE_TRUCK:
+            return "truck"
+        if vehicle_type == AgentSpec.VEHICLE_TYPE_TRAILER:
+            return "trailer"
+        if vehicle_type == AgentSpec.VEHICLE_TYPE_BUS:
+            return "bus"
+        if vehicle_type == AgentSpec.VEHICLE_TYPE_COACH:
+            return "coach"
+        if vehicle_type == AgentSpec.VEHICLE_TYPE_PEDESTRIAN:
+            return "pedestrian"
+        if vehicle_type == AgentSpec.VEHICLE_TYPE_MOTORCYCLE:
+            return "motorcycle"
+        if vehicle_type == AgentSpec.VEHICLE_TYPE_UNSPECIFIED:
+            return "passenger"
+        rospy.logwarn(
+            f"unsupported vehicle_type {vehicle_type}. defaulting to passenger car."
+        )
+        return "passenger"
+
+    def _agent_spec_callback(self, agent_spec: AgentSpec):
+        agent_params = (
+            json.loads(agent_spec.params_json) if agent_spec.params_json else {}
+        )
+        spec = registry.make(agent_spec.agent_type, **agent_params)
+        if not spec:
+            rospy.logwarn(
+                f"got unknown agent_type '{agent_spec.agent_type}' in AgentSpcec message with params='{agent_spec.param_json}'.  ignoring."
+            )
+        mission = Mission()
+        # TODO:  how to prevent them from spawning on top of another existing vehicle? (see how it's done in SUMO traffic)
+        mission.start = Start.from_pose(Pose.from_ros(agent_spec.start_pose))
+        mission.goal = PoisitionGoal(agent_spec.end_pose[:2], agent_spec.veh_length)
+        mission.entry_tactic = default_entry_tactic(agent_spec.start_speed)
+        # mission.via = TODO(agent_spec.vias)
+        mission.vehicle_spec = VehicleSpec(
+            veh_id=f"veh_for_agent_{agent_spec.agent_id}",
+            veh_type=self._decode_vehicle_type(agent_spec.veh_type),
+            dimensions=BoundingBox(
+                agent_spec.veh_length, agent_spec.veh_width, agent_spec.veh_height
+            ),
+        )
+        with self._control_lock:
+            if agent_spec.agent_id in self._agents:
+                rospy.logwarn(
+                    f"trying to add new agent with existing agent_id '{agent_spec.agent_id}'.  ignoring."
+                )
+                return
+            self._agents[agent_spec.agent_id] = spec.build_agent()
+            self._smarts.add_agent_with_mission(
+                agent_spec.agent_id, spec.agent_interface, mission
+            )
 
     @staticmethod
     def _get_nested_attr(obj: Any, dotname: str) -> Any:
@@ -320,30 +402,58 @@ class ROSDriver:
                     vehicle.angular_acceleration, entity.acceleration.angular
                 )
             entities.entities.append(entity)
-        self._publisher.publish(entities)
+        self._state_publisher.publish(entities)
 
-    def _check_reset(self):
+    def _publish_agents(
+        self, observations: Dict[str, Observation], dones: Dict[str, bool]
+    ):
+        agents = AgentsStamped()
+        agents.header.stamp = rospy.Time.now()
+        for agent_id, agent_obs in obervations.items():
+            veh_state = agent_ob.ego_vehicle_state
+            agent = AgentReport()
+            agent.agent_id = agent_id
+            agent.pose = Pose.from_center(veh_state.position, veh_state.heading)
+            agent.speed = veh_state.speed
+            agent.distance_travelled = agent_obs.distance_travelled
+            agent.is_done = dones[agent_id]
+            agent.reached_goal = agent_obs.events.reached_goal
+            agent.did_collide = bool(agent_obs.events.collisions)
+            agent.is_wrong_way = agent_obs.events.wrong_way
+            agent.is_off_route = agent_obs.events.off_route
+            agent.is_off_road = agent_obs.events.off_road
+            agent.is_on_shoulder = agent_obs.events.on_shoulder
+            agent.is_not_moving = agent_obs.events.not_moving
+            agents.append(agent)
+        self._agent_publisher.publish(agents)
+
+    def _check_reset(self) -> Dict[str, Observation]:
         with self._control_lock:
             if self._reset_smarts:
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
                 self._reset_smarts = False
                 if self._scenario_path:
-                    self._smarts.reset(Scenario(self._scenario_path))
+                    observations = self._smarts.reset(Scenario(self._scenario_path))
                     self._last_step_time = None
+                    return observations
+                return {}
+        return None
 
     def run_forever(self):
-        if not self._publisher:
+        if not self._state_publisher:
             raise Exception("must call setup_ros() first.")
         if not self._smarts:
             raise Exception("must call setup_smarts() first.")
         warned_scenario = False
+        observations = {}
         step_delta = None
         if self._target_freq:
             rate = rospy.Rate(self._target_freq)
         rospy.loginfo(f"starting to spin")
         try:
             while not rospy.is_shutdown():
-                self._check_reset()
+
+                obs = self._check_reset()
                 if not self._scenario_path:
                     if not warned_scenario:
                         rospy.loginfo("waiting for scenario on control channel...")
@@ -352,16 +462,32 @@ class ROSDriver:
                         rospy.loginfo("no more scenarios.  exiting...")
                         break
                     continue
+                elif obs is not None:
+                    observations = obs
+
+                with self._control_lock:
+                    actions = {
+                        agent_id: self._agents[agent_id].act(agent_obs)
+                        for agent_id, agent_obs in observations.items()
+                    }
+
                 if self._last_step_time:
                     step_delta = rospy.get_time() - self._last_step_time
                 self._last_step_time = rospy.get_time()
+
                 self._update_smarts_state(step_delta)
-                self._smarts.step({}, step_delta)
+
+                observations, _, dones, _ = self._smarts.step(actions, step_delta)
+
                 self._publish_state()
+                self._publish_agents(observations, dones)
+
                 if self._target_freq:
                     rate.sleep()
+
         except rospy.ROSInterruptException:
-            pass
+            rospy.loginfo("ROS interrrupted.  exiting...")
+
         self._reset()  # cleans up the SMARTS instance...
 
 

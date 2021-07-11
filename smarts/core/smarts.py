@@ -40,6 +40,7 @@ from smarts import VERSION
 from smarts.core.chassis import AckermannChassis, BoxChassis
 
 from . import models
+from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
 from .bubble_manager import BubbleManager
 from .colors import SceneColors
@@ -48,7 +49,7 @@ from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
 from .provider import Provider, ProviderState
 from .renderer import Renderer
-from .scenario import Scenario
+from .scenario import Mission, Scenario
 from .sensors import Collision
 from .sumo_road_network import SumoRoadNetwork
 from .sumo_traffic_simulation import SumoTrafficSimulation
@@ -184,6 +185,7 @@ class SMARTS:
         #
         # To compensate for this, we:
         #
+        # 0. Advance the simulation clock
         # 1. Fetch social agent actions
         # 2. Step all providers and harmonize state
         # 3. Step bubble manager
@@ -191,7 +193,6 @@ class SMARTS:
         # 5. Send observations to social agents
         # 6. Clear done agents
         # 7. Perform visualization
-        # 8. Advance the simulation clock
         #
         # In this way, observations and reward are computed with data that is
         # consistently with one step of latencey and the agent will observe consistent
@@ -355,6 +356,17 @@ class SMARTS:
     def switch_ego_agents(self, agent_interfaces):
         self._agent_manager.switch_initial_agents(agent_interfaces)
         self._is_setup = False
+
+    def add_agent_with_mission(
+        self, agent_id: str, agent_interface: AgentInterface, mission: Mission
+    ):
+        # TODO:  check that agent_id isn't already used...
+        if self._trap_manager.add_trap_for_agent(agent_id, mission, self.road_network):
+            self._agent_manager.add_ego_agent(agent_id, agent_interface)
+        else:
+            self._log.warning(
+                f"Unable to add entry trap for new agent '{agent_id}' with mission."
+            )
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
@@ -886,32 +898,30 @@ class SMARTS:
                 self._log.warning(
                     f"{agent_id} doesn't have a vehicle, is the agent done? (dropping action)"
                 )
-            else:
-                agent_interface = self._agent_manager.agent_interface_for_agent_id(
-                    agent_id
+                continue
+            agent_interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
+
+            for vehicle in agent_vehicles:
+                vehicle_action = action[vehicle.id] if is_boid_agent else action
+
+                controller_state = self._vehicle_index.controller_state_for_vehicle_id(
+                    vehicle.id
                 )
-                is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
-
-                for vehicle in agent_vehicles:
-                    vehicle_action = action[vehicle.id] if is_boid_agent else action
-
-                    controller_state = (
-                        self._vehicle_index.controller_state_for_vehicle_id(vehicle.id)
-                    )
-                    sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
-                        vehicle.id
-                    )
-                    # TODO: Support performing batched actions
-                    Controllers.perform_action(
-                        self,
-                        agent_id,
-                        vehicle,
-                        vehicle_action,
-                        controller_state,
-                        sensor_state,
-                        agent_interface.action_space,
-                        agent_interface.vehicle_type,
-                    )
+                sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
+                    vehicle.id
+                )
+                # TODO: Support performing batched actions
+                Controllers.perform_action(
+                    self,
+                    agent_id,
+                    vehicle,
+                    vehicle_action,
+                    controller_state,
+                    sensor_state,
+                    agent_interface.action_space,
+                    agent_interface.vehicle_type,
+                )
 
     def _sync_vehicles_to_renderer(self):
         assert self._renderer
