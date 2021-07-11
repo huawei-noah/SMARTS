@@ -68,6 +68,7 @@ class ROSDriver:
             self._scenario_path = None
             self._reset_smarts = False
             self._agents = {}
+            self._agents_to_add = {}
 
     def setup_ros(
         self,
@@ -148,12 +149,14 @@ class ROSDriver:
             self._scenario_path = None
             self._reset_smarts = False
             self._agents = {}
+            self._agents_to_add = {}
 
     def _smarts_control_callback(self, control: SmartsControl):
         with self._control_lock:
             self._scenario_path = control.reset_with_scenario_path
             self._reset_smarts = True
             self._agents = {}
+            self._agents_to_add = {}
 
     def _get_smarts_info(self, req: SmartsInfoRequest) -> SmartsInfoResponse:
         resp = SmartsInfoResponse()
@@ -262,15 +265,15 @@ class ROSDriver:
             ),
         )
         with self._control_lock:
-            if agent_spec.agent_id in self._agents:
+            if (
+                agent_spec.agent_id in self._agents
+                or agent_spec.agent_id in self._agents_to_add
+            ):
                 rospy.logwarn(
                     f"trying to add new agent with existing agent_id '{agent_spec.agent_id}'.  ignoring."
                 )
                 return
-            self._agents[agent_spec.agent_id] = spec.build_agent()
-            self._smarts.add_agent_with_mission(
-                agent_spec.agent_id, spec.agent_interface, mission
-            )
+            self._agents_to_add[agent_spec.agent_id] = (spec, mission)
 
     @staticmethod
     def _get_nested_attr(obj: Any, dotname: str) -> Any:
@@ -427,6 +430,22 @@ class ROSDriver:
             agents.append(agent)
         self._agent_publisher.publish(agents)
 
+    def _do_agents(self, observations: Dict[str, Observation]) -> Dict[str, Any]:
+        with self._control_lock:
+            actions = {
+                agent_id: self._agents[agent_id].act(agent_obs)
+                for agent_id, agent_obs in observations.items()
+            }
+            for agent_id, agent in self._agents_to_add.items():
+                spec, mission = agent[0], agent[1]
+                assert agent_id not in self._agents
+                self._agents[agent_id] = spec.build_agent()
+                self._smarts.add_agent_with_mission(
+                    agent_id, spec.agent_interface, mission
+                )
+            self._agents_to_add = {}
+            return actions
+
     def _check_reset(self) -> Dict[str, Observation]:
         with self._control_lock:
             if self._reset_smarts:
@@ -465,11 +484,7 @@ class ROSDriver:
                 elif obs is not None:
                     observations = obs
 
-                with self._control_lock:
-                    actions = {
-                        agent_id: self._agents[agent_id].act(agent_obs)
-                        for agent_id, agent_obs in observations.items()
-                    }
+                actions = self._do_agents(observations)
 
                 if self._last_step_time:
                     step_delta = rospy.get_time() - self._last_step_time
