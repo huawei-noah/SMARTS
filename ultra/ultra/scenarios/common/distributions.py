@@ -39,8 +39,8 @@ from ultra.scenarios.common.begin_time_init_funcs import *
 # -----------------------------------------
 
 
-prob_easy = 0.04
-prob_medium = 0.06
+prob_easy = 0.02
+prob_medium = 0.04
 prob_heavy = 0.08
 behavior_distribution = {
     "default": 0.70,
