@@ -26,7 +26,7 @@ import math
 import os
 from itertools import cycle
 from sys import path
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import numpy as np
 import yaml, inspect
@@ -40,6 +40,7 @@ from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")
 
+_CONFIG_FILE = "config.yaml"
 
 _STACK_SIZE = 4
 
@@ -55,29 +56,31 @@ class UltraEnv(HiWayEnv):
         eval_mode=False,
         ordered_scenarios=False,
     ):
-        self.timestep_sec = timestep_sec
-        self.headless = headless
         self.scenario_info = scenario_info
-        self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
-        if not eval_mode:
-            _scenarios = glob.glob(f"{self.scenarios['train']}")
-        else:
-            _scenarios = glob.glob(f"{self.scenarios['test']}")
+        self.headless = headless
+        self.timestep_sec = timestep_sec
+        self.seed = seed
+        self.eval_mode = eval_mode
+
+        agent_specs = agent_specs
+        ordered_scenarios = ordered_scenarios
+
+        scenarios = self.get_scenarios(scenario_info)
 
         self.smarts_observations_stack = deque(maxlen=_STACK_SIZE)
 
         super().__init__(
-            scenarios=_scenarios,
+            scenarios=scenarios,
             agent_specs=agent_specs,
-            headless=headless,
-            timestep_sec=timestep_sec,
-            seed=seed,
+            headless=self.headless,
+            timestep_sec=self.timestep_sec,
+            seed=self.seed,
             visdom=False,
         )
 
         if ordered_scenarios:
             scenario_roots = []
-            for root in _scenarios:
+            for root in scenarios:
                 if Scenario.is_valid_scenario(root):
                     # The case that this is a scenario root
                     scenario_roots.append(root)
@@ -143,17 +146,41 @@ class UltraEnv(HiWayEnv):
 
         return observations
 
-    def get_task(self, task_id, task_level):
+    def get_scenarios(self, scenario_info: Tuple[str, str]) -> List[str]:
+        """Finds all of the scenarios from the given scenario information
+
+        To obtain the path of scenarios:
+            1. Get the filename patterns of the train and test scenarios from
+               ultra/config.yaml from the given task and level.
+            2. Change the filename patterns from relative to absolute path
+            3. Depending on the evaluation mode, we can provide glob.glob with
+               the appropriate filename pattern to return a list of scenario dirs
+
+        Args:
+            scenario_info Tuple[str, str]: The first index represents
+                task id and second index represents task's level
+
+        Returns:
+            List[str]: Absolute path of scenarios
+        """
+        task_id, task_level = scenario_info[0], scenario_info[1]
+
         base_dir = os.path.join(os.path.dirname(__file__), "../")
-        config_path = os.path.join(base_dir, "config.yaml")
+        config_path = os.path.join(base_dir, _CONFIG_FILE)
 
         with open(config_path, "r") as task_file:
-            scenarios = yaml.safe_load(task_file)["tasks"]
-            task = scenarios[f"task{task_id}"][task_level]
+            tasks = yaml.safe_load(task_file)["tasks"]
+            scenario_paths = tasks[f"task{task_id}"][task_level]
 
-        task["train"] = os.path.join(base_dir, task["train"])
-        task["test"] = os.path.join(base_dir, task["test"])
-        return task
+        scenario_paths["train"] = os.path.join(base_dir, scenario_paths["train"])
+        scenario_paths["test"] = os.path.join(base_dir, scenario_paths["test"])
+
+        if not self.eval_mode:
+            scenarios = glob.glob(f"{scenario_paths['train']}")
+        else:
+            scenarios = glob.glob(f"{scenario_paths['test']}")
+
+        return scenarios
 
     @property
     def info(self):
