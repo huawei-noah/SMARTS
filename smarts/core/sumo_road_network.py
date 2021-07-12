@@ -324,6 +324,13 @@ class SumoRoadNetwork(RoadMap):
         def width_at_offset(self, offset: float) -> float:
             return self._width
 
+        @cached_property
+        def outgoing_foes(self) -> Tuple[List[RoadMap.Lane], bool]:
+            # TODO:  we might do better here since Sumo/Traci determines
+            # right-of-way for their connections/links.  See:
+            # https://sumo.dlr.de/pydoc/traci._lane.html#LaneDomain-getFoes
+            return super().outgoing_foes
+
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             shape = self._sumo_lane.getShape(False)

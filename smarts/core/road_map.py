@@ -21,7 +21,7 @@
 # to allow for typing to refer to class being defined (RoadMap)
 from __future__ import annotations
 
-from typing import NamedTuple, List, Sequence
+from typing import NamedTuple, List, Sequence, Tuple
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -165,8 +165,21 @@ class RoadMap:
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             raise NotImplementedError()
 
-        ## The next 5 methods are "reference" implementations for convenience.
+        ## The next 6 methods are "reference" implementations for convenience.
         ## Derived classes may want to extend as well as add a cache.
+
+        @property
+        def outgoing_foes(self) -> Tuple[List[RoadMap.Lane], bool]:
+            """All lanes that have the same outgoing lane as this one.
+            If right-of-way rules are known, these will be in order of priority,
+            otherwise they will be in random order.  The boolean flag
+            that is returned will be True if the ordering is by priority."""
+            result = [
+                incoming
+                for incoming in outgoing.incoming_lanes
+                for outgoing in self.outgoing_lanes
+            ]
+            return (list(set(result)), False)
 
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             s = self.offset_along_lane(point)
