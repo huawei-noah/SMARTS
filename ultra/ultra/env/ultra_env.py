@@ -172,9 +172,12 @@ class UltraEnv(HiWayEnv):
                 scenarios = glob.glob(f"{scenario_paths['train']}")
             else:
                 scenarios = glob.glob(f"{scenario_paths['test']}")
-        except Exception:
+        except (KeyError, ValueError):
             # Treat scenario_info as a list of scenario directories.
             scenarios = scenario_info
+        except Exception as exception:
+            # Otherwise, something else has gone wrong.
+            raise exception
 
         return scenarios
 
