@@ -152,23 +152,42 @@ def load_model(experiment_dir):
             f"\nThere are {length_dir} models inside in the experiment dir. Only the latest model >>> {agent_checkpoint_directories[agent_ids[0]][length_dir-1]} <<< will be trained\n"
         )
 
-    current_checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][
-        length_dir - 1
-    ]
+    checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][length_dir - 1]
 
     # Create the agent specifications matched with their associated ID and corresponding
     # checkpoint directory
     agent_specs = {
         agent_id: make(
             locator=agent_classes[agent_id],
-            checkpoint_dir=current_checkpoint_directory,
+            checkpoint_dir=checkpoint_directory,
             experiment_dir=experiment_dir,
             agent_id=agent_id,
         )
         for agent_id in agent_ids
     }
 
-    return agent_ids, agent_classes, agent_specs
+    # Create the agents matched with their associated ID.
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
+
+    try:
+        _ = [
+            agents[agent_id].load_replay_buffer(
+                os.path.join(experiment_dir, "replay_buffers", agent_id)
+            )
+            for agent_id in agent_ids
+        ]
+    except NotImplementedError:
+        print(
+            "Replay buffer is not loaded because policy does not utilize a replay buffer"
+        )
+    except Exception as e:
+        print(e)
+        raise
+
+    return agent_ids, agent_classes, agent_specs, agents
 
 
 def build_agents(policy_classes, policy_ids, max_episode_steps):
@@ -203,12 +222,7 @@ def build_agents(policy_classes, policy_ids, max_episode_steps):
         for agent_id, agent_spec in agent_specs.items()
     }
 
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
-
-    return agent_ids, agent_classes, agent_specs, agents, etag
+    return agent_ids, agent_classes, agent_specs, agents
 
 
 def _save_agent_metadata(
@@ -249,20 +263,16 @@ def train(
     evaluation_task_ids = dict()
 
     if experiment_dir:
-        agent_ids, agent_classes, agent_specs = load_model(experiment_dir)
-        # Create the agents matched with their associated ID.
-        agents = {
-            agent_id: agent_spec.build_agent()
-            for agent_id, agent_spec in agent_specs.items()
-        }
-        # Define an 'etag' for this experiment's data directory based off policy_classes.
-        etag = ":".join(
-            [policy_class.split(":")[-1] for policy_class in policy_classes]
-        )
+        agent_ids, agent_classes, agent_specs, agents = load_model(experiment_dir)
     else:
-        agent_ids, agent_classes, agent_specs, agents, etag = build_agents(
+        agent_ids, agent_classes, agent_specs, agents = build_agents(
             policy_classes, policy_ids, max_episode_steps
         )
+
+    # Define an 'etag' for this experiment's data directory based off policy_classes.
+    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
+    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
 
     # Create the environment.
     env = gym.make(
@@ -353,6 +363,21 @@ def train(
 
         if finished:
             break
+
+    try:
+        _ = [
+            agents[agent_id].save_replay_buffer(
+                episode.agent_replay_buffer_dir(agent_id)
+            )
+            for agent_id in agent_ids
+        ]
+    except NotImplementedError:
+        print(
+            "Replay buffer is not saved because policy does not utilize a replay buffer"
+        )
+    except Exception as e:
+        print(e)
+        raise
 
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):

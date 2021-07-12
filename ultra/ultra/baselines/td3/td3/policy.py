@@ -28,6 +28,8 @@ import torch
 import torch.nn.functional as F
 import random
 import numpy as np
+import pickle
+import time
 import torch.optim as optim
 
 from ultra.baselines.td3.td3.cnn_models import ActorNetwork as CNNActorNetwork
@@ -388,4 +390,26 @@ class TD3Policy(Agent):
         torch.save(
             self.critic_2_target.state_dict(),
             model_dir / "critic_2_target.pth",
+        )
+
+    def save_replay_buffer(self, agent_dir):
+        agent_dir = pathlib.Path(agent_dir)
+
+        start = time.time()
+        with open(os.path.join(agent_dir, "replay_buffer.pkl"), "wb") as metadata_file:
+            pickle.dump(self.memory, metadata_file, pickle.HIGHEST_PROTOCOL)
+        end = time.time()
+        print("Time elapsed (dumping):", end - start)
+        print(f"<<<<<<< REPLAY BUFFER SAVED TO {agent_dir}/replay_buffer.pkl >>>>>>>>>")
+
+    def load_replay_buffer(self, agent_dir):
+        agent_dir = pathlib.Path(agent_dir)
+
+        start = time.time()
+        with open(os.path.join(agent_dir, "replay_buffer.pkl"), "rb") as metadata_file:
+            self.memory = pickle.load(metadata_file)
+        end = time.time()
+        print("Time elapsed (loading):", end - start)
+        print(
+            f"<<<<<<< REPLAY BUFFER LOADED FROM {agent_dir}/replay_buffer.pkl >>>>>>>>>"
         )

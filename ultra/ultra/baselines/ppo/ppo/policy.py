@@ -404,6 +404,12 @@ class PPOPolicy(Agent):
         model_dir = pathlib.Path(model_dir)
         torch.save(self.ppo_net.state_dict(), model_dir / "ppo_network.pth")
 
+    def save_replay_buffer(self, *args):
+        pass
+
+    def load_replay_buffer(self, *args):
+        pass
+
     def load(self, model_dir):
         print("model loaded:", model_dir)
         model_dir = pathlib.Path(model_dir)
