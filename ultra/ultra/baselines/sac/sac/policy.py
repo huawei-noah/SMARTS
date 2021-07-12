@@ -23,6 +23,8 @@
 import torch
 import numpy as np
 import torch.nn as nn
+import pickle
+import time
 from sys import path
 from ultra.baselines.sac.sac.network import SACNetwork
 import torch.nn.functional as F
@@ -328,6 +330,28 @@ class SACPolicy(Agent):
         torch.save(self.sac_net.target.state_dict(), model_dir / "target.pth")
         torch.save(self.sac_net.critic.state_dict(), model_dir / "critic.pth")
         print("<<<<<<< MODEL SAVED >>>>>>>>>", model_dir)
+
+    def save_replay_buffer(self, agent_dir):
+        agent_dir = pathlib.Path(agent_dir)
+
+        start = time.time()
+        with open(os.path.join(agent_dir, "replay_buffer.pkl"), "wb") as metadata_file:
+            pickle.dump(self.memory, metadata_file, pickle.HIGHEST_PROTOCOL)
+        end = time.time()
+        print("Time elapsed (dumping):", end - start)
+        print(f"<<<<<<< REPLAY BUFFER SAVED TO {agent_dir}/replay_buffer.pkl >>>>>>>>>")
+
+    def load_replay_buffer(self, agent_dir):
+        agent_dir = pathlib.Path(agent_dir)
+
+        start = time.time()
+        with open(os.path.join(agent_dir, "replay_buffer.pkl"), "rb") as metadata_file:
+            self.memory = pickle.load(metadata_file)
+        end = time.time()
+        print("Time elapsed (loading):", end - start)
+        print(
+            f"<<<<<<< REPLAY BUFFER LOADED FROM {agent_dir}/replay_buffer.pkl >>>>>>>>>"
+        )
 
     def reset(self):
         pass

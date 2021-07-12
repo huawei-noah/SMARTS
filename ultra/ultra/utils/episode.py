@@ -144,6 +144,7 @@ class Episode:
             self.log_dir = log_dir
 
         self.experiment_dir = f"{self.log_dir}/{self.experiment_name}"
+        self.replay_buffer_dir = f"{self.log_dir}/{self.experiment_name}/replay_buffers"
         self.model_dir = f"{self.log_dir}/{self.experiment_name}/models"
         self.code_dir = f"{self.log_dir}/{self.experiment_name}/codes"
         self.pkls = f"{self.log_dir}/{self.experiment_name}/pkls"
@@ -176,6 +177,11 @@ class Episode:
 
     def checkpoint_dir(self, agent_id, iteration):
         path = f"{self.model_dir}/{agent_id}/{iteration}"
+        self.make_dir(path)
+        return path
+
+    def agent_replay_buffer_dir(self, agent_id):
+        path = f"{self.replay_buffer_dir}/{agent_id}"
         self.make_dir(path)
         return path
 
