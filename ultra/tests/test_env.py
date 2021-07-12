@@ -44,6 +44,8 @@ timestep_sec = 0.1
 seed = 2
 task_id = "00"
 task_level = "easy"
+prebuilt_scenario1 = "tests/task/test_task00_easy_2lane_t_70kmh_p-test-flow-1"
+prebuilt_scenario2 = "tests/task/train_task00_easy_2lane_t_70kmh_p-test-flow-0"
 
 
 class EnvTest(unittest.TestCase):
@@ -60,6 +62,22 @@ class EnvTest(unittest.TestCase):
         ray.shutdown()
         self.assertTrue(task_id1 == task_id)
         self.assertTrue(task_level1 == task_level)
+
+    def test_scenario_sequence(self):
+        @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
+        def run_experiment():
+            _, env = prepare_test_env_agent(
+                scenario_info=[prebuilt_scenario1, prebuilt_scenario2]
+            )
+            scenarios = env.scenario_info
+            env.close()
+            return scenarios
+
+        ray.init(ignore_reinit_error=True)
+        scenarios = ray.get(run_experiment.remote())
+        ray.shutdown()
+        self.assertTrue(scenarios[0] == prebuilt_scenario1)
+        self.assertTrue(scenarios[1] == prebuilt_scenario2)
 
     def test_headless(self):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
@@ -184,7 +202,7 @@ class TestLaneAgent(Agent):
         return "keep_lane"
 
 
-def prepare_test_env_agent(headless=True):
+def prepare_test_env_agent(scenario_info=("00", "easy"), headless=True):
     timestep_sec = 0.1
     # [throttle, brake, steering]
     policy_class = "ultra.baselines.ppo:ppo-v0"
@@ -192,7 +210,7 @@ def prepare_test_env_agent(headless=True):
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=("00", "easy"),
+        scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
