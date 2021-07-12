@@ -66,22 +66,6 @@ class EnvTest(unittest.TestCase):
         self.assertTrue(task_id1 == task_id)
         self.assertTrue(task_level1 == task_level)
 
-    def test_scenario_sequence(self):
-        @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
-        def run_experiment():
-            _, env = prepare_test_env_agent(
-                scenario_info=[prebuilt_scenario1, prebuilt_scenario2]
-            )
-            scenarios = env.scenario_info
-            env.close()
-            return scenarios
-
-        ray.init(ignore_reinit_error=True)
-        scenarios = ray.get(run_experiment.remote())
-        ray.shutdown()
-        self.assertTrue(scenarios[0] == prebuilt_scenario1)
-        self.assertTrue(scenarios[1] == prebuilt_scenario2)
-
     def test_get_scenarios_from_scenario_info(self):
         TASK_LEVEL = ("00", "easy")
         TASK_LEVEL_TRAIN_SCENARIOS = [
