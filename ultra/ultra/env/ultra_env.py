@@ -23,7 +23,7 @@ from collections import deque
 import copy
 import glob
 import math
-import os
+import pathlib
 from itertools import cycle
 from sys import path
 from typing import Dict, List, Tuple, Sequence, Union
@@ -158,15 +158,15 @@ class UltraEnv(HiWayEnv):
         try:
             # Attempt to load scenarios from a (task, level) tuple.
             task, level = scenario_info
-            base_dir = os.path.join(os.path.dirname(__file__), "../")
-            task_config_path = os.path.join(base_dir, _CONFIG_FILE)
+            base_dir = pathlib.Path(__file__).parent.parent
+            task_config_path = base_dir / _CONFIG_FILE
 
             with open(task_config_path, "r") as tasks_file:
                 tasks = yaml.safe_load(tasks_file)["tasks"]
             scenario_paths = tasks[f"task{task}"][level]
 
-            scenario_paths["train"] = os.path.join(base_dir, scenario_paths["train"])
-            scenario_paths["test"] = os.path.join(base_dir, scenario_paths["test"])
+            scenario_paths["train"] = (base_dir / scenario_paths["train"]).resolve()
+            scenario_paths["test"] = (base_dir / scenario_paths["test"]).resolve()
 
             if not eval_mode:
                 scenarios = glob.glob(f"{scenario_paths['train']}")
