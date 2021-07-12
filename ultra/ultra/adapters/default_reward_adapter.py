@@ -160,7 +160,7 @@ def adapt(observation: Observation, reward: float) -> float:
     ego_wrong_way_penalty = -5 if ego_events.wrong_way else 0
 
     # Intermediate rewards/penalties per step
-    ego_step_reward = 0.005 * min(speed_fraction, 1) * np.cos(angle_error)
+    ego_step_reward = 0.05 * min(speed_fraction, 1) * np.cos(angle_error)
     new_ego_dist_center_penalty = -0.01 * min(
         2, abs(ego_dist_center) 
     )  # TODO: Increase penalty
