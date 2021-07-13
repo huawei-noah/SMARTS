@@ -22,7 +22,7 @@ float64  veh_height    # in meters (can be 0)
 
 
 geometry_msgs/Pose     start_pose
-float64                start_speed    # linear speed (in direction of initial heading)
+float64                start_speed    # linear speed in m/s (in direction of initial heading)
 
 geometry_msgs/Pose[]   via_points     # optional points to try to hit on the way to end_pose (NYI)
 

@@ -157,6 +157,8 @@ class ROSDriver:
             self._reset_smarts = True
             self._agents = {}
             self._agents_to_add = {}
+        for ros_agent_spec in contro.initial_agents:
+            self._agent_spec_callback(ros_agent_spec)
 
     def _get_smarts_info(self, req: SmartsInfoRequest) -> SmartsInfoResponse:
         resp = SmartsInfoResponse()
@@ -242,38 +244,42 @@ class ROSDriver:
         )
         return "passenger"
 
-    def _agent_spec_callback(self, agent_spec: AgentSpec):
+    def _agent_spec_callback(self, ros_agent_spec: AgentSpec):
         agent_params = (
-            json.loads(agent_spec.params_json) if agent_spec.params_json else {}
+            json.loads(ros_agent_spec.params_json) if ros_agent_spec.params_json else {}
         )
-        spec = registry.make(agent_spec.agent_type, **agent_params)
-        if not spec:
+        agent_spec = registry.make(ros_agent_spec.agent_type, **agent_params)
+        if not agent_spec:
             rospy.logwarn(
-                f"got unknown agent_type '{agent_spec.agent_type}' in AgentSpcec message with params='{agent_spec.param_json}'.  ignoring."
+                f"got unknown agent_type '{ros_agent_spec.agent_type}' in AgentSpec message with params='{ros_agent_spec.param_json}'.  ignoring."
             )
         mission = Mission()
         # TODO:  how to prevent them from spawning on top of another existing vehicle? (see how it's done in SUMO traffic)
-        mission.start = Start.from_pose(Pose.from_ros(agent_spec.start_pose))
-        mission.goal = PoisitionGoal(agent_spec.end_pose[:2], agent_spec.veh_length)
-        mission.entry_tactic = default_entry_tactic(agent_spec.start_speed)
-        # mission.via = TODO(agent_spec.vias)
+        mission.start = Start.from_pose(Pose.from_ros(ros_agent_spec.start_pose))
+        mission.goal = PoisitionGoal(
+            ros_agent_spec.end_pose[:2], ros_agent_spec.veh_length
+        )
+        mission.entry_tactic = default_entry_tactic(ros_agent_spec.start_speed)
+        # mission.via = TODO(ros_agent_spec.vias)
         mission.vehicle_spec = VehicleSpec(
-            veh_id=f"veh_for_agent_{agent_spec.agent_id}",
-            veh_type=self._decode_vehicle_type(agent_spec.veh_type),
+            veh_id=f"veh_for_agent_{ros_agent_spec.agent_id}",
+            veh_type=self._decode_vehicle_type(ros_agent_spec.veh_type),
             dimensions=BoundingBox(
-                agent_spec.veh_length, agent_spec.veh_width, agent_spec.veh_height
+                ros_agent_spec.veh_length,
+                ros_agent_spec.veh_width,
+                ros_agent_spec.veh_height,
             ),
         )
         with self._control_lock:
             if (
-                agent_spec.agent_id in self._agents
-                or agent_spec.agent_id in self._agents_to_add
+                ros_agent_spec.agent_id in self._agents
+                or ros_agent_spec.agent_id in self._agents_to_add
             ):
                 rospy.logwarn(
-                    f"trying to add new agent with existing agent_id '{agent_spec.agent_id}'.  ignoring."
+                    f"trying to add new agent with existing agent_id '{ros_agent_spec.agent_id}'.  ignoring."
                 )
                 return
-            self._agents_to_add[agent_spec.agent_id] = (spec, mission)
+            self._agents_to_add[ros_agent_spec.agent_id] = (agent_spec, mission)
 
     @staticmethod
     def _get_nested_attr(obj: Any, dotname: str) -> Any:
