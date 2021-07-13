@@ -26,12 +26,13 @@ import pytest
 import logging
 
 import gym
-from smarts.core.utils.frame_monitor import FrameMonitor, FramerateException
+import time
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
 
 logging.basicConfig(level=logging.INFO)
+test_logger = logging.getLogger()
 
 AGENT_ID = "Agent-007"
 
@@ -75,24 +76,40 @@ def env_and_spec(scenarios, seed, headless=True, max_episode_steps=None):
 
 def test_env_frame_test(scenarios, seed):
     env, agent_spec = env_and_spec(scenarios, seed)
-    runtime_warnings = 0
+
     for episode in episodes(n=10):
         agent = agent_spec.build_agent()
         observations = env.reset()
         episode.record_scenario(env.scenario_log)
 
         dones = {"__all__": False}
+
+        maximum_frame_rate = 0
+        minimum_frame_rate = float("inf")
+        avg_frame_rate = 0
+        step_counter = 0
+        fps_sum = 0
+
         while not dones["__all__"]:
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
-            try:
-                with FrameMonitor(40):
-                    observations, rewards, dones, infos = env.step(
-                        {AGENT_ID: agent_action}
-                    )
-            except FramerateException as e:
-                runtime_warnings += 1
-                pass
+            step_start_time = int(time.time() * 1000)
+            observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
+            step_end_time = int(time.time() * 1000)
+            delta = step_end_time - step_start_time
+            step_fps = round(1000 / delta, 2)
+            maximum_frame_rate = max(maximum_frame_rate, step_fps)
+            minimum_frame_rate = min(minimum_frame_rate, step_fps)
+            fps_sum += step_fps
+            test_logger.info(
+                f"The time delta at episode {episode + 1}, step {step_counter+1} is {delta} milliseconds which is {step_fps} fps."
+            )
+
             episode.record_step(observations, rewards, dones, infos)
+            step_counter += 1
+        if step_counter != 0:
+            avg_frame_rate = fps_sum / step_counter
+        test_logger.info(
+            f"Episode {episode + 1}, Minimum fps: {minimum_frame_rate}, Maximum fps: {maximum_frame_rate}, Average fps: {avg_frame_rate}."
+        )
     env.close()
-    assert runtime_warnings < 0

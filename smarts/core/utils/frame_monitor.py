@@ -27,7 +27,7 @@ class FramerateException(Exception):
     """An exception raised if a renderer is required but not available."""
 
     def __str__(self):
-        return 'The monitor has not started yet.'
+        return "The monitor has not started yet."
 
     @classmethod
     def above_threshold(cls, desired_fps, delta):
