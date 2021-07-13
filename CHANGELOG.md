@@ -17,7 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
 ### Changed
 ### Deprecated
-– The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
+- The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.
 ### Removed
 
@@ -25,7 +25,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added 
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
 - Added a `TraverseGoal` goal for imitation learning agents.  See Issue #848.
-- Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828. 
+- Added `README_pypi.md` to update to the general user installation PyPI instructions. See Issue #828. 
 - Added a new utility experiment file `cli/run.py` to replace the context given by `supervisord.conf`. See PR #911.
 - Added `scl zoo install` command to install zoo policy agents at the specified paths. See Issue #603.
 - Added a `FrameStack` wrapper which returns stacked observations for each agent.
