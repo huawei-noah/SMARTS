@@ -162,7 +162,7 @@ def adapt(observation: Observation, reward: float) -> float:
     # Intermediate rewards/penalties per step
     ego_step_reward = 0.1 * min(speed_fraction, 1) * np.cos(angle_error)
     new_ego_dist_center_penalty = -0.005 * min(
-        2, abs(ego_dist_center) 
+        2, abs(ego_dist_center)
     )  # TODO: Increase penalty
     ego_speed_penalty = (
         -0.1 if ego_observation.speed > closest_wp.speed_limit else 0
