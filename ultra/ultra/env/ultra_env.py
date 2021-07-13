@@ -74,7 +74,7 @@ class UltraEnv(HiWayEnv):
 
         if ordered_scenarios:
             scenario_roots = []
-            for root in _scenarios:
+            for root in scenarios:
                 if Scenario.is_valid_scenario(root):
                     # The case that this is a scenario root
                     scenario_roots.append(root)
