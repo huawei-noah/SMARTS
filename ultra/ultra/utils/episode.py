@@ -319,16 +319,16 @@ class Episode:
 
 
 def episodes(n, etag=None, log_dir=None):
-    col_width = 30
+    col_width = [15,15,15,15,18,18,60]
     with tp.TableContext(
         [
             f"Episode",
             f"Sim/Wall",
             f"Total Steps",
             f"Steps/Sec",
-            f"Scenario",
             f"Score",
             f"Goal Completed",
+            f"Scenario",
         ],
         width=col_width,
         style="round",
@@ -378,9 +378,9 @@ def episodes(n, etag=None, log_dir=None):
                     f"{e.sim2wall_ratio:.2f}",
                     f"{e.steps}",
                     f"{e.steps_per_second:.2f}",
-                    f"{e.scenario}",
                     ", ".join(agent_rewards_strings),
                     ", ".join(agent_goal_completion_strings),
+                    f"{e.scenario}",
                 )
                 table(row)
             else:
