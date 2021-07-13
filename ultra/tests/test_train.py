@@ -200,22 +200,6 @@ class TrainTest(unittest.TestCase):
                 except ImportError as err:
                     self.assertTrue(False)
 
-    def test_check_agents_from_pool(self):
-        seed = 2
-        policy = ""
-
-        with open("ultra/agent_pool.json") as f:
-            data = json.load(f)
-            for policy in data["agents"].keys():
-                policy_path = data["agents"][policy]["path"]
-                policy_locator = data["agents"][policy]["locator"]
-                policy_class = str(policy_path) + ":" + str(policy_locator)
-                try:
-                    spec = make(locator=policy_class)
-                    agent = spec.build_agent()
-                except ImportError as err:
-                    self.assertTrue(False)
-
     def test_spec_is_instance_agentspec(self):
         policy_class = "ultra.baselines.sac:sac-v0"
         spec = make(locator=policy_class)
