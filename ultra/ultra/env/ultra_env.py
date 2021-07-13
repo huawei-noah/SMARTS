@@ -130,10 +130,10 @@ class UltraEnv(HiWayEnv):
         return observations, rewards, agent_dones, infos
 
     def reset(self):
-        scenario = next(self._scenarios_iterator)
+        self.scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
-        smarts_observations = self._smarts.reset(scenario)
+        smarts_observations = self._smarts.reset(self.scenario)
 
         for _ in range(_STACK_SIZE):
             self.smarts_observations_stack.append(copy.deepcopy(smarts_observations))
@@ -181,6 +181,10 @@ class UltraEnv(HiWayEnv):
             _scenarios = glob.glob(f"{scenario_paths['test']}")
 
         return _scenarios
+
+    @property
+    def scenario_path(self):
+        return self.scenario.root_filepath
 
     @property
     def info(self):

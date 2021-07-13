@@ -154,6 +154,7 @@ class Episode:
         self.tb_writer = tb_writer
         self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
+        self.scenario = None
 
     @property
     def sim2wall_ratio(self):
@@ -252,6 +253,9 @@ class Episode:
 
         # Increment this episode's step count.
         self.steps += 1
+    
+    def record_scenario_path(self, scenario_path):
+        self.scenario = scenario_path.split("/")[-1]
 
     def record_episode(self):
         for _, agent_info in self.info[self.active_tag].items():
@@ -315,13 +319,14 @@ class Episode:
 
 
 def episodes(n, etag=None, log_dir=None):
-    col_width = 18
+    col_width = 30
     with tp.TableContext(
         [
             f"Episode",
             f"Sim/Wall",
             f"Total Steps",
             f"Steps/Sec",
+            f"Scenario",
             f"Score",
             f"Goal Completed",
         ],
@@ -373,12 +378,13 @@ def episodes(n, etag=None, log_dir=None):
                     f"{e.sim2wall_ratio:.2f}",
                     f"{e.steps}",
                     f"{e.steps_per_second:.2f}",
+                    f"{e.scenario}",
                     ", ".join(agent_rewards_strings),
                     ", ".join(agent_goal_completion_strings),
                 )
                 table(row)
             else:
-                table(("", "", "", "", ""))
+                table(("", "", "", "", "", "", ""))
 
 
 class Callbacks(DefaultCallbacks):
