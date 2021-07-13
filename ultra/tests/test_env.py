@@ -93,7 +93,7 @@ class EnvTest(unittest.TestCase):
         # Test using multiple sequences of scenario directories of varying length.
         for num_scenarios in range(1, 4):
             scenarios = FAKE_SCENARIOS[:num_scenarios]
-            scenarios = UltraEnv.get_scenarios_from_scenario_info(scenarios, False)
+            scenarios = UltraEnv.get_scenarios_from_scenario_info(scenarios)
             for scenario in scenarios:
                 self.assertIn(scenario, FAKE_SCENARIOS)
 

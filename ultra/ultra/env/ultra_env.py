@@ -142,7 +142,7 @@ class UltraEnv(HiWayEnv):
 
     @staticmethod
     def get_scenarios_from_scenario_info(
-        scenario_info: Union[Tuple[str, str], Sequence[str]], eval_mode: bool
+        scenario_info: Union[Tuple[str, str], Sequence[str]], eval_mode: bool = False
     ) -> List[str]:
         """Finds all scenarios from a given (task, level) tuple, or sequence of scenario
         directories.
@@ -151,6 +151,9 @@ class UltraEnv(HiWayEnv):
             scenario_info (Union[Tuple[str, str], Sequence[str]]): Either a tuple of
                 two strings (task, level) that describe the scenarios of the specific
                 task and level, or a sequence of scenario directory strings.
+            eval_mode (bool): Used only when obtaining scenarios from a (task, level)
+                tuple. This determines whether to return the evaluation scenarios of the
+                specified task's level. Training scenarios are returned by default.
 
         Returns:
             List[str]: A list of scenario directory strings.
