@@ -10,6 +10,7 @@ test: build-all-scenarios
 		-n `nproc --ignore 2` \
 		./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+		--ignore=./smarts/core/tests/test_env_frame_rate.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
 		--ignore=./smarts/env/tests/test_learning.py \
 		-k 'not test_long_determinism'

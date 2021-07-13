@@ -23,6 +23,20 @@
 import time
 
 
+class FramerateException(Exception):
+    """An exception raised if a renderer is required but not available."""
+
+    def __str__(self):
+        return 'The monitor has not started yet.'
+
+    @classmethod
+    def above_threshold(cls, desired_fps, delta):
+        return cls(
+            f"The frame rate increased, higher than the desired threshold, \
+                desired: {desired_fps} fps, actual: {round(1000 / delta, 2)} fps."
+        )
+
+
 class FrameMonitor:
     def __init__(self, desired_fps=10):
         self._desired_fps = int(desired_fps)
@@ -43,14 +57,11 @@ class FrameMonitor:
 
     def stop(self):
         if self._start_time_ms is None:
-            raise RuntimeError("The monitor has not started yet.")
+            raise FramerateException()
 
         now = self._time_now()
         delta = now - self._start_time_ms
         actual_fps = round(1000 / delta, 2)
         if round(1000 / delta, 2) > self._desired_fps:
-            raise RuntimeError(
-                f"The frame rate increased, higher than the desired threshold, \
-                desired: {self._desired_fps} fps, actual: {round(1000 / delta, 2)} fps."
-            )
+            raise FramerateException.above_threshold(self._desired_fps, delta)
         return actual_fps

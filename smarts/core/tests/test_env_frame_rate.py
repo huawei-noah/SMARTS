@@ -26,10 +26,9 @@ import pytest
 import logging
 
 import gym
-from smarts.core.utils.frame_monitor import FrameMonitor
+from smarts.core.utils.frame_monitor import FrameMonitor, FramerateException
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 
 logging.basicConfig(level=logging.INFO)
@@ -45,9 +44,6 @@ def scenarios():
 @pytest.fixture
 def seed():
     return 42
-
-
-from smarts.core.agent import Agent
 
 
 class KeepLaneAgent(Agent):
@@ -94,9 +90,9 @@ def test_env_frame_test(scenarios, seed):
                     observations, rewards, dones, infos = env.step(
                         {AGENT_ID: agent_action}
                     )
-            except Exception as e:
+            except FramerateException as e:
                 runtime_warnings += 1
                 pass
             episode.record_step(observations, rewards, dones, infos)
     env.close()
-    assert runtime_warnings > 0
+    assert runtime_warnings < 0
