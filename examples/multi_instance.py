@@ -3,8 +3,18 @@ import tempfile
 
 import gym
 import numpy as np
-import ray
 import torch
+
+# ray[rllib] is not the part of main dependency of the SMARTS package. It needs to be installed separately
+# as a part of the smarts[train] dependency using the command "pip install -e .[train]. The following try block checks
+# whether ray[rllib] was installed by user and raises an Exception warning the user to install it if not so.
+try:
+    import ray
+except Exception as e:
+    from examples import RayException
+
+    raise RayException.required_to("multi_instance.py")
+
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec

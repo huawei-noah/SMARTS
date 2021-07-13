@@ -1,6 +1,16 @@
 name: SMARTS CI Base Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - ultra-**
+      - ultra_**
+      - ultra/**
+  pull_request:
+    branches-ignore:
+      - ultra-**
+      - ultra_**
+      - ultra/**
 
 jobs:
   test:
@@ -36,7 +46,7 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade wheel
           pip install --upgrade -r requirements.txt
-          pip install --upgrade -e .[train,test]
+          pip install --upgrade -e .[train,test,camera-obs]
       - name: Run smoke tests
         run: |
           . .venv/bin/activate

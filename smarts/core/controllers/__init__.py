@@ -48,7 +48,8 @@ class ActionSpaceType(Enum):
     Trajectory = 5
     MultiTargetPose = 6  # for boid control
     MPC = 7
-    Imitation = 8
+    TrajectoryWithTime = 8  # for pure interpolation provider
+    Imitation = 9
 
 
 class Controllers:

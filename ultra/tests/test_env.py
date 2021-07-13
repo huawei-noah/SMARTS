@@ -19,11 +19,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from collections import deque
+from smarts.core.sensors import TopDownRGB
 import unittest
 
 import gym
+import numpy as np
 import ray
 
+from smarts.core.agent_interface import (
+    AgentInterface,
+    NeighborhoodVehicles,
+    RGB,
+    Waypoints,
+)
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import make
 from ultra.baselines.agent_spec import BaselineAgentSpec
@@ -82,9 +92,96 @@ class EnvTest(unittest.TestCase):
         ray.shutdown()
         self.assertTrue(timestep_sec1 == timestep_sec)
 
+    def test_observations_stacking(self):
+        EPISODES = 3
+        WIDTH = 64
+        HEIGHT = WIDTH
+        RESOLUTION = 50 / WIDTH
+        ENVIRONMENT_STACK_SIZE = 4
+
+        agent_spec = AgentSpec(
+            interface=AgentInterface(
+                waypoints=Waypoints(lookahead=1),
+                neighborhood_vehicles=NeighborhoodVehicles(radius=10.0),
+                rgb=RGB(width=WIDTH, height=HEIGHT, resolution=RESOLUTION),
+                action=ActionSpaceType.Lane,
+            ),
+            agent_builder=TestLaneAgent,
+        )
+        agent = agent_spec.build_agent()
+
+        environment = gym.make(
+            "ultra.env:ultra-v0",
+            agent_specs={AGENT_ID: agent_spec},
+            scenario_info=("00", "easy"),
+            headless=True,
+            timestep_sec=0.1,
+            seed=2,
+        )
+
+        def check_environment_observations_stack(environment):
+            self.assertIsInstance(environment.smarts_observations_stack, deque)
+            self.assertEqual(
+                len(environment.smarts_observations_stack), ENVIRONMENT_STACK_SIZE
+            )
+            self.assertIsInstance(environment.smarts_observations_stack[0], dict)
+            self.assertTrue(
+                all(
+                    str(environment.smarts_observations_stack[0]) == str(observations)
+                    for observations in environment.smarts_observations_stack
+                )
+            )
+
+        def check_stacked_observations(environment, observations):
+            self.assertIn(AGENT_ID, observations)
+            self.assertTrue(AGENT_ID, observations[AGENT_ID].top_down_rgb)
+            self.assertIsInstance(observations[AGENT_ID].top_down_rgb, TopDownRGB)
+            self.assertEqual(
+                observations[AGENT_ID].top_down_rgb.metadata,
+                environment.smarts_observations_stack[-1][
+                    AGENT_ID
+                ].top_down_rgb.metadata,
+            )
+            self.assertEqual(
+                observations[AGENT_ID].top_down_rgb.data.shape,
+                (ENVIRONMENT_STACK_SIZE, HEIGHT, WIDTH, 3),
+            )
+            # Ensure the stacked observation's TopDownRGB data is in the same order, and
+            # and contains the same NumPy arrays as the environment's observation stack.
+            self.assertTrue(
+                all(
+                    np.array_equal(
+                        observations_from_stack[AGENT_ID].top_down_rgb.data,
+                        observations[AGENT_ID].top_down_rgb.data[i],
+                    )
+                    for i, observations_from_stack in enumerate(
+                        environment.smarts_observations_stack
+                    )
+                )
+            )
+
+        for _ in range(EPISODES):
+            dones = {"__all__": False}
+            observations = environment.reset()
+
+            check_environment_observations_stack(environment)
+            check_stacked_observations(environment, observations)
+
+            while not dones["__all__"]:
+                action = agent.act(observations[AGENT_ID])
+                observations, _, dones, _ = environment.step({AGENT_ID: action})
+                check_stacked_observations(environment, observations)
+
+        environment.close()
+
 
 # other attributes are not set
 #'action_space', 'close', 'get_task', 'headless', 'info', 'metadata', 'observation_space', 'render', 'reset', 'reward_range', 'scenario_info', 'scenario_log', 'scenarios', 'seed', 'spec', 'step', 'timestep_sec', 'unwrapped'
+
+
+class TestLaneAgent(Agent):
+    def act(self, _):
+        return "keep_lane"
 
 
 def prepare_test_env_agent(headless=True):

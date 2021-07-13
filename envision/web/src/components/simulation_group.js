@@ -20,7 +20,13 @@
 import React from "react";
 import Simulation from "./simulation.js";
 
-const SimulationGroup = ({ simulationIds, client, egoView }) => {
+const SimulationGroup = ({
+  simulationIds,
+  client,
+  controlModes,
+  playingMode,
+  egoView,
+}) => {
   return (
     <div style={{ padding: "10px" }}>
       {simulationIds.map((simId) => (
@@ -33,7 +39,13 @@ const SimulationGroup = ({ simulationIds, client, egoView }) => {
             height: "480px",
           }}
         >
-          <Simulation client={client} simulationId={simId} egoView={egoView} />
+          <Simulation
+            client={client}
+            simulationId={simId}
+            egoView={egoView}
+            controlModes={controlModes}
+            playingMode={playingMode}
+          />
         </div>
       ))}
     </div>

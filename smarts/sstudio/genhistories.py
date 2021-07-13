@@ -273,7 +273,7 @@ class NGSIM(_TrajectoryDataset):
         if any(np.isnan(c)) or any(np.isnan(n)):
             return self._prev_heading
         s = np.linalg.norm(n - c)
-        if s > 0.0:
+        if s == 0.0:
             return self._prev_heading
         vhat = (n - c) / s
         r = math.atan2(vhat[1], vhat[0])

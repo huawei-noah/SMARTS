@@ -71,6 +71,34 @@ def fast_quaternion_from_angle(angle: float) -> np.ndarray:
     return np.array([0, 0, math.sin(half_angle), math.cos(half_angle)])
 
 
+def mult_quat(q1, q2):
+    """
+    Quaternion multiplication.
+    """
+    q3 = np.copy(q1)
+    q3[0] = q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3]
+    q3[1] = q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2]
+    q3[2] = q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1]
+    q3[3] = q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0]
+    return q3
+
+
+def rotate_quat(quat, vect):
+    """
+    Rotate a vector with the rotation defined by a quaternion.
+    """
+    # Transform vect into an quaternion
+    vect = np.append([0], vect)
+    # Normalize it
+    norm_vect = np.linalg.norm(vect)
+    vect /= norm_vect
+    # Computes the conjugate of quat
+    quat_ = np.append(quat[0], -quat[1:])
+    # The result is given by: quat * vect * quat_
+    res = mult_quat(quat, mult_quat(vect, quat_)) * norm_vect
+    return res[1:]
+
+
 def clip(val, min_val, max_val):
     assert (
         min_val <= max_val

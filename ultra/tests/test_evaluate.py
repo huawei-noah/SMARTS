@@ -170,13 +170,11 @@ class EvaluateTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
         )[0]
-        models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
         evaluate_command = (
             f"python ultra/evaluate.py "
-            f"--task 00 --level eval_test --models {models} --experiment-dir {experiment_dir} "
+            f"--task 00 --level eval_test --experiment-dir {experiment_dir} "
             f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
-
         ray.shutdown()
         try:
             os.system(evaluate_command)
@@ -198,10 +196,9 @@ class EvaluateTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*")
         )[0]
-        models = " ".join(glob.glob(os.path.join(experiment_dir, "models/000/")))
         evaluate_command = (
             f"python ultra/evaluate.py "
-            f"--task 00-multiagent --level eval_test --models {models} --experiment-dir {experiment_dir} "
+            f"--task 00-multiagent --level eval_test --agents 000 --experiment-dir {experiment_dir} "
             f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
         )
 
@@ -313,6 +310,58 @@ class EvaluateTest(unittest.TestCase):
             print(err)
             self.assertTrue(False)
 
+    def test_record_evaluation_at_proper_episode_indices(self):
+        """Due to parallelization, there might arise a situation where the episode
+        object at the beginning of an evaluation would not match the episode
+        object when recording to tensorboard. This test ensures that the evaluation data
+        (for both test and train scenarios) is recorded at the proper episode index.
+        """
+        AGENT_ID = "000"
+        log_dir = os.path.join(
+            EvaluateTest.OUTPUT_DIRECTORY, "output_eval_episode_check_log/"
+        )
+
+        # Arbitary values for evaluation rate and number of training episodes
+        eval_rate = 4
+        num_episodes = 20
+
+        train_command = (
+            "python ultra/train.py "
+            f"--task 00 --level eval_test --policy sac --headless --episodes {num_episodes} "
+            f"--eval-rate {eval_rate} --eval-episodes 2 --max-episode-steps 2 --log-dir {log_dir}"
+        )
+
+        if not os.path.exists(log_dir):
+            os.system(train_command)
+
+        with open(
+            os.path.join(
+                log_dir, os.listdir(log_dir)[0], "pkls/Evaluation/results.pkl"
+            ),
+            "rb",
+        ) as handle:
+            evaluation_results = dill.load(handle)
+
+        # Check if the episode indices are divisible by the evaluation rate. If they
+        # do, then the evaluation data is properly saved under the results.pkl
+        # and also correctly added to the tensorboard
+        for index in evaluation_results[AGENT_ID].keys():
+            self.assertEqual((index) % eval_rate, 0)
+
+        with open(
+            os.path.join(
+                log_dir, os.listdir(log_dir)[0], "pkls/Evaluation_Training/results.pkl"
+            ),
+            "rb",
+        ) as handle:
+            evaluation_training_results = dill.load(handle)
+
+        # Check if the episode indices are divisible by the evaluation rate. If they
+        # do, then the evaluation training data is properly saved under the results.pkl
+        # and also correctly added to the tensorboard
+        for index in evaluation_training_results[AGENT_ID].keys():
+            self.assertEqual((index) % eval_rate, 0)
+
     def test_extract_policy_from_path(self):
         paths = [
             "from.ultra.baselines.sac:sac-v0",
@@ -354,11 +403,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
     agent_ids = ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(num_agents)]
     agent_classes = {agent_id: "ultra.baselines.sac:sac-v0" for agent_id in agent_ids}
     agent_specs = {
-        agent_id: BaselineAgentSpec(
-            action_type=ActionSpaceType.Continuous,
-            policy_class=SACPolicy,
-            max_episode_steps=2,
-        )
+        agent_id: BaselineAgentSpec(policy_class=SACPolicy, max_episode_steps=2)
         for agent_id in agent_ids
     }
 

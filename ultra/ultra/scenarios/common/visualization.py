@@ -105,8 +105,8 @@ def draw_intersection(
     else:
         fig_offset_y = 700
         fig_offset_x = 300
-    fig_offset_y = 100
-    fig_offset_x = 100
+    # fig_offset_y = 100
+    # fig_offset_x = 100
     fig_mul = 2
     # Create a figure to contain the plot.
     figure = plt.figure(figsize=(20, 10))
@@ -138,9 +138,7 @@ def draw_intersection(
     font = cv2.FONT_HERSHEY_DUPLEX
 
     for state in social_vehicle_states:  # .items():
-        # print(state['behavior'])
-        # if v_id not in finished_vehicles:
-        # behavior_key, behavior_color = get_social_vehicle_color(state["behavior"])
+        behavior_key, behavior_color = get_social_vehicle_color(state.id)
         pos_x = fig_offset_x + int(state.position[0] * fig_mul)
         pos_y = fig_offset_y - int(state.position[1] * fig_mul)
         canvas = cv2.circle(
@@ -149,14 +147,14 @@ def draw_intersection(
                 pos_x,
                 pos_y,
             ),
-            radius=1,
-            color=(10, 10, 30),
+            radius=2,
+            color=behavior_color,
             thickness=2,
         )
         # canvas = cv2.putText(
-        #     canvas, str(v_id), (pos_x + 4, pos_y + 4), font, 0.3, behavior_color, 1,
+        #     canvas, str(state.id), (pos_x + 4, pos_y + 4), font, 0.3, behavior_color, 1,
         # )
-        # colors_legend.add((behavior_key, behavior_color))
+        colors_legend.add((behavior_key, behavior_color))
     # print(ego)
     # if ego:
     canvas = cv2.circle(
@@ -195,20 +193,31 @@ def draw_intersection(
         1,
     )
 
-    # color_offset = 20
-    # legend_position = (30, 50)
-    #
-    # for color_key, color in colors_legend:
-    #     canvas = cv2.putText(
-    #         canvas,
-    #         color_key,
-    #         (legend_position[0], legend_position[1] + color_offset),
-    #         font,
-    #         0.5,
-    #         color,
-    #         1,
-    #     )
-    #     color_offset += 20
+    timestep_str = f"Timestep : {step}"
+    canvas = cv2.putText(
+        canvas,
+        timestep_str,
+        (650, 40),
+        font,
+        0.5,
+        (255, 255, 255),
+        1,
+    )
+
+    color_offset = 20
+    legend_position = (30, 10)
+
+    for color_key, color in colors_legend:
+        canvas = cv2.putText(
+            canvas,
+            color_key,
+            (legend_position[0], legend_position[1] + color_offset),
+            font,
+            0.5,
+            color,
+            1,
+        )
+        color_offset += 20
     cv2.imwrite(f"temp/{step}.png", canvas)
     plt.close("all")
     return canvas

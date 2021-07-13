@@ -36,7 +36,6 @@ from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
-from .renderer import Renderer
 from .scenario import Mission, Via
 from .lanepoints import LanePoint
 
@@ -637,7 +636,7 @@ class CameraSensor(Sensor):
     def __init__(
         self,
         vehicle,
-        renderer: Renderer,
+        renderer,  # type Renderer or None
         name: str,
         mask: int,
         width: int,
@@ -673,7 +672,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        renderer: Renderer,
+        renderer,  # type Renderer or None
     ):
         super().__init__(
             vehicle,
@@ -715,7 +714,7 @@ class OGMSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        renderer: Renderer,
+        renderer,  # type Renderer or None
     ):
         super().__init__(
             vehicle,
@@ -757,7 +756,7 @@ class RGBSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        renderer: Renderer,
+        renderer,  # type Renderer or None
     ):
         super().__init__(
             vehicle, renderer, "rgb", RenderMasks.RGB_HIDE, width, height, resolution

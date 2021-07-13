@@ -32,7 +32,6 @@ from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
-from .renderer import Renderer, RendererException
 from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
@@ -130,6 +129,16 @@ class VehicleGeometry:
     @classmethod
     def fromfile(cls, path, color):
         pass
+
+
+class RendererException(Exception):
+    """An exception raised if a renderer is required but not available."""
+
+    @classmethod
+    def required_to(cls, thing):
+        return cls(
+            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
+        )
 
 
 class Vehicle:

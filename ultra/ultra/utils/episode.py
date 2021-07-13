@@ -281,7 +281,9 @@ class Episode:
         self.initialize_tb_writer()
 
         for agent_id, agent_info in self.info[self.active_tag].items():
-            agent_itr = recording_step if recording_step else self.get_itr(agent_id)
+            agent_itr = (
+                recording_step if recording_step is not None else self.get_itr(agent_id)
+            )
             data = {}
 
             for key, value in agent_info.data.items():
@@ -321,6 +323,7 @@ def episodes(n, etag=None, log_dir=None):
             f"Total Steps",
             f"Steps/Sec",
             f"Score",
+            f"Goal Completed",
         ],
         width=col_width,
         style="round",
@@ -358,12 +361,20 @@ def episodes(n, etag=None, log_dir=None):
                     )
                     for agent_id, agent_info in e.info[e.active_tag].items()
                 ]
+                agent_goal_completion_strings = [
+                    "{}: {}".format(
+                        agent_id,
+                        bool(agent_info.data["reached_goal"]),
+                    )
+                    for agent_id, agent_info in e.info[e.active_tag].items()
+                ]
                 row = (
                     f"{e.index + 1}/{n}",
                     f"{e.sim2wall_ratio:.2f}",
                     f"{e.steps}",
                     f"{e.steps_per_second:.2f}",
                     ", ".join(agent_rewards_strings),
+                    ", ".join(agent_goal_completion_strings),
                 )
                 table(row)
             else:
