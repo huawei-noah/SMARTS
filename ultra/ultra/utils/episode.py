@@ -253,7 +253,7 @@ class Episode:
 
         # Increment this episode's step count.
         self.steps += 1
-    
+
     def record_scenario_path(self, scenario_path):
         self.scenario = scenario_path.split("/")[-1]
 
@@ -319,7 +319,7 @@ class Episode:
 
 
 def episodes(n, etag=None, log_dir=None):
-    col_width = [15,15,15,15,18,18,60]
+    col_width = [15, 15, 15, 15, 18, 18, 60]
     with tp.TableContext(
         [
             f"Episode",
