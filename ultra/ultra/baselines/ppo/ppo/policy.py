@@ -405,10 +405,10 @@ class PPOPolicy(Agent):
         torch.save(self.ppo_net.state_dict(), model_dir / "ppo_network.pth")
 
     def save_replay_buffer(self, *args):
-        pass
+        raise NotImplementedError
 
     def load_replay_buffer(self, *args):
-        pass
+        raise NotImplementedError
 
     def load(self, model_dir):
         print("model loaded:", model_dir)
