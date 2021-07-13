@@ -47,30 +47,20 @@ def seed():
     return 42
 
 
-class ChaseViaPointsAgent(Agent):
-    def act(self, obs: Observation):
-        if (
-            len(obs.via_data.near_via_points) < 1
-            or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
-        ):
-            return (obs.waypoint_paths[0][0].speed_limit, 0)
+from smarts.core.agent import Agent
 
-        nearest = obs.via_data.near_via_points[0]
-        if nearest.lane_index == obs.ego_vehicle_state.lane_index:
-            return (nearest.required_speed, 0)
 
-        return (
-            nearest.required_speed,
-            1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
-        )
+class KeepLaneAgent(Agent):
+    def act(self, obs):
+        return "keep_lane"
 
 
 def env_and_spec(scenarios, seed, headless=True, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
-            AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
+            AgentType.Laner, max_episode_steps=max_episode_steps
         ),
-        agent_builder=ChaseViaPointsAgent,
+        agent_builder=KeepLaneAgent,
     )
 
     env = gym.make(
