@@ -42,46 +42,46 @@ class TrainTest(unittest.TestCase):
     # Put generated files and folders in this directory.
     OUTPUT_DIRECTORY = "tests/train_test/"
 
-    # @classmethod
-    # def setUpClass(cls):
-    #     """Generate model"""
-    #     model_log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/")
-    #     try:
-    #         os.system(
-    #             f"python ultra/train.py --task 00 --level easy --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {model_log_dir} --eval-episodes 1 --headless"
-    #         )
-    #     except Exception as err:
-    #         print(err)
-    #         self.assertTrue(False)
+    @classmethod
+    def setUpClass(cls):
+        """Generate model"""
+        model_log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/")
+        try:
+            os.system(
+                f"python ultra/train.py --task 00 --level easy --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {model_log_dir} --eval-episodes 1 --headless"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
 
-    #     if not os.path.exists(model_log_dir):
-    #         self.assertTrue(False)
+        if not os.path.exists(model_log_dir):
+            self.assertTrue(False)
 
-    # def test_train_cli(self):
-    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
-    #     try:
-    #         os.system(
-    #             f"python ultra/train.py --task 00 --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir}"
-    #         )
-    #     except Exception as err:
-    #         print(err)
-    #         self.assertTrue(False)
+    def test_train_cli(self):
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+        try:
+            os.system(
+                f"python ultra/train.py --task 00 --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir}"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
 
-    #     if not os.path.exists(log_dir):
-    #         self.assertTrue(False)
+        if not os.path.exists(log_dir):
+            self.assertTrue(False)
 
-    # def test_train_cli_multiagent(self):
-    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
-    #     try:
-    #         os.system(
-    #             f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
-    #         )
-    #     except Exception as err:
-    #         print(err)
-    #         self.assertTrue(False)
+    def test_train_cli_multiagent(self):
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+        try:
+            os.system(
+                f"python ultra/train.py --task 00-multiagent --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --log-dir {log_dir} --policy dqn,bdqn,ppo"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
 
-    #     if not os.path.exists(log_dir):
-    #         self.assertTrue(False)
+        if not os.path.exists(log_dir):
+            self.assertTrue(False)
 
     def test_train_single_agent(self):
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
@@ -153,84 +153,84 @@ class TrainTest(unittest.TestCase):
             self.assertTrue(False)
             ray.shutdown()
 
-    # def test_train_models(self):
-    #     """Further train the trained model"""
-    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
-    #     experiment_dir = glob.glob(
-    #         os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
-    #     )[0]
+    def test_train_models(self):
+        """Further train the trained model"""
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+        experiment_dir = glob.glob(
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
+        )[0]
 
-    #     try:
-    #         os.system(
-    #             f"python ultra/train.py --task 00 --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --experiment-dir {experiment_dir} --log-dir {log_dir} --headless"
-    #         )
-    #     except Exception as err:
-    #         print(err)
-    #         self.assertTrue(False)
+        try:
+            os.system(
+                f"python ultra/train.py --task 00 --level easy --episodes 1 --eval-episodes 0 --max-episode-steps 2 --experiment-dir {experiment_dir} --log-dir {log_dir} --headless"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
 
-    #     if not os.path.exists(log_dir):
-    #         self.assertTrue(False)
+        if not os.path.exists(log_dir):
+            self.assertTrue(False)
 
-    #     shutil.rmtree(log_dir)
+        shutil.rmtree(log_dir)
 
-    # def test_load_model(self):
-    #     experiment_dir = glob.glob(
-    #         os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
-    #     )[0]
-    #     agent_ids, agent_classes, agent_specs, agents = load_model(experiment_dir)
+    def test_load_model(self):
+        experiment_dir = glob.glob(
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
+        )[0]
+        agent_ids, agent_classes, agent_specs, agents = load_model(experiment_dir)
 
-    #     self.assertEqual(agent_ids[0], "000")
-    #     self.assertEqual(agent_classes[agent_ids[0]], "ultra.baselines.sac:sac-v0")
-    #     self.assertIsInstance(agent_specs[agent_ids[0]], AgentSpec)
-    #     self.assertIsInstance(agents[agent_ids[0]], SACPolicy)
+        self.assertEqual(agent_ids[0], "000")
+        self.assertEqual(agent_classes[agent_ids[0]], "ultra.baselines.sac:sac-v0")
+        self.assertIsInstance(agent_specs[agent_ids[0]], AgentSpec)
+        self.assertIsInstance(agents[agent_ids[0]], SACPolicy)
 
-    # def test_check_agents_from_pool(self):
-    #     seed = 2
-    #     policy = ""
+    def test_check_agents_from_pool(self):
+        seed = 2
+        policy = ""
 
-    #     with open("ultra/agent_pool.json") as f:
-    #         data = json.load(f)
-    #         for policy in data["agents"].keys():
-    #             policy_path = data["agents"][policy]["path"]
-    #             policy_locator = data["agents"][policy]["locator"]
-    #             policy_class = str(policy_path) + ":" + str(policy_locator)
-    #             try:
-    #                 spec = make(locator=policy_class)
-    #                 agent = spec.build_agent()
-    #             except ImportError as err:
-    #                 self.assertTrue(False)
+        with open("ultra/agent_pool.json") as f:
+            data = json.load(f)
+            for policy in data["agents"].keys():
+                policy_path = data["agents"][policy]["path"]
+                policy_locator = data["agents"][policy]["locator"]
+                policy_class = str(policy_path) + ":" + str(policy_locator)
+                try:
+                    spec = make(locator=policy_class)
+                    agent = spec.build_agent()
+                except ImportError as err:
+                    self.assertTrue(False)
 
-    # def test_check_agents_from_pool(self):
-    #     seed = 2
-    #     policy = ""
+    def test_check_agents_from_pool(self):
+        seed = 2
+        policy = ""
 
-    #     with open("ultra/agent_pool.json") as f:
-    #         data = json.load(f)
-    #         for policy in data["agents"].keys():
-    #             policy_path = data["agents"][policy]["path"]
-    #             policy_locator = data["agents"][policy]["locator"]
-    #             policy_class = str(policy_path) + ":" + str(policy_locator)
-    #             try:
-    #                 spec = make(locator=policy_class)
-    #                 agent = spec.build_agent()
-    #             except ImportError as err:
-    #                 self.assertTrue(False)
+        with open("ultra/agent_pool.json") as f:
+            data = json.load(f)
+            for policy in data["agents"].keys():
+                policy_path = data["agents"][policy]["path"]
+                policy_locator = data["agents"][policy]["locator"]
+                policy_class = str(policy_path) + ":" + str(policy_locator)
+                try:
+                    spec = make(locator=policy_class)
+                    agent = spec.build_agent()
+                except ImportError as err:
+                    self.assertTrue(False)
 
-    # def test_spec_is_instance_agentspec(self):
-    #     policy_class = "ultra.baselines.sac:sac-v0"
-    #     spec = make(locator=policy_class)
-    #     self.assertIsInstance(spec, AgentSpec)
+    def test_spec_is_instance_agentspec(self):
+        policy_class = "ultra.baselines.sac:sac-v0"
+        spec = make(locator=policy_class)
+        self.assertIsInstance(spec, AgentSpec)
 
-    # def test_agent_is_instance_policy(self):
-    #     policy_class = "ultra.baselines.sac:sac-v0"
-    #     spec = make(locator=policy_class)
-    #     agent = spec.build_agent()
-    #     self.assertIsInstance(agent, SACPolicy)
+    def test_agent_is_instance_policy(self):
+        policy_class = "ultra.baselines.sac:sac-v0"
+        spec = make(locator=policy_class)
+        agent = spec.build_agent()
+        self.assertIsInstance(agent, SACPolicy)
 
-    # def tearDown(self):
-    #     log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
-    #     if os.path.exists(log_dir):
-    #         shutil.rmtree(log_dir)
+    def tearDown(self):
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
+        if os.path.exists(log_dir):
+            shutil.rmtree(log_dir)
 
     @classmethod
     def tearDownClass(cls):
