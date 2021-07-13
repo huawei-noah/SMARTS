@@ -150,27 +150,27 @@ def adapt(observation: Observation, reward: float) -> float:
     speed_fraction = max(0, ego_observation.speed / closest_wp.speed_limit)
 
     # Termination rewards
-    ego_reached_goal_reward = 5 if ego_events.reached_goal else 0
+    ego_reached_goal_reward = 1 if ego_events.reached_goal else 0
 
     # Termination penalty
-    ego_collision_penalty = -5 if len(ego_events.collisions) > 0 else 0
-    ego_off_road_penalty = -5 if ego_events.off_road else 0
-    ego_not_moving_penalty = -5 if ego_events.not_moving else 0
-    ego_off_route_penalty = -5 if ego_events.off_route else 0
-    ego_wrong_way_penalty = -5 if ego_events.wrong_way else 0
+    ego_collision_penalty = -1 if len(ego_events.collisions) > 0 else 0
+    ego_off_road_penalty = -1 if ego_events.off_road else 0
+    ego_not_moving_penalty = -1 if ego_events.not_moving else 0
+    ego_off_route_penalty = -1 if ego_events.off_route else 0
+    ego_wrong_way_penalty = -1 if ego_events.wrong_way else 0
 
     # Intermediate rewards/penalties per step
-    ego_step_reward = 0.05 * min(speed_fraction, 1) * np.cos(angle_error)
-    new_ego_dist_center_penalty = -0.01 * min(
+    ego_step_reward = 0.1 * min(speed_fraction, 1) * np.cos(angle_error)
+    new_ego_dist_center_penalty = -0.005 * min(
         2, abs(ego_dist_center) 
     )  # TODO: Increase penalty
     ego_speed_penalty = (
         -0.1 if ego_observation.speed > closest_wp.speed_limit else 0
     )  # TODO: Increase penalty
     ego_timeout_penalty = (
-        -1
+        -0.01
         if (
-            (ego_observation.speed < closest_wp.speed_limit * 0.5)
+            (ego_observation.speed < 1)
             and len(observation.neighborhood_vehicle_states) == 0
         )
         else 0
