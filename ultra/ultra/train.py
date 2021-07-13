@@ -147,12 +147,11 @@ def load_model(experiment_dir):
     assert len(agent_ids) == 1, "Cannot load model from multi-agent experiments."
 
     length_dir = len(agent_checkpoint_directories[agent_ids[0]])
+    checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][length_dir - 1]
     if length_dir > 1:
         print(
-            f"\nThere are {length_dir} models inside in the experiment dir. Only the latest model >>> {agent_checkpoint_directories[agent_ids[0]][length_dir-1]} <<< will be trained\n"
+            f"\nThere are {length_dir} models inside in the experiment dir. Only the latest model >>> {checkpoint_directory} <<< will be trained\n"
         )
-
-    checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][length_dir - 1]
 
     # Create the agent specifications matched with their associated ID and corresponding
     # checkpoint directory
@@ -363,6 +362,7 @@ def train(
         if finished:
             break
 
+    # Save each agent's replay buffer post training run
     try:
         _ = [
             agents[agent_id].save_replay_buffer(
