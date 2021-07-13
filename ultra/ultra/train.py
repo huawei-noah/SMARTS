@@ -188,8 +188,7 @@ def load_model(experiment_dir):
             "Replay buffer is not loaded because policy does not utilize a replay buffer"
         )
     except Exception as e:
-        print(e)
-        raise
+        raise Exception
 
     return agent_ids, agent_classes, agent_specs, agents
 
@@ -379,8 +378,7 @@ def train(
             "Replay buffer is not saved because policy does not utilize a replay buffer"
         )
     except Exception as e:
-        print(e)
-        raise
+        raise Exception
 
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):
