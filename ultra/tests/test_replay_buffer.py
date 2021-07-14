@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import collections
 import unittest
 
 import numpy as np
@@ -299,32 +300,46 @@ class ReplayBufferTest(unittest.TestCase):
 def generate_image_transitions(
     num_transitions, stack_size, image_height, image_width, action_size
 ):
-    states = np.random.uniform(
-        low=0.0, high=1.0, size=(num_transitions, stack_size, image_height, image_width)
-    ).astype(np.float32)
-    next_states = np.concatenate(
-        (
-            states[1:],
-            np.random.uniform(
-                low=0.0, high=1.0, size=(1, stack_size, image_height, image_width)
-            ).astype(np.float32),
+    states = []
+    next_states = []
+    previous_actions = []
+    actions = []
+    rewards = []
+    dones = []
+
+    previous_action = np.random.uniform(low=-1.0, high=1.0, size=(action_size,))
+    action = np.random.uniform(low=-1.0, high=1.0, size=(action_size,))
+    next_state = collections.deque(
+        [np.zeros((image_height, image_width)) for _ in range(stack_size)],
+        maxlen=stack_size
+    )
+    state = collections.deque(
+        [np.zeros((image_height, image_width)) for _ in range(stack_size)],
+        maxlen=stack_size
+    )
+
+    for _ in range(num_transitions):
+        previous_action = action
+        action = np.random.uniform(low=-1.0, high=1.0, size=(action_size,))
+
+        state.extend([frame for frame in next_state])
+        next_state.append(
+            np.random.uniform(low=0.0, high=1.0, size=(image_height, image_width))
         )
-    )
-    previous_actions = np.random.uniform(
-        low=-1.0, high=1.0, size=(num_transitions, action_size)
-    ).astype(np.float32)
-    actions = np.concatenate(
-        (
-            previous_actions[1:],
-            np.random.uniform(low=-1.0, high=1.0, size=(1, action_size)).astype(
-                np.float32
-            ),
-        )
-    )
-    rewards = np.random.uniform(low=-10.0, high=10.0, size=(num_transitions,)).astype(
-        np.float32
-    )
-    dones = np.random.choice([True, False], size=(num_transitions,))
+
+        states.append(np.stack(state))
+        next_states.append(np.stack(next_state))
+        previous_actions.append(previous_action)
+        actions.append(action)
+        rewards.append(np.random.uniform(low=-10.0, high=10.0))
+        dones.append(np.random.choice([True, False]))
+
+    states = np.stack(states).astype(np.float32)
+    next_states = np.stack(next_states).astype(np.float32)
+    previous_actions = np.stack(previous_actions).astype(np.float32)
+    actions = np.stack(actions).astype(np.float32)
+    rewards = np.stack(rewards).astype(np.float32)
+    dones = np.stack(dones)
 
     return states, next_states, previous_actions, actions, rewards, dones
 
