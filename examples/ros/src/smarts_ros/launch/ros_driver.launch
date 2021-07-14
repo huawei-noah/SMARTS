@@ -7,7 +7,7 @@
   <arg name="test_scenario" default="scenarios/loop" doc="A path to scenario to test with." />
   <arg name="test_agent_type" default="module:agent" doc="A zoo registry locator with which to find the test agent." />
   <arg name="test_agent_params" default="" doc="Optional JSON string containing parameters to configure the test agent." />
-  <arg name="tast_agent_start_pose" default="[[0.0, 0.0, 0.0], 0.0]" doc="The starting pose for the test agent." />
+  <arg name="test_agent_start_pose" default="[[0.0, 0.0, 0.0], 0.0]" doc="The starting pose for the test agent." />
   <arg name="test_agent_speed" default="0" doc="Optional starting speed for the test agent." />
 
   <node pkg="smarts_ros" name="SMARTS" type="ros_driver.py" output="screen">
@@ -21,7 +21,7 @@
     <param name="_scenario" type="str" value="$(arg test_scenario)" />
     <param name="_agent_type" type="str" value="$(arg test_agent_type)" />
     <param name="_agent_params" type="str" value="$(arg test_agent_params)" />
-    <param name="_agent_start_pose" value="$(arg test_agent_start_pose)" />
+    <param name="_agent_start_pose" type="str" value="$(arg test_agent_start_pose)" />
     <param name="_agent_speed" type="double" value="$(arg test_agent_speed)" />
   </test>
 </launch>
