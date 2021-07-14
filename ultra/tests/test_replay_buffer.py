@@ -299,7 +299,11 @@ class ReplayBufferTest(unittest.TestCase):
 
 
 def generate_image_transitions(
-    num_transitions, stack_size, image_height, image_width, action_size
+    num_transitions: int,
+    stack_size: int,
+    image_height: int,
+    image_width: int,
+    action_size: int,
 ):
     states = []
     next_states = []
