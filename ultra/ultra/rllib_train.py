@@ -83,6 +83,9 @@ def train(
             f"{adapters.AdapterType.DefaultActionContinuous} action type."
         )
     if observation_type != adapters.AdapterType.DefaultObservationVector:
+        # NOTE: The SMARTS observations adaptation that is done in ULTRA's Gym
+        #       environment is not done in ULTRA's RLlib environment. If other
+        #       observation adapters are used, they may raise an Exception.
         raise Exception(
             f"RLlib training only supports the "
             f"{adapters.AdapterType.DefaultObservationVector} observation type."
@@ -92,6 +95,9 @@ def train(
     observation_space = adapters.space_from_type(adapter_type=observation_type)
 
     action_adapter = adapters.adapter_from_type(adapter_type=action_type)
+    info_adapter = adapters.adapter_from_type(
+        adapter_type=adapters.AdapterType.DefaultInfo
+    )
     observation_adapter = adapters.adapter_from_type(adapter_type=observation_type)
     reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
 
@@ -145,6 +151,7 @@ def train(
             agent_params={},
             agent_builder=None,
             action_adapter=action_adapter,
+            info_adapter=info_adapter,
             observation_adapter=observation_adapter,
             reward_adapter=reward_adapter,
         )

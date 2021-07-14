@@ -84,17 +84,12 @@ class ActorNetwork(torch.nn.Module):
         self,
         input_channels,
         input_dimension,
-        low_dim_state_size,
-        action_space,
+        action_size,
         seed,
         hidden_dim=512,
     ):
-        # TODO: Ensure low_dim_state_size is 0. Or, the forward method would have to
-        #       concatenate an image and a low dim states vector. We can maybe just get
-        #       rid of the low_dim_state_size parameter.
         super(ActorNetwork, self).__init__()
-        self.state_space = low_dim_state_size
-        self.action_space = action_space
+        self.action_size = action_size
         self.seed = torch.manual_seed(seed)
 
         self.conv1 = torch.nn.Conv2d(
@@ -121,8 +116,8 @@ class ActorNetwork(torch.nn.Module):
             ActorNetwork.CONV_KERNEL_SIZES,
             ActorNetwork.CONV_STRIDE_SIZES,
         )
-        self.fc1 = torch.nn.Linear(conv_output_size + low_dim_state_size, hidden_dim)
-        self.fc2 = torch.nn.Linear(hidden_dim, action_space)
+        self.fc1 = torch.nn.Linear(conv_output_size, hidden_dim)
+        self.fc2 = torch.nn.Linear(hidden_dim, action_size)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -137,9 +132,6 @@ class ActorNetwork(torch.nn.Module):
         output = F.relu(self.conv2(output))
         output = F.relu(self.conv3(output))
         output = output.view(output.size(0), -1)
-        # NOTE: Comment out the concatenation because we no longer take low_dim_state.
-        #       Should this still have the ability to take states with low_dim_state?
-        # output = torch.cat((output, low_dim_state), dim=1)
         output = F.relu(self.fc1(output))
         output = self.fc2(output)
 
@@ -159,18 +151,13 @@ class CriticNetwork(torch.nn.Module):
         self,
         input_channels,
         input_dimension,
-        low_dim_state_size,
-        action_space,
+        action_size,
         seed,
         hidden_dim=512,
     ):
-        # TODO: Ensure low_dim_state_size is 0. Or, the forward method would have to
-        #       concatenate an image and a low dim states vector. We can maybe just get
-        #       rid of the low_dim_state_size parameter.
         super(CriticNetwork, self).__init__()
         self.seed = torch.manual_seed(seed)
-        self.state_space = low_dim_state_size
-        self.action_space = action_space
+        self.action_size = action_size
 
         self.conv1 = torch.nn.Conv2d(
             input_channels,
@@ -196,9 +183,7 @@ class CriticNetwork(torch.nn.Module):
             CriticNetwork.CONV_KERNEL_SIZES,
             CriticNetwork.CONV_STRIDE_SIZES,
         )
-        self.fc1 = torch.nn.Linear(
-            conv_output_size + low_dim_state_size + action_space, hidden_dim
-        )
+        self.fc1 = torch.nn.Linear(conv_output_size + action_size, hidden_dim)
         self.fc2 = torch.nn.Linear(hidden_dim, 1)
 
     def reset_parameters(self):
@@ -213,9 +198,6 @@ class CriticNetwork(torch.nn.Module):
         output = F.relu(self.conv2(output))
         output = F.relu(self.conv3(output))
         output = output.view(output.size(0), -1)
-        # NOTE: Comment out the concatenation because we no longer take low_dim_state.
-        #       Should this still have the ability to take states with low_dim_state?
-        # output = torch.cat((output, low_dim_state, action), dim=1)
         output = torch.cat((output, action), dim=1)
         output = F.relu(self.fc1(output))
         output = self.fc2(output)

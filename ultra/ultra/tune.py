@@ -188,7 +188,7 @@ def tune_train(
 
         # Normalize the data and record this episode on tensorboard.
         episode.record_episode()
-        episode.record_tensorboard()
+        episode.record_tensorboard(recording_step=episode.index)
 
         # Save the agent if we have reached its save rate.
         if (episode.index + 1) % save_rate == 0:
@@ -241,9 +241,7 @@ def _perform_evaluation_on_best(
     evaluation_experiment_dir = glob.glob(
         os.path.join(best_log_dir, args.log_dir, "*/")
     )[0]
-    evaluation_models_dir = glob.glob(
-        os.path.join(evaluation_experiment_dir, "models/*/")
-    )
+    agents = os.listdir(os.path.join(evaluation_experiment_dir, "models"))
 
     print(f"Evaluating the best performing trial ({best_trial}).")
     evaluate_saved_models(
@@ -251,7 +249,7 @@ def _perform_evaluation_on_best(
         log_dir=evaluation_results_dir,
         headless=headless,
         max_episode_steps=max_episode_steps,
-        model_paths=evaluation_models_dir,
+        agents=agents,
         num_episodes=num_episodes,
         scenario_info=scenario_info,
         timestep=timestep,

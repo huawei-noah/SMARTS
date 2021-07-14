@@ -320,6 +320,7 @@ def generate_stopwatcher(
 
 def generate_left_turn_missions(
     missions,
+    shuffle_missions,
     route_distributions,
     route_lanes,
     speed,
@@ -366,6 +367,11 @@ def generate_left_turn_missions(
                 )
                 for ego_mission_config in missions
             ]
+            # Not all routes need to have a custom start/end offset
+            if "pos_offsets" in route_info:
+                pos_offsets = route_info["pos_offsets"]
+            else:
+                pos_offsets = None
             flows, vehicles_log_info = generate_social_vehicles(
                 route_distribution=route_info["distribution"],
                 begin_time_init=route_info["begin_time_init"],
@@ -378,6 +384,7 @@ def generate_left_turn_missions(
                 ],
                 stops=stops,
                 deadlock_optimization=route_info["deadlock_optimization"],
+                pos_offsets=pos_offsets,
                 stopwatcher_info=stopwatcher_info,
                 traffic_params={"speed": speed, "traffic_density": traffic_density},
             )
@@ -458,7 +465,8 @@ def generate_left_turn_missions(
             for ego_route in ego_routes
         ]
     # Shuffle the missions so agents don't do the same route all the time.
-    random.shuffle(mission_objects)
+    if shuffle_missions:
+        random.shuffle(mission_objects)
     gen_missions(scenario, mission_objects)
 
     if bubbles:
@@ -497,6 +505,7 @@ def generate_social_vehicles(
     stopwatcher_info,
     traffic_params,
     stops,
+    pos_offsets,
     begin_time_init=None,
     deadlock_optimization=True,
 ):
@@ -590,13 +599,23 @@ def generate_social_vehicles(
             )
         else:
             behavior = get_social_vehicle_behavior(behavior_idx)
+            if pos_offsets:
+                start_offset = random.randint(
+                    pos_offsets["start"][0], pos_offsets["start"][1]
+                )
+                end_offset = random.randint(
+                    pos_offsets["end"][0], pos_offsets["end"][1]
+                )
+            else:
+                start_offset = "base"
+                end_offset = "max"
             flows.append(
                 Flow(
                     begin=begin_time,
                     end=end_time,
                     route=Route(
-                        begin=(f"edge-{start_lane}", start_lane_id, "base"),
-                        end=(f"edge-{end_lane}", end_lane_id, "max"),
+                        begin=(f"edge-{start_lane}", start_lane_id, start_offset),
+                        end=(f"edge-{end_lane}", end_lane_id, end_offset),
                     ),
                     rate=1,
                     actors={behavior: 1.0},
@@ -620,6 +639,7 @@ def generate_social_vehicles(
 def scenario_worker(
     seeds,
     ego_missions,
+    shuffle_missions,
     route_lanes,
     route_distributions,
     map_dir,
@@ -643,6 +663,7 @@ def scenario_worker(
 
         generate_left_turn_missions(
             missions=ego_missions,
+            shuffle_missions=shuffle_missions,
             route_lanes=route_lanes,
             route_distributions=route_distributions,
             map_dir=map_dir,
@@ -669,6 +690,8 @@ def build_scenarios(
     stopwatcher_route,
     save_dir,
     root_path,
+    shuffle_missions=True,
+    pool_dir=None,
     dynamic_pattern_func=None,
 ):
     print("Generating Scenario ...")
@@ -683,7 +706,7 @@ def build_scenarios(
     level_config = task_config["levels"][level_name]
     scenarios_dir = os.path.dirname(os.path.realpath(__file__))
     task_dir = f"{scenarios_dir}/{task}"
-    pool_dir = f"{scenarios_dir}/pool"
+    pool_dir = f"{scenarios_dir}/pool/experiment_pool" if pool_dir is None else pool_dir
 
     train_total, test_total = (
         int(level_config["train"]["total"]),
@@ -743,7 +766,7 @@ def build_scenarios(
                 inner_part = math.ceil(float(percent) * len(seeds))
 
                 inner_cur_split = inner_prev_split + inner_part
-                name_additions = [mode, level_name, intersection_type, speed]
+                name_additions = [mode, task, level_name, intersection_type, speed]
 
                 if level_name != "no-traffic":
                     name_additions.append(traffic_density)
@@ -761,6 +784,7 @@ def build_scenarios(
                     args=(
                         temp_seeds,
                         ego_missions,
+                        shuffle_missions,
                         route_lanes,
                         route_distributions,
                         map_dir,
@@ -793,36 +817,3 @@ def build_scenarios(
     for process in jobs:
         process.join()
     print("*** time took:", time.time() - start)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser("generate scenarios")
-    parser.add_argument("--task", help="type a task id [0, 1, 2, 3, X]", type=str)
-    parser.add_argument("--level", help="easy/medium/hard, low-high/high-low", type=str)
-    parser.add_argument(
-        "--stopwatcher",
-        help="all/aggressive/default/slow/blocker/crusher south-west",
-        nargs="+",
-    )
-    parser.add_argument(
-        "--save-dir", help="directory for saving maps", type=str, default=None
-    )
-    parser.add_argument(
-        "--root-dir", help="directory of maps", type=str, default="ultra/scenarios"
-    )
-
-    args = parser.parse_args()
-
-    stopwatcher_behavior, stopwatcher_route = None, None
-    if args.stopwatcher:
-        stopwatcher_behavior, stopwatcher_route = args.stopwatcher
-
-    print("starting ...")
-    build_scenarios(
-        task=f"task{args.task}",
-        level_name=args.level,
-        stopwatcher_behavior=stopwatcher_behavior,
-        stopwatcher_route=stopwatcher_route,
-        save_dir=args.save_dir,
-        root_path=args.root_dir,
-    )

@@ -49,6 +49,64 @@ without adapting it any further. It expects that the action outputted by the age
 already is one of the four available strings. The behaviour of this adapter is fully
 defined in this module's `adapt` function.
 
+## Info Adapters
+
+An info adapter takes an [observation](https://smarts.readthedocs.io/en/latest/sim/observations.html#id1), reward, and info dictionary from the environment and adapts them to include
+more relevant information about the agent at each step. By default, the ULTRA
+environment includes the ego vehicle's raw observation, and its score in the info
+dictionary.
+```python
+info = {
+    "score": ...,  # A float, the total distance travelled by the ego vehicle.
+    "env_obs": ...,  # A smarts.core.sensors.Observation, the raw observation received by the ego vehicle.
+}
+```
+
+ULTRA has a default info adapter that is used to include more data about the
+agent that can be used to track the agent's learning progress and monitor the agent
+during training and evaluation.
+
+### [ultra.adapters.default_info_adapter](../ultra/adapters/default_info_adapter.py)
+
+The default info adapter requires that the SMARTS environment include the next 20
+waypoints in front of the ego vehicle, and all neighborhood (social) vehicles within a
+radius of 200 meters around the ego vehicle. Therefore, when using this adapter, the
+[AgentInterface](../../smarts/core/agent_interface.py) of your agent needs its
+`waypoints` parameter to be `Waypoints(lookahead=20)` and its `neighborhood_vehicles`
+parameter to be `NeighborhoodVehciles(radius=200.0)`. This requirement is outlined in
+this module's `required_interface`.
+
+The default info adapter modifies the given info dictionary passed to it by the
+environment. Specifically, it adds another key, "logs", to the info dictionary. This
+key's values is another dictionary that contains information about the agent:
+```python
+info = {
+    "score": ...,  # A float, the total distance travelled by the ego vehicle.
+    "env_obs": ...,  # A smarts.core.sensors.Observation, the raw observation received by the ego vehicle.
+    "logs": {
+        "position": ...,  # A np.ndarray with shape (3,), the x, y, z position of the ego vehicle.
+        "speed": ...,  # A float, the speed of the ego vehicle in meters per second.
+        "steering": ...,  # A float, the angle of the front wheels in radians.
+        "heading": ...,  # A smarts.core.coordinates.Heading, the vehicle's heading in radians.
+        "dist_center": ...,  # A float, the distance in meters from the center of the lane of the closest waypoint.
+        "start": ...,  # A smarts.core.scenario.Start, the start of the ego evhicle's mission.
+        "goal": ...,  # A smarts.core.scenario.PositionalGoal, the goal of the ego vehicle's mission.
+        "closest_wp": ...,  # A smarts.core.waypoints.Waypoint, the closest waypoint to the ego vehicle.
+        "events": ...,  # A smarts.core.events.Events, the events of the ego vehicle.
+        "ego_num_violations": ...,  # An int, the number of violations committed by the ego vehicle (see ultra.utils.common.ego_social_safety).
+        "social_num_violations": ...,  # An int, the number of violations committed by social vehicles (see ultra.utils.common.ego_social_safety).
+        "goal_dist": ...,  # A float, the euclidean distance between the ego vehicle and its goal.
+        "linear_jerk": ...,  # A float, the magnitude of the ego vehicle's linear jerk.
+        "angular_jerk": ...,  # A float, the magnitude of the ego vehicle's angular jerk.
+        "env_score": ...,  # A float, the ULTRA environment's reward obtained from the default reward adapter (see ultra.adapters.default_reward_adapter).
+    }
+}
+```
+
+This information contained in logs can ultimately be used by ULTRA's [Episode](../ultra/utils/episode.py)
+object that is used to record this data to Tensorboard and also save this data to a
+serializable object.
+
 ## Observation Adapters
 
 An observation adapter takes an [observation](https://smarts.readthedocs.io/en/latest/sim/observations.html#id1)
@@ -67,20 +125,20 @@ parameter to be `RGB(width=64, height=64, resolution=(50 / 64))`. This requireme
 outlined in this module's `required_interface`.
 
 This default image observation adapter produces a NumPy array of type `float32` and with
-shape `(1, 64, 64)`. Each element of the array is normalized to be in the range
+shape `(4, 64, 64)`. Each element of the array is normalized to be in the range
 `[0, 1]`. This observation space is outlined in this module's `gym_space`.
 
 This adapter receives an observation from the environment that contains a
 `smarts.core.sensors.TopDownRGB` instance in the observation. The `data` attribute of
-this class is a NumPy array of type `uint8` and shape `(64, 64, 3)`. The adapter
-converts this array to gray-scale by dotting it with `(0.2125, 0.7154, 0.0721)`,
-resulting in the value of each gray-scale pixel to be a linear combination of the red
-(R), green (G), and blue (B) components of that pixel:
-`0.2125 * R + 0.7154 * G + 0.0721 * B`. The gray-scale image is then normalized by
-dividing the array by `255.0`, and its 0th dimension is 'unsqueezed' to produce a
-3-dimensional array. The output is a NumPy array of type `float32` and with shape
-`(1, 64, 64)`. The behaviour of this adapter is fully defined in this module's `adapt`
-function.
+this class is a NumPy array of type `uint8` and shape `(4, 64, 64, 3)`. The adapter
+converts this array to gray-scale by dotting it with `(0.1, 0.8, 0.1)`, resulting in the
+value of each gray-scale pixel to be a linear combination of the red (R), green (G), and
+blue (B) components of that pixel: `0.1 * R + 0.8 * G + 0.1 * B`. This gray-scale
+weighting was chosen to accentuate the differences in gray values between the ego
+vehicle, social vehicles, and the road. The gray-scale image is then normalized by
+dividing the array by `255.0`. The output is a NumPy array of type `float32` and with
+shape `(4, 64, 64)`. The most recent frame is at the highest index of this array. The
+behaviour of this adapter is fully defined in this module's `adapt` function.
 
 ### [ultra.adapters.default_observation_vector_adapter](../ultra/adapters/default_observation_vector_adapter.py)
 
@@ -196,17 +254,15 @@ A reward adapter takes an [observation](https://smarts.readthedocs.io/en/latest/
 and the [environment reward](https://smarts.readthedocs.io/en/latest/sim/observations.html#rewards)
 as arguments from the environment and adapts them, acting as a custom reward function.
 ULTRA has one default reward adapter that uses elements from the agent's observation, as
-well as the environment reward to develop a custom reward.
+well as the environment reward, to develop a custom reward.
 
 ### [ultra.adapters.default_reward_adapter](../ultra/adapters/default_reward_adapter.py)
 
 The default reward adapter requires that the SMARTS environment include the next 20
-waypoints in front of the ego vehicle, and all neighborhood (social) vehicles within a
-radius of 200 meters around the ego vehicle. Therefore, when using this adapter, the
-[`AgentInterface`](../../smarts/core/agent_interface.py) of your agent needs its
-`waypoints` parameter to be `Waypoints(lookahead=20)` and its `neighborhood_vehicles`
-parameter to be `NeighborhoodVehicles(radius=200.0)`. This requirement is outlined in
-this module's `required_interface`.
+waypoints in front of the ego vehicle in the ego vehicle's observation. Therefore, when
+using this adapter, the [`AgentInterface`](../../smarts/core/agent_interface.py) of your
+agent needs its `waypoints` parameter to be `Waypoints(lookahead=20)`. This requirement
+is outlined in this module's `required_interface`.
 
 This default reward adapter combines elements of the agent's observation along with the
 environment reward to create a custom reward. This custom reward consists of multiple
@@ -242,11 +298,12 @@ going faster than the speed limit, else `0.0`.
 `0.0`.
 - `ego_step_reward` is
 `0.02 * min(max(0, ego_vehicle_speed / speed_limit), 1) * cos(angle_error)`.
-- `enironment_reward` is `the_environment_reward / 100`.
+- `environment_reward` is `the_environment_reward / 100`.
 
 And `speed_limit` is the speed limit of the nearest waypoint to the ego vehicle in
 meters per second; the `ego_vehicle_speed` is the speed of the ego vehicle in meters per
 second; the `angle_error` is the closest waypoint's heading minus the ego vehicle's
-heading; and the `ego_distance_from_center` is the lateral distance between the center
+heading; the `ego_distance_from_center` is the lateral distance between the center
 of the closest waypoint's lane and the ego vehicle's position, divided by half of that
-lane's width.
+lane's width; and `the_environment_reward` is the raw reward received from the SMARTS
+simulator.

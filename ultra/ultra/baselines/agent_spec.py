@@ -70,6 +70,7 @@ class BaselineAgentSpec(AgentSpec):
                     agent_builder=spec.policy_builder,
                     observation_adapter=spec.observation_adapter,
                     reward_adapter=spec.reward_adapter,
+                    info_adapter=spec.info_adapter,
                 )
 
                 spec = new_spec
@@ -94,15 +95,17 @@ class BaselineAgentSpec(AgentSpec):
             reward_type = adapters.type_from_string(
                 string_type=policy_params["reward_type"]
             )
+            info_type = adapters.AdapterType.DefaultInfo
 
             adapter_interface_requirements = adapters.required_interface_from_types(
-                action_type, observation_type, reward_type
+                action_type, observation_type, reward_type, info_type
             )
             action_adapter = adapters.adapter_from_type(adapter_type=action_type)
             observation_adapter = adapters.adapter_from_type(
                 adapter_type=observation_type
             )
             reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
+            info_adapter = adapters.adapter_from_type(adapter_type=info_type)
 
             spec = AgentSpec(
                 interface=AgentInterface(
@@ -117,6 +120,7 @@ class BaselineAgentSpec(AgentSpec):
                 action_adapter=action_adapter,
                 observation_adapter=observation_adapter,
                 reward_adapter=reward_adapter,
+                info_adapter=info_adapter,
             )
 
         return spec

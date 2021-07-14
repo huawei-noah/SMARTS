@@ -145,15 +145,12 @@ class TD3Policy(Agent):
             stack_size = observation_space.shape[0]
             image_shape = (observation_space.shape[1], observation_space.shape[2])
 
-            state_size = 0
-
             actor_network_class = CNNActorNetwork
             critic_network_class = CNNCriticNetwork
             network_params = {
                 "input_channels": stack_size,
                 "input_dimension": image_shape,
-                "low_dim_state_size": state_size,
-                "action_space": self.action_size,
+                "action_size": self.action_size,
                 "seed": self.seed,
             }
         else:

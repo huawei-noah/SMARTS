@@ -23,7 +23,6 @@ import torch
 from torch import nn
 import numpy as np
 import ultra.adapters as adapters
-from ultra.baselines.bdqn.bdqn.network import *
 from smarts.core.agent import Agent
 from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
 import pathlib, os, copy
@@ -141,13 +140,10 @@ class BehavioralDQNPolicy(DQNPolicy):
             stack_size = observation_space.shape[0]
             image_shape = (observation_space.shape[1], observation_space.shape[2])
 
-            state_size = 0
-
             network_class = DQNCNN
             network_params = {
-                "n_in_channels": stack_size,  # TODO: The stack size.
+                "n_in_channels": stack_size,
                 "image_dim": image_shape,
-                "state_size": state_size,
                 "num_actions": self.num_actions,
             }
         else:
