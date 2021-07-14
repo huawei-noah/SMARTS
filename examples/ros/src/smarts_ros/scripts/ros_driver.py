@@ -34,7 +34,7 @@ from smarts.core.scenario import (
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.vehicle import VehicleState
-import smarts.zoo.registry
+from smarts.zoo import registry
 
 
 # Don't expect SMARTS to be able to reliably maintain rates faster than this!
@@ -156,7 +156,7 @@ class ROSDriver:
             self._reset_smarts = True
             self._agents = {}
             self._agents_to_add = {}
-        for ros_agent_spec in contro.initial_agents:
+        for ros_agent_spec in control.initial_agents:
             self._agent_spec_callback(ros_agent_spec)
 
     def _get_smarts_info(self, req: SmartsInfoRequest) -> SmartsInfoResponse:
@@ -252,21 +252,20 @@ class ROSDriver:
             rospy.logwarn(
                 f"got unknown agent_type '{ros_agent_spec.agent_type}' in AgentSpec message with params='{ros_agent_spec.param_json}'.  ignoring."
             )
-        mission = Mission()
-        # TODO:  how to prevent them from spawning on top of another existing vehicle? (see how it's done in SUMO traffic)
-        mission.start = Start.from_pose(Pose.from_ros(ros_agent_spec.start_pose))
-        mission.goal = PositionGoal(
-            ros_agent_spec.end_pose[:2], ros_agent_spec.veh_length
-        )
-        mission.entry_tactic = default_entry_tactic(ros_agent_spec.start_speed)
-        # mission.via = TODO(ros_agent_spec.vias)
-        mission.vehicle_spec = VehicleSpec(
-            veh_id=f"veh_for_agent_{ros_agent_spec.agent_id}",
-            veh_type=self._decode_vehicle_type(ros_agent_spec.veh_type),
-            dimensions=BoundingBox(
-                ros_agent_spec.veh_length,
-                ros_agent_spec.veh_width,
-                ros_agent_spec.veh_height,
+        mission = Mission(
+            start=Start.from_pose(Pose.from_ros(ros_agent_spec.start_pose)),
+            goal=PositionGoal(ros_agent_spec.end_pose[:2], ros_agent_spec.veh_length),
+            # via=TODO(ros_agent_spec.vias),
+            # TODO:  how to prevent them from spawning on top of another existing vehicle? (see how it's done in SUMO traffic)
+            entry_tactic=default_entry_tactic(ros_agent_spec.start_speed),
+            vehicle_spec=VehicleSpec(
+                veh_id=f"veh_for_agent_{ros_agent_spec.agent_id}",
+                veh_type=self._decode_vehicle_type(ros_agent_spec.veh_type),
+                dimensions=BoundingBox(
+                    ros_agent_spec.veh_length,
+                    ros_agent_spec.veh_width,
+                    ros_agent_spec.veh_height,
+                ),
             ),
         )
         with self._control_lock:
@@ -417,7 +416,7 @@ class ROSDriver:
     ):
         agents = AgentsStamped()
         agents.header.stamp = rospy.Time.now()
-        for agent_id, agent_obs in obervations.items():
+        for agent_id, agent_obs in observations.items():
             veh_state = agent_ob.ego_vehicle_state
             agent = AgentReport()
             agent.agent_id = agent_id
@@ -433,7 +432,7 @@ class ROSDriver:
             agent.is_on_shoulder = agent_obs.events.on_shoulder
             agent.is_not_moving = agent_obs.events.not_moving
             agents.append(agent)
-        self._agent_publisher.publish(agents)
+        self._agents_publisher.publish(agents)
 
     def _do_agents(self, observations: Dict[str, Observation]) -> Dict[str, Any]:
         with self._control_lock:

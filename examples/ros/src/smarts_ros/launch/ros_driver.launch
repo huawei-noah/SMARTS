@@ -18,10 +18,10 @@
   </node>
 
   <test test-name="test_smarts_ros" pkg="smarts_ros" type="test_smarts_ros.py">
-    <param name="_scenario" type="str" value="$(arg test_scenario)" />
-    <param name="_agent_type" type="str" value="$(arg test_agent_type)" />
-    <param name="_agent_params" type="str" value="$(arg test_agent_params)" />
-    <param name="_agent_start_pose" type="str" value="$(arg test_agent_start_pose)" />
-    <param name="_agent_speed" type="double" value="$(arg test_agent_speed)" />
+    <param name="scenario" type="str" value="$(arg test_scenario)" />
+    <param name="agent_type" type="str" value="$(arg test_agent_type)" />
+    <param name="agent_params" type="str" value="$(arg test_agent_params)" />
+    <param name="agent_start_pose" type="str" value="$(arg test_agent_start_pose)" />
+    <param name="agent_speed" type="double" value="$(arg test_agent_speed)" />
   </test>
 </launch>

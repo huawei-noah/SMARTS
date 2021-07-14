@@ -324,7 +324,9 @@ class Vehicle:
             # but we use that value here in case we ever expand our history functionality.
             vehicle_config_type = mission.vehicle_spec.veh_config_type
             chassis_dims = mission.vehicle_spec.dimensions
-            chassis_dims.fallback_on_defaults(VEHICLE_CONFIGS[vehicle_config_type].dimensions)
+            chassis_dims.fallback_on_defaults(
+                VEHICLE_CONFIGS[vehicle_config_type].dimensions
+            )
         else:
             # non-history agents can currently only control passenger vehicles.
             vehicle_config_type = "passenger"

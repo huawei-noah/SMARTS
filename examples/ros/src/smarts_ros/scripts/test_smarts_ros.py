@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-#PKG = 'smarts_ros'
-#import roslib
-#roslib.load_manifest(PKG)
+# PKG = 'smarts_ros'
+# import roslib
+# roslib.load_manifest(PKG)
 
 import os
 import json
 import rospy
 import sys
-#import unittest
+from unittest import TestCase
 
 from smarts_ros.msg import (
     AgentReport,
@@ -22,7 +22,7 @@ from smarts_ros.srv import SmartsInfo
 from smarts.core.coordinates import fast_quaternion_from_angle
 
 
-class TestSmartsRos:
+class TestSmartsRos(TestCase):
     """Node to test the smarts_ros package."""
 
     def __init__(self):
@@ -34,17 +34,13 @@ class TestSmartsRos:
         self,
         node_name: str = "SMARTS",
         def_namespace: str = "SMARTS/",
-        buffer_size: int = 3,
+        pub_queue_size: int = 10,
     ):
         rospy.init_node(node_name, anonymous=True)
 
         # If the namespace is aready set in the environment, we use it,
         # otherwise we use our default.
         namespace = def_namespace if not os.environ.get("ROS_NAMESPACE") else ""
-
-        self._smarts_info_srv = rospy.ServiceProxy("{namespace}{node_name}_info", SmartsInfo)
-        smarts_info = self._smarts_info_srv()
-        rospy.loginfo(f"Tester detected SMARTS version={smarts_info.version}.")
 
         self._control_publisher = rospy.Publisher(
             f"{namespace}control", SmartsControl, queue_size=pub_queue_size
@@ -57,7 +53,16 @@ class TestSmartsRos:
         )
 
         rospy.Subscriber(f"{namespace}agents_out", AgentsStamped, self._agents_callback)
-        rospy.Subscriber(f"{namespace}entities_out", EntitiesStamped, self._entities_callback)
+        rospy.Subscriber(
+            f"{namespace}entities_out", EntitiesStamped, self._entities_callback
+        )
+
+        rospy.sleep(5)  # wait for other node to start...
+        self._smarts_info_srv = rospy.ServiceProxy(
+            f"{namespace}{node_name}_info", SmartsInfo
+        )
+        smarts_info = self._smarts_info_srv()
+        rospy.loginfo(f"Tester detected SMARTS version={smarts_info.version}.")
 
     @staticmethod
     def _vector_to_xyz(v, xyz):
@@ -69,7 +74,8 @@ class TestSmartsRos:
 
     def _init_scenario(self):
         scenario = rospy.get_param("~scenario")
-        assert os.path.is_dir(scenario)
+        self.assertTrue(os.path.isdir(scenario))
+        rospy.loginfo(f"Tester using scneario at {scenario}.")
 
         control_msg = SmartsControl()
         control_msg.reset_with_scenario_path = scenario
@@ -80,38 +86,44 @@ class TestSmartsRos:
         agent_spec.params_json = rospy.get_param("~agent_params")
         agent_spec.start_speed = rospy.get_param("~agent_speed")
         pose = json.loads(rospy.get_param("~agent_start_pose"))
-        agent_spec.start_pose.position = TestSmartsRos._vector_to_xyz(pose[0])
-        agent_spec.start_pose.orientation = TestSmartsRos._vector_to_xyzw(fast_quaternion_from_angle(pose[1]))
+        TestSmartsRos._vector_to_xyz(pose[0], agent_spec.start_pos.position)
+        TestSmartsRos._vector_to_xyzw(
+            fast_quaternion_from_angle(pose[1]),
+            agent_spec.start_pose.orientation,
+        )
         self._agents[agent_spec.agent_id] = agent_spec
-        control_msg.initial_agents = [ agent_spec ]
+        control_msg.initial_agents = [agent_spec]
         self._control_publisher.publish(control_msg)
-        rospy.loginfo(f"SMARTS control message sent with scenario_path=f{control_msg.reset_with_scenario_path} and initial_agents=f{control_msg.initial_agents}.")
+        rospy.loginfo(
+            f"SMARTS control message sent with scenario_path=f{control_msg.reset_with_scenario_path} and initial_agents=f{control_msg.initial_agents}."
+        )
+        return scenario
 
     def _agents_callback(self, agents: AgentsStamped):
-        rospy.logdebug(f"got report about {len(agents)} agents")
-        assert len(agents) == len(self._agents)
+        rospy.logdebug(f"got report about {len(agents.agents)} agents")
+        self.assertEqual(len(agents.agents), len(self._agents))
 
     def _entities_callback(self, entities: EntitiesStamped):
-        rospy.logdebug(f"got report about {len(entities)} agents")
+        rospy.logdebug(f"got report about {len(entities.entities)} agents")
 
     def run_forever(self):
         if not self._smarts_info_srv:
             raise Exception("must call setup_ros() first.")
 
-        self._init_scenario()
+        scenario = self._init_scenario()
 
         rospy.sleep(1)
         smarts_info = self._smarts_info_srv()
-        assert self._scenario == smarts_info.current_scenario_path
-        assert 0 == smarts_info.step_count
-        assert 0.0 == smarts_info.elapsed_sim_time
+        self.assertEqual(scenario, smarts_info.current_scenario_path)
+        self.assertEqual(0, smarts_info.step_count)
+        self.assertEqual(0.0, smarts_info.elapsed_sim_time)
 
         rospy.spin()
 
 
 if __name__ == "__main__":
-    #import rostest
-    #rostest.rosrun(PKG, 'test_smarts_ros', TestSmartsRos)
+    # import rostest
+    # rostest.rosrun(PKG, 'test_smarts_ros', TestSmartsRos)
     tester = TestSmartsRos()
     tester.setup_ros()
     tester.run_forever()
