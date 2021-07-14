@@ -51,38 +51,39 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
     )
     scenarios_iterator = Scenario.scenario_variations(
         scenarios,
-        list([]),
+        [],
     )
 
-    scenario = next(scenarios_iterator)
-    obs = smarts.reset(scenario)
+    # scenario = next(scenarios_iterator)
+    for scenario in scenarios_iterator:
+        obs = smarts.reset(scenario)
 
-    collected_data = {}
-    _record_data(smarts.elapsed_sim_time, obs, collected_data)
-
-    # could also include "motorcycle" or "truck" in this set if desired
-    vehicle_types = frozenset({"car"})
-
-    while True:
-        smarts.step({})
-        current_vehicles = smarts.vehicle_index.social_vehicle_ids(
-            vehicle_types=vehicle_types
-        )
-
-        if collected_data and not current_vehicles:
-            print("no more vehicles.  exiting...")
-            break
-
-        smarts.attach_sensors_to_vehicles(agent_spec, current_vehicles)
-        obs, _, _, dones = smarts.observe_from(current_vehicles)
-
+        collected_data = {}
         _record_data(smarts.elapsed_sim_time, obs, collected_data)
 
-    # an example of how we might save the data per car
-    for car, data in collected_data.items():
-        outfile = f"data_{scenario.name}_{scenario.traffic_history.name}_{car}.pkl"
-        with open(outfile, "wb") as of:
-            pickle.dump(data, of)
+        # could also include "motorcycle" or "truck" in this set if desired
+        vehicle_types = frozenset({"car"})
+
+        while True:
+            smarts.step({})
+            current_vehicles = smarts.vehicle_index.social_vehicle_ids(
+                vehicle_types=vehicle_types
+            )
+
+            if collected_data and not current_vehicles:
+                print("no more vehicles.  exiting...")
+                break
+
+            smarts.attach_sensors_to_vehicles(agent_spec, current_vehicles)
+            obs, _, _, dones = smarts.observe_from(current_vehicles)
+
+            _record_data(smarts.elapsed_sim_time, obs, collected_data)
+
+        # an example of how we might save the data per car
+        for car, data in collected_data.items():
+            outfile = f"data_{scenario.name}_{scenario.traffic_history.name}_{car}.pkl"
+            with open(outfile, "wb") as of:
+                pickle.dump(data, of)
 
     smarts.destroy()
 
