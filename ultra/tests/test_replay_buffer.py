@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections
+import copy
 import unittest
 
 import numpy as np
@@ -307,22 +308,17 @@ def generate_image_transitions(
     rewards = []
     dones = []
 
-    previous_action = np.random.uniform(low=-1.0, high=1.0, size=(action_size,))
     action = np.random.uniform(low=-1.0, high=1.0, size=(action_size,))
     next_state = collections.deque(
         [np.zeros((image_height, image_width)) for _ in range(stack_size)],
-        maxlen=stack_size
-    )
-    state = collections.deque(
-        [np.zeros((image_height, image_width)) for _ in range(stack_size)],
-        maxlen=stack_size
+        maxlen=stack_size,
     )
 
     for _ in range(num_transitions):
-        previous_action = action
+        previous_action = copy.deepcopy(action)
         action = np.random.uniform(low=-1.0, high=1.0, size=(action_size,))
 
-        state.extend([frame for frame in next_state])
+        state = copy.deepcopy(next_state)
         next_state.append(
             np.random.uniform(low=0.0, high=1.0, size=(image_height, image_width))
         )
