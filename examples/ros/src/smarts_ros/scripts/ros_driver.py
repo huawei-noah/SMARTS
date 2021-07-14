@@ -254,13 +254,19 @@ class ROSDriver:
             )
         mission = Mission(
             start=Start.from_pose(Pose.from_ros(ros_agent_spec.start_pose)),
-            goal=PositionGoal(ros_agent_spec.end_pose[:2], ros_agent_spec.veh_length),
+            goal=PositionalGoal(
+                (
+                    ros_agent_spec.end_pose.position.x,
+                    ros_agent_spec.end_pose.position.y,
+                ),
+                ros_agent_spec.veh_length,
+            ),
             # via=TODO(ros_agent_spec.vias),
             # TODO:  how to prevent them from spawning on top of another existing vehicle? (see how it's done in SUMO traffic)
             entry_tactic=default_entry_tactic(ros_agent_spec.start_speed),
             vehicle_spec=VehicleSpec(
                 veh_id=f"veh_for_agent_{ros_agent_spec.agent_id}",
-                veh_type=self._decode_vehicle_type(ros_agent_spec.veh_type),
+                veh_config_type=self._decode_vehicle_type(ros_agent_spec.veh_type),
                 dimensions=BoundingBox(
                     ros_agent_spec.veh_length,
                     ros_agent_spec.veh_width,
@@ -417,10 +423,12 @@ class ROSDriver:
         agents = AgentsStamped()
         agents.header.stamp = rospy.Time.now()
         for agent_id, agent_obs in observations.items():
-            veh_state = agent_ob.ego_vehicle_state
+            pose = Pose.from_center(veh_state.position, veh_state.heading)
+            veh_state = agent_obs.ego_vehicle_state
             agent = AgentReport()
             agent.agent_id = agent_id
-            agent.pose = Pose.from_center(veh_state.position, veh_state.heading)
+            ROSDriver._vector_to_xyz(pose.position, agent.pose.position)
+            ROSDriver._vector_to_xyzw(pose.orientation, agent.pose.orientation)
             agent.speed = veh_state.speed
             agent.distance_travelled = agent_obs.distance_travelled
             agent.is_done = dones[agent_id]
@@ -431,7 +439,7 @@ class ROSDriver:
             agent.is_off_road = agent_obs.events.off_road
             agent.is_on_shoulder = agent_obs.events.on_shoulder
             agent.is_not_moving = agent_obs.events.not_moving
-            agents.append(agent)
+            agents.agents.append(agent)
         self._agents_publisher.publish(agents)
 
     def _do_agents(self, observations: Dict[str, Observation]) -> Dict[str, Any]:
@@ -444,9 +452,7 @@ class ROSDriver:
                 spec, mission = agent[0], agent[1]
                 assert agent_id not in self._agents
                 self._agents[agent_id] = spec.build_agent()
-                self._smarts.add_agent_with_mission(
-                    agent_id, spec.agent_interface, mission
-                )
+                self._smarts.add_agent_with_mission(agent_id, spec.interface, mission)
             self._agents_to_add = {}
             return actions
 

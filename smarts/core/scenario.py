@@ -53,9 +53,12 @@ class Start:
     position: Tuple[int, int]
     heading: Heading
 
-    def from_pose(pose: Pose):
-        self.position = pose.position[:2]
-        self.heading = pose.heading
+    @classmethod
+    def from_pose(cls, pose: Pose):
+        return cls(
+            position=pose.position[:2],
+            heading=pose.heading,
+        )
 
 
 @dataclass(frozen=True)

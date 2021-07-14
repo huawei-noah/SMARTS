@@ -86,7 +86,7 @@ class TestSmartsRos(TestCase):
         agent_spec.params_json = rospy.get_param("~agent_params")
         agent_spec.start_speed = rospy.get_param("~agent_speed")
         pose = json.loads(rospy.get_param("~agent_start_pose"))
-        TestSmartsRos._vector_to_xyz(pose[0], agent_spec.start_pos.position)
+        TestSmartsRos._vector_to_xyz(pose[0], agent_spec.start_pose.position)
         TestSmartsRos._vector_to_xyzw(
             fast_quaternion_from_angle(pose[1]),
             agent_spec.start_pose.orientation,
