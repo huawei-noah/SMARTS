@@ -79,20 +79,21 @@ class TestSmartsRos(TestCase):
 
         control_msg = SmartsControl()
         control_msg.reset_with_scenario_path = scenario
-        agent_spec = AgentSpec()
-        agent_spec.agent_id = "TestROSAgent"
-        agent_spec.veh_type = AgentSpec.VEHICLE_TYPE_CAR
-        agent_spec.agent_type = rospy.get_param("~agent_type")
-        agent_spec.params_json = rospy.get_param("~agent_params")
-        agent_spec.start_speed = rospy.get_param("~agent_speed")
-        pose = json.loads(rospy.get_param("~agent_start_pose"))
-        TestSmartsRos._vector_to_xyz(pose[0], agent_spec.start_pose.position)
-        TestSmartsRos._vector_to_xyzw(
-            fast_quaternion_from_angle(pose[1]),
-            agent_spec.start_pose.orientation,
-        )
-        self._agents[agent_spec.agent_id] = agent_spec
-        control_msg.initial_agents = [agent_spec]
+        if rospy.get_param("~add_test_agent", False):
+            agent_spec = AgentSpec()
+            agent_spec.agent_id = "TestROSAgent"
+            agent_spec.veh_type = AgentSpec.VEHICLE_TYPE_CAR
+            agent_spec.agent_type = rospy.get_param("~agent_type")
+            agent_spec.params_json = rospy.get_param("~agent_params")
+            agent_spec.start_speed = rospy.get_param("~agent_speed")
+            pose = json.loads(rospy.get_param("~agent_start_pose"))
+            TestSmartsRos._vector_to_xyz(pose[0], agent_spec.start_pose.position)
+            TestSmartsRos._vector_to_xyzw(
+                fast_quaternion_from_angle(pose[1]),
+                agent_spec.start_pose.orientation,
+            )
+            self._agents[agent_spec.agent_id] = agent_spec
+            control_msg.initial_agents = [agent_spec]
         self._control_publisher.publish(control_msg)
         rospy.loginfo(
             f"SMARTS control message sent with scenario_path=f{control_msg.reset_with_scenario_path} and initial_agents=f{control_msg.initial_agents}."
