@@ -42,6 +42,14 @@ class BoundingBox:
     def as_lwh(self):
         return (self.length, self.width, self.height)
 
+    def fallback_on_defaults(self, defaults):
+        if not self.length or self.length == -1:
+            self.length = defaults.length
+        if not self.width or self.width == -1:
+            self.width = defaults.width
+        if not self.height or self.height == -1:
+            self.height = defaults.height
+
 
 class Heading(float):
     """In this space we use radians, 0 is facing north, and turn counter-clockwise."""

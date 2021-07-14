@@ -3,7 +3,6 @@
 import os
 import json
 import rospy
-import std_msgs
 import sys
 from smarts_ros.msg import (
     AgentReport,
@@ -256,7 +255,7 @@ class ROSDriver:
         mission = Mission()
         # TODO:  how to prevent them from spawning on top of another existing vehicle? (see how it's done in SUMO traffic)
         mission.start = Start.from_pose(Pose.from_ros(ros_agent_spec.start_pose))
-        mission.goal = PoisitionGoal(
+        mission.goal = PositionGoal(
             ros_agent_spec.end_pose[:2], ros_agent_spec.veh_length
         )
         mission.entry_tactic = default_entry_tactic(ros_agent_spec.start_speed)
@@ -384,8 +383,8 @@ class ROSDriver:
         xyz.x, xyz.y, xyz.z = v[0], v[1], v[2]
 
     @staticmethod
-    def _vector_to_xyzw(v, xyz):
-        xyz.x, xyz.y, xyz.z, xyz.w = v[0], v[1], v[2], v[3]
+    def _vector_to_xyzw(v, xyzw):
+        xyzw.x, xyzw.y, xyzw.z, xyzw.w = v[0], v[1], v[2], v[3]
 
     def _publish_state(self):
         smarts_state = self._smarts.external_provider.all_vehicle_states

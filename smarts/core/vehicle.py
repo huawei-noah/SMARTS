@@ -324,6 +324,7 @@ class Vehicle:
             # but we use that value here in case we ever expand our history functionality.
             vehicle_config_type = mission.vehicle_spec.veh_config_type
             chassis_dims = mission.vehicle_spec.dimensions
+            chassis_dims.fallback_on_defaults(VEHICLE_CONFIGS[vehicle_config_type].dimensions)
         else:
             # non-history agents can currently only control passenger vehicles.
             vehicle_config_type = "passenger"
@@ -400,12 +401,7 @@ class Vehicle:
     @staticmethod
     def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_config_type):
         dims = vehicle_state.dimensions
-        if not dims.length or dims.length == -1:
-            dims.length = VEHICLE_CONFIGS[vehicle_config_type].dimensions.length
-        if not dims.width or dims.width == -1:
-            dims.width = VEHICLE_CONFIGS[vehicle_config_type].dimensions.width
-        if not dims.height or dims.height == -1:
-            dims.height = VEHICLE_CONFIGS[vehicle_config_type].dimensions.height
+        dims.fallback_on_defaults(VEHICLE_CONFIGS[vehicle_config_type].dimensions)
         chassis = BoxChassis(
             pose=vehicle_state.pose,
             speed=vehicle_state.speed,
