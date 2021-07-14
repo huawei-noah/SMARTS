@@ -49,13 +49,8 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
         traffic_sim=SumoTrafficSimulation(headless=headless, auto_start=True),
         envision=None if headless else Envision(),
     )
-    scenarios_iterator = Scenario.scenario_variations(
-        scenarios,
-        [],
-    )
 
-    # scenario = next(scenarios_iterator)
-    for scenario in scenarios_iterator:
+    for scenario in Scenario.scenario_variations(scenarios, []):
         obs = smarts.reset(scenario)
 
         collected_data = {}
