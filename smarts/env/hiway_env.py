@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import logging
 from typing import Sequence
+import warnings
 
 import gym
 
@@ -76,7 +77,7 @@ class HiWayEnv(gym.Env):
         shuffle_scenarios=True,
         headless=False,
         visdom=False,
-        fixed_timestep_sec=0.1,
+        fixed_timestep_sec=None,
         seed=42,
         num_external_sumo_clients=0,
         sumo_headless=True,
@@ -92,10 +93,12 @@ class HiWayEnv(gym.Env):
         smarts.core.seed(seed)
 
         if timestep_sec and not fixed_timestep_sec:
-            self._log.warning(
-                "timestep_sec is deprecated in favor of fixed_timestep_sec.  Please update your code."
+            warnings.warn(
+                "timestep_sec has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
+                category=DeprecationWarning,
             )
-            fixed_timestep_sec = timestep_sec
+        if not fixed_timestep_sec:
+            fixed_timestep_sec = timestep_sec or 0.1
 
         self._agent_specs = agent_specs
         self._dones_registered = 0
