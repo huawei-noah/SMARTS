@@ -545,7 +545,7 @@ class Vehicle:
             or state.dimensions.height != self.height
         ):
             self._log.warning(
-                f"unable to change a vehicle's dimensions via external_state_update()"
+                "Unable to change a vehicle's dimensions via external_state_update()."
             )
         # XXX:  any way to update acceleration in pybullet?
         self._chassis.state_override(dt, state.pose, linear_velocity, angular_velocity)

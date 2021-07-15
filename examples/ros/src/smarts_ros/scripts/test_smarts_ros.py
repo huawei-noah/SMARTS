@@ -109,7 +109,7 @@ class TestSmartsRos(TestCase):
 
     def run_forever(self):
         if not self._smarts_info_srv:
-            raise Exception("must call setup_ros() first.")
+            raise RuntimeError("must call setup_ros() first.")
 
         scenario = self._init_scenario()
 

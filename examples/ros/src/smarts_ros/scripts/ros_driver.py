@@ -127,7 +127,7 @@ class ROSDriver:
     ):
         assert not self._smarts
         if not self._state_publisher:
-            raise Exception("must call setup_ros() first.")
+            raise RuntimeError("must call setup_ros() first.")
 
         headless = rospy.get_param("~headless", headless)
         seed = rospy.get_param("~seed", seed)
@@ -470,9 +470,9 @@ class ROSDriver:
 
     def run_forever(self):
         if not self._state_publisher:
-            raise Exception("must call setup_ros() first.")
+            raise RuntimeError("must call setup_ros() first.")
         if not self._smarts:
-            raise Exception("must call setup_smarts() first.")
+            raise RuntimeError("must call setup_smarts() first.")
         warned_scenario = False
         observations = {}
         step_delta = None

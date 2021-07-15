@@ -151,8 +151,8 @@ class SMARTS:
         """Note the time_delta_since_last_step param is in (nominal) seconds."""
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
-        assert (
-            not self._fixed_timestep_sec or not time_delta_since_last_step
+        assert not (
+            self._fixed_timestep_sec and time_delta_since_last_step
         ), "cannot switch from fixed- to variable-time steps mid-simulation"
 
         try:
