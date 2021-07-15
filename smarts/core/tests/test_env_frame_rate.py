@@ -76,8 +76,9 @@ def env_and_spec(scenarios, seed, headless=True, max_episode_steps=None):
 
 def test_env_frame_test(scenarios, seed):
     env, agent_spec = env_and_spec(scenarios, seed)
-
+    episode_counter = 0
     for episode in episodes(n=10):
+        episode_counter += 1
         agent = agent_spec.build_agent()
         observations = env.reset()
         episode.record_scenario(env.scenario_log)
@@ -102,7 +103,7 @@ def test_env_frame_test(scenarios, seed):
             minimum_frame_rate = min(minimum_frame_rate, step_fps)
             fps_sum += step_fps
             test_logger.info(
-                f"The time delta at episode {episode + 1}, step {step_counter+1} is {delta} milliseconds which is {step_fps} fps."
+                f"The time delta at episode {episode_counter}, step {step_counter+1} is {delta} milliseconds which is {step_fps} fps."
             )
 
             episode.record_step(observations, rewards, dones, infos)
@@ -110,6 +111,6 @@ def test_env_frame_test(scenarios, seed):
         if step_counter != 0:
             avg_frame_rate = fps_sum / step_counter
         test_logger.info(
-            f"Episode {episode + 1}, Minimum fps: {minimum_frame_rate}, Maximum fps: {maximum_frame_rate}, Average fps: {avg_frame_rate}."
+            f"Episode {episode_counter}, Minimum fps: {minimum_frame_rate}, Maximum fps: {maximum_frame_rate}, Average fps: {avg_frame_rate}."
         )
     env.close()
