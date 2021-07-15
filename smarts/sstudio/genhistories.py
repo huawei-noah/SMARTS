@@ -24,6 +24,7 @@ import logging
 import math
 import os
 import sqlite3
+import sys
 
 import ijson
 import numpy as np
