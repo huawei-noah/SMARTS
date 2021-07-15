@@ -631,7 +631,8 @@ class SMARTS:
                     vehicle.updated = True
 
     def _step_pybullet(self):
-        for _ in range(round(self._last_dt / self._pybullet_period)):
+        pybullet_substeps = max(1, round(self._last_dt / self._pybullet_period))
+        for _ in range(pybullte_substeps):
             self._bullet_client.stepSimulation()
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:
