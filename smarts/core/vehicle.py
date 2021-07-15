@@ -70,6 +70,10 @@ class VehicleState:
         """For deferring to external co-simulators only. Use with caution!"""
         self._privileged = True
 
+    @property
+    def privileged(self) -> bool:
+        return self._privileged
+
 
 @dataclass(frozen=True)
 class VehicleConfig:
