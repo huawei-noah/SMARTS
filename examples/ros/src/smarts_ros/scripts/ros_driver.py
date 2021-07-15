@@ -3,6 +3,7 @@
 from collections import deque
 import os
 import json
+import math
 import rospy
 import sys
 import time
@@ -34,6 +35,7 @@ from smarts.core.scenario import (
 )
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
+from smarts.core.utils.math import fast_quaternion_from_angle, yaw_from_quaternion
 from smarts.core.vehicle import VehicleState
 from smarts.zoo import registry
 
@@ -305,13 +307,17 @@ class ROSDriver:
 
     @staticmethod
     def _extrapolate_to_now(
-        state_name: str, states: Sequence[float], veh_id: str, staleness: float
+        state_name: str,
+        states: Sequence[EntitiesStamped],
+        veh_id: str,
+        staleness: float,
     ) -> np.ndarray:
         # Here, we just do some straightforward/basic smoothing using a moving average,
         # and then extrapolate to the current time.
         dt = 0.0
         last_time = None
         avg = np.array((0.0, 0.0, 0.0, 0.0))
+        is_quaternion = False
         for state in states:
             for entity in state.entities:
                 if entity.entity_id != veh_id:
@@ -319,7 +325,10 @@ class ROSDriver:
                 vector = ROSDriver._get_nested_attr(entity, state_name)
                 assert vector
                 if hasattr(vector, "w"):
-                    vector = np.array((vector.x, vector.y, vector.z, vector.w))
+                    quat = np.array((vector.x, vector.y, vector.z, vector.w))
+                    heading = yaw_from_quaternion(quat) % (2 * math.pi)
+                    vector = np.array((heading,))
+                    is_quaternion = True
                 else:
                     vector = np.array((vector.x, vector.y, vector.z))
                 avg[: len(vector)] += vector
@@ -330,7 +339,8 @@ class ROSDriver:
                 last_vect = vector
                 break
         avg /= len(states)
-        return last_vect + staleness * 2 * (last_vect - avg[: len(last_vect)]) / dt
+        result = last_vect + staleness * 2 * (last_vect - avg[: len(last_vect)]) / dt
+        return fast_quaternion_from_angle(result[0]) if is_quaternion else result
 
     def _update_smarts_state(self, step_delta: float) -> bool:
         with self._state_lock:
