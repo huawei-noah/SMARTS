@@ -327,9 +327,9 @@ class Vehicle:
             # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
             # but we use that value here in case we ever expand our history functionality.
             vehicle_config_type = mission.vehicle_spec.veh_config_type
-            chassis_dims = mission.vehicle_spec.dimensions
-            chassis_dims.fallback_on_defaults(
-                VEHICLE_CONFIGS[vehicle_config_type].dimensions
+            chassis_dims = BoundingBox.copy_with_defaults(
+                mission.vehicle_spec.dimensions,
+                VEHICLE_CONFIGS[vehicle_config_type].dimensions,
             )
         else:
             # non-history agents can currently only control passenger vehicles.
@@ -406,8 +406,9 @@ class Vehicle:
 
     @staticmethod
     def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_config_type):
-        dims = vehicle_state.dimensions
-        dims.fallback_on_defaults(VEHICLE_CONFIGS[vehicle_config_type].dimensions)
+        dims = BoundingBox.copy_with_defaults(
+            vehicle_state.dimensions, VEHICLE_CONFIGS[vehicle_config_type].dimensions
+        )
         chassis = BoxChassis(
             pose=vehicle_state.pose,
             speed=vehicle_state.speed,

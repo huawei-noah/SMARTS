@@ -102,9 +102,6 @@ class TrafficHistoryProvider(Provider):
                 continue
             vehicle_ids.add(v_id)
             vehicle_config_type = self._histories.decode_vehicle_type(hr.vehicle_type)
-            dims = BoundingBox(hr.vehicle_length, hr.vehicle_width, hr.vehicle_height)
-            # Note: Neither NGSIM nor INTERACTION provide the vehicle height
-            dims.fallback_on_defaults(VEHICLE_CONFIGS[vehicle_config_type].dimensions)
             pos_x = hr.position_x + self._map_location_offset[0]
             pos_y = hr.position_y + self._map_location_offset[1]
             vehicles.append(
@@ -112,7 +109,13 @@ class TrafficHistoryProvider(Provider):
                     vehicle_id=self._vehicle_id_prefix + v_id,
                     vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_center((pos_x, pos_y, 0), Heading(hr.heading_rad)),
-                    dimensions=dims,
+                    # Note: Neither NGSIM nor INTERACTION provide the vehicle height
+                    dimensions=BoundingBox.init_with_defaults(
+                        hr.vehicle_length,
+                        hr.vehicle_width,
+                        hr.vehicle_height,
+                        defaults=VEHICLE_CONFIGS[vehicle_config_type].dimensions,
+                    ),
                     speed=hr.speed,
                     source="HISTORY",
                 )

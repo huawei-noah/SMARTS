@@ -32,23 +32,29 @@ from smarts.core.utils.math import (
 )
 
 
-@dataclass
+@dataclass(frozen=True)
 class BoundingBox:
     length: float
     width: float
     height: float
 
+    @classmethod
+    def init_with_defaults(cls, length: float, width: float, height: float, defaults):
+        if not length or length == -1:
+            length = defaults.length
+        if not width or width == -1:
+            width = defaults.width
+        if not height or height == -1:
+            height = defaults.height
+        return cls(length, width, height)
+
+    @classmethod
+    def copy_with_defaults(cls, bbox, defaults):
+        return cls.init_with_defaults(bbox.length, bbox.width, bbox.height, defaults)
+
     @property
     def as_lwh(self):
         return (self.length, self.width, self.height)
-
-    def fallback_on_defaults(self, defaults):
-        if not self.length or self.length == -1:
-            self.length = defaults.length
-        if not self.width or self.width == -1:
-            self.width = defaults.width
-        if not self.height or self.height == -1:
-            self.height = defaults.height
 
 
 class Heading(float):
