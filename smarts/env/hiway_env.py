@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+from time import time
 from typing import Sequence
 
 import gym
@@ -28,6 +29,16 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
+from contextlib import contextmanager
+
+
+@contextmanager
+def timeit(name: str, logger):
+    start = time()
+    yield
+    elapsed_time = (time() - start) * 1000
+
+    logger.info(f'"{name}" took: {elapsed_time:4f}ms')
 
 
 class HiWayEnv(gym.Env):
@@ -164,7 +175,8 @@ class HiWayEnv(gym.Env):
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
         }
-        observations, rewards, agent_dones, extras = self._smarts.step(agent_actions)
+        with timeit("SMARTS Simulation/Scenario Step", self._log):
+            observations, rewards, agent_dones, extras = self._smarts.step(agent_actions)
 
         infos = {
             agent_id: {"score": value, "env_obs": observations[agent_id]}
