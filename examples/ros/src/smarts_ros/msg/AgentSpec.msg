@@ -2,6 +2,7 @@
 string   agent_id      # must be unique in the simulation
 
 string   agent_type    # can be used as lookup into zoo registry
+string   agent_ver     # optional version (if not specified, defaults to "latest")
 
 string   params_json   # optional JSON string containing config parameters
 

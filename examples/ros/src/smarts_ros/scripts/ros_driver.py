@@ -121,6 +121,8 @@ class ROSDriver:
         if not self._state_publisher:
             raise RuntimeError("must call setup_ros() first.")
 
+        self._zoo_module = rospy.get_param("~zoo_module", "zoo")
+
         headless = rospy.get_param("~headless", headless)
         seed = rospy.get_param("~seed", seed)
         time_ratio = rospy.get_param("~time_ratio", time_ratio)
@@ -239,7 +241,9 @@ class ROSDriver:
         agent_params = (
             json.loads(ros_agent_spec.params_json) if ros_agent_spec.params_json else {}
         )
-        agent_spec = registry.make(ros_agent_spec.agent_type, **agent_params)
+        agent_version = ros_agent_spec.agent_version or "latest"
+        agent_type_locator = f"{self._zoo_module}:{ros_agent_spec.agent_type}-{agent_version}"
+        agent_spec = registry.make(agent_type_locator, **agent_params)
         if not agent_spec:
             rospy.logwarn(
                 f"got unknown agent_type '{ros_agent_spec.agent_type}' in AgentSpec message with params='{ros_agent_spec.param_json}'.  ignoring."

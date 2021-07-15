@@ -84,6 +84,7 @@ class TestSmartsRos(TestCase):
             agent_spec.agent_id = "TestROSAgent"
             agent_spec.veh_type = AgentSpec.VEHICLE_TYPE_CAR
             agent_spec.agent_type = rospy.get_param("~agent_type")
+            agent_spec.agent_ver = rospy.get_param("~agent_ver")
             agent_spec.params_json = rospy.get_param("~agent_params")
             agent_spec.start_speed = rospy.get_param("~agent_speed")
             pose = json.loads(rospy.get_param("~agent_start_pose"))
