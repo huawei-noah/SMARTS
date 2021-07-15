@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 
+from collections import deque
 import os
 import json
 import rospy
 import sys
+import time
+from threading import Lock
+from typing import Any, Dict, List, Sequence
+
+import numpy as np
+
 from smarts_ros.msg import (
     AgentReport,
     AgentSpec,
@@ -13,12 +20,6 @@ from smarts_ros.msg import (
     SmartsControl,
 )
 from smarts_ros.srv import SmartsInfo, SmartsInfoResponse, SmartsInfoRequest
-
-from collections import deque
-import numpy as np
-import time
-from threading import Lock
-from typing import Any, Dict, List, Sequence
 
 from envision.client import Client as Envision
 from smarts.core.agent import Agent
@@ -237,19 +238,33 @@ class ROSDriver:
         )
         return "passenger"
 
+    @staticmethod
+    def _pose_from_ros(ros_pose) -> Pose:
+        return Pose(
+            position=(ros_pose.position.x, ros_pose.position.y, ros_pose.position.z),
+            orientation=(
+                ros_pose.orientation.x,
+                ros_pose.orientation.y,
+                ros_pose.orientation.z,
+                ros_pose.orientation.w,
+            ),
+        )
+
     def _agent_spec_callback(self, ros_agent_spec: AgentSpec):
         agent_params = (
             json.loads(ros_agent_spec.params_json) if ros_agent_spec.params_json else {}
         )
         agent_version = ros_agent_spec.agent_version or "latest"
-        agent_type_locator = f"{self._zoo_module}:{ros_agent_spec.agent_type}-{agent_version}"
+        agent_type_locator = (
+            f"{self._zoo_module}:{ros_agent_spec.agent_type}-{agent_version}"
+        )
         agent_spec = registry.make(agent_type_locator, **agent_params)
         if not agent_spec:
             rospy.logwarn(
                 f"got unknown agent_type '{ros_agent_spec.agent_type}' in AgentSpec message with params='{ros_agent_spec.param_json}'.  ignoring."
             )
         mission = Mission(
-            start=Start.from_pose(Pose.from_ros(ros_agent_spec.start_pose)),
+            start=Start.from_pose(ROSDriver._pose_from_ros(ros_agent_spec.start_pose)),
             goal=PositionalGoal(
                 (
                     ros_agent_spec.end_pose.position.x,

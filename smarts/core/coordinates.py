@@ -249,15 +249,3 @@ class Pose:
     def as_panda3d(self):
         """ Convert to panda3D (object bounds centre position, heading)"""
         return (self.position, self.heading.as_panda3d)
-
-    @classmethod
-    def from_ros(cls, ros_pose):
-        return cls(
-            position=(ros_pose.position.x, ros_pose.position.y, ros_pose.position.z),
-            orientation=(
-                ros_pose.orientation.x,
-                ros_pose.orientation.y,
-                ros_pose.orientation.z,
-                ros_pose.orientation.w,
-            ),
-        )

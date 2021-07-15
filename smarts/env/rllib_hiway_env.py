@@ -17,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import warnings
+
 import numpy as np
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
@@ -91,8 +93,14 @@ class RLlibHiWayEnv(MultiAgentEnv):
         self._envision_record_data_replay_path = config.get(
             "envision_record_data_replay_path", None
         )
-        self._fixed_timestep_sec = config.get(
-            "fixed_timestep_sec", config.get("timestep_sec", 0.1)
+        timestep_sec = config.get("timestep_sec")
+        if timestep_sec:
+            warnings.warn(
+                "timestep_sec has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
+                category=DeprecationWarning,
+            )
+        self._fixed_timestep_sec = (
+            config.get("fixed_timestep_sec") or timestep_sec or 0.1
         )
         self._smarts = None  # Created on env.setup()
         self._dones_registered = 0
