@@ -59,6 +59,16 @@ from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
+from contextlib import contextmanager
+
+
+@contextmanager
+def timeit(name: str, logger):
+    start = time()
+    yield
+    elapsed_time = (time() - start) * 1000
+
+    logger.info(f'"{name}" took: {elapsed_time:4f}ms')
 
 
 class SMARTSNotSetupError(Exception):
@@ -186,16 +196,24 @@ class SMARTS:
         dt = self._timestep_sec
 
         # 1. Fetch agent actions
-        all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
+        with timeit("Fetch agent actions", self._log):
+            all_agent_actions = self._agent_manager.fetch_agent_actions(
+                self, agent_actions
+            )
 
         # 2. Step all providers and harmonize state
-        provider_state = self._step_providers(all_agent_actions, dt)
-        self._check_if_acting_on_active_agents(agent_actions)
+        with timeit("Stepping all providers and harmonizing state", self._log):
+            provider_state = self._step_providers(all_agent_actions, dt)
+        with timeit("Checking if all agents are active", self._log):
+            self._check_if_acting_on_active_agents(agent_actions)
 
         # 3. Step bubble manager and trap manager
-        self._vehicle_index.sync()
-        self._bubble_manager.step(self)
-        self._trap_manager.step(self)
+        with timeit("Syncing vehicle index", self._log):
+            self._vehicle_index.sync()
+        with timeit("Stepping through bubble manager", self._log):
+            self._bubble_manager.step(self)
+        with timeit("Stepping through trap manager", self._log):
+            self._trap_manager.step(self)
 
         # 4. Calculate observation and reward
         # We pre-compute vehicle_states here because we *think* the users will
@@ -205,35 +223,41 @@ class SMARTS:
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
 
         # Agents
-        self._agent_manager.step_sensors(self)
+        with timeit("Stepping through sensors", self._log):
+            self._agent_manager.step_sensors(self)
 
         if self._renderer:
             # runs through the render pipeline (for camera-based sensors)
             # MUST perform this after step_sensors() above, and before observe() below,
             # so that all updates are ready before rendering happens per frame
-            self._renderer.render()
+            with timeit("Running through render pipeline", self._log):
+                self._renderer.render()
 
-        observations, rewards, scores, dones = self._agent_manager.observe(self)
-
-        response_for_ego = self._agent_manager.filter_response_for_ego(
-            (observations, rewards, scores, dones)
-        )
+        with timeit("calculating observations and rewards", self._log):
+            observations, rewards, scores, dones = self._agent_manager.observe(self)
+            response_for_ego = self._agent_manager.filter_response_for_ego(
+                (observations, rewards, scores, dones)
+            )
 
         # 5. Send observations to social agents
-        self._agent_manager.send_observations_to_social_agents(observations)
+        with timeit("Sending observations to social agents", self._log):
+            self._agent_manager.send_observations_to_social_agents(observations)
 
         # 6. Clear done agents
-        self._teardown_done_agents_and_vehicles(dones)
+        with timeit("Clearing done agents", self._log):
+            self._teardown_done_agents_and_vehicles(dones)
 
         # 7. Perform visualization
-        self._try_emit_envision_state(provider_state, observations, scores)
-        self._try_emit_visdom_obs(observations)
+        with timeit("Performing visualizations", self._log):
+            self._try_emit_envision_state(provider_state, observations, scores)
+            self._try_emit_visdom_obs(observations)
 
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
 
         # 8. Advance the simulation clock.
-        self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + dt)
+        with timeit("Advancing the simulation clock", self._log):
+            self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + dt)
 
         return observations, rewards, dones, extras
 
