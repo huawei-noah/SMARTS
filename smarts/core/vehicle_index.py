@@ -261,7 +261,7 @@ class VehicleIndex:
 
     def vehicle_by_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
-        return self._vehicles.get(vehicle_id)
+        return self._vehicles[vehicle_id]
 
     @clear_cache
     def teardown_vehicles_by_vehicle_ids(self, vehicle_ids):
