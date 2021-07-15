@@ -481,7 +481,7 @@ class ROSDriver:
                         rospy.loginfo("no more scenarios.  exiting...")
                         break
                     continue
-                elif obs is not None:
+                if obs is not None:
                     observations = obs
 
                 actions = self._do_agents(observations)
