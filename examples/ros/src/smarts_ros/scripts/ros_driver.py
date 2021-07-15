@@ -37,10 +37,6 @@ from smarts.core.vehicle import VehicleState
 from smarts.zoo import registry
 
 
-# Don't expect SMARTS to be able to reliably maintain rates faster than this!
-SMARTS_MAX_FREQ = 60.0
-
-
 class ROSDriver:
     """Wraps SMARTS as a ROS (v1) node.
     See the README.md in `examples/ros` for
@@ -116,10 +112,6 @@ class ROSDriver:
         target_freq = rospy.get_param("~target_freq", target_freq)
         if target_freq:
             assert target_freq > 0.0
-            if target_freq > SMARTS_MAX_FREQ:
-                rospy.logwarn(
-                    f"specified target frequency of {target_freq} Hz cannot be guaranteed by SMARTS."
-                )
             self._target_freq = target_freq
 
     def setup_smarts(
@@ -506,6 +498,10 @@ class ROSDriver:
                 self._publish_agents(observations, dones)
 
                 if self._target_freq:
+                    if rate.remaining().secs <= 0.0:
+                        rospy.logwarn(
+                            f"SMARTS unable to maintain requested target_freq of {self._target_freq} Hz."
+                        )
                     rate.sleep()
 
         except rospy.ROSInterruptException:
