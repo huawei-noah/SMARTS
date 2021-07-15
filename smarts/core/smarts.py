@@ -59,16 +59,7 @@ from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
-from contextlib import contextmanager
-
-
-@contextmanager
-def timeit(name: str, logger):
-    start = time()
-    yield
-    elapsed_time = (time() - start) * 1000
-
-    logger.info(f'"{name}" took: {elapsed_time:4f}ms')
+from smarts.core.utils.logging import timeit
 
 
 class SMARTSNotSetupError(Exception):

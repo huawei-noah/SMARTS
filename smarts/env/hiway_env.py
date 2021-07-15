@@ -29,16 +29,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
-from contextlib import contextmanager
-
-
-@contextmanager
-def timeit(name: str, logger):
-    start = time()
-    yield
-    elapsed_time = (time() - start) * 1000
-
-    logger.info(f'"{name}" took: {elapsed_time:4f}ms')
+from smarts.core.utils.logging import timeit
 
 
 class HiWayEnv(gym.Env):
