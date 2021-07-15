@@ -55,7 +55,6 @@ class VehicleState:
     dimensions: BoundingBox
     vehicle_type: str = None
     vehicle_config_type: str = None  # key into VEHICLE_CONFIGS
-    privileged: bool = False  # use with caution (most should be False)
     updated: bool = False
     speed: float = 0
     steering: float = None
@@ -65,6 +64,11 @@ class VehicleState:
     angular_velocity: np.ndarray = None
     linear_acceleration: np.ndarray = None
     angular_acceleration: np.ndarray = None
+    _privileged: bool = False
+
+    def set_privileged(self):
+        """For deferring to external co-simulators only. Use with caution!"""
+        self._privileged = True
 
 
 @dataclass(frozen=True)

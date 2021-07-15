@@ -359,22 +359,20 @@ class ROSDriver:
             ang_acc = ROSDriver._extrapolate_to_now(
                 "acceleration.angular", states, veh_id, staleness
             )
-
-            entities.append(
-                VehicleState(
-                    source="EXTERNAL",
-                    vehicle_id=veh_id,
-                    vehicle_config_type=veh_type,
-                    privileged=True,
-                    pose=Pose(pos, orientation),
-                    dimensions=veh_dims,
-                    speed=np.linalg.norm(lin_vel),
-                    linear_velocity=lin_vel,
-                    angular_velocity=ang_vel,
-                    linear_acceleration=lin_acc,
-                    angular_acceleration=ang_acc,
-                )
+            vs = VehicleState(
+                source="EXTERNAL",
+                vehicle_id=veh_id,
+                vehicle_config_type=veh_type,
+                pose=Pose(pos, orientation),
+                dimensions=veh_dims,
+                speed=np.linalg.norm(lin_vel),
+                linear_velocity=lin_vel,
+                angular_velocity=ang_vel,
+                linear_acceleration=lin_acc,
+                angular_acceleration=ang_acc,
             )
+            vs.set_privileged()
+            entities.append(vs)
 
         rospy.logdebug(
             f"sending state to SMARTS w/ step_delta={step_delta}, staleness={staleness}..."
