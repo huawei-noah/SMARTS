@@ -30,9 +30,9 @@ from time import time
 def timeit(name: str, logger):
     start = time()
     yield
-    ellapsed_time = (time() - start) * 1000
+    elapsed_time = (time() - start) * 1000
 
-    logger.info(f'"{name}" took: {ellapsed_time:4f}ms')
+    logger.info(f'"{name}" took: {elapsed_time:4f}ms')
 
 
 def isnotebook():
