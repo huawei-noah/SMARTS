@@ -175,19 +175,17 @@ def load_model(experiment_dir):
         for agent_id, agent_spec in agent_specs.items()
     }
 
-    try:
-        _ = [
+    for agent_id in agent_ids:
+        try:
             agents[agent_id].load_replay_buffer(
                 os.path.join(experiment_dir, "replay_buffers", agent_id)
             )
-            for agent_id in agent_ids
-        ]
-    except NotImplementedError:
-        print(
-            "Replay buffer is not loaded because policy does not utilize a replay buffer"
-        )
-    except Exception as e:
-        raise Exception
+        except NotImplementedError:
+            print(
+                "Replay buffer is not loaded because policy does not utilize a replay buffer"
+            )
+        except Exception as e:
+            raise Exception
 
     return agent_ids, agent_classes, agent_specs, agents
 
@@ -366,19 +364,17 @@ def train(
             break
 
     # Save each agent's replay buffer post training run
-    try:
-        _ = [
+    for agent_id in agent_ids:
+        try:
             agents[agent_id].save_replay_buffer(
                 episode.agent_replay_buffer_dir(agent_id)
             )
-            for agent_id in agent_ids
-        ]
-    except NotImplementedError:
-        print(
-            "Replay buffer is not saved because policy does not utilize a replay buffer"
-        )
-    except Exception as e:
-        raise Exception
+        except NotImplementedError:
+            print(
+                "Replay buffer is not saved because policy does not utilize a replay buffer"
+            )
+        except Exception as e:
+            raise Exception
 
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):
