@@ -263,7 +263,7 @@ class ROSDriver:
         try:
             agent_spec = registry.make(agent_type_locator, **agent_params)
         except ImportError as ie:
-            rospy.logerror(
+            rospy.logerr(
                 f"Unable to locate agent type with locator={agent_type_locator}:  {ie}"
             )
         if not agent_spec:
