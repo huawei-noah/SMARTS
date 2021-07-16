@@ -79,7 +79,7 @@ class TestSmartsRos(TestCase):
 
         control_msg = SmartsControl()
         control_msg.reset_with_scenario_path = scenario
-        if rospy.get_param("~add_test_agent", False):
+        if rospy.get_param("~add_agent", False):
             agent_spec = AgentSpec()
             agent_spec.agent_id = "TestROSAgent"
             agent_spec.veh_type = AgentSpec.VEHICLE_TYPE_CAR
@@ -103,7 +103,11 @@ class TestSmartsRos(TestCase):
 
     def _agents_callback(self, agents: AgentsStamped):
         rospy.logdebug(f"got report about {len(agents.agents)} agents")
-        self.assertEqual(len(agents.agents), len(self._agents))
+        self.assertEqual(
+            len(agents.agents),
+            len(self._agents),
+            f"{len(agents.agents)} != {len(self._agents)}",
+        )
 
     def _entities_callback(self, entities: EntitiesStamped):
         rospy.logdebug(f"got report about {len(entities.entities)} agents")
@@ -114,11 +118,17 @@ class TestSmartsRos(TestCase):
 
         scenario = self._init_scenario()
 
-        rospy.sleep(1)
+        rospy.sleep(5)  # hack to avoid startup race condition
         smarts_info = self._smarts_info_srv()
-        self.assertEqual(scenario, smarts_info.current_scenario_path)
-        self.assertEqual(0, smarts_info.step_count)
-        self.assertEqual(0.0, smarts_info.elapsed_sim_time)
+        self.assertEqual(
+            scenario,
+            smarts_info.current_scenario_path,
+            f"'{scenario}' != '{smarts_info.current_scenario_path}'",
+        )
+        self.assertEqual(0, smarts_info.step_count, f"{smarts_info.step_count}")
+        self.assertEqual(
+            0.0, smarts_info.elapsed_sim_time, f"{smarts_info.elapsed_sim_time}"
+        )
 
         rospy.spin()
 
