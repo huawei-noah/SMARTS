@@ -338,8 +338,10 @@ class ROSDriver:
                 last_time = stamp
                 last_vect = vector
                 break
-        avg /= len(states)
-        result = last_vect + staleness * 2 * (last_vect - avg[: len(last_vect)]) / dt
+        result = last_vect
+        if dt > 0.0:
+            avg /= len(states)
+            result += staleness * 2 * (last_vect - avg[: len(last_vect)]) / dt
         return fast_quaternion_from_angle(result[0]) if is_quaternion else result
 
     def _update_smarts_state(self, step_delta: float) -> bool:
@@ -527,7 +529,7 @@ class ROSDriver:
                 self._publish_agents(observations, dones)
 
                 if self._target_freq:
-                    if rate.remaining().secs <= 0.0:
+                    if rate.remaining().to_sec() <= 0.0:
                         rospy.logwarn(
                             f"SMARTS unable to maintain requested target_freq of {self._target_freq} Hz."
                         )
