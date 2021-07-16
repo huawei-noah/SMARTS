@@ -256,15 +256,21 @@ class ROSDriver:
         agent_params = (
             json.loads(ros_agent_spec.params_json) if ros_agent_spec.params_json else {}
         )
-        agent_version = ros_agent_spec.agent_version or "latest"
+        agent_version = ros_agent_spec.agent_ver or "latest"
         agent_type_locator = (
             f"{self._zoo_module}:{ros_agent_spec.agent_type}-{agent_version}"
         )
-        agent_spec = registry.make(agent_type_locator, **agent_params)
+        try:
+            agent_spec = registry.make(agent_type_locator, **agent_params)
+        except ImportError as ie:
+            rospy.logerror(
+                f"Unable to locate agent type with locator={agent_type_locator}:  {ie}"
+            )
         if not agent_spec:
             rospy.logwarn(
                 f"got unknown agent_type '{ros_agent_spec.agent_type}' in AgentSpec message with params='{ros_agent_spec.param_json}'.  ignoring."
             )
+            return
         mission = Mission(
             start=Start.from_pose(ROSDriver._pose_from_ros(ros_agent_spec.start_pose)),
             goal=PositionalGoal(
