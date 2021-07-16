@@ -56,6 +56,8 @@ class _ShowBaseInstance(ShowBase):
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
+            loadPrcFileData("", "window-type offscreen")
+            loadPrcFileData("", "load-display p3headlessgl")
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
             loadPrcFileData("", "model-path %s" % os.getcwd())
