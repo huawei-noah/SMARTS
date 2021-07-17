@@ -364,6 +364,12 @@ class ROSDriver:
 
         entities = []
         most_recent_state = states[-1]
+        # Note: when the source of these states is a co-simulator
+        # running on another machine across the network, for accurate
+        # extrapolation and staleness-related computations, it is
+        # a good idea to either use an external time server or a
+        # ROS /clock node (in which case the /use_sim_time parameter
+        # shoule be set to True).
         staleness = (rospy.get_rostime() - most_recent_state.header.stamp).to_sec()
         for entity in most_recent_state.entities:
             veh_id = entity.entity_id
