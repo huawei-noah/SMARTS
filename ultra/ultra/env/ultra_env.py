@@ -70,6 +70,7 @@ class UltraEnv(HiWayEnv):
             timestep_sec=timestep_sec,
             seed=seed,
             visdom=False,
+            endless_traffic=False,
         )
 
         if ordered_scenarios:
