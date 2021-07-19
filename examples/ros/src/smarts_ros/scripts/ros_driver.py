@@ -324,7 +324,10 @@ class ROSDriver:
             source="EXTERNAL",
             vehicle_id=veh_id,
             vehicle_config_type=veh_type,
-            pose=Pose(ROSDriver._xyz_to_vect(entity.pose.position), ROSDriver._xyzw_to_vect(entity.pose.orientation)),
+            pose=Pose(
+                ROSDriver._xyz_to_vect(entity.pose.position),
+                ROSDriver._xyzw_to_vect(entity.pose.orientation),
+            ),
             dimensions=veh_dims,
             linear_velocity=ROSDriver._xyz_to_vect(entity.velocity.linear),
             angular_velocity=ROSDriver._xyz_to_vect(entity.velocity.angular),
@@ -336,7 +339,9 @@ class ROSDriver:
         return vs
 
     @staticmethod
-    def _extrapolate_to_now(vs: VehicleState, staleness: float, states: Sequence[EntitiesStamped]):
+    def _extrapolate_to_now(
+        vs: VehicleState, staleness: float, states: Sequence[EntitiesStamped]
+    ):
         """Here we just linearly extrapolate the acceleration to "now" from the previous two states
         for each vehicle and then use standard kinematics to project the velocity and position from that.
         We don't need to do any smoothing here because we haven't snapped to a fixed time grid yet."""
@@ -358,20 +363,31 @@ class ROSDriver:
         # The following 4 lines are a hack b/c I'm too stupid to figure out
         # how to do calculus on quaternions...
         heading = yaw_from_quaternion(vs.position.orientation)
-        heading += staleness * (vs.angular_velocity + .5 * vs.angular_acceleration * staleness + ang_acc_slope * staleness * staleness / 6.0)
+        heading += staleness * (
+            vs.angular_velocity
+            + 0.5 * vs.angular_acceleration * staleness
+            + ang_acc_slope * staleness * staleness / 6.0
+        )
         heading %= 2 * math.pi
         vs.posision.orientation = fast_quaternion_from_angle(heading)
 
         # I assume the following should be updated based on changing
         # heading from above, but I'll leave that for now...
-        vs.position.pose += staleness * (vs.linear_velocity + .5 * vs.linear_acceleration * staleness + lin_acc_slope * staleness * staleness / 6.0)
+        vs.position.pose += staleness * (
+            vs.linear_velocity
+            + 0.5 * vs.linear_acceleration * staleness
+            + lin_acc_slope * staleness * staleness / 6.0
+        )
 
-        vs.linear_velocity += staleness * (vs.linear_acceleration + .5 * lin_acc_slope * staleness)
+        vs.linear_velocity += staleness * (
+            vs.linear_acceleration + 0.5 * lin_acc_slope * staleness
+        )
         vs.speed = np.linalg.norm(vs.linear_velocity)
-        vs.angular_velocity += staleness * (vs.angular_acceleration + .5 * ang_acc_slope * staleness)
+        vs.angular_velocity += staleness * (
+            vs.angular_acceleration + 0.5 * ang_acc_slope * staleness
+        )
         vs.linear_acceleration += staleness * lin_acc_slope
         vs.angular_acceleration += staleness * ang_acc_slope
-
 
     def _update_smarts_state(self, step_delta: float) -> bool:
         with self._state_lock:
