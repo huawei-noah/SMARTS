@@ -120,6 +120,7 @@ pyglet==1.5.15
 Pygments==2.9.0
 pynput==1.7.3
 pyparsing==2.4.7
+pyrender==0.1.45
 pyrsistent==0.17.3
 pytest==6.2.4
 pytest-benchmark==3.4.1

@@ -1,6 +1,12 @@
 Bootstrap: docker
 From: ubuntu:bionic
 
+%help
+    singularity container for SMARTS.
+
+%labels
+    Github: https://github.com/huawei-noah/SMARTS
+
 %files
     . /src
 
@@ -44,17 +50,14 @@ From: ubuntu:bionic
     cd ${SINGULARITY_CONTAINER}/src
     pip install --no-cache-dir -e .[dev,camera-obs]
 
-    # Suppress error message due to missing /dev/input folder
-    mkdir -p /dev/input
-
 %environment
     export SUMO_HOME=/usr/share/sumo
     export PYTHONPATH=/src
 
-%runscript
-    cd /src
-    exec "$@"
-
 %startscript
-    cd /src
-    exec "$@"
+    # Suppress error message due to missing /dev/input folder
+    mkdir -p /dev/input
+
+%runscript
+    # Suppress error message due to missing /dev/input folder
+    mkdir -p /dev/input

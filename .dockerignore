@@ -43,6 +43,7 @@
 **/.python-version
 **/*.rou.alt.xml
 **/*.rou.xml
+**/*.sif
 **/*.so
 **/social_agents/*
 **/*.spec

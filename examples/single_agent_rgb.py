@@ -1,8 +1,10 @@
 import logging
 
 import gym
+
 # import matplotlib.pyplot as plt
 import numpy as np
+from datetime import datetime
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
@@ -45,7 +47,6 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         agent_builder=ChaseViaPointsAgent,
     )
 
-
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
@@ -70,22 +71,31 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         while not dones["__all__"]:
             agent_obs = observations[AGENT_ID]
 
-
             # Plot graph
             step += 1
-            if step%100 == 0:
+            if step % 100 == 0:
                 rgb = agent_obs.top_down_rgb.data
-                print(rgb.shape)
-                pixel = rgb[128,128,:]/255
+                line1 = str(rgb.shape)
+                print(line1)
+                pixel = rgb[128, 128, :] / 255
                 des = np.array(Colors.Red.value)
-                print("Center pixel match: ", np.allclose(pixel, des[:-1], 1e-4))
+                line2 = "Center pixel match: " + str(np.allclose(pixel, des[:-1], 1e-4))
+                print(line2)
                 print("--------------------")
+                out_filename = "./results.txt"
+                with open(out_filename, "a") as out_file:
+                    out_file.write(line1 + "\n")
+                    out_file.write(line2 + "\n")
+                    now = datetime.now()
+                    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+                    out_file.write(dt_string + "\n")
+                    out_file.write("--------------------\n")
+
             # fig=plt.figure(figsize=(10,10))
             # img = agent_obs.top_down_rgb.data
             # fig.add_subplot(1, 1, 1)
             # plt.imshow(img)
             # plt.show()
-
 
             agent_action = agent.act(agent_obs)
             observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})

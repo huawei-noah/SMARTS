@@ -445,9 +445,13 @@ class SMARTS:
             try:
                 from .renderer import Renderer
 
+                # from .renderer import PyRenderer
+
                 self._renderer = Renderer(self._sim_id)
+                # self._pyrenderer = PyRenderer(self._sim_id)
                 if self._scenario:
                     self._renderer.setup(self._scenario)
+                    # self._pyrenderer.setup(self._scenario)
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
             except Exception as e:
                 self._log.warning("unable to create Renderer:  " + repr(e))
