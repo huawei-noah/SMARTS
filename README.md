@@ -288,14 +288,15 @@ docker push huaweinoah/smarts:$VERSION
 1. Run singularity container in interactive mode
     ```bash
     $ singularity shell --containall ./smarts.sif
+    $ python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/ --headless
     ```
 1. Execute a program inside a container.
     ```bash
-    $ singularity exec ./smarts.sif python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/ --headless
+    $ singularity exec --bind ./results:/src/results ./smarts.sif python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/ --headless
     ```
 1. Run a container instance in the background.
     ```bash
-    $ singularity instance start ./smarts.sif smarts_train  python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/ --headless
+    $ singularity instance start --bind ./results:/src/results ./smarts.sif smarts_train  python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/ --headless
     ```    
 1. Alternative option to build singularity container: Convert from previously built docker image.
     ```bash

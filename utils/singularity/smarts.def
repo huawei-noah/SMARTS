@@ -54,10 +54,7 @@ From: ubuntu:bionic
     export SUMO_HOME=/usr/share/sumo
     export PYTHONPATH=/src
 
-%startscript
-    # Suppress error message due to missing /dev/input folder
-    mkdir -p /dev/input
-
 %runscript
     # Suppress error message due to missing /dev/input folder
     mkdir -p /dev/input
+    exec "$@"

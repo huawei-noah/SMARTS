@@ -53,7 +53,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
-        visdom=False,
+        visdom=True,
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
@@ -82,7 +82,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
                 line2 = "Center pixel match: " + str(np.allclose(pixel, des[:-1], 1e-4))
                 print(line2)
                 print("--------------------")
-                out_filename = "./results.txt"
+                out_filename = "./results/results.txt"
                 with open(out_filename, "a") as out_file:
                     out_file.write(line1 + "\n")
                     out_file.write(line2 + "\n")
