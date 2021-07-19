@@ -146,7 +146,7 @@ t_patterns = {
             },
             "south-north": None,  # blocking
             "west-east": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "start_end_on_different_lanes_probability": 0.0,
                 "distribution": behavior_distribution,
                 "begin_time_init": {
@@ -169,7 +169,7 @@ t_patterns = {
                 "deadlock_optimization": True,
             },
             "east-west": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "start_end_on_different_lanes_probability": 0.0,
                 "distribution": behavior_distribution,
                 "begin_time_init": {
@@ -225,7 +225,7 @@ t_patterns = {
             },
             "south-north": None,  # blocking
             "west-east": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "start_end_on_different_lanes_probability": 0.0,
                 "distribution": behavior_distribution,
                 "begin_time_init": {
@@ -237,7 +237,7 @@ t_patterns = {
             },
             "west-north": None,  # blocking
             "east-west": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "start_end_on_different_lanes_probability": 0.0,
                 "distribution": behavior_distribution,
                 "begin_time_init": {
@@ -307,7 +307,7 @@ t_patterns = {
             },  # blocking
             "south-north": None,  # blocking
             "west-east": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "distribution": {
                     "default": 0.7,
                     "aggressive": 0.30,
@@ -348,7 +348,7 @@ t_patterns = {
                 "deadlock_optimization": False,
             },  # blocking
             "east-west": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "distribution": {
                     "default": 0.7,
                     "aggressive": 0.30,
@@ -763,7 +763,7 @@ cross_patterns = {
                 "deadlock_optimization": True,
             },
             "south-north": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "start_end_on_different_lanes_probability": 0.0,
                 "distribution": behavior_distribution,
                 "begin_time_init": {
@@ -780,7 +780,7 @@ cross_patterns = {
             "east-north": None,  # blocking
             "east-south": None,
             "north-south": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "start_end_on_different_lanes_probability": 0.0,
                 "distribution": behavior_distribution,
                 "begin_time_init": {
@@ -844,7 +844,7 @@ cross_patterns = {
                 "deadlock_optimization": False,
             },
             "south-north": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "start_end_on_different_lanes_probability": 0.0,
                 "distribution": behavior_distribution,
                 "begin_time_init": {
@@ -861,7 +861,7 @@ cross_patterns = {
             "east-south": None,
             "west-south": None,
             "north-south": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "start_end_on_different_lanes_probability": 0.0,
                 "distribution": behavior_distribution,
                 "begin_time_init": {
@@ -934,7 +934,7 @@ cross_patterns = {
                 "deadlock_optimization": True,
             },
             "south-north": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "distribution": {
                     "default": 0.7,
                     "aggressive": 0.3,
@@ -960,7 +960,7 @@ cross_patterns = {
             "east-north": None,  # blocking
             "east-south": None,
             "north-south": {
-                "vehicles": 1000,
+                "vehicles": 200,
                 "distribution": {
                     "default": 0.70,
                     "aggressive": 0.30,
