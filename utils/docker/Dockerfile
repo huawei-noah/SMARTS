@@ -30,7 +30,7 @@ RUN apt-get update --fix-missing && \
         sumo-tools \
         wget \
         # x11-apps \
-        xserver-xorg-video-dummy && \
+        xorg && \
     apt-get autoremove && \
     rm -rf /var/lib/apt/lists/*
 
@@ -63,12 +63,13 @@ RUN pip install --no-cache-dir -e .[dev,camera-obs]
 # For Envision
 EXPOSE 8081
 
-RUN unset DISPLAY
-
 # TODO: Find a better place to put this (e.g. through systemd). As it stands now ctrl-c
 #       could close x-server. Even though it's "running in the background".
 # RUN echo "/usr/bin/Xorg " \
 #     "-noreset +extension GLX +extension RANDR +extension RENDER" \
 #     "-logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch $DISPLAY &" >> ~/.bashrc
+
+# Suppress error message due to missing /dev/input folder
+RUN echo "mkdir -p /dev/input" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]

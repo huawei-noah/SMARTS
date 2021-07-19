@@ -73,7 +73,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
 
             # Plot graph
             step += 1
-            if step%300 == 0:
+            if step%100 == 0:
                 rgb = agent_obs.top_down_rgb.data
                 print(rgb.shape)
                 pixel = rgb[128,128,:]/255

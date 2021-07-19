@@ -25,7 +25,7 @@ From: ubuntu:bionic
             sumo-doc \
             sumo-tools \
             wget \
-            xserver-xorg-video-dummy && \
+            xorg && \
         apt-get autoremove && \
         rm -rf /var/lib/apt/lists/*
 
@@ -44,14 +44,17 @@ From: ubuntu:bionic
     cd ${SINGULARITY_CONTAINER}/src
     pip install --no-cache-dir -e .[dev,camera-obs]
 
+    # Suppress error message due to missing /dev/input folder
+    mkdir -p /dev/input
+
 %environment
     export SUMO_HOME=/usr/share/sumo
     export PYTHONPATH=/src
 
 %runscript
     cd /src
-    exec /bin/bash "$@"
+    exec "$@"
 
 %startscript
     cd /src
-    exec /bin/bash "$@"
+    exec "$@"

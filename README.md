@@ -291,9 +291,17 @@ docker push huaweinoah/smarts:$VERSION
         $ cd </path/to/SMARTS>
         $ sudo singularity build smarts.sif docker-daemon://huaweinoah/smarts:$VERSION
         ```
-1. Run singularity container
+1. Run singularity container in interactive mode
     ```bash
     $ singularity shell --containall ./smarts.sif
+    ```
+1. Run singularity container as an executable 
+    ```bash
+    $ ./smarts.sif python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/ --headless
+    ```
+1. Run singularity container in the background 
+    ```bash
+    $ singularity instance start ./smarts.sif smarts_train python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/ --headless
     ```
 
 ### Troubleshooting
