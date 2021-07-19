@@ -176,7 +176,8 @@ class ROSDriver:
         with self._state_lock:
             self._recent_state.append(entities)
 
-    def _decode_entity_type(self, entity_type: int) -> str:
+    @staticmethod
+    def _decode_entity_type(entity_type: int) -> str:
         if entity_type == EntityState.ENTITY_TYPE_CAR:
             return "passenger"
         if entity_type == EntityState.ENTITY_TYPE_TRUCK:
@@ -198,7 +199,8 @@ class ROSDriver:
         )
         return "passenger"
 
-    def _encode_entity_type(self, entity_type: str) -> int:
+    @staticmethod
+    def _encode_entity_type(entity_type: str) -> int:
         if entity_type in ["passenger", "car"]:
             return EntityState.ENTITY_TYPE_CAR
         if entity_type == "truck":
@@ -218,7 +220,8 @@ class ROSDriver:
         rospy.logwarn(f"unsupported entity_type {entity_type}. defaulting to 'car'.")
         return EntityState.ENTITY_TYPE_CAR
 
-    def _decode_vehicle_type(self, vehicle_type: int) -> str:
+    @staticmethod
+    def _decode_vehicle_type(vehicle_type: int) -> str:
         if vehicle_type == AgentSpec.VEHICLE_TYPE_CAR:
             return "passenger"
         if vehicle_type == AgentSpec.VEHICLE_TYPE_TRUCK:
@@ -285,7 +288,7 @@ class ROSDriver:
             entry_tactic=default_entry_tactic(ros_agent_spec.start_speed),
             vehicle_spec=VehicleSpec(
                 veh_id=f"veh_for_agent_{ros_agent_spec.agent_id}",
-                veh_config_type=self._decode_vehicle_type(ros_agent_spec.veh_type),
+                veh_config_type=ROSDriver._decode_vehicle_type(ros_agent_spec.veh_type),
                 dimensions=BoundingBox(
                     ros_agent_spec.veh_length,
                     ros_agent_spec.veh_width,
@@ -305,50 +308,70 @@ class ROSDriver:
             self._agents_to_add[ros_agent_spec.agent_id] = (agent_spec, mission)
 
     @staticmethod
-    def _get_nested_attr(obj: Any, dotname: str) -> Any:
-        props = dotname.split(".")
-        for prop in props:
-            obj = getattr(obj, prop)
-        return obj
+    def _xyz_to_vect(xyz) -> np.ndarray:
+        return np.array((xyz.x, xyz.y, xyz.z))
 
     @staticmethod
-    def _extrapolate_to_now(
-        state_name: str,
-        states: Sequence[EntitiesStamped],
-        veh_id: str,
-        staleness: float,
-    ) -> np.ndarray:
-        # Here, we just do some straightforward/basic smoothing using a moving average,
-        # and then extrapolate to the current time.
-        dt = 0.0
-        last_time = None
-        avg = np.array((0.0, 0.0, 0.0, 0.0))
-        is_quaternion = False
-        for state in states:
-            for entity in state.entities:
-                if entity.entity_id != veh_id:
-                    continue
-                vector = ROSDriver._get_nested_attr(entity, state_name)
-                assert vector
-                if hasattr(vector, "w"):
-                    quat = np.array((vector.x, vector.y, vector.z, vector.w))
-                    heading = yaw_from_quaternion(quat) % (2 * math.pi)
-                    vector = np.array((heading,))
-                    is_quaternion = True
-                else:
-                    vector = np.array((vector.x, vector.y, vector.z))
-                avg[: len(vector)] += vector
-                stamp = state.header.stamp.to_sec()
-                if last_time:
-                    dt += stamp - last_time
-                last_time = stamp
-                last_vect = vector
-                break
-        result = last_vect
-        if dt > 0.0:
-            avg /= len(states)
-            result += staleness * 2 * (last_vect - avg[: len(last_vect)]) / dt
-        return fast_quaternion_from_angle(result[0]) if is_quaternion else result
+    def _xyzw_to_vect(xyzw) -> np.ndarray:
+        return np.array((xyzw.x, xyzw.y, xyzw.z, xyzw.w))
+
+    @staticmethod
+    def _entity_to_vs(entity: EntityState) -> VehicleState:
+        veh_id = entity.entity_id
+        veh_type = ROSDriver._decode_entity_type(entity.entity_type)
+        veh_dims = BoundingBox(entity.length, entity.width, entity.height)
+        vs = VehicleState(
+            source="EXTERNAL",
+            vehicle_id=veh_id,
+            vehicle_config_type=veh_type,
+            pose=Pose(ROSDriver._xyz_to_vect(entity.pose.position), ROSDriver._xyzw_to_vect(entity.pose.orientation)),
+            dimensions=veh_dims,
+            linear_velocity=ROSDriver._xyz_to_vect(entity.velocity.linear),
+            angular_velocity=ROSDriver._xyz_to_vect(entity.velocity.angular),
+            linear_acceleration=ROSDriver._xyz_to_vect(entity.acceleration.linear),
+            angular_acceleration=ROSDriver._xyz_to_vect(entity.acceleration.angular),
+        )
+        vs.set_privileged()
+        vs.speed = np.linalg.norm(vs.linear_velocity)
+        return vs
+
+    @staticmethod
+    def _extrapolate_to_now(vs: VehicleState, staleness: float, states: Sequence[EntitiesStamped]):
+        """Here we just linearly extrapolate the acceleration to "now" from the previous two states
+        for each vehicle and then use standard kinematics to project the velocity and position from that.
+        We don't need to do any smoothing here because we haven't snapped to a fixed time grid yet."""
+        prev_entity = None
+        for s in range(len(states) - 1):
+            prev_state = states[-2 - s]
+            for entity in prev_state.entities:
+                if entity.entity_id == vs.vehicle_id:
+                    prev_entity = entity
+                    break
+        if not prev_entity:
+            return vs
+        prev_dt = state[-1].header.stamp.to_sec() - prev_state.header.stamp.to_sec()
+        prev_lin_acc = ROSDriver._xyz_to_vect(prev_entity.acceleration.linear)
+        prev_ang_acc = ROSDriver._xyz_to_vect(prev_entity.acceleration.angular)
+        lin_acc_slope = (vs.linear_acceleration - prev_lin_acc) / prev_dt
+        ang_acc_slope = (vs.angular_acceleration - prev_ang_acc) / prev_dt
+
+        # The following 4 lines are a hack b/c I'm too stupid to figure out
+        # how to do calculus on quaternions...
+        heading = yaw_from_quaternion(vs.position.orientation)
+        heading += staleness * (vs.angular_velocity + .5 * vs.angular_acceleration * staleness + ang_acc_slope * staleness * staleness / 6.0)
+        heading %= 2 * math.pi
+        vs.posision.orientation = fast_quaternion_from_angle(heading)
+
+        # I assume the following should be updated based on changing
+        # heading from above, but I'll leave that for now...
+        vs.position.pose += staleness * (vs.linear_velocity + .5 * vs.linear_acceleration * staleness + lin_acc_slope * staleness * staleness / 6.0)
+
+        vs.linear_velocity += staleness * (vs.linear_acceleration + .5 * lin_acc_slope * staleness)
+        vs.speed = np.linalg.norm(vs.linear_velocity)
+        vs.angular_velocity += staleness * (vs.angular_acceleration + .5 * ang_acc_slope * staleness)
+        vs.linear_acceleration += staleness * lin_acc_slope
+        vs.angular_acceleration += staleness * ang_acc_slope
+
 
     def _update_smarts_state(self, step_delta: float) -> bool:
         with self._state_lock:
@@ -372,41 +395,9 @@ class ROSDriver:
         # shoule be set to True).
         staleness = (rospy.get_rostime() - most_recent_state.header.stamp).to_sec()
         for entity in most_recent_state.entities:
-            veh_id = entity.entity_id
-            veh_type = self._decode_entity_type(entity.entity_type)
-            veh_dims = BoundingBox(entity.length, entity.width, entity.height)
-
-            pos = ROSDriver._extrapolate_to_now(
-                "pose.position", states, veh_id, staleness
-            )
-            orientation = ROSDriver._extrapolate_to_now(
-                "pose.orientation", states, veh_id, staleness
-            )
-            lin_vel = ROSDriver._extrapolate_to_now(
-                "velocity.linear", states, veh_id, staleness
-            )
-            ang_vel = ROSDriver._extrapolate_to_now(
-                "velocity.angular", states, veh_id, staleness
-            )
-            lin_acc = ROSDriver._extrapolate_to_now(
-                "acceleration.linear", states, veh_id, staleness
-            )
-            ang_acc = ROSDriver._extrapolate_to_now(
-                "acceleration.angular", states, veh_id, staleness
-            )
-            vs = VehicleState(
-                source="EXTERNAL",
-                vehicle_id=veh_id,
-                vehicle_config_type=veh_type,
-                pose=Pose(pos, orientation),
-                dimensions=veh_dims,
-                speed=np.linalg.norm(lin_vel),
-                linear_velocity=lin_vel,
-                angular_velocity=ang_vel,
-                linear_acceleration=lin_acc,
-                angular_acceleration=ang_acc,
-            )
-            vs.set_privileged()
+            vs = ROSDriver._entity_to_vs(entity)
+            if len(state) > 1 and staleness > 0:
+                ROSDriver._extrapolate_to_now(vs, staleness, states)
             entities.append(vs)
 
         rospy.logdebug(
@@ -431,7 +422,7 @@ class ROSDriver:
         for vehicle in smarts_state:
             entity = EntityState()
             entity.entity_id = vehicle.vehicle_id
-            entity.entity_type = self._encode_entity_type(vehicle.vehicle_type)
+            entity.entity_type = ROSDriver._encode_entity_type(vehicle.vehicle_type)
             entity.length = vehicle.dimensions.length
             entity.width = vehicle.dimensions.width
             entity.height = vehicle.dimensions.height

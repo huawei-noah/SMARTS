@@ -627,6 +627,7 @@ class SMARTS:
                     )
                 # Update the social vehicle avatar to match the vehicle state
                 if not vehicle.updated:
+                    # Note:  update_state() happens *after* pybullet has been stepped.
                     social_vehicle.update_state(vehicle, dt=dt)
                     vehicle.updated = True
 
