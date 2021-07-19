@@ -256,13 +256,13 @@ class ROSDriver:
         )
 
     def _agent_spec_callback(self, ros_agent_spec: AgentSpec):
-        agent_params = (
-            json.loads(ros_agent_spec.params_json) if ros_agent_spec.params_json else {}
-        )
-        agent_version = ros_agent_spec.agent_ver or "latest"
-        agent_type_locator = (
-            f"{self._zoo_module}:{ros_agent_spec.agent_type}-{agent_version}"
-        )
+        assert (
+            len(ros_agent_spec.policies) == 1
+        ), "more than 1 policy/mission/task per agent is not yet supported"
+        policy = ros_agent_spec.policies[0]
+        agent_params = json.loads(policy.params_json) if policy.params_json else {}
+        agent_version = policy.agent_ver or "latest"
+        agent_type_locator = f"{self._zoo_module}:{policy.agent_type}-{agent_version}"
         try:
             agent_spec = registry.make(agent_type_locator, **agent_params)
         except ImportError as ie:
@@ -271,19 +271,22 @@ class ROSDriver:
             )
         if not agent_spec:
             rospy.logwarn(
-                f"got unknown agent_type '{ros_agent_spec.agent_type}' in AgentSpec message with params='{ros_agent_spec.param_json}'.  ignoring."
+                f"got unknown agent_type '{policy.agent_type}' in AgentSpec message with params='{policy.param_json}'.  ignoring."
             )
             return
-        mission = Mission(
-            start=Start.from_pose(ROSDriver._pose_from_ros(ros_agent_spec.start_pose)),
-            goal=PositionalGoal(
+        if ros_agent_spec.end_pose:
+            goal = PositionalGoal(
                 (
                     ros_agent_spec.end_pose.position.x,
                     ros_agent_spec.end_pose.position.y,
                 ),
                 ros_agent_spec.veh_length,
-            ),
-            # via=TODO(ros_agent_spec.vias),
+            )
+        else:
+            goal = EndlessGoal()
+        mission = Mission(
+            start=Start.from_pose(ROSDriver._pose_from_ros(ros_agent_spec.start_pose)),
+            goal=goal,
             # TODO:  how to prevent them from spawning on top of another existing vehicle? (see how it's done in SUMO traffic)
             entry_tactic=default_entry_tactic(ros_agent_spec.start_speed),
             vehicle_spec=VehicleSpec(

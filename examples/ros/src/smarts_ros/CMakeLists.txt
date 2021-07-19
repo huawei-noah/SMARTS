@@ -53,6 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
    EntityState.msg
    EntitiesStamped.msg
    AgentSpec.msg
+   AgentPolicy.msg
    AgentReport.msg
    AgentsStamped.msg
    SmartsControl.msg

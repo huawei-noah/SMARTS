@@ -11,6 +11,7 @@ import sys
 from unittest import TestCase
 
 from smarts_ros.msg import (
+    AgentPolicy,
     AgentReport,
     AgentSpec,
     AgentsStamped,
@@ -83,9 +84,6 @@ class TestSmartsRos(TestCase):
             agent_spec = AgentSpec()
             agent_spec.agent_id = "TestROSAgent"
             agent_spec.veh_type = AgentSpec.VEHICLE_TYPE_CAR
-            agent_spec.agent_type = rospy.get_param("~agent_type")
-            agent_spec.agent_ver = rospy.get_param("~agent_ver")
-            agent_spec.params_json = rospy.get_param("~agent_params")
             agent_spec.start_speed = rospy.get_param("~agent_speed")
             pose = json.loads(rospy.get_param("~agent_start_pose"))
             TestSmartsRos._vector_to_xyz(pose[0], agent_spec.start_pose.position)
@@ -93,6 +91,11 @@ class TestSmartsRos(TestCase):
                 fast_quaternion_from_angle(pose[1]),
                 agent_spec.start_pose.orientation,
             )
+            policy = AgentPolicy()
+            policy.agent_type = rospy.get_param("~agent_type")
+            policy.agent_ver = rospy.get_param("~agent_ver")
+            policy.params_json = rospy.get_param("~agent_params")
+            agent_spec.policies = [policy]
             self._agents[agent_spec.agent_id] = agent_spec
             control_msg.initial_agents = [agent_spec]
         self._control_publisher.publish(control_msg)
