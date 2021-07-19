@@ -437,7 +437,17 @@ def generate_left_turn_missions(
         speed_m_per_s = float("".join(filter(str.isdigit, speed))) * 5.0 / 18.0
         hijacking_params = route_distributions["ego_hijacking_params"]
         zone_range = hijacking_params["zone_range"]
-        waiting_time = hijacking_params["wait_to_hijack_limit_s"]
+
+        wait_to_hijack_limit_s = hijacking_params["wait_to_hijack_limit_s"]
+        waiting_time = (
+            np.random.randint(
+                wait_to_hijack_limit_s[0],
+                wait_to_hijack_limit_s[1],
+            )
+            if type(wait_to_hijack_limit_s) is tuple
+            else wait_to_hijack_limit_s
+        )
+
         start_time = (
             hijacking_params["start_time"]
             if hijacking_params["start_time"] != "default"
