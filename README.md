@@ -246,7 +246,7 @@ python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 
 If you're comfortable using docker or are on a platform without suitable support to easily run SMARTS (e.g. an older version of Ubuntu) you can run the following,
 
 ```bash
-$ cd /path/to/SMARTS
+$ cd </path/to/SMARTS>
 $ docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:<version>
 # E.g. docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:v0.4.12
 # <press enter>
@@ -278,6 +278,23 @@ docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
 docker login
 docker push huaweinoah/smarts:$VERSION
 ```
+
+### Singularity
+1. Build singularity container 
+    + From definition file.
+        ```bash
+        $ cd </path/to/SMARTS>
+        $ sudo singularity build smarts.sif ./utils/singularity/smarts.def
+        ```
+    + Alternatively, convert from previously built docker image.
+        ```bash
+        $ cd </path/to/SMARTS>
+        $ sudo singularity build smarts.sif docker-daemon://huaweinoah/smarts:$VERSION
+        ```
+1. Run singularity container
+    ```bash
+    $ singularity shell --containall ./smarts.sif
+    ```
 
 ### Troubleshooting
 

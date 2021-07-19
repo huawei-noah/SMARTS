@@ -56,7 +56,6 @@ class _ShowBaseInstance(ShowBase):
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
-            loadPrcFileData("", "window-type offscreen")
             loadPrcFileData("", "load-display p3headlessgl")
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
@@ -93,13 +92,7 @@ class _ShowBaseInstance(ShowBase):
             self.setFrameRateMeter(False)
 
         except Exception as e:
-            # Known reasons for this failing:
-            raise Exception(
-                f"Error in initializing framework for opening graphical display and creating scene graph. "
-                "A typical reason is display not found. Try running with different configurations of "
-                "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "
-                "the documentation.\nException was: {e}"
-            ) from e
+            raise e
 
     def destroy(self):
         super().destroy()

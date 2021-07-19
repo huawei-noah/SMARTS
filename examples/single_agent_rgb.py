@@ -1,6 +1,8 @@
 import logging
 
 import gym
+# import matplotlib.pyplot as plt
+import numpy as np
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
@@ -8,7 +10,7 @@ from smarts.core.agent_interface import AgentInterface, RGB
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
-
+from smarts.core.colors import Colors
 
 logging.basicConfig(level=logging.INFO)
 
@@ -40,7 +42,6 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
             rgb=RGB(),
             action=ActionSpaceType.LaneWithContinuousSpeed,
         ),
-        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
         agent_builder=ChaseViaPointsAgent,
     )
 
@@ -65,8 +66,27 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         episode.record_scenario(env.scenario_log)
 
         dones = {"__all__": False}
+        step = 0
         while not dones["__all__"]:
             agent_obs = observations[AGENT_ID]
+
+
+            # Plot graph
+            step += 1
+            if step%300 == 0:
+                rgb = agent_obs.top_down_rgb.data
+                print(rgb.shape)
+                pixel = rgb[128,128,:]/255
+                des = np.array(Colors.Red.value)
+                print("Center pixel match: ", np.allclose(pixel, des[:-1], 1e-4))
+                print("--------------------")
+            # fig=plt.figure(figsize=(10,10))
+            # img = agent_obs.top_down_rgb.data
+            # fig.add_subplot(1, 1, 1)
+            # plt.imshow(img)
+            # plt.show()
+
+
             agent_action = agent.act(agent_obs)
             observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
             episode.record_step(observations, rewards, dones, infos)
@@ -82,6 +102,6 @@ if __name__ == "__main__":
         scenarios=args.scenarios,
         sim_name=args.sim_name,
         headless=args.headless,
-        num_episodes=args.episodes,
+        num_episodes=2,
         seed=args.seed,
     )
