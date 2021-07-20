@@ -3,7 +3,7 @@
 ULTRA's Gym and RLlib environments inherit from SMARTS' `smarts.env.hiway_env.HiWayEnv`
 and `smarts.env.rllib_hiway_env.RLlibHiWayEnv` respectively.
 
-ULTRA's Gym environment differs in two ways from SMARTS' HiWayEnv:
+ULTRA's Gym environment differs in a few ways from SMARTS' HiWayEnv:
 1. ULTRA's Gym environment takes a `scenario_info` parameter that is used to specify a
 specific task and level that describe the type of scenarios the environment will use.
 2. ULTRA's Gym environment can also take a `scenarios` parameter to directly specified
@@ -17,6 +17,9 @@ of this class to still be a NumPy array, but with shape
 `(_STACK_SIZE, HEIGHT, WIDTH, 3)` where `_STACK_SIZE` is the number of frames to stack
 (its value can be found in `ultra.env.ultra_env`), `HEIGHT` is the height of the RGB
 image, and `WIDTH` is the width of the RGB image.
+4. ULTRA's Gym environment sets the `endless_traffic` flag to be False. This stops
+social vehicles from teleporting back to their starting position once completion of
+mission route. 
 
 ULTRA's RLlib environment differs in one way from SMARTS' RLlibHiWayEnv:
 1. ULTRA's RLlib environment takes a `scenario_info` key as part of its config. This
