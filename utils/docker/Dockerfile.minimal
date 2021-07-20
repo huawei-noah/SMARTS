@@ -1,8 +1,8 @@
 # Steps to build and push minimal SMARTS docker image
 # ```bash
-# $ export VERSION=v0.4.13
-# $ cd /path/to/SMARTS
-# $ docker build -f ./etc/docker/Dockerfile.minimal -t huaweinoah/smarts:$VERSION-minimal .
+# $ export VERSION=v0.4.17
+# $ cd </path/to/SMARTS>
+# $ docker build -f ./utils/docker/Dockerfile.minimal -t huaweinoah/smarts:$VERSION-minimal .
 # $ docker push huaweinoah/smarts:$VERSION-minimal
 # ```
 
@@ -58,5 +58,8 @@ EXPOSE 8081
 RUN echo "/usr/bin/Xorg " \
     "-noreset +extension GLX +extension RANDR +extension RENDER" \
     "-logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch $DISPLAY &" >> ~/.bashrc
+
+# Suppress message of missing /dev/input folder
+RUN echo "mkdir -p /dev/input" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]

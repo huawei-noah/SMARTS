@@ -7,11 +7,10 @@
 **/.coverage.*
 **/coverage.xml
 **/develop-eggs/
-**/Dockerfile
 **/.dockerignore
-**/downloads/
 **/docs/_build/
 **/docs/api
+**/downloads/
 **/.DS_Store
 **/eggs/
 **/.eggs/

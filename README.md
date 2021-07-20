@@ -271,7 +271,7 @@ $ python examples/single_agent.py scenarios/loop
 
 ```bash
 # For this to work, your account needs to be added to the huaweinoah org
-$ cd /path/to/SMARTS
+$ cd </path/to/SMARTS>
 export VERSION=v0.4.17
 docker build --no-cache -f ./utils/docker/Dockerfile -t smarts:$VERSION .
 docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
@@ -283,22 +283,22 @@ docker push huaweinoah/smarts:$VERSION
 ```bash
 # Build container from definition file.
 $ cd </path/to/SMARTS>
-$ sudo singularity build smarts.sif ./utils/singularity/smarts.def
+$ sudo singularity build ./utils/singularity/smarts.sif ./utils/singularity/smarts.def
 
 # Run container in interactive mode.
 $ cd </path/to/SMARTS>
-$ sudo singularity shell --containall --bind ../SMARTS:/src ./smarts.sif
+$ singularity shell --containall --bind ../SMARTS:/SMARTS ./utils/singularity/smarts.sif
 # Inside the container
-$ python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/
+$ python3.7 /SMARTS/examples/single_agent.py /SMARTS/scenarios/loop/ --headless
 
 # Run commands within the container from the host system.
 $ cd </path/to/SMARTS>
-$ sudo singularity exec --containall --bind ../SMARTS:/src ./smarts.sif python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop
+$ singularity exec --containall --bind ../SMARTS:/SMARTS ./utils/singularity/smarts.sif python3.7 /SMARTS/examples/single_agent.py /SMARTS/scenarios/loop/ --headless
 
 # Run container instance in the background.
 $ cd </path/to/SMARTS>
-$ sudo singularity instance start --containall --bind ../SMARTS:/src ./smarts.sif smarts_train /src/examples/single_agent_rgb.py /src/scenarios/loop/
-```    
+$ singularity instance start --containall --bind ../SMARTS:/SMARTS ./utils/singularity/smarts.sif smarts_train /SMARTS/examples/single_agent.py /SMARTS/scenarios/loop/ --headless
+```
 
 ### Troubleshooting
 
