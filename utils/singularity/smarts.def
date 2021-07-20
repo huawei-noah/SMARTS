@@ -48,13 +48,8 @@ From: ubuntu:bionic
 
     # Copy source files and install SMARTS
     cd ${SINGULARITY_CONTAINER}/src
-    pip install --no-cache-dir -e .[dev,camera-obs]
+    pip install --no-cache-dir -e .[train,test,dev,camera-obs]
 
 %environment
     export SUMO_HOME=/usr/share/sumo
     export PYTHONPATH=/src
-
-%runscript
-    # Suppress error message due to missing /dev/input folder
-    mkdir -p /dev/input
-    exec "$@"

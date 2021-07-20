@@ -5,6 +5,7 @@ import gym
 # import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
+from pathlib import Path
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
@@ -53,7 +54,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
-        visdom=True,
+        visdom=False,
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
@@ -61,6 +62,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         # envision_record_data_replay_path="./data_replay",
     )
 
+    out_filename = Path(__file__).parent.resolve().joinpath("results", "results.txt")
     for episode in episodes(n=num_episodes):
         agent = agent_spec.build_agent()
         observations = env.reset()
@@ -82,7 +84,6 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
                 line2 = "Center pixel match: " + str(np.allclose(pixel, des[:-1], 1e-4))
                 print(line2)
                 print("--------------------")
-                out_filename = "./results/results.txt"
                 with open(out_filename, "a") as out_file:
                     out_file.write(line1 + "\n")
                     out_file.write(line2 + "\n")
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     main(
         scenarios=args.scenarios,
         sim_name=args.sim_name,
-        headless=args.headless,
+        headless=True,
         num_episodes=2,
         seed=args.seed,
     )

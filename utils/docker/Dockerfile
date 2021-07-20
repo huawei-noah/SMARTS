@@ -44,6 +44,7 @@ RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
 
 # # Setup DISPLAY
 # ENV DISPLAY :1
+# # VOLUME /tmp/.X11-unix
 # RUN wget -O /etc/X11/xorg.conf http://xpra.org/xorg.conf && \
 #     cp /etc/X11/xorg.conf /usr/share/X11/xorg.conf.d/xorg.conf
 
@@ -58,7 +59,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 ENV PYTHONPATH=/src
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e .[dev,camera-obs]
+RUN pip install --no-cache-dir -e .[train,test,dev,camera-obs]
 
 # For Envision
 EXPOSE 8081
