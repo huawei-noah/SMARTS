@@ -2,7 +2,7 @@ Bootstrap: docker
 From: ubuntu:bionic
 
 %help
-    singularity container for SMARTS.
+    Singularity container for SMARTS.
 
 %labels
     Github: https://github.com/huawei-noah/SMARTS
@@ -53,3 +53,7 @@ From: ubuntu:bionic
 %environment
     export SUMO_HOME=/usr/share/sumo
     export PYTHONPATH=/src
+
+%startscript
+    mkdir -p /dev/input
+    python3.7 "$@"    
