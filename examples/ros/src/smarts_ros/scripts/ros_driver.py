@@ -35,7 +35,11 @@ from smarts.core.scenario import (
 )
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
-from smarts.core.utils.math import fast_quaternion_from_angle, yaw_from_quaternion
+from smarts.core.utils.math import (
+    fast_quaternion_from_angle,
+    vec_to_radians,
+    yaw_from_quaternion,
+)
 from smarts.core.vehicle import VehicleState
 from smarts.zoo import registry
 
@@ -355,7 +359,7 @@ class ROSDriver:
                     break
         if not prev_entity:
             return vs
-        prev_dt = state[-1].header.stamp.to_sec() - prev_state.header.stamp.to_sec()
+        prev_dt = states[-1].header.stamp.to_sec() - prev_state.header.stamp.to_sec()
         prev_lin_acc = ROSDriver._xyz_to_vect(prev_entity.acceleration.linear)
         prev_ang_acc = ROSDriver._xyz_to_vect(prev_entity.acceleration.angular)
         lin_acc_slope = (vs.linear_acceleration - prev_lin_acc) / prev_dt
@@ -363,18 +367,19 @@ class ROSDriver:
 
         # The following 4 lines are a hack b/c I'm too stupid to figure out
         # how to do calculus on quaternions...
-        heading = yaw_from_quaternion(vs.position.orientation)
-        heading += staleness * (
+        heading = yaw_from_quaternion(vs.pose.orientation)
+        heading_delta_vec = staleness * (
             vs.angular_velocity
             + 0.5 * vs.angular_acceleration * staleness
             + ang_acc_slope * staleness * staleness / 6.0
         )
+        heading += vec_to_radians(heading_delta_vec[:2])
         heading %= 2 * math.pi
-        vs.posision.orientation = fast_quaternion_from_angle(heading)
+        vs.pose.orientation = fast_quaternion_from_angle(heading)
 
         # I assume the following should be updated based on changing
         # heading from above, but I'll leave that for now...
-        vs.position.pose += staleness * (
+        vs.pose.position += staleness * (
             vs.linear_velocity
             + 0.5 * vs.linear_acceleration * staleness
             + lin_acc_slope * staleness * staleness / 6.0
@@ -413,7 +418,7 @@ class ROSDriver:
         staleness = (rospy.get_rostime() - most_recent_state.header.stamp).to_sec()
         for entity in most_recent_state.entities:
             vs = ROSDriver._entity_to_vs(entity)
-            if len(state) > 1 and staleness > 0:
+            if len(states) > 1 and staleness > 0:
                 ROSDriver._extrapolate_to_now(vs, staleness, states)
             entities.append(vs)
 
