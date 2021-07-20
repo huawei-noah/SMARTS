@@ -280,28 +280,25 @@ docker push huaweinoah/smarts:$VERSION
 ```
 
 ### Singularity
-1. Build Singularity container from definition file.
-    ```bash
-    $ cd </path/to/SMARTS>
-    $ sudo singularity build smarts.sif ./utils/singularity/smarts.def
-    ```
-1. Run Singularity container in interactive mode.
-    ```bash
-    $ cd </path/to/SMARTS>
-    $ sudo singularity shell --containall --bind ../SMARTS:/src ./smarts.sif
-    # Inside the container
-    $ python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/
-    ```
-1. Run commands within the container from the host system.
-    ```bash
-    $ cd </path/to/SMARTS>
-    $ sudo singularity exec --containall --bind ../SMARTS:/src ./smarts.sif python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop
-    ```
-1. Run Singularity container instance in the background.
-    ```bash
-    $ cd </path/to/SMARTS>
-    $ sudo singularity instance start --containall --bind ../SMARTS:/src ./smarts.sif smarts_train /src/examples/single_agent_rgb.py /src/scenarios/loop/
-    ```    
+```bash
+# Build container from definition file.
+$ cd </path/to/SMARTS>
+$ sudo singularity build smarts.sif ./utils/singularity/smarts.def
+
+# Run container in interactive mode.
+$ cd </path/to/SMARTS>
+$ sudo singularity shell --containall --bind ../SMARTS:/src ./smarts.sif
+# Inside the container
+$ python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop/
+
+# Run commands within the container from the host system.
+$ cd </path/to/SMARTS>
+$ sudo singularity exec --containall --bind ../SMARTS:/src ./smarts.sif python3.7 /src/examples/single_agent_rgb.py /src/scenarios/loop
+
+# Run container instance in the background.
+$ cd </path/to/SMARTS>
+$ sudo singularity instance start --containall --bind ../SMARTS:/src ./smarts.sif smarts_train /src/examples/single_agent_rgb.py /src/scenarios/loop/
+```    
 
 ### Troubleshooting
 
