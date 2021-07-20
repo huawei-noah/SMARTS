@@ -19,7 +19,7 @@ float64  veh_height  # in meters (can be 0)
 geometry_msgs/Pose   start_pose
 float64              start_speed    # linear speed in m/s (in direction of initial heading)
 
-AgentPolicy[]        policies 
+AgentTask[]          tasks
 
 geometry_msgs/Pose   end_pose       # optional, if not specified, vehicle will randomly cruise after task(s)
 

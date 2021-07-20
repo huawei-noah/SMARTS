@@ -257,21 +257,19 @@ class ROSDriver:
 
     def _agent_spec_callback(self, ros_agent_spec: AgentSpec):
         assert (
-            len(ros_agent_spec.policies) == 1
-        ), "more than 1 policy/mission/task per agent is not yet supported"
-        policy = ros_agent_spec.policies[0]
-        agent_params = json.loads(policy.params_json) if policy.params_json else {}
-        agent_version = policy.agent_ver or "latest"
-        agent_type_locator = f"{self._zoo_module}:{policy.agent_type}-{agent_version}"
+            len(ros_agent_spec.tasks) == 1
+        ), "more than 1 task per agent is not yet supported"
+        task = ros_agent_spec.tasks[0]
+        agent_params = json.loads(task.params_json) if task.params_json else {}
+        agent_version = task.agent_ver or "latest"
+        agent_locator = f"{self._zoo_module}:{task.agent_ref}-{agent_version}"
         try:
-            agent_spec = registry.make(agent_type_locator, **agent_params)
+            agent_spec = registry.make(agent_locator, **agent_params)
         except ImportError as ie:
-            rospy.logerr(
-                f"Unable to locate agent type with locator={agent_type_locator}:  {ie}"
-            )
+            rospy.logerr(f"Unable to locate agent with locator={agent_locator}:  {ie}")
         if not agent_spec:
             rospy.logwarn(
-                f"got unknown agent_type '{policy.agent_type}' in AgentSpec message with params='{policy.param_json}'.  ignoring."
+                f"got unknown agent_ref '{task.agent_ref}' in AgentSpec message with params='{task.param_json}'.  ignoring."
             )
             return
         if ros_agent_spec.end_pose:
