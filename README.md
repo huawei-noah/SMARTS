@@ -302,11 +302,6 @@ docker push huaweinoah/smarts:$VERSION
     $ cd </path/to/SMARTS>
     $ sudo singularity instance start --containall --bind ../SMARTS:/src ./smarts.sif smarts_train /src/examples/single_agent_rgb.py /src/scenarios/loop/
     ```    
-1. Alternative option to build Singularity container. Convert from previously built docker image.
-    ```bash
-    $ cd </path/to/SMARTS>
-    $ sudo singularity build smarts.sif docker-daemon://huaweinoah/smarts:$VERSION
-    ```
 
 ### Troubleshooting
 
