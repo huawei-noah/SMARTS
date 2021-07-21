@@ -27,7 +27,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Refactored the top level of the SMARTS module to make it easier to navigate the project and understand its structure. See issue #776.
 - Made Panda3D and its modules optional as a requirement/dependencies to setup SMARTS. See Issue #883.
 - Updated the `Tensorflow` version to `2.2.1` for rl-agent and bump up its version to `1.0`. See Issue #211.
-
+- Made `Ray` and its module `Ray[rllib]` optional as a requirement/dependency to setup SMARTS. See Issue #917.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 - Fixed a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
