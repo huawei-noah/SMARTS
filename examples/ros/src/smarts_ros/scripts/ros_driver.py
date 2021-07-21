@@ -27,6 +27,7 @@ from smarts.core.agent import Agent
 from smarts.core.coordinates import BoundingBox, Heading, Pose
 from smarts.core.scenario import (
     default_entry_tactic,
+    EndlessGoal,
     Mission,
     PositionalGoal,
     Scenario,
@@ -277,7 +278,10 @@ class ROSDriver:
                 f"got unknown task_ref '{task.task_ref}' in AgentSpec message with params='{task.param_json}'.  ignoring."
             )
             return
-        if ros_agent_spec.end_pose:
+        if (
+            ros_agent_spec.end_pose.position.x != 0.0
+            or ros_agent_spec.end_pose.position.y != 0.0
+        ):
             goal = PositionalGoal(
                 (
                     ros_agent_spec.end_pose.position.x,
