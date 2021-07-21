@@ -117,9 +117,8 @@ def test_optional_renderer(smarts, scenario):
     for _ in range(10):
         smarts.step({})
 
-    try:
-        renderer = smarts.renderer
-    except Exception as e:
+    renderer = smarts.renderer
+    if not renderer:
         raise RendererException.required_to("run test_renderer.py")
 
     assert smarts.is_rendering
