@@ -102,6 +102,8 @@ class RLlibHiWayEnv(MultiAgentEnv):
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
         }
+
+        observations, rewards, dones, extras = None, None, None, None
         with timeit("SMARTS simulation/scenario step", self._log):
             observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
