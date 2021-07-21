@@ -1,8 +1,9 @@
 # Steps to build and push minimal SMARTS docker image
 # ```bash
-# $ export VERSION=v0.4.17
 # $ cd </path/to/SMARTS>
-# $ docker build -f ./utils/docker/Dockerfile.minimal -t huaweinoah/smarts:$VERSION-minimal .
+# export VERSION=v0.4.18
+# $ docker build --no-cache -f ./utils/docker/Dockerfile.minimal -t huaweinoah/smarts:$VERSION-minimal .
+# $ docker login
 # $ docker push huaweinoah/smarts:$VERSION-minimal
 # ```
 
