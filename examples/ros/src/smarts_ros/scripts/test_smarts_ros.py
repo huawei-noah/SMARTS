@@ -58,10 +58,9 @@ class TestSmartsRos(TestCase):
             f"{namespace}entities_out", EntitiesStamped, self._entities_callback
         )
 
-        rospy.sleep(5)  # wait for other node to start...
-        self._smarts_info_srv = rospy.ServiceProxy(
-            f"{namespace}{node_name}_info", SmartsInfo
-        )
+        service_name = f"{namespace}{node_name}_info"
+        rospy.wait_for_service(service_name)
+        self._smarts_info_srv = rospy.ServiceProxy(service_name, SmartsInfo)
         smarts_info = self._smarts_info_srv()
         rospy.loginfo(f"Tester detected SMARTS version={smarts_info.version}.")
 
@@ -92,9 +91,9 @@ class TestSmartsRos(TestCase):
                 agent_spec.start_pose.orientation,
             )
             task = AgentTask()
-            task.agent_ref = rospy.get_param("~agent_ref")
-            task.agent_ver = rospy.get_param("~agent_ver")
-            task.params_json = rospy.get_param("~agent_params")
+            task.task_ref = rospy.get_param("~task_ref")
+            task.task_ver = rospy.get_param("~task_ver")
+            task.params_json = rospy.get_param("~task_params")
             agent_spec.tasks = [task]
             self._agents[agent_spec.agent_id] = agent_spec
             control_msg.initial_agents = [agent_spec]

@@ -82,6 +82,7 @@ class ROSDriver:
         pub_queue_size: int = 10,
     ):
         assert not self._state_publisher
+
         # enforce only one SMARTS instance per ROS network...
         # NOTE: The node name specified here may be overridden by ROS
         # remapping arguments from the command line invocation.
@@ -91,14 +92,14 @@ class ROSDriver:
         # otherwise we use our default.
         namespace = def_namespace if not os.environ.get("ROS_NAMESPACE") else ""
 
+        self._service_name = f"{namespace}{node_name}_info"
+
         self._state_publisher = rospy.Publisher(
             f"{namespace}entities_out", EntitiesStamped, queue_size=pub_queue_size
         )
         self._agents_publisher = rospy.Publisher(
             f"{namespace}agents_out", AgentsStamped, queue_size=pub_queue_size
         )
-
-        rospy.Service(f"{namespace}{node_name}_info", SmartsInfo, self._get_smarts_info)
 
         rospy.Subscriber(
             f"{namespace}control", SmartsControl, self._smarts_control_callback
@@ -264,16 +265,16 @@ class ROSDriver:
             len(ros_agent_spec.tasks) == 1
         ), "more than 1 task per agent is not yet supported"
         task = ros_agent_spec.tasks[0]
-        agent_params = json.loads(task.params_json) if task.params_json else {}
-        agent_version = task.agent_ver or "latest"
-        agent_locator = f"{self._zoo_module}:{task.agent_ref}-{agent_version}"
+        task_params = json.loads(task.params_json) if task.params_json else {}
+        task_version = task.task_ver or "latest"
+        agent_locator = f"{self._zoo_module}:{task.task_ref}-{task_version}"
         try:
-            agent_spec = registry.make(agent_locator, **agent_params)
+            agent_spec = registry.make(agent_locator, **task_params)
         except ImportError as ie:
             rospy.logerr(f"Unable to locate agent with locator={agent_locator}:  {ie}")
         if not agent_spec:
             rospy.logwarn(
-                f"got unknown agent_ref '{task.agent_ref}' in AgentSpec message with params='{task.param_json}'.  ignoring."
+                f"got unknown task_ref '{task.task_ref}' in AgentSpec message with params='{task.param_json}'.  ignoring."
             )
             return
         if ros_agent_spec.end_pose:
@@ -519,6 +520,9 @@ class ROSDriver:
             raise RuntimeError("must call setup_ros() first.")
         if not self._smarts:
             raise RuntimeError("must call setup_smarts() first.")
+
+        rospy.Service(self._service_name, SmartsInfo, self._get_smarts_info)
+
         warned_scenario = False
         observations = {}
         step_delta = None
