@@ -59,7 +59,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 ENV PYTHONPATH=/src
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e .[train,test,dev]
+RUN pip install --no-cache-dir -e .[train,test,dev,camera-obs]
 
 # For Envision
 EXPOSE 8081

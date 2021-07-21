@@ -9,6 +9,9 @@ All text added must be human-readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
+### Fixed
+- Added `camera-obs` to the SMARTS Dockerfile so that camera observations can be used in the generated image without extra work.
+
 ## [0.4.17] - 2021-07-02
 ### Added 
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
