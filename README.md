@@ -278,16 +278,17 @@ docker push huaweinoah/smarts:$VERSION
 ```
 
 ### Using Singularity
-Set up SMARTS according to [setup](#setup) above, before proceeding with singularity instructions below.
-
 ```bash
 $ cd </path/to/SMARTS>
 
 # Build container from definition file.
 $ sudo singularity build ./utils/singularity/smarts.sif ./utils/singularity/smarts.def
 
-# Build the required scenarios.
-$ scl scenario build ./scenarios/loop/
+# Use the container to build the required scenarios.
+$ singularity shell --containall --bind ../SMARTS:/SMARTS ./utils/singularity/smarts.sif
+# Inside the container
+$ scl scenario build /SMARTS/scenarios/loop/
+$ exit
 
 # Then, run the container using one of the following methods.
 
