@@ -11,6 +11,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Changed
 - Made changes to log sections of the scenario step in `smarts.py` to help evaluate smarts performance problems. See Issue #661.
+### Added 
+- Dockerfile for headless machines.
+- Singularity definition file and instructions to build/run singularity containers.
+### Fixed
+- Suppress messages in docker containers from missing `/dev/input` folder.
+- When code runs on headless machine, panda3d will fallback to using `p3headlessgl` option to render images without requiring X11.
 
 ## [0.4.17] - 2021-07-02
 ### Added 
@@ -20,6 +26,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a new utility experiment file `cli/run.py` to replace the context given by `supervisord.conf`. See PR #911.
 - Added `scl zoo install` command to install zoo policy agents at the specified paths. See Issue #603.
 - Added a `FrameStack` wrapper which returns stacked observations for each agent.
+- Added a Cross RL Social Agent in `zoo/policies` as a concrete training examples. See PR #700.
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space. See Issue #844.
 - Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266. 
@@ -42,7 +49,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an args count error caused by `websocket.on_close()` sending a variable number of args.
 - Fixed the multi-instance display of `envision`. See Issue #784.
 - Caught abrupt terminate signals, in order to shutdown zoo manager and zoo workers.
-
 ## Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.
@@ -87,12 +93,7 @@ the missions for all agents.
 - Improved performance by removing unused traffic light functionality.
 - Limit the memory use of traffic histories by incrementally loading the traffic history file with a worker process.
 ### Fixed
-- In order to avoid precision issues in our coordinates with big floating point numbers,
-we now initially shift road networks (maps) that are offset back to the origin
-using [netconvert](https://sumo.dlr.de/docs/netconvert.html).
-We adapt Sumo vehicle positions to take this into account to allow Sumo to continue
-using the original coordinate system.  See Issue #325.
-    - This fix will require all Scenarios to be rebuilt (`scl scenario build-all --clean ./scenarios`).
+- In order to avoid precision issues in our coordinates with big floating point numbers, we now initially shift road networks (maps) that are offset back to the origin using [netconvert](https://sumo.dlr.de/docs/netconvert.html). We adapt Sumo vehicle positions to take this into account to allow Sumo to continue using the original coordinate system.  See Issue #325. This fix will require all scenarios to be rebuilt (`scl scenario build-all --clean ./scenarios`).
 - Cleanly close down the traffic history provider thread. See PR #665.
 - Improved the disposal of a SMARTS instance. See issue #378.
 - Envision now resumes from current frame after un-pausing.

@@ -1,0 +1,59 @@
+Bootstrap: docker
+From: ubuntu:bionic
+
+%help
+    Singularity container for SMARTS.
+
+%labels
+    Github: https://github.com/huawei-noah/SMARTS
+
+%files
+    . /src
+
+%post
+    # Install libraries
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update --fix-missing && \
+        apt-get install -y \
+            software-properties-common && \
+        add-apt-repository -y ppa:deadsnakes/ppa && \
+        add-apt-repository -y ppa:sumo/stable && \
+        apt-get update && \
+        apt-get install -y \
+            libsm6 \
+            libspatialindex-dev \
+            libxext6 \
+            libxrender-dev \
+            python3.7 \
+            python3.7-dev \
+            python3.7-venv \
+            sumo \
+            sumo-doc \
+            sumo-tools \
+            wget \
+            xorg && \
+        apt-get autoremove && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Update default python version
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+
+    # Install pip
+    wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
+    python get-pip.py && \
+    pip install --upgrade pip
+
+    # Install requirements.txt
+    pip install --no-cache-dir -r ${SINGULARITY_CONTAINER}/src/requirements.txt
+
+    # Copy source files and install SMARTS
+    cd ${SINGULARITY_CONTAINER}/src
+    pip install --no-cache-dir -e .[train,test,dev,camera-obs]
+
+%environment
+    export SUMO_HOME=/usr/share/sumo
+    export PYTHONPATH=/src
+
+%startscript
+    mkdir -p /dev/input
+    python3.7 "$@"    
