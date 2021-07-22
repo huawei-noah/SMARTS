@@ -18,8 +18,8 @@ of this class to still be a NumPy array, but with shape
 (its value can be found in `ultra.env.ultra_env`), `HEIGHT` is the height of the RGB
 image, and `WIDTH` is the width of the RGB image.
 4. ULTRA's Gym environment sets the `endless_traffic` flag to be False. This stops
-social vehicles from teleporting back to their starting position once completion of
-mission route. 
+social vehicles from teleporting back to their starting position once they complete
+their mission route.
 
 ULTRA's RLlib environment differs in one way from SMARTS' RLlibHiWayEnv:
 1. ULTRA's RLlib environment takes a `scenario_info` key as part of its config. This
