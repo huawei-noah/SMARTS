@@ -376,7 +376,7 @@ class ROSDriver:
         heading_delta_vec = staleness * (
             vs.angular_velocity
             + 0.5 * vs.angular_acceleration * staleness
-            + ang_acc_slope * staleness * staleness / 6.0
+            + ang_acc_slope * staleness ** 2 / 6.0
         )
         heading += vec_to_radians(heading_delta_vec[:2])
         heading %= 2 * math.pi

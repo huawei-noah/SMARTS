@@ -120,7 +120,7 @@ class TestSmartsRos(TestCase):
 
         scenario = self._init_scenario()
 
-        rospy.sleep(5)  # hack to avoid startup race condition
+        rospy.sleep(3)  # hack to avoid race w/ resetting the SMARTS scenario
         smarts_info = self._smarts_info_srv()
         self.assertEqual(
             scenario,
