@@ -38,11 +38,6 @@ setup(
         "pynput",  # Used by HumanKeyboardAgent
         "sh",
         "shapely",
-        # HACK: There is a bug where if we only install the base ray dependency here
-        #       and ray[rllib] under [train] it  prevents rllib from getting installed.
-        #       For simplicity we just install both here. In the future we may want to
-        #       address this bug head on to keep our SMARTS base install more lean.
-        "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
         # The following are for Scenario Studio
         "yattag",
         # The following are for /envision
@@ -68,6 +63,7 @@ setup(
             "pytest-cov",
             "pytest-notebook",
             "pytest-xdist",
+            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
         ],
         "train": [
             "tensorflow==2.2.1",
@@ -75,6 +71,7 @@ setup(
             "scipy==1.4.1",
             "torch==1.4.0",
             "torchvision==0.5.0",
+            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
         ],
         "dev": [
             "black==20.8b1",
