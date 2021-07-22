@@ -34,7 +34,6 @@ from multiprocessing import Manager, Process
 from shutil import copyfile
 from typing import Any, Dict, Sequence
 
-import numpy as np
 import yaml
 
 from smarts.core.utils.sumo import sumolib
@@ -335,8 +334,8 @@ def generate_left_turn_missions(
     intersection_name,
     traffic_density,
 ):
-    # dont worry about these seeds, theyre used by sumo
-    sumo_seed = random.choice([0, 1, 2, 3, 4])
+    # By default the sumo_seed is set to the scenario seed
+    sumo_seed = seed
     stopwatcher_info = None
     stopwatcher_added = False
     if stopwatcher_behavior:
@@ -346,7 +345,6 @@ def generate_left_turn_missions(
         }
 
     random.seed(seed)
-    np.random.seed(seed)
     all_flows = []
     metadata = {"routes": {}, "total_vehicles": 0, "stopwatcher": None}
 
