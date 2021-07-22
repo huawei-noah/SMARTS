@@ -9,6 +9,8 @@ All text added must be human-readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
+
+## [0.4.18] - 2021-07-22
 ### Added 
 - Dockerfile for headless machines.
 - Singularity definition file and instructions to build/run singularity containers.
