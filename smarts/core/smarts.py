@@ -227,7 +227,7 @@ class SMARTS:
         observations, rewards, scores, dones = None, None, None, None
         response_for_ego = None
 
-        with timeit("calculating observations and rewards", self._log):
+        with timeit("Calculating Observations and Rewards", self._log):
             observations, rewards, scores, dones = self._agent_manager.observe(self)
             response_for_ego = self._agent_manager.filter_response_for_ego(
                 (observations, rewards, scores, dones)
