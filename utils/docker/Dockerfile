@@ -60,7 +60,7 @@ ENV PYTHONPATH=/src
 COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e .[train,test,dev,camera-obs] \
-    && cp /src/smarts.egg-info /media/smarts.egg-info
+    && cp -r /src/smarts.egg-info /media/smarts.egg-info
 
 # For Envision
 EXPOSE 8081
