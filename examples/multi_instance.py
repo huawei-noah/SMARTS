@@ -92,7 +92,7 @@ def train(
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         seed=seed,
     )
 
@@ -142,7 +142,7 @@ def evaluate(agent_spec, evaluation_scenarios, headless, seed):
         scenarios=evaluation_scenarios,  # we evaluate against the loop scenario
         agent_specs={AGENT_ID: agent_spec},
         headless=headless,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         seed=seed,
     )
     agent = agent_spec.build_agent()

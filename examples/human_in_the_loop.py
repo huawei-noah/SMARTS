@@ -97,7 +97,7 @@ def main(
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         seed=seed,
     )
 

@@ -30,7 +30,7 @@ if __name__ == "__main__":
         agent_specs={},
         headless=args.headless,
         visdom=False,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         endless_traffic=False,
         envision_record_data_replay_path=data_replay_path,
     )

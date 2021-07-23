@@ -88,6 +88,9 @@ class SumoTrafficSimulation(Provider):
         self._debug = debug
         self._scenario = None
         self._log_file = None
+        assert (
+            time_resolution
+        ), "cannot use SUMO traffic simulation with variable time deltas"
         self._time_resolution = time_resolution
         self._headless = headless
         self._cumulative_sim_seconds = 0
@@ -605,14 +608,14 @@ class SumoTrafficSimulation(Provider):
             front_bumper_pos = front_bumper_positions[i]
             heading = Heading.from_sumo(sumo_vehicle[tc.VAR_ANGLE])
             speed = sumo_vehicle[tc.VAR_SPEED]
-            vehicle_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
-            dimensions = VEHICLE_CONFIGS[vehicle_type].dimensions
+            vehicle_config_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
+            dimensions = VEHICLE_CONFIGS[vehicle_config_type].dimensions
             provider_vehicles.append(
                 VehicleState(
                     # XXX: In the case of the SUMO traffic provider, the vehicle ID is
                     #      the sumo ID is the actor ID.
                     vehicle_id=sumo_id,
-                    vehicle_type=vehicle_type,
+                    vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_front_bumper(
                         front_bumper_pos, heading, dimensions.length
                     ),

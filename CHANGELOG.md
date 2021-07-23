@@ -9,6 +9,18 @@ All text added must be human-readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
+### Added
+- Added a ROS wrapper/driver example to wrap SMARTS in a ROS (v1) node.
+- Added the ability to pass an optional `time_delta_since_last_step` to SMARTS' `step()` function
+  to support variable timesteps for co-simulation.
+- Added `step_count` and `elapsed_sim_time` to the `Observation` class.  See PR #974 and Issues #884 and #918.
+- Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
+- Allow specifying "-latest" as a version suffix for zoo locator strings.
+### Changed
+### Deprecated
+- The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
+  for clarity since we are adding the ability to have variable time steps.
+### Removed
 
 ## [0.4.18] - 2021-07-22
 ### Added 
@@ -27,7 +39,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added 
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
 - Added a `TraverseGoal` goal for imitation learning agents.  See Issue #848.
-- Added README_pypi.md to update to the general user installation PyPI instructions. See Issue #828. 
+- Added `README_pypi.md` to update to the general user installation PyPI instructions. See Issue #828. 
 - Added a new utility experiment file `cli/run.py` to replace the context given by `supervisord.conf`. See PR #911.
 - Added `scl zoo install` command to install zoo policy agents at the specified paths. See Issue #603.
 - Added a `FrameStack` wrapper which returns stacked observations for each agent.
@@ -54,7 +66,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an args count error caused by `websocket.on_close()` sending a variable number of args.
 - Fixed the multi-instance display of `envision`. See Issue #784.
 - Caught abrupt terminate signals, in order to shutdown zoo manager and zoo workers.
-## Removed
+### Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.
 
