@@ -34,6 +34,7 @@ from multiprocessing import Manager, Process
 from shutil import copyfile
 from typing import Any, Dict, Sequence
 
+import numpy as np
 import yaml
 
 from smarts.core.utils.sumo import sumolib
@@ -345,6 +346,7 @@ def generate_left_turn_missions(
         }
 
     random.seed(seed)
+    np.random.seed(seed)
     all_flows = []
     metadata = {"routes": {}, "total_vehicles": 0, "stopwatcher": None}
 
