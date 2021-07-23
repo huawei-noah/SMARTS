@@ -73,27 +73,27 @@ class TrapManager:
 
     def init_traps(self, road_map, missions):
         self._traps.clear()
-
         for agent_id, mission in missions.items():
-            if mission is None:
-                mission = Mission.random_endless_mission(road_map)
+            self.add_trap_for_agent(agent_id, mission, road_map)
 
-            if not mission.entry_tactic:
-                mission = replace(mission, entry_tactic=default_entry_tactic())
+    def add_trap_for_agent(self, agent_id: str, mission: Mission, road_map) -> bool:
+        if mission is None:
+            mission = Mission.random_endless_mission(road_map)
 
-            if (
-                not isinstance(mission.entry_tactic, TrapEntryTactic)
-                and mission.entry_tactic
-            ):
-                continue
+        if not mission.entry_tactic:
+            mission = replace(mission, entry_tactic=default_entry_tactic())
 
-            plan = road_map.create_plan_for_mission(mission)
+        if (
+            not isinstance(mission.entry_tactic, TrapEntryTactic)
+            and mission.entry_tactic
+        ):
+            return False
 
-            trap = self._mission2trap(road_map, plan.mission)
-            self.add_trap_for_agent_id(agent_id, trap)
+        plan = road_map.create_plan_for_mission(mission)
 
-    def add_trap_for_agent_id(self, agent_id, trap: Trap):
+        trap = self._mission2trap(road_map, plan.mission)
         self._traps[agent_id] = trap
+        return True
 
     def reset_traps(self, used_traps):
         for agent_id, _ in used_traps:
@@ -130,7 +130,7 @@ class TrapManager:
             if trap is None:
                 continue
 
-            trap.step_trigger(sim.timestep_sec)
+            trap.step_trigger(sim.last_dt)
 
             if not trap.ready:
                 continue
@@ -227,7 +227,7 @@ class TrapManager:
                     provider.create_vehicle(
                         VehicleState(
                             vehicle_id=vehicle.id,
-                            vehicle_type="passenger",
+                            vehicle_config_type="passenger",
                             pose=vehicle.pose,
                             dimensions=vehicle.chassis.dimensions,
                             speed=vehicle.speed,

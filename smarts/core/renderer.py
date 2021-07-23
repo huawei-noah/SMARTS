@@ -49,22 +49,14 @@ from .masks import RenderMasks
 from .scenario import Scenario
 
 
-class RendererException(Exception):
-    """An exception raised if a renderer is required but not available."""
-
-    @classmethod
-    def required_to(cls, thing):
-        return cls(
-            "A renderer is required to {thing}.  Ensure that `renderer_optional=False` is set when creating SMARTS instance."
-        )
-
-
 class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
+            loadPrcFileData("", "load-display p3headlessgl")
+            loadPrcFileData("", "aux-display p3headlessgl")
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
             loadPrcFileData("", "model-path %s" % os.getcwd())
@@ -100,13 +92,7 @@ class _ShowBaseInstance(ShowBase):
             self.setFrameRateMeter(False)
 
         except Exception as e:
-            # Known reasons for this failing:
-            raise RendererException(
-                f"Error in initializing framework for opening graphical display and creating scene graph. "
-                "A typical reason is display not found. Try running with different configurations of "
-                "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "
-                "the documentation.\nException was: {e}"
-            ) from e
+            raise e
 
     def destroy(self):
         super().destroy()

@@ -7,5 +7,5 @@ setup(
     version=VERSION,
     packages=["rl_agent"],
     include_package_data=True,
-    install_requires=["tensorflow==2.2.1", "smarts"],
+    install_requires=["smarts", "tensorflow==2.2.1", "ray[rllib]==1.0.1.post1"],
 )

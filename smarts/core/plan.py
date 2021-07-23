@@ -49,6 +49,14 @@ class Start:
     def point(self) -> Point:
         return Point(*self.position)
 
+    @classmethod
+    def from_pose(cls, pose: Pose):
+        return cls(
+            position=pose.position[:2],
+            heading=pose.heading,
+        )
+
+
 
 @dataclass(frozen=True)
 class Goal:

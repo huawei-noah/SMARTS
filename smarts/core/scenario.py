@@ -33,7 +33,7 @@ from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.coordinates import Heading, Dimensions, RefLinePoint
+from smarts.core.coordinates import Heading, Dimensions, Pose, RefLinePoint
 from smarts.core.data_model import SocialAgent
 from smarts.core.default_map_factory import create_road_map
 from smarts.core.plan import (
@@ -427,7 +427,7 @@ class Scenario:
             pos_x, pos_y, heading, speed = pphs
             entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
-            veh_type = self._traffic_history.vehicle_type(v_id)
+            veh_config_type = self._traffic_history.vehicle_config_type(v_id)
             veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(v_id)
             # missions start from front bumper, but pos is center of vehicle
             hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
@@ -441,7 +441,7 @@ class Scenario:
                 start_time=start_time,
                 vehicle_spec=VehicleSpec(
                     veh_id=v_id,
-                    veh_type=veh_type,
+                    veh_config_type=veh_config_type,
                     dimensions=Dimensions(veh_length, veh_width, veh_height),
                 ),
             )

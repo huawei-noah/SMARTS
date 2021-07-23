@@ -55,7 +55,7 @@ for _ in range(1000):
 # For Mac OS X users, make sure XQuartz is pre-installed as SUMO's dependency
 
 # git clone ...
-cd <project>
+cd <path/to/SMARTS>
 
 # Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
 bash utils/setup/install_deps.sh
@@ -75,6 +75,10 @@ pip install --upgrade pip
 
 # install [train] version of python package with the rllib dependencies
 pip install -e .[train]
+
+# make sure to install [test] version of python package with the rllib dependencies so that you can run sanity-test (and verify they are passing)
+# OPTIONAL: install [camera-obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
+pip install -e .[camera-obs]  
 
 # make sure you can run sanity-test (and verify they are passing)
 # if tests fail, check './sanity_test_result.xml' for test report. 
@@ -100,7 +104,6 @@ You need to add the `--envision` flag to run the Envision server where you can s
 
 After executing the above command, visit http://localhost:8081/ in your browser to view your experiment.
 
-
 Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
 ```bash
@@ -111,7 +114,7 @@ Pass in the agent example path and scenarios folder path above to run an experim
 
 ## Documentation
 
-Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest)
+Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest).
 
 ## CLI tool
 
@@ -123,9 +126,10 @@ scl COMMAND SUBCOMMAND [OPTIONS] [ARGS]...
 ```
 
 Commands:
-* envision
 * scenario
+* envision
 * zoo
+* run
 
 Subcommands of scenario:
 * build-all: Generate all scenarios under the given directories
@@ -137,6 +141,9 @@ Subcommands of envision:
 
 Subcommands of zoo:
 * zoo: Build an agent, used for submitting to the agent-zoo
+
+Subcommands of run:
+No subcommands of `run`. You can directly use `run` to simulate an experiment as mentioned in the example above.
 
 ### Examples:
 
@@ -237,9 +244,9 @@ python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 
 If you're comfortable using docker or are on a platform without suitable support to easily run SMARTS (e.g. an older version of Ubuntu) you can run the following,
 
 ```bash
-$ cd /path/to/SMARTS
+$ cd </path/to/SMARTS>
 $ docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:<version>
-# E.g. docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:v0.4.12
+# E.g. docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:v0.4.18
 # <press enter>
 
 # Run Envision server in the background
@@ -254,26 +261,51 @@ $ scl scenario build scenarios/loop --clean
 # add --headless if you do not need visualisation
 $ python examples/single_agent.py scenarios/loop
 
-# On your host machine visit http://localhost:8081 to see the running simulation in
-# Envision.
+# On your host machine visit http://localhost:8081 to see the running simulation in Envision.
 ```
 
 (For those who have permissions:) if you want to push new images to our [public dockerhub registry](https://hub.docker.com/orgs/huaweinoah) run,
 
 ```bash
 # For this to work, your account needs to be added to the huaweinoah org
-$ cd /path/to/SMARTS
-export VERSION=v0.4.16
-docker build --no-cache -f ./utils/docker/Dockerfile -t smarts:$VERSION .
-docker tag smarts:$VERSION huaweinoah/smarts:$VERSION
-docker login
-docker push huaweinoah/smarts:$VERSION
+$ cd </path/to/SMARTS>
+export VERSION=v0.4.18
+$ docker build --no-cache -f ./utils/docker/Dockerfile -t huaweinoah/smarts:$VERSION .
+$ docker login
+$ docker push huaweinoah/smarts:$VERSION
+```
+
+### Using Singularity
+```bash
+$ cd </path/to/SMARTS>
+
+# Build container from definition file.
+$ sudo singularity build ./utils/singularity/smarts.sif ./utils/singularity/smarts.def
+
+# Use the container to build the required scenarios.
+$ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
+# Inside the container
+Singularity> scl scenario build /src/scenarios/loop/
+Singularity> exit
+
+# Then, run the container using one of the following methods.
+
+# 1. Run container in interactive mode.
+$ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
+# Inside the container
+Singularity> python3.7 /src/examples/single_agent.py /src/scenarios/loop/ --headless
+
+# 2. Run commands within the container from the host system.
+$ singularity exec --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif python3.7 /src/examples/single_agent.py /src/scenarios/loop/ --headless
+
+# 3. Run container instance in the background.
+$ singularity instance start --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif smarts_train /src/examples/single_agent.py /src/scenarios/loop/ --headless
 ```
 
 ### Troubleshooting
 
 #### General
-In many cases additinal run logs are located at '~/.smarts'. These can sometimes be helpful.
+In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
 
 #### SUMO
 SUMO can have some problems in setup. Please look through the following for support for SUMO:

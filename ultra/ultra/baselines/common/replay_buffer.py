@@ -24,6 +24,7 @@ from collections import deque, namedtuple
 import numpy as np
 import random, copy
 import torch
+from ultra import adapters
 from ultra.utils.common import normalize_im
 from collections.abc import Iterable
 
@@ -54,9 +55,9 @@ class ReplayBufferDataset(Dataset):
     cpu = torch.device("cpu")
 
     def __init__(self, buffer_size, device):
-        self.buffer_size = buffer_size
-        self.memory = deque(maxlen=self.buffer_size)
-        self.device = device
+        self._buffer_size = buffer_size
+        self._memory = deque(maxlen=self._buffer_size)
+        self._device = device
 
     def add(
         self,
@@ -65,9 +66,36 @@ class ReplayBufferDataset(Dataset):
         reward,
         next_state,
         done,
-        social_capacity,
-        observation_num_lookahead,
-        social_vehicle_config,
+        prev_action,
+        others=None,
+    ):
+        raise NotImplementedError
+
+    @staticmethod
+    def make_states_batch(states, device):
+        raise NotImplementedError
+
+    def __len__(self):
+        return len(self._memory)
+
+    def __getitem__(self, index):
+        if torch.is_tensor(index):
+            index = index.tolist()
+        state, action, reward, next_state, done, others = tuple(self._memory[index])
+        return state, action, reward, next_state, done, others
+
+
+class DefaultVectorReplayBufferDataset(ReplayBufferDataset):
+    def __init__(self, buffer_size, device):
+        super(DefaultVectorReplayBufferDataset, self).__init__(buffer_size, device)
+
+    def add(
+        self,
+        state,
+        action,
+        reward,
+        next_state,
+        done,
         prev_action,
         others=None,
     ):
@@ -80,10 +108,10 @@ class ReplayBufferDataset(Dataset):
             np.append(state["low_dim_states"], prev_action)
         )
         state["low_dim_states"] = torch.from_numpy(state["low_dim_states"]).to(
-            self.device
+            self._device
         )
         state["social_vehicles"] = torch.from_numpy(state["social_vehicles"]).to(
-            self.device
+            self._device
         )
 
         next_state["low_dim_states"] = np.float32(
@@ -91,26 +119,78 @@ class ReplayBufferDataset(Dataset):
         )
         next_state["social_vehicles"] = torch.from_numpy(
             next_state["social_vehicles"]
-        ).to(self.device)
+        ).to(self._device)
         next_state["low_dim_states"] = torch.from_numpy(
             next_state["low_dim_states"]
-        ).to(self.device)
+        ).to(self._device)
 
         action = np.asarray([action]) if not isinstance(action, Iterable) else action
         action = torch.from_numpy(action).float()
         reward = torch.from_numpy(np.asarray([reward])).float()
         done = torch.from_numpy(np.asarray([done])).float()
         new_experience = Transition(state, action, reward, next_state, done, others)
-        self.memory.append(new_experience)
+        self._memory.append(new_experience)
 
-    def __len__(self):
-        return len(self.memory)
+    @staticmethod
+    def make_states_batch(states, device):
+        # image_keys = states[0]["images"].keys()
+        # images = {}
+        # for k in image_keys:
+        #     _images = torch.cat([e[k] for e in states], dim=0).float().to(device)
+        #     _images = normalize_im(_images)
+        #     images[k] = _images
+        low_dim_states_batch = (
+            torch.cat([e["low_dim_states"] for e in states], dim=0).float().to(device)
+        )
+        if "social_vehicles" in states[0]:
+            social_vehicles_batch = [
+                e["social_vehicles"][0].float().to(device) for e in states
+            ]
+        else:
+            social_vehicles_batch = False
+        out = {
+            # "images": images,
+            "low_dim_states": low_dim_states_batch,
+            "social_vehicles": social_vehicles_batch,
+        }
+        return out
 
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-        state, action, reward, next_state, done, others = tuple(self.memory[idx])
-        return state, action, reward, next_state, done, others
+
+class DefaultImageReplayBufferDataset(ReplayBufferDataset):
+    def __init__(self, buffer_size, device):
+        super(DefaultImageReplayBufferDataset, self).__init__(buffer_size, device)
+
+    def add(
+        self,
+        state,
+        action,
+        reward,
+        next_state,
+        done,
+        prev_action,
+        others=None,
+    ):
+        if others is None:
+            others = {}
+
+        # Dereference the states.
+        state = copy.deepcopy(state)
+        next_state = copy.deepcopy(next_state)
+
+        state = torch.from_numpy(state).to(self._device)
+        next_state = torch.from_numpy(next_state).to(self._device)
+        action = np.asarray([action]) if not isinstance(action, Iterable) else action
+        action = torch.from_numpy(action).float()
+        reward = torch.from_numpy(np.asarray([reward])).float()
+        done = torch.from_numpy(np.asarray([done])).float()
+
+        new_experience = Transition(state, action, reward, next_state, done, others)
+
+        self._memory.append(new_experience)
+
+    @staticmethod
+    def make_states_batch(states, device):
+        return torch.cat(states, dim=0).float().to(device)
 
 
 class ReplayBuffer:
@@ -118,11 +198,22 @@ class ReplayBuffer:
         self,
         buffer_size,
         batch_size,
+        observation_type,
         device_name,
         pin_memory=False,
         num_workers=0,
     ):
-        self.replay_buffer_dataset = ReplayBufferDataset(buffer_size, device=None)
+        if observation_type == adapters.AdapterType.DefaultObservationVector:
+            self.replay_buffer_dataset = DefaultVectorReplayBufferDataset(
+                buffer_size, device=None
+            )
+        elif observation_type == adapters.AdapterType.DefaultObservationImage:
+            self.replay_buffer_dataset = DefaultImageReplayBufferDataset(
+                buffer_size, device=None
+            )
+        else:
+            raise Exception(f"'{observation_type}' does not have a DataSet.")
+
         self.sampler = RandomRLSampler(self.replay_buffer_dataset, batch_size)
         self.data_loader = DataLoader(
             self.replay_buffer_dataset,
@@ -141,35 +232,12 @@ class ReplayBuffer:
     def __getitem__(self, idx):
         return self.replay_buffer_dataset[idx]
 
-    def make_state_from_dict(self, states, device):
-        # image_keys = states[0]["images"].keys()
-        # images = {}
-        # for k in image_keys:
-        #     _images = torch.cat([e[k] for e in states], dim=0).float().to(device)
-        #     _images = normalize_im(_images)
-        #     images[k] = _images
-        low_dim_states = (
-            torch.cat([e["low_dim_states"] for e in states], dim=0).float().to(device)
-        )
-        if "social_vehicles" in states[0]:
-            social_vehicles = [
-                e["social_vehicles"][0].float().to(device) for e in states
-            ]
-        else:
-            social_vehicles = False
-        out = {
-            # "images": images,
-            "low_dim_states": low_dim_states,
-            "social_vehicles": social_vehicles,
-        }
-        return out
-
     def sample(self, device=None):
         device = device if device else self.storage_device
         batch = list(iter(self.data_loader))
         states, actions, rewards, next_states, dones, others = zip(*batch)
-        states = self.make_state_from_dict(states, device)
-        next_states = self.make_state_from_dict(next_states, device)
+        states = self.replay_buffer_dataset.make_states_batch(states, device)
+        next_states = self.replay_buffer_dataset.make_states_batch(next_states, device)
         actions = torch.cat(actions, dim=0).float().to(device)
         rewards = torch.cat(rewards, dim=0).float().to(device)
         dones = torch.cat(dones, dim=0).float().to(device)

@@ -81,7 +81,7 @@ def env(agent_spec):
         agent_specs={AGENT_ID: agent_spec},
         headless=True,
         visdom=False,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         seed=42,
     )
 

@@ -53,19 +53,30 @@ if __name__ == "__main__":
         "--task", help="type a task id [0, 1, 2, 3]", type=str
     )
     parser_generate_scenarios.add_argument(
-        "--save-dir", help="directory for saving maps", type=str, default=None
+        "--save-dir", help="directory for saving scenarios", type=str, default=None
     )
     parser_generate_scenarios.add_argument(
         "--root-dir",
-        help="directory for saving maps",
+        help="path to task directory",
         type=str,
         default="ultra/scenarios",
+    )
+    parser_generate_scenarios.add_argument(
+        "--pool-dir",
+        help="directory for locating maps",
+        type=str,
+        default="ultra/scenarios/pool/experiment_pool",
     )
     parser_generate_scenarios.add_argument("--level", help="easy/medium/hard", type=str)
     parser_generate_scenarios.add_argument(
         "--stopwatcher",
         help="aggressive/default/slow/blocker/crusher south-west",
         nargs="+",
+    )
+    parser_generate_scenarios.add_argument(
+        "--no-mission-shuffle",
+        help="Do not shuffle ego missions.",
+        action="store_false",
     )
 
     parser_generate_scenarios.set_defaults(which="generate")
@@ -133,6 +144,8 @@ if __name__ == "__main__":
             stopwatcher_route=stopwatcher_route,
             save_dir=args.save_dir,
             root_path=args.root_dir,
+            pool_dir=args.pool_dir,
+            shuffle_missions=args.no_mission_shuffle,
         )
     else:
         ray.init()
