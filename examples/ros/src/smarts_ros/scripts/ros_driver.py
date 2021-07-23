@@ -24,16 +24,16 @@ from smarts_ros.srv import SmartsInfo, SmartsInfoResponse, SmartsInfoRequest
 
 from envision.client import Client as Envision
 from smarts.core.agent import Agent
-from smarts.core.coordinates import BoundingBox, Heading, Pose
-from smarts.core.scenario import (
+from smarts.core.coordinates import Dimensions, Heading, Pose
+from smarts.core.plan import (
     default_entry_tactic,
     EndlessGoal,
     Mission,
     PositionalGoal,
-    Scenario,
     Start,
     VehicleSpec,
 )
+from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.math import (
@@ -299,7 +299,7 @@ class ROSDriver:
             vehicle_spec=VehicleSpec(
                 veh_id=f"veh_for_agent_{ros_agent_spec.agent_id}",
                 veh_config_type=ROSDriver._decode_vehicle_type(ros_agent_spec.veh_type),
-                dimensions=BoundingBox(
+                dimensions=Dimensions(
                     ros_agent_spec.veh_length,
                     ros_agent_spec.veh_width,
                     ros_agent_spec.veh_height,
@@ -329,7 +329,7 @@ class ROSDriver:
     def _entity_to_vs(entity: EntityState) -> VehicleState:
         veh_id = entity.entity_id
         veh_type = ROSDriver._decode_entity_type(entity.entity_type)
-        veh_dims = BoundingBox(entity.length, entity.width, entity.height)
+        veh_dims = Dimensions(entity.length, entity.width, entity.height)
         vs = VehicleState(
             source="EXTERNAL",
             vehicle_id=veh_id,

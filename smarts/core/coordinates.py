@@ -50,8 +50,8 @@ class Dimensions:
         return cls(length, width, height)
 
     @classmethod
-    def copy_with_defaults(cls, bbox, defaults):
-        return cls.init_with_defaults(bbox.length, bbox.width, bbox.height, defaults)
+    def copy_with_defaults(cls, dims, defaults):
+        return cls.init_with_defaults(dims.length, dims.width, dims.height, defaults)
 
     @property
     def as_lwh(self):

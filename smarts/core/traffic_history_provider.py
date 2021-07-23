@@ -111,7 +111,7 @@ class TrafficHistoryProvider(Provider):
                     vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_center((pos_x, pos_y, 0), Heading(hr.heading_rad)),
                     # Note: Neither NGSIM nor INTERACTION provide the vehicle height
-                    dimensions=BoundingBox.init_with_defaults(
+                    dimensions=Dimensions.init_with_defaults(
                         hr.vehicle_length,
                         hr.vehicle_width,
                         hr.vehicle_height,

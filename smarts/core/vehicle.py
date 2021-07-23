@@ -29,7 +29,7 @@ import yaml
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
-from .renderer import Renderer, RendererException
+from .coordinates import Dimensions, Heading, Pose
 from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
@@ -329,7 +329,7 @@ class Vehicle:
             # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
             # but we use that value here in case we ever expand our history functionality.
             vehicle_config_type = mission.vehicle_spec.veh_config_type
-            chassis_dims = BoundingBox.copy_with_defaults(
+            chassis_dims = Dimensions.copy_with_defaults(
                 mission.vehicle_spec.dimensions,
                 VEHICLE_CONFIGS[vehicle_config_type].dimensions,
             )
@@ -404,7 +404,7 @@ class Vehicle:
 
     @staticmethod
     def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_config_type):
-        dims = BoundingBox.copy_with_defaults(
+        dims = Dimensions.copy_with_defaults(
             vehicle_state.dimensions, VEHICLE_CONFIGS[vehicle_config_type].dimensions
         )
         chassis = BoxChassis(

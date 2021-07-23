@@ -57,7 +57,6 @@ class Start:
         )
 
 
-
 @dataclass(frozen=True)
 class Goal:
     def is_endless(self) -> bool:
