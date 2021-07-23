@@ -444,7 +444,7 @@ def generate_left_turn_missions(
                 wait_to_hijack_limit_s[0],
                 wait_to_hijack_limit_s[1],
             )
-            if type(wait_to_hijack_limit_s) is tuple
+            if isinstance(wait_to_hijack_limit_s, (list, tuple))
             else wait_to_hijack_limit_s
         )
 
