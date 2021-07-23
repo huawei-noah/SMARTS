@@ -131,3 +131,6 @@ OpEn_build/
 
 # Ignore generated ULTRA tasks
 ultra/ultra/scenarios/task*/*/
+
+# Singularity
+*.sif

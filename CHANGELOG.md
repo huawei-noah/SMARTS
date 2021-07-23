@@ -22,6 +22,19 @@ Copy and pasting the git commit messages is __NOT__ enough.
   for clarity since we are adding the ability to have variable time steps.
 ### Removed
 
+## [0.4.18] - 2021-07-22
+### Added 
+- Dockerfile for headless machines.
+- Singularity definition file and instructions to build/run singularity containers.
+- Support multiple outgoing edges from SUMO maps.
+- Added a Cross RL Social Agent in `zoo/policies` as a concrete training examples. See PR #700.
+- Made `Ray` and its module `Ray[rllib]` optional as a requirement/dependency to setup SMARTS. See Issue #917.
+### Fixed
+- Suppress messages in docker containers from missing `/dev/input` folder.
+- When code runs on headless machine, panda3d will fallback to using `p3headlessgl` option to render images without requiring X11.
+- Fix the case where mapping a blank repository to the docker container `/src` directory via `-v $SMARTS_REPO/src` as directed in the `README` will cause `scl` and other commands to not work.
+- Fix case where multiple outgoing edges could cause non-determinism.
+
 ## [0.4.17] - 2021-07-02
 ### Added 
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
@@ -30,6 +43,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a new utility experiment file `cli/run.py` to replace the context given by `supervisord.conf`. See PR #911.
 - Added `scl zoo install` command to install zoo policy agents at the specified paths. See Issue #603.
 - Added a `FrameStack` wrapper which returns stacked observations for each agent.
+
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space. See Issue #844.
 - Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266. 
@@ -43,12 +57,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Made `Ray` and its module `Ray[rllib]` optional as a requirement/dependency to setup SMARTS. See Issue #917.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
-- Fixed a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
+- Fix a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
 - Limited the number of workers SMARTS will use to establish remote agents so as to lower memory footprint.
 - Patched a restart of SUMO every 50 resets to avoid rampant memory growth.
-- Fixed bugs in `AccelerometerSensor`.  See PR #878.
+- Fix bugs in `AccelerometerSensor`.  See PR #878.
 - Ensure that `yaw_rate` is always a scalar in `EgoVehicleObservation`.
-- Fixed the internal holes created at sharp turns due to crude map geometry. See issue #900.
+- Fix the internal holes created at sharp turns due to crude map geometry. See issue #900.
 - Fixed an args count error caused by `websocket.on_close()` sending a variable number of args.
 - Fixed the multi-instance display of `envision`. See Issue #784.
 - Caught abrupt terminate signals, in order to shutdown zoo manager and zoo workers.
@@ -96,12 +110,7 @@ the missions for all agents.
 - Improved performance by removing unused traffic light functionality.
 - Limit the memory use of traffic histories by incrementally loading the traffic history file with a worker process.
 ### Fixed
-- In order to avoid precision issues in our coordinates with big floating point numbers,
-we now initially shift road networks (maps) that are offset back to the origin
-using [netconvert](https://sumo.dlr.de/docs/netconvert.html).
-We adapt Sumo vehicle positions to take this into account to allow Sumo to continue
-using the original coordinate system.  See Issue #325.
-    - This fix will require all Scenarios to be rebuilt (`scl scenario build-all --clean ./scenarios`).
+- In order to avoid precision issues in our coordinates with big floating point numbers, we now initially shift road networks (maps) that are offset back to the origin using [netconvert](https://sumo.dlr.de/docs/netconvert.html). We adapt Sumo vehicle positions to take this into account to allow Sumo to continue using the original coordinate system.  See Issue #325. This fix will require all scenarios to be rebuilt (`scl scenario build-all --clean ./scenarios`).
 - Cleanly close down the traffic history provider thread. See PR #665.
 - Improved the disposal of a SMARTS instance. See issue #378.
 - Envision now resumes from current frame after un-pausing.
@@ -121,4 +130,3 @@ using the original coordinate system.  See Issue #325.
 – Note any features that have been deleted and removed from the software.
 ### Security
 – Invite users to upgrade and avoid fixed software vulnerabilities.
-
