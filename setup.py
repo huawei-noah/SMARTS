@@ -82,8 +82,8 @@ setup(
             "sphinxcontrib-apidoc",
         ],
         "camera-obs": [
-            "panda3d",
-            "panda3d-gltf",
+            "panda3d==1.10.9",
+            "panda3d-gltf==0.13",
         ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
