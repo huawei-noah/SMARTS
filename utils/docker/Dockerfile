@@ -18,10 +18,7 @@ RUN apt-get update --fix-missing && \
     add-apt-repository -y ppa:sumo/stable && \
     apt-get update && \
     apt-get install -y \
-        libsm6 \
         libspatialindex-dev \
-        libxext6 \
-        libxrender-dev \
         python3.7 \
         python3.7-dev \
         python3.7-venv \
@@ -33,27 +30,29 @@ RUN apt-get update --fix-missing && \
     apt-get autoremove && \
     rm -rf /var/lib/apt/lists/*
 
+# Setup SUMO
+ENV SUMO_HOME /usr/share/sumo
+
 # Update default python version
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 
-# Install pip
+# Setup virtual environment and install pip
+ENV VIRTUAL_ENV=/opt/.venv
+RUN python3.7 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
     python get-pip.py && \
     pip install --upgrade pip
-
-# Setup SUMO
-ENV SUMO_HOME /usr/share/sumo
 
 # Install requirements.txt
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install SMARTS
-ENV PYTHONPATH=/src
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e .[train,test,dev,camera-obs] \
-    && cp -r /src/smarts.egg-info /media/smarts.egg-info
+RUN pip install --no-cache-dir -e .[train,test,dev,camera-obs] && \
+    cp -r /src/smarts.egg-info /media/smarts.egg-info
 
 # For Envision
 EXPOSE 8081

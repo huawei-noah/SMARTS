@@ -2,7 +2,7 @@
 
 function check_python_version_gte_3_7 {
     echo "Checking for >=python3.7"
-    # running through current minor verions
+    # running through current minor versions
     hash python3.7 2>/dev/null \
     || hash python3.8 2>/dev/null \
     || hash python3.9 2>/dev/null;
