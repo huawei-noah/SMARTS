@@ -19,7 +19,7 @@ jobs:
   test:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: adaickalavan/smarts:v0.4.18-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     strategy:
       matrix:
         tests:
