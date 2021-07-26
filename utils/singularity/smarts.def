@@ -39,8 +39,8 @@ From: ubuntu:bionic
     export VIRTUAL_ENV=/opt/.venv
     python3.7 -m venv $VIRTUAL_ENV
     export PATH="$VIRTUAL_ENV/bin:$PATH"
-    wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
-    python get-pip.py && \
+    wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py
+    python get-pip.py
     pip install --upgrade pip
 
     # Install requirements.txt
