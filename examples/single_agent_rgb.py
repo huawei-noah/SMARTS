@@ -110,7 +110,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(
-        scenarios=['./scenarios/loop/'],
+        scenarios=["./scenarios/loop/"],
         sim_name=args.sim_name,
         headless=True,
         num_episodes=2,
