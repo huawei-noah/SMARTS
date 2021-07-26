@@ -59,7 +59,8 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 ENV PYTHONPATH=/src
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e .[train,test,dev]
+RUN pip install --no-cache-dir -e .[train,test,dev,camera-obs] \
+    && cp -r /src/smarts.egg-info /media/smarts.egg-info
 
 # For Envision
 EXPOSE 8081
@@ -69,5 +70,12 @@ EXPOSE 8081
 RUN echo "/usr/bin/Xorg " \
     "-noreset +extension GLX +extension RANDR +extension RENDER" \
     "-logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch $DISPLAY &" >> ~/.bashrc
+
+# Suppress message of missing /dev/input folder and copy smarts.egg-info if not there
+RUN echo "mkdir -p /dev/input\n" \
+         "if [[ ! -d /src/smarts.egg-info ]]; then" \
+         "   cp -r /media/smarts.egg-info /src/smarts.egg-info;" \
+         "   chmod -R 777 /src/smarts.egg-info;" \
+         "fi" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]

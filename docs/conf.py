@@ -12,6 +12,7 @@
 #
 import os
 import sys
+from smarts import VERSION
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -23,7 +24,7 @@ copyright = "2021, Huawei Technologies."
 author = "Huawei Noah's Ark Lab."
 
 # The full version, including alpha/beta/rc tags
-release = "0.4.17"
+release = VERSION
 
 
 # -- General configuration ---------------------------------------------------
