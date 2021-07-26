@@ -353,8 +353,13 @@ t_patterns = {
                 "deadlock_optimization": False,
             },  # blocking
             "east-west": {
-                "vehicles": 1000,
-                "distribution": behavior_distribution,
+                "vehicles": 200,
+                "distribution": {
+                    "default": 0.80,
+                    "aggressive": 0.20,
+                    "cautious": 0.00,
+                    "blocker": 0.0,
+                },
                 "start_end_on_different_lanes_probability": 0.0,
                 "begin_time_init": {
                     "func": burst_begin_time_init_func,
