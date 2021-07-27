@@ -17,3 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+
+import pkg_resources
+
+# The full version, including alpha/beta/rc tags
+VERSION = pkg_resources.get_distribution("smarts").version

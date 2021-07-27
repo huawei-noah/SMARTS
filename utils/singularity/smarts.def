@@ -49,11 +49,12 @@ From: ubuntu:bionic
     # Copy source files and install SMARTS
     cd ${SINGULARITY_CONTAINER}/src
     pip install --no-cache-dir -e .[train,test,dev,camera-obs]
+    cp -r ${SINGULARITY_CONTAINER}/src/smarts.egg-info ${SINGULARITY_CONTAINER}/media/smarts.egg-info
 
 %environment
     export SUMO_HOME=/usr/share/sumo
     export PYTHONPATH=/src
+    . /src/utils/singularity/setup.sh
 
 %startscript
-    mkdir -p /dev/input
     python3.7 "$@"    

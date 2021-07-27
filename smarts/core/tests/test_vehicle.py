@@ -63,14 +63,14 @@ def social_vehicle(position, heading, speed, bullet_client):
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
         bullet_client=bullet_client,
     )
-    return Vehicle(id="sv-132", pose=pose, chassis=chassis)
+    return Vehicle(id="sv-132", chassis=chassis)
 
 
 @pytest.fixture
 def provider_vehicle(position, heading, speed):
     return VehicleState(
         vehicle_id="sv-132",
-        vehicle_type="truck",
+        vehicle_config_type="truck",
         pose=Pose.from_center(position, heading),
         dimensions=BoundingBox(length=3, width=1, height=2),
         speed=speed,
@@ -110,17 +110,15 @@ def test_create_social_vehicle(bullet_client):
 
     car = Vehicle(
         id="sv-132",
-        pose=Pose.from_center((0, 0, 0), Heading(0)),
         chassis=chassis,
-        sumo_vehicle_type="passenger",
+        vehicle_config_type="passenger",
     )
     assert car.vehicle_type == "car"
 
     truck = Vehicle(
         id="sv-132",
-        pose=Pose.from_center((0, 0, 0), Heading(0)),
         chassis=chassis,
-        sumo_vehicle_type="truck",
+        vehicle_config_type="truck",
     )
     assert truck.vehicle_type == "truck"
 
@@ -136,9 +134,8 @@ def test_vehicle_bounding_box(bullet_client):
 
     vehicle = Vehicle(
         id="vehicle-0",
-        pose=pose,
         chassis=chassis,
-        sumo_vehicle_type="passenger",
+        vehicle_config_type="passenger",
     )
     for coordinates in zip(
         vehicle.bounding_box, [[0.5, 2.5], (1.5, 2.5), (1.5, -0.5), (0.5, -0.5)]

@@ -283,23 +283,23 @@ $ cd </path/to/SMARTS>
 $ sudo singularity build ./utils/singularity/smarts.sif ./utils/singularity/smarts.def
 
 # Use the container to build the required scenarios.
-$ singularity shell --containall --bind ../SMARTS:/SMARTS ./utils/singularity/smarts.sif
+$ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
 # Inside the container
-Singularity> scl scenario build /SMARTS/scenarios/loop/
+Singularity> scl scenario build /src/scenarios/loop/
 Singularity> exit
 
 # Then, run the container using one of the following methods.
 
 # 1. Run container in interactive mode.
-$ singularity shell --containall --bind ../SMARTS:/SMARTS ./utils/singularity/smarts.sif
+$ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
 # Inside the container
-Singularity> python3.7 /SMARTS/examples/single_agent.py /SMARTS/scenarios/loop/ --headless
+Singularity> python3.7 /src/examples/single_agent.py /src/scenarios/loop/ --headless
 
 # 2. Run commands within the container from the host system.
-$ singularity exec --containall --bind ../SMARTS:/SMARTS ./utils/singularity/smarts.sif python3.7 /SMARTS/examples/single_agent.py /SMARTS/scenarios/loop/ --headless
+$ singularity exec --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif python3.7 /src/examples/single_agent.py /src/scenarios/loop/ --headless
 
 # 3. Run container instance in the background.
-$ singularity instance start --containall --bind ../SMARTS:/SMARTS ./utils/singularity/smarts.sif smarts_train /SMARTS/examples/single_agent.py /SMARTS/scenarios/loop/ --headless
+$ singularity instance start --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif smarts_train /src/examples/single_agent.py /src/scenarios/loop/ --headless
 ```
 
 ### Troubleshooting

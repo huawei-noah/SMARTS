@@ -95,7 +95,7 @@ def run(
         for pose, i in zip(injected_poses, range(len(injected_poses))):
             converted_to_provider = VehicleState(
                 vehicle_id=f"EGO{i}",
-                vehicle_type="passenger",
+                vehicle_config_type="passenger",
                 pose=pose,
                 dimensions=passenger_dimen,
                 speed=0,
@@ -112,9 +112,7 @@ def run(
             pose = Pose.from_center([0, 0, 0], Heading(0))
             vehicles[v] = Vehicle(
                 id=v_id,
-                pose=pose,
                 chassis=BoxChassis(
-                    pose=pose,
                     speed=0,
                     dimensions=vehicle_config.dimensions,
                     bullet_client=client,

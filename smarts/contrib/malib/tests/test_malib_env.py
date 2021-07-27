@@ -38,7 +38,7 @@ def env():
         "headless": True,
         "episode_limit": 1000,
         "visdom": False,
-        "timestep_sec": 0.1,
+        "fixed_timestep_sec": 0.1,
     }
 
     env = ListHiWayEnv(configs)
