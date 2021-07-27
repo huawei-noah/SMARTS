@@ -58,7 +58,7 @@ def test_we_reach_target_pose_at_given_time(motion_planner_provider, loop_scenar
     motion_planner_provider.create_vehicle(
         VehicleState(
             vehicle_id="EGO",
-            vehicle_type="passenger",
+            vehicle_config_type="passenger",
             pose=Pose.from_center([0, 0, 0.5], heading=Heading(0)),
             dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
             speed=0,

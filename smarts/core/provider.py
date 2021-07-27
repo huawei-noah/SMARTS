@@ -20,8 +20,6 @@
 from dataclasses import dataclass, field
 from typing import List, Set
 
-import numpy as np
-
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Pose
 from .scenario import Scenario
@@ -31,6 +29,7 @@ from .vehicle import VehicleState
 @dataclass
 class ProviderState:
     vehicles: List[VehicleState] = field(default_factory=list)
+    dt: float = None  # most Providers can leave this blank
 
     def merge(self, other: "ProviderState"):
         our_vehicles = {v.vehicle_id for v in self.vehicles}
@@ -63,7 +62,7 @@ class Provider:
     def setup(self, scenario: Scenario) -> ProviderState:
         raise NotImplementedError
 
-    def step(self, actions, dt, elapsed_sim_time) -> ProviderState:
+    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
         raise NotImplementedError
 
     def sync(self, provider_state: ProviderState):

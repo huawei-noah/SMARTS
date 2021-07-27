@@ -272,7 +272,7 @@ def smarts(agent_spec):
     smarts = SMARTS(
         agent_interfaces={AGENT_ID: agent_spec.interface},
         traffic_sim=SumoTrafficSimulation(),
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
     )
     yield smarts
     smarts.destroy()

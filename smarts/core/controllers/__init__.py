@@ -76,18 +76,18 @@ class Controllers:
             )
         elif action_space == ActionSpaceType.ActuatorDynamic:
             ActuatorDynamicController.perform_action(
-                vehicle, action, controller_state, dt_sec=sim.timestep_sec
+                vehicle, action, controller_state, dt_sec=sim.last_dt
             )
         elif action_space == ActionSpaceType.Trajectory:
             TrajectoryTrackingController.perform_trajectory_tracking_PD(
                 action,
                 vehicle,
                 controller_state,
-                dt_sec=sim.timestep_sec,
+                dt_sec=sim.last_dt,
             )
         elif action_space == ActionSpaceType.MPC:
             TrajectoryTrackingController.perform_trajectory_tracking_MPC(
-                action, vehicle, controller_state, sim.timestep_sec
+                action, vehicle, controller_state, sim.last_dt
             )
         elif action_space == ActionSpaceType.LaneWithContinuousSpeed:
             LaneFollowingController.perform_lane_following(
@@ -120,7 +120,7 @@ class Controllers:
             elif action == "change_lane_right":
                 perform_lane_following(target_speed=12.5, lane_change=-1)
         elif action_space == ActionSpaceType.Imitation:
-            ImitationController.perform_action(sim.timestep_sec, vehicle, action)
+            ImitationController.perform_action(sim.last_dt, vehicle, action)
         else:
             # Note: TargetPose and MultiTargetPose use a MotionPlannerProvider directly
             raise ValueError(
