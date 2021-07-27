@@ -48,16 +48,16 @@ RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
 COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e . && \
-    cp -r /src/ultra.egg-info /media/ultra.egg-info
+    cp -r /src/ultra_rl.egg-info /media/ultra_rl.egg-info
 
 # Expose a port for Envision.
 EXPOSE 8081
 
-# Suppress message of missing /dev/input folder and copy ultra.egg-info if not there
+# Suppress message of missing /dev/input folder and copy ultra_rl.egg-info if not there
 RUN echo "mkdir -p /dev/input\n" \
-         "if [[ ! -d /src/ultra.egg-info ]]; then" \
-         "   cp -r /media/ultra.egg-info /src/ultra.egg-info;" \
-         "   chmod -R 777 /src/ultra.egg-info;" \
+         "if [[ ! -d /src/ultra_rl.egg-info ]]; then" \
+         "   cp -r /media/ultra_rl.egg-info /src/ultra_rl.egg-info;" \
+         "   chmod -R 777 /src/ultra_rl.egg-info;" \
          "fi" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]
