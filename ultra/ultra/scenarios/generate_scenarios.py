@@ -335,8 +335,8 @@ def generate_left_turn_missions(
     intersection_name,
     traffic_density,
 ):
-    # dont worry about these seeds, theyre used by sumo
-    sumo_seed = random.choice([0, 1, 2, 3, 4])
+    # By default the sumo_seed is set to the scenario seed
+    sumo_seed = seed
     stopwatcher_info = None
     stopwatcher_added = False
     if stopwatcher_behavior:

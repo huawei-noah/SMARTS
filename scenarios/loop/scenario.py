@@ -9,16 +9,15 @@ traffic = t.Traffic(
         t.Flow(
             route=t.RandomRoute(),
             rate=60 * 60,
-            actors={
-                t.TrafficActor(
-                    name="car",
-                    vehicle_type=random.choice(
-                        ["passenger", "bus", "coach", "truck", "trailer"]
-                    ),
-                ): 1
-            },
+            actors={t.TrafficActor(name="car", vehicle_type=vehicle_type): 1},
         )
-        for i in range(5)
+        for vehicle_type in [
+            "passenger",
+            "bus",
+            "coach",
+            "truck",
+            "trailer",
+        ]
     ]
 )
 
