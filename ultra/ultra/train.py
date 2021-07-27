@@ -206,6 +206,7 @@ def train(
     )
 
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
+
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
         dones = {"__all__": False}
@@ -223,6 +224,20 @@ def train(
                 agent_classes,
                 agent_specs,
             )
+
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            evaluation_task_ids=evaluation_task_ids,
+            **eval_info,
+            **env.info,
+        )
+
+        collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
         evaluation_check(
             agents=agents,

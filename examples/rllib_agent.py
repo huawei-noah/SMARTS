@@ -2,9 +2,19 @@ from pathlib import Path
 
 import gym
 import numpy as np
-from ray.rllib.models import ModelCatalog
-from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
-from ray.rllib.utils import try_import_tf
+
+# ray[rllib] is not the part of main dependency of the SMARTS package. It needs to be installed separately
+# as a part of the smarts[train] dependency using the command "pip install -e .[train]. The following try block checks
+# whether ray[rllib] was installed by user and raises an Exception warning the user to install it if not so.
+try:
+    from ray.rllib.models import ModelCatalog
+    from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
+    from ray.rllib.utils import try_import_tf
+except Exception as e:
+    from examples import RayException
+
+    raise RayException.required_to("rllib_agent.py")
+
 
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType

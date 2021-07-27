@@ -5,7 +5,7 @@ on:
     - cron: '0 23 * * 4'
       # Time is in UTC
       # Runs at 11.00pm, UTC  , every Thursday
-      # Runs at  6.00pm, UTC-5, every Thursday
+      # Runs at  7.00pm, UTC-4, every Thursday
   workflow_dispatch:
 
 env:
@@ -36,7 +36,7 @@ jobs:
           pip install wheel
           pip install pympler
           pip install -r requirements.txt
-          pip install -e .[train,test]
+          pip install -e .[train,test,camera-obs]
       - name: Test memory growth
         run: |
           cd $GITHUB_WORKSPACE
