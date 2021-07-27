@@ -5,7 +5,7 @@ on:
     - cron: '0 23 * * 2'
       # Time is in UTC
       # Runs at 11.00pm, UTC  , every Tuesday
-      # Runs at  6.00pm, UTC-5, every Tuesday
+      # Runs at  7.00pm, UTC-4, every Tuesday
   workflow_dispatch:
 
 env:

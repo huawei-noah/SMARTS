@@ -34,7 +34,7 @@ class RLAgent(Agent):
         self._sess = tf.compat.v1.Session(graph=tf.Graph())
         self._sess.__enter__()
 
-        with tf.compat.v1.name_scope(self._policy_name):
+        with tf.name_scope(self._policy_name):
             # obs_space need to be flattened before passed to PPOTFPolicy
             flat_obs_space = self._prep.observation_space
             self.policy = LoadPolicy(flat_obs_space, self._action_space, {})
