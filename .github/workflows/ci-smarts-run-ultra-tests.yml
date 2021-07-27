@@ -13,28 +13,19 @@ on:
 jobs:
   test-base:
     runs-on: ubuntu-18.04
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
           ref: develop
-      - name: Setup X11
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
       - name: Install dependencies
         run: |
           cd ultra
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install --upgrade --upgrade-strategy eager pip
-          pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade pip
+          pip install --upgrade wheel
           pip install --upgrade -e .
           pip install --upgrade numpy
       - name: Run ultra tests
@@ -43,21 +34,13 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
+
   test-package-via-setup:
     runs-on: ubuntu-18.04
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup X11
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
       - name: Install ultra-rl via setup.py
         run: |
           cd ultra
@@ -72,29 +55,21 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/test_ultra_package.py
+
   test-package-via-wheel:
     runs-on: ubuntu-18.04
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup X11
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
       - name: Install ultra-rl via whl file
         run: |
           cd ultra
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install --upgrade --upgrade-strategy eager pip
-          pip install --upgrade --upgrade-strategy eager wheel
-          pip install --upgrade --upgrade-strategy eager -e .
+          pip install --upgrade pip
+          pip install --upgrade wheel
+          pip install --upgrade -e .
           python setup.py bdist_wheel
           cd dist
           pip install $(ls . | grep ultra)
