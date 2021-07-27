@@ -21,14 +21,13 @@
 # THE SOFTWARE.
 
 import pytest
-
+import time
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 from helpers.scenario import temp_scenario
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.frame_monitor import FrameMonitor
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 
 AGENT_1 = "Agent_007"
@@ -104,5 +103,9 @@ def test_smarts_framerate(smarts, scenarios):
     smarts.reset(scenario)
 
     for _ in range(10):
-        with FrameMonitor(10):
-            smarts.step({AGENT_1: "keep_lane"})
+        step_start_time = int(time.time() * 1000)
+        smarts.step({AGENT_1: "keep_lane"})
+        step_end_time = int(time.time() * 1000)
+        delta = step_end_time - step_start_time
+        step_fps = round(1000 / delta, 2)
+        assert step_fps >= 10
