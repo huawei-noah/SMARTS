@@ -9,5 +9,5 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 # Install our package on top
-pip install .
+pip install .[train,test,dev,camera-obs]
 pip freeze | grep -v -E '^smarts' | grep -v 'pkg-resources==0.0.0' | diff -u requirements.txt -
