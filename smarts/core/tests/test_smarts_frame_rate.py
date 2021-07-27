@@ -104,5 +104,5 @@ def test_smarts_framerate(smarts, scenarios):
     smarts.reset(scenario)
 
     for _ in range(10):
-        with FrameMonitor(30):
+        with FrameMonitor(10):
             smarts.step({AGENT_1: "keep_lane"})
