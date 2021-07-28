@@ -177,6 +177,10 @@ class Mission:
     def is_complete(self, vehicle, distance_travelled):
         return self.goal.is_reached(vehicle)
 
+    @property
+    def start_pos(self):
+        return self.start.position if self.start else self.start_pose.position
+
 
 @dataclass(frozen=True)
 class LapMission:

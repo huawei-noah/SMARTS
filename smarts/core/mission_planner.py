@@ -128,7 +128,7 @@ class MissionPlanner:
             self._route = EmptyRoute()
         else:
             start_lane = self._road_network.nearest_lane(
-                self._mission.start.position,
+                self._mission.start_pos,
                 include_junctions=False,
                 include_special=False,
             )
@@ -399,7 +399,7 @@ class MissionPlanner:
             neighborhood_vehicles[0].pose.position[:2]
         )
         start_lane = self._road_network.nearest_lane(
-            self._mission.start.position,
+            self._mission.start_pos,
             include_junctions=False,
             include_special=False,
         )
