@@ -24,6 +24,7 @@ import glob
 import importlib
 import os
 import pickle
+import pkg_resources
 from typing import Sequence, Tuple
 
 # Set environment to better support Ray
@@ -371,6 +372,12 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    if pkg_resources.get_distribution("smarts").version >= "0.4.17":
+        raise Exception(
+            "ULTRA tuning does not work with smarts>=0.4.17. See "
+            "https://github.com/huawei-noah/SMARTS/pull/1027 for more information."
+        )
 
     assert (
         args.metric in _AVAILABLE_TUNE_METRICS
