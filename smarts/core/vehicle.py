@@ -312,8 +312,9 @@ class Vehicle:
     def vehicle_type(self):
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
 
-    @staticmethod
+    @classmethod
     def build_agent_vehicle(
+        cls,
         sim,
         vehicle_id,
         agent_interface,
@@ -383,7 +384,8 @@ class Vehicle:
         # change this to dynamic_action_spaces later when pr merged
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
             if mission.vehicle_spec:
-                self._log.warning(
+                logger = logging.getLogger(cls.__name__)
+                logger.warning(
                     "setting vehicle dimensions on a AckermannChassis not yet supported"
                 )
             chassis = AckermannChassis(
