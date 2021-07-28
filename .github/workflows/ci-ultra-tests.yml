@@ -75,8 +75,8 @@ jobs:
           ./tests/test_episode.py \
           ./tests/test_rllib_train.py \
           ./tests/test_scenarios.py \
-          ./tests/test_social_vehicles.py \
-          ./tests/test_tune.py
+          ./tests/test_social_vehicles.py
+          # ./tests/test_tune.py
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
