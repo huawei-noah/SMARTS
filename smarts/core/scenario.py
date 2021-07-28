@@ -47,16 +47,18 @@ from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
 
 
-# XXX: consider using smarts.core.coordinates.Pose for this
+# XXX: consider using Mission's `start_pose` member instead of `start`
 @dataclass(frozen=True)
 class Start:
     position: Tuple[int, int]
     heading: Heading
 
     @classmethod
-    def from_pose(cls, pose: Pose):
+    def from_pose(cls, pose: Pose, veh_length: float):
+        # Start is relative to front bumper but pose is center of vehicle
+        hhx, hhy = radians_to_vec(pose.heading) * (0.5 * veh_length)
         return cls(
-            position=pose.position[:2],
+            position=(pose.position[0] + hhx, pose.position[1] + hhy),
             heading=pose.heading,
         )
 
@@ -165,6 +167,8 @@ class Mission:
     via: Tuple[Via, ...] = ()
     # if specified, will use vehicle_spec to build the vehicle (for histories)
     vehicle_spec: VehicleSpec = None
+    # Alternate way of specifying the start position; `start` must be None if specified.
+    start_pose: Pose = None
 
     @property
     def has_fixed_route(self):
@@ -570,17 +574,16 @@ class Scenario:
             pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
             assert pphs
             pos_x, pos_y, heading, speed = pphs
+            start_pose = Pose.from_center(
+                (pos_x + map_offset[0], pos_y + map_offset[1]), heading
+            )
             entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
             veh_config_type = self._traffic_history.vehicle_config_type(v_id)
             veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(v_id)
-            # missions start from front bumper, but pos is center of vehicle
-            hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
             vehicle_missions[v_id] = Mission(
-                start=Start(
-                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
-                    Heading(heading),
-                ),
+                start=None,
+                start_pose=start_pose,
                 entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_network),
                 start_time=start_time,

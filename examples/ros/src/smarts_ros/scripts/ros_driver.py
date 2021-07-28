@@ -292,7 +292,8 @@ class ROSDriver:
         else:
             goal = EndlessGoal()
         mission = Mission(
-            start=Start.from_pose(ROSDriver._pose_from_ros(ros_agent_spec.start_pose)),
+            start=None,
+            start_pose=ROSDriver._pose_from_ros(ros_agent_spec.start_pose),
             goal=goal,
             # TODO:  how to prevent them from spawning on top of another existing vehicle? (see how it's done in SUMO traffic)
             entry_tactic=default_entry_tactic(ros_agent_spec.start_speed),

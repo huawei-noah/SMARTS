@@ -345,11 +345,16 @@ class Vehicle:
                 initial_speed = mission.task.initial_speed
 
         start = mission.start
-        start_pose = Pose.from_front_bumper(
-            front_bumper_position=np.array(start.position),
-            heading=start.heading,
-            length=chassis_dims.length,
-        )
+        if start:
+            assert not mission.start_pose
+            start_pose = Pose.from_front_bumper(
+                front_bumper_position=np.array(start.position),
+                heading=start.heading,
+                length=chassis_dims.length,
+            )
+        else:
+            assert mission.start_pose
+            start_pose = mission.start_pose
 
         vehicle_color = (
             SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
