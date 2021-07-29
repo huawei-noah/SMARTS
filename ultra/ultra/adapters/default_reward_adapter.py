@@ -105,17 +105,16 @@ def adapt(observation: Observation, reward: float) -> float:
     # Termination reward
     ego_reached_goal_reward = 1.0 if ego_events.reached_goal else 0.0
 
-    # Termination penalty
-    ego_collision_penalty = -1.0 if len(ego_events.collisions) > 0.0 else 0.0
-    ego_off_road_penalty = -1.0 if ego_events.off_road else 0.0
-    ego_not_moving_penalty = -1.0 if ego_events.not_moving else 0.0
-    ego_off_route_penalty = -1.0 if ego_events.off_route else 0.0
-    ego_wrong_way_penalty = -1.0 if ego_events.wrong_way else 0.0
+    # Termination reward
+    ego_collision_reward = -1.0 if len(ego_events.collisions) > 0 else 0.0
+    ego_off_road_reward = -1.0 if ego_events.off_road else 0.0
+    ego_off_route_reward = -1.0 if ego_events.off_route else 0.0
+    ego_wrong_way_reward = -1.0 if ego_events.wrong_way else 0.0
 
     # Intermediate rewards/penalties per step
     ego_step_reward = 0.02 * min(speed_fraction, 1) * np.cos(angle_error)
-    ego_dist_center_penalty = -0.005 * min(1, abs(ego_dist_center))
-    ego_angle_error_penalty = 0.005 * max(0, np.cos(angle_error))
+    ego_dist_center_reward = -0.005 * min(1, abs(ego_dist_center))
+    ego_angle_error_reward = 0.005 * max(0, np.cos(angle_error))
     ego_linear_jerk = -0.0001 * linear_jerk
     ego_angular_jerk = -0.0001 * angular_jerk * math.cos(angle_error)
 
@@ -134,13 +133,13 @@ def adapt(observation: Observation, reward: float) -> float:
     rewards = sum(
         [
             ego_reached_goal_reward,
-            ego_collision_penalty,
-            ego_off_road_penalty,
-            ego_off_route_penalty,
-            ego_wrong_way_penalty,
+            ego_collision_reward,
+            ego_off_road_reward,
+            ego_off_route_reward,
+            ego_wrong_way_reward,
             ego_speed_reward,
-            ego_dist_center_penalty,
-            ego_angle_error_penalty,
+            ego_dist_center_reward,
+            ego_angle_error_reward,
             ego_step_reward,
             env_reward,
             # ego_linear_jerk,
