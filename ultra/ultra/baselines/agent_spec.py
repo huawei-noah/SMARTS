@@ -24,7 +24,7 @@ import numpy as np
 import torch, yaml, os, inspect, dill
 
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface
+from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from ultra.baselines.common.yaml_loader import load_yaml
 import ultra.adapters as adapters
 
@@ -111,6 +111,7 @@ class BaselineAgentSpec(AgentSpec):
                 interface=AgentInterface(
                     **adapter_interface_requirements,
                     max_episode_steps=max_episode_steps,
+                    done_criteria=DoneCriteria(wrong_way=True)
                     debug=True,
                 ),
                 agent_params=dict(
