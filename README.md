@@ -80,10 +80,15 @@ pip install -e .[train]
 # OPTIONAL: install [camera-obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
 pip install -e .[camera-obs]  
 
+# To run sanity-test on Ubuntu
 # make sure you can run sanity-test (and verify they are passing)
 # if tests fail, check './sanity_test_result.xml' for test report. 
 pip install -e .[test]
 make sanity-test
+
+# To run sanity-test on Mac OS X
+pip install -e .[test]
+make macos-sanity-test
 
 # then you can run a scenario, see following section for more details
 ```
