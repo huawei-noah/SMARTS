@@ -119,11 +119,12 @@ def adapt(observation: Observation, reward: float) -> float:
     ego_angular_jerk = -0.0001 * angular_jerk * math.cos(angle_error)
 
     # Speed reward
-    ego_speed_reward = min(
-        0, (closest_wp.speed_limit - ego_observation.speed) * 0.01
-    )  # m/s
-    ego_speed_reward += -0.01 if speed_fraction < 0.01 else 0.0  # Speed below threshold
-    ego_speed_reward = -0.1 if speed_fraction >= 1 else 0.0  # Speed above limit
+    if speed_fraction < 0.01: # Speed below threshold
+        ego_speed_reward = -0.01
+    elif speed_fraction >= 1: # Speed above limit
+        ego_speed_reward = -0.1
+    else:
+        ego_speed_reward = 0.0
 
     # NOTE: This requires the NeighborhoodVehicles interface.
     # ego_safety_reward = -0.02 if ego_num_violations > 0 else 0
