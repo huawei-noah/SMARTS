@@ -27,6 +27,7 @@ class TestSmartsRos(TestCase):
     """Node to test the smarts_ros package."""
 
     def __init__(self):
+        super().__init__()
         self._smarts_info_srv = None
         self._control_publisher = None
         self._agents = {}
@@ -105,11 +106,10 @@ class TestSmartsRos(TestCase):
 
     def _agents_callback(self, agents: AgentsStamped):
         rospy.logdebug(f"got report about {len(agents.agents)} agents")
-        self.assertEqual(
-            len(agents.agents),
-            len(self._agents),
-            f"{len(agents.agents)} != {len(self._agents)}",
-        )
+        if len(agents.agents) != len(self._agents):
+            rospy.logwarn(
+                f"SMARTS reporting {len(agents.agents)} agents, but we've added {len(self._agents)}."
+            )
 
     def _entities_callback(self, entities: EntitiesStamped):
         rospy.logdebug(f"got report about {len(entities.entities)} agents")
@@ -117,21 +117,7 @@ class TestSmartsRos(TestCase):
     def run_forever(self):
         if not self._smarts_info_srv:
             raise RuntimeError("must call setup_ros() first.")
-
         scenario = self._init_scenario()
-
-        rospy.sleep(3)  # hack to avoid race w/ resetting the SMARTS scenario
-        smarts_info = self._smarts_info_srv()
-        self.assertEqual(
-            scenario,
-            smarts_info.current_scenario_path,
-            f"'{scenario}' != '{smarts_info.current_scenario_path}'",
-        )
-        self.assertEqual(0, smarts_info.step_count, f"{smarts_info.step_count}")
-        self.assertEqual(
-            0.0, smarts_info.elapsed_sim_time, f"{smarts_info.elapsed_sim_time}"
-        )
-
         rospy.spin()
 
 
