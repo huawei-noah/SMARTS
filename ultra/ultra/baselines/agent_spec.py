@@ -72,7 +72,9 @@ class BaselineAgentSpec(AgentSpec):
                     reward_adapter=spec.reward_adapter,
                     info_adapter=spec.info_adapter,
                 )
-
+                
+                # Update the interface.done_criteria for existing agent specs
+                new_spec.interface.done_criteria = DoneCriteria(wrong_way=True)
                 spec = new_spec
         else:
             # If policy_params is None, then there must be a params.yaml file in the
@@ -111,7 +113,7 @@ class BaselineAgentSpec(AgentSpec):
                 interface=AgentInterface(
                     **adapter_interface_requirements,
                     max_episode_steps=max_episode_steps,
-                    done_criteria=DoneCriteria(wrong_way=True)
+                    done_criteria=DoneCriteria(wrong_way=True),
                     debug=True,
                 ),
                 agent_params=dict(
