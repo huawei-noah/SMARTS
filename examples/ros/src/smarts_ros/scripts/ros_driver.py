@@ -474,8 +474,8 @@ class ROSDriver:
         agents = AgentsStamped()
         agents.header.stamp = rospy.Time.now()
         for agent_id, agent_obs in observations.items():
-            pose = Pose.from_center(veh_state.position, veh_state.heading)
             veh_state = agent_obs.ego_vehicle_state
+            pose = Pose.from_center(veh_state.position, veh_state.heading)
             agent = AgentReport()
             agent.agent_id = agent_id
             ROSDriver._vector_to_xyz(pose.position, agent.pose.position)
@@ -502,7 +502,10 @@ class ROSDriver:
             for agent_id, agent in self._agents_to_add.items():
                 spec, mission = agent[0], agent[1]
                 assert agent_id not in self._agents
-                self._agents[agent_id] = spec.build_agent()
+                agent = spec.build_agent()
+                # XXX: hack! in the future this injection must be removed or done another way...
+                agent.sim = self._smarts
+                self._agents[agent_id] = agent
                 self._smarts.add_agent_with_mission(agent_id, spec.interface, mission)
             self._agents_to_add = {}
             return actions
