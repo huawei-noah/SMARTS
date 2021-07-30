@@ -20,11 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from collections import defaultdict
-from glob import glob
 from os import path
-from pathlib import Path
-
 from setuptools import find_packages, setup
 
 this_dir = path.abspath(path.dirname(__file__))
@@ -45,7 +41,7 @@ setup(
     zip_safe=True,
     python_requires=">=3.7",
     install_requires=[
-        "smarts[train,test,camera-obs]==0.4.18",
+        "smarts[train,test,camera-obs]@git+https://github.com/huaweinoah/smarts.git#67e914ee3f24691315369d9a7118eab1c5dc0b50",
         "setuptools>=41.0.0,!=50.0",
         "dill",
         "black==20.8b1",
