@@ -372,26 +372,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # args.task = "00"
-    # args.level = "easy"
-    # args.policy = "ppo"
-    # args.episode = 2
-    # args.max_episode_steps = 50
-    # args.timestep = 0.1
-    # args.headless = True
-    # args.eval_episodes = 2
-    # args.save_rate = 1
-    # args.seed = 2
-    # args.log_dir = os.path.join("/home/kyber/workspaces/SMARTS/ultra/tune_logs")
-    # args.config_module = "tests.tune.ppo_config"
-    # args.metric = "episode_return"
-    # args.mode = "max"
-    # args.scope = "last"
-    # args.grace_period = 1
-    # args.reduction_factor = 2
-    # args.brackets = 1
-    # args.num_samples = 2
-
     assert (
         args.metric in _AVAILABLE_TUNE_METRICS
     ), f"Unsupported metric '{args.metric}'."
