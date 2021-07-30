@@ -21,7 +21,7 @@ import logging
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from typing import NamedTuple
+from typing import FrozenSet, NamedTuple
 
 import numpy as np
 import tableprint as tp
@@ -164,11 +164,15 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
-    def social_vehicle_ids(self):
+    def social_vehicle_ids(self, vehicle_types: FrozenSet[str] = None):
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Social
         ]["vehicle_id"]
-        vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
+        vehicle_ids = [
+            self._2id_to_id[id_]
+            for id_ in vehicle_ids
+            if not vehicle_types or self._vehicles[id_].vehicle_type in vehicle_types
+        ]
         return set(vehicle_ids)
 
     @cache
@@ -627,13 +631,13 @@ class VehicleIndex:
 
     @clear_cache
     def build_social_vehicle(
-        self, sim, vehicle_state, actor_id, vehicle_type, vehicle_id=None
-    ):
+        self, sim, vehicle_state, actor_id, vehicle_config_type, vehicle_id=None
+    ) -> Vehicle:
         if vehicle_id is None:
             vehicle_id = gen_id()
 
         vehicle = Vehicle.build_social_vehicle(
-            sim, vehicle_id, vehicle_state, vehicle_type
+            sim, vehicle_id, vehicle_state, vehicle_config_type
         )
 
         vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id)
