@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Linux packages
+        run: sudo apt install git-all 
       - name: Install dependencies
         run: |
           cd ultra
@@ -53,6 +55,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Linux packages
+        run: sudo apt install git-all   
       - name: Install dependencies
         run: |
           cd ultra
@@ -85,6 +89,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Linux packages
+        run: sudo apt install git-all         
       - name: Install ultra-rl via setup.py
         run: |
           cd ultra
@@ -109,6 +115,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Linux packages
+        run: sudo apt install git-all         
       - name: Install ultra-rl via whl file
         run: |
           cd ultra
@@ -138,6 +146,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Linux packages
+        run: sudo apt install git-all   
       - name: Install ultra-rl via pypi
         run: |
           cd ultra
