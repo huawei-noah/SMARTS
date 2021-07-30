@@ -41,7 +41,7 @@ setup(
     zip_safe=True,
     python_requires=">=3.7",
     install_requires=[
-        "smarts[train,test,camera-obs]@git+https://github.com/huawei-noah/SMARTS.git#67e914ee3f24691315369d9a7118eab1c5dc0b50",
+        "smarts[train,test,camera-obs] @ git+https://git@github.com/huawei-noah/SMARTS@social-agents#egg=smarts",
         "setuptools>=41.0.0,!=50.0",
         "dill",
         "black==20.8b1",
