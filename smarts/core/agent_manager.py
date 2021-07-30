@@ -456,6 +456,10 @@ class AgentManager:
         self._social_agent_data_models[agent_id] = agent_model
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
+        if not self._remote_agent_buffer:
+            self._remote_agent_buffer = RemoteAgentBuffer(
+                zoo_manager_addrs=self._zoo_addrs
+            )
         remote_agent = self._remote_agent_buffer.acquire_remote_agent()
         remote_agent.start(social_agent)
         self._remote_social_agents[agent_id] = remote_agent
