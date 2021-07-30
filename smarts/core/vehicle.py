@@ -378,11 +378,11 @@ class Vehicle:
 
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
-        if (
-            agent_interface
-            and agent_interface.action in sim.dynamic_action_spaces
-            and not mission.vehicle_spec
-        ):
+        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+            if mission.vehicle_spec:
+                self._log.warning(
+                    "setting vehicle dimensions on a AckermannChassis not yet supported"
+                )
             chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,

@@ -12,6 +12,9 @@ on:
       - ultra_**
       - ultra/**
 
+env:
+  venv_dir: .venv
+
 jobs:
   test-heavy-base-tests:
     runs-on: ubuntu-18.04
@@ -20,14 +23,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Linux packages
+        run: |
+          add-apt-repository ppa:git-core/ppa
+          apt-get update
+          apt-get install -y git
       - name: Install dependencies
         run: |
           cd ultra
-          python3.7 -m venv .venv
-          . .venv/bin/activate
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install --upgrade -e .
+          pip install -e .
           pip install --upgrade numpy
       - name: Run ultra tests (heavy)
         # To prevent segmentation faults and/or termination signals (i.e. SIGABRT), the
@@ -35,7 +43,7 @@ jobs:
         # heavy tests are divided up into two parts (forked and unforked).
         run: |
           cd ultra
-          . .venv/bin/activate
+          . ${{env.venv_dir}}/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           --durations=0 \
@@ -50,33 +58,42 @@ jobs:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
+    strategy:
+      matrix:
+        tests:         
+          - ./tests/test_adapter.py
+          - ./tests/test_env.py
+          - ./tests/test_episode.py
+          - ./tests/test_rllib_train.py
+          - ./tests/test_scenarios.py
+          - ./tests/test_social_vehicles.py
+          - ./tests/test_tune.py
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Linux packages
+        run: |
+          add-apt-repository ppa:git-core/ppa
+          apt-get update
+          apt-get install -y git
       - name: Install dependencies
         run: |
           cd ultra
-          python3.7 -m venv .venv
-          . .venv/bin/activate
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install --upgrade -e .
+          pip install -e .
           pip install --upgrade numpy
       - name: Run ultra tests (light)
         run: |
           cd ultra
-          . .venv/bin/activate
+          . ${{env.venv_dir}}/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           --durations=0 \
           --forked \
-          ./tests/test_adapter.py \
-          ./tests/test_env.py \
-          ./tests/test_episode.py \
-          ./tests/test_rllib_train.py \
-          ./tests/test_scenarios.py \
-          ./tests/test_social_vehicles.py \
-          ./tests/test_tune.py
+          ${{matrix.tests}}
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
@@ -85,22 +102,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Linux packages
+        run: |
+          add-apt-repository ppa:git-core/ppa
+          apt-get update
+          apt-get install -y git 
       - name: Install ultra-rl via setup.py
         run: |
           cd ultra
-          python3.7 -m venv .venv
-          . .venv/bin/activate
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
-          pip install --upgrade -e .
+          pip install -e .
           pip install --upgrade numpy
       - name: Run test
         run: |
           cd ultra
-          . .venv/bin/activate
+          . ${{env.venv_dir}}/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           --durations=0 \
-          ./tests/test_ultra_package.py \
+          ./tests/test_ultra_package.py
 
   test-package-via-wheel:
     runs-on: ubuntu-18.04
@@ -109,13 +131,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Linux packages
+        run: |
+          add-apt-repository ppa:git-core/ppa
+          apt-get update
+          apt-get install -y git    
       - name: Install ultra-rl via whl file
         run: |
           cd ultra
-          python3.7 -m venv .venv
-          . .venv/bin/activate
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
-          pip install --upgrade -e .
+          pip install -e .
           pip install --upgrade numpy
           python setup.py bdist_wheel
           cd dist
@@ -125,11 +152,11 @@ jobs:
       - name: Run test
         run: |
           cd ultra
-          . .venv/bin/activate
+          . ${{env.venv_dir}}/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
           --durations=0 \
-          ./tests/test_ultra_package.py \
+          ./tests/test_ultra_package.py
 
   test-package-via-pypi:
     runs-on: ubuntu-18.04
@@ -141,12 +168,12 @@ jobs:
       - name: Install ultra-rl via pypi
         run: |
           cd ultra
-          python3.7 -m venv .venv
-          . .venv/bin/activate
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
           pip install ultra-rl
       - name: Run test
         run: |
           cd ultra
-          . .venv/bin/activate
+          . ${{env.venv_dir}}/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/test_ultra_package.py
