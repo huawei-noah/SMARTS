@@ -31,7 +31,7 @@ import tableprint as tp
 class EpisodeLog:
     index: int = 0
     start_time: float = field(default_factory=lambda: time.time())
-    timestep_sec: float = 0
+    fixed_timestep_sec: float = 0
     scores: dict = field(default_factory=lambda: defaultdict(lambda: 0))
     steps: int = 0
     scenario_map: str = ""
@@ -44,7 +44,7 @@ class EpisodeLog:
 
     @property
     def sim_time(self):
-        return self.timestep_sec * self.steps
+        return self.fixed_timestep_sec * self.steps
 
     @property
     def sim2wall_ratio(self):
@@ -55,7 +55,7 @@ class EpisodeLog:
         return self.steps / self.wall_time
 
     def record_scenario(self, scenario_log):
-        self.timestep_sec = scenario_log["timestep_sec"]
+        self.fixed_timestep_sec = scenario_log["fixed_timestep_sec"]
         self.scenario_map = scenario_log["scenario_map"]
         self.scenario_routes = scenario_log["scenario_routes"]
         self.mission_hash = scenario_log["mission_hash"]

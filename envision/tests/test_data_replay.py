@@ -125,7 +125,7 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
         agent_interfaces={AGENT_ID: agent_spec.interface},
         traffic_sim=SumoTrafficSimulation(time_resolution=TIMESTEP_SEC),
         envision=envision,
-        timestep_sec=TIMESTEP_SEC,
+        fixed_timestep_sec=TIMESTEP_SEC,
     )
     step_through_episodes(agent_spec, smarts, scenarios_iterator)
     smarts.destroy()
@@ -146,7 +146,7 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
     assert new_sent_data.qsize() == 0
 
     # Now read data replay
-    Envision.read_and_send(jsonl_paths[0], timestep_sec=TIMESTEP_SEC)
+    Envision.read_and_send(jsonl_paths[0], fixed_timestep_sec=TIMESTEP_SEC)
 
     # Verify the new data matches the original data
     assert original_sent_data.qsize() == new_sent_data.qsize()

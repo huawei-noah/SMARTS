@@ -1,31 +1,32 @@
 name: ULTRA CI Base Tests
 
-on: [push, pull_request]
+on: 
+  push:
+    branches:
+      - ultra-**
+      - ultra_**
+      - ultra/**
+  pull_request:
+    branches:
+      - ultra-**
+      - ultra_**
+      - ultra/**
 
 jobs:
   test-heavy-base-tests:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup X11
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
       - name: Install dependencies
         run: |
           cd ultra
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install --upgrade --upgrade-strategy eager pip
-          pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade pip
+          pip install --upgrade wheel
           pip install --upgrade -e .
           pip install --upgrade numpy
       - name: Run ultra tests (heavy)
@@ -48,26 +49,17 @@ jobs:
   test-light-base-tests:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup X11
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
       - name: Install dependencies
         run: |
           cd ultra
           python3.7 -m venv .venv
           . .venv/bin/activate
-          pip install --upgrade --upgrade-strategy eager pip
-          pip install --upgrade --upgrade-strategy eager wheel
+          pip install --upgrade pip
+          pip install --upgrade wheel
           pip install --upgrade -e .
           pip install --upgrade numpy
       - name: Run ultra tests (light)
@@ -89,19 +81,10 @@ jobs:
   test-package-via-setup:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup X11
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
       - name: Install ultra-rl via setup.py
         run: |
           cd ultra
@@ -122,19 +105,10 @@ jobs:
   test-package-via-wheel:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup X11
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
       - name: Install ultra-rl via whl file
         run: |
           cd ultra
@@ -160,19 +134,10 @@ jobs:
   test-package-via-pypi:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup X11
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
       - name: Install ultra-rl via pypi
         run: |
           cd ultra

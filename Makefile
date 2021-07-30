@@ -13,6 +13,8 @@ test: build-all-scenarios
 		--ignore=./smarts/env/tests/test_benchmark.py \
 		--ignore=./smarts/env/tests/test_learning.py \
 		-k 'not test_long_determinism'
+	rm -f .coverage.*
+	rm -f .coverage*
 
 .PHONY: sanity-test
 sanity-test: build-all-scenarios
@@ -44,6 +46,8 @@ test-memory-growth: build-all-scenarios
 		--dist=loadscope \
 		-n `nproc --ignore 1` \
 		./smarts/core/tests/test_smarts_memory_growth.py
+	rm -f .coverage.*
+	rm -f .coverage*
 
 .PHONY: test-long-determinism
 test-long-determinism: 
@@ -92,12 +96,6 @@ $(scenario)/flamegraph-perf.log: build-scenario $(script) smarts/core/* smarts/e
 	# pip install git+https://github.com/asokoloski/python-flamegraph.git
 	python -m flamegraph -i 0.001 -o $(scenario)/flamegraph-perf.log $(script) $(scenario)
 
-.PHONY: pview
-pview: $(scenario)/map.egg
-	# !!! READ THE pview MANUAL !!!
-	# https://www.panda3d.org/manual/?title=Previewing_3D_Models_in_Pview
-	pview -c -l $(scenario)/map.egg
-
 .PHONY: sumo-gui
 sumo-gui: $(scenario)/map.net.xml
 	sumo-gui \
@@ -105,11 +103,11 @@ sumo-gui: $(scenario)/map.net.xml
 
 .PHONY: header-test
 header-test:
-	bash ./header_test.sh
+	bash ./bin/header_test.sh
 
 .PHONY: gen-header
 gen-header:
-	bash ./gen_header.sh
+	bash ./bin/gen_header.sh
 
 .PHONY: clean
 clean:
@@ -126,11 +124,13 @@ clean:
 	rm -f ./$(scenario)/*.rou.alt.xml
 	rm -rf ./$(scenario)/traffic
 	rm -rf ./$(scenario)/social_agents
+	rm -f .coverage.*
+	rm -f .coverage*
 
 .PHONY: format
 format:
 	# pip install isort==5.7.0
-	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./benchmark/ ./cli ./envision ./examples/ ./extras/ ./scenarios/ ./smarts ./ultra ./zoo
+	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./ultra ./zoo
 	# pip install black==20.8b1
 	black .
 	# npm install prettier
@@ -152,3 +152,8 @@ wheel: docs
 .PHONY: rm-pycache
 rm-pycache:
 	find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+
+.PHONY: rm-cov
+rm-cov:
+	find . -type f -name ".coverage.*" -delete
+	find . -type f -name ".coverage*" -delete

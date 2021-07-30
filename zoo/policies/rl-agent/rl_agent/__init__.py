@@ -14,7 +14,7 @@ from .lane_space import (
     get_observation_adapter,
 )
 
-VERSION = "0.1.1"
+VERSION = "1.0.0"
 
 
 def entrypoint(
@@ -51,4 +51,4 @@ def entrypoint(
         )
 
 
-register(locator="rl-agent-v0", entry_point=entrypoint)
+register(locator="rl-agent-v1", entry_point=entrypoint)
