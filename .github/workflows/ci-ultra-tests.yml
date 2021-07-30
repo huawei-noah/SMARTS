@@ -23,8 +23,8 @@ jobs:
       - name: Install Linux packages
         run: |
           add-apt-repository ppa:git-core/ppa
-          apt update
-          apt install git
+          apt-get update
+          apt-get install -y git
       - name: Install dependencies
         run: |
           cd ultra
@@ -61,8 +61,8 @@ jobs:
       - name: Install Linux packages
         run: |
           add-apt-repository ppa:git-core/ppa
-          apt update
-          apt install git
+          apt-get update
+          apt-get install -y git
       - name: Install dependencies
         run: |
           cd ultra
@@ -98,8 +98,8 @@ jobs:
       - name: Install Linux packages
         run: |
           add-apt-repository ppa:git-core/ppa
-          apt update
-          apt install git     
+          apt-get update
+          apt-get install -y git 
       - name: Install ultra-rl via setup.py
         run: |
           cd ultra
@@ -127,8 +127,8 @@ jobs:
       - name: Install Linux packages
         run: |
           add-apt-repository ppa:git-core/ppa
-          apt update
-          apt install git        
+          apt-get update
+          apt-get install -y git    
       - name: Install ultra-rl via whl file
         run: |
           cd ultra
@@ -161,8 +161,8 @@ jobs:
       - name: Install Linux packages
         run: |
           add-apt-repository ppa:git-core/ppa
-          apt update
-          apt install git
+          apt-get update
+          apt-get install -y git
       - name: Install ultra-rl via pypi
         run: |
           cd ultra
