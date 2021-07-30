@@ -37,6 +37,7 @@ import SceneComponent from "babylonjs-hook";
 import Bubbles from "./bubbles.js";
 import Camera from "./camera.js";
 import Vehicles from "./vehicles.js";
+import { PLAYMODES } from "./header";
 import DrivenPaths from "./driven_paths.js";
 import MissionRoutes from "./mission_routes.js";
 import Waypoints from "./waypoints.js";
@@ -58,6 +59,7 @@ export default function Simulation({
   onElapsedTimesChanged = (current, total) => {},
   style = {},
   playing = true,
+  playingMode,
 }) {
   const [scene, setScene] = useState(null);
 
@@ -153,34 +155,30 @@ export default function Simulation({
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
   };
 
-  // State subscription
+  // State subscription, animate until the next render...
   useEffect(() => {
     let stopPolling = false;
     (async () => {
       const msInSec = 1000;
       const it = client.worldstate(simulationId);
       let prevElapsedTime = null;
-      let waitStartTime = null;
+      let waitStartTime = Date.now();
       let wstate_and_time;
       if (playing) wstate_and_time = await it.next();
       while (!stopPolling && playing && !wstate_and_time.done) {
         let wstate, elapsed_times;
         [wstate, elapsed_times] = wstate_and_time.value;
-        const currentTime = elapsed_times[0];
-        if (prevElapsedTime == null) {
-          // default: wait 50ms before playing the next frame
-          await sleep(50);
-        } else {
-          // msInSec*(currentTime-prevElapsedTime) is the time difference between
-          //   current frame and previous frame
-          // Since we could have waited (Date.now() - waitStartTime) to get the current frame,
-          //    we deduct this amount from the time we will be waiting
+        if (prevElapsedTime == null || playingMode == PLAYMODES.uncapped) {
+          // playing uncapped still needs a small amount of sleep time for
+          // React to trigger update, 0.1 millisecond
+          await sleep(0.1);
+        } else if (playingMode == PLAYMODES.near_real_time) {
           await sleep(
-            msInSec * (currentTime - prevElapsedTime) -
+            msInSec * (elapsed_times[0] - prevElapsedTime) -
               (Date.now() - waitStartTime)
           );
+          prevElapsedTime = elapsed_times[0];
         }
-        prevElapsedTime = currentTime;
 
         setWorldState(wstate);
         onElapsedTimesChanged(...elapsed_times);
@@ -191,7 +189,7 @@ export default function Simulation({
 
     // Called when simulation ID changes
     return () => (stopPolling = true);
-  }, [simulationId, playing]);
+  }, [simulationId, playing, playingMode]);
 
   // Load map
   useEffect(() => {

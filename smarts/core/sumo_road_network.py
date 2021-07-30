@@ -27,11 +27,11 @@ from functools import lru_cache
 from subprocess import check_output
 from tempfile import NamedTemporaryFile
 from typing import Sequence, Tuple, Union
-from cached_property import cached_property
 
 import numpy as np
 import trimesh
 import trimesh.scene
+from cached_property import cached_property
 from shapely import ops
 from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
@@ -39,6 +39,7 @@ from shapely.ops import snap, triangulate
 from trimesh.exchange import gltf
 
 from .utils.math import rotate_around_point
+from .lanepoints import LanePoints
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
 from sumolib.net.edge import Edge  # isort:skip
@@ -92,7 +93,9 @@ class SumoRoadNetwork:
     # in North America (although US highway lanes are wider at ~3.7m).
     DEFAULT_LANE_WIDTH = 3.2
 
-    def __init__(self, graph, net_file, default_lane_width=None):
+    def __init__(
+        self, graph, net_file, default_lane_width=None, lanepoint_spacing=None
+    ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
         self._net_file = net_file
@@ -101,20 +104,30 @@ class SumoRoadNetwork:
             if default_lane_width is not None
             else SumoRoadNetwork.DEFAULT_LANE_WIDTH
         )
+        self._lanepoints = None
+        if lanepoint_spacing is not None:
+            assert lanepoint_spacing > 0
+            # XXX: this should be last here since LanePoints() calls road_network methods immediately
+            self._lanepoints = LanePoints(self, spacing=lanepoint_spacing)
 
     @staticmethod
     def _check_net_origin(bbox):
         assert len(bbox) == 4
         return bbox[0] <= 0.0 and bbox[1] <= 0.0 and bbox[2] >= 0.0 and bbox[3] >= 0.0
 
+    shifted_net_file_name = "shifted_map-AUTOGEN.net.xml"
+
+    @classmethod
+    def shifted_net_file_path(cls, net_file_path):
+        net_file_folder = os.path.dirname(net_file_path)
+        return os.path.join(net_file_folder, cls.shifted_net_file_name)
+
     @classmethod
     @lru_cache(maxsize=1)
-    def _shift_coordinates(cls, net_file_path):
-        net_file_folder = os.path.dirname(net_file_path)
-        out_path = os.path.join(net_file_folder, f"shifted_map-AUTOGEN.net.xml")
-        assert out_path != net_file_path
+    def _shift_coordinates(cls, net_file_path, shifted_path):
+        assert shifted_path != net_file_path
         logger = logging.getLogger(cls.__name__)
-        logger.info(f"normalizing net coordinates into {out_path}...")
+        logger.info(f"normalizing net coordinates into {shifted_path}...")
         ## Translate the map's origin to remove huge (imprecise) offsets.
         ## See https://sumo.dlr.de/docs/netconvert.html#usage_description
         ## for netconvert options description.
@@ -126,37 +139,35 @@ class SumoRoadNetwork:
                     "-s",
                     net_file_path,
                     "-o",
-                    out_path,
+                    shifted_path,
                 ]
             )
             logger.debug(f"netconvert output: {stdout}")
-            return out_path
+            return True
         except Exception as e:
             logger.warning(
                 f"unable to use netconvert tool to normalize coordinates: {e}"
             )
-        return None
+        return False
 
     @classmethod
-    def from_file(cls, net_file, default_lane_width=None):
+    def from_file(
+        cls,
+        net_file,
+        shift_to_origin=False,
+        default_lane_width=None,
+        lanepoint_spacing=None,
+    ):
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
         G = sumolib.net.readNet(net_file, withInternal=True)
 
-        # check to see if we need to shift the map...
-        # if it already has an offset, it's probably been shifted
-        # correctly already, so we don't need to do it.  if not,
-        # then we check to see if the graph's bounding box includes
-        # the origin, and then shift it ourselves if not.
-        original_offset = G.getLocationOffset()
-        if (
-            original_offset[0] == 0
-            and original_offset[1] == 0
-            and not cls._check_net_origin(G.getBoundary())
-        ):
-            shifted_net_file = cls._shift_coordinates(net_file)
-            if shifted_net_file:
+        if not cls._check_net_origin(G.getBoundary()):
+            shifted_net_file = cls.shifted_net_file_path(net_file)
+            if os.path.isfile(shifted_net_file) or (
+                shift_to_origin and cls._shift_coordinates(net_file, shifted_net_file)
+            ):
                 G = sumolib.net.readNet(shifted_net_file, withInternal=True)
                 assert cls._check_net_origin(G.getBoundary())
                 net_file = shifted_net_file
@@ -167,7 +178,13 @@ class SumoRoadNetwork:
                 # the offset should not be used (because all their other
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
-        return cls(G, net_file, default_lane_width)
+
+        return cls(
+            G,
+            net_file,
+            default_lane_width=default_lane_width,
+            lanepoint_spacing=lanepoint_spacing,
+        )
 
     @property
     def graph(self):
@@ -195,6 +212,10 @@ class SumoRoadNetwork:
     def default_lane_width(self, default_lane_width):
         self._default_lane_width = default_lane_width
 
+    @property
+    def lanepoints(self):
+        return self._lanepoints
+
     def _compute_road_polygons(self):
         lane_to_poly = {}
         for edge in self._graph.getEdges():
@@ -209,7 +230,12 @@ class SumoRoadNetwork:
 
                 lane_to_poly[lane.getID()] = shape
 
+        # Remove holes created at tight junctions due to crude map geometry
+        self._snap_internal_holes(lane_to_poly)
+        self._snap_external_holes(lane_to_poly)
+        # Remove break in visible lane connections created when lane enters an intersection
         self._snap_internal_edges(lane_to_poly)
+
         polys = list(lane_to_poly.values())
 
         for node in self._graph.getNodes():
@@ -247,6 +273,59 @@ class SumoRoadNetwork:
             if outgoing_shape:
                 lane_shape = Polygon(snap(lane_shape, outgoing_shape, snap_threshold))
                 lane_to_poly[lane_id] = lane_shape
+
+    def _snap_internal_holes(self, lane_to_poly, snap_threshold=2):
+        for lane_id in lane_to_poly:
+            lane = self.lane_by_id(lane_id)
+
+            # Only do snapping for internal edge lane holes
+            if not lane.getEdge().isSpecial():
+                continue
+            lane_shape = lane_to_poly[lane_id]
+            for x, y in lane_shape.exterior.coords:
+                for nl, dist in self.nearest_lanes(
+                    (x, y),
+                    max(10, 2 * self._default_lane_width),
+                    include_junctions=False,
+                ):
+                    if not nl:
+                        continue
+                    nl_shape = lane_to_poly.get(nl.getID())
+                    if nl_shape:
+                        lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
+            lane_to_poly[lane_id] = lane_shape
+
+    def _snap_external_holes(self, lane_to_poly, snap_threshold=2):
+        for lane_id in lane_to_poly:
+            lane = self.lane_by_id(lane_id)
+
+            # Only do snapping for external edge lane holes
+            if lane.getEdge().isSpecial():
+                continue
+
+            incoming = self.lane_by_id(lane_id).getIncoming()
+            if incoming and incoming[0].getEdge().isSpecial():
+                continue
+
+            outgoing = self.lane_by_id(lane_id).getOutgoing()
+            if outgoing:
+                outgoing_lane = outgoing[0].getToLane()
+                if outgoing_lane.getEdge().isSpecial():
+                    continue
+
+            lane_shape = lane_to_poly[lane_id]
+            for x, y in lane_shape.exterior.coords:
+                for nl, dist in self.nearest_lanes(
+                    (x, y),
+                    max(10, 2 * self._default_lane_width),
+                    include_junctions=False,
+                ):
+                    if (not nl) or (nl and nl.getEdge().isSpecial()):
+                        continue
+                    nl_shape = lane_to_poly.get(nl.getID())
+                    if nl_shape:
+                        lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
+            lane_to_poly[lane_id] = lane_shape
 
     @staticmethod
     def _triangulate(polygon):
@@ -408,6 +487,7 @@ class SumoRoadNetwork:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
         x, y = point
+        # XXX: note that this getNeighboringLanes() call is fairly heavy/expensive (as revealed by profiling)
         candidate_lanes = self._graph.getNeighboringLanes(
             x, y, r=radius, includeJunctions=include_junctions, allowFallback=False
         )
@@ -538,17 +618,55 @@ class SumoRoadNetwork:
 
     def point_is_within_road(self, point):
         # XXX: Not robust around junctions (since their shape is quite crude?)
-        # # We use a small radius 10 factor in some forgiveness for crude SUMO distance checks
-        # for lane, dist in self.nearest_lanes(point[:2], radius=10):
-        #     shape = SumoRoadNetwork.buffered_lane_or_edge(lane, lane.getWidth() * 1)
-        #     if sumolib.geomhelper.isWithin(point, shape):
-        #         return True
-        #
-        # return False
-
         radius = max(5, 2 * self._default_lane_width)
-        nearest_lanes = self.nearest_lanes(point[:2], radius=radius)
-        return any(0.5 * nl.getWidth() + 1e-1 > dist for nl, dist in nearest_lanes)
+        for nl, dist in self.nearest_lanes(point[:2], radius=radius):
+            if dist < 0.5 * nl.getWidth() + 1e-1:
+                return True
+        return False
+
+    def drove_off_map(
+        self, veh_position: Tuple[float, float, float], veh_heading: float
+    ) -> bool:
+        # try to determine if the vehicle "exited" the map by driving beyond the end of a dead-end lane.
+        radius = max(5, 2 * self._default_lane_width)
+        nearest_lanes = self.nearest_lanes(veh_position[:2], radius=radius)
+        if not nearest_lanes:
+            return False  # we can't tell anything here
+        nl, dist = nearest_lanes[0]
+        if nl.getOutgoing() or dist < 0.5 * nl.getWidth() + 1e-1:
+            return False  # the last lane it was in was not a dead-end, or it's still in a lane
+        end_node = nl.getEdge().getToNode()
+        end_point = end_node.getCoord()
+        dist = math.sqrt(
+            (veh_position[0] - end_point[0]) ** 2
+            + (veh_position[1] - end_point[1]) ** 2
+        )
+        if dist > 2 * nl.getWidth():
+            return False  # it's no where near the end of the lane
+        # now check its heading to ensure it was going in roughly the right direction for this lane
+        end_shape = end_node.getShape()
+        veh_heading %= 2 * math.pi
+        tolerance = math.pi / 4
+        for p in range(1, len(end_shape)):
+            num = end_shape[p][1] - end_shape[p - 1][1]
+            den = end_shape[p][0] - end_shape[p - 1][0]
+            crossing_heading = math.atan(-den / num)
+            if den < 0:
+                crossing_heading += math.pi
+            elif num < 0:
+                crossing_heading -= math.pi
+            crossing_heading -= math.pi / 2
+            # we allow for it to be going either way since it's a pain to determine which side of the edge it's on
+            if (
+                abs(veh_heading - crossing_heading % (2 * math.pi)) < tolerance
+                or abs(
+                    (veh_heading + math.pi) % (2 * math.pi)
+                    - crossing_heading % (2 * math.pi)
+                )
+                < tolerance
+            ):
+                return True
+        return False
 
     def road_nodes_with_triggers(self):
         """Scan the road network for any nodes with ID's that match the form:

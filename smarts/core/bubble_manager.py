@@ -504,7 +504,7 @@ class BubbleManager:
                 provider.create_vehicle(
                     VehicleState(
                         vehicle_id=vehicle_id,
-                        vehicle_type="passenger",
+                        vehicle_config_type="passenger",
                         pose=vehicle.pose,
                         dimensions=vehicle.chassis.dimensions,
                         speed=vehicle.speed,
@@ -548,9 +548,7 @@ class BubbleManager:
     def _prepare_sensors_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, bubble
     ):
-        mission_planner = MissionPlanner(
-            sim.scenario.waypoints, sim.scenario.road_network
-        )
+        mission_planner = MissionPlanner(sim.scenario.road_network)
         vehicle = sim.vehicle_index.start_agent_observation(
             sim,
             vehicle_id,

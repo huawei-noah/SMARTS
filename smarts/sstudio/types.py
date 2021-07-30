@@ -167,7 +167,7 @@ class TrafficActor(Actor):
     max_speed: float = 55.5
     """The vehicle's maximum velocity (in m/s), defaults 200 km/h for vehicles"""
     vehicle_type: str = "passenger"
-    """The type of vehicle this actor uses. ("passenger", "bus", "coach", "truck", "trailer")"""
+    """The configured vehicle type this actor will perform as. ("passenger", "bus", "coach", "truck", "trailer")"""
     lane_changing_model: LaneChangingModel = field(
         default_factory=LaneChangingModel, hash=False
     )

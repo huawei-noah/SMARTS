@@ -8,14 +8,23 @@ from pathlib import Path
 from typing import Dict
 
 import numpy as np
-from ray import tune
-from ray.rllib.agents.callbacks import DefaultCallbacks
-from ray.rllib.env.base_env import BaseEnv
-from ray.rllib.evaluation.episode import MultiAgentEpisode
-from ray.rllib.evaluation.rollout_worker import RolloutWorker
-from ray.rllib.policy.policy import Policy
-from ray.rllib.utils.typing import PolicyID
-from ray.tune.schedulers import PopulationBasedTraining
+
+# ray[rllib] is not the part of main dependency of the SMARTS package. It needs to be installed separately
+# as a part of the smarts[train] dependency using the command "pip install -e .[train]. The following try block checks
+# whether ray[rllib] was installed by user and raises an Exception warning the user to install it if not so.
+try:
+    from ray import tune
+    from ray.rllib.agents.callbacks import DefaultCallbacks
+    from ray.rllib.env.base_env import BaseEnv
+    from ray.rllib.evaluation.episode import MultiAgentEpisode
+    from ray.rllib.evaluation.rollout_worker import RolloutWorker
+    from ray.rllib.policy.policy import Policy
+    from ray.rllib.utils.typing import PolicyID
+    from ray.tune.schedulers import PopulationBasedTraining
+except Exception as e:
+    from examples import RayException
+
+    raise RayException.required_to("rllib.py")
 
 import smarts
 from examples.rllib_agent import TrainingModel, rllib_agent

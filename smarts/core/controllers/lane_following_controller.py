@@ -79,7 +79,7 @@ class LaneFollowingController:
         # This lookahead value is coupled with a few calculations below, changing it
         # may affect stability of the controller.
         wp_paths = sensor_state.mission_planner.waypoint_paths_at(
-            sim, vehicle.pose, lookahead=16
+            vehicle.pose, lookahead=16
         )
         current_lane = LaneFollowingController.find_current_lane(
             wp_paths, vehicle.position
@@ -171,10 +171,8 @@ class LaneFollowingController:
             )
 
         speed_error = vehicle.speed - target_speed
-        state.integral_speed_error += speed_error * sim.timestep_sec
-        velocity_error_damping_term = (
-            speed_error - state.speed_error
-        ) / sim.timestep_sec
+        state.integral_speed_error += speed_error * sim.last_dt
+        velocity_error_damping_term = (speed_error - state.speed_error) / sim.last_dt
         # 5.5 is the gain of feedforward term for throttle. This term is
         # directly related to the steering angle, this is added to further
         # enhance the speed tracking performance. TODO: currently, the bullet
@@ -270,7 +268,7 @@ class LaneFollowingController:
         # gain for lateral error. The feedforward term based on the
         # curvature is added to enhance the transient performance when
         # the road curvature changes locally.
-        state.lateral_integral_error += sim.timestep_sec * controller_lat_error
+        state.lateral_integral_error += sim.last_dt * controller_lat_error
         # The feed forward term for the  steering controller. This
         # term is proportionate to Ux^2/R. The coefficient 0.15 is
         # chosen to enhance the transient tracking performance.
@@ -300,13 +298,14 @@ class LaneFollowingController:
             lateral_speed_gain = 0.22
             max_steering_nomralized = 0.12
 
+        z_yaw = vehicle.chassis.velocity_vectors[1][2]
         heading_error = min_angles_difference_signed(
             (vehicle.heading % (2 * math.pi)), reference_heading
         )
         steering_norm = np.clip(
             -heading_speed_gain * math.degrees(state.heading_error_gain) * heading_error
             + lateral_speed_gain * state.lateral_error_gain * (controller_lat_error)
-            + yaw_rate_speed_gain * vehicle.chassis.yaw_rate[2]
+            + yaw_rate_speed_gain * z_yaw
             + 0.3 * state.lateral_integral_error
             - steering_controller_feed_forward,
             -max_steering_nomralized,
@@ -320,7 +319,7 @@ class LaneFollowingController:
             steering_norm,
             state.steering_state,
             steering_filter_constant,
-            sim.timestep_sec,
+            sim.last_dt,
         )
 
         # The Throttle low pass filter, 2 is the constant of the
@@ -332,7 +331,7 @@ class LaneFollowingController:
             throttle_norm,
             state.throttle_state,
             throttle_filter_constant,
-            sim.timestep_sec,
+            sim.last_dt,
             lower_bound=0,
         )
         # Applying control actions to the vehicle
@@ -421,7 +420,7 @@ class LaneFollowingController:
         agent_id, vehicle, controller_state, sensor_state
     ):
         # When we reach the end of our target lane, we need to update it
-        # to the next lane best lane along the path
+        # to the next best lane along the path
         state = controller_state
         paths = sensor_state.mission_planner.waypoint_paths_on_lane_at(
             vehicle.pose, state.target_lane_id, lookahead=2

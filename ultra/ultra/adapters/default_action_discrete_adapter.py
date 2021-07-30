@@ -31,7 +31,7 @@ class DiscreteStrings(gym.Space):
     def __init__(self, strings: Sequence[str]):
         assert len(strings) > 0
         self._strings = strings
-        super(DiscreteStrings, self).__init__((), np.str)
+        super(DiscreteStrings, self).__init__((), str)
 
     def sample(self) -> str:
         index = self.np_random.randint(len(self._strings))
