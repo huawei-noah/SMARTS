@@ -21,7 +21,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Linux packages
-        run: apt-get install git
+        run: |
+          add-apt-repository ppa:git-core/ppa
+          apt update
+          apt install git
       - name: Install dependencies
         run: |
           cd ultra
@@ -56,7 +59,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Linux packages
-        run: apt-get install git  
+        run: |
+          add-apt-repository ppa:git-core/ppa
+          apt update
+          apt install git
       - name: Install dependencies
         run: |
           cd ultra
@@ -90,7 +96,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Linux packages
-        run: apt-get install git        
+        run: |
+          add-apt-repository ppa:git-core/ppa
+          apt update
+          apt install git     
       - name: Install ultra-rl via setup.py
         run: |
           cd ultra
@@ -116,7 +125,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Linux packages
-        run: apt-get install git        
+        run: |
+          add-apt-repository ppa:git-core/ppa
+          apt update
+          apt install git        
       - name: Install ultra-rl via whl file
         run: |
           cd ultra
@@ -147,7 +159,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Linux packages
-        run: apt-get install git  
+        run: |
+          add-apt-repository ppa:git-core/ppa
+          apt update
+          apt install git
       - name: Install ultra-rl via pypi
         run: |
           cd ultra
