@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 from cached_property import cached_property
@@ -52,12 +52,14 @@ from smarts.sstudio.types import Via as SSVia
 class Start:
     position: Tuple[int, int]
     heading: Heading
+    from_front_bumper: Optional[bool] = True
 
     @classmethod
     def from_pose(cls, pose: Pose):
         return cls(
             position=pose.position[:2],
             heading=pose.heading,
+            from_front_bumper=False,
         )
 
 

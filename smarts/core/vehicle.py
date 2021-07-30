@@ -312,8 +312,9 @@ class Vehicle:
     def vehicle_type(self):
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
 
-    @staticmethod
+    @classmethod
     def build_agent_vehicle(
+        cls,
         sim,
         vehicle_id,
         agent_interface,
@@ -345,11 +346,14 @@ class Vehicle:
                 initial_speed = mission.task.initial_speed
 
         start = mission.start
-        start_pose = Pose.from_front_bumper(
-            front_bumper_position=np.array(start.position),
-            heading=start.heading,
-            length=chassis_dims.length,
-        )
+        if start.from_front_bumper:
+            start_pose = Pose.from_front_bumper(
+                front_bumper_position=np.array(start.position),
+                heading=start.heading,
+                length=chassis_dims.length,
+            )
+        else:
+            start_pose = Pose.from_center(start.position, start.heading)
 
         vehicle_color = (
             SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
@@ -380,7 +384,8 @@ class Vehicle:
         # change this to dynamic_action_spaces later when pr merged
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
             if mission.vehicle_spec:
-                self._log.warning(
+                logger = logging.getLogger(cls.__name__)
+                logger.warning(
                     "setting vehicle dimensions on a AckermannChassis not yet supported"
                 )
             chassis = AckermannChassis(
