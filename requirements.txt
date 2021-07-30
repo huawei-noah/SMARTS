@@ -94,7 +94,7 @@ opencv-python==4.5.2.54
 opencv-python-headless==4.3.0.36
 opt-einsum==3.3.0
 packaging==20.9
-panda3d==1.10.9
+Panda3D==1.10.9
 panda3d-gltf==0.13
 panda3d-simplepbr==0.8
 pandas==1.2.4
@@ -172,6 +172,7 @@ tornado==6.1
 traitlets==5.0.5
 trimesh==3.9.20
 Twisted==21.2.0
+typing==3.7.4.3
 typing-extensions==3.10.0.0
 urllib3==1.26.5
 visdom==0.1.8.9
