@@ -174,7 +174,7 @@ def bubble_config_to_bubble_object(
         ),
         margin=BUBBLE_MARGIN,
         limit=None,
-        exclusion_prefixes=vehicles_to_not_hijack,
+        exclusion_prefixes=tuple(vehicles_to_not_hijack),
         follow_actor_id=None,
         follow_offset=None,
         keep_alive=False,
@@ -459,7 +459,7 @@ def generate_left_turn_missions(
                         length=zone_range[1],
                         n_lanes=(ego_route.begin[1] + 1),
                     ),  # Area to hijack.
-                    exclusion_prefixes=vehicles_to_not_hijack,  # Don't hijack these.
+                    exclusion_prefixes=tuple(vehicles_to_not_hijack),  # Don't hijack.
                 ),
             )
             for ego_route in ego_routes
