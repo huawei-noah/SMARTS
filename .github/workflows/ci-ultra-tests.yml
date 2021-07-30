@@ -35,7 +35,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install --upgrade -e .
+          pip install -e .
           pip install --upgrade numpy
       - name: Run ultra tests (heavy)
         # To prevent segmentation faults and/or termination signals (i.e. SIGABRT), the
@@ -83,7 +83,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install --upgrade -e .
+          pip install -e .
           pip install --upgrade numpy
       - name: Run ultra tests (light)
         run: |
@@ -113,7 +113,7 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
-          pip install --upgrade -e .
+          pip install -e .
           pip install --upgrade numpy
       - name: Run test
         run: |
@@ -142,7 +142,7 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
-          pip install --upgrade -e .
+          pip install -e .
           pip install --upgrade numpy
           python setup.py bdist_wheel
           cd dist
