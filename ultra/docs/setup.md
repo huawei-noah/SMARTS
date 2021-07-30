@@ -33,7 +33,7 @@ Build the Docker images and run the container.
 $ cd <path_to_SMARTS>/SMARTS/ultra
 
 # 2 - Build the Docker image.
-$ docker build --no-cache -f Dockerfile -t ultra:latest .
+$ docker build --no-cache --network=host -f Dockerfile -t ultra:latest .
 
 # 3 - Create and run the Docker container.
 $ docker run --rm -it -v $(PWD):/src -p 8081:8081 ultra:latest
