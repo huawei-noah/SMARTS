@@ -119,9 +119,9 @@ def adapt(observation: Observation, reward: float) -> float:
     ego_angular_jerk = -0.0001 * angular_jerk * math.cos(angle_error)
 
     # Speed reward
-    if speed_fraction < 0.01: # Speed below threshold
+    if speed_fraction < 0.01:  # Speed below threshold
         ego_speed_reward = -0.01
-    elif speed_fraction >= 1: # Speed above limit
+    elif speed_fraction >= 1:  # Speed above limit
         ego_speed_reward = -0.1
     else:
         ego_speed_reward = 0.0
