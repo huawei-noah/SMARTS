@@ -372,15 +372,17 @@ class ROSDriver:
 
         # The following 4 lines are a hack b/c I'm too stupid to figure out
         # how to do calculus on quaternions...
-        heading = yaw_from_quaternion(vs.pose.orientation)
+        heading = vs.pose.heading
         heading_delta_vec = staleness * (
             vs.angular_velocity
             + 0.5 * vs.angular_acceleration * staleness
             + ang_acc_slope * staleness ** 2 / 6.0
         )
-        heading += vec_to_radians(heading_delta_vec[:2])
+        heading += vec_to_radians(heading_delta_vec[:2]) + (0.5 * math.pi)
         heading %= 2 * math.pi
         vs.pose.orientation = fast_quaternion_from_angle(heading)
+        # XXX: also need to remove the cached heading_ since we've changed orientation
+        vs.pose.heading_ = None
 
         # I assume the following should be updated based on changing
         # heading from above, but I'll leave that for now...
