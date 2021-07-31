@@ -370,7 +370,7 @@ class ROSDriver:
         lin_acc_slope = (vs.linear_acceleration - prev_lin_acc) / prev_dt
         ang_acc_slope = (vs.angular_acceleration - prev_ang_acc) / prev_dt
 
-        # The following 4 lines are a hack b/c I'm too stupid to figure out
+        # The following ~10 lines are a hack b/c I'm too stupid to figure out
         # how to do calculus on quaternions...
         heading = vs.pose.heading
         heading_delta_vec = staleness * (
@@ -389,7 +389,7 @@ class ROSDriver:
         vs.pose.position += staleness * (
             vs.linear_velocity
             + 0.5 * vs.linear_acceleration * staleness
-            + lin_acc_slope * staleness * staleness / 6.0
+            + lin_acc_slope * staleness ** 2 / 6.0
         )
 
         vs.linear_velocity += staleness * (
@@ -402,7 +402,7 @@ class ROSDriver:
         vs.linear_acceleration += staleness * lin_acc_slope
         vs.angular_acceleration += staleness * ang_acc_slope
 
-    def _update_smarts_state(self, step_delta: float) -> bool:
+    def _update_smarts_state(self) -> float:
         with self._state_lock:
             if (
                 not self._recent_state
@@ -411,18 +411,28 @@ class ROSDriver:
                 rospy.logdebug(
                     f"No messages received on topic {self._state_topic} yet to send to SMARTS."
                 )
-                return False
-            states = [s for s in self._recent_state]
+                states = None
+            else:
+                states = [s for s in self._recent_state]
 
-        entities = []
-        most_recent_state = states[-1]
+        rosnow = rospy.get_rostime()
+        if self._last_step_time:
+            step_delta = (rosnow - self._last_step_time).to_sec()
+        else:
+            step_delta = None
+        self._last_step_time = rosnow
+        if not states:
+            return step_delta
+
         # Note: when the source of these states is a co-simulator
         # running on another machine across the network, for accurate
         # extrapolation and staleness-related computations, it is
         # a good idea to either use an external time server or a
         # ROS /clock node (in which case the /use_sim_time parameter
         # shoule be set to True).
-        staleness = (rospy.get_rostime() - most_recent_state.header.stamp).to_sec()
+        entities = []
+        most_recent_state = states[-1]
+        staleness = (rosnow - most_recent_state.header.stamp).to_sec()
         for entity in most_recent_state.entities:
             vs = ROSDriver._entity_to_vs(entity)
             if len(states) > 1 and staleness > 0:
@@ -434,7 +444,7 @@ class ROSDriver:
         )
         self._smarts.external_provider.state_update(entities, step_delta)
         self._most_recent_state_sent = most_recent_state
-        return True
+        return step_delta
 
     @staticmethod
     def _vector_to_xyz(v, xyz):
@@ -555,11 +565,7 @@ class ROSDriver:
 
                 actions = self._do_agents(observations)
 
-                if self._last_step_time:
-                    step_delta = rospy.get_time() - self._last_step_time
-                self._last_step_time = rospy.get_time()
-
-                self._update_smarts_state(step_delta)
+                step_delta = self._update_smarts_state()
 
                 observations, _, dones, _ = self._smarts.step(actions, step_delta)
 
