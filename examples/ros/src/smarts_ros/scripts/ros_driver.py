@@ -8,7 +8,7 @@ import rospy
 import sys
 import time
 from threading import Lock
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
 
 import numpy as np
 
@@ -348,28 +348,79 @@ class ROSDriver:
         vs.speed = np.linalg.norm(vs.linear_velocity)
         return vs
 
+    class _VehicleStateVector:
+        def __init__(self, vs: VehicleState, stamp: float):
+            self.vs = vs
+            self.vector = np.concatenate(
+                (
+                    np.array((stamp,)),
+                    vs.pose.position,
+                    np.array((vs.pose.heading,)),
+                    np.array(vs.dimensions.as_lwh),
+                    vs.linear_velocity,
+                    vs.angular_velocity,
+                    vs.linear_acceleration,
+                    vs.angular_acceleration,
+                )
+            )
+
+        @property
+        def stamp(self):
+            return self.vector[0]
+
+        def average_with(self, other_vect: np.ndarray):
+            self.vector += other_vect
+            self.vector /= 2
+            self.update_vehicle_state()
+
+        def update_vehicle_state(self):
+            assert len(self.vector) == 20
+            self.vs.pose = Pose.from_center(
+                self.vector[1:4], Heading(self.vector[4] % (2 * math.pi))
+            )
+            self.vs.dimensions = BoundingBox(*self.vector[5:8])
+            self.linear_velocity = self.vector[8:11]
+            self.angular_velocity = self.vector[11:14]
+            self.linear_acceleration = self.vector[14:17]
+            self.angular_acceleration = self.vector[17:]
+            self.vs.speed = np.linalg.norm(self.linear_velocity)
+
+    @staticmethod
+    def _moving_average(
+        vehicle_id: str, states: Sequence[EntitiesStamped]
+    ) -> Tuple[VehicleState, float, float, float]:
+        prev_states = []
+        for s in range(len(states)):
+            prev_state = states[-1 - s]
+            for entity in prev_state.entities:
+                if entity.entity_id == vehicle_id:
+                    vs = ROSDriver._entity_to_vs(entity)
+                    stamp = prev_state.header.stamp.to_sec()
+                    prev_states.append(ROSDriver._VehicleStateVector(vs, stamp))
+        assert prev_states
+        if len(prev_states) == 1:
+            return (prev_states[0].vs, prev_states[0].stamp, 0, 0)
+        prev_states[0].average_with(prev_states[1].vector)
+        if len(prev_states) == 2:
+            return (prev_states[0].vs, prev_states[0].stamp, 0, 0)
+        prev_states[1].average_with(prev_states[2].vector)
+        dt = prev_states[0].stamp - prev_states[1].stamp
+        lin_acc_slope = (
+            prev_states[0].vs.linear_acceleration
+            - prev_states[1].vs.linear_acceleration
+        ) / dt
+        ang_acc_slope = (
+            prev_states[0].vs.angular_acceleration
+            - prev_states[1].vs.angular_acceleration
+        ) / dt
+        return (prev_states[0].vs, prev_states[0].stamp, lin_acc_slope, ang_acc_slope)
+
     @staticmethod
     def _extrapolate_to_now(
-        vs: VehicleState, staleness: float, states: Sequence[EntitiesStamped]
+        vs: VehicleState, staleness: float, lin_acc_slope: float, ang_acc_slope: float
     ):
-        """Here we just linearly extrapolate the acceleration to "now" from the previous two states
-        for each vehicle and then use standard kinematics to project the velocity and position from that.
-        We don't need to do any smoothing here because we haven't snapped to a fixed time grid yet."""
-        prev_entity = None
-        for s in range(len(states) - 1):
-            prev_state = states[-2 - s]
-            for entity in prev_state.entities:
-                if entity.entity_id == vs.vehicle_id:
-                    prev_entity = entity
-                    break
-        if not prev_entity:
-            return vs
-        prev_dt = states[-1].header.stamp.to_sec() - prev_state.header.stamp.to_sec()
-        prev_lin_acc = ROSDriver._xyz_to_vect(prev_entity.acceleration.linear)
-        prev_ang_acc = ROSDriver._xyz_to_vect(prev_entity.acceleration.angular)
-        lin_acc_slope = (vs.linear_acceleration - prev_lin_acc) / prev_dt
-        ang_acc_slope = (vs.angular_acceleration - prev_ang_acc) / prev_dt
-
+        """Here we just linearly extrapolate the acceleration to "now" from the previous state for
+        each vehicle and then use standard kinematics to project the velocity and position from that."""
         # The following ~10 lines are a hack b/c I'm too stupid to figure out
         # how to do calculus on quaternions...
         heading = vs.pose.heading
@@ -432,15 +483,19 @@ class ROSDriver:
         # shoule be set to True).
         entities = []
         most_recent_state = states[-1]
-        staleness = (rosnow - most_recent_state.header.stamp).to_sec()
         for entity in most_recent_state.entities:
-            vs = ROSDriver._entity_to_vs(entity)
-            if len(states) > 1 and staleness > 0:
-                ROSDriver._extrapolate_to_now(vs, staleness, states)
+            vs, stamp, lin_acc_slope, ang_acc_slope = ROSDriver._moving_average(
+                entity.entity_id, states
+            )
+            entity_staleness = rosnow.to_sec() - stamp
+            if entity_staleness > 0:
+                ROSDriver._extrapolate_to_now(
+                    vs, entity_staleness, lin_acc_slope, ang_acc_slope
+                )
             entities.append(vs)
 
         rospy.logdebug(
-            f"sending state to SMARTS w/ step_delta={step_delta}, staleness={staleness}..."
+            f"sending state to SMARTS w/ step_delta={step_delta}, approximate staleness={(rosnow - most_recent_state.header.stamp).to_sec()}..."
         )
         self._smarts.external_provider.state_update(entities, step_delta)
         self._most_recent_state_sent = most_recent_state
