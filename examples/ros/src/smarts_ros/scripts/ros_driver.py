@@ -375,7 +375,7 @@ class ROSDriver:
             self.vs.pose = Pose.from_center(
                 self.vector[1:4], Heading(self.vector[4] % (2 * math.pi))
             )
-            self.vs.dimensions = BoundingBox(*self.vector[5:8])
+            self.vs.dimensions = Dimensions(*self.vector[5:8])
             self.linear_velocity = self.vector[8:11]
             self.angular_velocity = self.vector[11:14]
             self.linear_acceleration = self.vector[14:17]
