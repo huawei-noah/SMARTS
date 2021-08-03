@@ -321,12 +321,7 @@ class AgentManager:
 
     def setup_agents(self, sim):
         self.init_ego_agents(sim)
-        if sim.scenario.social_agents:
-            if not self._remote_agent_buffer:
-                self._remote_agent_buffer = RemoteAgentBuffer(
-                    zoo_manager_addrs=self._zoo_addrs
-                )
-            self.setup_social_agents(sim)
+        self.setup_social_agents(sim)
         self.start_keep_alive_boid_agents(sim)
 
     def add_ego_agent(self, agent_id: str, agent_interface: AgentInterface):
@@ -342,6 +337,14 @@ class AgentManager:
 
     def setup_social_agents(self, sim):
         social_agents = sim.scenario.social_agents
+        if social_agents:
+            if not self._remote_agent_buffer:
+                self._remote_agent_buffer = RemoteAgentBuffer(
+                    zoo_manager_addrs=self._zoo_addrs
+                )
+        else:
+            return
+
         self._remote_social_agents = {
             agent_id: self._remote_agent_buffer.acquire_remote_agent()
             for agent_id in social_agents
