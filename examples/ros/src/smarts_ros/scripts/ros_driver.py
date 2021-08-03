@@ -607,7 +607,7 @@ class ROSDriver:
             while not rospy.is_shutdown():
 
                 obs = self._check_reset()
-                if not self._scenario_path:
+                if obs is None or not self._scenario_path:
                     if not warned_scenario:
                         rospy.loginfo("waiting for scenario on control channel...")
                         warned_scenario = True
