@@ -69,7 +69,7 @@ def create_argument_parser():
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=200,
+        default=1200,
     )
     parser.add_argument(
         "--max-steps",
