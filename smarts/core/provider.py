@@ -37,6 +37,7 @@ class ProviderState:
         assert our_vehicles.isdisjoint(other_vehicles)
 
         self.vehicles += other.vehicles
+        self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 
     def filter(self, vehicle_ids):
         provider_vehicle_ids = [v.vehicle_id for v in self.vehicles]
