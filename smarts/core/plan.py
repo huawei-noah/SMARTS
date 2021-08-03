@@ -190,7 +190,7 @@ class Via:
 @dataclass(frozen=True)
 class VehicleSpec:
     veh_id: str
-    veh_type: str
+    veh_config_type: str
     dimensions: Dimensions
 
 

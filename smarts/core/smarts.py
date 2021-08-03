@@ -363,7 +363,7 @@ class SMARTS:
         self, agent_id: str, agent_interface: AgentInterface, mission: Mission
     ):
         # TODO:  check that agent_id isn't already used...
-        if self._trap_manager.add_trap_for_agent(agent_id, mission, self.road_network):
+        if self._trap_manager.add_trap_for_agent(agent_id, mission, self.road_map):
             self._agent_manager.add_ego_agent(agent_id, agent_interface)
         else:
             self._log.warning(
@@ -512,6 +512,7 @@ class SMARTS:
     def road_map(self) -> RoadMap:
         return self.scenario.road_map
 
+    @property
     def external_provider(self) -> ExternalProvider:
         return self._external_provider
 
