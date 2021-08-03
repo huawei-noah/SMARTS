@@ -112,17 +112,12 @@ class TrapManager:
             v_id: sim.vehicle_index.vehicle_by_id(v_id) for v_id in social_vehicle_ids
         }
 
-        existing_agent_vehicles = (
-            sim.vehicle_index.vehicle_by_id(v_id)
-            for v_id in sim.vehicle_index.agent_vehicle_ids()
-        )
-
         def largest_vehicle_plane_dimension(vehicle):
             return max(*vehicle.chassis.dimensions.as_lwh[:2])
 
-        agent_vehicle_comp = [
+        vehicle_comp = [
             (v.position[:2], largest_vehicle_plane_dimension(v), v)
-            for v in existing_agent_vehicles
+            for v in vehicles.values()
         ]
 
         for agent_id in sim.agent_manager.pending_agent_ids:
@@ -151,7 +146,7 @@ class TrapManager:
                 vehicle = vehicles[v_id]
                 point = Point(vehicle.position)
 
-                if any(v_id.startswith(prefix) for prefix in trap.exclusion_prefixes):
+                if not trap.includes(v_id):
                     continue
 
                 if not point.within(trap.geometry):
@@ -193,15 +188,18 @@ class TrapManager:
                 )
             elif trap.patience_expired:
                 mission = trap.mission
-                if len(agent_vehicle_comp) > 0:
-                    agent_vehicle_comp.sort(
+                if len(vehicle_comp) > 0:
+                    vehicle_comp.sort(
                         key=lambda v: squared_dist(v[0], mission.start.position)
                     )
 
-                    # Make sure there is not an agent vehicle in the same location
-                    pos, largest_dimension, _ = agent_vehicle_comp[0]
-                    if squared_dist(pos, mission.start.position) < largest_dimension:
-                        continue
+                    # Make sure there is not a vehicle in the same location
+                    for pos, largest_dimension, _ in vehicle_comp[:3]:
+                        if (
+                            squared_dist(pos, mission.start.position)
+                            < largest_dimension
+                        ):
+                            continue
 
                 vehicle = TrapManager._make_vehicle(
                     sim, agent_id, trap.mission, trap.default_entry_speed
