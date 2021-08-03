@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 import math
 import random
 from typing import List, Optional, Tuple
@@ -80,7 +81,14 @@ class PositionalGoal(Goal):
     radius: float
 
     @classmethod
-    def from_road(cls, road_id, road_map, lane_index=0, lane_offset=None, radius=1):
+    def from_road(
+        cls,
+        road_id: str,
+        road_map: RoadMap,
+        lane_index: int = 0,
+        lane_offset: float = None,
+        radius: float = 1,
+    ):
         road = road_map.road_by_id(road_id)
         lane = road.lane_at_index(lane_index)  # XXX: bidirectional roads?
 
@@ -216,7 +224,9 @@ class Mission:
 
     @staticmethod
     def random_endless_mission(
-        road_map: RoadMap, min_range_along_lane=0.3, max_range_along_lane=0.9
+        road_map: RoadMap,
+        min_range_along_lane: float = 0.3,
+        max_range_along_lane: float = 0.9,
     ) -> Mission:
         assert min_range_along_lane > 0  # Need to start further than beginning of lane
         assert max_range_along_lane < 1  # Cannot start past end of lane
@@ -282,7 +292,7 @@ class Waypoint:
     speed_limit: float  # Lane speed in m/s
     lane_index: int  # Index of the lane this lanepoint is over. 0 is the outer(right) most lane
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, Waypoint):
             return False
         return (
@@ -354,8 +364,8 @@ class Plan:
     def road_map(self) -> RoadMap:
         return self._road_map
 
-    def create_route(self, mission) -> Mission:
-        assert not self._route, "already called plan"
+    def create_route(self, mission: Mission) -> Mission:
+        assert not self._route, "already called create_route()"
         self._mission = mission or Mission.random_endless_mission(self._road_map)
 
         if not self._mission.has_fixed_route:

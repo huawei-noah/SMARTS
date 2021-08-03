@@ -101,29 +101,6 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def index(self) -> int:
-            """ 0 is outer / right-most (relative to lane heading) lane on road. """
-            raise NotImplementedError()
-
-        @property
-        def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
-            """Note: left is defined as 90 degrees clockwise relative to the lane heading.
-            Second result is True if lane is in the same direction as this one.
-            May return None for lanes in junctions."""
-            raise NotImplementedError()
-
-        @property
-        def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
-            """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
-            Second result is True if lane is in the same direction as this one.
-            May return None for lanes in junctions."""
-            raise NotImplementedError()
-
-        @property
-        def oncoming_lanes(self) -> List[RoadMap.Lane]:
-            raise NotImplementedError()
-
-        @property
         def speed_limit(self) -> float:
             raise NotImplementedError()
 
@@ -136,11 +113,44 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
+        def index(self) -> int:
+            """ 0 is outer / right-most (relative to lane heading) lane on road. """
+            raise NotImplementedError()
+
+        @property
+        def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
+            """Note: left is defined as 90 degrees clockwise relative to the lane heading.
+            Second result is True if lane is in the same direction as this one
+            May return None for lanes in junctions."""
+            raise NotImplementedError()
+
+        @property
+        def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
+            """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
+            Second result is True if lane is in the same direction as this one.
+            May return None for lanes in junctions."""
+            raise NotImplementedError()
+
+        @property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
             raise NotImplementedError()
 
         @property
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
+            raise NotImplementedError()
+
+        @property
+        def oncoming_lanes(self) -> List[RoadMap.Lane]:
+            raise NotImplementedError()
+
+        @property
+        def foes(self) -> Tuple[List[RoadMap.Lane], bool]:
+            """All lanes that in some way intersect with (cross) this one,
+            including those that have the same outgoing lane as this one,
+            and so might require right-of-way rules.
+            If right-of-way rules are known, these will be in order of priority,
+            otherwise they will be in random order.  The boolean flag
+            that is returned will be True if the ordering is by priority."""
             raise NotImplementedError()
 
         @property
@@ -165,21 +175,8 @@ class RoadMap:
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             raise NotImplementedError()
 
-        ## The next 6 methods are "reference" implementations for convenience.
+        ## The next 5 methods are "reference" implementations for convenience.
         ## Derived classes may want to extend as well as add a cache.
-
-        @property
-        def outgoing_foes(self) -> Tuple[List[RoadMap.Lane], bool]:
-            """All lanes that have the same outgoing lane as this one.
-            If right-of-way rules are known, these will be in order of priority,
-            otherwise they will be in random order.  The boolean flag
-            that is returned will be True if the ordering is by priority."""
-            result = [
-                incoming
-                for incoming in outgoing.incoming_lanes
-                for outgoing in self.outgoing_lanes
-            ]
-            return (list(set(result)), False)
 
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             s = self.offset_along_lane(world_point)

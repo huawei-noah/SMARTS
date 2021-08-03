@@ -236,6 +236,23 @@ class SumoRoadNetwork(RoadMap):
             return self._road_dir
 
         @cached_property
+        def speed_limit(self) -> float:
+            return self._sumo_lane.getSpeed()
+
+        @cached_property
+        def length(self) -> float:
+            return self._sumo_lane.getLength()
+
+        @cached_property
+        def _width(self) -> float:
+            return self._sumo_lane.getWidth()
+
+        @property
+        def in_junction(self) -> bool:
+            """ will return None if not in a junction"""
+            return self._road.is_junction
+
+        @cached_property
         def index(self) -> int:
             """ 0 is outer / right-most (relative to lane heading) lane on road. """
             return self._sumo_lane.getIndex()
@@ -259,23 +276,6 @@ class SumoRoadNetwork(RoadMap):
             return (lanes[index], True) if index >= 0 else (None, True)
 
         @cached_property
-        def speed_limit(self) -> float:
-            return self._sumo_lane.getSpeed()
-
-        @cached_property
-        def length(self) -> float:
-            return self._sumo_lane.getLength()
-
-        @cached_property
-        def _width(self) -> float:
-            return self._sumo_lane.getWidth()
-
-        @property
-        def in_junction(self) -> bool:
-            """ will return None if not in a junction"""
-            return self._road.is_junction
-
-        @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
             return [
                 self._map.lane_by_id(incoming.getID())
@@ -295,6 +295,20 @@ class SumoRoadNetwork(RoadMap):
             for oncr in self.road.oncoming_roads:
                 result += oncr.lanes
             return result
+
+        @cached_property
+        def foes(self) -> Tuple[List[RoadMap.Lane], bool]:
+            # TODO:  we might do better here since Sumo/Traci determines
+            # right-of-way for their connections/links.  See:
+            # https://sumo.dlr.de/pydoc/traci._lane.html#LaneDomain-getFoes
+            # TODO:  might use Edge.getCrossingEdges() ?
+            #     but do edges ever "cross" in sumo?  or just end in junctions?
+            result = [
+                incoming
+                for incoming in outgoing.incoming_lanes
+                for outgoing in self.outgoing_lanes
+            ]
+            return (list(set(result)), False)
 
         def buffered_shape(self, width: float = 1.0) -> Polygon:
             return SumoRoadNetwork._buffered_shape(self._sumo_lane.getShape(), width)
@@ -323,13 +337,6 @@ class SumoRoadNetwork(RoadMap):
 
         def width_at_offset(self, offset: float) -> float:
             return self._width
-
-        @cached_property
-        def outgoing_foes(self) -> Tuple[List[RoadMap.Lane], bool]:
-            # TODO:  we might do better here since Sumo/Traci determines
-            # right-of-way for their connections/links.  See:
-            # https://sumo.dlr.de/pydoc/traci._lane.html#LaneDomain-getFoes
-            return super().outgoing_foes
 
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
