@@ -51,7 +51,7 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--task`: The task number to run (default is 1).
   - `--level`: The level of the task (default is easy).
   - `--episodes`: The number of training episodes to run (default is 1000000).
-  - `--max-episode-steps`: The option to limit the number of steps per epsiodes (default is 200).
+  - `--max-episode-steps`: The option to limit the number of steps per epsiodes (default is 1200).
   - `--timestep`: The environment timestep in seconds (default is 0.1).
   - `--headless`: Provide this flag to run training without Envision.
   - `--eval-episodes`: The number of evaluation episodes (default is 200).
