@@ -68,8 +68,8 @@ class ROSDriver:
         with self._state_lock:
             self._recent_state = deque(maxlen=3)
         with self._control_lock:
+            self._control = None
             self._scenario_path = None
-            self._reset_smarts = False
             self._agents = {}
             self._agents_to_add = {}
 
@@ -148,17 +148,14 @@ class ROSDriver:
         assert self._smarts.external_provider
         self._last_step_time = None
         with self._control_lock:
+            self._control = None
             self._scenario_path = None
-            self._reset_smarts = False
             self._agents = {}
             self._agents_to_add = {}
 
     def _smarts_control_callback(self, control: SmartsControl):
         with self._control_lock:
-            self._scenario_path = control.reset_with_scenario_path
-            self._reset_smarts = True
-            self._agents = {}
-            self._agents_to_add = {}
+            self._control = control
         for ros_agent_spec in control.initial_agents:
             self._agent_spec_callback(ros_agent_spec)
 
@@ -579,9 +576,12 @@ class ROSDriver:
 
     def _check_reset(self) -> Dict[str, Observation]:
         with self._control_lock:
-            if self._reset_smarts:
+            if self._control:
+                self._scenario_path = self._control.reset_with_scenario_path
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
-                self._reset_smarts = False
+                self._agents = {}
+                self._agents_to_add = {}
+                self._control = None
                 if self._scenario_path:
                     observations = self._smarts.reset(Scenario(self._scenario_path))
                     self._last_step_time = None
@@ -607,7 +607,7 @@ class ROSDriver:
             while not rospy.is_shutdown():
 
                 obs = self._check_reset()
-                if obs is None or not self._scenario_path:
+                if not self._scenario_path:
                     if not warned_scenario:
                         rospy.loginfo("waiting for scenario on control channel...")
                         warned_scenario = True
