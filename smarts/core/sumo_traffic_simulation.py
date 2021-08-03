@@ -34,7 +34,7 @@ from traci.exceptions import FatalTraCIError, TraCIException
 
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
-from smarts.core.coordinates import Heading, Pose
+from smarts.core.coordinates import BoundingBox, Heading, Pose
 from smarts.core.provider import Provider, ProviderState
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
@@ -395,7 +395,11 @@ class SumoTrafficSimulation(Provider):
             self._traci_conn.vehicle.remove(vehicle_id)
 
         for vehicle_id in external_vehicles_that_have_joined:
-            dimensions = provider_vehicles[vehicle_id].dimensions
+            vehicle_state = provider_vehicles[vehicle_id]
+            dimensions = BoundingBox.copy_with_defaults(
+                vehicle_state.dimensions,
+                VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
+            )
             self._create_vehicle(vehicle_id, dimensions)
             no_checks = 0b00000
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)

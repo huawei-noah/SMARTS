@@ -44,6 +44,7 @@ class PlanningError(Exception):
 class Start:
     position: Tuple[int, int]
     heading: Heading
+    from_front_bumper: Optional[bool] = True
 
     @property
     def point(self) -> Point:
@@ -54,6 +55,7 @@ class Start:
         return cls(
             position=pose.position[:2],
             heading=pose.heading,
+            from_front_bumper=False,
         )
 
 
@@ -100,7 +102,7 @@ class PositionalGoal(Goal):
         return dist <= self.radius
 
 
-@dataclass
+@dataclass(frozen=True)
 class TraverseGoal(Goal):
     """A TraverseGoal is satisfied whenever an Agent-driven vehicle
     successfully finishes traversing a non-closed (acyclical) map

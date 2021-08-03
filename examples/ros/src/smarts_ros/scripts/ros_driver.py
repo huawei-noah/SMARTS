@@ -372,15 +372,17 @@ class ROSDriver:
 
         # The following 4 lines are a hack b/c I'm too stupid to figure out
         # how to do calculus on quaternions...
-        heading = yaw_from_quaternion(vs.pose.orientation)
+        heading = vs.pose.heading
         heading_delta_vec = staleness * (
             vs.angular_velocity
             + 0.5 * vs.angular_acceleration * staleness
             + ang_acc_slope * staleness ** 2 / 6.0
         )
-        heading += vec_to_radians(heading_delta_vec[:2])
+        heading += vec_to_radians(heading_delta_vec[:2]) + (0.5 * math.pi)
         heading %= 2 * math.pi
         vs.pose.orientation = fast_quaternion_from_angle(heading)
+        # XXX: also need to remove the cached heading_ since we've changed orientation
+        vs.pose.heading_ = None
 
         # I assume the following should be updated based on changing
         # heading from above, but I'll leave that for now...
@@ -474,8 +476,8 @@ class ROSDriver:
         agents = AgentsStamped()
         agents.header.stamp = rospy.Time.now()
         for agent_id, agent_obs in observations.items():
-            pose = Pose.from_center(veh_state.position, veh_state.heading)
             veh_state = agent_obs.ego_vehicle_state
+            pose = Pose.from_center(veh_state.position, veh_state.heading)
             agent = AgentReport()
             agent.agent_id = agent_id
             ROSDriver._vector_to_xyz(pose.position, agent.pose.position)
@@ -502,7 +504,10 @@ class ROSDriver:
             for agent_id, agent in self._agents_to_add.items():
                 spec, mission = agent[0], agent[1]
                 assert agent_id not in self._agents
-                self._agents[agent_id] = spec.build_agent()
+                agent = spec.build_agent()
+                # XXX: hack! in the future this injection must be removed or done another way...
+                agent.sim = self._smarts
+                self._agents[agent_id] = agent
                 self._smarts.add_agent_with_mission(agent_id, spec.interface, mission)
             self._agents_to_add = {}
             return actions
