@@ -74,7 +74,7 @@ class EvaluateTest(unittest.TestCase):
 
         # Generate the scenarios.
         os.system(generate_command)
-        os.system(multiagent_generate_command)
+        # os.system(multiagent_generate_command)
 
         # Remove existing models
         if os.path.exists(path):
@@ -85,305 +85,324 @@ class EvaluateTest(unittest.TestCase):
         # Generate models before evaluation tests
         if not os.path.exists(path):
             os.system(train_command)
-        if not os.path.exists(multiagent_path):
-            os.system(multiagent_train_command)
+        # if not os.path.exists(multiagent_path):
+        #     os.system(multiagent_train_command)
 
-    def test_a_folders(self):
-        path = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/")
-        if not os.path.exists(path):
-            self.assertTrue(False)
+    # def test_a_folders(self):
+    #     path = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/")
+    #     if not os.path.exists(path):
+    #         self.assertTrue(False)
 
-        path = glob.glob(
-            os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*/models")
-        )[0]
-        if len(os.listdir(path)) == 0:
-            self.assertTrue(False)
+    #     path = glob.glob(
+    #         os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*/models")
+    #     )[0]
+    #     if len(os.listdir(path)) == 0:
+    #         self.assertTrue(False)
 
-        path = "tests/task/eval_test"
-        if len(os.listdir(path)) <= 2:
-            self.assertTrue(False)
+    #     path = "tests/task/eval_test"
+    #     if len(os.listdir(path)) <= 2:
+    #         self.assertTrue(False)
 
-        multiagent_path = os.path.join(
-            EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/"
-        )
-        if not os.path.exists(path):
-            self.assertTrue(False)
+    #     multiagent_path = os.path.join(
+    #         EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/"
+    #     )
+    #     if not os.path.exists(path):
+    #         self.assertTrue(False)
 
-        multiagent_path = glob.glob(
-            os.path.join(
-                EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*/models"
-            )
-        )[0]
-        if len(os.listdir(multiagent_path)) < 2:
-            self.assertTrue(False)
+    #     multiagent_path = glob.glob(
+    #         os.path.join(
+    #             EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*/models"
+    #         )
+    #     )[0]
+    #     if len(os.listdir(multiagent_path)) < 2:
+    #         self.assertTrue(False)
 
-        multiagent_path = "tests/task/eval_test_multiagent"
-        if len(os.listdir(path)) <= 2:
-            self.assertTrue(False)
+    #     multiagent_path = "tests/task/eval_test_multiagent"
+    #     if len(os.listdir(path)) <= 2:
+    #         self.assertTrue(False)
 
-    def test_evaluation_check(self):
-        log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_check_logs/")
-        # ray.init(ignore_reinit_error=True)
-        ray.shutdown()
-        ray.init()
-        try:
-            run_experiment(
-                scenario_info=("00", "eval_test"), num_agents=1, log_dir=log_dir
-            )
-            self.assertTrue(True)
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
+    # def test_evaluation_check(self):
+    #     log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_check_logs/")
+    #     # ray.init(ignore_reinit_error=True)
+    #     ray.shutdown()
+    #     ray.init()
+    #     try:
+    #         run_experiment(
+    #             scenario_info=("00", "eval_test"), num_agents=1, log_dir=log_dir
+    #         )
+    #         self.assertTrue(True)
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
 
-        if not os.listdir(log_dir):
-            raise "Evaluation failed to generate new experiment folder"
-            self.assertTrue(False)
-        else:
-            shutil.rmtree(log_dir)
+    #     if not os.listdir(log_dir):
+    #         raise "Evaluation failed to generate new experiment folder"
+    #         self.assertTrue(False)
+    #     else:
+    #         shutil.rmtree(log_dir)
 
-    def test_evaluation_check_multiagent(self):
-        log_dir = os.path.join(
-            EvaluateTest.OUTPUT_DIRECTORY, "output_eval_check_multiagent_logs/"
-        )
-        # ray.init(ignore_reinit_error=True)
-        ray.shutdown()
-        ray.init()
-        try:
-            run_experiment(
-                scenario_info=("00-multiagent", "eval_test"),
-                num_agents=3,
-                log_dir=log_dir,
-            )
-            self.assertTrue(True)
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
+    # def test_evaluation_check_multiagent(self):
+    #     log_dir = os.path.join(
+    #         EvaluateTest.OUTPUT_DIRECTORY, "output_eval_check_multiagent_logs/"
+    #     )
+    #     # ray.init(ignore_reinit_error=True)
+    #     ray.shutdown()
+    #     ray.init()
+    #     try:
+    #         run_experiment(
+    #             scenario_info=("00-multiagent", "eval_test"),
+    #             num_agents=3,
+    #             log_dir=log_dir,
+    #         )
+    #         self.assertTrue(True)
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
 
-        if not os.listdir(log_dir):
-            raise "Evaluation failed to generate new experiment folder"
-            self.assertTrue(False)
-        else:
-            shutil.rmtree(log_dir)
+    #     if not os.listdir(log_dir):
+    #         raise "Evaluation failed to generate new experiment folder"
+    #         self.assertTrue(False)
+    #     else:
+    #         shutil.rmtree(log_dir)
 
-    def test_evaluate_cli(self):
-        log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_cli_logs/")
+    # def test_evaluate_cli(self):
+    #     log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_cli_logs/")
+    #     experiment_dir = glob.glob(
+    #         os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
+    #     )[0]
+    #     evaluate_command = (
+    #         f"python ultra/evaluate.py "
+    #         f"--task 00 --level eval_test --experiment-dir {experiment_dir} "
+    #         f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
+    #     )
+    #     ray.shutdown()
+    #     try:
+    #         os.system(evaluate_command)
+    #         self.assertTrue(True)
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
+
+    #     if not os.listdir(log_dir):
+    #         raise "Evaluation failed to generate new experiment folder"
+    #         self.assertTrue(False)
+    #     else:
+    #         shutil.rmtree(log_dir)
+
+    # def test_evaluate_cli_multiagent(self):
+    #     log_dir = os.path.join(
+    #         EvaluateTest.OUTPUT_DIRECTORY, "output_eval_cli_multiagent_logs/"
+    #     )
+    #     experiment_dir = glob.glob(
+    #         os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*")
+    #     )[0]
+    #     evaluate_command = (
+    #         f"python ultra/evaluate.py "
+    #         f"--task 00-multiagent --level eval_test --agents 000 --experiment-dir {experiment_dir} "
+    #         f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
+    #     )
+
+    #     ray.shutdown()
+    #     try:
+    #         os.system(evaluate_command)
+    #         self.assertTrue(True)
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
+
+    #     if not os.listdir(log_dir):
+    #         raise "Evaluation failed to generate new experiment folder"
+    #         self.assertTrue(False)
+    #     else:
+    #         shutil.rmtree(log_dir)
+
+    # def test_evaluate_agent(self):
+    #     seed = 2
+    #     models_directory = glob.glob(
+    #         os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*/models/")
+    #     )[0]
+    #     log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_agent_logs/")
+
+    #     with open(
+    #         os.path.join(models_directory, "../agent_metadata.pkl"), "rb"
+    #     ) as metadata_file:
+    #         agent_metadata = pickle.load(metadata_file)
+
+    #     agent_ids = agent_metadata["agent_ids"]
+    #     policy_classes = agent_metadata["agent_classes"]
+    #     checkpoint_directories = {
+    #         agent_id: sorted(
+    #             glob.glob(os.path.join(models_directory, agent_id, "*")),
+    #             key=lambda x: int(x.split("/")[-1]),
+    #         )
+    #         for agent_id in agent_ids
+    #     }
+
+    #     ray.shutdown()
+    #     ray.init(ignore_reinit_error=True)
+    #     try:
+    #         evaluate.remote(
+    #             experiment_dir=None,
+    #             agent_ids=agent_ids,
+    #             policy_classes=policy_classes,
+    #             seed=seed,
+    #             checkpoint_dirs=checkpoint_directories,
+    #             scenario_info=("00", "eval_test"),
+    #             num_episodes=1,
+    #             max_episode_steps=2,
+    #             timestep_sec=0.1,
+    #             headless=True,
+    #             log_dir=log_dir,
+    #         )
+    #         self.assertTrue(True)
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
+
+    # # This test performs evaluation on multiple agents, but the test map
+    # # that is created can only support one agent. Skip this for now until
+    # # we can specify a map to use that supports multiple agents.
+    # @unittest.skip
+    # def test_evaluate_multiagent(self):
+    #     seed = 2
+    #     models_directory = glob.glob(
+    #         os.path.join(
+    #             EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*/models/"
+    #         )
+    #     )[0]
+    #     log_dir = os.path.join(
+    #         EvaluateTest.OUTPUT_DIRECTORY, "output_eval_multiagent_logs/"
+    #     )
+
+    #     with open(
+    #         os.path.join(models_directory, "../agent_metadata.pkl"), "rb"
+    #     ) as metadata_file:
+    #         agent_metadata = pickle.load(metadata_file)
+
+    #     agent_ids = agent_metadata["agent_ids"]
+    #     policy_classes = agent_metadata["agent_classes"]
+    #     checkpoint_directories = {
+    #         agent_id: sorted(
+    #             glob.glob(os.path.join(models_directory, agent_id, "*")),
+    #             key=lambda x: int(x.split("/")[-1]),
+    #         )
+    #         for agent_id in agent_ids
+    #     }
+
+    #     ray.shutdown()
+    #     ray.init(ignore_reinit_error=True)
+    #     try:
+    #         evaluate.remote(
+    #             experiment_dir=None,
+    #             agent_ids=agent_ids,
+    #             policy_classes=policy_classes,
+    #             seed=seed,
+    #             checkpoint_dirs=checkpoint_directories,
+    #             scenario_info=("00-multiagent", "eval_test"),
+    #             num_episodes=1,
+    #             max_episode_steps=2,
+    #             timestep_sec=0.1,
+    #             headless=True,
+    #             log_dir=log_dir,
+    #         )
+    #         self.assertTrue(True)
+    #     except Exception as err:
+    #         print(err)
+    #         self.assertTrue(False)
+
+    # def test_record_evaluation_at_proper_episode_indices(self):
+    #     """Due to parallelization, there might arise a situation where the episode
+    #     object at the beginning of an evaluation would not match the episode
+    #     object when recording to tensorboard. This test ensures that the evaluation data
+    #     (for both test and train scenarios) is recorded at the proper episode index.
+    #     """
+    #     AGENT_ID = "000"
+    #     log_dir = os.path.join(
+    #         EvaluateTest.OUTPUT_DIRECTORY, "output_eval_episode_check_log/"
+    #     )
+
+    #     # Arbitary values for evaluation rate and number of training episodes
+    #     eval_rate = 4
+    #     num_episodes = 20
+
+    #     train_command = (
+    #         "python ultra/train.py "
+    #         f"--task 00 --level eval_test --policy sac --headless --episodes {num_episodes} "
+    #         f"--eval-rate {eval_rate} --eval-episodes 2 --max-episode-steps 2 --log-dir {log_dir}"
+    #     )
+
+    #     if not os.path.exists(log_dir):
+    #         os.system(train_command)
+
+    #     with open(
+    #         os.path.join(
+    #             log_dir, os.listdir(log_dir)[0], "pkls/Evaluation/results.pkl"
+    #         ),
+    #         "rb",
+    #     ) as handle:
+    #         evaluation_results = dill.load(handle)
+
+    #     # Check if the episode indices are divisible by the evaluation rate. If they
+    #     # do, then the evaluation data is properly saved under the results.pkl
+    #     # and also correctly added to the tensorboard
+    #     for index in evaluation_results[AGENT_ID].keys():
+    #         self.assertEqual((index) % eval_rate, 0)
+
+    #     with open(
+    #         os.path.join(
+    #             log_dir, os.listdir(log_dir)[0], "pkls/Evaluation_Training/results.pkl"
+    #         ),
+    #         "rb",
+    #     ) as handle:
+    #         evaluation_training_results = dill.load(handle)
+
+    #     # Check if the episode indices are divisible by the evaluation rate. If they
+    #     # do, then the evaluation training data is properly saved under the results.pkl
+    #     # and also correctly added to the tensorboard
+    #     for index in evaluation_training_results[AGENT_ID].keys():
+    #         self.assertEqual((index) % eval_rate, 0)
+
+    # def test_extract_policy_from_path(self):
+    #     paths = [
+    #         "from.ultra.baselines.sac:sac-v0",
+    #         "hello.ultra.ppo:ppo-v1",
+    #         "ultra.custom:custom",
+    #         "a.sb.ultra.c.d.e.sac:sac-v99",
+    #         "a.b.c.d.e.ultra.custom_agent.policy:MBPO-v2",
+    #     ]
+
+    #     def extract(path):
+    #         m = re.search(
+    #             "ultra(.)*([a-zA-Z0-9_]*.)+([a-zA-Z0-9_])+:[a-zA-Z0-9_]+((-)*[a-zA-Z0-9_]*)*",
+    #             path,
+    #         )
+
+    #         try:
+    #             policy_class = m.group(0)
+    #         except AttributeError as e:
+    #             self.assertTrue(False)
+
+    #     for path in paths:
+    #         extract(path)
+
+    def test_use_parsed_max_episode_steps(self):
+        _AGENT_ID = "000"
+        _MAX_EPISODE_STEPS = 45
         experiment_dir = glob.glob(
             os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
         )[0]
-        evaluate_command = (
-            f"python ultra/evaluate.py "
-            f"--task 00 --level eval_test --experiment-dir {experiment_dir} "
-            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
-        )
-        ray.shutdown()
-        try:
-            os.system(evaluate_command)
-            self.assertTrue(True)
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
-
-        if not os.listdir(log_dir):
-            raise "Evaluation failed to generate new experiment folder"
-            self.assertTrue(False)
-        else:
-            shutil.rmtree(log_dir)
-
-    def test_evaluate_cli_multiagent(self):
-        log_dir = os.path.join(
-            EvaluateTest.OUTPUT_DIRECTORY, "output_eval_cli_multiagent_logs/"
-        )
-        experiment_dir = glob.glob(
-            os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*")
-        )[0]
-        evaluate_command = (
-            f"python ultra/evaluate.py "
-            f"--task 00-multiagent --level eval_test --agents 000 --experiment-dir {experiment_dir} "
-            f"--episodes 1 --max-episode-steps 2 --log-dir {log_dir} --headless"
-        )
-
-        ray.shutdown()
-        try:
-            os.system(evaluate_command)
-            self.assertTrue(True)
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
-
-        if not os.listdir(log_dir):
-            raise "Evaluation failed to generate new experiment folder"
-            self.assertTrue(False)
-        else:
-            shutil.rmtree(log_dir)
-
-    def test_evaluate_agent(self):
-        seed = 2
-        models_directory = glob.glob(
-            os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*/models/")
-        )[0]
-        log_dir = os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "output_eval_agent_logs/")
-
-        with open(
-            os.path.join(models_directory, "../agent_metadata.pkl"), "rb"
-        ) as metadata_file:
-            agent_metadata = pickle.load(metadata_file)
-
-        agent_ids = agent_metadata["agent_ids"]
-        policy_classes = agent_metadata["agent_classes"]
-        checkpoint_directories = {
-            agent_id: sorted(
-                glob.glob(os.path.join(models_directory, agent_id, "*")),
-                key=lambda x: int(x.split("/")[-1]),
+        agent_spec = {
+            _AGENT_ID: BaselineAgentSpec(
+                policy_class=SACPolicy,
+                max_episode_steps=_MAX_EPISODE_STEPS,
+                experiment_dir=experiment_dir,
+                agent_id=_AGENT_ID,
             )
-            for agent_id in agent_ids
         }
 
-        ray.shutdown()
-        ray.init(ignore_reinit_error=True)
-        try:
-            evaluate.remote(
-                experiment_dir=None,
-                agent_ids=agent_ids,
-                policy_classes=policy_classes,
-                seed=seed,
-                checkpoint_dirs=checkpoint_directories,
-                scenario_info=("00", "eval_test"),
-                num_episodes=1,
-                max_episode_steps=2,
-                timestep_sec=0.1,
-                headless=True,
-                log_dir=log_dir,
-            )
-            self.assertTrue(True)
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
-
-    # This test performs evaluation on multiple agents, but the test map
-    # that is created can only support one agent. Skip this for now until
-    # we can specify a map to use that supports multiple agents.
-    @unittest.skip
-    def test_evaluate_multiagent(self):
-        seed = 2
-        models_directory = glob.glob(
-            os.path.join(
-                EvaluateTest.OUTPUT_DIRECTORY, "multiagent_test_models/*/models/"
-            )
-        )[0]
-        log_dir = os.path.join(
-            EvaluateTest.OUTPUT_DIRECTORY, "output_eval_multiagent_logs/"
+        self.assertEqual(
+            agent_spec[_AGENT_ID].interface.max_episode_steps, _MAX_EPISODE_STEPS
         )
-
-        with open(
-            os.path.join(models_directory, "../agent_metadata.pkl"), "rb"
-        ) as metadata_file:
-            agent_metadata = pickle.load(metadata_file)
-
-        agent_ids = agent_metadata["agent_ids"]
-        policy_classes = agent_metadata["agent_classes"]
-        checkpoint_directories = {
-            agent_id: sorted(
-                glob.glob(os.path.join(models_directory, agent_id, "*")),
-                key=lambda x: int(x.split("/")[-1]),
-            )
-            for agent_id in agent_ids
-        }
-
-        ray.shutdown()
-        ray.init(ignore_reinit_error=True)
-        try:
-            evaluate.remote(
-                experiment_dir=None,
-                agent_ids=agent_ids,
-                policy_classes=policy_classes,
-                seed=seed,
-                checkpoint_dirs=checkpoint_directories,
-                scenario_info=("00-multiagent", "eval_test"),
-                num_episodes=1,
-                max_episode_steps=2,
-                timestep_sec=0.1,
-                headless=True,
-                log_dir=log_dir,
-            )
-            self.assertTrue(True)
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
-
-    def test_record_evaluation_at_proper_episode_indices(self):
-        """Due to parallelization, there might arise a situation where the episode
-        object at the beginning of an evaluation would not match the episode
-        object when recording to tensorboard. This test ensures that the evaluation data
-        (for both test and train scenarios) is recorded at the proper episode index.
-        """
-        AGENT_ID = "000"
-        log_dir = os.path.join(
-            EvaluateTest.OUTPUT_DIRECTORY, "output_eval_episode_check_log/"
-        )
-
-        # Arbitary values for evaluation rate and number of training episodes
-        eval_rate = 4
-        num_episodes = 20
-
-        train_command = (
-            "python ultra/train.py "
-            f"--task 00 --level eval_test --policy sac --headless --episodes {num_episodes} "
-            f"--eval-rate {eval_rate} --eval-episodes 2 --max-episode-steps 2 --log-dir {log_dir}"
-        )
-
-        if not os.path.exists(log_dir):
-            os.system(train_command)
-
-        with open(
-            os.path.join(
-                log_dir, os.listdir(log_dir)[0], "pkls/Evaluation/results.pkl"
-            ),
-            "rb",
-        ) as handle:
-            evaluation_results = dill.load(handle)
-
-        # Check if the episode indices are divisible by the evaluation rate. If they
-        # do, then the evaluation data is properly saved under the results.pkl
-        # and also correctly added to the tensorboard
-        for index in evaluation_results[AGENT_ID].keys():
-            self.assertEqual((index) % eval_rate, 0)
-
-        with open(
-            os.path.join(
-                log_dir, os.listdir(log_dir)[0], "pkls/Evaluation_Training/results.pkl"
-            ),
-            "rb",
-        ) as handle:
-            evaluation_training_results = dill.load(handle)
-
-        # Check if the episode indices are divisible by the evaluation rate. If they
-        # do, then the evaluation training data is properly saved under the results.pkl
-        # and also correctly added to the tensorboard
-        for index in evaluation_training_results[AGENT_ID].keys():
-            self.assertEqual((index) % eval_rate, 0)
-
-    def test_extract_policy_from_path(self):
-        paths = [
-            "from.ultra.baselines.sac:sac-v0",
-            "hello.ultra.ppo:ppo-v1",
-            "ultra.custom:custom",
-            "a.sb.ultra.c.d.e.sac:sac-v99",
-            "a.b.c.d.e.ultra.custom_agent.policy:MBPO-v2",
-        ]
-
-        def extract(path):
-            m = re.search(
-                "ultra(.)*([a-zA-Z0-9_]*.)+([a-zA-Z0-9_])+:[a-zA-Z0-9_]+((-)*[a-zA-Z0-9_]*)*",
-                path,
-            )
-
-            try:
-                policy_class = m.group(0)
-            except AttributeError as e:
-                self.assertTrue(False)
-
-        for path in paths:
-            extract(path)
 
     # @classmethod
     # def tearDownClass(cls):
