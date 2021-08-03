@@ -80,7 +80,7 @@ class PositionalGoal(Goal):
     radius: float
 
     @classmethod
-    def from_edge(cls, road_id, road_map, lane_index=0, lane_offset=None, radius=1):
+    def from_road(cls, road_id, road_map, lane_index=0, lane_offset=None, radius=1):
         road = road_map.road_by_id(road_id)
         lane = road.lane_at_index(lane_index)  # XXX: bidirectional roads?
 
@@ -155,7 +155,7 @@ class TraverseGoal(Goal):
             elif num < 0:
                 crossing_heading -= math.pi
             crossing_heading -= math.pi / 2
-            # we allow for it to be going either way since it's a pain to determine which side of the edge it's on
+            # we allow for it to be going either way since it's a pain to determine which side of the road it's on
             if (
                 abs(veh_heading - crossing_heading % (2 * math.pi)) < tolerance
                 or abs(
@@ -180,7 +180,7 @@ def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
 @dataclass(frozen=True)
 class Via:
     lane_id: str
-    edge_id: str
+    road_id: str
     lane_index: int
     position: Tuple[float, float]
     hit_distance: float
@@ -198,7 +198,7 @@ class VehicleSpec:
 class Mission:
     start: Start
     goal: Goal
-    # An optional list of edge IDs between the start and end goal that we want to
+    # An optional list of road IDs between the start and end goal that we want to
     # ensure the mission includes
     route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1
@@ -246,7 +246,7 @@ class LapMission:
     goal: Goal
     route_length: float
     num_laps: int = None  # None means infinite # of laps
-    # An optional list of edge IDs between the start and end goal that we want to
+    # An optional list of road IDs between the start and end goal that we want to
     # ensure the mission includes
     route_vias: Tuple[str] = field(default_factory=tuple)
     start_time: float = 0.1

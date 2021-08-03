@@ -561,7 +561,7 @@ class BubbleManager:
         route = sim.traffic_sim.vehicle_route(vehicle_id=vehicle.id)
         mission = Mission(
             start=Start(vehicle.position[:2], vehicle.heading),
-            goal=PositionalGoal.from_edge(route[-1], sim.scenario.road_map),
+            goal=PositionalGoal.from_road(route[-1], sim.scenario.road_map),
         )
         plan.create_route(mission)
 
