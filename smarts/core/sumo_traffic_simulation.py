@@ -26,19 +26,20 @@ import time
 from typing import List, Sequence
 
 import numpy as np
-import traci.constants as tc
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
+
+from smarts.core.utils.sumo import SUMO_PATH, traci
+import traci.constants as tc
 from traci.exceptions import FatalTraCIError, TraCIException
 
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
-from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.provider import Provider, ProviderState
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
-from smarts.core.utils.sumo import SUMO_PATH, traci
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -396,7 +397,7 @@ class SumoTrafficSimulation(Provider):
 
         for vehicle_id in external_vehicles_that_have_joined:
             vehicle_state = provider_vehicles[vehicle_id]
-            dimensions = BoundingBox.copy_with_defaults(
+            dimensions = Dimensions.copy_with_defaults(
                 vehicle_state.dimensions,
                 VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
             )
