@@ -531,6 +531,7 @@ class Vehicle:
         self._chassis.control(*args, **kwargs)
 
     def update_state(self, state: VehicleState, dt: float):
+        state.updated = True
         if not state.privileged:
             assert isinstance(self._chassis, BoxChassis)
             self.control(pose=state.pose, speed=state.speed, dt=dt)

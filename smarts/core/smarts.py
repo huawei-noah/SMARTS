@@ -606,7 +606,6 @@ class SMARTS:
                         pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                         assert isinstance(pybullet_vehicle.chassis, BoxChassis)
                         pybullet_vehicle.update_state(vehicle, dt=dt)
-                        pybullet_vehicle.updated = True
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
@@ -627,11 +626,13 @@ class SMARTS:
                 if not vehicle.updated:
                     # Note:  update_state() happens *after* pybullet has been stepped.
                     social_vehicle.update_state(vehicle, dt=dt)
-                    vehicle.updated = True
 
     def _step_pybullet(self):
-        pybullet_substeps = max(1, round(self._last_dt / self._pybullet_period))
+        self._bullet_client.stepSimulation()
+        pybullet_substeps = max(1, round(self._last_dt / self._pybullet_period)) - 1
         for _ in range(pybullet_substeps):
+            for vehicle in self._vehicle_index.vehicles:
+                vehicle.chassis.reapply_last_control()
             self._bullet_client.stepSimulation()
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:

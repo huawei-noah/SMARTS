@@ -79,6 +79,9 @@ class Chassis:
     def control(self, *args, **kwargs):
         raise NotImplementedError
 
+    def reapply_last_control(self):
+        raise NotImplementedError
+
     def teardown(self):
         raise NotImplementedError
 
@@ -181,6 +184,10 @@ class BoxChassis(Chassis):
         self._pose = pose
         self._speed = speed
         self._bullet_constraint.move_to(pose)
+
+    def reapply_last_control(self):
+        # no need to do anything here since we're not applying forces
+        pass
 
     def state_override(
         self,
@@ -604,6 +611,7 @@ class AckermannChassis(Chassis):
         """Apply throttle [0, 1], brake [0, 1], and steering [-1, 1] values for this
         timestep.
         """
+        self._last_control = (throttle, brake, steering)
 
         if isinstance(throttle, np.ndarray):
             assert all(
@@ -630,6 +638,10 @@ class AckermannChassis(Chassis):
             return
         self._apply_throttle(throttle_list)
         self._apply_brake(brake)
+
+    def reapply_last_control(self):
+        assert self._last_control
+        self.control(*self._last_control)
 
     def state_override(
         self,
