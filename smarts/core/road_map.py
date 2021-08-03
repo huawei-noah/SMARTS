@@ -182,14 +182,14 @@ class RoadMap:
             return (list(set(result)), False)
 
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
-            s = self.offset_along_lane(point)
+            s = self.offset_along_lane(world_point)
             vector = self.vector_at_offset(s)
-            normal = np.array([-vector[1], vector[0]])
+            normal = np.array([-vector[1], vector[0], 0])
             center_at_s = self.from_lane_coord(RefLinePoint(s=s))
             offcenter_vector = np.array(world_point) - center_at_s
             t_sign = np.sign(np.dot(offcenter_vector, normal))
             t = np.linalg.norm(offcenter_vector) * t_sign
-            return RefLinePoint(s=u, t=t)
+            return RefLinePoint(s=s, t=t)
 
         def center_at_point(self, point: Point) -> Point:
             offset = self.offset_along_lane(point)

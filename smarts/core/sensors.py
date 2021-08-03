@@ -203,7 +203,7 @@ class Sensors:
         closest_lane = sim.road_map.nearest_lane(vehicle.pose.point)
         ego_lane_id = closest_lane.lane_id
         ego_lane_index = closest_lane.index
-        ego_road_id = (closest_lane.road.road_id,)
+        ego_road_id = closest_lane.road.road_id
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {

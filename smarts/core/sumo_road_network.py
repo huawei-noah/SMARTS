@@ -232,7 +232,7 @@ class SumoRoadNetwork(RoadMap):
         @property
         def road_dir(self) -> bool:
             if self._road_dir is None and self._road:
-                self._road_dir = self._road.lanes[self.index].lane_id == lane_id
+                self._road_dir = self._road.lanes[self.index].lane_id == self.lane_id
             return self._road_dir
 
         @cached_property
