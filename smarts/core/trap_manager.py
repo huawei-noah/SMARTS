@@ -29,7 +29,7 @@ from shapely.geometry import Point, Polygon
 from smarts.core.mission_planner import Mission, MissionPlanner
 from smarts.core.scenario import Start, default_entry_tactic
 from smarts.core.utils.math import clip, squared_dist
-from smarts.core.vehicle import VehicleState, VEHICLE_CONFIGS
+from smarts.core.vehicle import Vehicle, VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic
 
 
@@ -189,14 +189,7 @@ class TrapManager:
             elif trap.patience_expired:
                 # Make sure there is not a vehicle in the same location
                 mission = trap.mission
-                if mission.vehicle_spec:
-                    nv_dims = BoundingBox.copy_with_defaults(
-                        mission.vehicle_spec.dimensions,
-                        VEHICLE_CONFIGS[vehicle_config_type].dimensions,
-                    )
-                else:
-                    vehicle_config_type = "passenger"
-                    nv_dims = VEHICLE_CONFIGS[vehicle_config_type].dimensions
+                nv_dims = Vehicle.agent_vehicle_dims(mission)
                 new_veh_maxd = max(nv_dims.as_lwh[:2])
                 overlapping = False
                 for pos, largest_dimension, _ in vehicle_comp:

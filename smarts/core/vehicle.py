@@ -312,6 +312,20 @@ class Vehicle:
     def vehicle_type(self):
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
 
+    @staticmethod
+    def agent_vehicle_dims(mission) -> BoundingBox:
+        if mission.vehicle_spec:
+            # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
+            # but we use that value here in case we ever expand our history functionality.
+            vehicle_config_type = mission.vehicle_spec.veh_config_type
+            return BoundingBox.copy_with_defaults(
+                mission.vehicle_spec.dimensions,
+                VEHICLE_CONFIGS[vehicle_config_type].dimensions,
+            )
+        # non-history agents can currently only control passenger vehicles.
+        vehicle_config_type = "passenger"
+        return VEHICLE_CONFIGS[vehicle_config_type].dimensions
+
     @classmethod
     def build_agent_vehicle(
         cls,
@@ -328,18 +342,7 @@ class Vehicle:
     ):
         mission = mission_planner.mission
 
-        if mission.vehicle_spec:
-            # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
-            # but we use that value here in case we ever expand our history functionality.
-            vehicle_config_type = mission.vehicle_spec.veh_config_type
-            chassis_dims = BoundingBox.copy_with_defaults(
-                mission.vehicle_spec.dimensions,
-                VEHICLE_CONFIGS[vehicle_config_type].dimensions,
-            )
-        else:
-            # non-history agents can currently only control passenger vehicles.
-            vehicle_config_type = "passenger"
-            chassis_dims = VEHICLE_CONFIGS[vehicle_config_type].dimensions
+        chassis_dims = cls.agent_vehicle_dims(mission)
 
         if isinstance(mission.task, UTurn):
             if mission.task.initial_speed:
