@@ -187,22 +187,18 @@ class TrapManager:
                     sim, vehicle_id, agent_id, mission
                 )
             elif trap.patience_expired:
+                # Make sure there is not a vehicle in the same location
                 mission = trap.mission
-                if len(vehicle_comp) > 0:
-                    vehicle_comp.sort(
-                        key=lambda v: squared_dist(v[0], mission.start.position)
-                    )
-
-                    # Make sure there is not a vehicle in the same location
-                    for pos, largest_dimension, _ in vehicle_comp[:3]:
-                        if (
-                            squared_dist(pos, mission.start.position)
-                            < largest_dimension
-                        ):
-                            continue
+                overlapping = False
+                for pos, largest_dimension, _ in vehicle_comp:
+                    if squared_dist(pos, mission.start.position) < largest_dimension:
+                        overlapping = True
+                        break
+                if overlapping:
+                    continue
 
                 vehicle = TrapManager._make_vehicle(
-                    sim, agent_id, trap.mission, trap.default_entry_speed
+                    sim, agent_id, mission, trap.default_entry_speed
                 )
             else:
                 continue
