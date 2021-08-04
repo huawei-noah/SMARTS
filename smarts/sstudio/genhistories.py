@@ -456,29 +456,31 @@ class OldJSON(_TrajectoryDataset):
             return state.get("heading", -math.pi / 2)
         return None
 
+
 class Waymo(_TrajectoryDataset):
     def __init__(self, dataset_spec, output):
         super().__init__(dataset_spec, output)
 
     @property
     def rows(self):
-        dataset = tf.data.TFRecordDataset(self._dataset_spec["input_path"], compression_type='')
+        dataset = tf.data.TFRecordDataset(
+            self._dataset_spec["input_path"], compression_type=""
+        )
         scenario_list = list(dataset.as_numpy_iterator())
         for scenario_data in scenario_list[:1]:
             scenario = scenario_pb2.Scenario()
             scenario.ParseFromString(bytearray(scenario_data))
-            
+
             for i in range(len(scenario.tracks)):
                 vehicle_id = scenario.tracks[i].id
                 vehicle_type = self._lookup_agent_type(scenario.tracks[i].object_type)
-                
+
                 for j in range(len(scenario.timestamps_seconds)):
                     obj_state = scenario.tracks[i].states[j]
                     if obj_state.valid == False:
                         continue
 
-                    vel = np.array([obj_state.velocity_x,
-                                    obj_state.velocity_y])
+                    vel = np.array([obj_state.velocity_x, obj_state.velocity_y])
                     row = {}
                     row["vehicle_id"] = vehicle_id
                     row["type"] = vehicle_type
@@ -496,13 +498,18 @@ class Waymo(_TrajectoryDataset):
 
     @staticmethod
     def _lookup_agent_type(agent_type: int):
-        if   agent_type == 1: return 2 # car
-        elif agent_type == 2: return 4 # pedestrian
-        elif agent_type == 3: return 4 # cyclist
-        else: return 0                 # other
+        if agent_type == 1:
+            return 2  # car
+        elif agent_type == 2:
+            return 4  # pedestrian
+        elif agent_type == 3:
+            return 4  # cyclist
+        else:
+            return 0  # other
 
     def column_val_in_row(self, row, col_name):
         return row[col_name]
+
 
 def _check_args(args):
     if not args.force and os.path.exists(args.output):

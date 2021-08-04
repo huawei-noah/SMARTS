@@ -1,7 +1,7 @@
 trajectory_dataset:
     name: 
     source: Waymo
-    input_path: ./training_20s/uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000
+    input_path: ./waymo_dataset/training_20s/uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000
 
     # 55mph is roughly 25m/s.  100km/h is roughly 28m/s.
     speed_limit_mps: 28
