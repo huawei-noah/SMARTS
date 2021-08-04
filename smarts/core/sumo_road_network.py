@@ -322,7 +322,7 @@ class SumoRoadNetwork(RoadMap):
             road_ids = [road.road_id for road in route.roads] if route else None
             return self._waypoint_paths_at(pose.position, lookahead, road_ids)
 
-        def waypoint_paths_on_offset(
+        def waypoint_paths_at_offset(
             self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
             wp_start = self.from_lane_coord(RefLinePoint(offset))
@@ -335,9 +335,6 @@ class SumoRoadNetwork(RoadMap):
             lookahead: int,
             filter_road_ids: Sequence[str] = None,
         ) -> List[List[Waypoint]]:
-            """computes equally-spaced Waypoints for all lane paths
-            up to lookahead waypoints ahead, constrained to filter_road_ids if specified,
-            starting at the nearest LanePoint to point within lane lane_id."""
             closest_linked_lp = (
                 self._map._lanepoints.closest_linked_lanepoint_on_lane_to_point(
                     point, self._lane_id
@@ -676,7 +673,7 @@ class SumoRoadNetwork(RoadMap):
         )
         closest_lane = closest_lps[0].lane
         # TAI: the above lines could be replaced by:
-        # closest_lane = self.nearest_lane(pose.point, radius=within_radius)
+        # closest_lane = self.nearest_lane(pose.position, radius=within_radius)
         waypoint_paths = []
         for lane in closest_lane.road.lanes:
             waypoint_paths += lane._waypoint_paths_at(pose.position, lookahead)
@@ -1066,7 +1063,7 @@ class SumoRoadNetwork(RoadMap):
             lanepoint, lookahead, filter_road_ids
         )
         result = [
-            SumoRoadNetwork._equally_spaced_path(path, point)
+            SumoRoadNetwork._equally_spaced_path(path, point, self._lanepoints.spacing)
             for path in lanepoint_paths
         ]
 
@@ -1078,7 +1075,7 @@ class SumoRoadNetwork(RoadMap):
 
     @staticmethod
     def _equally_spaced_path(
-        path: Sequence[LinkedLanePoint], point: Tuple[float, float, float]
+        path: Sequence[LinkedLanePoint], point: Tuple[float, float, float], lp_spacing: float
     ) -> List[Waypoint]:
         """given a list of LanePoints starting near point, that may not be evenly spaced,
         returns the same number of Waypoints that are evenly spaced and start at point."""
@@ -1141,7 +1138,7 @@ class SumoRoadNetwork(RoadMap):
             )
         )
 
-        if len(cumulative_path_dist) <= 1:
+        if len(cumulative_path_dist) <= lp_spacing:
             lp = path[0].lp
             return [
                 Waypoint(
