@@ -23,7 +23,7 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache
 
-import numpy
+import numpy as np
 import yaml
 
 from smarts.sstudio.types import UTurn
@@ -48,18 +48,31 @@ from .sensors import (
 from .utils.math import rotate_around_point
 
 
-@dataclass(frozen=True)
+@dataclass
 class VehicleState:
     vehicle_id: str
-    vehicle_type: str
     pose: Pose
     dimensions: BoundingBox
+    vehicle_type: str = None
+    vehicle_config_type: str = None  # key into VEHICLE_CONFIGS
+    updated: bool = False
     speed: float = 0
     steering: float = None
     yaw_rate: float = None
     source: str = None  # the source of truth for this vehicle state
-    linear_velocity: numpy.ndarray = None
-    angular_velocity: numpy.ndarray = None
+    linear_velocity: np.ndarray = None
+    angular_velocity: np.ndarray = None
+    linear_acceleration: np.ndarray = None
+    angular_acceleration: np.ndarray = None
+    _privileged: bool = False
+
+    def set_privileged(self):
+        """For deferring to external co-simulators only. Use with caution!"""
+        self._privileged = True
+
+    @property
+    def privileged(self) -> bool:
+        return self._privileged
 
 
 @dataclass(frozen=True)
@@ -140,21 +153,16 @@ class Vehicle:
     def __init__(
         self,
         id: str,
-        # XXX: can probably remove pose as a parameter here since it's in chassis now.
-        pose: Pose,
         chassis: Chassis,
-        # TODO: We should not be leaking SUMO here.
-        sumo_vehicle_type="passenger",
+        vehicle_config_type: str = "passenger",
         color=None,
         action_space=None,
     ):
-        assert isinstance(pose, Pose)
-
         self._log = logging.getLogger(self.__class__.__name__)
         self._id = id
 
         self._chassis = chassis
-        self._sumo_vehicle_type = sumo_vehicle_type
+        self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
         self._speed = None
 
@@ -164,7 +172,7 @@ class Vehicle:
         # Color override
         self._color = color
         if self._color is None:
-            config = VEHICLE_CONFIGS[sumo_vehicle_type]
+            config = VEHICLE_CONFIGS[vehicle_config_type]
             self._color = config.color
 
         self._renderer = None
@@ -245,6 +253,7 @@ class Vehicle:
         return VehicleState(
             vehicle_id=self.id,
             vehicle_type=self.vehicle_type,
+            vehicle_config_type=None,  # it's hard to invert
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
@@ -287,8 +296,8 @@ class Vehicle:
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
         origin = self.position[:2]
-        dimensions = numpy.array([self.width, self.length])
-        corners = numpy.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
+        dimensions = np.array([self.width, self.length])
+        corners = np.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
         heading = self.heading
         return [
             rotate_around_point(
@@ -301,10 +310,25 @@ class Vehicle:
 
     @property
     def vehicle_type(self):
-        return VEHICLE_CONFIGS[self._sumo_vehicle_type].vehicle_type
+        return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
 
     @staticmethod
+    def agent_vehicle_dims(mission) -> BoundingBox:
+        if mission.vehicle_spec:
+            # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
+            # but we use that value here in case we ever expand our history functionality.
+            vehicle_config_type = mission.vehicle_spec.veh_config_type
+            return BoundingBox.copy_with_defaults(
+                mission.vehicle_spec.dimensions,
+                VEHICLE_CONFIGS[vehicle_config_type].dimensions,
+            )
+        # non-history agents can currently only control passenger vehicles.
+        vehicle_config_type = "passenger"
+        return VEHICLE_CONFIGS[vehicle_config_type].dimensions
+
+    @classmethod
     def build_agent_vehicle(
+        cls,
         sim,
         vehicle_id,
         agent_interface,
@@ -318,26 +342,21 @@ class Vehicle:
     ):
         mission = mission_planner.mission
 
-        if mission.vehicle_spec:
-            # mission.vehicle_spec.veh_type will always be "passenger" for now,
-            # but we use that value here in case we ever expand our history functionality.
-            vehicle_type = mission.vehicle_spec.veh_type
-            chassis_dims = mission.vehicle_spec.dimensions
-        else:
-            # non-history agents can currently only control passenger vehicles.
-            vehicle_type = "passenger"
-            chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+        chassis_dims = cls.agent_vehicle_dims(mission)
 
         if isinstance(mission.task, UTurn):
             if mission.task.initial_speed:
                 initial_speed = mission.task.initial_speed
 
         start = mission.start
-        start_pose = Pose.from_front_bumper(
-            front_bumper_position=numpy.array(start.position),
-            heading=start.heading,
-            length=chassis_dims.length,
-        )
+        if start.from_front_bumper:
+            start_pose = Pose.from_front_bumper(
+                front_bumper_position=np.array(start.position),
+                heading=start.heading,
+                length=chassis_dims.length,
+            )
+        else:
+            start_pose = Pose.from_center(start.position, start.heading)
 
         vehicle_color = (
             SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
@@ -366,11 +385,12 @@ class Vehicle:
 
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
-        if (
-            agent_interface
-            and agent_interface.action in sim.dynamic_action_spaces
-            and not mission.vehicle_spec
-        ):
+        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+            if mission.vehicle_spec:
+                logger = logging.getLogger(cls.__name__)
+                logger.warning(
+                    "setting vehicle dimensions on a AckermannChassis not yet supported"
+                )
             chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
@@ -390,7 +410,6 @@ class Vehicle:
 
         vehicle = Vehicle(
             id=vehicle_id,
-            pose=start_pose,
             chassis=chassis,
             color=vehicle_color,
         )
@@ -398,17 +417,18 @@ class Vehicle:
         return vehicle
 
     @staticmethod
-    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_type):
-        return Vehicle(
-            id=vehicle_id,
+    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_config_type):
+        dims = BoundingBox.copy_with_defaults(
+            vehicle_state.dimensions, VEHICLE_CONFIGS[vehicle_config_type].dimensions
+        )
+        chassis = BoxChassis(
             pose=vehicle_state.pose,
-            chassis=BoxChassis(
-                pose=vehicle_state.pose,
-                speed=vehicle_state.speed,
-                dimensions=vehicle_state.dimensions,
-                bullet_client=sim.bc,
-            ),
-            sumo_vehicle_type=vehicle_type,
+            speed=vehicle_state.speed,
+            dimensions=dims,
+            bullet_client=sim.bc,
+        )
+        return Vehicle(
+            id=vehicle_id, chassis=chassis, vehicle_config_type=vehicle_config_type
         )
 
     @staticmethod
@@ -437,12 +457,7 @@ class Vehicle:
             )
 
         if agent_interface.accelerometer:
-            vehicle.attach_accelerometer_sensor(
-                AccelerometerSensor(
-                    vehicle=vehicle,
-                    sim=sim,
-                )
-            )
+            vehicle.attach_accelerometer_sensor(AccelerometerSensor(vehicle=vehicle))
 
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
@@ -525,10 +540,36 @@ class Vehicle:
     def control(self, *args, **kwargs):
         self._chassis.control(*args, **kwargs)
 
+    def update_state(self, state: VehicleState, dt: float):
+        state.updated = True
+        if not state.privileged:
+            assert isinstance(self._chassis, BoxChassis)
+            self.control(pose=state.pose, speed=state.speed, dt=dt)
+            return
+        # "Privileged" means we can work directly (bypass force application).
+        # Conceptually, this is playing 'god' with physics and should only be used
+        # to defer to a co-simulator's states.
+        linear_velocity, angular_velocity = None, None
+        if not np.allclose(
+            self._chassis.velocity_vectors[0], state.linear_velocity
+        ) or not np.allclose(self._chassis.velocity_vectors[1], state.angular_velocity):
+            linear_velocity = state.linear_velocity
+            angular_velocity = state.angular_velocity
+        if (
+            state.dimensions.length != self.length
+            or state.dimensions.width != self.width
+            or state.dimensions.height != self.height
+        ):
+            self._log.warning(
+                "Unable to change a vehicle's dimensions via external_state_update()."
+            )
+        # XXX:  any way to update acceleration in pybullet?
+        self._chassis.state_override(dt, state.pose, linear_velocity, angular_velocity)
+
     def create_renderer_node(self, renderer):
         assert not self._renderer
         self._renderer = renderer
-        config = VEHICLE_CONFIGS[self._sumo_vehicle_type]
+        config = VEHICLE_CONFIGS[self._vehicle_config_type]
         self._renderer.create_vehicle_node(
             config.glb_model, self._id, self.vehicle_color, self.pose
         )

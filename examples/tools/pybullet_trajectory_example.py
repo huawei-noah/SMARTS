@@ -172,7 +172,6 @@ if __name__ == "__main__":
 
             vehicle = Vehicle(
                 id="vehicle",
-                pose=pose,
                 chassis=AckermannChassis(
                     pose=pose,
                     bullet_client=client,

@@ -43,8 +43,8 @@ class AgentManager:
 
     def __init__(self, interfaces, zoo_addrs=None):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._remote_agent_buffer = RemoteAgentBuffer(zoo_manager_addrs=zoo_addrs)
-
+        self._remote_agent_buffer = None
+        self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
         self._vehicle_with_sensors = dict()
@@ -75,7 +75,9 @@ class AgentManager:
         self._pending_agent_ids = set()
 
     def destroy(self):
-        self._remote_agent_buffer.destroy()
+        if self._remote_agent_buffer:
+            self._remote_agent_buffer.destroy()
+            self._remote_agent_buffer = None
         Sensors.clean_up()
 
     @property
@@ -322,15 +324,27 @@ class AgentManager:
         self.setup_social_agents(sim)
         self.start_keep_alive_boid_agents(sim)
 
+    def add_ego_agent(self, agent_id: str, agent_interface: AgentInterface):
+        # TODO: Remove `pending_agent_ids`
+        self.pending_agent_ids.add(agent_id)
+        self._ego_agent_ids.add(agent_id)
+        self.agent_interfaces[agent_id] = agent_interface
+        # agent will now be given vehicle by trap manager when appropriate
+
     def init_ego_agents(self, sim):
         for agent_id, agent_interface in self._initial_interfaces.items():
-            # TODO: Remove `pending_agent_ids`
-            self.pending_agent_ids.add(agent_id)
-            self._ego_agent_ids.add(agent_id)
-            self.agent_interfaces[agent_id] = agent_interface
+            self.add_ego_agent(agent_id, agent_interface)
 
     def setup_social_agents(self, sim):
         social_agents = sim.scenario.social_agents
+        if social_agents:
+            if not self._remote_agent_buffer:
+                self._remote_agent_buffer = RemoteAgentBuffer(
+                    zoo_manager_addrs=self._zoo_addrs
+                )
+        else:
+            return
+
         self._remote_social_agents = {
             agent_id: self._remote_agent_buffer.acquire_remote_agent()
             for agent_id in social_agents
@@ -434,6 +448,7 @@ class AgentManager:
                 VehicleState(
                     vehicle_id=vehicle.id,
                     vehicle_type=vehicle.vehicle_type,
+                    vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
                     pose=vehicle.pose,
                     dimensions=vehicle.chassis.dimensions,
                     source="NEW-AGENT",
@@ -444,6 +459,10 @@ class AgentManager:
         self._social_agent_data_models[agent_id] = agent_model
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
+        if not self._remote_agent_buffer:
+            self._remote_agent_buffer = RemoteAgentBuffer(
+                zoo_manager_addrs=self._zoo_addrs
+            )
         remote_agent = self._remote_agent_buffer.acquire_remote_agent()
         remote_agent.start(social_agent)
         self._remote_social_agents[agent_id] = remote_agent

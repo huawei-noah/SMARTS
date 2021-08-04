@@ -29,12 +29,12 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.coordinates import Heading, BoundingBox
+from smarts.core.coordinates import Heading, BoundingBox, Pose
 from smarts.core.data_model import SocialAgent
 from smarts.core.route import ShortestRoute
 from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -52,6 +52,15 @@ from smarts.sstudio.types import Via as SSVia
 class Start:
     position: Tuple[int, int]
     heading: Heading
+    from_front_bumper: Optional[bool] = True
+
+    @classmethod
+    def from_pose(cls, pose: Pose):
+        return cls(
+            position=pose.position[:2],
+            heading=pose.heading,
+            from_front_bumper=False,
+        )
 
 
 @dataclass(frozen=True)
@@ -97,7 +106,7 @@ class PositionalGoal(Goal):
         return dist <= self.radius
 
 
-@dataclass
+@dataclass(frozen=True)
 class TraverseGoal(Goal):
     """A TraverseGoal is satisfied whenever an Agent-driven vehicle
     successfully finishes traversing a non-closed (acyclical) map
@@ -141,7 +150,7 @@ class Via:
 @dataclass(frozen=True)
 class VehicleSpec:
     veh_id: str
-    veh_type: str
+    veh_config_type: str
     dimensions: BoundingBox
 
 
@@ -565,7 +574,7 @@ class Scenario:
             pos_x, pos_y, heading, speed = pphs
             entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
-            veh_type = self._traffic_history.vehicle_type(v_id)
+            veh_config_type = self._traffic_history.vehicle_config_type(v_id)
             veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(v_id)
             # missions start from front bumper, but pos is center of vehicle
             hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
@@ -579,7 +588,7 @@ class Scenario:
                 start_time=start_time,
                 vehicle_spec=VehicleSpec(
                     veh_id=v_id,
-                    veh_type=veh_type,
+                    veh_config_type=veh_config_type,
                     dimensions=BoundingBox(veh_length, veh_width, veh_height),
                 ),
             )

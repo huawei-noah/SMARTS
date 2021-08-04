@@ -18,7 +18,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         sumo_headless=True,
         visdom=False,
         seed=seed,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
     )
 
     if max_episode_steps is None:

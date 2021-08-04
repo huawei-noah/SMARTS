@@ -126,6 +126,13 @@ class Vias:
 
 @dataclass
 class Observation:
+    # dt is the amount of sim_time the last step took .
+    # step_count is the number of steps take by SMARTS so far.
+    # elapsed_sim_time is the amout of simulation time that's passed so far.
+    # note: to get the average step_time, elapsed_sim_time can be divided by step_count
+    dt: float
+    step_count: int
+    elapsed_sim_time: float
     events: Events
     ego_vehicle_state: EgoVehicleObservation
     neighborhood_vehicle_states: List[VehicleObservation]
@@ -222,6 +229,7 @@ class Sensors:
             acceleration_values = vehicle.accelerometer_sensor(
                 ego_vehicle_state.linear_velocity,
                 ego_vehicle_state.angular_velocity,
+                sim.last_dt,
             )
             acceleration_params.update(
                 dict(
@@ -302,6 +310,9 @@ class Sensors:
 
         return (
             Observation(
+                dt=sim.last_dt,
+                step_count=sim.step_count,
+                elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle_observation,
                 neighborhood_vehicle_states=neighborhood_vehicles,
@@ -1025,12 +1036,11 @@ class RoadWaypointsSensor(Sensor):
 
 
 class AccelerometerSensor(Sensor):
-    def __init__(self, vehicle, sim):
-        self._dt = sim.timestep_sec
+    def __init__(self, vehicle):
         self.linear_velocities = deque(maxlen=3)
         self.angular_velocities = deque(maxlen=3)
 
-    def __call__(self, linear_velocity, angular_velocity):
+    def __call__(self, linear_velocity, angular_velocity, dt: float):
         if linear_velocity is not None:
             self.linear_velocities.append(linear_velocity)
         if angular_velocity is not None:
@@ -1041,23 +1051,24 @@ class AccelerometerSensor(Sensor):
         linear_jerk = np.array((0.0, 0.0, 0.0))
         angular_jerk = np.array((0.0, 0.0, 0.0))
 
+        if not dt:
+            return (linear_acc, angular_acc, linear_jerk, angular_jerk)
+
         if len(self.linear_velocities) >= 2:
-            linear_acc = (
-                self.linear_velocities[-1] - self.linear_velocities[-2]
-            ) / self._dt
+            linear_acc = (self.linear_velocities[-1] - self.linear_velocities[-2]) / dt
             if len(self.linear_velocities) >= 3:
                 last_linear_acc = (
                     self.linear_velocities[-2] - self.linear_velocities[-3]
-                ) / self._dt
+                ) / dt
                 linear_jerk = linear_acc - last_linear_acc
         if len(self.angular_velocities) >= 2:
             angular_acc = (
                 self.angular_velocities[-1] - self.angular_velocities[-2]
-            ) / self._dt
+            ) / dt
             if len(self.angular_velocities) >= 3:
                 last_angular_acc = (
                     self.angular_velocities[-2] - self.angular_velocities[-3]
-                ) / self._dt
+                ) / dt
                 angular_jerk = angular_acc - last_angular_acc
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)

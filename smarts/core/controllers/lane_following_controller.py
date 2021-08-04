@@ -171,10 +171,8 @@ class LaneFollowingController:
             )
 
         speed_error = vehicle.speed - target_speed
-        state.integral_speed_error += speed_error * sim.timestep_sec
-        velocity_error_damping_term = (
-            speed_error - state.speed_error
-        ) / sim.timestep_sec
+        state.integral_speed_error += speed_error * sim.last_dt
+        velocity_error_damping_term = (speed_error - state.speed_error) / sim.last_dt
         # 5.5 is the gain of feedforward term for throttle. This term is
         # directly related to the steering angle, this is added to further
         # enhance the speed tracking performance. TODO: currently, the bullet
@@ -270,7 +268,7 @@ class LaneFollowingController:
         # gain for lateral error. The feedforward term based on the
         # curvature is added to enhance the transient performance when
         # the road curvature changes locally.
-        state.lateral_integral_error += sim.timestep_sec * controller_lat_error
+        state.lateral_integral_error += sim.last_dt * controller_lat_error
         # The feed forward term for the  steering controller. This
         # term is proportionate to Ux^2/R. The coefficient 0.15 is
         # chosen to enhance the transient tracking performance.
@@ -321,7 +319,7 @@ class LaneFollowingController:
             steering_norm,
             state.steering_state,
             steering_filter_constant,
-            sim.timestep_sec,
+            sim.last_dt,
         )
 
         # The Throttle low pass filter, 2 is the constant of the
@@ -333,7 +331,7 @@ class LaneFollowingController:
             throttle_norm,
             state.throttle_state,
             throttle_filter_constant,
-            sim.timestep_sec,
+            sim.last_dt,
             lower_bound=0,
         )
         # Applying control actions to the vehicle
