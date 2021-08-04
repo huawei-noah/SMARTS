@@ -433,4 +433,7 @@ def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
         elif os.path.exists(os.path.join(scenario, th_file)):
             continue
         cmd += [th_file]
-        subprocess.check_call(cmd, cwd=scenario)
+        try:
+            subprocess.check_output(cmd, cwd=scenario)
+        except subprocess.CalledProcessError as e:
+            print(e.output.decode())

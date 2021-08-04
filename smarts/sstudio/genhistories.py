@@ -24,6 +24,11 @@ import logging
 import math
 import os
 import sqlite3
+import sys
+
+# For Waymo dataset
+import tensorflow as tf
+from waymo_open_dataset.protos import scenario_pb2
 
 import ijson
 import numpy as np
@@ -95,7 +100,9 @@ class _TrajectoryDataset:
                    id INTEGER PRIMARY KEY,
                    type INTEGER NOT NULL,
                    length REAL,
-                   width REAL
+                   width REAL,
+                   height REAL,
+                   is_ego_vehicle INTEGER DEFAULT 0
                ) WITHOUT ROWID"""
         )
         ccur.execute(
@@ -130,7 +137,7 @@ class _TrajectoryDataset:
         iscur.close()
 
         # TAI:  can use executemany() and batch insert rows together if this turns out to be too slow...
-        insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?)"
+        insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?, ?, ?)"
         insert_traj_sql = "INSERT INTO Trajectory VALUES (?, ?, ?, ?, ?, ?, ?)"
         vehicle_ids = set()
         itcur = dbconxn.cursor()
@@ -143,6 +150,8 @@ class _TrajectoryDataset:
                     int(self.column_val_in_row(row, "type")),
                     float(self.column_val_in_row(row, "length")) * self.scale,
                     float(self.column_val_in_row(row, "width")) * self.scale,
+                    float(self.column_val_in_row(row, "height")) * self.scale,
+                    int(self.column_val_in_row(row, "is_ego_vehicle")),
                 )
                 ivcur.execute(insert_vehicle_sql, veh_args)
                 ivcur.close()
@@ -216,8 +225,7 @@ class Interaction(_TrajectoryDataset):
             self._next_row = None
             yield last_row
 
-    @staticmethod
-    def _lookup_agent_type(agent_type):
+    def _lookup_agent_type(self, agent_type):
         # Try to match the NGSIM types...
         if agent_type == "motorcycle":
             return 1
@@ -239,7 +247,7 @@ class Interaction(_TrajectoryDataset):
         if col_name == "width":
             return row.get("width", 0.0)
         if col_name == "type":
-            return Interaction._lookup_agent_type(row["agent_type"])
+            return self._lookup_agent_type(row["agent_type"])
         if col_name == "speed":
             if self._next_row:
                 # XXX: could try to divide by sim_time delta here instead of assuming .1s
@@ -410,8 +418,7 @@ class OldJSON(_TrajectoryDataset):
                 for state in states.values():
                     yield (t, state)
 
-    @staticmethod
-    def _lookup_agent_type(agent_type):
+    def _lookup_agent_type(self, agent_type):
         if isinstance(agent_type, int):
             return agent_type
         # Try to match the NGSIM types...
@@ -436,7 +443,7 @@ class OldJSON(_TrajectoryDataset):
         if col_name == "id":
             return state["vehicle_id"]
         if col_name == "type":
-            return OldJSON._lookup_agent_type(state["vehicle_type"])
+            return self._lookup_agent_type(state["vehicle_type"])
         if col_name == "length":
             return state.get("vehicle_length", 0.0)
         if col_name == "width":
@@ -449,6 +456,53 @@ class OldJSON(_TrajectoryDataset):
             return state.get("heading", -math.pi / 2)
         return None
 
+class Waymo(_TrajectoryDataset):
+    def __init__(self, dataset_spec, output):
+        super().__init__(dataset_spec, output)
+
+    @property
+    def rows(self):
+        dataset = tf.data.TFRecordDataset(self._dataset_spec["input_path"], compression_type='')
+        scenario_list = list(dataset.as_numpy_iterator())
+        for scenario_data in scenario_list[:1]:
+            scenario = scenario_pb2.Scenario()
+            scenario.ParseFromString(bytearray(scenario_data))
+            
+            for i in range(len(scenario.tracks)):
+                vehicle_id = scenario.tracks[i].id
+                vehicle_type = self._lookup_agent_type(scenario.tracks[i].object_type)
+                
+                for j in range(len(scenario.timestamps_seconds)):
+                    obj_state = scenario.tracks[i].states[j]
+                    if obj_state.valid == False:
+                        continue
+
+                    vel = np.array([obj_state.velocity_x,
+                                    obj_state.velocity_y])
+                    row = {}
+                    row["vehicle_id"] = vehicle_id
+                    row["type"] = vehicle_type
+                    row["length"] = obj_state.length
+                    row["height"] = obj_state.height
+                    row["width"] = obj_state.width
+                    row["sim_time"] = scenario.timestamps_seconds[j] * 1000.0
+                    row["position_x"] = obj_state.center_x
+                    row["position_y"] = obj_state.center_y
+                    row["heading_rad"] = obj_state.heading
+                    row["speed"] = np.linalg.norm(vel)
+                    row["lane_id"] = 0
+                    row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
+                    yield row
+
+    @staticmethod
+    def _lookup_agent_type(agent_type: int):
+        if   agent_type == 1: return 2 # car
+        elif agent_type == 2: return 4 # pedestrian
+        elif agent_type == 3: return 4 # cyclist
+        else: return 0                 # other
+
+    def column_val_in_row(self, row, col_name):
+        return row[col_name]
 
 def _check_args(args):
     if not args.force and os.path.exists(args.output):
@@ -495,6 +549,8 @@ if __name__ == "__main__":
     source = dataset_spec.get("source", "NGSIM")
     if source == "NGSIM":
         dataset = NGSIM(dataset_spec, args.output)
+    elif source == "Waymo":
+        dataset = Waymo(dataset_spec, args.output)
     elif source == "OldJSON":
         dataset = OldJSON(dataset_spec, args.output)
     else:
