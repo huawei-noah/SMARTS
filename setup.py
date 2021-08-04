@@ -88,7 +88,7 @@ setup(
         ],
         "waymo": [
             "tensorflow==2.2.1",
-            "waymo-open-dataset-tf-2-1-0",
+            "waymo-open-dataset-tf-2-2-0",
         ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
