@@ -1075,7 +1075,9 @@ class SumoRoadNetwork(RoadMap):
 
     @staticmethod
     def _equally_spaced_path(
-        path: Sequence[LinkedLanePoint], point: Tuple[float, float, float], lp_spacing: float
+        path: Sequence[LinkedLanePoint],
+        point: Tuple[float, float, float],
+        lp_spacing: float,
     ) -> List[Waypoint]:
         """given a list of LanePoints starting near point, that may not be evenly spaced,
         returns the same number of Waypoints that are evenly spaced and start at point."""
