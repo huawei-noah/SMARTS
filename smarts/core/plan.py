@@ -138,7 +138,7 @@ class TraverseGoal(Goal):
         if not nearest_lanes:
             return False  # we can't tell anything here
         nl, dist = nearest_lanes[0]
-        # TODO STEVE:  nl.width_at_offset!
+        # TODO SUMO road_network:  need to use nl.width_at_offset() instead
         if nl.outgoing_lanes or dist < 0.5 * nl.width + 1e-1:
             return False  # the last lane it was in was not a dead-end, or it's still in a lane
         end_node = nl.road.getToNode()  # TODO SUMO road_network
