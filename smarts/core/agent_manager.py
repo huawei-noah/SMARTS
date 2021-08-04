@@ -43,8 +43,8 @@ class AgentManager:
 
     def __init__(self, interfaces, zoo_addrs=None):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._remote_agent_buffer = RemoteAgentBuffer(zoo_manager_addrs=zoo_addrs)
-
+        self._remote_agent_buffer = None
+        self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
         self._vehicle_with_sensors = dict()
@@ -75,7 +75,9 @@ class AgentManager:
         self._pending_agent_ids = set()
 
     def destroy(self):
-        self._remote_agent_buffer.destroy()
+        if self._remote_agent_buffer:
+            self._remote_agent_buffer.destroy()
+            self._remote_agent_buffer = None
         Sensors.clean_up()
 
     @property
@@ -335,6 +337,14 @@ class AgentManager:
 
     def setup_social_agents(self, sim):
         social_agents = sim.scenario.social_agents
+        if social_agents:
+            if not self._remote_agent_buffer:
+                self._remote_agent_buffer = RemoteAgentBuffer(
+                    zoo_manager_addrs=self._zoo_addrs
+                )
+        else:
+            return
+
         self._remote_social_agents = {
             agent_id: self._remote_agent_buffer.acquire_remote_agent()
             for agent_id in social_agents
@@ -449,6 +459,10 @@ class AgentManager:
         self._social_agent_data_models[agent_id] = agent_model
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
+        if not self._remote_agent_buffer:
+            self._remote_agent_buffer = RemoteAgentBuffer(
+                zoo_manager_addrs=self._zoo_addrs
+            )
         remote_agent = self._remote_agent_buffer.acquire_remote_agent()
         remote_agent.start(social_agent)
         self._remote_social_agents[agent_id] = remote_agent
