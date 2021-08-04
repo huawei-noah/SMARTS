@@ -126,6 +126,11 @@ class Vias:
 
 @dataclass
 class Observation:
+    # dt is the amount of sim_time the last step took .
+    # step_count is the number of steps take by SMARTS so far.
+    # elapsed_sim_time is the amout of simulation time that's passed so far.
+    # note: to get the average step_time, elapsed_sim_time can be divided by step_count
+    dt: float
     step_count: int
     elapsed_sim_time: float
     events: Events
@@ -305,6 +310,7 @@ class Sensors:
 
         return (
             Observation(
+                dt=sim.last_dt,
                 step_count=sim.step_count,
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
