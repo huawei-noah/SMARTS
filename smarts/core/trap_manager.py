@@ -29,7 +29,7 @@ from shapely.geometry import Point, Polygon
 from smarts.core.coordinates import Point as MapPoint
 from smarts.core.plan import default_entry_tactic, Mission, Start, Plan
 from smarts.core.utils.math import clip, squared_dist
-from smarts.core.vehicle import VehicleState
+from smarts.core.vehicle import Vehicle, VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic
 
 
@@ -110,17 +110,12 @@ class TrapManager:
             v_id: sim.vehicle_index.vehicle_by_id(v_id) for v_id in social_vehicle_ids
         }
 
-        existing_agent_vehicles = (
-            sim.vehicle_index.vehicle_by_id(v_id)
-            for v_id in sim.vehicle_index.agent_vehicle_ids()
-        )
-
         def largest_vehicle_plane_dimension(vehicle):
             return max(*vehicle.chassis.dimensions.as_lwh[:2])
 
-        agent_vehicle_comp = [
+        vehicle_comp = [
             (v.position[:2], largest_vehicle_plane_dimension(v), v)
-            for v in existing_agent_vehicles
+            for v in vehicles.values()
         ]
 
         for agent_id in sim.agent_manager.pending_agent_ids:
@@ -149,7 +144,7 @@ class TrapManager:
                 vehicle = vehicles[v_id]
                 point = Point(vehicle.position)
 
-                if any(v_id.startswith(prefix) for prefix in trap.exclusion_prefixes):
+                if not trap.includes(v_id):
                     continue
 
                 if not point.within(trap.geometry):
@@ -190,22 +185,23 @@ class TrapManager:
                     sim, vehicle_id, agent_id, mission
                 )
             elif trap.patience_expired:
+                # Make sure there is not a vehicle in the same location
                 mission = trap.mission
-                if len(agent_vehicle_comp) > 0:
-                    agent_vehicle_comp.sort(
-                        key=lambda v: squared_dist(v[0], mission.start.position[:2])
-                    )
-
-                    # Make sure there is not an agent vehicle in the same location
-                    pos, largest_dimension, _ = agent_vehicle_comp[0]
+                nv_dims = Vehicle.agent_vehicle_dims(mission)
+                new_veh_maxd = max(nv_dims.as_lwh[:2])
+                overlapping = False
+                for pos, largest_dimension, _ in vehicle_comp:
                     if (
-                        squared_dist(pos, mission.start.position[:2])
-                        < largest_dimension
+                        squared_dist(pos, mission.start.position)
+                        <= (0.5 * (largest_dimension + new_veh_maxd)) ** 2
                     ):
-                        continue
+                        overlapping = True
+                        break
+                if overlapping:
+                    continue
 
                 vehicle = TrapManager._make_vehicle(
-                    sim, agent_id, trap.mission, trap.default_entry_speed
+                    sim, agent_id, mission, trap.default_entry_speed
                 )
             else:
                 continue
