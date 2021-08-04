@@ -294,7 +294,7 @@ def train(
             observations = next_observations
 
         episode.record_episode()
-        episode.record_scenario_path(env.scenario_path)
+        episode.record_scenario_name(env.scenario_log["scenario_map"])
         episode.record_tensorboard(recording_step=episode.index)
 
         if finished:

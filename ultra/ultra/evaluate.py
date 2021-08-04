@@ -220,7 +220,7 @@ def evaluate(
             )
 
         episode.record_episode()
-        episode.record_scenario_path(env.scenario_path)
+        episode.record_scenario_name(env.scenario_log["scenario_map"])
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():

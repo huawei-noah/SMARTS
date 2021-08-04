@@ -154,7 +154,7 @@ class Episode:
         self.tb_writer = tb_writer
         self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
-        self.scenario = None
+        self.scenario_name = None
 
     @property
     def sim2wall_ratio(self):
@@ -254,8 +254,8 @@ class Episode:
         # Increment this episode's step count.
         self.steps += 1
 
-    def record_scenario_path(self, scenario_path):
-        self.scenario = scenario_path.split("/")[-1]
+    def record_scenario_name(self, scenario_path):
+        self.scenario_name = scenario_path.split("/")[-1]
 
     def record_episode(self):
         for _, agent_info in self.info[self.active_tag].items():
@@ -380,7 +380,7 @@ def episodes(n, etag=None, log_dir=None):
                     f"{e.steps_per_second:.2f}",
                     ", ".join(agent_rewards_strings),
                     ", ".join(agent_goal_completion_strings),
-                    f"{e.scenario}",
+                    f"{e.scenario_name}",
                 )
                 table(row)
             else:
