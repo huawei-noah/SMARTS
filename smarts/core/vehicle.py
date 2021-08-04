@@ -23,7 +23,7 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache
 
-import numpy
+import numpy as np
 import yaml
 
 from smarts.sstudio.types import UTurn
@@ -32,7 +32,6 @@ from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import BoundingBox, Heading, Pose
-from .renderer import Renderer, RendererException
 from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
@@ -49,18 +48,31 @@ from .sensors import (
 from .utils.math import rotate_around_point
 
 
-@dataclass(frozen=True)
+@dataclass
 class VehicleState:
     vehicle_id: str
-    vehicle_type: str
     pose: Pose
     dimensions: BoundingBox
+    vehicle_type: str = None
+    vehicle_config_type: str = None  # key into VEHICLE_CONFIGS
+    updated: bool = False
     speed: float = 0
     steering: float = None
     yaw_rate: float = None
     source: str = None  # the source of truth for this vehicle state
-    linear_velocity: numpy.ndarray = None
-    angular_velocity: numpy.ndarray = None
+    linear_velocity: np.ndarray = None
+    angular_velocity: np.ndarray = None
+    linear_acceleration: np.ndarray = None
+    angular_acceleration: np.ndarray = None
+    _privileged: bool = False
+
+    def set_privileged(self):
+        """For deferring to external co-simulators only. Use with caution!"""
+        self._privileged = True
+
+    @property
+    def privileged(self) -> bool:
+        return self._privileged
 
 
 @dataclass(frozen=True)
@@ -106,6 +118,18 @@ VEHICLE_CONFIGS = {
         dimensions=BoundingBox(length=10, width=2.5, height=4),
         glb_model="trailer.glb",
     ),
+    "pedestrian": VehicleConfig(
+        vehicle_type="pedestrian",
+        color=SceneColors.SocialVehicle.value,
+        dimensions=BoundingBox(length=0.5, width=0.5, height=1.6),
+        glb_model="pedestrian.glb",
+    ),
+    "motorcycle": VehicleConfig(
+        vehicle_type="motorcycle",
+        color=SceneColors.SocialVehicle.value,
+        dimensions=BoundingBox(length=2.5, width=1, height=1.4),
+        glb_model="motorcycle.glb",
+    ),
 }
 
 # TODO: Replace VehicleConfigs w/ the VehicleGeometry class
@@ -115,24 +139,30 @@ class VehicleGeometry:
         pass
 
 
+class RendererException(Exception):
+    """An exception raised if a renderer is required but not available."""
+
+    @classmethod
+    def required_to(cls, thing):
+        return cls(
+            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
+        )
+
+
 class Vehicle:
     def __init__(
         self,
         id: str,
-        pose: Pose,
         chassis: Chassis,
-        # TODO: We should not be leaking SUMO here.
-        sumo_vehicle_type="passenger",
+        vehicle_config_type: str = "passenger",
         color=None,
         action_space=None,
     ):
-        assert isinstance(pose, Pose)
-
         self._log = logging.getLogger(self.__class__.__name__)
         self._id = id
 
         self._chassis = chassis
-        self._sumo_vehicle_type = sumo_vehicle_type
+        self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
         self._speed = None
 
@@ -142,7 +172,7 @@ class Vehicle:
         # Color override
         self._color = color
         if self._color is None:
-            config = VEHICLE_CONFIGS[sumo_vehicle_type]
+            config = VEHICLE_CONFIGS[vehicle_config_type]
             self._color = config.color
 
         self._renderer = None
@@ -223,6 +253,7 @@ class Vehicle:
         return VehicleState(
             vehicle_id=self.id,
             vehicle_type=self.vehicle_type,
+            vehicle_config_type=None,  # it's hard to invert
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
@@ -264,22 +295,22 @@ class Vehicle:
         self._assert_initialized()
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
-        half_length = self.length / 2
-        half_width = self.width / 2
-        corners = [(-1, 1), (1, 1), (1, -1), (-1, -1)]
+        origin = self.position[:2]
+        dimensions = np.array([self.width, self.length])
+        corners = np.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
+        heading = self.heading
         return [
             rotate_around_point(
-                point=self.position[:2]
-                + numpy.array(corner) * numpy.array([half_width, half_length]),
-                radians=self.heading,
-                origin=self.position[:2],
+                point=origin + corner * dimensions,
+                radians=heading,
+                origin=origin,
             )
             for corner in corners
         ]
 
     @property
     def vehicle_type(self):
-        return VEHICLE_CONFIGS[self._sumo_vehicle_type].vehicle_type
+        return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
 
     @staticmethod
     def build_agent_vehicle(
@@ -294,17 +325,28 @@ class Vehicle:
         controller_filepath,
         initial_speed=None,
     ):
-        # Agents can currently only control passenger vehicles
-        vehicle_type = "passenger"
-        chassis_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
+        mission = mission_planner.mission
 
-        if isinstance(mission_planner.mission.task, UTurn):
-            if mission_planner.mission.task.initial_speed:
-                initial_speed = mission_planner.mission.task.initial_speed
+        if mission.vehicle_spec:
+            # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
+            # but we use that value here in case we ever expand our history functionality.
+            vehicle_config_type = mission.vehicle_spec.veh_config_type
+            chassis_dims = BoundingBox.copy_with_defaults(
+                mission.vehicle_spec.dimensions,
+                VEHICLE_CONFIGS[vehicle_config_type].dimensions,
+            )
+        else:
+            # non-history agents can currently only control passenger vehicles.
+            vehicle_config_type = "passenger"
+            chassis_dims = VEHICLE_CONFIGS[vehicle_config_type].dimensions
 
-        start = mission_planner.mission.start
+        if isinstance(mission.task, UTurn):
+            if mission.task.initial_speed:
+                initial_speed = mission.task.initial_speed
+
+        start = mission.start
         start_pose = Pose.from_front_bumper(
-            front_bumper_position=numpy.array(start.position),
+            front_bumper_position=np.array(start.position),
             heading=start.heading,
             length=chassis_dims.length,
         )
@@ -337,6 +379,10 @@ class Vehicle:
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+            if mission.vehicle_spec:
+                self._log.warning(
+                    "setting vehicle dimensions on a AckermannChassis not yet supported"
+                )
             chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
@@ -356,7 +402,6 @@ class Vehicle:
 
         vehicle = Vehicle(
             id=vehicle_id,
-            pose=start_pose,
             chassis=chassis,
             color=vehicle_color,
         )
@@ -364,17 +409,18 @@ class Vehicle:
         return vehicle
 
     @staticmethod
-    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_type):
-        return Vehicle(
-            id=vehicle_id,
+    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_config_type):
+        dims = BoundingBox.copy_with_defaults(
+            vehicle_state.dimensions, VEHICLE_CONFIGS[vehicle_config_type].dimensions
+        )
+        chassis = BoxChassis(
             pose=vehicle_state.pose,
-            chassis=BoxChassis(
-                pose=vehicle_state.pose,
-                speed=vehicle_state.speed,
-                dimensions=vehicle_state.dimensions,
-                bullet_client=sim.bc,
-            ),
-            sumo_vehicle_type=vehicle_type,
+            speed=vehicle_state.speed,
+            dimensions=dims,
+            bullet_client=sim.bc,
+        )
+        return Vehicle(
+            id=vehicle_id, chassis=chassis, vehicle_config_type=vehicle_config_type
         )
 
     @staticmethod
@@ -403,12 +449,7 @@ class Vehicle:
             )
 
         if agent_interface.accelerometer:
-            vehicle.attach_accelerometer_sensor(
-                AccelerometerSensor(
-                    vehicle=vehicle,
-                    sim=sim,
-                )
-            )
+            vehicle.attach_accelerometer_sensor(AccelerometerSensor(vehicle=vehicle))
 
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
@@ -491,10 +532,35 @@ class Vehicle:
     def control(self, *args, **kwargs):
         self._chassis.control(*args, **kwargs)
 
+    def update_state(self, state: VehicleState, dt: float):
+        if not state.privileged:
+            assert isinstance(self._chassis, BoxChassis)
+            self.control(pose=state.pose, speed=state.speed, dt=dt)
+            return
+        # "Privileged" means we can work directly (bypass force application).
+        # Conceptually, this is playing 'god' with physics and should only be used
+        # to defer to a co-simulator's states.
+        linear_velocity, angular_velocity = None, None
+        if not np.allclose(
+            self._chassis.velocity_vectors[0], state.linear_velocity
+        ) or not np.allclose(self._chassis.velocity_vectors[1], state.angular_velocity):
+            linear_velocity = state.linear_velocity
+            angular_velocity = state.angular_velocity
+        if (
+            state.dimensions.length != self.length
+            or state.dimensions.width != self.width
+            or state.dimensions.height != self.height
+        ):
+            self._log.warning(
+                "Unable to change a vehicle's dimensions via external_state_update()."
+            )
+        # XXX:  any way to update acceleration in pybullet?
+        self._chassis.state_override(dt, state.pose, linear_velocity, angular_velocity)
+
     def create_renderer_node(self, renderer):
         assert not self._renderer
         self._renderer = renderer
-        config = VEHICLE_CONFIGS[self._sumo_vehicle_type]
+        config = VEHICLE_CONFIGS[self._vehicle_config_type]
         self._renderer.create_vehicle_node(
             config.glb_model, self._id, self.vehicle_color, self.pose
         )

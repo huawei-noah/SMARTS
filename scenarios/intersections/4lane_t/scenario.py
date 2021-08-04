@@ -54,7 +54,7 @@ social_agent_missions = {
             t.SocialAgentActor(
                 name="open-agent", agent_locator="open_agent:open_agent-v0"
             ),
-            t.SocialAgentActor(name="rl-agent", agent_locator="rl_agent:rl-agent-v0"),
+            t.SocialAgentActor(name="rl-agent", agent_locator="rl_agent:rl-agent-v1"),
         ],
         [
             t.Mission(

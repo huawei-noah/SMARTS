@@ -58,7 +58,7 @@ env = gym.make(
     agents={AGENT_ID: agent},
     headless=args.headless,
     visdom=False,
-    timestep_sec=0.1,
+    fixed_timestep_sec=0.1,
     envision_record_data_replay_path="./data_replay",
 )
 ```

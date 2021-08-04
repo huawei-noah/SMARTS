@@ -32,21 +32,9 @@ Build the Docker images and run the container.
 # 1 - Navigate to the ULTRA directory.
 $ cd <path_to_SMARTS>/SMARTS/ultra
 
-# 2 - Build the Docker images.
-$ docker build -t <image_name> --network=host .
+# 2 - Build the Docker image.
+$ docker build --no-cache --network=host -f Dockerfile -t ultra:latest .
 
-# 3 - Create the Docker container.
-$ docker run \
-        -it \
-        --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
-        --privileged \
-        --env="XAUTHORITY=/tmp/.docker.xauth" \
-        --env="QT_X11_NO_MITSHM=1" \
-        --volume=/usr/lib/nvidia-384:/usr/lib/nvidia-384 \
-        --volume=/usr/lib32/nvidia-384:/usr/lib32/nvidia-384 \
-        --runtime=nvidia \
-        --device /dev/dri \
-        --volume=<path_to_SMARTS>:/SMARTS \
-        --name=<container_name> \
-        <image_name>
+# 3 - Create and run the Docker container.
+$ docker run --rm -it -v $(PWD):/src -p 8081:8081 ultra:latest
 ```

@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import logging
 from typing import Sequence
+import warnings
 
 import gym
 
@@ -44,8 +45,9 @@ class HiWayEnv(gym.Env):
             true|false envision disabled
         visdom:
             true|false visdom integration
-        timestep_sec:
+        fixed_timestep_sec:
             the step length for all components of the simulation
+            (may be None if time deltas are externally-driven)
         seed:
             the seed for random number generation
         num_external_sumo_clients:
@@ -75,7 +77,7 @@ class HiWayEnv(gym.Env):
         shuffle_scenarios=True,
         headless=False,
         visdom=False,
-        timestep_sec=0.1,
+        fixed_timestep_sec=None,
         seed=42,
         num_external_sumo_clients=0,
         sumo_headless=True,
@@ -85,9 +87,18 @@ class HiWayEnv(gym.Env):
         envision_endpoint=None,
         envision_record_data_replay_path=None,
         zoo_addrs=None,
+        timestep_sec=None,  # for backwards compatibility (deprecated)
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts.core.seed(seed)
+
+        if timestep_sec and not fixed_timestep_sec:
+            warnings.warn(
+                "timestep_sec has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
+                category=DeprecationWarning,
+            )
+        if not fixed_timestep_sec:
+            fixed_timestep_sec = timestep_sec or 0.1
 
         self._agent_specs = agent_specs
         self._dones_registered = 0
@@ -119,7 +130,7 @@ class HiWayEnv(gym.Env):
             agent_interfaces=agent_interfaces,
             traffic_sim=SumoTrafficSimulation(
                 headless=sumo_headless,
-                time_resolution=timestep_sec,
+                time_resolution=fixed_timestep_sec,
                 num_external_sumo_clients=num_external_sumo_clients,
                 sumo_port=sumo_port,
                 auto_start=sumo_auto_start,
@@ -127,9 +138,13 @@ class HiWayEnv(gym.Env):
             ),
             envision=envision_client,
             visdom=visdom_client,
-            timestep_sec=timestep_sec,
+            fixed_timestep_sec=fixed_timestep_sec,
             zoo_addrs=zoo_addrs,
         )
+
+    @property
+    def agent_specs(self):
+        return self._agent_specs
 
     @property
     def scenario_log(self):
@@ -137,7 +152,7 @@ class HiWayEnv(gym.Env):
 
         Returns:
             A dictionary with the following:
-                timestep_sec:
+                fixed_timestep_sec:
                     The timestep of the simulation.
                 scenario_map:
                     The name of the current scenario.
@@ -149,7 +164,7 @@ class HiWayEnv(gym.Env):
 
         scenario = self._smarts.scenario
         return {
-            "timestep_sec": self._smarts.timestep_sec,
+            "fixed_timestep_sec": self._smarts.fixed_timestep_sec,
             "scenario_map": scenario.name,
             "scenario_routes": scenario.route or "",
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
