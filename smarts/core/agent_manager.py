@@ -24,6 +24,7 @@ from envision.types import format_actor_id
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
+from smarts.core.plan import Plan
 from smarts.core.remote_agent_buffer import RemoteAgentBuffer
 from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
@@ -403,7 +404,7 @@ class AgentManager:
 
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
-        plan = scenario.road_map.create_plan_for_mission(mission)
+        plan = Plan(sim.road_map, mission)
 
         vehicle = sim.vehicle_index.build_agent_vehicle(
             sim,
@@ -512,7 +513,7 @@ class AgentManager:
             if sv_id in self._vehicle_with_sensors:
                 continue
 
-            plan = sim.road_map.create_plan_for_mission(None)
+            plan = Plan(sim.road_map, None)
 
             agent_id = f"Agent-{sv_id}"
             self._vehicle_with_sensors[sv_id] = agent_id

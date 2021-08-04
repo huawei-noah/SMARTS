@@ -27,7 +27,7 @@ import numpy as np
 from shapely.geometry import Point, Polygon
 
 from smarts.core.coordinates import Point as MapPoint
-from smarts.core.plan import default_entry_tactic, Mission, Start
+from smarts.core.plan import default_entry_tactic, Mission, Start, Plan
 from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic
@@ -89,8 +89,7 @@ class TrapManager:
         ):
             return False
 
-        plan = road_map.create_plan_for_mission(mission)
-
+        plan = Plan(road_map, mission)
         trap = self._mission2trap(road_map, plan.mission)
         self._traps[agent_id] = trap
         return True
@@ -245,7 +244,7 @@ class TrapManager:
     @staticmethod
     def _hijack_vehicle(sim, vehicle_id, agent_id, mission):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        plan = sim.road_map.create_plan_for_mission(mission)
+        plan = Plan(sim.road_map, mission)
 
         # Apply agent vehicle association.
         sim.vehicle_index.start_agent_observation(
@@ -265,7 +264,7 @@ class TrapManager:
     @staticmethod
     def _make_vehicle(sim, agent_id, mission, initial_speed):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        plan = sim.road_map.create_plan_for_mission(mission)
+        plan = Plan(sim.road_map, mission)
         # 3. Apply agent vehicle association.
         vehicle = sim.vehicle_index.build_agent_vehicle(
             sim,

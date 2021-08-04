@@ -27,7 +27,8 @@ from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 import numpy as np
 
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
-from smarts.core.plan import Plan, Waypoint
+from smarts.core.plan import Plan
+from smarts.core.road_map import Waypoint
 from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
@@ -193,11 +194,10 @@ class Sensors:
         if vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
-            waypoint_paths = sensor_state.plan.waypoint_paths(
+            waypoint_paths = sim.road_map.waypoint_paths(
                 vehicle.pose,
                 lookahead=1,
                 within_radius=vehicle.length,
-                constrain_to_route=False,
             )
 
         closest_lane = sim.road_map.nearest_lane(vehicle.pose.point)
@@ -832,11 +832,10 @@ class TripMeterSensor(Sensor):
         self._sim = sim
         self._plan = plan
 
-        waypoint_paths = plan.waypoint_paths(
+        waypoint_paths = sim.road_map.waypoint_paths(
             vehicle.pose,
             lookahead=1,
             within_radius=vehicle.length,
-            constrain_to_route=False,
         )
         starting_wp = waypoint_paths[0][0]
         self._wps_for_distance = [starting_wp]
@@ -914,9 +913,10 @@ class WaypointsSensor(Sensor):
         self._lookahead = lookahead
 
     def __call__(self):
-        return self._plan.waypoint_paths(
+        return self._plan.road_map.waypoint_paths(
             self._vehicle.pose,
             lookahead=self._lookahead,
+            route=self._plan.route,
         )
 
     def teardown(self):
@@ -943,9 +943,10 @@ class RoadWaypointsSensor(Sensor):
         return RoadWaypoints(lanes=lane_paths, route_waypoints=route_waypoints)
 
     def route_waypoints(self):
-        return self._plan.waypoint_paths(
+        return self._road_map.waypoint_paths(
             self._vehicle.pose,
             lookahead=self._horizon,
+            route=self._plan.route,
         )
 
     def paths_for_lane(self, lane, overflow_offset=None):
@@ -967,11 +968,10 @@ class RoadWaypointsSensor(Sensor):
             wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
             adj_pose = Pose.from_center(wp_start, self._vehicle.heading)
             wps_to_lookahead = self._horizon * 2
-            paths = self._plan.waypoint_paths_on_lane_at_point(
+            paths = lane.waypoint_paths_at_point(
                 pose=adj_pose,
-                lane_id=lane.lane_id,
                 lookahead=wps_to_lookahead,
-                constrain_to_route=False,
+                route=self._plan.route,
             )
             return paths
 

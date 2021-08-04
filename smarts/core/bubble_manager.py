@@ -30,7 +30,7 @@ from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
 
 from smarts.core.data_model import SocialAgent
-from smarts.core.plan import Mission, PositionalGoal, Start
+from smarts.core.plan import Mission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
@@ -547,7 +547,7 @@ class BubbleManager:
     def _prepare_sensors_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, bubble
     ):
-        plan = sim.road_map.create_plan_for_mission(None, find_route=False)
+        plan = Plan(sim.road_map, None, find_route=False)
         vehicle = sim.vehicle_index.start_agent_observation(
             sim,
             vehicle_id,

@@ -27,6 +27,7 @@ from helpers.scenario import temp_scenario
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Heading, Pose
+from smarts.core.plan import Plan
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import DrivenPathSensor, WaypointsSensor
 from smarts.sstudio import gen_scenario
@@ -90,7 +91,7 @@ def test_waypoints_sensor(scenarios):
     )
 
     mission = scenario.missions[AGENT_ID]
-    plan = scenario.road_map.create_plan_for_mission(mission)
+    plan = Plan(scenario.road_map, mission)
 
     sensor = WaypointsSensor(vehicle, plan)
     waypoints = sensor()

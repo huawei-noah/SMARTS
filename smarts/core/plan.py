@@ -31,7 +31,6 @@ import numpy as np
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap
-from .utils.math import signed_dist_to_line
 
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
 
@@ -274,74 +273,6 @@ class LapMission:
         )
 
 
-@dataclass(frozen=True)
-class Waypoint:
-    """Dynamic, based on map and vehicle.  Unlike Sumo LanePoints,
-    Waypoints do not have to snap to the middle of a road-map Lane.
-    They start abreast of a vehicle's present location in the nearest Lane
-    and are then interpolated along the LanePoints paths such that
-    they're evenly spaced.  These are usually what is returned through
-    a vehicle's sensors."""
-
-    # XXX: consider renaming lane_id, lane_index, lane_width
-    #      to nearest_lane_id, nearest_lane_index, nearest_lane_width
-    pos: np.ndarray  # Point positioned on center of lane
-    heading: Heading  # Heading angle of lane at this point (radians)
-    lane_id: str  # ID of lane under lanepoint
-    lane_width: float  # Width of lane at this point (meters)
-    speed_limit: float  # Lane speed in m/s
-    lane_index: int  # Index of the lane this lanepoint is over. 0 is the outer(right) most lane
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, Waypoint):
-            return False
-        return (
-            (self.pos == other.pos).all()
-            and self.heading == other.heading
-            and self.lane_width == other.lane_width
-            and self.speed_limit == other.speed_limit
-            and self.lane_id == other.lane_id
-            and self.lane_index == other.lane_index
-        )
-
-    def __hash__(self):
-        return hash(
-            (
-                *self.pos,
-                self.heading,
-                self.lane_width,
-                self.speed_limit,
-                self.lane_id,
-                self.lane_index,
-            )
-        )
-
-    def relative_heading(self, h: Heading) -> Heading:
-        """Computes relative heading between the given angle and the waypoint heading
-
-        Returns:
-            relative_heading: [-pi..pi]
-        """
-        assert isinstance(
-            h, Heading
-        ), "Heading h ({}) must be an instance of smarts.core.coordinates.Heading".format(
-            type(h)
-        )
-        return self.heading.relative_to(h)
-
-    def signed_lateral_error(self, p) -> float:
-        """Returns the signed lateral distance from the given point to the
-        line formed by the waypoint position and the waypoint heading.
-
-        Negative signals right of line and Positive left of line.
-        """
-        return signed_dist_to_line(p, self.pos, self.heading.direction_vector())
-
-    def dist_to(self, p) -> float:
-        """Calculates straight line distance to the given 2D point"""
-        return np.linalg.norm(self.pos - p[: len(self.pos)])
-
-
 class Plan:
     def __init__(
         self, road_map: RoadMap, mission: Mission = None, find_route: bool = True
@@ -399,40 +330,3 @@ class Plan:
             )
 
         return self._mission
-
-    def waypoint_paths(
-        self,
-        pose: Pose,
-        lookahead: int,
-        within_radius: float = 5,
-        constrain_to_route: bool = True,
-    ) -> List[List[Waypoint]]:
-        """Computes equally-spaced Waypoints for all lane paths
-        up to lookahead waypoints ahead, starting on the Road containing
-        the nearest Lane aligned with the vehicle's pose within within_radius meters.
-        Constrains paths to your (possibly-inferred) route only if constrain_to_route.
-        Route inference assumes you're on the correct route already;
-        we do not presently "replan" in case the route has changed."""
-        raise NotImplementedError()
-
-    def waypoint_paths_on_lane_at_point(
-        self, pose: Pose, lane_id: str, lookahead: int, constrain_to_route: bool = True
-    ) -> List[List[Waypoint]]:
-        """Computes equally-spaced Waypoints for all lane paths
-        up to lookahead waypoints ahead, starting at Lane lane_id
-        Constrains paths to your (possibly-inferred) route only if constrain_to_route.
-        Route inference assumes you're on the correct route already;
-        we do not presently "replan" in case the route has changed.
-        """
-        raise NotImplementedError()
-
-    def waypoint_paths_on_lane_at_offset(
-        self, lane: RoadMap.Lane, offset: float, lookahead: int = 30
-    ) -> List[List[Waypoint]]:
-        """Computes equally-spaced Waypoints for all lane paths
-        up to lookahead waypoints ahead, starting offset into lane.
-        Constrains paths to your (possibly-inferred) route only if constrain_to_route.
-        Route inference assumes you're on the correct route already;
-        we do not presently "replan" in case the route has changed.
-        """
-        raise NotImplementedError()

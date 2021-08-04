@@ -78,7 +78,9 @@ class LaneFollowingController:
         state = controller_state
         # This lookahead value is coupled with a few calculations below, changing it
         # may affect stability of the controller.
-        wp_paths = sensor_state.plan.waypoint_paths(vehicle.pose, lookahead=16)
+        wp_paths = sim.road_map.waypoint_paths(
+            vehicle.pose, lookahead=16, route=sensor_state.plan.route
+        )
         current_lane = LaneFollowingController.find_current_lane(
             wp_paths, vehicle.position
         )
@@ -423,8 +425,10 @@ class LaneFollowingController:
         # When we reach the end of our target lane, we need to update it
         # to the next best lane along the path
         state = controller_state
-        paths = sensor_state.plan.waypoint_paths_on_lane_at_point(
-            vehicle.pose, state.target_lane_id, lookahead=2
+        plan = sensor_state.plan
+        lane = plan.road_map.lane_by_id(state.target_lane_id)
+        paths = lane.waypoint_paths_at_point(
+            vehicle.pose, lookahead=2, route=plan.route
         )
 
         candidate_next_wps = []
