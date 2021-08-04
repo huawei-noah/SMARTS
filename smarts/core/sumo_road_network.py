@@ -231,8 +231,11 @@ class SumoRoadNetwork:
                 lane_to_poly[lane.getID()] = shape
 
         # Remove holes created at tight junctions due to crude map geometry
+        # NOTE: If you don't want snapping of a particular edge, set its type to "ignore_snapping" in
+        # the scenario's map.net.xml file. See scnenario/ngsim/map.net.xml for example.
         self._snap_internal_holes(lane_to_poly)
         self._snap_external_holes(lane_to_poly)
+
         # Remove break in visible lane connections created when lane enters an intersection
         self._snap_internal_edges(lane_to_poly)
 
@@ -279,7 +282,9 @@ class SumoRoadNetwork:
             lane = self.lane_by_id(lane_id)
 
             # Only do snapping for internal edge lane holes
-            if not lane.getEdge().isSpecial():
+            if (not lane.getEdge().isSpecial()) or (
+                lane.getEdge().getType() == "ignore_snapping"
+            ):
                 continue
             lane_shape = lane_to_poly[lane_id]
             for x, y in lane_shape.exterior.coords:
@@ -300,7 +305,10 @@ class SumoRoadNetwork:
             lane = self.lane_by_id(lane_id)
 
             # Only do snapping for external edge lane holes
-            if lane.getEdge().isSpecial():
+            if (
+                lane.getEdge().isSpecial()
+                or lane.getEdge().getType() == "ignore_snapping"
+            ):
                 continue
 
             incoming = self.lane_by_id(lane_id).getIncoming()

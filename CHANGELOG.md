@@ -9,7 +9,9 @@ All text added must be human-readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
-### Added
+
+### Added 
+- Added `scenarios/ngsim` map and fixed its holes.  See Issue #969.
 - Added a ROS wrapper/driver example to wrap SMARTS in a ROS (v1) node.
 - Added the ability to pass an optional `time_delta_since_last_step` to SMARTS' `step()` function
   to support variable timesteps for co-simulation.
@@ -38,6 +40,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - When code runs on headless machine, panda3d will fallback to using `p3headlessgl` option to render images without requiring X11.
 - Fix the case where mapping a blank repository to the docker container `/src` directory via `-v $SMARTS_REPO/src` as directed in the `README` will cause `scl` and other commands to not work.
 - Fix case where multiple outgoing edges could cause non-determinism.
+
 
 ## [0.4.17] - 2021-07-02
 ### Added 
