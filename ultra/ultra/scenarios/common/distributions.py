@@ -431,7 +431,12 @@ t_patterns = {
             "east-south": None,
             "east-north": None,  # blocking
             "east-west": None,
-        }
+        },
+        "ego_hijacking_params": {
+            "zone_range": [5, 10],
+            "wait_to_hijack_limit_s": 2,
+            "start_time": 3,  # any value or default for LANE_LENGTH / speed_m_per_s
+        },
     },
     "mid-interaction": {
         "routes": {
@@ -498,7 +503,12 @@ t_patterns = {
                     "end": (50, 50),
                 },
             },
-        }
+        },
+        "ego_hijacking_params": {
+            "zone_range": [5, 10],
+            "wait_to_hijack_limit_s": 2,
+            "start_time": 3,  # any value or default for LANE_LENGTH / speed_m_per_s
+        },
     },
     "high-interaction": {  # t-intersection
         "routes": {
@@ -1066,7 +1076,12 @@ cross_patterns = {
                     "end": (150, 160),
                 },
             },
-        }
+        },
+        "ego_hijacking_params": {
+            "zone_range": [5, 10],
+            "wait_to_hijack_limit_s": 2,
+            "start_time": 3,  # any value or default for LANE_LENGTH / speed_m_per_s
+        },
     },
     "mid-interaction": {
         "routes": {
@@ -1116,7 +1131,12 @@ cross_patterns = {
                     "end": (50, 50),
                 },
             },
-        }
+        },
+        "ego_hijacking_params": {
+            "zone_range": [5, 10],
+            "wait_to_hijack_limit_s": 2,
+            "start_time": 3,  # any value or default for LANE_LENGTH / speed_m_per_s
+        },
     },
     "high-interaction": {  # c-intersection
         "routes": {
