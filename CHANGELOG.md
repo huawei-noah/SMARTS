@@ -19,7 +19,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
 ### Changed
 - Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
-  and allow for (eventually) supporting other map formats.  See Issue #830.
+  and allow for (eventually) supporting other map formats.  See Issue #830 and PR #1048.
   This had multiple cascading ripple effects.
 ### Fixed
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
