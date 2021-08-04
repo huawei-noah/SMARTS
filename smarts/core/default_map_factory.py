@@ -31,7 +31,7 @@ from smarts.core.utils.file import file_md5_hash
 #
 # Downstream developers who want to extend SMARTS to support other
 # map formats (by extending the RoadMap base class) can replace this
-# file with their own version and whouldn't have to change much else.
+# file with their own version and shouldn't have to change much else.
 #
 
 

@@ -27,7 +27,11 @@ import numpy as np
 from shapely.geometry import Polygon
 
 from .coordinates import BoundingBox, Point, Pose, RefLinePoint
-from .utils.math import fast_quaternion_from_angle, vec_to_radians
+from .utils.math import (
+    fast_quaternion_from_angle,
+    min_angles_difference_signed,
+    vec_to_radians,
+)
 
 
 # TODO:
@@ -37,7 +41,7 @@ from .utils.math import fast_quaternion_from_angle, vec_to_radians
 
 
 class RoadMap:
-    """Abstract base class from which map implementation classes extend."""
+    """Base class from which map implementation classes extend."""
 
     @property
     def source(self) -> str:
@@ -175,7 +179,7 @@ class RoadMap:
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             raise NotImplementedError()
 
-        ## The next 5 methods are "reference" implementations for convenience.
+        ## The next 6 methods are "reference" implementations for convenience.
         ## Derived classes may want to extend as well as add a cache.
 
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
@@ -213,6 +217,24 @@ class RoadMap:
             desired_vector = self.vector_at_offset(offset)
             orientation = fast_quaternion_from_angle(vec_to_radians(desired_vector[:2]))
             return Pose(position=position, orientation=orientation)
+
+        def curvature_radius_at_offset(
+            self, offset: float, lookahead: int = 5, infinite_value: float = 1e20
+        ) -> float:
+            """ lookahead is in meters """
+            assert lookahead > 1
+            if offset + lookahead > self.length:
+                return infinite_value
+            prev_heading_vec = None
+            heading_deltas = 0.0
+            for i in range(lookahead):
+                heading_vec = vec_to_radians(self.vector_at_offset(offset + i))
+                if prev_heading_vec:
+                    heading_deltas += min_angles_difference_signed(
+                        heading_vec, prev_heading_vec
+                    )
+                prev_heading_vec = heading_vec
+            return lookahead / heading_deltas if heading_deltas else infinite_value
 
     class Road:
         """This is akin to a 'road segment' in real life.
