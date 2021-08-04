@@ -477,7 +477,7 @@ class Waymo(_TrajectoryDataset):
 
                 for j in range(len(scenario.timestamps_seconds)):
                     obj_state = scenario.tracks[i].states[j]
-                    if obj_state.valid == False:
+                    if obj_state.valid is False:
                         continue
 
                     vel = np.array([obj_state.velocity_x, obj_state.velocity_y])
