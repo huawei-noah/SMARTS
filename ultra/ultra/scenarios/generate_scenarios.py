@@ -816,20 +816,13 @@ def build_scenarios(
                 jobs.append(sub_proc)
                 sub_proc.start()
                 inner_prev_split = inner_cur_split
-            if len(mode_seeds) > 0:
-                generation_stats = (
-                    f">> {mode} {intersection_type} "
-                    f"count: {seed_count} "
-                    f"generated: {seed_count / len(mode_seeds)} "
-                    f"real: {intersection_percent}"
-                )
-            else:
-                generation_stats = (
-                    f">> {mode} {intersection_type} "
-                    f"count: {seed_count} "
-                    f"generated: 0 "
-                    f"real: {intersection_percent}"
-                )
+            generated = seed_count / len(mode_seeds) if len(mode_seeds) > 0 else 0
+            generation_stats = (
+                f">> {mode} {intersection_type} "
+                f"count: {seed_count} "
+                f"generated: {generated} "
+                f"real: {intersection_percent}"
+            )
             print(generation_stats)
             # print("--")
             prev_split = cur_split
