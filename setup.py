@@ -87,6 +87,7 @@ setup(
             "panda3d-gltf==0.13",
         ],
         "waymo": [
+            "tensorflow==2.2.1",
             "waymo-open-dataset-tf-2-1-0",
         ],
     },
