@@ -311,7 +311,7 @@ class Vehicle:
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
 
     @staticmethod
-    def agent_vehicle_dims(mission) -> BoundingBox:
+    def agent_vehicle_dims(mission) -> Dimensions:
         if mission.vehicle_spec:
             # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
             # but we use that value here in case we ever expand our history functionality.
