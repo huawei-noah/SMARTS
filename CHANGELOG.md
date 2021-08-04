@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added the ability to pass an optional `time_delta_since_last_step` to SMARTS' `step()` function
   to support variable timesteps for co-simulation.
 - Added `step_count` and `elapsed_sim_time` to the `Observation` class.  See PR #974 and Issues #884 and #918.
+- Added `dt` to `Observation` class to inform users of the observations of the variable timestep.
 - Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
 ### Changed
