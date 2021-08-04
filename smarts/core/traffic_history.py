@@ -122,7 +122,9 @@ class TrafficHistory:
         from smarts.core.vehicle import VEHICLE_CONFIGS
 
         query = "SELECT length, width, height, type FROM Vehicle WHERE id = ?"
-        length, width, height, veh_type = self._query_val(tuple, query, params=(vehicle_id,))
+        length, width, height, veh_type = self._query_val(
+            tuple, query, params=(vehicle_id,)
+        )
         default_dims = VEHICLE_CONFIGS[self.decode_vehicle_type(veh_type)].dimensions
         if not length:
             length = default_dims.length
