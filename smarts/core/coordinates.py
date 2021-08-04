@@ -97,7 +97,8 @@ class BoundingBox:
             z=(self.min_pt.z + self.max_pt.z) / 2,
         )
 
-    def as_dimensions(self):
+    @property
+    def as_dimensions(self) -> Dimensions:
         return Dimensions(length=self.length, width=self.width, height=self.height)
 
 
@@ -190,7 +191,7 @@ class Pose:
     orientation: Sequence  # [a, b, c, d] -> a + bi + cj + dk = 0
     heading_: Optional[Heading] = None  # cached heading to avoid recomputing
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, Pose):
             return False
         return (self.position == other.position).all() and (
