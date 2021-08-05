@@ -1055,7 +1055,7 @@ class SMARTS:
 
         scenario_name = {
             agent_id: (self.scenario._root).split("/")[-1]
-            for agent_id in 
+            for agent_id in list(self._agent_manager.ego_agent_ids)
         }
 
         state = envision_types.State(
