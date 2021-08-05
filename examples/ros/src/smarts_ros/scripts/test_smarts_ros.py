@@ -75,8 +75,7 @@ class TestSmartsRos(TestCase):
 
     def _init_scenario(self):
         scenario = rospy.get_param("~scenario")
-        self.assertTrue(os.path.isdir(scenario))
-        rospy.loginfo(f"Tester using scenario at {scenario}.")
+        rospy.loginfo(f"Tester using scenario:  {scenario}.")
 
         control_msg = SmartsControl()
         control_msg.reset_with_scenario_path = scenario

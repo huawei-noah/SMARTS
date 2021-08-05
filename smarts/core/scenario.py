@@ -419,7 +419,7 @@ class Scenario:
 
     def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
         vehicle_missions = {}
-        map_offset = self._road_network.net_offset
+        map_offset = self._road_map.xy_offset
         for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])
             pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
@@ -592,20 +592,9 @@ class Scenario:
         >>> Scenario.is_valid_scenario("scenarios/non_existant")
         False
         """
-        paths = [
-            os.path.join(scenario_root, "map.net.xml"),
-        ]
-
-        for f in paths:
-            if not os.path.exists(f):
-                return False
-
-        # make sure we can load the map
+        # just make sure we can load the map
         road_map, _ = create_road_map(scenario_root)
-        if road_map is None:
-            return False
-
-        return True
+        return road_map is not None
 
     @staticmethod
     def next(scenario_iterator, log_id=""):

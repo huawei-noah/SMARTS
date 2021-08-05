@@ -186,7 +186,7 @@ class SumoRoadNetwork(RoadMap):
 
     # TODO:  get rid of this, fix traffic_history_provider
     @cached_property
-    def net_offset(self):
+    def xy_offset(self):
         """ This is our offset from what's in the original net file. """
         return (
             self._graph.getLocationOffset()

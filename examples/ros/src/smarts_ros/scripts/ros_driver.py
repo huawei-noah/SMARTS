@@ -69,7 +69,6 @@ class ROSDriver:
             self._recent_state = deque(maxlen=3)
         with self._control_lock:
             self._control = None
-            self._scenario_path = None
             self._agents = {}
             self._agents_to_add = {}
 
@@ -149,7 +148,6 @@ class ROSDriver:
         self._last_step_time = None
         with self._control_lock:
             self._control = None
-            self._scenario_path = None
             self._agents = {}
             self._agents_to_add = {}
 
@@ -577,13 +575,13 @@ class ROSDriver:
     def _check_reset(self) -> Dict[str, Observation]:
         with self._control_lock:
             if self._control:
-                self._scenario_path = self._control.reset_with_scenario_path
-                rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
+                scenario_path = self._control.reset_with_scenario_path
+                rospy.loginfo(f"resetting SMARTS w/ scenario={scenario_path}")
                 self._agents = {}
                 self._agents_to_add = {}
                 self._control = None
                 if self._scenario_path:
-                    observations = self._smarts.reset(Scenario(self._scenario_path))
+                    observations = self._smarts.reset(Scenario(scenario_path))
                     self._last_step_time = None
                     return observations
                 return {}
