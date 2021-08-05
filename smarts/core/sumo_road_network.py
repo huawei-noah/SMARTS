@@ -1004,6 +1004,9 @@ class SumoRoadNetwork(RoadMap):
             self.filter_road_ids = ()
             self._starts = {}
 
+        # XXX:  all vehicles share this cache now (as opposed to before
+        # when it was in Plan.py and each vehicle had its own cache).
+        # TODO: probably need to add vehicle_id to the key somehow (or just make it bigger)
         def _match(self, lookahead, point, filter_road_ids) -> bool:
             return (
                 lookahead <= self.lookahead
