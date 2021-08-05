@@ -22,14 +22,15 @@ import { Tree } from "antd";
 
 export const attrs = Object.freeze({
   score: 0,
-  speed: 1,
-  position: 2,
-  heading: 3,
-  laneID: 4,
+  scenarioName: 1,
+  speed: 2,
+  position: 3,
+  heading: 4,
+  laneID: 5,
 });
 
 export const agentModes = Object.freeze({
-  egoObs: "5",
+  egoObs: "6",
   socialObs: 6,
 });
 
@@ -45,6 +46,10 @@ const treeData = [
           {
             title: "score",
             key: attrs.score,
+          },
+          {
+            title: "scenario name",
+            key: attrs.scenarioName,
           },
           {
             title: "speed",
@@ -75,6 +80,7 @@ const treeData = [
 export default function ControlPanel({ showControls, toggleControlModes }) {
   const [expandedKeys, setExpandedKeys] = useState([agentModes.egoObs]);
   const [checkedKeys, setCheckedKeys] = useState([
+    attrs.scenarioName,
     attrs.score,
     agentModes.socialObs,
   ]);

@@ -1053,9 +1053,15 @@ class SMARTS:
             for bubble in self._bubble_manager.bubbles
         ]
 
+        scenario_name = {
+            agent_id: (self.scenario._root).split("/")[-1]
+            for agent_id in 
+        }
+
         state = envision_types.State(
             traffic=traffic,
             scenario_id=self.scenario.scenario_hash,
+            scenario_name=scenario_name,
             bubbles=bubble_geometry,
             scene_colors=SceneColors.EnvisionColors.value,
             scores=scores,
