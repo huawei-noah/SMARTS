@@ -1054,7 +1054,7 @@ class SMARTS:
         ]
 
         scenario_name = {
-            agent_id: (self.scenario._root).split("/")[-1]
+            agent_id: os.path.split(self.scenario._root)[1]
             for agent_id in list(self._agent_manager.ego_agent_ids)
         }
 
