@@ -255,7 +255,7 @@ class Episode:
         self.steps += 1
 
     def record_scenario_name(self, scenario_path):
-        self.scenario_name = scenario_path.split("/")[-1]
+        self.scenario_name = os.path.split(scenario_path)[1]
 
     def record_episode(self):
         for _, agent_info in self.info[self.active_tag].items():
@@ -328,7 +328,7 @@ def episodes(n, etag=None, log_dir=None):
             f"Steps/Sec",
             f"Score",
             f"Goal Completed",
-            f"Scenario",
+            f"Scenario name",
         ],
         width=col_width,
         style="round",
