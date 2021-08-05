@@ -626,6 +626,8 @@ class Scenario:
 
     @property
     def vehicle_filepath(self):
+        if not os.path.isdir(self._root):
+            return None
         for fname in os.listdir(self._root):
             if fname.endswith(".urdf") and fname != "plane.urdf":
                 return os.path.join(self._root, fname)
