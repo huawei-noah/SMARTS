@@ -351,7 +351,9 @@ class SumoRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def point_in_lane(self, point: Point) -> bool:
             lane_point = self.to_lane_coord(point)
-            return abs(lane_point.t) <= self._width / 2
+            return (
+                abs(lane_point.t) <= self._width / 2 and 0 <= lane_point.s < self.length
+            )
 
         @lru_cache(maxsize=8)
         def offset_along_lane(self, world_point: Point) -> float:
@@ -391,6 +393,7 @@ class SumoRoadNetwork(RoadMap):
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             return super().edges_at_point(point)
 
+        @lru_cache(8)
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
             return super().vector_at_offset(start_offset)
 
