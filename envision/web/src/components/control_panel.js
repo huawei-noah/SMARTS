@@ -21,8 +21,8 @@ import React, { useState } from "react";
 import { Tree } from "antd";
 
 export const attrs = Object.freeze({
-  score: 0,
-  scenarioName: 1,
+  scenarioName: 0,
+  score: 1,
   speed: 2,
   position: 3,
   heading: 4,
