@@ -1053,7 +1053,11 @@ class SMARTS:
             for bubble in self._bubble_manager.bubbles
         ]
 
-        scenario_name = os.path.split(self.scenario._root)[1]
+        scenario_folder_path = self.scenario._root
+        scenario_name = os.path.split((scenario_folder_path).rstrip("/"))[1]
+        assert (
+            scenario_name != ""
+        ), f"Scenario name was not properly extracted from the scenario folder path: {scenario_folder_path}"
 
         state = envision_types.State(
             traffic=traffic,
