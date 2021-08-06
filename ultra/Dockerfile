@@ -16,8 +16,10 @@ RUN apt-get update --fix-missing && \
         software-properties-common && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     add-apt-repository -y ppa:sumo/stable && \
+    add-apt-repository -y ppa:git-core/ppa && \
     apt-get update && \
     apt-get install -y \
+        git \
         libspatialindex-dev \
         python3.7 \
         python3.7-dev \

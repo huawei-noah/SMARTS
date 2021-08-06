@@ -283,27 +283,24 @@ custom_reward = (
     ego_speed_reward +
     ego_distance_from_center_reward +
     ego_angle_error_reward +
-    ego_reached_goal_reward +
     ego_step_reward +
     environment_reward
 )
 ```
 
 Where:
-- `ego_goal_reward` is `0.0`
+- `ego_goal_reward` is `1.0` if the ego vehicle has reached its goal, else `0.0`
 - `ego_collison_reward` is `-1.0` if the ego vehicle has collided, else `0.0`.
 - `ego_off_road_reward` is `-1.0` if the ego vehicle is off the road, else `0.0`.
 - `ego_off_route_reward` is `-1.0` if the ego vehicle is off its route, else `0.0`.
-- `ego_wrong_way_reward` is `-0.02` if the ego vehicle is facing the wrong way, else
+- `ego_wrong_way_reward` is `-1.0` if the ego vehicle is facing the wrong way, else
 `0.0`.
-- `ego_speed_reward` is `0.01 * (speed_limit - ego_vehicle_speed)` if the ego vehicle is
-going faster than the speed limit, else `0.0`.
-- `ego_distance_from_center_reward` is `-0.002 * min(1, abs(ego_distance_from_center))`.
-- `ego_angle_error_reward` is `-0.0005 * max(0, cos(angle_error))`.
-- `ego_reached_goal_reward` is `1.0` if the ego vehicle has reached its goal, else
-`0.0`.
+- `ego_speed_reward` is `-0.01` if `speed_fraction < 0.01`, or it is `-0.1` if
+`speed_fraction >= 1`.
+- `ego_distance_from_center_reward` is `-0.005 * min(1, abs(ego_distance_from_center))`.
+- `ego_angle_error_reward` is `0.005 * max(0, cos(angle_error))`.
 - `ego_step_reward` is
-`0.02 * min(max(0, ego_vehicle_speed / speed_limit), 1) * cos(angle_error)`.
+`0.02 * min(speed_fraction, 1) * cos(angle_error)`.
 - `environment_reward` is `the_environment_reward / 100`.
 
 And `speed_limit` is the speed limit of the nearest waypoint to the ego vehicle in
@@ -311,8 +308,8 @@ meters per second; the `ego_vehicle_speed` is the speed of the ego vehicle in me
 second; the `angle_error` is the closest waypoint's heading minus the ego vehicle's
 heading; the `ego_distance_from_center` is the lateral distance between the center
 of the closest waypoint's lane and the ego vehicle's position, divided by half of that
-lane's width; and `the_environment_reward` is the raw reward received from the SMARTS
-simulator.
+lane's width; `the_environment_reward` is the raw reward received from the SMARTS
+simulator; and `speed_fraction` is `max(0, ego_vehicle_speed / speed_limit)`.
 
 ## Appendix
 

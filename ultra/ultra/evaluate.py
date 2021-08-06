@@ -402,7 +402,7 @@ if __name__ == "__main__":
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=10000,
+        default=1200,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1

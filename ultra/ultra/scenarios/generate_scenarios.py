@@ -594,10 +594,10 @@ def generate_social_vehicles(
             end_lane_id = route_lanes[stopwatcher_info["direction"][1]] - 1
             # To ensure that the stopwatcher spawns in all scenarios the
             # stopwatcher's begin time is bounded between 10s to 50s
-            # (100ts to 500ts, if 1s = 1 ts). During analysis, the
+            # (100ts to 500ts, if 1s = 10 ts). During analysis, the
             # stopwatcher is guaranteed to spawn before the 500ts
             # and no less then 100ts
-            begin_time = random.randint(10, 200)
+            begin_time = random.randint(10, 50)
             flows.append(
                 generate_stopwatcher(
                     stopwatcher_behavior=stopwatcher_info["behavior"],
@@ -816,9 +816,14 @@ def build_scenarios(
                 jobs.append(sub_proc)
                 sub_proc.start()
                 inner_prev_split = inner_cur_split
-            print(
-                f">> {mode} {intersection_type} count:{seed_count} generated: {seed_count/len(mode_seeds)} real: {intersection_percent}"
+            generated = seed_count / len(mode_seeds) if len(mode_seeds) > 0 else 0
+            generation_stats = (
+                f">> {mode} {intersection_type} "
+                f"count: {seed_count} "
+                f"generated: {generated} "
+                f"real: {intersection_percent}"
             )
+            print(generation_stats)
             # print("--")
             prev_split = cur_split
             main_seed_count += seed_count
