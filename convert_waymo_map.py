@@ -24,7 +24,7 @@ def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
 
 def read_trajectory_data(path, scenario_index):
     dataset_spec = {"input_path": path}
-    dataset = Waymo(dataset_spec, None)
+    dataset = Waymo(dataset_spec, scenario_index, None)
 
     trajectories = {}
     agent_id = None
@@ -183,10 +183,10 @@ if __name__ == "__main__":
     parser.add_argument("--outdir", help="output directory for screenshots", nargs="?")
     args = parser.parse_args()
 
-    if args.outdir:
-        for i in range(79):
-            animate(args.path, i, screenshot=True, outdir=args.outdir)
-    else:
-        plot(args.path, 1)
-    animate(args.path, 3, screenshot=False)
+    # if args.outdir:
+    #     for i in range(79):
+    #        animate(args.path, i, screenshot=True, outdir=args.outdir)
+    # else:
+    #    plot(args.path, 1)
+    animate(args.path, 7, screenshot=False)
 # %%
