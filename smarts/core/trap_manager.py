@@ -192,7 +192,7 @@ class TrapManager:
                 overlapping = False
                 for pos, largest_dimension, _ in vehicle_comp:
                     if (
-                        squared_dist(pos, mission.start.position)
+                        squared_dist(pos, mission.start.position[:2])
                         <= (0.5 * (largest_dimension + new_veh_maxd)) ** 2
                     ):
                         overlapping = True
@@ -296,10 +296,12 @@ class TrapManager:
 
         if default_entry_speed is None:
             n_lane = road_map.nearest_lane(mission.start.point)
+            assert n_lane, "mission must start in a lane"
             default_entry_speed = n_lane.speed_limit
 
         if zone is None:
             n_lane = n_lane or road_map.nearest_lane(mission.start.point)
+            assert n_lane, "mission must start in a lane"
             lane_speed = n_lane.speed_limit
             start_road_id = n_lane.road.road_id
             start_lane = n_lane.index

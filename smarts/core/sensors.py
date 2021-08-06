@@ -183,6 +183,14 @@ class Sensors:
                 nv_lane = sim.road_map.nearest_lane(
                     nv.pose.point, radius=vehicle.length
                 )
+                if nv_lane:
+                    nv_road_id = nv_lane.road.road_id
+                    nv_lane_id = nv_lane.lane_id
+                    nv_lane_index = nv_lane.index
+                else:
+                    nv_road_id = None
+                    nv_lane_id = None
+                    nv_lane_index = None
                 neighborhood_vehicles.append(
                     VehicleObservation(
                         id=nv.vehicle_id,
@@ -190,9 +198,9 @@ class Sensors:
                         bounding_box=nv.dimensions,
                         heading=nv.pose.heading,
                         speed=nv.speed,
-                        road_id=nv_lane.road.road_id,
-                        lane_id=nv_lane.lane_id,
-                        lane_index=nv_lane.index,
+                        road_id=nv_road_id,
+                        lane_id=nv_lane_id,
+                        lane_index=nv_lane_index,
                     )
                 )
 
@@ -206,9 +214,14 @@ class Sensors:
             )
 
         closest_lane = sim.road_map.nearest_lane(vehicle.pose.point)
-        ego_lane_id = closest_lane.lane_id
-        ego_lane_index = closest_lane.index
-        ego_road_id = closest_lane.road.road_id
+        if closest_lane:
+            ego_lane_id = closest_lane.lane_id
+            ego_lane_index = closest_lane.index
+            ego_road_id = closest_lane.road.road_id
+        else:
+            ego_lane_id = None
+            ego_lane_index = None
+            ego_road_id = None
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
@@ -938,6 +951,8 @@ class RoadWaypointsSensor(Sensor):
 
     def __call__(self):
         lane = self._road_map.nearest_lane(self._vehicle.pose.point)
+        if not lane:
+            return RoadWaypoints(lanes={}, route_waypoints=[])
         road = lane.road
         lane_paths = {}
         for croad in [road] + road.parallel_roads + road.oncoming_roads:
