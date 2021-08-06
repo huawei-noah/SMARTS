@@ -314,7 +314,7 @@ class SumoRoadNetwork(RoadMap):
             ]
             return (list(set(result)), False)
 
-        def waypoint_paths_at_point(
+        def waypoint_paths_for_pose(
             self, pose: Pose, lookahead: int, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
             road_ids = [road.road_id for road in route.roads] if route else None

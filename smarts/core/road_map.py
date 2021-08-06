@@ -183,7 +183,7 @@ class RoadMap:
             that is returned will be True if the ordering is by priority."""
             raise NotImplementedError()
 
-        def waypoint_paths_at_point(
+        def waypoint_paths_for_pose(
             self, pose: Pose, lookahead: int, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
             """Computes equally-spaced Waypoints for all lane paths

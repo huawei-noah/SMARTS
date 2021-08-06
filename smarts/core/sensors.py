@@ -989,7 +989,7 @@ class RoadWaypointsSensor(Sensor):
             wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
             adj_pose = Pose.from_center(wp_start, self._vehicle.heading)
             wps_to_lookahead = self._horizon * 2
-            paths = lane.waypoint_paths_at_point(
+            paths = lane.waypoint_paths_for_pose(
                 pose=adj_pose,
                 lookahead=wps_to_lookahead,
                 route=self._plan.route,

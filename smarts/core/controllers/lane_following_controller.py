@@ -427,7 +427,7 @@ class LaneFollowingController:
         state = controller_state
         plan = sensor_state.plan
         lane = plan.road_map.lane_by_id(state.target_lane_id)
-        paths = lane.waypoint_paths_at_point(
+        paths = lane.waypoint_paths_for_pose(
             vehicle.pose, lookahead=2, route=plan.route
         )
 
