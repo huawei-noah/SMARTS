@@ -80,7 +80,6 @@ const treeData = [
 export default function ControlPanel({ showControls, toggleControlModes }) {
   const [expandedKeys, setExpandedKeys] = useState([agentModes.egoObs]);
   const [checkedKeys, setCheckedKeys] = useState([
-    attrs.scenarioName,
     attrs.score,
     agentModes.socialObs,
   ]);
