@@ -325,9 +325,9 @@ simulator; and `speed_fraction` is `max(0, ego_vehicle_speed / speed_limit)`.
   <img src="_static/relative_position_diagram.png" width="935" height="205">
 </p>
 
-Suppose the ego vehicle is at position $(x_e, y_e)$ with heading $\theta$ and we want to
-calculate the position of a nearby social vehicle (or waypoint) relative to the ego
-vehicle. Let this nearby social vehicle (or waypoint) be at position $(x_s, y_s)$, we
-can then define their difference in position as $\vec{d} = (x_s - x_e, y_s - y_e)$. In
-order to align this difference to the ego's coordinate system, $\vec{d}$ is rotated by
-$-\theta$.
+Suppose the ego vehicle is at position _(x<sub>e</sub>, y<sub>e</sub>)_ with heading
+θ and we want to calculate the position of a nearby social vehicle (or waypoint)
+relative to the ego vehicle. Let this nearby social vehicle (or waypoint) be at position
+_(x<sub>s</sub>, y<sub>s</sub>)_ so that their difference in position is
+_**d** = (x<sub>s</sub> - x<sub>e</sub>, y<sub>s</sub> - y<sub>e</sub>)_. In order to
+align this difference to the ego's coordinate system, _**d**_ is rotated by -θ.
