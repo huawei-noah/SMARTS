@@ -45,6 +45,7 @@ import TrafficDividers from "./traffic_dividers.js";
 import { attrs, agentModes } from "./control_panel";
 
 import InfoDisplay from "./InfoDisplay";
+import ScenarioNameDisplay from "./ScenarioNameDisplay"
 import earcut from "earcut";
 
 // Required by Babylon.js
@@ -303,17 +304,13 @@ export default function Simulation({
             data={worldState.scores}
             attrName="Score"
             data_formattter={(score) => parseFloat(score).toFixed(2)}
-            ego_agent_ids={worldState.ego_agent_ids}
-            ego_only={!controlModes[agentModes.socialObs]}
           />
         ) : null}
         {controlModes[attrs.scenarioName] ? (
-          <InfoDisplay
+          <ScenarioNameDisplay
             data={worldState.scenario_name}
             attrName="Scenario name"
             data_formattter={(scenario_name) => scenario_name}
-            ego_agent_ids={worldState.ego_agent_ids}
-            ego_only={!controlModes[agentModes.socialObs]}
           />
         ) : null}
         {controlModes[attrs.speed] ? (
