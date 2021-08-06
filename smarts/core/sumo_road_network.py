@@ -41,10 +41,8 @@ from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap, Waypoint
 from .sumo_lanepoints import LinkedLanePoint, SumoLanePoints
 from .utils.math import (
-    fast_quaternion_from_angle,
     inplace_unwrap,
     radians_to_vec,
-    vec_to_radians,
     vec_2d,
 )
 
@@ -210,7 +208,7 @@ class SumoRoadNetwork(RoadMap):
     @property
     def scale_factor(self) -> float:
         # map units per meter
-        return self._default_lane_width / DEFAULT_ENTRY_TACTIC
+        return self._default_lane_width / SumoRoadNetwork.DEFAULT_LANE_WIDTH
 
     def to_glb(self, at_path):
         """ build a glb file for camera rendering and envision """
@@ -412,6 +410,9 @@ class SumoRoadNetwork(RoadMap):
             return lane
         sumo_lane = self._graph.getLane(lane_id)
         if not sumo_lane:
+            self._log.warning(
+                f"SumoRoadNetwork got request for unknown lane_id '{lane_id}'"
+            )
             return None
         lane = SumoRoadNetwork.Lane(lane_id, sumo_lane, self)
         self._lanes[lane_id] = lane
@@ -524,6 +525,9 @@ class SumoRoadNetwork(RoadMap):
             return road
         sumo_edge = self._graph.getEdge(road_id)
         if not sumo_edge:
+            self._log.warning(
+                f"SumoRoadNetwork got request for unknown road_id '{road_id}'"
+            )
             return None
         road = SumoRoadNetwork.Road(road_id, sumo_edge, self)
         self._roads[road_id] = road
@@ -587,9 +591,11 @@ class SumoRoadNetwork(RoadMap):
                 ]
                 or []
             )
-            assert (
-                len(sub_route) >= 2
-            ), f"Unable to find valid path (len={len(sub_route)}) between {(cur_road.road_id, next_road.road_id)}"
+            if len(sub_route) < 2:
+                self._log.warning(
+                    f"Unable to find valid path between {(cur_road.road_id, next_road.road_id)}."
+                )
+                return result
             # The sub route includes the boundary roads (cur_road, next_road).
             # We clip the latter to prevent duplicates
             edges.extend(sub_route[:-1])

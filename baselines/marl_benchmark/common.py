@@ -346,7 +346,7 @@ class CalObs:
             ).dot(dist_wp_vehicle_vector)
 
             dist_to_vehicle = lane_dist + np.sign(direction_vector) * (
-                np.linalg.norm(vec_2d(nearest_wp.position) - vec_2d(v.position))
+                np.linalg.norm(vec_2d(nearest_wp.pos) - vec_2d(v.position))
             )
             lane_dist = dist_to_vehicle / 100.0
 

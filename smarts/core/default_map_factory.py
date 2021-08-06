@@ -26,8 +26,7 @@ from smarts.core.utils.file import file_md5_hash
 
 
 # The idea here is that anything in SMARTS that needs to use a RoadMap
-# can call this factory to create one of default type,
-# in this case a SumoRoadNetwork (for now).
+# can call this factory to create one of default type.
 #
 # Downstream developers who want to extend SMARTS to support other
 # map formats (by extending the RoadMap base class) can replace this

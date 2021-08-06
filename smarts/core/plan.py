@@ -105,8 +105,8 @@ class PositionalGoal(Goal):
     def is_reached(self, vehicle) -> bool:
         a = vehicle.position
         b = self.position
-        dist = math.sqrt((a[0] - b.x) ** 2 + (a[1] - b.y) ** 2)
-        return dist <= self.radius
+        sqr_dist = (a[0] - b.x) ** 2 + (a[1] - b.y) ** 2
+        return sqr_dist <= self.radius ** 2
 
 
 @dataclass(frozen=True)
@@ -235,7 +235,6 @@ class Mission:
         n_lane = random.choice(road.lanes)
 
         # XXX: The ends of the road are not as useful as starting mission locations.
-        #      Sumo complains if we get too close to 0 or `lane_length`.
         offset = random.random() * min_range_along_lane + (
             max_range_along_lane - min_range_along_lane
         )

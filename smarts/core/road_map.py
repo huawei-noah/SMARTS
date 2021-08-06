@@ -168,6 +168,9 @@ class RoadMap:
 
         @property
         def oncoming_lanes(self) -> List[RoadMap.Lane]:
+            """Returns a list of lanes on roads that start where
+            this one ends and end where this one starts.
+            Basically, traffic is going the 'other way' here."""
             raise NotImplementedError()
 
         @property
@@ -260,7 +263,8 @@ class RoadMap:
         def curvature_radius_at_offset(
             self, offset: float, lookahead: int = 5, infinite_value: float = 1e20
         ) -> float:
-            """ lookahead is in meters """
+            """lookahead (in meters) is the size of the window to use
+            to compute the curvature, which must be at least 1 to make sense."""
             assert lookahead > 1
             if offset + lookahead > self.length:
                 return infinite_value
@@ -309,10 +313,15 @@ class RoadMap:
 
         @property
         def oncoming_roads(self) -> List[RoadMap.Road]:
+            """Returns a list of roads that start where
+            this one ends and end where this one starts.
+            Basically, traffic is going the 'other way' here."""
             raise NotImplementedError()
 
         @property
         def parallel_roads(self) -> List[RoadMap.Road]:
+            """Returns roads that start and end at the same
+            point as this one."""
             raise NotImplementedError()
 
         @property
