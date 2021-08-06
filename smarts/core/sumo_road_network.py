@@ -400,9 +400,9 @@ class SumoRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def curvature_radius_at_offset(
-            self, offset: float, lookahead: int = 5, infinite_value: float = 1e20
+            self, offset: float, lookahead: int = 5
         ) -> float:
-            return super().curvature_radius_at_offset(offset, lookahead, infinite_value)
+            return super().curvature_radius_at_offset(offset, lookahead)
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
