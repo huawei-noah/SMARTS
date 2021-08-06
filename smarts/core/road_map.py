@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import NamedTuple, List, Sequence, Tuple
 
 import numpy as np
@@ -260,13 +261,14 @@ class RoadMap:
             return Pose(position=position, orientation=orientation)
 
         def curvature_radius_at_offset(
-            self, offset: float, lookahead: int = 5, infinite_value: float = 1e20
+            self, offset: float, lookahead: int = 5
         ) -> float:
             """lookahead (in meters) is the size of the window to use
-            to compute the curvature, which must be at least 1 to make sense."""
+            to compute the curvature, which must be at least 1 to make sense.
+            This may return math.inf if the lane is straight."""
             assert lookahead > 1
             if offset + lookahead > self.length:
-                return infinite_value
+                return math.inf
             prev_heading_vec = None
             heading_deltas = 0.0
             for i in range(lookahead):
@@ -276,7 +278,7 @@ class RoadMap:
                         heading_vec, prev_heading_vec
                     )
                 prev_heading_vec = heading_vec
-            return lookahead / heading_deltas if heading_deltas else infinite_value
+            return lookahead / heading_deltas if heading_deltas else math.inf
 
     class Road:
         """This is akin to a 'road segment' in real life.
