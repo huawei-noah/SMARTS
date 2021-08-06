@@ -45,7 +45,7 @@ import TrafficDividers from "./traffic_dividers.js";
 import { attrs, agentModes } from "./control_panel";
 
 import InfoDisplay from "./InfoDisplay";
-import ScenarioNameDisplay from "./ScenarioNameDisplay"
+import ScenarioNameDisplay from "./ScenarioNameDisplay";
 import earcut from "earcut";
 
 // Required by Babylon.js

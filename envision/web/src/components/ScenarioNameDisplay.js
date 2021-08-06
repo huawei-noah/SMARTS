@@ -20,21 +20,20 @@
 import React from "react";
 
 export default function ScenarioNameDisplay({
-    data,
-    attrName,
-    data_formattter,
-  }) {
-    return (
-      <table style={{ margin: "15px", tableLayout: "auto" }}>
-        <thead>
-          <tr key="data-head">
-            <th style={{ paddingRight: "15px" }}>{attrName}</th>
-          </tr>
-        </thead>
-          <tbody>
-            <td style={{ paddingRight: "15px" }}>{data_formattter(data)}</td>
-        </tbody>
-      </table>
-    );
-  }
-  
+  data,
+  attrName,
+  data_formattter,
+}) {
+  return (
+    <table style={{ margin: "15px", tableLayout: "auto" }}>
+      <thead>
+        <tr key="data-head">
+          <th style={{ paddingRight: "15px" }}>{attrName}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <td style={{ paddingRight: "15px" }}>{data_formattter(data)}</td>
+      </tbody>
+    </table>
+  );
+}
