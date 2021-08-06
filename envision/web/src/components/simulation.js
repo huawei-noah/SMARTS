@@ -299,18 +299,18 @@ export default function Simulation({
           maxWidth: "100%",
         }}
       >
-        {controlModes[attrs.score] ? (
-          <InfoDisplay
-            data={worldState.scores}
-            attrName="Score"
-            data_formattter={(score) => parseFloat(score).toFixed(2)}
-          />
-        ) : null}
         {controlModes[attrs.scenarioName] ? (
           <ScenarioNameDisplay
             data={worldState.scenario_name}
             attrName="Scenario name"
             data_formattter={(scenario_name) => scenario_name}
+          />
+        ) : null}
+        {controlModes[attrs.score] ? (
+          <InfoDisplay
+            data={worldState.scores}
+            attrName="Score"
+            data_formattter={(score) => parseFloat(score).toFixed(2)}
           />
         ) : null}
         {controlModes[attrs.speed] ? (

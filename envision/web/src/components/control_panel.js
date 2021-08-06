@@ -44,12 +44,12 @@ const treeData = [
         key: agentModes.egoObs,
         children: [
           {
-            title: "score",
-            key: attrs.score,
-          },
-          {
             title: "scenario name",
             key: attrs.scenarioName,
+          },
+          {
+            title: "score",
+            key: attrs.score,
           },
           {
             title: "speed",
