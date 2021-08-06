@@ -38,6 +38,7 @@ from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.provider import Provider, ProviderState
+from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
@@ -265,6 +266,9 @@ class SumoTrafficSimulation(Provider):
         self._current_reload_count = self._current_reload_count % self._reload_count + 1
 
         self._scenario = next_scenario
+        assert isinstance(
+            road_map, SumoRoadNetwork
+        ), "SumoTrafficSimulation requires a SumoRoadMap"
         self._log_file = next_scenario.unique_sumo_log_file()
 
         if restart_sumo:
@@ -652,8 +656,8 @@ class SumoTrafficSimulation(Provider):
         self._log.debug(
             f"Teleporting {vehicle_id} to lane_offset={lane_offset} route={route}"
         )
-        spawn_edge = self._scenario.road_map._graph.getEdge(route[0])
-        lane_index = random.randint(0, len(spawn_edge.getLanes()) - 1)
+        spawn_road = self._scenario.road_map.road_by_id(route[0])
+        lane_index = random.randint(0, len(spawn_road.lanes) - 1)
         self._emit_vehicle_by_route(vehicle_id, route, lane_index, lane_offset, type_id)
 
     def _reroute_vehicles(self, vehicle_states):
@@ -670,10 +674,10 @@ class SumoTrafficSimulation(Provider):
                 continue
 
             # Check if these edges forms a loop.
-            from_edge = self._scenario.road_map._graph.getEdge(route_edges[-1])
-            to_edge = self._scenario.road_map._graph.getEdge(route_edges[0])
-            next_edges = from_edge.getOutgoing().keys()
-            if to_edge not in next_edges:
+            from_road = self._scenario.road_map.road_by_id(route_edges[-1])
+            to_road = self._scenario.road_map.road_by_id(route_edges[0])
+            next_roads = [road.road_id for road in from_road.outgoing_roads]
+            if to_road not in next_roads:
                 # Reroute only if it's loop, otherwise, teleport the vehicle.
                 self._to_be_teleported[vehicle_id] = {
                     "route": route_edges,
