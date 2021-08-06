@@ -268,7 +268,7 @@ class SumoTrafficSimulation(Provider):
         self._scenario = next_scenario
         assert isinstance(
             road_map, SumoRoadNetwork
-        ), "SumoTrafficSimulation requires a SumoRoadMap"
+        ), "SumoTrafficSimulation requires a SumoRoadNetwork"
         self._log_file = next_scenario.unique_sumo_log_file()
 
         if restart_sumo:
