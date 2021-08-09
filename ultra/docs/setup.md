@@ -19,6 +19,7 @@ $ sumo
 $ python3.7 -m venv .venv
 
 # 5 - Activate virtual environment to install all dependencies.
+$ pip install --upgrade pip
 $ source .venv/bin/activate
 
 # 6 - Install dependencies.
