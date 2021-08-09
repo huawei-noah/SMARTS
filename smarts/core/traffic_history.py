@@ -162,6 +162,7 @@ class TrafficHistory:
         vehicle_type: int
         vehicle_length: float
         vehicle_width: float
+        vehicle_height: float
         position_x: float
         position_y: float
         heading_rad: float
@@ -170,7 +171,7 @@ class TrafficHistory:
     def vehicles_active_between(
         self, start_time: float, end_time: float
     ) -> Generator[TrafficHistory.VehicleRow, None, None]:
-        query = """SELECT V.id, V.type, V.length, V.width,
+        query = """SELECT V.id, V.type, V.length, V.width, V.height,
                           T.position_x, T.position_y, T.heading_rad, T.speed
                    FROM Vehicle AS V INNER JOIN Trajectory AS T ON V.id = T.vehicle_id
                    WHERE T.sim_time > ? AND T.sim_time <= ?

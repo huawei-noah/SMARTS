@@ -104,7 +104,7 @@ class PositionalGoal(Goal):
         return dist <= self.radius
 
 
-@dataclass(frozen=True)
+@dataclass
 class TraverseGoal(Goal):
     """A TraverseGoal is satisfied whenever an Agent-driven vehicle
     successfully finishes traversing a non-closed (acyclical) map

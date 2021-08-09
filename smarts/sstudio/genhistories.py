@@ -466,35 +466,38 @@ class Waymo(_TrajectoryDataset):
         dataset = tf.data.TFRecordDataset(
             self._dataset_spec["input_path"], compression_type=""
         )
+        scenario_index = 0
+        if "scenario_index" in self._dataset_spec:
+            scenario_index = self._dataset_spec["scenario_index"]
         scenario_list = list(dataset.as_numpy_iterator())
-        for scenario_data in scenario_list[:1]:
-            scenario = scenario_pb2.Scenario()
-            scenario.ParseFromString(bytearray(scenario_data))
+        scenario_data = scenario_list[scenario_index]
+        scenario = scenario_pb2.Scenario()
+        scenario.ParseFromString(bytearray(scenario_data))
 
-            for i in range(len(scenario.tracks)):
-                vehicle_id = scenario.tracks[i].id
-                vehicle_type = self._lookup_agent_type(scenario.tracks[i].object_type)
+        for i in range(len(scenario.tracks)):
+            vehicle_id = scenario.tracks[i].id
+            vehicle_type = self._lookup_agent_type(scenario.tracks[i].object_type)
 
-                for j in range(len(scenario.timestamps_seconds)):
-                    obj_state = scenario.tracks[i].states[j]
-                    if obj_state.valid == False:
-                        continue
+            for j in range(len(scenario.timestamps_seconds)):
+                obj_state = scenario.tracks[i].states[j]
+                if obj_state.valid == False:
+                    continue
 
-                    vel = np.array([obj_state.velocity_x, obj_state.velocity_y])
-                    row = {}
-                    row["vehicle_id"] = vehicle_id
-                    row["type"] = vehicle_type
-                    row["length"] = obj_state.length
-                    row["height"] = obj_state.height
-                    row["width"] = obj_state.width
-                    row["sim_time"] = scenario.timestamps_seconds[j] * 1000.0
-                    row["position_x"] = obj_state.center_x
-                    row["position_y"] = obj_state.center_y
-                    row["heading_rad"] = obj_state.heading
-                    row["speed"] = np.linalg.norm(vel)
-                    row["lane_id"] = 0
-                    row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
-                    yield row
+                vel = np.array([obj_state.velocity_x, obj_state.velocity_y])
+                row = {}
+                row["vehicle_id"] = vehicle_id
+                row["type"] = vehicle_type
+                row["length"] = obj_state.length
+                row["height"] = obj_state.height
+                row["width"] = obj_state.width
+                row["sim_time"] = scenario.timestamps_seconds[j] * 1000.0
+                row["position_x"] = obj_state.center_x
+                row["position_y"] = obj_state.center_y
+                row["heading_rad"] = obj_state.heading
+                row["speed"] = np.linalg.norm(vel)
+                row["lane_id"] = 0
+                row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
+                yield row
 
     @staticmethod
     def _lookup_agent_type(agent_type: int):
@@ -546,6 +549,9 @@ if __name__ == "__main__":
     if not _check_args(args):
         parser.print_usage()
         sys.exit(-1)
+
+    if args.force and os.path.exists(args.output):
+        os.remove(args.output)
 
     if args.old:
         dataset_spec = {"source": "OldJSON", "input_path": args.dataset}
