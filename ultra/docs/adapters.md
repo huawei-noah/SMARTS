@@ -205,28 +205,34 @@ waypoint's lane and the ego vehicle's position, divided by half of that lane's w
 - `relative_goal_position_x` is the x component of the vector obtained by calculating
 the goal's `(x, y)` position minus the ego vehicle's `(x, y)` position, and rotating
 that difference by the negative of the ego vehicle's heading. All in all, this keeps
-this component completely relative from the ego vehicle's perspective.
+this component completely relative from the ego vehicle's perspective. See Appendix B
+for more details.
 - `relative_goal_position_y` is the y component of the vector obtained by calculating
 the goal's `(x, y)` position minus the ego vehicle's `(x, y)` position, and rotating
 that difference by the negative of the ego vehicle's heading. All in all, this keeps
-this component completely relative from the ego vehicle's perspective.
+this component completely relative from the ego vehicle's perspective. See Appendix B
+for more details.
 - `relative_waypoint_position_x` is the x component of the vector obtained by
 calculating the waypoint's `(x, y)` position minus the ego vehicle's `(x, y)` position,
 and rotating that difference by the negative of the ego vehicle's heading. All in all,
-this keeps the component completely relative from the ego vehicle's perspective.
+this keeps the component completely relative from the ego vehicle's perspective. See
+Appendix B for more details.
 - `relative_waypoint_position_y` is the y component of the vector obtained by
 calculating the waypoint's `(x, y)` position minus the ego vehicle's `(x, y)` position,
 and rotating that difference by the negative of the ego vehicle's heading. All in all,
-this keeps the component completely relative from the ego vehicle's perspective.
+this keeps the component completely relative from the ego vehicle's perspective. See
+Appendix B for more details.
 - `road_speed` is the speed limit of the closest waypoint.
 - `relative_vehicle_position_x` is the x component of vector obtained by calculating the
 social vehicle's `(x, y)` position minus the ego vehicle's `(x, y)` position, and
 rotating that difference by the negative of the ego vehicle's heading. All in all, this
-keeps this component completely relative from the ego vehicle's perspective.
+keeps this component completely relative from the ego vehicle's perspective. See
+Appendix B for more details.
 - `relative_vehicle_position_y` is the y component of vector obtained by calculating the
 social vehicle's `(x, y)` position minus the ego vehicle's `(x, y)` position, and
 rotating that difference by the negative of the ego vehicle's heading. All in all, this
-keeps this component completely relative from the ego vehicle's perspective.
+keeps this component completely relative from the ego vehicle's perspective. See
+Appendix B for more details.
 - `heading_difference` is the heading of the social vehicle minus the heading of the ego
 vehicle.
 - `social_vehicle_speed` is the speed of the social vehicle in meters per second.
@@ -303,4 +309,25 @@ second; the `angle_error` is the closest waypoint's heading minus the ego vehicl
 heading; the `ego_distance_from_center` is the lateral distance between the center
 of the closest waypoint's lane and the ego vehicle's position, divided by half of that
 lane's width; `the_environment_reward` is the raw reward received from the SMARTS
-simulator; and `speed_fraction` is `max(0, ego_vehicle_speed / speed_limit)`
+simulator; and `speed_fraction` is `max(0, ego_vehicle_speed / speed_limit)`.
+
+## Appendix
+
+### A&emsp;The SMARTS/ULTRA Coordinate System
+
+<p align="center">
+  <img src="_static/smarts_coordinate_system.png" width="615" height="428">
+</p>
+
+### B&emsp;Relative Positions to the Ego Vehicle
+
+<p align="center">
+  <img src="_static/relative_position_diagram.png" width="935" height="205">
+</p>
+
+Suppose the ego vehicle is at position _(x<sub>e</sub>, y<sub>e</sub>)_ with heading
+θ and we want to calculate the position of a nearby social vehicle (or waypoint)
+relative to the ego vehicle. Let this nearby social vehicle (or waypoint) be at position
+_(x<sub>s</sub>, y<sub>s</sub>)_ so that their difference in position is
+_**d** = (x<sub>s</sub> - x<sub>e</sub>, y<sub>s</sub> - y<sub>e</sub>)_. In order to
+align this difference to the ego's coordinate system, _**d**_ is rotated by -θ.
