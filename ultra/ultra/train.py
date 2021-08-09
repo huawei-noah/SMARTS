@@ -239,20 +239,6 @@ def train(
 
         collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
-        evaluation_check(
-            agents=agents,
-            agent_ids=agent_ids,
-            policy_classes=agent_classes,
-            episode=episode,
-            log_dir=log_dir,
-            max_episode_steps=max_episode_steps,
-            evaluation_task_ids=evaluation_task_ids,
-            **eval_info,
-            **env.info,
-        )
-
-        collect_evaluations(evaluation_task_ids=evaluation_task_ids)
-
         while not dones["__all__"]:
             # Break if any of the agent's step counts is max_steps (default is 1000000) or greater.
             if any([episode.get_itr(agent_id) >= max_steps for agent_id in agents]):
