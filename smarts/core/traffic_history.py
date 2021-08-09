@@ -121,15 +121,17 @@ class TrafficHistory:
         # do import here to break circular dependency chain
         from smarts.core.vehicle import VEHICLE_CONFIGS
 
-        query = "SELECT length, width, type FROM Vehicle WHERE id = ?"
-        length, width, veh_type = self._query_val(tuple, query, params=(vehicle_id,))
+        query = "SELECT length, width, height, type FROM Vehicle WHERE id = ?"
+        length, width, height, veh_type = self._query_val(
+            tuple, query, params=(vehicle_id,)
+        )
         default_dims = VEHICLE_CONFIGS[self.decode_vehicle_type(veh_type)].dimensions
         if not length:
             length = default_dims.length
         if not width:
             width = default_dims.width
-        # Note: Neither NGSIM nor INTERACTION provide the vehicle height, so use our defaults
-        height = default_dims.height
+        if not height:
+            height = default_dims.height
         return length, width, height
 
     def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
