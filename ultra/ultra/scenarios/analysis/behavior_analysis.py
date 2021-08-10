@@ -19,35 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import argparse
-import glob
-import json
-import os
-import random
-import re
-import sys
-import timeit
-from collections import defaultdict
 
 import dill
-import gym
+import matplotlib.pyplot as plt
 import numpy as np
-import ray
 import torch
-from matplotlib import pyplot as plt
 
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType, NeighborhoodVehicles
-from smarts.core.controllers import ActionSpaceType
-from smarts.core.utils.episodes import episodes
 from ultra.scenarios.analysis.base_analysis import BaseAnalysis
-from ultra.scenarios.common.social_vehicle_definitions import get_social_vehicle_color
-from ultra.scenarios.common.visualization import (
-    convert_to_gif,
-    draw_intersection,
-    profile_vehicles,
-)
-from ultra.scenarios.generate_scenarios import get_direction
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
