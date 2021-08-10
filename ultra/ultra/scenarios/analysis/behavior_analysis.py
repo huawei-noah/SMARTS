@@ -23,6 +23,7 @@
 import dill
 import matplotlib.pyplot as plt
 import numpy as np
+import ray
 import torch
 
 from ultra.scenarios.analysis.base_analysis import BaseAnalysis
