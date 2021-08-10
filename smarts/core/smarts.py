@@ -400,7 +400,7 @@ class SMARTS:
 
         plane_path = self._scenario.plane_filepath
 
-        # 1e6 is the default value for plane length and width.
+        # 1e6 is the default value for plane length and width in smarts/models/plane.urdf.
         mapbb = self._scenario.map_bounding_box
         plane_scale = max(mapbb[0], mapbb[1]) / 1e6
         if not os.path.exists(plane_path):
@@ -411,7 +411,7 @@ class SMARTS:
             plane_path,
             useFixedBase=True,
             basePosition=mapbb[2],
-            globalScaling=1.1 * plane_scale,
+            globalScaling=2.2 * plane_scale,
         )
 
     def teardown(self):
