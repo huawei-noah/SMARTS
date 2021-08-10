@@ -481,9 +481,6 @@ class SMARTS:
             self._bullet_client.disconnect()
             self._bullet_client = None
 
-    def __del__(self):
-        self.destroy()
-
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self._clear_collisions(vehicle_ids)
