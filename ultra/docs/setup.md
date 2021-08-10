@@ -23,6 +23,7 @@ $ pip install --upgrade pip
 $ source .venv/bin/activate
 
 # 6 - Install dependencies.
+$ pip install wheel
 $ pip install -e .
 ```
 
