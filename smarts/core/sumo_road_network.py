@@ -266,6 +266,7 @@ class SumoRoadNetwork(RoadMap):
             """Note: left is defined as 90 degrees clockwise relative to the lane heading.
             Second result is True if lane is in the same direction as this one.
             May return None for lanes in junctions."""
+            # TODO:  how to deal with intersections?
             lanes = self._road.lanes_by_direction(self.road_dir)
             index = self.index + 1
             return (lanes[index], True) if index < len(lanes) else (None, True)
@@ -275,6 +276,7 @@ class SumoRoadNetwork(RoadMap):
             """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
             Second result is True if lane is in the same direction as this one.
             May return None for lanes in junctions."""
+            # TODO:  how to deal with intersections?
             lanes = self._road.lanes_by_direction(self.road_dir)
             index = self.index - 1
             return (lanes[index], True) if index >= 0 else (None, True)
@@ -293,11 +295,22 @@ class SumoRoadNetwork(RoadMap):
                 for outgoing in self._sumo_lane.getOutgoing()
             ]
 
-        @cached_property
-        def oncoming_lanes(self) -> List[RoadMap.Lane]:
+        @lru_cache(maxsize=16)
+        def oncoming_lanes_at_offset(self, offset: float) -> List[RoadMap.Lane]:
             result = []
-            for oncr in self.road.oncoming_roads:
-                result += oncr.lanes
+            radius = 1.1 * self.width_at_offset(offset)
+            pt = self.from_lane_coord(RefLinePoint(offset))
+            nearby_lanes = self._map.nearest_lanes(pt, radius=radius)
+            if not nearby_lanes:
+                return result
+            my_vect = self.vector_at_offset(offset)
+            my_norm = np.linalg.norm(my_vect)
+            threshold = -0.995562  # cos(175*pi/180)
+            for lane, _ in nearby_lanes:
+                lv = lane.vector_at_offset(offset)
+                lane_angle = np.dot(my_vect, lv) / (my_norm * np.linalg.norm(lv))
+                if lane_angle < threshold:
+                    result.append(lane)
             return result
 
         @cached_property
@@ -350,6 +363,7 @@ class SumoRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def point_in_lane(self, point: Point) -> bool:
+            # TAI:  could use (cached) self._sumo_lane.getBoundingBox(...) as a quick first-pass check...
             lane_point = self.to_lane_coord(point)
             return (
                 abs(lane_point.t) <= self._width / 2 and 0 <= lane_point.s < self.length
@@ -454,15 +468,13 @@ class SumoRoadNetwork(RoadMap):
                 for edge in self._sumo_edge.getOutgoing().keys()
             ]
 
-        @cached_property
-        def oncoming_roads(self) -> List[RoadMap.Road]:
-            from_node = self._sumo_edge.getFromNode()
-            to_node = self._sumo_edge.getToNode()
-            return [
-                self._map.road_by_id(edge.getID())
-                for edge in to_node.getOutgoing()
-                if edge.getToNode().getID() == from_node.getID()
-            ]
+        @lru_cache(maxsize=16)
+        def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
+            result = []
+            for lane in self.lanes:
+                offset = lane.to_lane_coord(point).s
+                result += [ol.road for ol in lane.oncoming_lanes_at_offset(offset)]
+            return result
 
         @cached_property
         def parallel_roads(self) -> List[RoadMap.Road]:
@@ -489,6 +501,7 @@ class SumoRoadNetwork(RoadMap):
 
         def lane_at_index(self, index: int, direction: bool = True) -> RoadMap.Lane:
             # Note:  all SUMO Lanes for an Edge go in the same direction.
+            # TODO:  except in intersections
             assert direction
             return self.lanes_by_direction(direction)[index]
 
@@ -498,6 +511,7 @@ class SumoRoadNetwork(RoadMap):
             all True lanes go in the same direction, as do all False lanes,
             but True and False lanes go in opposing directions."""
             # Note:  all SUMO Lanes for an Edge go in the same direction.
+            # TODO:  figure out intersections
             if not self._lanes and direction:
                 self._lanes = [
                     self._map.lane_by_id(sumo_lane.getID())
@@ -507,6 +521,7 @@ class SumoRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def point_on_road(self, point: Point) -> bool:
+            # TAI:  could use (cached) self._sumo_edge.getBoundingBox(...) as a quick first-pass check...
             for lane in self.lanes:
                 if lane.point_in_lane(point):
                     return True

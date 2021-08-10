@@ -78,7 +78,6 @@ class AgentManager:
         if self._remote_agent_buffer:
             self._remote_agent_buffer.destroy()
             self._remote_agent_buffer = None
-        Sensors.clean_up()
 
     @property
     def agent_ids(self):

@@ -483,44 +483,31 @@ class Sensors:
         )
         # Check that center of vehicle is still close to route
         radius = vehicle_minimum_radius_bounds + 5
-        nearest_lanes = sim.scenario.road_map.nearest_lanes(vehicle_pos, radius=radius)
+        nearest_lane = sim.scenario.road_map.nearest_lane(vehicle_pos, radius=radius)
 
-        # No road nearby.
-        if not nearest_lanes:
+        # No road nearby, so we're not on route!
+        if not nearest_lane:
             return (True, False)
 
-        nearest_lane, _ = nearest_lanes[0]
-
-        # Route is endless
-        if not route_roads:
+        if (
+            not route_roads
+            or nearest_lane.road in route_roads
+            or nearest_lane.in_junction
+        ):
             is_wrong_way = cls._check_wrong_way_event(nearest_lane, sim, vehicle)
             return (False, is_wrong_way)
 
-        closest_roads = []
-        used_roads = set()
-        for lane, _ in nearest_lanes:
-            road = lane.road
-            if road in used_roads:
-                continue
-            used_roads.add(road)
-            closest_roads.append(road)
+        # so we're not obviously on the route, but we might have just gone
+        # over the center line into an oncoming lane...
+        for on_lane in nearest_lane.oncoming_lanes_at_offset(TODO):
+            if on_lane.road in route_roads:
+                is_wrong_way = cls._check_wrong_way_event(on_lane, sim, vehicle)
+                return (False, is_wrong_way)
 
-        # TODO: Narrow down the route roads to check using distance travelled.
-        is_off_route, route_road_or_oncoming = cls._vehicle_off_route_info(
-            sim.scenario.root_filepath, tuple(route_roads), tuple(closest_roads)
-        )
-        is_wrong_way = False
-        if route_road_or_oncoming:
-            # Lanes from a road are parallel so any lane from the road will do for direction check
-            # but the innermost lane will be the last lane in the road and usually the closest.
-            lane_to_check = route_road_or_oncoming.lanes[-1]
-            is_wrong_way = cls._check_wrong_way_event(lane_to_check, sim, vehicle)
-
-        return (is_off_route, is_wrong_way)
+        return (True, False)
 
     @staticmethod
-    def _vehicle_is_wrong_way(sim, vehicle, lane_id):
-        closest_lane = sim.road_map.lane_by_id(lane_id)
+    def _vehicle_is_wrong_way(sim, vehicle, closest_lane):
         target_pose = closest_lane.target_pose_at_point(Point(*vehicle.pose.position))
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
@@ -533,55 +520,7 @@ class Sensors:
         # false positive `wrong way` events.
         if lane_to_check.in_junction:
             return False
-
-        return cls._vehicle_is_wrong_way(sim, vehicle, lane_to_check.lane_id)
-
-    @classmethod
-    @lru_cache(maxsize=32)
-    def _vehicle_off_route_info(cls, instance_id, route_roads, closest_roads):
-        for route_road in route_roads:
-            for index_of_road in range(len(closest_roads)):
-                if route_road != closest_roads[index_of_road]:
-                    continue
-                closest_road = cls._road_or_closer_oncoming(
-                    instance_id, index_of_road, closest_roads
-                )
-                return (False, closest_road)
-
-        # Check to see if actor is in the oncoming traffic lane.
-        for close_road in closest_roads:
-            # Forgive the actor if it is in an intersection
-            if close_road.is_junction:
-                return (False, close_road)
-
-            oncoming_roads = close_road.oncoming_roads
-            if not oncoming_roads:
-                continue
-
-            for close_road in route_roads:
-                if oncoming_roads[0] != close_road:
-                    continue
-                # Actor is in the oncoming traffic lane.
-                return (False, oncoming_roads[0])
-
-        return (True, None)
-
-    @classmethod
-    def _road_or_closer_oncoming(cls, instance_id, on_route_road_index, closest_roads):
-        """Check backward to find if the oncoming road is closer."""
-        oncoming_roads = closest_roads[on_route_road_index].oncoming_roads
-        if (
-            oncoming_roads
-            and oncoming_roads[0] in closest_roads[: max(0, on_route_road_index - 1)]
-        ):
-            # oncoming road was closer
-            return oncoming_roads[0]
-        # or the route road we already found
-        return closest_roads[on_route_road_index]
-
-    @classmethod
-    def clean_up(cls):
-        cls._vehicle_off_route_info.cache_clear()
+        return cls._vehicle_is_wrong_way(sim, vehicle, lane_to_check)
 
 
 class Sensor:
@@ -950,12 +889,15 @@ class RoadWaypointsSensor(Sensor):
         self._horizon = horizon
 
     def __call__(self):
-        lane = self._road_map.nearest_lane(self._vehicle.pose.point)
+        veh_pt = self._vehicle.pose.point
+        lane = self._road_map.nearest_lane(veh_pt)
         if not lane:
             return RoadWaypoints(lanes={}, route_waypoints=[])
         road = lane.road
         lane_paths = {}
-        for croad in [road] + road.parallel_roads + road.oncoming_roads:
+        for croad in (
+            [road] + road.parallel_roads + road.oncoming_roads_at_point(veh_pt)
+        ):
             for lane in croad.lanes:
                 lane_paths[lane.lane_id] = self.paths_for_lane(lane)
 

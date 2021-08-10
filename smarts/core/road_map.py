@@ -166,11 +166,9 @@ class RoadMap:
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
             raise NotImplementedError()
 
-        @property
-        def oncoming_lanes(self) -> List[RoadMap.Lane]:
-            """Returns a list of lanes on roads that start where
-            this one ends and end where this one starts.
-            Basically, traffic is going the 'other way' here."""
+        def oncoming_lanes_at_offset(self, offset: float) -> List[RoadMap.Lane]:
+            """Returns a list of nearby lanes at offset that are (roughly)
+            parallel to this one but go in the opposite direction."""
             raise NotImplementedError()
 
         @property
@@ -312,11 +310,9 @@ class RoadMap:
         def outgoing_roads(self) -> List[RoadMap.Road]:
             raise NotImplementedError()
 
-        @property
-        def oncoming_roads(self) -> List[RoadMap.Road]:
-            """Returns a list of roads that start where
-            this one ends and end where this one starts.
-            Basically, traffic is going the 'other way' here."""
+        def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
+            """Returns a list of nearby roads to point that are (roughly)
+            parallel to this one but have lanes that go in the opposite direction."""
             raise NotImplementedError()
 
         @property
