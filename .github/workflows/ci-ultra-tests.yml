@@ -173,9 +173,6 @@ jobs:
           pip install ultra-rl
       - name: Run test
         run: |
-          cd ultra
-          rm evaluate.py rllib_train.py train.py tune.py
-          rm -rf env
-          . ${{env.venv_dir}}/bin/activate
-          scl scenario build-all ultra/scenarios/pool
-          pytest -v ./tests/test_ultra_package.py
+          . ultra/${{env.venv_dir}}/bin/activate
+          scl scenario build-all ultra/ultra/scenarios/pool
+          pytest -v ultra/tests/test_ultra_package.py

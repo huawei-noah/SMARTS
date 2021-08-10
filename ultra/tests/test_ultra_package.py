@@ -57,7 +57,7 @@ class UltraPackageTest(unittest.TestCase):
         ray.shutdown()
         try:
             ray.init(ignore_reinit_error=True)
-            train.remote(
+            train(
                 scenario_info=("00", "eval_test"),
                 policy_classes=[policy_class],
                 num_episodes=1,
