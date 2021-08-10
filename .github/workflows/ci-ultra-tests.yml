@@ -167,15 +167,16 @@ jobs:
         uses: actions/checkout@v2
       - name: Install ultra-rl via pypi
         run: |
-          cd ultra
+          mkdir /src
+          cp ./ultra/ultra/scenarios /src/scenarios
+          cp ./ultra/tests /src/tests
+          cd /src
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install ultra-rl
       - name: Run test
         run: |
-          cd ultra
-          rm -rf adapters baselines env utils
-          rm __init__.py evaluate.py train.py tune.py
+          cd /src
           . ${{env.venv_dir}}/bin/activate
-          scl scenario build-all ultra/scenarios/pool
-          pytest -v tests/test_ultra_package.py
+          scl scenario build-all ./scenarios/pool
+          pytest -v /src/tests/test_ultra_package.py
