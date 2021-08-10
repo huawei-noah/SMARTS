@@ -8,6 +8,13 @@ function check_python_version_gte_3_7 {
     || hash python3.9 2>/dev/null;
 }
 
+function check_python_version_gte_3_8 {
+    echo "Checking for >=python3.8"
+    # running through current minor verions
+    hash python3.8 2>/dev/null \
+    || hash python3.9 2>/dev/null;
+}
+
 function do_install_for_linux {
     echo "Installing sumo (used for traffic simulation and road network)"
     sudo add-apt-repository ppa:sumo/stable
@@ -74,9 +81,70 @@ function do_install_for_macos {
     fi
 }
 
+function do_install_for_WSL {
+    # We currently only support Ubuntu distribution for WSL (Windows subsystem
+    # for Linux). The main difference between WSL and native installation is that
+    # WSL does not support python3.7, instead python3.8 and its dependencies will be
+    # installed
+    echo "Installing in WSL"
+    echo "Installing sumo (used for traffic simulation and road network)"
+    sudo add-apt-repository ppa:sumo/stable
+    sudo apt-get update
+
+    sudo apt-get install -y \
+         libspatialindex-dev \
+         sumo sumo-tools sumo-doc \
+         build-essential cmake
+
+    #only a problem for linux
+    if ! check_python_version_gte_3_8; then
+
+         echo "A >=3.8 python version not found"
+         read -p "Install python3.8? [Yn]" should_add_python_3_8
+         if [[ $should_add_python_3_8 =~ ^[yY\w]*$ ]]; then
+              echo ""
+              printf "This will run the following commands:\n$ sudo apt-get update\n$ sudo apt-get install software-properties-common\n$ sudo add-apt-repository ppa:deadsnakes/ppa\n$ sudo apt-get install python3.8 python3.8-dev python3.8-tk python3.8-venv"
+              echo ""
+              read -p "WARNING. Is this OK? If you are unsure choose no. [Yn]" should_add_python_3_8
+              # second check to make sure they really want to
+              if [[ $should_add_python_3_8 =~ ^[yY\w]*$ ]]; then
+                    sudo apt-get install software-properties-common
+                    sudo add-apt-repository ppa:deadsnakes/ppa
+                    sudo apt-get install python3.8 python3.8-dev python3.8-tk python3.8-venv
+              fi
+         fi
+    fi
+
+    echo ""
+    echo "-- dependencies have been installed --"
+    echo ""
+    echo "You'll need to set the SUMO_HOME variable. Logging out and back in will"
+    echo "get you set up. Alternatively, in your current session, you can run:"
+    echo ""
+    echo "  source /etc/profile.d/sumo.sh"
+    echo ""
+}
+
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     echo "Detected Linux"
-    do_install_for_linux
+    # If kernel release is Microsoft-based then proceed with WSL
+    # installation otherwise native linux installation
+    DISTRIB=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
+    if [[ $DISTRIB == '"Ubuntu"' ]]; then
+        # WSL1 and WSL2 both have different kernal version string
+        # representations: For example
+        #   WSL1: 4.X.X-12345-Microsoft
+        #   WSL2: 5.XX.XX.X-microsoft-standard-WSL2
+        # To ensure that both versions of WSL are supported, the
+        # kernal release string needs to be compared with keywords
+        # from WSL1 (i.e Microsoft) and WSL2 (i.e WSL2) kernal 
+        # version string formats. 
+        if [[ $(uname -r) =~ (Microsoft|WSL2) ]]; then
+            do_install_for_WSL
+        else
+            do_install_for_linux
+        fi
+    fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Detected macOS"
     do_install_for_macos
