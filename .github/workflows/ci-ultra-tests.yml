@@ -170,6 +170,7 @@ jobs:
           cd ultra
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
+          rm -rf ultra
           pip install ultra-rl
       - name: Run test
         run: |
