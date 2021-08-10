@@ -63,7 +63,7 @@ class UltraEnv(HiWayEnv):
             scenarios=scenarios,
             agent_specs=agent_specs,
             headless=headless,
-            fixed_timestep_sec=timestep_sec,
+            timestep_sec=timestep_sec,
             seed=seed,
             visdom=False,
             endless_traffic=False,
