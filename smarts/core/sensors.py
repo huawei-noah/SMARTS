@@ -497,9 +497,11 @@ class Sensors:
             is_wrong_way = cls._check_wrong_way_event(nearest_lane, sim, vehicle)
             return (False, is_wrong_way)
 
+        veh_offset = nearest_lane.offset_along_lane(vehicle_pos)
+
         # so we're not obviously on the route, but we might have just gone
         # over the center line into an oncoming lane...
-        for on_lane in nearest_lane.oncoming_lanes_at_offset(TODO):
+        for on_lane in nearest_lane.oncoming_lanes_at_offset(veh_offset):
             if on_lane.road in route_roads:
                 is_wrong_way = cls._check_wrong_way_event(on_lane, sim, vehicle)
                 return (False, is_wrong_way)
