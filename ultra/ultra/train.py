@@ -301,7 +301,6 @@ if __name__ == "__main__":
     # Obtain the policy class IDs from the arguments.
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
-    import logging    
 
     ray.init()
     train(
@@ -320,3 +319,4 @@ if __name__ == "__main__":
         log_dir=args.log_dir,
         policy_ids=policy_ids,
     )
+    ray.shutdown()
