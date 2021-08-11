@@ -1,0 +1,16 @@
+# request
+
+---
+
+# response
+
+Header header
+
+string version
+
+# Since SMARTS may continue to run, the following will be
+# less than or equal to the most current values in SMARTS:
+uint32 step_count
+float64 elapsed_sim_time
+
+string current_scenario_path

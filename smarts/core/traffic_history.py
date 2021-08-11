@@ -97,6 +97,7 @@ class TrafficHistory:
     def decode_vehicle_type(self, vehicle_type: int) -> str:
         # Options from NGSIM and INTERACTION currently include:
         #  1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
+        # This actually returns a "vehicle_config_type".
         if vehicle_type == 1:
             return "motorcycle"
         elif vehicle_type == 2:
@@ -111,7 +112,7 @@ class TrafficHistory:
             )
         return "passenger"
 
-    def vehicle_type(self, vehicle_id: str) -> str:
+    def vehicle_config_type(self, vehicle_id: str) -> str:
         query = "SELECT type FROM Vehicle WHERE id = ?"
         veh_type = self._query_val(int, query, params=(vehicle_id,))
         return self.decode_vehicle_type(veh_type)

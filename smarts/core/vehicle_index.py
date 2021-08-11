@@ -631,13 +631,13 @@ class VehicleIndex:
 
     @clear_cache
     def build_social_vehicle(
-        self, sim, vehicle_state, actor_id, vehicle_type, vehicle_id=None
-    ):
+        self, sim, vehicle_state, actor_id, vehicle_config_type, vehicle_id=None
+    ) -> Vehicle:
         if vehicle_id is None:
             vehicle_id = gen_id()
 
         vehicle = Vehicle.build_social_vehicle(
-            sim, vehicle_id, vehicle_state, vehicle_type
+            sim, vehicle_id, vehicle_state, vehicle_config_type
         )
 
         vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id)

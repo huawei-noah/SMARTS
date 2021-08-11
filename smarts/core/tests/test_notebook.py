@@ -65,7 +65,7 @@ def run_scenario(
         sim_name=sim_name,
         headless=headless,
         visdom=False,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
     )
