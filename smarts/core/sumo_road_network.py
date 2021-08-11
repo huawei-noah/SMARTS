@@ -592,7 +592,7 @@ class SumoRoadNetwork(RoadMap):
         start_road: RoadMap.Road,
         end_road: RoadMap.Road,
         via: Sequence[RoadMap.Road] = None,
-        max_to_gen: int = None,
+        max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         assert max_to_gen == 1, "multiple route generation not yet supported for Sumo"
         newroute = SumoRoadNetwork.Route()
