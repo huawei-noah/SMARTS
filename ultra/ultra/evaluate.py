@@ -28,8 +28,6 @@ os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
 import glob
 import time
-from pydoc import locate
-
 import gym
 import numpy as np
 import ray

@@ -19,22 +19,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import json
 import os
-import sys
 
 from ultra.utils.ray import default_ray_kwargs
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
-import pickle
-import time
-
 import dill
 import gym
-import psutil
+import pickle
 import ray
+import time
 import torch
 
 from smarts.zoo.registry import make
@@ -306,19 +302,22 @@ if __name__ == "__main__":
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
     ray.init()
-    train(
-        scenario_info=(args.task, args.level),
-        num_episodes=int(args.episodes),
-        max_episode_steps=int(args.max_episode_steps),
-        max_steps=int(args.max_steps),
-        eval_info={
-            "eval_rate": float(args.eval_rate),
-            "eval_episodes": int(args.eval_episodes),
-        },
-        timestep_sec=float(args.timestep),
-        headless=args.headless,
-        policy_classes=policy_classes,
-        seed=args.seed,
-        log_dir=args.log_dir,
-        policy_ids=policy_ids,
-    )
+    try:
+        train(
+            scenario_info=(args.task, args.level),
+            num_episodes=int(args.episodes),
+            max_episode_steps=int(args.max_episode_steps),
+            max_steps=int(args.max_steps),
+            eval_info={
+                "eval_rate": float(args.eval_rate),
+                "eval_episodes": int(args.eval_episodes),
+            },
+            timestep_sec=float(args.timestep),
+            headless=args.headless,
+            policy_classes=policy_classes,
+            seed=args.seed,
+            log_dir=args.log_dir,
+            policy_ids=policy_ids,
+        )
+    finally:
+        ray.shutdown()
