@@ -139,7 +139,7 @@ class ControllerState:
             target_lane = sim.road_map.nearest_lane(vehicle_pose.point)
             assert (
                 target_lane
-            ), "too far from lane for lane-following.  maybe increase radius in nearest_lane call?"
+            ), "Controller has failed because actor is to far from lane for lane-following."  # maybe increase radius in nearest_lane call?
             return LaneFollowingControllerState(target_lane.lane_id)
 
         if action_space == ActionSpaceType.ActuatorDynamic:

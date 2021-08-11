@@ -43,7 +43,7 @@ def create_road_map(
     should signify that the map is different enough
     that map-related caches should be reloaded."""
 
-    assert map_source, "a map source must be specified"
+    assert map_source, "A road map source must be specified"
 
     map_path = map_source
     if not os.path.isfile(map_path):
