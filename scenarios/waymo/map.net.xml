@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2021-08-11 16:34:57 by Eclipse SUMO netedit Version 1.9.2
+<!-- generated on 2021-08-11 17:31:48 by Eclipse SUMO netedit Version 1.9.2
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
@@ -9,6 +9,7 @@
 
     <output>
         <output-file value="/home/kyber/huawei/smarts/SMARTS/scenarios/waymo/map.net.xml"/>
+        <plain-output-prefix value=""/>
     </output>
 
     <processing>
@@ -41,56 +42,56 @@
     <location netOffset="0.00,0.00" convBoundary="-30.56,8082.46,250.88,8268.53" origBoundary="-30.56,8082.46,256.23,8325.51" projParameter="!"/>
 
     <edge id=":cluster_gneJ0_gneJ1_gneJ2_0" function="internal">
-        <lane id=":cluster_gneJ0_gneJ1_gneJ2_0_0" index="0" speed="9.44" length="20.84" shape="49.72,8257.62 49.03,8263.18 46.62,8267.12 42.49,8269.44 36.65,8270.13"/>
+        <lane id=":cluster_gneJ0_gneJ1_gneJ2_0_0" index="0" speed="9.64" length="21.50" width="4.00" shape="50.12,8257.61 49.41,8263.35 46.92,8267.42 42.67,8269.81 36.64,8270.53"/>
     </edge>
     <edge id=":cluster_gneJ0_gneJ1_gneJ2_1" function="internal">
-        <lane id=":cluster_gneJ0_gneJ1_gneJ2_1_0" index="0" speed="8.21" length="15.51" shape="36.71,8266.93 41.09,8266.42 44.19,8264.71 46.00,8261.81 46.52,8257.70"/>
+        <lane id=":cluster_gneJ0_gneJ1_gneJ2_1_0" index="0" speed="8.12" length="14.85" width="4.00" shape="36.72,8266.53 40.92,8266.04 43.89,8264.41 45.62,8261.63 46.12,8257.71"/>
     </edge>
     <edge id=":cluster_node-4_node-57_node-60_0" function="internal">
-        <lane id=":cluster_node-4_node-57_node-60_0_0" index="0" speed="13.89" length="20.39" shape="45.86,8232.56 45.92,8212.17"/>
+        <lane id=":cluster_node-4_node-57_node-60_0_0" index="0" speed="13.89" length="20.39" width="4.00" shape="45.46,8232.56 45.52,8212.17"/>
     </edge>
     <edge id=":cluster_node-4_node-57_node-60_1" function="internal">
-        <lane id=":cluster_node-4_node-57_node-60_1_0" index="0" speed="8.87" length="8.33" shape="45.86,8232.56 46.34,8227.04 47.48,8224.50"/>
+        <lane id=":cluster_node-4_node-57_node-60_1_0" index="0" speed="9.08" length="9.40" width="4.00" shape="45.46,8232.56 45.96,8226.86 47.49,8223.51"/>
     </edge>
     <edge id=":cluster_node-4_node-57_node-60_6" function="internal">
-        <lane id=":cluster_node-4_node-57_node-60_6_0" index="0" speed="8.87" length="9.80" shape="47.48,8224.50 48.11,8223.10 51.17,8220.76 55.52,8220.00"/>
+        <lane id=":cluster_node-4_node-57_node-60_6_0" index="0" speed="9.08" length="9.37" width="4.00" shape="47.49,8223.51 47.81,8222.80 50.99,8220.38 55.52,8219.60"/>
     </edge>
     <edge id=":cluster_node-4_node-57_node-60_2" function="internal">
-        <lane id=":cluster_node-4_node-57_node-60_2_0" index="0" speed="7.56" length="12.86" shape="55.50,8223.20 52.59,8223.76 50.55,8225.49 49.37,8228.40 49.06,8232.48"/>
+        <lane id=":cluster_node-4_node-57_node-60_2_0" index="0" speed="7.45" length="12.19" width="4.00" shape="55.50,8223.60 52.77,8224.14 50.85,8225.79 49.75,8228.56 49.46,8232.45"/>
     </edge>
     <edge id=":cluster_node-4_node-57_node-60_3" function="internal">
-        <lane id=":cluster_node-4_node-57_node-60_3_0" index="0" speed="8.61" length="16.65" shape="55.50,8223.20 51.27,8222.48 48.26,8220.41 46.48,8216.97 45.92,8212.17"/>
+        <lane id=":cluster_node-4_node-57_node-60_3_0" index="0" speed="8.83" length="17.29" width="4.00" shape="55.50,8223.60 51.09,8222.86 47.96,8220.71 46.10,8217.14 45.52,8212.17"/>
     </edge>
     <edge id=":cluster_node-4_node-57_node-60_4" function="internal">
-        <lane id=":cluster_node-4_node-57_node-60_4_0" index="0" speed="7.25" length="11.48" shape="49.12,8212.21 49.49,8215.60 50.68,8218.03 52.69,8219.49 55.52,8220.00"/>
+        <lane id=":cluster_node-4_node-57_node-60_4_0" index="0" speed="7.14" length="10.84" width="4.00" shape="49.52,8212.21 49.87,8215.43 50.99,8217.73 52.87,8219.12 55.52,8219.60"/>
     </edge>
     <edge id=":cluster_node-4_node-57_node-60_5" function="internal">
-        <lane id=":cluster_node-4_node-57_node-60_5_0" index="0" speed="13.89" length="20.27" shape="49.12,8212.21 49.06,8232.48"/>
+        <lane id=":cluster_node-4_node-57_node-60_5_0" index="0" speed="13.89" length="20.24" width="4.00" shape="49.52,8212.21 49.46,8232.45"/>
     </edge>
 
     <edge id="-gneE0" from="cluster_gneJ0_gneJ1_gneJ2" to="node-3" priority="-1" shape="36.68,8268.53 -30.56,8267.35">
-        <lane id="-gneE0_0" index="0" speed="13.89" length="67.25" shape="36.65,8270.13 -30.59,8268.95"/>
+        <lane id="-gneE0_0" index="0" speed="13.89" length="67.25" width="4.00" shape="36.64,8270.53 -30.60,8269.35"/>
     </edge>
     <edge id="-gneE3" from="cluster_node-4_node-57_node-60" to="cluster_gneJ0_gneJ1_gneJ2" priority="-1" shape="47.34,8227.83 48.12,8257.66">
-        <lane id="-gneE3_0" index="0" speed="13.89" length="25.15" shape="49.06,8232.48 49.72,8257.62"/>
+        <lane id="-gneE3_0" index="0" speed="13.89" length="25.16" width="4.00" shape="49.46,8232.45 50.12,8257.61"/>
     </edge>
     <edge id="-gneE4" from="node-42" to="cluster_node-4_node-57_node-60" priority="-1" shape="48.79,8082.46 47.52,8212.19">
-        <lane id="-gneE4_0" index="0" speed="13.89" length="129.74" shape="50.39,8082.48 49.12,8212.21"/>
+        <lane id="-gneE4_0" index="0" speed="13.89" length="129.74" width="4.00" shape="50.79,8082.48 49.52,8212.21"/>
     </edge>
     <edge id="-gneE5" from="node-59" to="cluster_node-4_node-57_node-60" priority="-1" shape="250.88,8223.05 55.51,8221.60">
-        <lane id="-gneE5_0" index="0" speed="13.89" length="195.38" shape="250.87,8224.65 55.50,8223.20"/>
+        <lane id="-gneE5_0" index="0" speed="13.89" length="195.38" width="4.00" shape="250.87,8225.05 55.50,8223.60"/>
     </edge>
     <edge id="gneE0" from="node-3" to="cluster_gneJ0_gneJ1_gneJ2" priority="-1" shape="-30.56,8267.35 36.68,8268.53">
-        <lane id="gneE0_0" index="0" speed="13.89" length="67.25" shape="-30.53,8265.75 36.71,8266.93"/>
+        <lane id="gneE0_0" index="0" speed="13.89" length="67.25" width="4.00" shape="-30.52,8265.35 36.72,8266.53"/>
     </edge>
     <edge id="gneE3" from="cluster_gneJ0_gneJ1_gneJ2" to="cluster_node-4_node-57_node-60" priority="-1" shape="48.12,8257.66 47.34,8227.83">
-        <lane id="gneE3_0" index="0" speed="13.89" length="25.15" shape="46.52,8257.70 45.86,8232.56"/>
+        <lane id="gneE3_0" index="0" speed="13.89" length="25.16" width="4.00" shape="46.12,8257.71 45.46,8232.56"/>
     </edge>
     <edge id="gneE4" from="cluster_node-4_node-57_node-60" to="node-42" priority="-1" shape="47.52,8212.19 48.79,8082.46">
-        <lane id="gneE4_0" index="0" speed="13.89" length="129.74" shape="45.92,8212.17 47.19,8082.44"/>
+        <lane id="gneE4_0" index="0" speed="13.89" length="129.74" width="4.00" shape="45.52,8212.17 46.79,8082.44"/>
     </edge>
     <edge id="gneE5" from="cluster_node-4_node-57_node-60" to="node-59" priority="-1" shape="55.51,8221.60 250.88,8223.05">
-        <lane id="gneE5_0" index="0" speed="13.89" length="195.38" shape="55.52,8220.00 250.89,8221.45"/>
+        <lane id="gneE5_0" index="0" speed="13.89" length="195.38" width="4.00" shape="55.52,8219.60 250.89,8221.05"/>
     </edge>
 
     <tlLogic id="cluster_node-4_node-57_node-60" type="static" programID="0" offset="0">
@@ -100,11 +101,11 @@
         <phase duration="3"  state="rryyyr"/>
     </tlLogic>
 
-    <junction id="cluster_gneJ0_gneJ1_gneJ2" type="priority" x="43.46" y="8263.73" incLanes="-gneE3_0 gneE0_0" intLanes=":cluster_gneJ0_gneJ1_gneJ2_0_0 :cluster_gneJ0_gneJ1_gneJ2_1_0" shape="51.32,8257.58 44.92,8257.74 44.75,8260.10 44.10,8262.02 42.98,8263.51 41.37,8264.55 39.29,8265.16 36.74,8265.33 36.62,8271.73 41.22,8271.41 44.96,8270.27 47.83,8268.32 49.85,8265.56 51.02,8261.97">
+    <junction id="cluster_gneJ0_gneJ1_gneJ2" type="priority" x="43.46" y="8263.73" incLanes="-gneE3_0 gneE0_0" intLanes=":cluster_gneJ0_gneJ1_gneJ2_0_0 :cluster_gneJ0_gneJ1_gneJ2_1_0" shape="52.12,8257.56 44.12,8257.76 43.97,8259.87 43.38,8261.58 42.37,8262.91 40.93,8263.84 39.05,8264.38 36.75,8264.53 36.61,8272.53 41.46,8272.19 45.40,8270.99 48.44,8268.93 50.57,8266.00 51.80,8262.21">
         <request index="0" response="00" foes="00" cont="0"/>
         <request index="1" response="00" foes="00" cont="0"/>
     </junction>
-    <junction id="cluster_node-4_node-57_node-60" type="traffic_light_right_on_red" x="50.12" y="8220.54" incLanes="gneE3_0 -gneE5_0 -gneE4_0" intLanes=":cluster_node-4_node-57_node-60_0_0 :cluster_node-4_node-57_node-60_6_0 :cluster_node-4_node-57_node-60_2_0 :cluster_node-4_node-57_node-60_3_0 :cluster_node-4_node-57_node-60_4_0 :cluster_node-4_node-57_node-60_5_0" shape="44.26,8232.60 50.66,8232.44 50.74,8230.09 51.11,8228.18 51.77,8226.69 52.72,8225.63 53.96,8225.00 55.49,8224.80 55.53,8218.40 52.83,8217.70 51.89,8216.84 51.23,8215.64 50.84,8214.10 50.72,8212.22 44.32,8212.16">
+    <junction id="cluster_node-4_node-57_node-60" type="traffic_light_right_on_red" x="50.12" y="8220.54" incLanes="gneE3_0 -gneE5_0 -gneE4_0" intLanes=":cluster_node-4_node-57_node-60_0_0 :cluster_node-4_node-57_node-60_6_0 :cluster_node-4_node-57_node-60_2_0 :cluster_node-4_node-57_node-60_3_0 :cluster_node-4_node-57_node-60_4_0 :cluster_node-4_node-57_node-60_5_0" shape="43.46,8232.61 51.46,8232.40 51.52,8230.31 51.83,8228.61 52.38,8227.28 53.17,8226.34 54.20,8225.78 55.48,8225.60 55.54,8217.60 53.28,8216.99 52.50,8216.24 51.94,8215.20 51.62,8213.86 51.52,8212.23 43.52,8212.15">
         <request index="0" response="000000" foes="001000" cont="0"/>
         <request index="1" response="110000" foes="111000" cont="1"/>
         <request index="2" response="100000" foes="100000" cont="0"/>
@@ -112,11 +113,11 @@
         <request index="4" response="000000" foes="000010" cont="0"/>
         <request index="5" response="000000" foes="001110" cont="0"/>
     </junction>
-    <junction id="node-3" type="dead_end" x="-30.56" y="8267.35" incLanes="-gneE0_0" intLanes="" shape="-30.56,8267.35 -30.62,8270.55 -30.56,8267.35"/>
-    <junction id="node-42" type="dead_end" x="48.79" y="8082.46" incLanes="gneE4_0" intLanes="" shape="48.79,8082.46 45.59,8082.43 48.79,8082.46"/>
-    <junction id="node-59" type="dead_end" x="250.88" y="8223.05" incLanes="gneE5_0" intLanes="" shape="250.88,8223.05 250.90,8219.85 250.88,8223.05"/>
+    <junction id="node-3" type="dead_end" x="-30.56" y="8267.35" incLanes="-gneE0_0" intLanes="" shape="-30.56,8267.35 -30.63,8271.35 -30.56,8267.35"/>
+    <junction id="node-42" type="dead_end" x="48.79" y="8082.46" incLanes="gneE4_0" intLanes="" shape="48.79,8082.46 44.79,8082.42 48.79,8082.46"/>
+    <junction id="node-59" type="dead_end" x="250.88" y="8223.05" incLanes="gneE5_0" intLanes="" shape="250.88,8223.05 250.91,8219.05 250.88,8223.05"/>
 
-    <junction id=":cluster_node-4_node-57_node-60_6_0" type="internal" x="47.48" y="8224.50" incLanes=":cluster_node-4_node-57_node-60_1_0 -gneE4_0" intLanes=":cluster_node-4_node-57_node-60_3_0 :cluster_node-4_node-57_node-60_4_0 :cluster_node-4_node-57_node-60_5_0"/>
+    <junction id=":cluster_node-4_node-57_node-60_6_0" type="internal" x="47.49" y="8223.51" incLanes=":cluster_node-4_node-57_node-60_1_0 -gneE4_0" intLanes=":cluster_node-4_node-57_node-60_3_0 :cluster_node-4_node-57_node-60_4_0 :cluster_node-4_node-57_node-60_5_0"/>
 
     <connection from="-gneE3" to="-gneE0" fromLane="0" toLane="0" via=":cluster_gneJ0_gneJ1_gneJ2_0_0" dir="l" state="M"/>
     <connection from="-gneE4" to="gneE5" fromLane="0" toLane="0" via=":cluster_node-4_node-57_node-60_4_0" tl="cluster_node-4_node-57_node-60" linkIndex="4" dir="r" state="O"/>
