@@ -141,12 +141,15 @@ class RoadMap:
 
         @property
         def index(self) -> int:
-            """ 0 is outer / right-most (relative to lane heading) lane on road. """
+            """when not in_junction, 0 is outer / right-most (relative to lane heading) lane on road.
+            otherwise, index scheme is implementation-dependent, but must be deterministic."""
+            # TAI:  UK roads
             raise NotImplementedError()
 
         @property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: left is defined as 90 degrees clockwise relative to the lane heading.
+            (I.e., positive `t` in the RefLane coordinate system.)
             Second result is True if lane is in the same direction as this one
             May return None for lanes in junctions."""
             raise NotImplementedError()
@@ -154,6 +157,7 @@ class RoadMap:
         @property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
+            (I.e., negative `t` in the RefLane coordinate system.)
             Second result is True if lane is in the same direction as this one.
             May return None for lanes in junctions."""
             raise NotImplementedError()
@@ -172,13 +176,10 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def foes(self) -> Tuple[List[RoadMap.Lane], bool]:
+        def foes(self) -> List[RoadMap.Lane]:
             """All lanes that in some way intersect with (cross) this one,
             including those that have the same outgoing lane as this one,
-            and so might require right-of-way rules.
-            If right-of-way rules are known, these will be in order of priority,
-            otherwise they will be in random order.  The boolean flag
-            that is returned will be True if the ordering is by priority."""
+            and so might require right-of-way rules."""
             raise NotImplementedError()
 
         def waypoint_paths_for_pose(
@@ -246,12 +247,11 @@ class RoadMap:
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
             add_offset = 1  # a little further down the lane
             end_offset = start_offset + add_offset
-            # assert end_offset <= self.length + add_offset, f"Offset={end_offset} goes out further than the end of lane=({self.lane_id}, length={length})"
             p1 = self.from_lane_coord(RefLinePoint(s=start_offset))
             p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
             return np.array(p2) - np.array(p1)
 
-        def target_pose_at_point(self, point: Point) -> Pose:
+        def center_pose_at_point(self, point: Point) -> Pose:
             offset = self.offset_along_lane(point)
             position = self.from_lane_coord(RefLinePoint(s=offset))
             desired_vector = self.vector_at_offset(offset)
@@ -333,7 +333,8 @@ class RoadMap:
             """Lanes returned in order of lane index (right-to-left) for a direction.
             direction is arbitrary indicator:
             all True lanes go in the same direction, as do all False lanes,
-            but True and False lanes go in opposing directions."""
+            but True and False lanes go in opposing directions.
+            Not defined in junctions."""
             raise NotImplementedError()
 
         def point_on_road(self, point: Point) -> bool:

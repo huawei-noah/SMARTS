@@ -314,7 +314,7 @@ class SumoRoadNetwork(RoadMap):
             return result
 
         @cached_property
-        def foes(self) -> Tuple[List[RoadMap.Lane], bool]:
+        def foes(self) -> List[RoadMap.Lane]:
             # TODO:  we might do better here since Sumo/Traci determines
             # right-of-way for their connections/links.  See:
             # https://sumo.dlr.de/pydoc/traci._lane.html#LaneDomain-getFoes
@@ -325,7 +325,7 @@ class SumoRoadNetwork(RoadMap):
                 for incoming in outgoing.incoming_lanes
                 for outgoing in self.outgoing_lanes
             ]
-            return (list(set(result)), False)
+            return list(set(result))
 
         def waypoint_paths_for_pose(
             self, pose: Pose, lookahead: int, route: RoadMap.Route = None
@@ -412,8 +412,8 @@ class SumoRoadNetwork(RoadMap):
             return super().vector_at_offset(start_offset)
 
         @lru_cache(maxsize=8)
-        def target_pose_at_point(self, point: Point) -> Pose:
-            return super().target_pose_at_point(point)
+        def center_pose_at_point(self, point: Point) -> Pose:
+            return super().center_pose_at_point(point)
 
         @lru_cache(maxsize=8)
         def curvature_radius_at_offset(
