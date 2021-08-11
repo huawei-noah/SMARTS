@@ -140,8 +140,8 @@ def generate_sumo_map(path, scenario_index):
             f'--edge-files={edges_path}',
             f'--output-file={net_path}',
             "--offset.disable-normalization",
-            # "--geometry.split"
-            # '--junctions.join'
+            # "--geometry.split",
+            # "--junctions.join"
         ],
         stdout=subprocess.PIPE
     )
@@ -240,6 +240,7 @@ def animate(path, scenario_index, screenshot=False, outdir=None):
         print(f"Saving {outpath}")
         fig.savefig(outpath, dpi=100)
         plt.close('all')
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
