@@ -152,23 +152,18 @@ function do_install_for_WSL {
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     echo "Detected Linux"
-    # If kernel release is Microsoft-based then proceed with WSL
-    # installation otherwise native linux installation
-    DISTRIB=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
-    if [[ $DISTRIB == '"Ubuntu"' ]]; then
-        # WSL1 and WSL2 both have different kernal version string
-        # representations: For example
-        #   WSL1: 4.X.X-12345-Microsoft
-        #   WSL2: 5.XX.XX.X-microsoft-standard-WSL2
-        # To ensure that both versions of WSL are supported, the
-        # kernal release string needs to be compared with keywords
-        # from WSL1 (i.e Microsoft) and WSL2 (i.e WSL2) kernal 
-        # version string formats. 
-        if [[ $(uname -r) =~ (Microsoft|WSL2) ]]; then
-            do_install_for_WSL
-        else
-            do_install_for_linux
-        fi
+    # WSL1 and WSL2 both have different kernal version string
+    # representations: For example
+    #   WSL1: 4.X.X-12345-Microsoft
+    #   WSL2: 5.XX.XX.X-microsoft-standard-WSL2
+    # To ensure that both versions of WSL are supported, the
+    # kernal release string needs to be compared with keywords
+    # from WSL1 (i.e Microsoft) and WSL2 (i.e WSL2) kernal 
+    # version string formats. 
+    if [[ $(uname -r) =~ (Microsoft|WSL2) ]]; then
+        do_install_for_WSL
+    else
+        do_install_for_linux
     fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Detected macOS"
