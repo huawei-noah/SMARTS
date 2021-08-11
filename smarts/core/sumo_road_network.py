@@ -328,12 +328,13 @@ class SumoRoadNetwork(RoadMap):
             #        https://sumo.dlr.de/pydoc/traci._lane.html#LaneDomain-getFoes
             result = [
                 incoming
-                for incoming in outgoing.incoming_lanes
                 for outgoing in self.outgoing_lanes
+                for incoming in outgoing.incoming_lanes
+                if incoming != self
             ]
             if self.in_junction:
                 in_roads = set(il.road for il in self.incoming_lanes)
-                for foe in self.lanes:
+                for foe in self.road.lanes:
                     foe_in_roads = set(il.road for il in foe.incoming_lanes)
                     if not bool(in_roads & foe_in_roads):
                         result.append(foe)
