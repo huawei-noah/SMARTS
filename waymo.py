@@ -109,7 +109,7 @@ def generate_sumo_map(path, scenario_index):
         edge.set("speed", str(11.0))
         lane = ET.SubElement(edge, "lane")
         lane.set("index", str(0))
-        lane.set("width", str(2.5))
+        lane.set("width", str(4))
         lane.set("shape", shape_str(xs, ys))
 
     scenario_id, map_features = read_map_data(path, scenario_index)
@@ -133,13 +133,14 @@ def generate_sumo_map(path, scenario_index):
         f.write(nodes_xml)
 
     # Generate netfile with netconvert
+    print(f"Generating SUMO map file: {net_path}")
     proc = subprocess.Popen([
             'netconvert',
             f'--node-files={nodes_path}',
             f'--edge-files={edges_path}',
             f'--output-file={net_path}',
-            "--offset.disable-normalization"
-            "--geometry.split"
+            "--offset.disable-normalization",
+            # "--geometry.split"
             # '--junctions.join'
         ],
         stdout=subprocess.PIPE

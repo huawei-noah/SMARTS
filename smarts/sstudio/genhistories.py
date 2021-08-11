@@ -493,7 +493,7 @@ class Waymo(_TrajectoryDataset):
                 row["sim_time"] = scenario.timestamps_seconds[j] * 1000.0
                 row["position_x"] = obj_state.center_x
                 row["position_y"] = obj_state.center_y
-                row["heading_rad"] = obj_state.heading
+                row["heading_rad"] = obj_state.heading - math.pi/2
                 row["speed"] = np.linalg.norm(vel)
                 row["lane_id"] = 0
                 row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
