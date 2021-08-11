@@ -302,20 +302,22 @@ if __name__ == "__main__":
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
     ray.init()
-    train(
-        scenario_info=(args.task, args.level),
-        num_episodes=int(args.episodes),
-        max_episode_steps=int(args.max_episode_steps),
-        max_steps=int(args.max_steps),
-        eval_info={
-            "eval_rate": float(args.eval_rate),
-            "eval_episodes": int(args.eval_episodes),
-        },
-        timestep_sec=float(args.timestep),
-        headless=args.headless,
-        policy_classes=policy_classes,
-        seed=args.seed,
-        log_dir=args.log_dir,
-        policy_ids=policy_ids,
-    )
-    ray.shutdown()
+    try:
+        train(
+            scenario_info=(args.task, args.level),
+            num_episodes=int(args.episodes),
+            max_episode_steps=int(args.max_episode_steps),
+            max_steps=int(args.max_steps),
+            eval_info={
+                "eval_rate": float(args.eval_rate),
+                "eval_episodes": int(args.eval_episodes),
+            },
+            timestep_sec=float(args.timestep),
+            headless=args.headless,
+            policy_classes=policy_classes,
+            seed=args.seed,
+            log_dir=args.log_dir,
+            policy_ids=policy_ids,
+        )
+    finally:
+        ray.shutdown()
