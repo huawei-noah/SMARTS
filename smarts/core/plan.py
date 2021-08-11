@@ -89,7 +89,7 @@ class PositionalGoal(Goal):
         radius: float = 1,
     ):
         road = road_map.road_by_id(road_id)
-        lane = road.lane_at_index(lane_index)  # XXX: bidirectional roads?
+        lane = road.lane_at_index(lane_index)
 
         if lane_offset is None:
             # Default to the midpoint safely ensuring we are on the lane and not
@@ -240,7 +240,7 @@ class Mission:
         )
         offset *= n_lane.length
         coord = n_lane.from_lane_coord(RefLinePoint(offset))
-        target_pose = n_lane.target_pose_at_point(coord)
+        target_pose = n_lane.center_pose_at_point(coord)
         return Mission(
             start=Start(target_pose.position, target_pose.heading),
             goal=EndlessGoal(),

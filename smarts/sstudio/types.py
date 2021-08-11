@@ -548,7 +548,7 @@ class MapZone(Zone):
         road = road_map.road_by_id(road_id)
         buffer_from_ends = 1e-6
         for lane_idx in range(lane_idx, lane_idx + self.n_lanes):
-            lane = road.lane_at_index(lane_idx)  # XXX: bidirectional roads?
+            lane = road.lane_at_index(lane_idx)
             lane_length = lane.length
             geom_length = self.length
 

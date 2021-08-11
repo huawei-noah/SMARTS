@@ -223,7 +223,6 @@ class SumoRoadNetwork(RoadMap):
             self._map = road_map
             self._road = road_map.road_by_id(sumo_lane.getEdge().getID())
             assert self._road
-            self._road_dir = None
 
         @property
         def lane_id(self) -> str:
@@ -232,12 +231,6 @@ class SumoRoadNetwork(RoadMap):
         @property
         def road(self) -> RoadMap.Road:
             return self._road
-
-        @property
-        def road_dir(self) -> bool:
-            if self._road_dir is None and self._road:
-                self._road_dir = self._road.lanes[self.index].lane_id == self.lane_id
-            return self._road_dir
 
         @cached_property
         def speed_limit(self) -> float:
@@ -253,33 +246,49 @@ class SumoRoadNetwork(RoadMap):
 
         @property
         def in_junction(self) -> bool:
-            """ will return None if not in a junction"""
             return self._road.is_junction
 
         @cached_property
         def index(self) -> int:
-            """ 0 is outer / right-most (relative to lane heading) lane on road. """
             return self._sumo_lane.getIndex()
 
         @cached_property
+        def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
+            if not self.in_junction:
+                # When not in an intersection, all SUMO Lanes for an Edge go in the same direction.
+                return [l for l in self.road.lanes if l != self]
+            result = []
+            in_roads = set(il.road for il in self.incoming_lanes)
+            out_roads = set(il.road for il in self.outgoing_lanes)
+            for lane in self.road.lanes:
+                if self == lane:
+                    continue
+                other_in_roads = set(il.road for il in lane.incoming_lanes)
+                if in_roads & other_in_roads:
+                    other_out_roads = set(il.road for il in self.outgoing_lanes)
+                    if out_roads & other_out_roads:
+                        result.append(lane)
+            return result
+
+        @cached_property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
-            """Note: left is defined as 90 degrees clockwise relative to the lane heading.
-            Second result is True if lane is in the same direction as this one.
-            May return None for lanes in junctions."""
-            # TODO:  how to deal with intersections?
-            lanes = self._road.lanes_by_direction(self.road_dir)
-            index = self.index + 1
-            return (lanes[index], True) if index < len(lanes) else (None, True)
+            result = None
+            for other in self.lanes_in_same_direction:
+                if other.index > self.index and (
+                    not result or other.index < result.index
+                ):
+                    result = other
+            return result
 
         @cached_property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
-            """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
-            Second result is True if lane is in the same direction as this one.
-            May return None for lanes in junctions."""
-            # TODO:  how to deal with intersections?
-            lanes = self._road.lanes_by_direction(self.road_dir)
-            index = self.index - 1
-            return (lanes[index], True) if index >= 0 else (None, True)
+            result = None
+            for other in self.lanes_in_same_direction:
+                if other.index < self.index and (
+                    not result or other.index > result.index
+                ):
+                    result = other
+            return result
 
         @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
@@ -315,16 +324,19 @@ class SumoRoadNetwork(RoadMap):
 
         @cached_property
         def foes(self) -> List[RoadMap.Lane]:
-            # TODO:  we might do better here since Sumo/Traci determines
-            # right-of-way for their connections/links.  See:
-            # https://sumo.dlr.de/pydoc/traci._lane.html#LaneDomain-getFoes
-            # TODO:  might use Edge.getCrossingEdges() ?
-            #     but do edges ever "cross" in sumo?  or just end in junctions?
+            # TODO:  we might do better here since Sumo/Traci determines right-of-way for their connections/links.  See:
+            #        https://sumo.dlr.de/pydoc/traci._lane.html#LaneDomain-getFoes
             result = [
                 incoming
                 for incoming in outgoing.incoming_lanes
                 for outgoing in self.outgoing_lanes
             ]
+            if self.in_junction:
+                in_roads = set(il.road for il in self.incoming_lanes)
+                for foe in self.lanes:
+                    foe_in_roads = set(il.road for il in foe.incoming_lanes)
+                    if not bool(in_roads & foe_in_roads):
+                        result.append(foe)
             return list(set(result))
 
         def waypoint_paths_for_pose(
@@ -440,7 +452,6 @@ class SumoRoadNetwork(RoadMap):
             self._road_id = road_id
             self._sumo_edge = sumo_edge
             self._map = road_map
-            self._lanes = []
 
         @cached_property
         def is_junction(self) -> bool:
@@ -489,35 +500,15 @@ class SumoRoadNetwork(RoadMap):
                 and edge.getToNode().getID() == to_node.getID()
             ]
 
-        @property
+        @cached_property
         def lanes(self) -> List[RoadMap.Lane]:
-            # Note:  all SUMO Lanes for an Edge go in the same direction.
-            if not self._lanes:
-                self._lanes = [
-                    self._map.lane_by_id(sumo_lane.getID())
-                    for sumo_lane in self._sumo_edge.getLanes()
-                ]
-            return self._lanes
+            return [
+                self._map.lane_by_id(sumo_lane.getID())
+                for sumo_lane in self._sumo_edge.getLanes()
+            ]
 
-        def lane_at_index(self, index: int, direction: bool = True) -> RoadMap.Lane:
-            # Note:  all SUMO Lanes for an Edge go in the same direction.
-            # TODO:  except in intersections
-            assert direction
-            return self.lanes_by_direction(direction)[index]
-
-        def lanes_by_direction(self, direction: bool) -> List[RoadMap.Lane]:
-            """Lanes returned in order of lane index (right-to-left) for a direction.
-            direction is arbitrary indicator:
-            all True lanes go in the same direction, as do all False lanes,
-            but True and False lanes go in opposing directions."""
-            # Note:  all SUMO Lanes for an Edge go in the same direction.
-            # TODO:  figure out intersections
-            if not self._lanes and direction:
-                self._lanes = [
-                    self._map.lane_by_id(sumo_lane.getID())
-                    for sumo_lane in self._sumo_edge.getLanes()
-                ]
-            return self._lanes
+        def lane_at_index(self, index: int) -> RoadMap.Lane:
+            return self.lanes[index]
 
         @lru_cache(maxsize=8)
         def point_on_road(self, point: Point) -> bool:

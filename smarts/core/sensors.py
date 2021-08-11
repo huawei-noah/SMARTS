@@ -510,7 +510,7 @@ class Sensors:
 
     @staticmethod
     def _vehicle_is_wrong_way(sim, vehicle, closest_lane):
-        target_pose = closest_lane.target_pose_at_point(Point(*vehicle.pose.position))
+        target_pose = closest_lane.center_pose_at_point(Point(*vehicle.pose.position))
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
             np.fabs(vehicle.pose.heading.relative_to(target_pose.heading)) > 0.5 * np.pi

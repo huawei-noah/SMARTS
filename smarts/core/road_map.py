@@ -147,11 +147,19 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
+        def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
+            """returns all other lanes on this road where traffic goes
+            in the same direction.  it is currently assumed these will be
+            adjacent to one another.  In junctions, diverging lanes
+            should not be included."""
+            raise NotImplementedError()
+
+        @property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: left is defined as 90 degrees clockwise relative to the lane heading.
             (I.e., positive `t` in the RefLane coordinate system.)
             Second result is True if lane is in the same direction as this one
-            May return None for lanes in junctions."""
+            In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
 
         @property
@@ -159,7 +167,7 @@ class RoadMap:
             """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
             (I.e., negative `t` in the RefLane coordinate system.)
             Second result is True if lane is in the same direction as this one.
-            May return None for lanes in junctions."""
+            In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
 
         @property
@@ -179,7 +187,8 @@ class RoadMap:
         def foes(self) -> List[RoadMap.Lane]:
             """All lanes that in some way intersect with (cross) this one,
             including those that have the same outgoing lane as this one,
-            and so might require right-of-way rules."""
+            and so might require right-of-way rules.  This should only
+            ever happen in junctions."""
             raise NotImplementedError()
 
         def waypoint_paths_for_pose(
@@ -326,15 +335,7 @@ class RoadMap:
         def lanes(self) -> List[RoadMap.Lane]:
             raise NotImplementedError()
 
-        def lane_at_index(self, index: int, direction: bool = True) -> RoadMap.Lane:
-            raise NotImplementedError()
-
-        def lanes_by_direction(self, direction: bool) -> List[RoadMap.Lane]:
-            """Lanes returned in order of lane index (right-to-left) for a direction.
-            direction is arbitrary indicator:
-            all True lanes go in the same direction, as do all False lanes,
-            but True and False lanes go in opposing directions.
-            Not defined in junctions."""
+        def lane_at_index(self, index: int) -> RoadMap.Lane:
             raise NotImplementedError()
 
         def point_on_road(self, point: Point) -> bool:
