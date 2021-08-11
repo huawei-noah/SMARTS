@@ -278,7 +278,7 @@ class SumoRoadNetwork(RoadMap):
                     not result or other.index < result.index
                 ):
                     result = other
-            return result
+            return result, True
 
         @cached_property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
@@ -288,7 +288,7 @@ class SumoRoadNetwork(RoadMap):
                     not result or other.index > result.index
                 ):
                     result = other
-            return result
+            return result, True
 
         @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
