@@ -286,6 +286,10 @@ class Plan:
     def route(self) -> RoadMap.Route:
         return self._route
 
+    @route.setter
+    def route(self, route: RoadMap.Route):
+        self._route = route
+
     @property
     def mission(self) -> Mission:
         return self._mission
