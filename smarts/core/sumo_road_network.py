@@ -558,12 +558,18 @@ class SumoRoadNetwork(RoadMap):
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
         # XXX: note that this getNeighboringLanes() call is fairly heavy/expensive (as revealed by profiling)
-        # XXX: Not robust around junctions (since their shape is quite crude?)
+        # The includeJunctions parameter is the opposite of include_junctions because
+        # what it does in the Sumo query is attach the "node" that is the junction (node)
+        # shape to the shape of the non-special lanes that connect to it.  So if
+        # includeJunctions is True, we are more likely to hit "normal" lanes
+        # even when in an intersection where we want to hit "special"
+        # lanes when we specify include_junctions=True.  Note that "special"
+        # lanes are always candidates to be returned, no matter what.
         candidate_lanes = self._graph.getNeighboringLanes(
             point[0],
             point[1],
             r=radius,
-            includeJunctions=include_junctions,
+            includeJunctions=not include_junctions,
             allowFallback=False,
         )
         if not include_junctions:

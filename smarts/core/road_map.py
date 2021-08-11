@@ -296,6 +296,7 @@ class RoadMap:
 
         @property
         def is_junction(self) -> bool:
+            """Note that a junction can be an intersection ('+') or a 'T', 'Y', 'L', etc."""
             raise NotImplementedError()
 
         @property
