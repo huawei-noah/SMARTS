@@ -300,7 +300,7 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def length(self) -> int:
+        def length(self) -> float:
             raise NotImplementedError()
 
         @property

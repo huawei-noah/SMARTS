@@ -447,7 +447,7 @@ class SumoRoadNetwork(RoadMap):
             return self._sumo_edge.isSpecial()
 
         @cached_property
-        def length(self) -> int:
+        def length(self) -> float:
             return self._sumo_edge.getLength()
 
         @property
