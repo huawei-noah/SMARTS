@@ -53,21 +53,21 @@ class ReplayCheckerAgent(Agent):
             return (0.0, 0.0)
         cur_state = obs.ego_vehicle_state
 
-        # assert math.isclose(
-        #     cur_state.heading, exp["heading"], abs_tol=0.1
-        # ), f'vid={self._vehicle_id}: {cur_state.heading} != {exp["heading"]} @ {obs_time}'
+        assert math.isclose(
+            cur_state.heading, exp["heading"], abs_tol=1e-2
+        ), f'vid={self._vehicle_id}: {cur_state.heading} != {exp["heading"]} @ {obs_time}'
         # Note: the other checks can't be as tight b/c we lose some accuracy (due to angular acceleration)
         # by converting the acceleration vector to a scalar in the observation script,
         # which compounds over time throughout the simulation.
-        # assert math.isclose(
-        #     cur_state.speed, exp["speed"], abs_tol=0.1
-        # ), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
-        # assert math.isclose(
-        #     cur_state.position[0], exp["ego_pos"][0], abs_tol=2
-        # ), f'vid={self._vehicle_id}: {cur_state.position[0]} != {exp["ego_pos"][0]} @ {obs_time}'
-        # assert math.isclose(
-        #     cur_state.position[1], exp["ego_pos"][1], abs_tol=2
-        # ), f'vid={self._vehicle_id}: {cur_state.position[1]} != {exp["ego_pos"][1]} @ {obs_time}'
+        assert math.isclose(
+            cur_state.speed, exp["speed"], abs_tol=1
+        ), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
+        assert math.isclose(
+            cur_state.position[0], exp["ego_pos"][0], abs_tol=2
+        ), f'vid={self._vehicle_id}: {cur_state.position[0]} != {exp["ego_pos"][0]} @ {obs_time}'
+        assert math.isclose(
+            cur_state.position[1], exp["ego_pos"][1], abs_tol=2
+        ), f'vid={self._vehicle_id}: {cur_state.position[1]} != {exp["ego_pos"][1]} @ {obs_time}'
 
         # Then get and return the next set of control inputs
         atime = self._rounder(obs_time + self._fixed_timestep_sec)
@@ -128,7 +128,7 @@ def main(
             agent_params=smarts.fixed_timestep_sec,
         )
 
-        for episode in range(10):
+        for episode in range(1):
             logger.info(f"starting episode {episode}...")
 
             # Find which vehicle should be the ego
@@ -170,7 +170,10 @@ def main(
             # Finally start the simulation loop...
             logger.info(f"starting simulation loop...")
             observations = smarts.reset(scenario)
-            while not all(done for done in dones.values()) and smarts.elapsed_sim_time < last_time:
+            while (
+                not all(done for done in dones.values())
+                and smarts.elapsed_sim_time < last_time
+            ):
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs)
                     for agent_id, agent_obs in observations.items()

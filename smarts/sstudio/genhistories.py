@@ -463,6 +463,9 @@ class Waymo(_TrajectoryDataset):
 
     @property
     def rows(self):
+        def lerp(a, b, t):
+            return t * (b - a) + a
+
         dataset = tf.data.TFRecordDataset(
             self._dataset_spec["input_path"], compression_type=""
         )
@@ -477,27 +480,93 @@ class Waymo(_TrajectoryDataset):
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
             vehicle_type = self._lookup_agent_type(scenario.tracks[i].object_type)
+            rows = []
 
+            # First pass -- extract data
             for j in range(len(scenario.timestamps_seconds)):
                 obj_state = scenario.tracks[i].states[j]
-                if obj_state.valid == False:
-                    continue
-
                 vel = np.array([obj_state.velocity_x, obj_state.velocity_y])
+
                 row = {}
+                row["valid"] = obj_state.valid
                 row["vehicle_id"] = vehicle_id
                 row["type"] = vehicle_type
                 row["length"] = obj_state.length
                 row["height"] = obj_state.height
                 row["width"] = obj_state.width
-                row["sim_time"] = scenario.timestamps_seconds[j] * 1000.0
+                row["sim_time"] = scenario.timestamps_seconds[j]
                 row["position_x"] = obj_state.center_x
                 row["position_y"] = obj_state.center_y
-                row["heading_rad"] = obj_state.heading - math.pi/2
+                row["heading_rad"] = obj_state.heading - math.pi / 2
                 row["speed"] = np.linalg.norm(vel)
                 row["lane_id"] = 0
                 row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
-                yield row
+                rows.append(row)
+
+            # Second pass -- align timesteps to 10 Hz and interpolate trajectory data if needed
+            for j in range(len(scenario.timestamps_seconds)):
+                row = rows[j]
+                if row["valid"] == False:
+                    continue
+                timestep = 0.1
+                time_current = row["sim_time"]
+                time_expected = round(j * timestep, 3)
+                time_error = time_current - time_expected
+
+                if time_error == 0:
+                    continue
+
+                # Align to expected timestep
+                row["sim_time"] = time_expected
+
+                if time_error > 0:
+                    # If first element, we can't interpolate backwards
+                    if j == 0:
+                        continue
+
+                    # Interpolate backwards using previous timestep
+                    prev_row = rows[j - 1]
+                    if prev_row["valid"]:
+                        prev_time = prev_row["sim_time"]
+                        t = (time_expected - prev_time) / (time_current - prev_time)
+                        row["speed"] = lerp(prev_row["speed"], row["speed"], t)
+                        row["position_x"] = lerp(
+                            prev_row["position_x"], row["position_x"], t
+                        )
+                        row["position_y"] = lerp(
+                            prev_row["position_y"], row["position_y"], t
+                        )
+                        row["heading_rad"] = lerp(
+                            prev_row["heading_rad"], row["heading_rad"], t
+                        )
+                else:
+                    # If last element, we can't interpolate forwards
+                    if j == len(scenario.timestamps_seconds) - 1:
+                        continue
+
+                    # Interpolate forwards using next timestep
+                    assert time_error < 0
+                    next_row = rows[j + 1]
+                    if next_row["valid"]:
+                        next_time = next_row["sim_time"]
+                        t = (time_expected - time_current) / (next_time - time_current)
+                        row["speed"] = lerp(row["speed"], next_row["speed"], t)
+                        row["position_x"] = lerp(
+                            row["position_x"], next_row["position_x"], t
+                        )
+                        row["position_y"] = lerp(
+                            row["position_y"], next_row["position_y"], t
+                        )
+                        row["heading_rad"] = lerp(
+                            row["heading_rad"], next_row["heading_rad"], t
+                        )
+
+            # Third pass -- filter invalid states and convert time to ms
+            for j in range(len(scenario.timestamps_seconds)):
+                if rows[j]["valid"] == False:
+                    continue
+                rows[j]["sim_time"] *= 1000.0
+                yield rows[j]
 
     @staticmethod
     def _lookup_agent_type(agent_type: int):
