@@ -61,7 +61,7 @@ class Start:
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class Goal:
     def is_endless(self):
         return True
@@ -70,12 +70,12 @@ class Goal:
         return False
 
 
-@dataclass(frozen=True)
+@dataclass
 class EndlessGoal(Goal):
     pass
 
 
-@dataclass(frozen=True)
+@dataclass
 class PositionalGoal(Goal):
     position: Tuple[int, int]
     # target_heading: Heading

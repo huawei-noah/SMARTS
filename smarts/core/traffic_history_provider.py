@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 import numpy as np
 import sqlite3
-import math
 from itertools import cycle
 from typing import NamedTuple, Set
 
