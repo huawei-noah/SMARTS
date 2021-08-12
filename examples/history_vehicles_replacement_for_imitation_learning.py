@@ -155,7 +155,6 @@ def main(
             ego_missions[agent_id] = replace(
                 mission, start_time=mission.start_time - history_start_time
             )
-
             last_time = list(agent._data.keys())[-1]
 
             # Tell the traffic history provider to start traffic
@@ -176,7 +175,7 @@ def main(
                     agent_id: agents[agent_id].act(agent_obs)
                     for agent_id, agent_obs in observations.items()
                 }
-                logger.info(
+                logger.debug(
                     "stepping @ sim_time={} for agents={}...".format(
                         smarts.elapsed_sim_time, list(observations.keys())
                     )

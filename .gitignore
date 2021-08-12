@@ -109,6 +109,7 @@ traffic_histories.pkl
 *.pkl
 *.shf
 **/social_agents/*
+*.tfrecord*
 
 # Manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml
