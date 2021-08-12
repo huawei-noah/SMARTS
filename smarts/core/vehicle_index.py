@@ -671,12 +671,12 @@ class VehicleIndex:
     def sensor_states_items(self):
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._sensor_states.items())
 
+    def check_vehicle_id_has_sensor_state(self, vehicle_id):
+        return vehicle_id in self._sensor_states
+
     def sensor_state_for_vehicle_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
-        if vehicle_id not in self._sensor_states:
-            return None
-        else:
-            return self._sensor_states[vehicle_id]
+        return self._sensor_states[vehicle_id]
 
     def controller_state_for_vehicle_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)

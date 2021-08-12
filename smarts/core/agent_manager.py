@@ -125,9 +125,12 @@ class AgentManager:
         for v_id in vehicle_ids:
             vehicle = sim.vehicle_index.vehicle_by_id(v_id)
             agent_id = self._vehicle_with_sensors[v_id]
-            sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-            if sensor_state is None:
+
+            if not sim.vehicle_index.check_vehicle_id_has_sensor_state(vehicle.id):
                 continue
+
+            sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+
             observations[agent_id], dones[agent_id] = Sensors.observe(
                 sim, agent_id, sensor_state, vehicle
             )
