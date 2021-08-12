@@ -1,6 +1,6 @@
 # Setup
 
-ULTRA can be run natively on a linux machine, or through a Docker container. ULTRA also supports installation on Windows Subsystem for Linux (i.e. WSL 1 and WSL 2). See instructions below for each method of setup.
+ULTRA can be run natively on a Linux machine, or through a Docker container. ULTRA also supports installation on Windows Subsystem for Linux (i.e. WSL 1 and WSL 2). See instructions below for each method of setup.
 
 ## Setup Natively on a Linux machine and/or WSL
 
