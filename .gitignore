@@ -106,9 +106,9 @@ shifted_map-AUTOGEN.net.xml
 bubbles.pkl
 missions.pkl
 traffic_histories.pkl
+**/social_agents/*
 *.pkl
 *.shf
-**/social_agents/*
 *.tfrecord*
 
 # Manually generated sumo route files
