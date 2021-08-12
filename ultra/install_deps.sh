@@ -82,10 +82,8 @@ function do_install_for_macos {
 }
 
 function do_install_for_WSL {
-    # We currently only support Ubuntu distribution for WSL (Windows subsystem
-    # for Linux). The main difference between WSL and native installation is that
-    # WSL does not support python3.7, instead python3.8 and its dependencies will be
-    # installed
+    # We currently only support Ubuntu distributions (18.04 & 20.04) 
+    # for WSL (Windows subsystem for Linux). 
     echo "Installing in WSL"
     echo "Installing sumo (used for traffic simulation and road network)"
     sudo add-apt-repository ppa:sumo/stable
