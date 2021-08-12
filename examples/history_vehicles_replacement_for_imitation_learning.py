@@ -128,7 +128,7 @@ def main(
             agent_params=smarts.fixed_timestep_sec,
         )
 
-        for episode in range(10):
+        for episode in range(1):
             logger.info(f"starting episode {episode}...")
 
             # Find which vehicle should be the ego
