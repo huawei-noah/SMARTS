@@ -593,7 +593,7 @@ class Scenario:
         return vehicle_missions
 
     def get_ego_vehicle_id(self):
-        return self._traffic_history.get_ego_vehicle_id()
+        return self._traffic_history.ego_vehicle_id()
 
     @staticmethod
     def discover_traffic_histories(scenario_root: str):

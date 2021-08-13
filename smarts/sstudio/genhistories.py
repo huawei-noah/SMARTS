@@ -24,17 +24,15 @@ import logging
 import math
 import os
 import sqlite3
+import struct
 import sys
-
-# For Waymo dataset
-import tensorflow as tf
-from waymo_open_dataset.protos import scenario_pb2
 
 import ijson
 import numpy as np
 import pandas as pd
 import yaml
 from numpy.lib.stride_tricks import as_strided as stride
+from waymo_open_dataset.protos import scenario_pb2
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -461,18 +459,33 @@ class Waymo(_TrajectoryDataset):
     def __init__(self, dataset_spec, output):
         super().__init__(dataset_spec, output)
 
+    @staticmethod
+    def read_dataset(path):
+        """Iterate over the records in a TFRecord file and return the bytes of each record.
+
+        path: The path to the TFRecord file
+        """
+        with open(path, "rb") as f:
+            while True:
+                length_bytes = f.read(8)
+                if len(length_bytes) != 8:
+                    return
+                record_len = int(struct.unpack("Q", length_bytes)[0])
+                _ = f.read(4)  # masked_crc32_of_length (ignore)
+                record_data = f.read(record_len)
+                _ = f.read(4)  # masked_crc32_of_data (ignore)
+                yield record_data
+
     @property
     def rows(self):
         def lerp(a, b, t):
             return t * (b - a) + a
 
-        dataset = tf.data.TFRecordDataset(
-            self._dataset_spec["input_path"], compression_type=""
-        )
         scenario_index = 0
         if "scenario_index" in self._dataset_spec:
             scenario_index = self._dataset_spec["scenario_index"]
-        scenario_list = list(dataset.as_numpy_iterator())
+        dataset = Waymo.read_dataset(self._dataset_spec["input_path"])
+        scenario_list = list(dataset)
         scenario_data = scenario_list[scenario_index]
         scenario = scenario_pb2.Scenario()
         scenario.ParseFromString(bytearray(scenario_data))
