@@ -105,7 +105,7 @@ def test_non_collision(bullet_client: bc.BulletClient):
     assert b_chassis.bullet_id not in collided_bullet_ids
     assert (
         len(collisions) == 0
-        or len(collided_bullet_ids) == 1
+        or len(set(collided_bullet_ids)) == 1
         and GROUND_ID in set(collided_bullet_ids)
     )
 
@@ -163,7 +163,7 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
     """Test that the ackerman chassis size has not changed accidentally by packing it around itself
     with no forces and then check for collisions after a few steps."""
     bullet_client.setGravity(0, 0, 0)
-    separation_for_collision_error = 0.05
+    separation_for_collision_error = 0.0501
     original_vehicle_dimensions = VEHICLE_CONFIGS["passenger"].dimensions
 
     shared_heading = Heading(0)
@@ -223,7 +223,13 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
         bullet_client=bullet_client,
     )
     collisions = step_with_vehicle_commands(chassis, steps=10)
-    assert len(collisions) < 1
+    GROUND_ID = 0
+    collided_bullet_ids = [c.bullet_id for c in collisions]
+    assert (
+        len(collisions) < 1
+        or len(set(collided_bullet_ids)) == 1
+        and GROUND_ID in set(collided_bullet_ids)
+    )
 
 
 AGENT_1 = "Agent_007"
