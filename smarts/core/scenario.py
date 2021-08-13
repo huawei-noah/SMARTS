@@ -61,7 +61,7 @@ class Start:
         )
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Goal:
     def is_endless(self):
         return True
@@ -70,12 +70,12 @@ class Goal:
         return False
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class EndlessGoal(Goal):
     pass
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class PositionalGoal(Goal):
     position: Tuple[int, int]
     # target_heading: Heading
@@ -104,7 +104,7 @@ class PositionalGoal(Goal):
         return dist <= self.radius
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class TraverseGoal(Goal):
     """A TraverseGoal is satisfied whenever an Agent-driven vehicle
     successfully finishes traversing a non-closed (acyclical) map
