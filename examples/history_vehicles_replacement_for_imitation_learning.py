@@ -200,7 +200,7 @@ def main(
             logger.info(f"starting simulation loop...")
             observations = smarts.reset(scenario)
             while not all(done for done in dones.values()):
-                if dataset == "waymo" and smarts.elapsed_sim_time < last_time:
+                if dataset == "waymo" and smarts.elapsed_sim_time >= last_time:
                     break
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs)
