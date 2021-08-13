@@ -244,9 +244,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset",
         "-d",
-        help="The number vehicles to randomly replace with agents per episode.",
+        help="The dataset whose replay simulation will be performed.",
         type=str,
-        default="ngsim",
+        default="waymo",
     )
 
     parser.add_argument(
