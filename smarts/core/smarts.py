@@ -23,7 +23,6 @@ import math
 import os
 import warnings
 from collections import defaultdict
-from time import time
 from typing import List, Sequence
 
 import numpy
@@ -146,6 +145,7 @@ class SMARTS:
         self._trap_manager: TrapManager = None
 
         self._ground_bullet_id = None
+        self._ground_plane_scale = 0.5
 
     def step(self, agent_actions, time_delta_since_last_step: float = None):
         """Note the time_delta_since_last_step param is in (nominal) seconds."""
@@ -397,21 +397,31 @@ class SMARTS:
         )
 
         client.setGravity(0, 0, -9.8)
+        self._setup_pybullet_ground_plane(client)
 
+    def _setup_pybullet_ground_plane(self, client: bc.BulletClient):
         plane_path = self._scenario.plane_filepath
-
-        # 1e6 is the default value for plane length and width in smarts/models/plane.urdf.
-        mapbb = self._scenario.map_bounding_box
-        plane_scale = max(mapbb[0], mapbb[1]) / 1e6
         if not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
+
+        mapbb = self._scenario.map_bounding_box
+        if mapbb and not self._ground_bullet_id:
+            # 1e6 is the default value for plane length and width in smarts/models/plane.urdf.
+            DEFAULT_PLANE_DIM = 1e6
+            self._ground_plane_scale = 2.2 * max(mapbb[0], mapbb[1]) / DEFAULT_PLANE_DIM
+        else:
+            self._ground_plane_scale *= 2.0
+
+        if self._ground_bullet_id is not None:
+            client.removeBody(self._ground_bullet_id)
+            self._ground_bullet_id = None
 
         self._ground_bullet_id = client.loadURDF(
             plane_path,
             useFixedBase=True,
             basePosition=mapbb[2],
-            globalScaling=2.2 * plane_scale,
+            globalScaling=self._ground_plane_scale,
         )
 
     def teardown(self):
@@ -932,13 +942,20 @@ class SMARTS:
     def _process_collisions(self):
         self._vehicle_collisions = defaultdict(list)  # list of `Collision` instances
 
+        rescale_plane = False
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             # We are only concerned with vehicle-vehicle collisions
             collidee_bullet_ids = set(
                 [p.bullet_id for p in vehicle.chassis.contact_points]
             )
-            collidee_bullet_ids.discard(self._ground_bullet_id)
+            if self._ground_bullet_id in collidee_bullet_ids:
+                collidee_bullet_ids.remove(self._ground_bullet_id)
+            else:
+                self._log.debug(
+                    f"detected agent vehicle={vehicle_id} no longer in contact with ground"
+                )
+                rescale_plane = True
 
             if not collidee_bullet_ids:
                 continue
@@ -951,11 +968,17 @@ class SMARTS:
                 collision = Collision(collidee_id=actor_id)
                 self._vehicle_collisions[vehicle_id].append(collision)
 
+        if rescale_plane:
+            self._log.info("rescaling pybullet ground plane")
+            self._setup_pybullet_ground_plane(self._bullet_client)
+
     def _bullet_id_to_vehicle(self, bullet_id):
         for vehicle in self._vehicle_index.vehicles:
             if bullet_id == vehicle.chassis.bullet_id:
                 return vehicle
-        assert False, "Only collisions with agent or social vehicles is supported"
+        assert (
+            False
+        ), f"Only collisions with agent or social vehicles is supported, hit {bullet_id}"
 
     def _try_emit_envision_state(self, provider_state, obs, scores):
         if not self._envision:
