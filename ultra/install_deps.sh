@@ -85,17 +85,19 @@ function do_install_for_WSL {
     # We currently only support Ubuntu distribution (v18.04) 
     # for WSL (Windows subsystem for Linux). 
     echo "Installing in WSL"
-    echo "Installing sumo (used for traffic simulation and road network)"
-    sudo add-apt-repository ppa:sumo/stable
-    sudo apt-get update
-
-    sudo apt-get install -y \
-         libspatialindex-dev \
-         sumo sumo-tools sumo-doc \
-         build-essential cmake
     
     local UBUNTU_VERSION=$(lsb_release -rs)
     if [[ $UBUNTU_VERSION == "18.04" ]]; then
+    
+        echo "Installing sumo (used for traffic simulation and road network)"
+        sudo add-apt-repository ppa:sumo/stable
+        sudo apt-get update
+
+        sudo apt-get install -y \
+            libspatialindex-dev \
+            sumo sumo-tools sumo-doc \
+            build-essential cmake
+
         #only a problem for linux
         if ! check_python_version_gte_3_7; then
 
