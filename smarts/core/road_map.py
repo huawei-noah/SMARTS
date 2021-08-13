@@ -52,7 +52,7 @@ class RoadMap:
 
     @property
     def bounding_box(self) -> BoundingBox:
-        # maps are assumed to start at the origin
+        # may return None to indicate the map is unbounded.
         raise NotImplementedError()
 
     @property

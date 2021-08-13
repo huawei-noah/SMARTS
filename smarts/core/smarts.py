@@ -410,8 +410,10 @@ class SMARTS:
             # 1e6 is the default value for plane length and width in smarts/models/plane.urdf.
             DEFAULT_PLANE_DIM = 1e6
             self._ground_plane_scale = 2.2 * max(mapbb[0], mapbb[1]) / DEFAULT_PLANE_DIM
+            center = mapbb[2]
         else:
             self._ground_plane_scale *= 2.0
+            center = (0, 0, 0)
 
         if self._ground_bullet_id is not None:
             client.removeBody(self._ground_bullet_id)
@@ -420,7 +422,7 @@ class SMARTS:
         self._ground_bullet_id = client.loadURDF(
             plane_path,
             useFixedBase=True,
-            basePosition=mapbb[2],
+            basePosition=center,
             globalScaling=self._ground_plane_scale,
         )
 
@@ -951,7 +953,7 @@ class SMARTS:
             )
             if self._ground_bullet_id in collidee_bullet_ids:
                 collidee_bullet_ids.remove(self._ground_bullet_id)
-            else:
+            elif isinstance(vehicle.chassis, AckermannChassis):
                 self._log.debug(
                     f"detected agent vehicle={vehicle_id} no longer in contact with ground"
                 )

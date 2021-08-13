@@ -63,7 +63,7 @@ def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
     # `getContactPoints` does not pick up collisions well so we cast a fast box check on the physics
     overlapping_objects = bullet_client.getOverlappingObjects(min_, max_)
     if overlapping_objects is not None:
-        contact_objects = set(oo for oo, _ in overlapping_objects if oo != bullet_id)
+        contact_objects = set(oo for _, oo in overlapping_objects if oo != bullet_id)
 
     contact_points = []
     for contact_object in contact_objects:

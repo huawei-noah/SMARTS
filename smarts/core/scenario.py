@@ -700,4 +700,4 @@ class Scenario:
     @property
     def map_bounding_box(self) -> Tuple[float, float, Tuple[float, float, float]]:
         bbox = self._road_map.bounding_box
-        return (bbox.length, bbox.width, bbox.center)
+        return (bbox.length, bbox.width, bbox.center) if bbox else None
