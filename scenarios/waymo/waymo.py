@@ -260,7 +260,7 @@ def animate(path, scenario_index, screenshot=False, outdir=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="convert_waymo_map.py",
+        prog="waymo.py",
         description="Extract map data from Waymo dataset and convert to SUMO.",
     )
     parser.add_argument("file", help="TFRecord file")
