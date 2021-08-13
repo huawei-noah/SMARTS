@@ -169,8 +169,8 @@ def main(
                     agentid_to_vehid[agent_id] = veh_id
                     agent_interfaces[agent_id] = agent_spec.interface
                     if (
-                            not history_start_time
-                            or veh_start_times[veh_id] < history_start_time
+                        not history_start_time
+                        or veh_start_times[veh_id] < history_start_time
                     ):
                         history_start_time = veh_start_times[veh_id]
 
