@@ -833,10 +833,6 @@ class SMARTS:
         return self._scenario
 
     @property
-    def traffic_sim(self):
-        return self._traffic_sim
-
-    @property
     def timestep_sec(self) -> float:
         warnings.warn(
             "SMARTS timestep_sec property has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
@@ -863,10 +859,6 @@ class SMARTS:
     def last_dt(self) -> float:
         assert not self._last_dt or self._last_dt > 0
         return self._last_dt
-
-    @property
-    def road_stiffness(self):
-        return self._bullet_client.getDynamicsInfo(self._ground_bullet_id, -1)[9]
 
     def neighborhood_vehicles_around_vehicle(self, vehicle, radius=None):
         other_states = [v for v in self._vehicle_states if v.vehicle_id != vehicle.id]
