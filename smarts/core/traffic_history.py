@@ -117,7 +117,7 @@ class TrafficHistory:
         veh_type = self._query_val(int, query, params=(vehicle_id,))
         return self.decode_vehicle_type(veh_type)
 
-    def get_ego_vehicle_id(self) -> int:
+    def ego_vehicle_id(self) -> int:
         query = "SELECT id FROM Vehicle WHERE is_ego_vehicle = 1"
         ego_id = self._query_val(int, query)
         return ego_id
