@@ -1007,10 +1007,10 @@ class SMARTS:
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             map_spot = np.array(vehicle.pose.position)
             if map_min is None or all(map_spot <= map_min):
-                map_min = map_spot
+                map_min = np.array(map_spot)
                 rescale_plane = True
             if map_max is None or all(map_spot >= map_max):
-                map_max = map_spot
+                map_max = np.array(map_spot)
                 rescale_plane = True
         if rescale_plane:
             MIN_DIM = 500.0
