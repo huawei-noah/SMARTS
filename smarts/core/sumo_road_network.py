@@ -587,7 +587,7 @@ class SumoRoadNetwork(RoadMap):
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         assert max_to_gen == 1, "multiple route generation not yet supported for Sumo"
-        newroute = SumoRoadNetwork.Route()
+        newroute = SumoRoadNetwork.Route(self)
         result = [newroute]
 
         roads = [start_road]
@@ -672,13 +672,16 @@ class SumoRoadNetwork(RoadMap):
         return routes
 
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
-        route = SumoRoadNetwork.Route()
+        route = SumoRoadNetwork.Route(self)
         next_edges = self._graph.getEdges(False)
         while next_edges and len(route.roads) < max_route_len:
             cur_edge = random.choice(next_edges)
             route.add_road(self.road_by_id(cur_edge.getID()))
             next_edges = list(cur_edge.getOutgoing().keys())
         return route
+
+    def empty_route(self) -> RoadMap.Route:
+        return SumoRoadNetwork.Route(self)
 
     def waypoint_paths(
         self,
@@ -750,9 +753,10 @@ class SumoRoadNetwork(RoadMap):
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
 
     class Route(RoadMap.Route):
-        def __init__(self):
+        def __init__(self, road_map):
             self._roads = []
             self._length = 0
+            self._road_map = road_map
 
         @property
         def roads(self) -> List[RoadMap.Road]:
@@ -772,6 +776,34 @@ class SumoRoadNetwork(RoadMap):
                 road.buffered_shape(sum([lane._width for lane in road.lanes]))
                 for road in self.roads
             ]
+
+        @lru_cache(maxsize=8)
+        def distance_between(self, start: Point, end: Point) -> float:
+            route_roads = set(self._roads)
+            for cand_start_lane in self._road_map.nearest_lanes(start, 30.0, False):
+                if cand_start_lane.road in route_roads:
+                    break
+            else:
+                logging.warning("unable to find road on route near start point")
+                return None
+            start_road = cand_start_lane.road
+            for cand_end_lane in self._road_map.nearest_lanes(end, 30.0, False):
+                if cand_end_lane.road in route_roads:
+                    break
+            else:
+                logging.warning("unable to find road on route near end point")
+                return None
+            end_road = cand_end_lane.road
+            d = 0
+            for road in self._roads:
+                if d == 0 and road == start_road:
+                    start_offset = cand_start_lane.offset_along_lane(start)
+                    d += cand_start_lane.length - start_offset
+                elif road == end_road:
+                    d += cand_end_lane.offset_along_lane(end)
+                elif d > 0:
+                    d += road.length
+            return d
 
     def _compute_road_polygons(self):
         lane_to_poly = {}

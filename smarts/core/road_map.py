@@ -105,6 +105,9 @@ class RoadMap:
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
         raise NotImplementedError()
 
+    def empty_route(self) -> RoadMap.Route:
+        raise NotImplementedError()
+
     def waypoint_paths(
         self,
         pose: Pose,
@@ -378,10 +381,6 @@ class RoadMap:
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             """A sequence of polygons describing the shape of each road on the route"""
             return []
-
-        @property
-        def crossing_lanes(self) -> List[RoadMap.Lane]:
-            raise NotImplementedError()
 
         def distance_between(self, start: Point, end: Point) -> float:
             """ Distance along route between two points.  """

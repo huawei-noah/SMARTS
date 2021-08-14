@@ -303,7 +303,7 @@ class Plan:
         self._mission = mission or Mission.random_endless_mission(self._road_map)
 
         if not self._mission.has_fixed_route:
-            self._route = RoadMap.Route()
+            self._route = self._road_map.empty_route()
             return self._mission
 
         start_lane = self._road_map.nearest_lane(
