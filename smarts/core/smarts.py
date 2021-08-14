@@ -44,7 +44,7 @@ from .agent_manager import AgentManager
 from .bubble_manager import BubbleManager
 from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
-from .coordinates import BoundingBox
+from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
 from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
@@ -1001,8 +1001,8 @@ class SMARTS:
 
     def _check_ground_plane(self):
         rescale_plane = False
-        map_min = self._map_bb.min_pt if self._map_bb else None
-        map_max = self._map_bb.max_pt if self._map_bb else None
+        map_min = np.array(self._map_bb.min_pt) if self._map_bb else None
+        map_max = np.array(self._map_bb.max_pt) if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             map_spot = np.array(vehicle.pose.position)
@@ -1013,9 +1013,16 @@ class SMARTS:
                 map_max = map_spot
                 rescale_plane = True
         if rescale_plane:
-            self._map_bb = BoundingBox(map_min, map_max)
+            MIN_DIM = 500.0
+            if map_max[0] - map_min[0] < MIN_DIM:
+                map_min[0] -= MIN_DIM
+                map_max[0] += MIN_DIM
+            if map_max[1] - map_min[1] < MIN_DIM:
+                map_min[1] -= MIN_DIM
+                map_max[1] += MIN_DIM
+            self._map_bb = BoundingBox(Point(*map_min), Point(*map_max))
             self._log.info(
-                f"rescaling pybullet ground plane to at least {self._map_min} and {self._map_max}"
+                f"rescaling pybullet ground plane to at least {map_min} and {map_max}"
             )
             self._setup_pybullet_ground_plane(self._bullet_client)
 
