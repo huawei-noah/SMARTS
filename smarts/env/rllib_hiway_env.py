@@ -21,7 +21,8 @@ import warnings
 
 import numpy as np
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
-
+import logging
+from smarts.core.utils.logging import timeit
 import smarts
 from envision.client import Client as Envision
 from smarts.core.scenario import Scenario
@@ -104,6 +105,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         )
         self._smarts = None  # Created on env.setup()
         self._dones_registered = 0
+        self._log = logging.getLogger(self.__class__.__name__)
 
     def step(self, agent_actions):
         agent_actions = {
@@ -111,7 +113,9 @@ class RLlibHiWayEnv(MultiAgentEnv):
             for agent_id, action in agent_actions.items()
         }
 
-        observations, rewards, dones, extras = self._smarts.step(agent_actions)
+        observations, rewards, dones, extras = None, None, None, None
+        with timeit("SMARTS simulation/scenario step", self._log):
+            observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         # Agent termination: RLlib expects that we return a "last observation"
         # on the step that an agent transitions to "done". All subsequent calls

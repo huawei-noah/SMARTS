@@ -35,6 +35,7 @@ from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.vehicle import RendererException
 
 
 @pytest.fixture
@@ -75,9 +76,12 @@ def test_smarts_doesnt_leak_tasks_after_reset(smarts, scenarios):
 
     See #237 for details
     """
-    num_tasks_before_reset = len(
-        smarts.renderer._showbase_instance.taskMgr.mgr.getTasks()
-    )
+    try:
+        num_tasks_before_reset = len(
+            smarts.renderer._showbase_instance.taskMgr.mgr.getTasks()
+        )
+    except Exception as e:
+        raise RendererException.required_to("test smarts_doesnt_leak_tasks_after_reset")
 
     scenario = next(scenarios)
     smarts.reset(scenario)
@@ -85,7 +89,12 @@ def test_smarts_doesnt_leak_tasks_after_reset(smarts, scenarios):
     for _ in range(10):
         smarts.step({})
 
-    num_tasks_after_reset = len(
-        smarts.renderer._showbase_instance.taskMgr.mgr.getTasks()
-    )
+    try:
+        num_tasks_after_reset = len(
+            smarts.renderer._showbase_instance.taskMgr.mgr.getTasks()
+        )
+
+    except Exception as e:
+        raise RendererException.required_to("test smarts_doesnt_leak_tasks_after_reset")
+
     assert num_tasks_after_reset == num_tasks_before_reset

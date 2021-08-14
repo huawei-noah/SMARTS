@@ -59,11 +59,15 @@ with open(controller_filepath, "r") as controller_file:
 def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
     contact_objects = set()
 
-    min_, max_ = bullet_client.getAABB(bullet_id, link_index)
     # `getContactPoints` does not pick up collisions well so we cast a fast box check on the physics
+    min_, max_ = bullet_client.getAABB(bullet_id, link_index)
+    # note that getAABB returns a box around the link_index link only,
+    # which means it's offset from the ground (min_ has a positive z)
+    # if link_index=0 (the chassis link) is used.
     overlapping_objects = bullet_client.getOverlappingObjects(min_, max_)
+    # the pairs returned by getOverlappingObjects() appear to be in the form (body_id, link_idx)
     if overlapping_objects is not None:
-        contact_objects = set(oo for _, oo in overlapping_objects if oo != bullet_id)
+        contact_objects = set(oo for oo, _ in overlapping_objects if oo != bullet_id)
 
     contact_points = []
     for contact_object in contact_objects:
@@ -528,7 +532,7 @@ class AckermannChassis(Chassis):
 
     @property
     def contact_points(self):
-        ## 0 is the chassis link index
+        ## 0 is the chassis link index (which means ground won't be included)
         contact_points = _query_bullet_contact_points(self._client, self._bullet_id, 0)
         return [
             ContactPoint(bullet_id=p[2], contact_point=p[5], contact_point_other=p[6])
