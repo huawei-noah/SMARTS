@@ -1001,15 +1001,15 @@ class SMARTS:
 
     def _check_ground_plane(self):
         rescale_plane = False
-        map_min = self._map_bb.min_pt
-        map_max = self._map_bb.max_pt
+        map_min = self._map_bb.min_pt if self._map_bb else None
+        map_max = self._map_bb.max_pt if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             map_spot = np.array(vehicle.pose.position)
-            if all(map_spot <= map_min):
+            if map_min is None or all(map_spot <= map_min):
                 map_min = map_spot
                 rescale_plane = True
-            if all(map_spot >= map_max):
+            if map_max is None or all(map_spot >= map_max):
                 map_max = map_spot
                 rescale_plane = True
         if rescale_plane:
