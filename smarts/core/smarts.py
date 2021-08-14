@@ -25,7 +25,7 @@ import warnings
 from collections import defaultdict
 from typing import List, Sequence
 
-import numpy
+import numpy as np
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
@@ -44,6 +44,7 @@ from .agent_manager import AgentManager
 from .bubble_manager import BubbleManager
 from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
+from .coordinates import BoundingBox
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
 from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
@@ -150,7 +151,7 @@ class SMARTS:
         self._trap_manager: TrapManager = None
 
         self._ground_bullet_id = None
-        self._ground_plane_scale = 0.5
+        self._map_bb = None
 
     def step(self, agent_actions, time_delta_since_last_step: float = None):
         """Note the time_delta_since_last_step param is in (nominal) seconds."""
@@ -424,15 +425,21 @@ class SMARTS:
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
 
-        mapbb = self._scenario.map_bounding_box
-        if mapbb and not self._ground_bullet_id:
+        if not self._map_bb:
+            self._map_bb = self.road_map.bounding_box
+
+        if self._map_bb:
             # 1e6 is the default value for plane length and width in smarts/models/plane.urdf.
             DEFAULT_PLANE_DIM = 1e6
-            self._ground_plane_scale = 2.2 * max(mapbb[0], mapbb[1]) / DEFAULT_PLANE_DIM
-            center = mapbb[2]
+            ground_plane_scale = (
+                2.2 * max(self._map_bb.length, self._map_bb.width) / DEFAULT_PLANE_DIM
+            )
+            ground_plane_center = self._map_bb.center
         else:
-            self._ground_plane_scale *= 2.0
-            center = (0, 0, 0)
+            # first step on undefined map, just use a big scale (1e6).
+            # it should get updated as soon as vehicles are added...
+            ground_plane_scale = 1.0
+            ground_plane_center = (0, 0, 0)
 
         if self._ground_bullet_id is not None:
             client.removeBody(self._ground_bullet_id)
@@ -441,8 +448,8 @@ class SMARTS:
         self._ground_bullet_id = client.loadURDF(
             plane_path,
             useFixedBase=True,
-            basePosition=center,
-            globalScaling=self._ground_plane_scale,
+            basePosition=ground_plane_center,
+            globalScaling=ground_plane_scale,
         )
 
     def teardown(self):
@@ -667,6 +674,8 @@ class SMARTS:
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:
         self._perform_agent_actions(agent_actions)
+
+        self._check_ground_plane()
 
         self._step_pybullet()
 
@@ -902,7 +911,7 @@ class SMARTS:
         distances = euclidean_distances(other_positions, [vehicle.position]).reshape(
             -1,
         )
-        indices = numpy.argwhere(distances <= radius).flatten()
+        indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 
     def vehicle_did_collide(self, vehicle_id):
@@ -962,7 +971,6 @@ class SMARTS:
     def _process_collisions(self):
         self._vehicle_collisions = defaultdict(list)  # list of `Collision` instances
 
-        rescale_plane = False
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             # We are only concerned with vehicle-vehicle collisions
@@ -971,11 +979,6 @@ class SMARTS:
             )
             if self._ground_bullet_id in collidee_bullet_ids:
                 collidee_bullet_ids.remove(self._ground_bullet_id)
-            elif isinstance(vehicle.chassis, AckermannChassis):
-                self._log.debug(
-                    f"detected agent vehicle={vehicle_id} no longer in contact with ground"
-                )
-                rescale_plane = True
 
             if not collidee_bullet_ids:
                 continue
@@ -988,10 +991,6 @@ class SMARTS:
                 collision = Collision(collidee_id=actor_id)
                 self._vehicle_collisions[vehicle_id].append(collision)
 
-        if rescale_plane:
-            self._log.info("rescaling pybullet ground plane")
-            self._setup_pybullet_ground_plane(self._bullet_client)
-
     def _bullet_id_to_vehicle(self, bullet_id):
         for vehicle in self._vehicle_index.vehicles:
             if bullet_id == vehicle.chassis.bullet_id:
@@ -999,6 +998,26 @@ class SMARTS:
         assert (
             False
         ), f"Only collisions with agent or social vehicles is supported, hit {bullet_id}"
+
+    def _check_ground_plane(self):
+        rescale_plane = False
+        map_min = self._map_bb.min_pt
+        map_max = self._map_bb.max_pt
+        for vehicle_id in self._vehicle_index.agent_vehicle_ids():
+            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+            map_spot = np.array(vehicle.pose.position)
+            if all(map_spot <= map_min):
+                map_min = map_spot
+                rescale_plane = True
+            if all(map_spot >= map_max):
+                map_max = map_spot
+                rescale_plane = True
+        if rescale_plane:
+            self._map_bb = BoundingBox(map_min, map_max)
+            self._log.info(
+                f"rescaling pybullet ground plane to at least {self._map_min} and {self._map_max}"
+            )
+            self._setup_pybullet_ground_plane(self._bullet_client)
 
     def _try_emit_envision_state(self, provider_state, obs, scores):
         if not self._envision:
