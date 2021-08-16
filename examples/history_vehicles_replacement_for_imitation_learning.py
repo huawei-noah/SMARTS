@@ -143,7 +143,7 @@ def main(
         dones = {}
         ego_missions = {}
 
-        dataset_source = scenario._traffic_history.dataset_source
+        dataset_source = scenario.get_traffic_history_source()
         if dataset_source == "Waymo":
             # For Waymo, we only hijack the vehicle that was autonomous in the dataset
             veh_id = str(scenario.get_traffic_history_ego_id())

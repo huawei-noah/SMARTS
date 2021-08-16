@@ -591,7 +591,7 @@ class Scenario:
         return vehicle_missions
 
     def get_traffic_history_source(self):
-        return self._traffic_history.dataset_source()
+        return self._traffic_history.dataset_source
 
     def get_traffic_history_ego_id(self):
         return self._traffic_history.ego_vehicle_id()
