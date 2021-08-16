@@ -143,13 +143,18 @@ class _TrajectoryDataset:
             vid = int(self.column_val_in_row(row, "vehicle_id"))
             if vid not in vehicle_ids:
                 ivcur = dbconxn.cursor()
+
+                # These are not available in all datasets
+                height = self.column_val_in_row(row, "height")
+                is_ego = self.column_val_in_row(row, "is_ego_vehicle")
+
                 veh_args = (
                     vid,
                     int(self.column_val_in_row(row, "type")),
                     float(self.column_val_in_row(row, "length")) * self.scale,
                     float(self.column_val_in_row(row, "width")) * self.scale,
-                    float(self.column_val_in_row(row, "height")) * self.scale,
-                    int(self.column_val_in_row(row, "is_ego_vehicle")),
+                    float(height) * self.scale if height else None,
+                    int(is_ego) if is_ego else 0,
                 )
                 ivcur.execute(insert_vehicle_sql, veh_args)
                 ivcur.close()
