@@ -80,6 +80,11 @@ class TrafficHistory:
             cur.close()
 
     @cached_property
+    def dataset_source(self) -> str:
+        query = "SELECT value FROM Spec where key='source'"
+        return self._query_val(str, query)
+
+    @cached_property
     def lane_width(self) -> float:
         query = "SELECT value FROM Spec where key='map_net.lane_width'"
         return self._query_val(float, query)
