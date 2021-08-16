@@ -94,6 +94,12 @@ class TrafficHistory:
         query = "SELECT value FROM Spec where key='speed_limit_mps'"
         return self._query_val(float, query)
 
+    @cached_property
+    def ego_vehicle_id(self) -> int:
+        query = "SELECT id FROM Vehicle WHERE is_ego_vehicle = 1"
+        ego_id = self._query_val(int, query)
+        return ego_id
+
     @lru_cache(maxsize=32)
     def vehicle_final_exit_time(self, vehicle_id: str) -> float:
         query = "SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id = ?"
@@ -121,11 +127,6 @@ class TrafficHistory:
         query = "SELECT type FROM Vehicle WHERE id = ?"
         veh_type = self._query_val(int, query, params=(vehicle_id,))
         return self.decode_vehicle_type(veh_type)
-
-    def ego_vehicle_id(self) -> int:
-        query = "SELECT id FROM Vehicle WHERE is_ego_vehicle = 1"
-        ego_id = self._query_val(int, query)
-        return ego_id
 
     def vehicle_size(self, vehicle_id: str) -> Tuple[float, float, float]:
         # do import here to break circular dependency chain

@@ -146,10 +146,13 @@ def main(
             dones = {}
             ego_missions = {}
 
-            dataset_source = scenario.get_traffic_history_source()
+            dataset_source = scenario.traffic_history.dataset_source
             if dataset_source == "Waymo":
                 # For Waymo, we only hijack the vehicle that was autonomous in the dataset
-                veh_id = str(scenario.get_traffic_history_ego_id())
+                veh_id = str(scenario.traffic_history.ego_vehicle_id)
+                agent_spec.interface.max_episode_steps = (
+                    scenario.traffic_history.vehicle_final_exit_time(veh_id) / 0.1
+                )
                 logger.info(f"chose vehicles: {veh_id}")
                 agent_id = f"ego-agent-IL-{veh_id}"
                 agentid_to_vehid[agent_id] = veh_id
