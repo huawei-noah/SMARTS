@@ -38,24 +38,6 @@ def _record_data(
 
 
 def main(scenarios: Sequence[str], headless: bool, seed: int):
-    def get_cycle_length(pool):
-        """Get the properties length of a cycle, without advancing it"""
-
-        # Get the current state
-        partial = []
-        n = 0
-        g = next(pool)
-        while g not in partial:
-            partial.append(g)
-            g = next(pool)
-            n += 1
-
-        # Cycle until the "current" (now previous) state
-        for i in range(n - 1):
-            print(g)
-            g = next(pool)
-        return n
-
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
         agent_builder=None,
@@ -68,9 +50,7 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
         envision=None if headless else Envision(),
     )
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
-    scenarios_iterator_len = get_cycle_length(scenarios_iterator)
-    for _ in range(scenarios_iterator_len):
-        scenario = next(scenarios_iterator)
+    for scenario in [next(scenarios_iterator)]:
         obs = smarts.reset(scenario)
 
         collected_data = {}
