@@ -100,9 +100,10 @@ def main(
     assert traffic_history_provider
 
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
-    for episode in range(episodes):
-        logger.info(f"starting episode {episode}...")
-
+    total_scenario_variations = Scenario.discover_traffic_history_scenarios_count(
+        scenarios
+    )
+    for _ in range(total_scenario_variations):
         scenario = next(scenarios_iterator)
         logger.debug("working on scenario {}".format(scenario.name))
 
@@ -132,107 +133,109 @@ def main(
             agent_params=smarts.fixed_timestep_sec,
         )
 
-        # Pick k vehicle missions to hijack with agent
-        # and figure out which one starts the earliest
-        agentid_to_vehid = {}
-        agent_interfaces = {}
+        for episode in range(episodes):
+            logger.info(f"starting episode {episode}...")
+            # Pick k vehicle missions to hijack with agent
+            # and figure out which one starts the earliest
+            agentid_to_vehid = {}
+            agent_interfaces = {}
 
-        # Build the Agents for the to-be-hijacked vehicles
-        # and gather their missions
-        agents = {}
-        dones = {}
-        ego_missions = {}
+            # Build the Agents for the to-be-hijacked vehicles
+            # and gather their missions
+            agents = {}
+            dones = {}
+            ego_missions = {}
 
-        dataset_source = scenario.get_traffic_history_source()
-        if dataset_source == "Waymo":
-            # For Waymo, we only hijack the vehicle that was autonomous in the dataset
-            veh_id = str(scenario.get_traffic_history_ego_id())
-            logger.info(f"chose vehicles: {veh_id}")
-            agent_id = f"ego-agent-IL-{veh_id}"
-            agentid_to_vehid[agent_id] = veh_id
-            agent_interfaces[agent_id] = agent_spec.interface
-            history_start_time = veh_start_times[veh_id]
-        else:
-            # For other datasets, hijack a sample of the recorded vehicles
-            history_start_time = None
-            sample = scenario.traffic_history.random_overlapping_sample(
-                veh_start_times, k
-            )
-            if len(sample) < k:
-                logger.warning(
-                    f"Unable to choose {k} overlapping missions.  allowing non-overlapping."
-                )
-                leftover = set(veh_start_times.keys()) - sample
-                sample.update(set(random.sample(leftover, k - len(sample))))
-            logger.info(f"chose vehicles: {sample}")
-
-            for veh_id in sample:
+            dataset_source = scenario.get_traffic_history_source()
+            if dataset_source == "Waymo":
+                # For Waymo, we only hijack the vehicle that was autonomous in the dataset
+                veh_id = str(scenario.get_traffic_history_ego_id())
+                logger.info(f"chose vehicles: {veh_id}")
                 agent_id = f"ego-agent-IL-{veh_id}"
                 agentid_to_vehid[agent_id] = veh_id
                 agent_interfaces[agent_id] = agent_spec.interface
-                if (
-                    not history_start_time
-                    or veh_start_times[veh_id] < history_start_time
-                ):
-                    history_start_time = veh_start_times[veh_id]
-
-        for agent_id in agent_interfaces.keys():
-            agent = agent_spec.build_agent()
-            veh_id = agentid_to_vehid[agent_id]
-            agent.load_data_for_vehicle(veh_id, scenario, history_start_time)
-            agents[agent_id] = agent
-            dones[agent_id] = False
-            mission = veh_missions[veh_id]
-            ego_missions[agent_id] = replace(
-                mission, start_time=mission.start_time - history_start_time
-            )
-
-        # Tell the traffic history provider to start traffic
-        # at the point when the earliest agent enters...
-        traffic_history_provider.start_time = history_start_time
-        # and all the other agents to offset their missions by this much too
-        scenario.set_ego_missions(ego_missions)
-        logger.info(f"offsetting sim_time by: {history_start_time}")
-
-        # Take control of vehicles with corresponding agent_ids
-        smarts.switch_ego_agents(agent_interfaces)
-
-        # Finally start the simulation loop...
-        logger.info(f"starting simulation loop...")
-        observations = smarts.reset(scenario)
-        while not all(done for done in dones.values()):
-            actions = {
-                agent_id: agents[agent_id].act(agent_obs)
-                for agent_id, agent_obs in observations.items()
-            }
-            logger.debug(
-                "stepping @ sim_time={} for agents={}...".format(
-                    smarts.elapsed_sim_time, list(observations.keys())
+                history_start_time = veh_start_times[veh_id]
+            else:
+                # For other datasets, hijack a sample of the recorded vehicles
+                history_start_time = None
+                sample = scenario.traffic_history.random_overlapping_sample(
+                    veh_start_times, k
                 )
-            )
-            observations, rewards, dones, infos = smarts.step(actions)
+                if len(sample) < k:
+                    logger.warning(
+                        f"Unable to choose {k} overlapping missions.  allowing non-overlapping."
+                    )
+                    leftover = set(veh_start_times.keys()) - sample
+                    sample.update(set(random.sample(leftover, k - len(sample))))
+                logger.info(f"chose vehicles: {sample}")
 
-            for agent_id in agents.keys():
-                if dones.get(agent_id, False):
-                    if not observations[agent_id].events.reached_goal:
-                        logger.warning(
-                            "agent_id={} exited @ sim_time={}".format(
-                                agent_id, smarts.elapsed_sim_time
+                for veh_id in sample:
+                    agent_id = f"ego-agent-IL-{veh_id}"
+                    agentid_to_vehid[agent_id] = veh_id
+                    agent_interfaces[agent_id] = agent_spec.interface
+                    if (
+                        not history_start_time
+                        or veh_start_times[veh_id] < history_start_time
+                    ):
+                        history_start_time = veh_start_times[veh_id]
+
+            for agent_id in agent_interfaces.keys():
+                agent = agent_spec.build_agent()
+                veh_id = agentid_to_vehid[agent_id]
+                agent.load_data_for_vehicle(veh_id, scenario, history_start_time)
+                agents[agent_id] = agent
+                dones[agent_id] = False
+                mission = veh_missions[veh_id]
+                ego_missions[agent_id] = replace(
+                    mission, start_time=mission.start_time - history_start_time
+                )
+
+            # Tell the traffic history provider to start traffic
+            # at the point when the earliest agent enters...
+            traffic_history_provider.start_time = history_start_time
+            # and all the other agents to offset their missions by this much too
+            scenario.set_ego_missions(ego_missions)
+            logger.info(f"offsetting sim_time by: {history_start_time}")
+
+            # Take control of vehicles with corresponding agent_ids
+            smarts.switch_ego_agents(agent_interfaces)
+
+            # Finally start the simulation loop...
+            logger.info(f"starting simulation loop...")
+            observations = smarts.reset(scenario)
+            while not all(done for done in dones.values()):
+                actions = {
+                    agent_id: agents[agent_id].act(agent_obs)
+                    for agent_id, agent_obs in observations.items()
+                }
+                logger.debug(
+                    "stepping @ sim_time={} for agents={}...".format(
+                        smarts.elapsed_sim_time, list(observations.keys())
+                    )
+                )
+                observations, rewards, dones, infos = smarts.step(actions)
+
+                for agent_id in agents.keys():
+                    if dones.get(agent_id, False):
+                        if not observations[agent_id].events.reached_goal:
+                            logger.warning(
+                                "agent_id={} exited @ sim_time={}".format(
+                                    agent_id, smarts.elapsed_sim_time
+                                )
                             )
-                        )
-                        logger.warning(
-                            "   ... with {}".format(observations[agent_id].events)
-                        )
-                    else:
-                        logger.info(
-                            "agent_id={} reached goal @ sim_time={}".format(
-                                agent_id, smarts.elapsed_sim_time
+                            logger.warning(
+                                "   ... with {}".format(observations[agent_id].events)
                             )
-                        )
-                        logger.debug(
-                            "   ... with {}".format(observations[agent_id].events)
-                        )
-                    del observations[agent_id]
+                        else:
+                            logger.info(
+                                "agent_id={} reached goal @ sim_time={}".format(
+                                    agent_id, smarts.elapsed_sim_time
+                                )
+                            )
+                            logger.debug(
+                                "   ... with {}".format(observations[agent_id].events)
+                            )
+                        del observations[agent_id]
 
     smarts.destroy()
 
