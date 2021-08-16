@@ -148,8 +148,12 @@ class _TrajectoryDataset:
                     int(self.column_val_in_row(row, "type")),
                     float(self.column_val_in_row(row, "length")) * self.scale,
                     float(self.column_val_in_row(row, "width")) * self.scale,
-                    float(self.column_val_in_row(row, "height")) * self.scale,
-                    int(self.column_val_in_row(row, "is_ego_vehicle")),
+                    None
+                    if self.column_val_in_row(row, "height") is None
+                    else float(self.column_val_in_row(row, "height")) * self.scale,
+                    0
+                    if self.column_val_in_row(row, "is_ego_vehicle") is None
+                    else int(self.column_val_in_row(row, "is_ego_vehicle")),
                 )
                 ivcur.execute(insert_vehicle_sql, veh_args)
                 ivcur.close()
