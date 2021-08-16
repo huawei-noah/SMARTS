@@ -34,10 +34,10 @@ class BaselineAgentSpec(AgentSpec):
         self,
         policy_class,
         # action_type,
+        max_episode_steps=1200,
         policy_params=None,
         checkpoint_dir=None,
         task=None,
-        max_episode_steps=1200,
         experiment_dir=None,
     ):
         pass
@@ -46,10 +46,10 @@ class BaselineAgentSpec(AgentSpec):
         self,
         policy_class,
         # action_type,
+        max_episode_steps=1200,
         policy_params=None,
         checkpoint_dir=None,
         # task=None,
-        max_episode_steps=1200,
         experiment_dir=None,
         agent_id="",
     ):
@@ -73,6 +73,10 @@ class BaselineAgentSpec(AgentSpec):
                     info_adapter=spec.info_adapter,
                 )
 
+                # Instead of using the max_episode_steps value from the
+                # agent_spec.interface in the agent_metadata.pkl, use the
+                # parsed max_episode_steps value
+                new_spec.interface.max_episode_steps = max_episode_steps
                 spec = new_spec
         else:
             # If policy_params is None, then there must be a params.yaml file in the

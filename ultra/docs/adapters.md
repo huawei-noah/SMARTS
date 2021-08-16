@@ -91,7 +91,7 @@ info = {
         "dist_center": ...,  # A float, the distance in meters from the center of the lane of the closest waypoint.
         "start": ...,  # A smarts.core.scenario.Start, the start of the ego evhicle's mission.
         "goal": ...,  # A smarts.core.scenario.PositionalGoal, the goal of the ego vehicle's mission.
-        "closest_wp": ...,  # A smarts.core.waypoints.Waypoint, the closest waypoint to the ego vehicle.
+        "closest_wp": ...,  # A smarts.core.mission_planner.Waypoint, the closest waypoint to the ego vehicle.
         "events": ...,  # A smarts.core.events.Events, the events of the ego vehicle.
         "ego_num_violations": ...,  # An int, the number of violations committed by the ego vehicle (see ultra.utils.common.ego_social_safety).
         "social_num_violations": ...,  # An int, the number of violations committed by social vehicles (see ultra.utils.common.ego_social_safety).
@@ -205,28 +205,34 @@ waypoint's lane and the ego vehicle's position, divided by half of that lane's w
 - `relative_goal_position_x` is the x component of the vector obtained by calculating
 the goal's `(x, y)` position minus the ego vehicle's `(x, y)` position, and rotating
 that difference by the negative of the ego vehicle's heading. All in all, this keeps
-this component completely relative from the ego vehicle's perspective.
+this component completely relative from the ego vehicle's perspective. See Appendix B
+for more details.
 - `relative_goal_position_y` is the y component of the vector obtained by calculating
 the goal's `(x, y)` position minus the ego vehicle's `(x, y)` position, and rotating
 that difference by the negative of the ego vehicle's heading. All in all, this keeps
-this component completely relative from the ego vehicle's perspective.
+this component completely relative from the ego vehicle's perspective. See Appendix B
+for more details.
 - `relative_waypoint_position_x` is the x component of the vector obtained by
 calculating the waypoint's `(x, y)` position minus the ego vehicle's `(x, y)` position,
 and rotating that difference by the negative of the ego vehicle's heading. All in all,
-this keeps the component completely relative from the ego vehicle's perspective.
+this keeps the component completely relative from the ego vehicle's perspective. See
+Appendix B for more details.
 - `relative_waypoint_position_y` is the y component of the vector obtained by
 calculating the waypoint's `(x, y)` position minus the ego vehicle's `(x, y)` position,
 and rotating that difference by the negative of the ego vehicle's heading. All in all,
-this keeps the component completely relative from the ego vehicle's perspective.
+this keeps the component completely relative from the ego vehicle's perspective. See
+Appendix B for more details.
 - `road_speed` is the speed limit of the closest waypoint.
 - `relative_vehicle_position_x` is the x component of vector obtained by calculating the
 social vehicle's `(x, y)` position minus the ego vehicle's `(x, y)` position, and
 rotating that difference by the negative of the ego vehicle's heading. All in all, this
-keeps this component completely relative from the ego vehicle's perspective.
+keeps this component completely relative from the ego vehicle's perspective. See
+Appendix B for more details.
 - `relative_vehicle_position_y` is the y component of vector obtained by calculating the
 social vehicle's `(x, y)` position minus the ego vehicle's `(x, y)` position, and
 rotating that difference by the negative of the ego vehicle's heading. All in all, this
-keeps this component completely relative from the ego vehicle's perspective.
+keeps this component completely relative from the ego vehicle's perspective. See
+Appendix B for more details.
 - `heading_difference` is the heading of the social vehicle minus the heading of the ego
 vehicle.
 - `social_vehicle_speed` is the speed of the social vehicle in meters per second.
@@ -277,27 +283,24 @@ custom_reward = (
     ego_speed_reward +
     ego_distance_from_center_reward +
     ego_angle_error_reward +
-    ego_reached_goal_reward +
     ego_step_reward +
     environment_reward
 )
 ```
 
 Where:
-- `ego_goal_reward` is `0.0`
+- `ego_goal_reward` is `1.0` if the ego vehicle has reached its goal, else `0.0`
 - `ego_collison_reward` is `-1.0` if the ego vehicle has collided, else `0.0`.
 - `ego_off_road_reward` is `-1.0` if the ego vehicle is off the road, else `0.0`.
 - `ego_off_route_reward` is `-1.0` if the ego vehicle is off its route, else `0.0`.
-- `ego_wrong_way_reward` is `-0.02` if the ego vehicle is facing the wrong way, else
+- `ego_wrong_way_reward` is `-1.0` if the ego vehicle is facing the wrong way, else
 `0.0`.
-- `ego_speed_reward` is `0.01 * (speed_limit - ego_vehicle_speed)` if the ego vehicle is
-going faster than the speed limit, else `0.0`.
-- `ego_distance_from_center_reward` is `-0.002 * min(1, abs(ego_distance_from_center))`.
-- `ego_angle_error_reward` is `-0.0005 * max(0, cos(angle_error))`.
-- `ego_reached_goal_reward` is `1.0` if the ego vehicle has reached its goal, else
-`0.0`.
+- `ego_speed_reward` is `-0.01` if `speed_fraction < 0.01`, or it is `-0.1` if
+`speed_fraction >= 1`.
+- `ego_distance_from_center_reward` is `-0.005 * min(1, abs(ego_distance_from_center))`.
+- `ego_angle_error_reward` is `0.005 * max(0, cos(angle_error))`.
 - `ego_step_reward` is
-`0.02 * min(max(0, ego_vehicle_speed / speed_limit), 1) * cos(angle_error)`.
+`0.02 * min(speed_fraction, 1) * cos(angle_error)`.
 - `environment_reward` is `the_environment_reward / 100`.
 
 And `speed_limit` is the speed limit of the nearest waypoint to the ego vehicle in
@@ -305,5 +308,26 @@ meters per second; the `ego_vehicle_speed` is the speed of the ego vehicle in me
 second; the `angle_error` is the closest waypoint's heading minus the ego vehicle's
 heading; the `ego_distance_from_center` is the lateral distance between the center
 of the closest waypoint's lane and the ego vehicle's position, divided by half of that
-lane's width; and `the_environment_reward` is the raw reward received from the SMARTS
-simulator.
+lane's width; `the_environment_reward` is the raw reward received from the SMARTS
+simulator; and `speed_fraction` is `max(0, ego_vehicle_speed / speed_limit)`.
+
+## Appendix
+
+### A&emsp;The SMARTS/ULTRA Coordinate System
+
+<p align="center">
+  <img src="_static/smarts_coordinate_system.png" width="615" height="428">
+</p>
+
+### B&emsp;Relative Positions to the Ego Vehicle
+
+<p align="center">
+  <img src="_static/relative_position_diagram.png" width="935" height="205">
+</p>
+
+Suppose the ego vehicle is at position _(x<sub>e</sub>, y<sub>e</sub>)_ with heading
+θ and we want to calculate the position of a nearby social vehicle (or waypoint)
+relative to the ego vehicle. Let this nearby social vehicle (or waypoint) be at position
+_(x<sub>s</sub>, y<sub>s</sub>)_ so that their difference in position is
+_**d** = (x<sub>s</sub> - x<sub>e</sub>, y<sub>s</sub> - y<sub>e</sub>)_. In order to
+align this difference to the ego's coordinate system, _**d**_ is rotated by -θ.

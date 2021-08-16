@@ -86,8 +86,10 @@ def adapt(observation: Observation, reward: float) -> float:
     lane_width = closest_wp.lane_width * 0.5
     ego_dist_center = signed_dist_from_center / lane_width
 
+    speed_fraction = max(0, ego_observation.speed / closest_wp.speed_limit)
+
     # NOTE: This requires the NeighborhoodVehicles interface.
-    # # number of violations
+    # number of violations
     # (ego_num_violations, social_num_violations,) = ego_social_safety(
     #     observation,
     #     d_min_ego=1.0,
@@ -97,45 +99,48 @@ def adapt(observation: Observation, reward: float) -> float:
     #     ignore_vehicle_behind=True,
     # )
 
-    speed_fraction = max(0, ego_observation.speed / closest_wp.speed_limit)
-    ego_step_reward = 0.02 * min(speed_fraction, 1) * np.cos(angle_error)
-    ego_speed_reward = min(
-        0, (closest_wp.speed_limit - ego_observation.speed) * 0.01
-    )  # m/s
-    ego_collision = len(ego_events.collisions) > 0
-    ego_collision_reward = -1.0 if ego_collision else 0.0
+    # Environment reward from SMARTS
+    env_reward /= 100
+
+    # Termination reward
+    ego_reached_goal_reward = 1.0 if ego_events.reached_goal else 0.0
+
+    # Termination reward
+    ego_collision_reward = -1.0 if len(ego_events.collisions) > 0 else 0.0
     ego_off_road_reward = -1.0 if ego_events.off_road else 0.0
     ego_off_route_reward = -1.0 if ego_events.off_route else 0.0
-    ego_wrong_way = -0.02 if ego_events.wrong_way else 0.0
-    ego_goal_reward = 0.0
-    ego_time_out = 0.0
-    ego_dist_center_reward = -0.002 * min(1, abs(ego_dist_center))
-    ego_angle_error_reward = -0.005 * max(0, np.cos(angle_error))
-    ego_reached_goal = 1.0 if ego_events.reached_goal else 0.0
+    ego_wrong_way_reward = -1.0 if ego_events.wrong_way else 0.0
+
+    # Intermediate rewards/penalties per step
+    ego_step_reward = 0.02 * min(speed_fraction, 1) * np.cos(angle_error)
+    ego_dist_center_reward = -0.005 * min(1, abs(ego_dist_center))
+    ego_angle_error_reward = 0.005 * max(0, np.cos(angle_error))
+    ego_linear_jerk = -0.0001 * linear_jerk
+    ego_angular_jerk = -0.0001 * angular_jerk * math.cos(angle_error)
+
+    # Speed reward
+    if speed_fraction < 0.01:  # Speed below threshold
+        ego_speed_reward = -0.01
+    elif speed_fraction >= 1:  # Speed above limit
+        ego_speed_reward = -0.1
+    else:
+        ego_speed_reward = 0.0
+
     # NOTE: This requires the NeighborhoodVehicles interface.
     # ego_safety_reward = -0.02 if ego_num_violations > 0 else 0
     # NOTE: This requires the NeighborhoodVehicles interface.
     # social_safety_reward = -0.02 if social_num_violations > 0 else 0
-    ego_lat_speed = 0.0  # -0.1 * abs(long_lat_speed[1])
-    ego_linear_jerk = -0.0001 * linear_jerk
-    ego_angular_jerk = -0.0001 * angular_jerk * math.cos(angle_error)
-    env_reward /= 100
-    # DG: Different speed reward
-    ego_speed_reward = -0.1 if speed_fraction >= 1 else 0.0
-    ego_speed_reward += -0.01 if speed_fraction < 0.01 else 0.0
 
     rewards = sum(
         [
-            ego_goal_reward,
+            ego_reached_goal_reward,
             ego_collision_reward,
             ego_off_road_reward,
             ego_off_route_reward,
-            ego_wrong_way,
+            ego_wrong_way_reward,
             ego_speed_reward,
-            # ego_time_out,
             ego_dist_center_reward,
             ego_angle_error_reward,
-            ego_reached_goal,
             ego_step_reward,
             env_reward,
             # ego_linear_jerk,
@@ -145,4 +150,5 @@ def adapt(observation: Observation, reward: float) -> float:
             # social_safety_reward,
         ]
     )
+
     return rewards

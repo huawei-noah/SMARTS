@@ -61,7 +61,7 @@
 3. Generate scenarios for training:
     ```sh
     # Remove existing easy scenarios.
-    $ rm -rf ultra/scenarios/task1/t*_easy_*
+    $ rm -rf ultra/scenarios/task1/t*_task1_easy_*
 
     # Generate the analysis scenarios from the analysis maps in the analysis pool.
     $ python ultra/scenarios/interface.py generate --task 1 --level easy --pool-dir ultra/scenarios/pool/analysis_pool/
