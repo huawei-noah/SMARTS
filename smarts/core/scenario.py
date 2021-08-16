@@ -61,7 +61,7 @@ class Start:
         )
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(frozen=True)
 class Goal:
     def is_endless(self):
         return True
@@ -70,12 +70,12 @@ class Goal:
         return False
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(frozen=True)
 class EndlessGoal(Goal):
     pass
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(frozen=True)
 class PositionalGoal(Goal):
     position: Tuple[int, int]
     # target_heading: Heading
@@ -104,7 +104,7 @@ class PositionalGoal(Goal):
         return dist <= self.radius
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(frozen=True)
 class TraverseGoal(Goal):
     """A TraverseGoal is satisfied whenever an Agent-driven vehicle
     successfully finishes traversing a non-closed (acyclical) map
@@ -115,15 +115,13 @@ class TraverseGoal(Goal):
     the vehicle must be going the correct direction in its lane
     just prior to doing so."""
 
-    def __init__(self, road_network: SumoRoadNetwork):
-        super().__init__()
-        self._road_network = road_network
+    road_network: SumoRoadNetwork
 
     def is_endless(self):
         return True
 
     def is_reached(self, vehicle):
-        return self._road_network.drove_off_map(vehicle.position, vehicle.heading)
+        return self.road_network.drove_off_map(vehicle.position, vehicle.heading)
 
 
 def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
