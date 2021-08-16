@@ -100,8 +100,8 @@ def main(
     traffic_history_provider = smarts.get_provider_by_type(TrafficHistoryProvider)
     assert traffic_history_provider
 
-    scenarios_iterator = Scenario.scenario_variations(scenarios, [])
-    for scenario in [next(scenarios_iterator)]:
+    # scenarios_iterator = Scenario.scenario_variations(scenarios, [])
+    for scenario in Scenario.scenario_variations(scenarios, []):
         logger.debug("working on scenario {}".format(scenario.name))
         veh_missions = scenario.discover_missions_of_traffic_histories()
         if not veh_missions:
