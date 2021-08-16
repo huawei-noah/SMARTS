@@ -30,7 +30,7 @@ import random
 import sqlite3
 from typing import Dict, Generator, NamedTuple, Set, Tuple, TypeVar
 
-T = TypeVar["T"]
+T = TypeVar("T")
 
 
 class TrafficHistory:
