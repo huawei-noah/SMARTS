@@ -142,23 +142,12 @@ def load_agents(experiment_dir):
         for agent_id in agent_ids
     }
 
-    # Confined to single agent experimens only
-    assert len(agent_ids) == 1, "Cannot load model from multi-agent experiments."
-
-    # TODO: Can this be made to accomodate the multi-agent case?
-    length_dir = len(agent_checkpoint_directories[agent_ids[0]])
-    checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][-1]
-    if length_dir > 1:
-        print(
-            f"\nThere are {length_dir} models inside in the experiment dir. Only the latest model >>> {checkpoint_directory} <<< will be trained\n"
-        )
-
     # Create the agent specifications matched with their associated ID and corresponding
     # checkpoint directory
     agent_specs = {
         agent_id: make(
             locator=agent_classes[agent_id],
-            checkpoint_dir=checkpoint_directory,
+            checkpoint_dir=agent_checkpoint_directories[agent_id][-1],
             experiment_dir=experiment_dir,
             agent_id=agent_id,
         )
@@ -174,7 +163,8 @@ def load_agents(experiment_dir):
     # Load any extra data that the agent needs from its last training run in order to
     # resume training (e.g. its previous replay buffer experience).
     for agent_id, agent in agents.items():
-        agent.load_extras(os.path.join(experiment_dir, "extras", agent_id))
+        extras_directory = os.path.join(experiment_dir, "extras", agent_id)
+        agent.load_extras(extras_directory)
 
     return agent_ids, agent_classes, agent_specs, agents
 
@@ -261,7 +251,9 @@ def train(
     # Define an 'etag' for this experiment's data directory based off policy_classes.
     # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
     # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+    etag = ":".join(
+        [agent_class.split(":")[-1] for agent_class in agent_classes.values()]
+    )
 
     # Create the environment.
     env = gym.make(
@@ -395,6 +387,7 @@ if __name__ == "__main__":
             policy_classes=policy_classes,
             seed=args.seed,
             log_dir=args.log_dir,
+            experiment_dir=args.experiment_dir,
             policy_ids=policy_ids,
         )
     finally:
