@@ -32,7 +32,7 @@ import ray
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
-from ultra.train import train, load_model
+from ultra.train import train, load_agents
 
 AGENT_ID = "001"
 seed = 2
@@ -177,7 +177,7 @@ class TrainTest(unittest.TestCase):
         experiment_dir = glob.glob(
             os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
         )[0]
-        agent_ids, agent_classes, agent_specs, agents = load_model(experiment_dir)
+        agent_ids, agent_classes, agent_specs, agents = load_agents(experiment_dir)
 
         self.assertEqual(agent_ids[0], "000")
         self.assertEqual(agent_classes[agent_ids[0]], "ultra.baselines.sac:sac-v0")
