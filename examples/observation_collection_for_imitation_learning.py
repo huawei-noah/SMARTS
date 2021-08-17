@@ -50,7 +50,8 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
         envision=None if headless else Envision(),
     )
 
-    scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenarios, [])
+    scenario_list = Scenario.get_scenario_list(scenarios)
+    scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenario_list, [])
     for scenario in scenarios_iterator:
         obs = smarts.reset(scenario)
 

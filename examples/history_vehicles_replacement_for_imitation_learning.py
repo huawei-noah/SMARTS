@@ -99,7 +99,8 @@ def main(
     traffic_history_provider = smarts.get_provider_by_type(TrafficHistoryProvider)
     assert traffic_history_provider
 
-    scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenarios, [])
+    scenario_list = Scenario.get_scenario_list(scenarios)
+    scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenario_list, [])
     for scenario in scenarios_iterator:
         logger.debug("working on scenario {}".format(scenario.name))
 
