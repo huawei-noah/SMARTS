@@ -59,7 +59,7 @@ class Start:
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class Goal:
     def is_endless(self) -> bool:
         return True
@@ -109,7 +109,6 @@ class PositionalGoal(Goal):
         return sqr_dist <= self.radius ** 2
 
 
-@dataclass(frozen=True)
 class TraverseGoal(Goal):
     """A TraverseGoal is satisfied whenever an Agent-driven vehicle
     successfully finishes traversing a non-closed (acyclical) map
@@ -138,10 +137,11 @@ class TraverseGoal(Goal):
         if not nearest_lanes:
             return False  # we can't tell anything here
         nl, dist = nearest_lanes[0]
-        # TODO SUMO road_network:  need to use nl.width_at_offset() instead
-        if nl.outgoing_lanes or dist < 0.5 * nl.width + 1e-1:
+        offset = nl.to_lane_coord(veh_position).s
+        if nl.outgoing_lanes or dist < 0.5 * nl.width_at_offset(offset) + 1e-1:
             return False  # the last lane it was in was not a dead-end, or it's still in a lane
-        end_node = nl.road.getToNode()  # TODO SUMO road_network
+        # TODO SUMO road_network:  node access not supported in road_map api!
+        end_node = nl.road.getToNode()
         end_point = end_node.getCoord()
         dist = math.sqrt(
             (veh_position[0] - end_point[0]) ** 2

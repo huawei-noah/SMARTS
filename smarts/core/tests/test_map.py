@@ -101,7 +101,8 @@ def test_sumo_map(scenario):
 
     routes = road_map.generate_routes(r1, r2)
     assert routes
-    assert len(routes[0].roads) == 4
+    print([r.road_id for r in routes[0].roads])
+    assert len(routes[0].roads) == 3
 
     route = routes[0]
     db = route.distance_between(point, (198, 65.20, 0))
