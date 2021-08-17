@@ -122,7 +122,7 @@ def create_argument_parser():
     return parser
 
 
-def load_model(experiment_dir):
+def load_agents(experiment_dir):
     # Load relevant agent metadata.
     with open(
         os.path.join(experiment_dir, "agent_metadata.pkl"), "rb"
@@ -150,8 +150,9 @@ def load_model(experiment_dir):
     # Confined to single agent experimens only
     assert len(agent_ids) == 1, "Cannot load model from multi-agent experiments."
 
+    # TODO: Can this be made to accomodate the multi-agent case?
     length_dir = len(agent_checkpoint_directories[agent_ids[0]])
-    checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][length_dir - 1]
+    checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][-1]
     if length_dir > 1:
         print(
             f"\nThere are {length_dir} models inside in the experiment dir. Only the latest model >>> {checkpoint_directory} <<< will be trained\n"
@@ -175,17 +176,10 @@ def load_model(experiment_dir):
         for agent_id, agent_spec in agent_specs.items()
     }
 
-    for agent_id in agent_ids:
-        try:
-            agents[agent_id].load_replay_buffer(
-                os.path.join(experiment_dir, "replay_buffers", agent_id)
-            )
-        except NotImplementedError:
-            print(
-                "Replay buffer is not loaded because policy does not utilize a replay buffer"
-            )
-        except Exception as e:
-            raise Exception
+    # Load any extra data that the agent needs from its last training run in order to
+    # resume training (e.g. its previous replay buffer experience).
+    for agent_id, agent in agents.items():
+        agent.load_extras(os.path.join(experiment_dir, "extras", agent_id))
 
     return agent_ids, agent_classes, agent_specs, agents
 
@@ -263,7 +257,7 @@ def train(
     evaluation_task_ids = dict()
 
     if experiment_dir:
-        agent_ids, agent_classes, agent_specs, agents = load_model(experiment_dir)
+        agent_ids, agent_classes, agent_specs, agents = load_agents(experiment_dir)
     else:
         agent_ids, agent_classes, agent_specs, agents = build_agents(
             policy_classes, policy_ids, max_episode_steps
@@ -363,18 +357,11 @@ def train(
         if finished:
             break
 
-    # Save each agent's replay buffer post training run
-    for agent_id in agent_ids:
-        try:
-            agents[agent_id].save_replay_buffer(
-                episode.agent_replay_buffer_dir(agent_id)
-            )
-        except NotImplementedError:
-            print(
-                "Replay buffer is not saved because policy does not utilize a replay buffer"
-            )
-        except Exception as e:
-            raise Exception
+    # Save any extra data that the agent may need to resume training in a future
+    # training session (e.g. its replay buffer experience).
+    for agent_id, agent in agents.items():
+        extras_directory = episode.extras_dir(agent_id)
+        agent.save_extras(extras_directory)
 
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):
