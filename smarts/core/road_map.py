@@ -99,7 +99,7 @@ class RoadMap:
         via: Sequence[RoadMap.Road] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
-        """ Routes will be returned in order of increasing road length """
+        """ Routes will be returned in order of increasing length """
         raise NotImplementedError()
 
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:

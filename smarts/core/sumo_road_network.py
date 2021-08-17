@@ -32,14 +32,14 @@ import trimesh
 import trimesh.scene
 from cached_property import cached_property
 from shapely import ops
-from shapely.geometry import LineString, MultiPolygon, Polygon
-from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
+from shapely.geometry import Polygon
 from shapely.ops import snap, triangulate
 from trimesh.exchange import gltf
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap, Waypoint
 from .sumo_lanepoints import LinkedLanePoint, SumoLanePoints
+from .utils.geometry import buffered_shape
 from .utils.math import (
     inplace_unwrap,
     radians_to_vec,
@@ -372,7 +372,7 @@ class SumoRoadNetwork(RoadMap):
             )
 
         def buffered_shape(self, width: float = 1.0) -> Polygon:
-            return SumoRoadNetwork._buffered_shape(self._sumo_lane.getShape(), width)
+            return buffered_shape(self._sumo_lane.getShape(), width)
 
         @lru_cache(maxsize=8)
         def point_in_lane(self, point: Point) -> bool:
@@ -527,7 +527,7 @@ class SumoRoadNetwork(RoadMap):
             return left_edge, right_edge
 
         def buffered_shape(self, width: float = 1.0) -> Polygon:
-            return SumoRoadNetwork._buffered_shape(self._sumo_edge.getShape(), width)
+            return buffered_shape(self._sumo_edge.getShape(), width)
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
@@ -809,9 +809,7 @@ class SumoRoadNetwork(RoadMap):
         lane_to_poly = {}
         for edge in self._graph.getEdges():
             for lane in edge.getLanes():
-                shape = SumoRoadNetwork._buffered_shape(
-                    lane.getShape(), lane.getWidth()
-                )
+                shape = buffered_shape(lane.getShape(), lane.getWidth())
                 # Check if "shape" is just a point.
                 if len(set(shape.exterior.coords)) == 1:
                     logging.debug(
@@ -977,22 +975,6 @@ class SumoRoadNetwork(RoadMap):
 
         scene.add_geometry(mesh)
         return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
-
-    @staticmethod
-    def _buffered_shape(shape, width: float = 1.0) -> Polygon:
-        ls = LineString(shape).buffer(
-            width / 2,
-            1,
-            cap_style=CAP_STYLE.flat,
-            join_style=JOIN_STYLE.round,
-            mitre_limit=5.0,
-        )
-        if isinstance(ls, MultiPolygon):
-            # Sometimes it oddly outputs a MultiPolygon and then we need to turn it into a convex hull
-            ls = ls.convex_hull
-        elif not isinstance(ls, Polygon):
-            raise RuntimeError("Shapely `object.buffer` behavior may have changed.")
-        return ls
 
     def _compute_traffic_dividers(self, threshold=1):
         lane_dividers = []  # divider between lanes with same traffic direction
