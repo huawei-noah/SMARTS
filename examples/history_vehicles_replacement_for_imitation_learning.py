@@ -59,7 +59,7 @@ class ReplayCheckerAgent(Agent):
         # by converting the acceleration vector to a scalar in the observation script,
         # which compounds over time throughout the simulation.
         assert math.isclose(
-            cur_state.speed, exp["speed"], abs_tol=0.1
+            cur_state.speed, exp["speed"], abs_tol=1
         ), f'vid={self._vehicle_id}: {cur_state.speed} != {exp["speed"]} @ {obs_time}'
         assert math.isclose(
             cur_state.position[0], exp["ego_pos"][0], abs_tol=2
@@ -98,7 +98,7 @@ def main(
     traffic_history_provider = smarts.get_provider_by_type(TrafficHistoryProvider)
     assert traffic_history_provider
 
-    scenarios_iterator = Scenario.scenario_variations(scenarios, [])
+    scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenarios, [])
     for scenario in scenarios_iterator:
         logger.debug("working on scenario {}".format(scenario.name))
         veh_missions = scenario.discover_missions_of_traffic_histories()
