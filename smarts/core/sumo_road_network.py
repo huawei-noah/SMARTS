@@ -300,7 +300,7 @@ class SumoRoadNetwork(RoadMap):
         @cached_property
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
             return [
-                self._map.lane_by_id(outgoing.getID())
+                self._map.lane_by_id(outgoing.getToLane().getID())
                 for outgoing in self._sumo_lane.getOutgoing()
             ]
 
@@ -780,14 +780,14 @@ class SumoRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def distance_between(self, start: Point, end: Point) -> float:
             route_roads = set(self._roads)
-            for cand_start_lane in self._map.nearest_lanes(start, 30.0, False):
+            for cand_start_lane, _ in self._map.nearest_lanes(start, 30.0, False):
                 if cand_start_lane.road in route_roads:
                     break
             else:
                 logging.warning("unable to find road on route near start point")
                 return None
             start_road = cand_start_lane.road
-            for cand_end_lane in self._map.nearest_lanes(end, 30.0, False):
+            for cand_end_lane, _ in self._map.nearest_lanes(end, 30.0, False):
                 if cand_end_lane.road in route_roads:
                     break
             else:
