@@ -103,9 +103,6 @@ shifted_map-AUTOGEN.net.xml
 *flamegraph-perf.log
 *flamegraph.svg
 *flamegraph.html
-bubbles.pkl
-missions.pkl
-traffic_histories.pkl
 **/social_agents/*
 *.pkl
 *.shf

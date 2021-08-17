@@ -363,27 +363,6 @@ class Scenario:
                 )
 
     @staticmethod
-    def discover_traffic_history_scenarios_count(
-        scenarios_or_scenarios_dirs: Sequence[str],
-    ):
-        scenario_roots = []
-        for root in scenarios_or_scenarios_dirs:
-            if Scenario.is_valid_scenario(root):
-                # This is the single scenario mode, only training against a single scenario
-                scenario_roots.append(root)
-            else:
-                scenario_roots.extend(Scenario.discover_scenarios(root))
-
-        total_traffic_history_variations = 0
-        for scenario_root in scenario_roots:
-            traffic_histories = Scenario.discover_traffic_histories(scenario_root) or [
-                None
-            ]
-            if traffic_histories != [None]:
-                total_traffic_history_variations += len(traffic_histories)
-        return total_traffic_history_variations
-
-    @staticmethod
     def discover_agent_missions_count(scenario_root):
         missions_file = os.path.join(scenario_root, "missions.pkl")
         if os.path.exists(missions_file):
