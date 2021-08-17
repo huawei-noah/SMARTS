@@ -183,6 +183,7 @@ class TrainTest(unittest.TestCase):
         self.assertEqual(agent_classes[agent_ids[0]], "ultra.baselines.sac:sac-v0")
         self.assertIsInstance(agent_specs[agent_ids[0]], AgentSpec)
         self.assertIsInstance(agents[agent_ids[0]], SACPolicy)
+        self.assertGreater(len(agents[agent_ids[0]].memory), 0)
 
     def test_check_agents_from_pool(self):
         seed = 2
