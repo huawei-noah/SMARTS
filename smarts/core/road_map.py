@@ -279,15 +279,16 @@ class RoadMap:
             assert lookahead > 1
             if offset + lookahead > self.length:
                 return math.inf
-            prev_heading_vec = None
+            prev_heading_rad = None
             heading_deltas = 0.0
             for i in range(lookahead):
-                heading_vec = vec_to_radians(self.vector_at_offset(offset + i))
-                if prev_heading_vec:
+                vec = self.vector_at_offset(offset + i)[:2]
+                heading_rad = vec_to_radians(vec[:2])
+                if prev_heading_rad:
                     heading_deltas += min_angles_difference_signed(
-                        heading_vec, prev_heading_vec
+                        heading_rad, prev_heading_rad
                     )
-                prev_heading_vec = heading_vec
+                prev_heading_rad = heading_rad
             return lookahead / heading_deltas if heading_deltas else math.inf
 
     class Road:
