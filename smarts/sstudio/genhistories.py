@@ -486,14 +486,26 @@ class Waymo(_TrajectoryDataset):
         def lerp(a, b, t):
             return t * (b - a) + a
 
-        scenario_index = 0
-        if "scenario_index" in self._dataset_spec:
-            scenario_index = self._dataset_spec["scenario_index"]
+        if "scenario_id" not in self._dataset_spec:
+            errmsg = "Dataset spec requires scenario_id to be set"
+            self._log.error(errmsg)
+            raise ValueError(errmsg)
+        scenario_id = self._dataset_spec["scenario_id"]
+
+        # Loop over the scenarios in the TFRecord and check its ID for a match
+        scenario = None
         dataset = Waymo.read_dataset(self._dataset_spec["input_path"])
-        scenario_list = list(dataset)
-        scenario_data = scenario_list[scenario_index]
-        scenario = scenario_pb2.Scenario()
-        scenario.ParseFromString(bytearray(scenario_data))
+        for record in dataset:
+            parsed_scenario = scenario_pb2.Scenario()
+            parsed_scenario.ParseFromString(bytearray(record))
+            if parsed_scenario.scenario_id == scenario_id:
+                scenario = parsed_scenario
+                break
+
+        if scenario == None:
+            errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
+            self._log.error(errmsg)
+            raise ValueError(errmsg)
 
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id

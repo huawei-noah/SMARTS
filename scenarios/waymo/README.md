@@ -18,7 +18,7 @@ Currently, users must supply their own map. Place the `map.net.xml` file in the 
 
 ## Generating the history database and creating the map
 
-Edit `scenarios/waymo/waymo.yaml` so that `input_path` points to the TFRecord file containing the scenario you want to use, and use `scenario_index` to select the scenario within the list of scenarios in the file.
+Edit `scenarios/waymo/waymo.yaml` so that `input_path` points to the TFRecord file containing the scenario you want to use, and use `scenario_id` to select the specific scenario in the file.
 
 From the root of the SMARTS repo run the following command to build the scenario:
 
