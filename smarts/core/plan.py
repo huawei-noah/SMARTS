@@ -31,6 +31,7 @@ import numpy as np
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap
+from .utils.math import min_angles_difference_signed, vec_to_radians
 
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
 
@@ -138,41 +139,16 @@ class TraverseGoal(Goal):
             return False  # we can't tell anything here
         nl, dist = nearest_lanes[0]
         offset = nl.to_lane_coord(veh_position).s
-        if nl.outgoing_lanes or dist < 0.5 * nl.width_at_offset(offset) + 1e-1:
+        nl_width = nl.width_at_offset(offset)
+        if nl.outgoing_lanes or dist < 0.5 * nl_width + 1e-1:
             return False  # the last lane it was in was not a dead-end, or it's still in a lane
-        # TODO SUMO road_network:  node access not supported in road_map api!
-        end_node = nl.road.getToNode()
-        end_point = end_node.getCoord()
-        dist = math.sqrt(
-            (veh_position[0] - end_point[0]) ** 2
-            + (veh_position[1] - end_point[1]) ** 2
-        )
-        if dist > 2 * nl.width:
+        if offset < nl.length - 2 * nl_width:
             return False  # it's no where near the end of the lane
         # now check its heading to ensure it was going in roughly the right direction for this lane
-        end_shape = end_node.getShape()
-        veh_heading %= 2 * math.pi
-        tolerance = math.pi / 4
-        for p in range(1, len(end_shape)):
-            num = end_shape[p][1] - end_shape[p - 1][1]
-            den = end_shape[p][0] - end_shape[p - 1][0]
-            crossing_heading = math.atan(-den / num)
-            if den < 0:
-                crossing_heading += math.pi
-            elif num < 0:
-                crossing_heading -= math.pi
-            crossing_heading -= math.pi / 2
-            # we allow for it to be going either way since it's a pain to determine which side of the road it's on
-            if (
-                abs(veh_heading - crossing_heading % (2 * math.pi)) < tolerance
-                or abs(
-                    (veh_heading + math.pi) % (2 * math.pi)
-                    - crossing_heading % (2 * math.pi)
-                )
-                < tolerance
-            ):
-                return True
-        return False
+        end_vec = nl.vector_at_offset(nl.length - 0.1)
+        end_heading = vec_to_radians(end_vec[:2])
+        heading_err = min_angles_difference_signed(end_heading, veh_heading)
+        return abs(heading_err) < math.pi / 6
 
 
 def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
