@@ -288,6 +288,7 @@ class Plan:
 
     @route.setter
     def route(self, route: RoadMap.Route):
+        # XXX: traffic simulator may also track route
         self._route = route
 
     @property

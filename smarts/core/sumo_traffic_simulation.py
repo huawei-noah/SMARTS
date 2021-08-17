@@ -490,6 +490,9 @@ class SumoTrafficSimulation(Provider):
         )
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
+    def update_route_for_vehicle(self, vehicle_id, new_route_edges):
+        self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
+
     def _create_vehicle(self, vehicle_id, dimensions):
         assert (
             type(vehicle_id) == str
