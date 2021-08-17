@@ -12,11 +12,14 @@ on:
       - ultra_**
       - ultra/**
 
+env:
+  venv_dir: .venv
+
 jobs:
   test:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     strategy:
       matrix:
         tests:
@@ -30,26 +33,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup X11
-        run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
       - name: Install dependencies
         run: |
-          python3.7 -m venv .venv
-          . .venv/bin/activate
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
           pip install --upgrade -r requirements.txt
           pip install --upgrade -e .[train,test,camera-obs]
       - name: Run smoke tests
         run: |
-          . .venv/bin/activate
+          . ${{env.venv_dir}}/bin/activate
           make build-all-scenarios
           PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \

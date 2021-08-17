@@ -63,6 +63,11 @@ from .utils.visdom_client import VisdomClient
 from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
 
+logging.basicConfig(
+    format="%(asctime)s.%(msecs)03d %(levelname)s: {%(module)s} %(message)s",
+    datefmt="%Y-%m-%d,%H:%M:%S",
+    level=logging.INFO,
+)
 
 MAX_PYBULLET_FREQ = 240
 
@@ -206,15 +211,21 @@ class SMARTS:
         self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + self._last_dt)
 
         # 1. Fetch agent actions
+        self._log.info("Fetching agent actions")
         all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
 
         # 2. Step all providers and harmonize state
+        self._log.info("Stepping all providers and harmonizing state")
         provider_state = self._step_providers(all_agent_actions)
+        self._log.info("Checking if all agents are active")
         self._check_if_acting_on_active_agents(agent_actions)
 
         # 3. Step bubble manager and trap manager
+        self._log.info("Syncing vehicle index")
         self._vehicle_index.sync()
+        self._log.info("Stepping through bubble manager")
         self._bubble_manager.step(self)
+        self._log.info("Stepping through trap manager")
         self._trap_manager.step(self)
 
         # 4. Calculate observation and reward
@@ -225,28 +236,36 @@ class SMARTS:
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
 
         # Agents
+        self._log.info("Stepping through sensors")
         self._agent_manager.step_sensors(self)
 
         if self._renderer:
             # runs through the render pipeline (for camera-based sensors)
             # MUST perform this after step_sensors() above, and before observe() below,
-            # so that all updates are ready before rendering happens per frame
+            # so that all updates are ready before rendering happens per
+            self._log.info("Running through the render pipeline")
             self._renderer.render()
 
+        self._log.info("Calculating observations and rewards")
         observations, rewards, scores, dones = self._agent_manager.observe(self)
 
+        self._log.info("Filtering response for ego")
         response_for_ego = self._agent_manager.filter_response_for_ego(
             (observations, rewards, scores, dones)
         )
 
         # 5. Send observations to social agents
+        self._log.info("Sending observations to social agents")
         self._agent_manager.send_observations_to_social_agents(observations)
 
         # 6. Clear done agents
+        self._log.info("Clearing done agents")
         self._teardown_done_agents_and_vehicles(dones)
 
         # 7. Perform visualization
+        self._log.info("Trying to emit the envision state")
         self._try_emit_envision_state(provider_state, observations, scores)
+        self._log.info("Trying to emit the visdom observations")
         self._try_emit_visdom_obs(observations)
 
         observations, rewards, scores, dones = response_for_ego
@@ -542,7 +561,6 @@ class SMARTS:
         """
         Teardown agents in the given list that have no vehicles registered as
         controlled-by or shadowed-by
-
         Params:
             agent_ids: Sequence of agent ids
         """
@@ -608,7 +626,6 @@ class SMARTS:
                         pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                         assert isinstance(pybullet_vehicle.chassis, BoxChassis)
                         pybullet_vehicle.update_state(vehicle, dt=dt)
-                        pybullet_vehicle.updated = True
             else:
                 # This vehicle is a social vehicle
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
@@ -629,11 +646,13 @@ class SMARTS:
                 if not vehicle.updated:
                     # Note:  update_state() happens *after* pybullet has been stepped.
                     social_vehicle.update_state(vehicle, dt=dt)
-                    vehicle.updated = True
 
     def _step_pybullet(self):
-        pybullet_substeps = max(1, round(self._last_dt / self._pybullet_period))
+        self._bullet_client.stepSimulation()
+        pybullet_substeps = max(1, round(self._last_dt / self._pybullet_period)) - 1
         for _ in range(pybullet_substeps):
+            for vehicle in self._vehicle_index.vehicles:
+                vehicle.chassis.reapply_last_control()
             self._bullet_client.stepSimulation()
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:
@@ -1053,9 +1072,16 @@ class SMARTS:
             for bubble in self._bubble_manager.bubbles
         ]
 
+        scenario_folder_path = self.scenario._root
+        scenario_name = os.path.split((scenario_folder_path).rstrip("/"))[1]
+        assert (
+            scenario_name != ""
+        ), f"Scenario name was not properly extracted from the scenario folder path: {scenario_folder_path}"
+
         state = envision_types.State(
             traffic=traffic,
             scenario_id=self.scenario.scenario_hash,
+            scenario_name=scenario_name,
             bubbles=bubble_geometry,
             scene_colors=SceneColors.EnvisionColors.value,
             scores=scores,
