@@ -19,28 +19,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, gym
+import os
 import ultra.adapters as adapters
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.utils.ray import default_ray_kwargs
-import timeit, datetime
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
-import time
-import psutil, dill, torch, inspect
+import torch
 import ray, torch, argparse
-import numpy as np
-from ray import tune
-from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
-
 from ray.rllib.models import ModelCatalog
 
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import (
     AgentInterface,
-    OGM,
     Waypoints,
     NeighborhoodVehicles,
 )

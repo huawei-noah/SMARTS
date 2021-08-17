@@ -385,6 +385,25 @@ class EvaluateTest(unittest.TestCase):
         for path in paths:
             extract(path)
 
+    def test_use_parsed_max_episode_steps(self):
+        _AGENT_ID = "000"
+        _MAX_EPISODE_STEPS = 45
+        experiment_dir = glob.glob(
+            os.path.join(EvaluateTest.OUTPUT_DIRECTORY, "sac_test_models/*")
+        )[0]
+        agent_spec = {
+            _AGENT_ID: BaselineAgentSpec(
+                policy_class=SACPolicy,
+                max_episode_steps=_MAX_EPISODE_STEPS,
+                experiment_dir=experiment_dir,
+                agent_id=_AGENT_ID,
+            )
+        }
+
+        self.assertEqual(
+            agent_spec[_AGENT_ID].interface.max_episode_steps, _MAX_EPISODE_STEPS
+        )
+
     # @classmethod
     # def tearDownClass(cls):
     #     os.system("ray stop")

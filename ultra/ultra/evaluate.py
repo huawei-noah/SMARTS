@@ -28,8 +28,6 @@ os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
 import glob
 import time
-from pydoc import locate
-
 import gym
 import numpy as np
 import ray
@@ -402,7 +400,7 @@ if __name__ == "__main__":
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=10000,
+        default=1200,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1

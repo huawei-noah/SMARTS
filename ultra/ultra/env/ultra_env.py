@@ -19,27 +19,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from collections import deque
+
 import copy
 import glob
-import math
-import os
-from itertools import cycle
-from sys import path
-from typing import Dict
-
 import numpy as np
-import yaml, inspect
-from scipy.spatial import distance
+import pathlib
+import yaml
 
+from collections import deque
+from itertools import cycle
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation, TopDownRGB
 from smarts.env.hiway_env import HiWayEnv
-import ultra.adapters as adapters
-from ultra.baselines.common.yaml_loader import load_yaml
+from sys import path
+from typing import Dict, List, Tuple, Sequence, Union
 
 path.append("./ultra")
 
+_CONFIG_FILE = "config.yaml"
 
 _STACK_SIZE = 4
 
@@ -55,29 +52,26 @@ class UltraEnv(HiWayEnv):
         eval_mode=False,
         ordered_scenarios=False,
     ):
-        self.timestep_sec = timestep_sec
-        self.headless = headless
         self.scenario_info = scenario_info
-        self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
-        if not eval_mode:
-            _scenarios = glob.glob(f"{self.scenarios['train']}")
-        else:
-            _scenarios = glob.glob(f"{self.scenarios['test']}")
-
+        self.headless = headless
+        self.timestep_sec = timestep_sec
         self.smarts_observations_stack = deque(maxlen=_STACK_SIZE)
 
+        scenarios = UltraEnv.get_scenarios_from_scenario_info(scenario_info, eval_mode)
+
         super().__init__(
-            scenarios=_scenarios,
+            scenarios=scenarios,
             agent_specs=agent_specs,
             headless=headless,
             timestep_sec=timestep_sec,
             seed=seed,
             visdom=False,
+            endless_traffic=False,
         )
 
         if ordered_scenarios:
             scenario_roots = []
-            for root in _scenarios:
+            for root in scenarios:
                 if Scenario.is_valid_scenario(root):
                     # The case that this is a scenario root
                     scenario_roots.append(root)
@@ -143,17 +137,49 @@ class UltraEnv(HiWayEnv):
 
         return observations
 
-    def get_task(self, task_id, task_level):
-        base_dir = os.path.join(os.path.dirname(__file__), "../")
-        config_path = os.path.join(base_dir, "config.yaml")
+    @staticmethod
+    def get_scenarios_from_scenario_info(
+        scenario_info: Union[Tuple[str, str], Sequence[str]], eval_mode: bool = False
+    ) -> List[str]:
+        """Finds all scenarios from a given (task, level) tuple, or sequence of scenario
+        directories.
 
-        with open(config_path, "r") as task_file:
-            scenarios = yaml.safe_load(task_file)["tasks"]
-            task = scenarios[f"task{task_id}"][task_level]
+        Args:
+            scenario_info (Union[Tuple[str, str], Sequence[str]]): Either a tuple of
+                two strings (task, level) that describe the scenarios of the specific
+                task and level, or a sequence of scenario directory strings.
+            eval_mode (bool): Used only when obtaining scenarios from a (task, level)
+                tuple. This determines whether to return the evaluation scenarios of the
+                specified task's level. Training scenarios are returned by default.
 
-        task["train"] = os.path.join(base_dir, task["train"])
-        task["test"] = os.path.join(base_dir, task["test"])
-        return task
+        Returns:
+            List[str]: A list of scenario directory strings.
+        """
+        try:
+            # Attempt to load scenarios from a (task, level) tuple.
+            task, level = scenario_info
+            base_dir = pathlib.Path(__file__).parent.parent
+            task_config_path = base_dir / _CONFIG_FILE
+
+            with open(task_config_path, "r") as tasks_file:
+                tasks = yaml.safe_load(tasks_file)["tasks"]
+            scenario_paths = tasks[f"task{task}"][level]
+
+            scenario_paths["train"] = (base_dir / scenario_paths["train"]).resolve()
+            scenario_paths["test"] = (base_dir / scenario_paths["test"]).resolve()
+
+            if not eval_mode:
+                scenarios = glob.glob(f"{scenario_paths['train']}")
+            else:
+                scenarios = glob.glob(f"{scenario_paths['test']}")
+        except (KeyError, ValueError):
+            # Treat scenario_info as a list of scenario directories.
+            scenarios = scenario_info
+        except Exception as exception:
+            # Otherwise, something else has gone wrong.
+            raise exception
+
+        return scenarios
 
     @property
     def info(self):

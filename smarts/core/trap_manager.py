@@ -69,32 +69,32 @@ class TrapManager:
     def __init__(self, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
         self._traps: Dict[Trap] = defaultdict(None)
-        self.init_traps(scenario.road_network, scenario.waypoints, scenario.missions)
+        self.init_traps(scenario.road_network, scenario.missions)
 
-    def init_traps(self, road_network, waypoints, missions):
+    def init_traps(self, road_network, missions):
         self._traps.clear()
-
         for agent_id, mission in missions.items():
-            mission_planner = MissionPlanner(waypoints, road_network)
-            if mission is None:
-                mission = mission_planner.random_endless_mission()
+            self.add_trap_for_agent(agent_id, mission, road_network)
 
-            if not mission.entry_tactic:
-                mission = replace(mission, entry_tactic=default_entry_tactic())
+    def add_trap_for_agent(self, agent_id: str, mission: Mission, road_network) -> bool:
+        mission_planner = MissionPlanner(road_network)
+        if mission is None:
+            mission = mission_planner.random_endless_mission()
 
-            if (
-                not isinstance(mission.entry_tactic, TrapEntryTactic)
-                and mission.entry_tactic
-            ):
-                continue
+        if not mission.entry_tactic:
+            mission = replace(mission, entry_tactic=default_entry_tactic())
 
-            mission = mission_planner.plan(mission)
+        if (
+            not isinstance(mission.entry_tactic, TrapEntryTactic)
+            and mission.entry_tactic
+        ):
+            return False
 
-            trap = self._mission2trap(road_network, mission)
-            self.add_trap_for_agent_id(agent_id, trap)
+        mission = mission_planner.plan(mission)
 
-    def add_trap_for_agent_id(self, agent_id, trap: Trap):
+        trap = self._mission2trap(road_network, mission)
         self._traps[agent_id] = trap
+        return True
 
     def reset_traps(self, used_traps):
         for agent_id, _ in used_traps:
@@ -131,7 +131,7 @@ class TrapManager:
             if trap is None:
                 continue
 
-            trap.step_trigger(sim.timestep_sec)
+            trap.step_trigger(sim.last_dt)
 
             if not trap.ready:
                 continue
@@ -225,7 +225,7 @@ class TrapManager:
                     provider.create_vehicle(
                         VehicleState(
                             vehicle_id=vehicle.id,
-                            vehicle_type="passenger",
+                            vehicle_config_type="passenger",
                             pose=vehicle.pose,
                             dimensions=vehicle.chassis.dimensions,
                             speed=vehicle.speed,
@@ -244,7 +244,6 @@ class TrapManager:
     def _hijack_vehicle(sim, vehicle_id, agent_id, mission):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         planner = MissionPlanner(
-            sim.scenario.waypoints,
             sim.scenario.road_network,
             agent_interface.agent_behavior,
         )
@@ -269,7 +268,6 @@ class TrapManager:
     def _make_vehicle(sim, agent_id, mission, initial_speed):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         planner = MissionPlanner(
-            sim.scenario.waypoints,
             sim.scenario.road_network,
             agent_interface.agent_behavior,
         )

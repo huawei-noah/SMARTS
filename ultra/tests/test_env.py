@@ -20,7 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from collections import deque
-from smarts.core.sensors import TopDownRGB
+import glob
+import pathlib
 import unittest
 
 import gym
@@ -35,8 +36,10 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.controllers import ActionSpaceType
+from smarts.core.sensors import TopDownRGB
 from smarts.zoo.registry import make
 from ultra.baselines.agent_spec import BaselineAgentSpec
+from ultra.env.ultra_env import UltraEnv
 from ultra.baselines.ppo.ppo.policy import PPOPolicy
 
 AGENT_ID = "001"
@@ -44,6 +47,8 @@ timestep_sec = 0.1
 seed = 2
 task_id = "00"
 task_level = "easy"
+prebuilt_scenario1 = "tests/task/test_task00_easy_2lane_t_70kmh_p-test-flow-1"
+prebuilt_scenario2 = "tests/task/train_task00_easy_2lane_t_70kmh_p-test-flow-0"
 
 
 class EnvTest(unittest.TestCase):
@@ -60,6 +65,37 @@ class EnvTest(unittest.TestCase):
         ray.shutdown()
         self.assertTrue(task_id1 == task_id)
         self.assertTrue(task_level1 == task_level)
+
+    def test_get_scenarios_from_scenario_info(self):
+        TASK_LEVEL = ("00", "easy")
+        TASK_LEVEL_TRAIN_SCENARIOS = [
+            str(pathlib.Path(path).resolve())
+            for path in glob.glob("tests/task/train_task00*")
+        ]
+        TASK_LEVEL_TEST_SCENARIOS = [
+            str(pathlib.Path(path).resolve())
+            for path in glob.glob("tests/task/test_task00*")
+        ]
+        FAKE_SCENARIOS = ["folder/scenario_1", "folder/scenario_2", "folder/scenario_3"]
+
+        # Test using a valid (task, level) tuple for training scenarios.
+        scenarios = UltraEnv.get_scenarios_from_scenario_info(TASK_LEVEL, False)
+        for scenario in scenarios:
+            self.assertIn(scenario, TASK_LEVEL_TRAIN_SCENARIOS)
+            self.assertIn("train", str(scenario))
+
+        # Test using a valid (task, level) tuple for testing scenarios.
+        scenarios = UltraEnv.get_scenarios_from_scenario_info(TASK_LEVEL, True)
+        for scenario in scenarios:
+            self.assertIn(scenario, TASK_LEVEL_TEST_SCENARIOS)
+            self.assertIn("test", str(scenarios))
+
+        # Test using multiple sequences of scenario directories of varying length.
+        for num_scenarios in range(1, 4):
+            scenarios = FAKE_SCENARIOS[:num_scenarios]
+            scenarios = UltraEnv.get_scenarios_from_scenario_info(scenarios)
+            for scenario in scenarios:
+                self.assertIn(scenario, FAKE_SCENARIOS)
 
     def test_headless(self):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
@@ -184,7 +220,7 @@ class TestLaneAgent(Agent):
         return "keep_lane"
 
 
-def prepare_test_env_agent(headless=True):
+def prepare_test_env_agent(scenario_info=("00", "easy"), headless=True):
     timestep_sec = 0.1
     # [throttle, brake, steering]
     policy_class = "ultra.baselines.ppo:ppo-v0"
@@ -192,7 +228,7 @@ def prepare_test_env_agent(headless=True):
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=("00", "easy"),
+        scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,
