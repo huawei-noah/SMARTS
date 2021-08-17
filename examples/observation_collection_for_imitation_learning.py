@@ -50,13 +50,8 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
         envision=None if headless else Envision(),
     )
 
-    total_scenario_variations = Scenario.discover_traffic_history_scenarios_count(
-        scenarios
-    )
-
-    scenarios_iterator = Scenario.scenario_variations(scenarios, [])
-    for _ in range(total_scenario_variations):
-        scenario = next(scenarios_iterator)
+    scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenarios, [])
+    for scenario in scenarios_iterator:
         obs = smarts.reset(scenario)
 
         collected_data = {}
