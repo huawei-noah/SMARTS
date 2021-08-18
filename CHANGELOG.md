@@ -19,8 +19,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `dt` to `Observation` class to inform users of the observations of the variable timestep.
 - Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
+### Changed
+- Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
+  and allow for (eventually) supporting other map formats.  See Issue #830 and PR #1048.
+  This had multiple cascading ripple effects (especially on Waypoint generation and caching,
+  Missions/Plans/Routes and road/lane-related sensors).
 ### Fixed
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
+- Prevent `TrapManager`from trapping vehicles in Bubble airlocks.  See Issue #1064.
 - Social-agent-buffer is instantiated only if the scenario requires social agents
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
@@ -107,7 +113,7 @@ process
 - Running imitation learning will now create a cached `history_mission.pkl` file in scenario folder that stores 
 the missions for all agents.
 - Added ijson as a dependency. 
-- Added `cached_property` as a dependency.
+- Added `cached-property` as a dependency.
 ### Changed
 - Lowered CPU cost of waypoint generation. This will result in a small increase in memory usage.
 - Set the number of processes used in `make test` to ignore 2 CPUs if possible.

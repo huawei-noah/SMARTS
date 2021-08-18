@@ -23,10 +23,9 @@ import math
 import os
 import warnings
 from collections import defaultdict
-from time import time
 from typing import List, Sequence
 
-import numpy
+import numpy as np
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
@@ -45,13 +44,14 @@ from .agent_manager import AgentManager
 from .bubble_manager import BubbleManager
 from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
+from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
 from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .provider import Provider, ProviderState
+from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensors import Collision
-from .sumo_road_network import SumoRoadNetwork
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .trap_manager import TrapManager
@@ -151,6 +151,7 @@ class SMARTS:
         self._trap_manager: TrapManager = None
 
         self._ground_bullet_id = None
+        self._map_bb = None
 
     def step(self, agent_actions, time_delta_since_last_step: float = None):
         """Note the time_delta_since_last_step param is in (nominal) seconds."""
@@ -319,7 +320,7 @@ class SMARTS:
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
-            self._trap_manager.init_traps(scenario.road_network, scenario.missions)
+            self._trap_manager.init_traps(scenario.road_map, scenario.missions)
             self._agent_manager.init_ego_agents(self)
             if self._renderer:
                 self._sync_vehicles_to_renderer()
@@ -356,7 +357,7 @@ class SMARTS:
     def setup(self, scenario: Scenario):
         self._scenario = scenario
 
-        self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_network)
+        self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
         self._trap_manager = TrapManager(scenario)
 
         if self._renderer:
@@ -382,7 +383,7 @@ class SMARTS:
         self, agent_id: str, agent_interface: AgentInterface, mission: Mission
     ):
         # TODO:  check that agent_id isn't already used...
-        if self._trap_manager.add_trap_for_agent(agent_id, mission, self.road_network):
+        if self._trap_manager.add_trap_for_agent(agent_id, mission, self.road_map):
             self._agent_manager.add_ego_agent(agent_id, agent_interface)
         else:
             self._log.warning(
@@ -416,23 +417,39 @@ class SMARTS:
         )
 
         client.setGravity(0, 0, -9.8)
+        self._setup_pybullet_ground_plane(client)
 
+    def _setup_pybullet_ground_plane(self, client: bc.BulletClient):
         plane_path = self._scenario.plane_filepath
-
-        # 1e6 is the default value for plane length and width.
-        plane_scale = (
-            max(self._scenario.map_bounding_box[0], self._scenario.map_bounding_box[1])
-            / 1e6
-        )
         if not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
 
+        if not self._map_bb:
+            self._map_bb = self.road_map.bounding_box
+
+        if self._map_bb:
+            # 1e6 is the default value for plane length and width in smarts/models/plane.urdf.
+            DEFAULT_PLANE_DIM = 1e6
+            ground_plane_scale = (
+                2.2 * max(self._map_bb.length, self._map_bb.width) / DEFAULT_PLANE_DIM
+            )
+            ground_plane_center = self._map_bb.center
+        else:
+            # first step on undefined map, just use a big scale (1e6).
+            # it should get updated as soon as vehicles are added...
+            ground_plane_scale = 1.0
+            ground_plane_center = (0, 0, 0)
+
+        if self._ground_bullet_id is not None:
+            client.removeBody(self._ground_bullet_id)
+            self._ground_bullet_id = None
+
         self._ground_bullet_id = client.loadURDF(
             plane_path,
             useFixedBase=True,
-            basePosition=self._scenario.map_bounding_box[2],
-            globalScaling=1.1 * plane_scale,
+            basePosition=ground_plane_center,
+            globalScaling=ground_plane_scale,
         )
 
     def teardown(self):
@@ -530,12 +547,12 @@ class SMARTS:
         return self._traffic_sim
 
     @property
-    def external_provider(self) -> ExternalProvider:
-        return self._external_provider
+    def road_map(self) -> RoadMap:
+        return self.scenario.road_map
 
     @property
-    def road_network(self) -> SumoRoadNetwork:
-        return self.scenario.road_network
+    def external_provider(self) -> ExternalProvider:
+        return self._external_provider
 
     @property
     def bc(self):
@@ -657,6 +674,8 @@ class SMARTS:
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:
         self._perform_agent_actions(agent_actions)
+
+        self._check_ground_plane()
 
         self._step_pybullet()
 
@@ -853,10 +872,6 @@ class SMARTS:
         return self._scenario
 
     @property
-    def traffic_sim(self):
-        return self._traffic_sim
-
-    @property
     def timestep_sec(self) -> float:
         warnings.warn(
             "SMARTS timestep_sec property has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
@@ -884,10 +899,6 @@ class SMARTS:
         assert not self._last_dt or self._last_dt > 0
         return self._last_dt
 
-    @property
-    def road_stiffness(self):
-        return self._bullet_client.getDynamicsInfo(self._ground_bullet_id, -1)[9]
-
     def neighborhood_vehicles_around_vehicle(self, vehicle, radius=None):
         other_states = [v for v in self._vehicle_states if v.vehicle_id != vehicle.id]
         if radius is None:
@@ -900,7 +911,7 @@ class SMARTS:
         distances = euclidean_distances(other_positions, [vehicle.position]).reshape(
             -1,
         )
-        indices = numpy.argwhere(distances <= radius).flatten()
+        indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 
     def vehicle_did_collide(self, vehicle_id):
@@ -966,7 +977,8 @@ class SMARTS:
             collidee_bullet_ids = set(
                 [p.bullet_id for p in vehicle.chassis.contact_points]
             )
-            collidee_bullet_ids.discard(self._ground_bullet_id)
+            if self._ground_bullet_id in collidee_bullet_ids:
+                collidee_bullet_ids.remove(self._ground_bullet_id)
 
             if not collidee_bullet_ids:
                 continue
@@ -983,7 +995,36 @@ class SMARTS:
         for vehicle in self._vehicle_index.vehicles:
             if bullet_id == vehicle.chassis.bullet_id:
                 return vehicle
-        assert False, "Only collisions with agent or social vehicles is supported"
+        assert (
+            False
+        ), f"Only collisions with agent or social vehicles is supported, hit {bullet_id}"
+
+    def _check_ground_plane(self):
+        rescale_plane = False
+        map_min = np.array(self._map_bb.min_pt) if self._map_bb else None
+        map_max = np.array(self._map_bb.max_pt) if self._map_bb else None
+        for vehicle_id in self._vehicle_index.agent_vehicle_ids():
+            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+            map_spot = np.array(vehicle.pose.position)
+            if map_min is None or all(map_spot <= map_min):
+                map_min = np.array(map_spot)
+                rescale_plane = True
+            if map_max is None or all(map_spot >= map_max):
+                map_max = np.array(map_spot)
+                rescale_plane = True
+        if rescale_plane:
+            MIN_DIM = 500.0
+            if map_max[0] - map_min[0] < MIN_DIM:
+                map_min[0] -= MIN_DIM
+                map_max[0] += MIN_DIM
+            if map_max[1] - map_min[1] < MIN_DIM:
+                map_min[1] -= MIN_DIM
+                map_max[1] += MIN_DIM
+            self._map_bb = BoundingBox(Point(*map_min), Point(*map_max))
+            self._log.info(
+                f"rescaling pybullet ground plane to at least {map_min} and {map_max}"
+            )
+            self._setup_pybullet_ground_plane(self._bullet_client)
 
     def _try_emit_envision_state(self, provider_state, obs, scores):
         if not self._envision:
@@ -1007,7 +1048,7 @@ class SMARTS:
                     mission_route_geometry = (
                         self._vehicle_index.sensor_state_for_vehicle_id(
                             v.vehicle_id
-                        ).mission_planner.route.geometry
+                        ).plan.route.geometry
                     )
                 else:
                     actor_type = envision_types.TrafficActorType.SocialAgent

@@ -30,7 +30,7 @@ from shapely.geometry import Point, Polygon
 from shapely.geometry import box as shapely_box
 
 from smarts.core import models
-from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.tire_models import TireForces
 from smarts.core.utils import pybullet
 from smarts.core.utils.bullet import (
@@ -90,7 +90,7 @@ class Chassis:
         raise NotImplementedError
 
     @property
-    def dimensions(self) -> BoundingBox:
+    def dimensions(self) -> Dimensions:
         raise NotImplementedError
 
     @property
@@ -166,7 +166,7 @@ class BoxChassis(Chassis):
         self,
         pose: Pose,
         speed: float,
-        dimensions: BoundingBox,
+        dimensions: Dimensions,
         bullet_client: bc.BulletClient,
     ):
         self._dimensions = dimensions
@@ -218,7 +218,7 @@ class BoxChassis(Chassis):
         self._bullet_constraint.move_to(force_pose)
 
     @property
-    def dimensions(self) -> BoundingBox:
+    def dimensions(self) -> Dimensions:
         return self._dimensions
 
     @property
@@ -396,7 +396,7 @@ class AckermannChassis(Chassis):
         width, length, height = np.array(
             self._client.getCollisionShapeData(self._bullet_id, 0)[0][3]
         )
-        self._dimensions = BoundingBox(length=length, width=width, height=height)
+        self._dimensions = Dimensions(length=length, width=width, height=height)
         chassis_pos = self._client.getLinkState(self._bullet_id, 0)[4]
         center_offset = np.array(
             self._client.getVisualShapeData(self._bullet_id, 0)[0][5]

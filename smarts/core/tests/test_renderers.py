@@ -31,8 +31,9 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
+from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.scenario import Scenario
 from smarts.core.vehicle import RendererException
-from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 

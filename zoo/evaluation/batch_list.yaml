@@ -104,10 +104,6 @@ scenario_list:
     step_num: 100
   merge:
     step_num: 250
-  cutin_escape:
-    step_num: 450
-  cutin_speed:
-    step_num: 700
   straight_pick_lane:
     step_num: 300
   turnleft_pick_lane:
@@ -116,15 +112,7 @@ scenario_list:
     step_num: 150
   merge_1:
     step_num: 240
-  cutin_escape_1:
-    step_num: 550
-  cutin_speed_1:
-    step_num: 850
   cross_2:
     step_num: 80
   merge_2:
     step_num: 200
-  cutin_escape_2:
-    step_num: 350
-  cutin_speed_2:
-    step_num: 850

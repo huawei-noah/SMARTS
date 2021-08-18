@@ -171,7 +171,7 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
     """Test that the ackerman chassis size has not changed accidentally by packing it around itself
     with no forces and then check for collisions after a few steps."""
     bullet_client.setGravity(0, 0, 0)
-    separation_for_collision_error = 0.05
+    separation_for_collision_error = 0.0501
     original_vehicle_dimensions = VEHICLE_CONFIGS["passenger"].dimensions
 
     shared_heading = Heading(0)
