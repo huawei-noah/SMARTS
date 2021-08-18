@@ -31,9 +31,9 @@ from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Wa
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading
 from smarts.core.events import Events
+from smarts.core.road_map import Waypoint
 from smarts.core.scenario import PositionalGoal, Start
 from smarts.core.sensors import Observation
-from smarts.core.waypoints import Waypoint
 import ultra.adapters as adapters
 from ultra.env.ultra_env import UltraEnv
 
