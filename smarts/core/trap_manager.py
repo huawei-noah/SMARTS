@@ -105,7 +105,11 @@ class TrapManager:
         if not sim.agent_manager.pending_agent_ids:
             return
 
-        social_vehicle_ids = sim.vehicle_index.social_vehicle_ids()
+        social_vehicle_ids = [
+            v_id
+            for v_id in sim.vehicle_index.social_vehicle_ids()
+            if not sim.vehicle_index.vehicle_is_shadowed(v_id)
+        ]
         vehicles = {
             v_id: sim.vehicle_index.vehicle_by_id(v_id) for v_id in social_vehicle_ids
         }
