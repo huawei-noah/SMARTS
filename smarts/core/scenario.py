@@ -593,7 +593,10 @@ class Scenario:
         False
         """
         # just make sure we can load the map
-        road_map, _ = create_road_map(scenario_root)
+        try:
+            road_map, _ = create_road_map(scenario_root)
+        except:
+            return False
         return road_map is not None
 
     @staticmethod
