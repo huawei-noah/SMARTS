@@ -405,7 +405,8 @@ class PPOPolicy(Agent):
         torch.save(self.ppo_net.state_dict(), model_dir / "ppo_network.pth")
 
     def save_extras(self, extras_dir):
-        """Save any extra data that the agent needs in order to resume training."""
+        """Called at the end of training. Used to save any extra data that the agent
+        needs in order to resume training."""
         pass
 
     def load(self, model_dir):
@@ -419,7 +420,8 @@ class PPOPolicy(Agent):
         )
 
     def load_extras(self, extras_dir):
-        """Load any extra data that the agent needs in order to resume training."""
+        """Called at the beginning of training. Used to load any extra data from the
+        last training run that the agent needs in order to resume training."""
         pass
 
     def reset(self):

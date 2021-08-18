@@ -375,7 +375,8 @@ class TD3Policy(Agent):
         )
 
     def load_extras(self, extras_dir):
-        """Load any extra data that the agent needs in order to resume training."""
+        """Called at the beginning of training. Used to load any extra data from the
+        last training run that the agent needs in order to resume training."""
         extras_dir = pathlib.Path(extras_dir)
 
         # Load the replay buffer.
@@ -403,7 +404,8 @@ class TD3Policy(Agent):
         )
 
     def save_extras(self, extras_dir):
-        """Save any extra data that the agent needs in order to resume training."""
+        """Called at the end of training. Used to save any extra data that the agent
+        needs in order to resume training."""
         extras_dir = pathlib.Path(extras_dir)
 
         start_time = time.time()
