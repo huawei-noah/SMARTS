@@ -22,9 +22,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 - Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
   and allow for (eventually) supporting other map formats.  See Issue #830 and PR #1048.
-  This had multiple cascading ripple effects.
+  This had multiple cascading ripple effects (especially on Waypoint generation and caching,
+  Missions/Plans/Routes and road/lane-related sensors).
 ### Fixed
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
+- Prevent `TrapManager`from trapping vehicles in Bubble airlocks.  See Issue #1064.
 - Social-agent-buffer is instantiated only if the scenario requires social agents
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
