@@ -14,25 +14,27 @@ pip install -e .[waymo]
 
 Next, download the dataset files to the folder `scenarios/waymo/waymo_dataset`. It is recommended to download the dataset files from the `training_20s` folder as they have the full traffic capture for each scenario.
 
-Currently, users must supply their own map. Place the `map.net.xml` file in the `scenarios/waymo` folder. Additionally, they can use the `scenarios/waymo/gen_sumo_map.py` to create a naive sumo map of their waymo scenario and then edit it manually to create a cleaner sumo map.
+Currently, users must supply their own map. We provide a script to generate a simple SUMO map from the map data in the Waymo dataset as a starting point.
 
-## Generating the history database and creating the map
-In order to create a sumo map of your waymo scenario, go to `scenarios/waymo` and run the following command,
+Example use of the map script:
+
 ```bash
-python scenarios/waymo/gen_sumo_map.py path/to/dataset scenario_id
-
-# example
-python scenarios/waymo/gen_sumo_map.py scenarios/waymo/waymo_dataset/uncompressed_scenario_training_20s_training_20s.tfrecord-00007-of-01000 e211c9b4f68ff2c8
+python scenarios/waymo/gen_sumo_map.py scenarios/waymo/waymo_dataset/uncompressed_scenario_training_20s_training_20s.tfrecord-00001-of-01000 e211c9b4f68ff2c8
 ```
-This will create the `net-{scenario_id}.net.xml` in `scenarios/waymo` which is the naive sumo map. This means the map will have lanes and edges accurate to their length and positions but will be full of holes and noise. There can be multiple junctions at the edge intersections and cracks in lanes.
-So you can edit the map using SUMO's [netedit](https://sumo.dlr.de/docs/Netedit/index.html) tool to edit the map manually and make it more usable. 
 
-Some Tips on how to edit the Sumo Map Manually:
-* Always use the current `net-{scenario_id}.net.xml` as skeleton and try to create new edges with multiple lanes directly overlapping the old ones by deleting the connections and then joining the nodes
-* You can remove all the overlapping junctions and create a single junction by removing the old junctions, selecting all the edge nodes that the junction will connect and using the `junctions.join` tool from taskbar.
-* You can move the entire polygons or change their lengths from one end by using the `move` tool from taskbar.
-* Make sure to remove any isolated edges or lanes and remove the old lanes, edges and junctions by deleting them manually.
-* Save your changes by in a new file called `map.net.xml` at the same level as `scenario.py` in `scenarios/waymo`.
+This will create a file called `map-{scenario_id}.net.xml` in `scenarios/waymo`. This map will have edges with a single lane for each lane in the map data. You can edit the map using SUMO's [netedit](https://sumo.dlr.de/docs/Netedit/index.html) tool to edit the map manually and make it more usable.
+
+Some tips for editing the SUMO map manually:
+* Clean up any edges/nodes that are detached from the main roads and/or have no traffic on them during the scenario
+* For intersections, join any overlapping junctions together, then join all the junctions that are part of the intersection using the `junctions.join` command under the 'Processing' menu.
+* Tweak the lane widths as needed. They will all have a default width assigned.
+* Always use the current `map-{scenario_id}.net.xml` as a skeleton and try to create new edges with multiple lanes directly overlapping the old ones by deleting the connections and then joining the nodes
+* You can move the entire polygons or change their lengths from one end by using the `move` tool.
+* Save your changes in a new file called `map.net.xml` in `scenarios/waymo`.
+
+Once you have your map ready, place the `map.net.xml` file in the `scenarios/waymo` folder.
+
+## Building the scenario
 
 Edit `scenarios/waymo/waymo.yaml` so that `input_path` points to the TFRecord file containing the scenario you want to use, and use `scenario_id` to select the specific scenario in the file.
 
