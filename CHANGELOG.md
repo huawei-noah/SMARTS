@@ -23,7 +23,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
   and allow for (eventually) supporting other map formats.  See Issue #830 and PR #1048.
   This had multiple cascading ripple effects (especially on Waypoint generation and caching,
-  Missions/Plans/Routes and road/lane-related sensors).
+  Missions/Plans/Routes and road/lane-related sensors).  These include:
+    - Removed the `AgentBehavior` class and the `agent_behavior` parameter to `AgentInterface`.
+    - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
+    - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
 ### Fixed
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
 - Prevent `TrapManager`from trapping vehicles in Bubble airlocks.  See Issue #1064.
