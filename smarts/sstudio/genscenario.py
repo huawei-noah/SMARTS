@@ -93,8 +93,8 @@ def gen_scenario(
     if scenario.social_agent_missions:
         for name, (actors, missions) in scenario.social_agent_missions.items():
             if not (
-                isinstance(actors, collections.Sequence)
-                and isinstance(missions, collections.Sequence)
+                isinstance(actors, collections.abc.Sequence)
+                and isinstance(missions, collections.abc.Sequence)
             ):
                 raise ValueError("Actors and missions must be sequences")
 
@@ -112,6 +112,8 @@ def gen_scenario(
         gen_friction_map(scenario=output_dir, surface_patches=scenario.friction_maps)
 
     if scenario.traffic_histories:
+        # TODO:  pass in Sumo graph offset and use to offset history coordinates
+        #    if sumo_road_network._graph._shifted_by_smarts: sumo_road_network._graph.getLocationOffset()
         gen_traffic_histories(
             scenario=output_dir,
             histories_datasets=scenario.traffic_histories,
@@ -171,7 +173,7 @@ def gen_social_agent_missions(
 
     # For backwards compatibility we support both a single value and a sequence
     actors = social_agent_actor
-    if not isinstance(actors, collections.Sequence):
+    if not isinstance(actors, collections.abc.Sequence):
         actors = [actors]
 
     # This doesn't support BoidAgentActor. Here we make that explicit
@@ -265,8 +267,8 @@ def gen_group_laps(
             The amount of laps before finishing
     """
 
-    start_edge_id, start_lane, start_offset = begin
-    end_edge_id, end_lane, end_offset = end
+    start_road_id, start_lane, start_offset = begin
+    end_road_id, end_lane, end_offset = end
 
     missions = []
     for i in range(vehicle_count):
@@ -275,11 +277,11 @@ def gen_group_laps(
             types.LapMission(
                 types.Route(
                     begin=(
-                        start_edge_id,
+                        start_road_id,
                         s_lane,
                         start_offset - grid_offset * i,
                     ),
-                    end=(end_edge_id, (end_lane + i) % used_lanes, end_offset),
+                    end=(end_road_id, (end_lane + i) % used_lanes, end_offset),
                 ),
                 num_laps=num_laps,
                 # route_length=route_length,
@@ -330,10 +332,6 @@ def _gen_missions(
         if route:
             kwargs["route"] = generator.resolve_route(route)
 
-        task = getattr(mission, "task", None)
-        if task:
-            kwargs["task"] = _resolve_task(task, generator=generator)
-
         via = getattr(mission, "via", ())
         if via is not ():
             kwargs["via"] = _resolve_vias(via, generator=generator)
@@ -357,26 +355,15 @@ def _gen_missions(
     with open(output_path, "wb") as f:
         pickle.dump(missions, f)
 
-
-def _resolve_task(task, generator):
-    if isinstance(task, types.CutIn):
-        if isinstance(task.complete_on_edge_id, types.JunctionEdgeIDResolver):
-            task = replace(
-                task,
-                complete_on_edge_id=task.complete_on_edge_id.to_edge(
-                    generator.road_network
-                ),
-            )
-
-    return task
+    return True
 
 
 def _resolve_vias(via: Tuple[types.Via], generator):
     vias = [*via]
     for i in range(len(vias)):
         v = vias[i]
-        if isinstance(v.edge_id, types.JunctionEdgeIDResolver):
-            vias[i] = replace(v, edge_id=v.edge_id.to_edge(generator.road_network))
+        if isinstance(v.road_id, types.JunctionEdgeIDResolver):
+            vias[i] = replace(v, road_id=v.road_id.to_edge(generator.road_network))
     return tuple(vias)
 
 

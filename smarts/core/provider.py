@@ -21,7 +21,6 @@ from dataclasses import dataclass, field
 from typing import List, Set
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Pose
 from .scenario import Scenario
 from .vehicle import VehicleState
 
@@ -37,6 +36,7 @@ class ProviderState:
         assert our_vehicles.isdisjoint(other_vehicles)
 
         self.vehicles += other.vehicles
+        self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 
     def filter(self, vehicle_ids):
         provider_vehicle_ids = [v.vehicle_id for v in self.vehicles]
