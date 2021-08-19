@@ -26,12 +26,13 @@ python scenarios/waymo/waymo_sumo_map_conversion.py scenarios/waymo/waymo_datase
 ```
 This will create the `net-{scenario_id}.net.xml` in `scenarios/waymo` which is the naive sumo map. This means the map will have lanes and edges accurate to their length and positions but will be full of holes and noise. There can be multiple junctions at the edge intersections and cracks in lanes.
 So you can edit the map using SUMO's [netedit](https://sumo.dlr.de/docs/Netedit/index.html) tool to edit the map manually and make it more usable. 
+
 Some Tips on how to edit the Sumo Map Manually:
-    * Always use the current `net-{scenario_id}.net.xml` as skeleton and try to create new edges with multiple lanes directly overlapping the old ones by deleting the connections and then joining the nodes
-    * You can remove all the overlapping junctions and create a single junction by removing the old junctions, selecting all the edge nodes that the junction will connect and using the `junctions.join` tool from taskbar.
-    * You can move the entire polygons or change their lengths from one end by using the `move` tool from taskbar.
-    * Make sure to remove any isolated edges or lanes and remove the old lanes, edges and junctions by deleting them manually.
-    * Save your changes by in a new file called `map.net.xml` at the same level as `scenario.py` in `scenarios/waymo`.
+* Always use the current `net-{scenario_id}.net.xml` as skeleton and try to create new edges with multiple lanes directly overlapping the old ones by deleting the connections and then joining the nodes
+* You can remove all the overlapping junctions and create a single junction by removing the old junctions, selecting all the edge nodes that the junction will connect and using the `junctions.join` tool from taskbar.
+* You can move the entire polygons or change their lengths from one end by using the `move` tool from taskbar.
+* Make sure to remove any isolated edges or lanes and remove the old lanes, edges and junctions by deleting them manually.
+* Save your changes by in a new file called `map.net.xml` at the same level as `scenario.py` in `scenarios/waymo`.
 
 Edit `scenarios/waymo/waymo.yaml` so that `input_path` points to the TFRecord file containing the scenario you want to use, and use `scenario_id` to select the specific scenario in the file.
 
