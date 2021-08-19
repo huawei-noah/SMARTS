@@ -78,18 +78,17 @@ class Queue(multiprocessing.queues.Queue):
     being raised, but also allows us to implement a reliable version of both
     qsize() and empty().
     """
-
     def __init__(self, *args, **kwargs):
-        super(multiprocessing.queues.Queue, self).__init__(*args, **kwargs)
+        super(Queue, self).__init__(*args, **kwargs)
         self.size = SharedCounter(0)
 
     def put(self, *args, **kwargs):
         self.size.increment(1)
-        super(multiprocessing.queues.Queue, self).put(*args, **kwargs)
+        super(Queue, self).put(*args, **kwargs)
 
     def get(self, *args, **kwargs):
         self.size.increment(-1)
-        return super(multiprocessing.queues.Queue, self).get(*args, **kwargs)
+        return super(Queue, self).get(*args, **kwargs)
 
     def qsize(self):
         """ Reliable implementation of multiprocessing.Queue.qsize() """
