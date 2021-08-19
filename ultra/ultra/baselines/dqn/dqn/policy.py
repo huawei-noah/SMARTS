@@ -297,6 +297,12 @@ class DQNPolicy(Agent):
             pickle.dump(self.replay, replay_buffer_file, pickle.HIGHEST_PROTOCOL)
         print(f"Saved replay buffer in {time.time() - start_time} s.")
 
+        # Save epsilon object.
+        start_time = time.time()
+        with open(extras_dir / "epsilon.pkl", "wb") as epsilon_file:
+            pickle.dump(self.epsilon_obj, epsilon_file, pickle.HIGHEST_PROTOCOL)
+        print(f"Saved epsilon object in {time.time() - start_time} s.")
+
     def load(self, model_dir, cpu=False):
         model_dir = pathlib.Path(model_dir)
         print("loading from :", model_dir)
@@ -322,6 +328,12 @@ class DQNPolicy(Agent):
         with open(extras_dir / "latest_replay_buffer.pkl", "rb") as replay_buffer_file:
             self.memory = pickle.load(replay_buffer_file)
         print(f"Loaded replay buffer in {time.time() - start_time} s.")
+
+        # Load epsilon object.
+        start_time = time.time()
+        with open(extras_dir / "epsilon.pkl", "rb") as epsilon_file:
+            self.epsilon_obj = pickle.load(epsilon_file)
+        print(f"Loaded epsilon object in {time.time() - start_time} s.")
 
     def step(self, state, action, reward, next_state, done, info, others=None):
         # dont treat timeout as done equal to True
