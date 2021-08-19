@@ -29,6 +29,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
+from smarts.core.utils.logging import timeit
 
 
 class HiWayEnv(gym.Env):
@@ -175,7 +176,11 @@ class HiWayEnv(gym.Env):
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
         }
-        observations, rewards, agent_dones, extras = self._smarts.step(agent_actions)
+        observations, rewards, agent_dones, extras = None, None, None, None
+        with timeit("SMARTS Simulation/Scenario Step", self._log):
+            observations, rewards, agent_dones, extras = self._smarts.step(
+                agent_actions
+            )
 
         infos = {
             agent_id: {"score": value, "env_obs": observations[agent_id]}

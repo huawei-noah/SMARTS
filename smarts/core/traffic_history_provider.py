@@ -23,7 +23,7 @@ from itertools import cycle
 from typing import NamedTuple, Set
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Heading, Pose
+from .coordinates import Dimensions, Heading, Pose
 from .provider import Provider, ProviderState
 from .utils.math import rounder_for_dt
 from .vehicle import VEHICLE_CONFIGS, VehicleState
@@ -57,7 +57,7 @@ class TrafficHistoryProvider(Provider):
         self._histories = scenario.traffic_history
         if self._histories:
             self._histories.connect_for_multiple_queries()
-        self._map_location_offset = scenario.road_network.net_offset
+        self._map_location_offset = scenario.road_map.xy_offset
         self._is_setup = True
         return ProviderState()
 
@@ -102,6 +102,7 @@ class TrafficHistoryProvider(Provider):
                 continue
             vehicle_ids.add(v_id)
             vehicle_config_type = self._histories.decode_vehicle_type(hr.vehicle_type)
+            # TODO:  shift map to origin on import
             pos_x = hr.position_x + self._map_location_offset[0]
             pos_y = hr.position_y + self._map_location_offset[1]
             vehicles.append(
@@ -110,7 +111,7 @@ class TrafficHistoryProvider(Provider):
                     vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_center((pos_x, pos_y, 0), Heading(hr.heading_rad)),
                     # Note: Neither NGSIM nor INTERACTION provide the vehicle height
-                    dimensions=BoundingBox.init_with_defaults(
+                    dimensions=Dimensions.init_with_defaults(
                         hr.vehicle_length,
                         hr.vehicle_width,
                         hr.vehicle_height,

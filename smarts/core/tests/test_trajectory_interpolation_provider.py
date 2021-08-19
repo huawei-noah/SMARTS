@@ -155,7 +155,7 @@ def scenario():
     with temp_scenario(name="map", map="maps/straight.net.xml") as scenario_root:
         mission = t.Mission(
             route=t.Route(
-                begin=("west", 1, 100),
+                begin=("west", 1, 99.9),
                 end=("east", 1, 10.0),
             )
         )

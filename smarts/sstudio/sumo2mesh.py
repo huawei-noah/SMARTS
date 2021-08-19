@@ -24,8 +24,7 @@ from smarts.core.sumo_road_network import SumoRoadNetwork
 
 def generate_glb_from_sumo_network(sumo_net_file, out_glb_file):
     road_network = SumoRoadNetwork.from_file(net_file=sumo_net_file)
-    glb = road_network.build_glb()
-    glb.write_glb(out_glb_file)
+    road_network.to_glb(out_glb_file)
 
 
 if __name__ == "__main__":
