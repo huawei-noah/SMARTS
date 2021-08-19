@@ -14,15 +14,15 @@ pip install -e .[waymo]
 
 Next, download the dataset files to the folder `scenarios/waymo/waymo_dataset`. It is recommended to download the dataset files from the `training_20s` folder as they have the full traffic capture for each scenario.
 
-Currently, users must supply their own map. Place the `map.net.xml` file in the `scenarios/waymo` folder. Additionally, they can use the `scenarios/waymo/waymo_sumo_map_conversion.py` to create a naive sumo map of their waymo scenario and then edit it manually to create a cleaner sumo map.
+Currently, users must supply their own map. Place the `map.net.xml` file in the `scenarios/waymo` folder. Additionally, they can use the `scenarios/waymo/gen_sumo_map.py` to create a naive sumo map of their waymo scenario and then edit it manually to create a cleaner sumo map.
 
 ## Generating the history database and creating the map
-Inorder to create a naive sumo map of your waymo scenario, go to `scenarios/waymo` and run the following command,
+In order to create a sumo map of your waymo scenario, go to `scenarios/waymo` and run the following command,
 ```bash
-python scenarios/waymo/waymo_sumo_map_conversion.py path/to/dataset scenario_id
+python scenarios/waymo/gen_sumo_map.py path/to/dataset scenario_id
 
 # example
-python scenarios/waymo/waymo_sumo_map_conversion.py scenarios/waymo/waymo_dataset/uncompressed_scenario_training_20s_training_20s.tfrecord-00007-of-01000 e211c9b4f68ff2c8
+python scenarios/waymo/gen_sumo_map.py scenarios/waymo/waymo_dataset/uncompressed_scenario_training_20s_training_20s.tfrecord-00007-of-01000 e211c9b4f68ff2c8
 ```
 This will create the `net-{scenario_id}.net.xml` in `scenarios/waymo` which is the naive sumo map. This means the map will have lanes and edges accurate to their length and positions but will be full of holes and noise. There can be multiple junctions at the edge intersections and cracks in lanes.
 So you can edit the map using SUMO's [netedit](https://sumo.dlr.de/docs/Netedit/index.html) tool to edit the map manually and make it more usable. 
