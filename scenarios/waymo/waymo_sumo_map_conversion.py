@@ -126,7 +126,7 @@ def generate_sumo_map(path, scenario_id):
     scenario_id, map_features = read_map_data(path, scenario_id)
     nodes_path = f"nodes-{scenario_id}.nod.xml"
     edges_path = f"edges-{scenario_id}.edg.xml"
-    net_path = f"scenarios/waymo/map.net.xml"
+    net_path = f"scenarios/waymo/net-{scenario_id}.net.xml"
 
     lanes = [convert_polyline(lane.polyline) for lane in map_features["lane"]]
     # lanes = list(filter(lambda lane: max(lane[1]) > 8150, lanes))
