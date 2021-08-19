@@ -153,7 +153,6 @@ def generate_sumo_map(path, scenario_id):
             f"--output-file={net_path}",
             "--offset.disable-normalization",
             "--no-internal-links=false",
-            "--junctions.join-same",
         ],
         stdout=subprocess.PIPE,
     )
