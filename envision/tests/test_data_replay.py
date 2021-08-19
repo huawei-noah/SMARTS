@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 import multiprocessing
+import multiprocessing.queues
 import tempfile
 from pathlib import Path
 
@@ -79,16 +80,16 @@ class Queue(multiprocessing.queues.Queue):
     """
 
     def __init__(self, *args, **kwargs):
-        super(Queue, self).__init__(*args, **kwargs)
+        super(multiprocessing.queues.Queue, self).__init__(*args, **kwargs)
         self.size = SharedCounter(0)
 
     def put(self, *args, **kwargs):
         self.size.increment(1)
-        super(Queue, self).put(*args, **kwargs)
+        super(multiprocessing.queues.Queue, self).put(*args, **kwargs)
 
     def get(self, *args, **kwargs):
         self.size.increment(-1)
-        return super(Queue, self).get(*args, **kwargs)
+        return super(multiprocessing.queues.Queue, self).get(*args, **kwargs)
 
     def qsize(self):
         """ Reliable implementation of multiprocessing.Queue.qsize() """
