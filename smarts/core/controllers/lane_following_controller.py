@@ -78,8 +78,8 @@ class LaneFollowingController:
         state = controller_state
         # This lookahead value is coupled with a few calculations below, changing it
         # may affect stability of the controller.
-        wp_paths = sensor_state.mission_planner.waypoint_paths_at(
-            vehicle.pose, lookahead=16
+        wp_paths = sim.road_map.waypoint_paths(
+            vehicle.pose, lookahead=16, route=sensor_state.plan.route
         )
         current_lane = LaneFollowingController.find_current_lane(
             wp_paths, vehicle.position
@@ -121,7 +121,10 @@ class LaneFollowingController:
         # update the location of the points which its curvature is less than
         # min_curvature.
         if look_ahead_curvature <= min_curvature:
-            state.min_curvature_location = (wp_path[4].pos[0], wp_path[4].pos[1])
+            state.min_curvature_location = (
+                wp_path[4].pos[0],
+                wp_path[4].pos[1],
+            )
 
         # LOOK AHEAD ERROR SETTING
         # look_ahead_wp_num is the ahead waypoint which is used to
@@ -422,8 +425,10 @@ class LaneFollowingController:
         # When we reach the end of our target lane, we need to update it
         # to the next best lane along the path
         state = controller_state
-        paths = sensor_state.mission_planner.waypoint_paths_on_lane_at(
-            vehicle.pose, state.target_lane_id, lookahead=2
+        plan = sensor_state.plan
+        lane = plan.road_map.lane_by_id(state.target_lane_id)
+        paths = lane.waypoint_paths_for_pose(
+            vehicle.pose, lookahead=2, route=plan.route
         )
 
         candidate_next_wps = []
