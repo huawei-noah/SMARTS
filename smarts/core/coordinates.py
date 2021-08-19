@@ -19,8 +19,9 @@
 # THE SOFTWARE.
 import enum
 import math
+from cached_property import cached_property
 from dataclasses import dataclass
-from typing import Optional, Sequence, SupportsFloat, Type, Union
+from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
 from typing_extensions import SupportsIndex
@@ -33,7 +34,7 @@ from smarts.core.utils.math import (
 
 
 @dataclass(frozen=True)
-class BoundingBox:
+class Dimensions:
     length: float
     width: float
     height: float
@@ -49,12 +50,56 @@ class BoundingBox:
         return cls(length, width, height)
 
     @classmethod
-    def copy_with_defaults(cls, bbox, defaults):
-        return cls.init_with_defaults(bbox.length, bbox.width, bbox.height, defaults)
+    def copy_with_defaults(cls, dims, defaults):
+        return cls.init_with_defaults(dims.length, dims.width, dims.height, defaults)
 
     @property
     def as_lwh(self):
         return (self.length, self.width, self.height)
+
+
+class Point(NamedTuple):
+    x: float
+    y: float
+    z: Optional[float] = 0
+
+
+class RefLinePoint(NamedTuple):
+    # See the Reference Line coordinate system in OpenDRIVE here:
+    #   https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems
+    s: float  # offset along lane from start of lane
+    t: Optional[float] = 0  # horizontal displacement from center of lane
+    h: Optional[float] = 0  # vertical displacement from surface of lane
+
+
+@dataclass(frozen=True)
+class BoundingBox:
+    min_pt: Point
+    max_pt: Point
+
+    @property
+    def length(self):
+        return self.max_pt.x - self.min_pt.x
+
+    @property
+    def width(self):
+        return self.max_pt.y - self.min_pt.y
+
+    @property
+    def height(self):
+        return self.max_pt.z - self.min_pt.z
+
+    @property
+    def center(self):
+        return Point(
+            x=(self.min_pt.x + self.max_pt.x) / 2,
+            y=(self.min_pt.y + self.max_pt.y) / 2,
+            z=(self.min_pt.z + self.max_pt.z) / 2,
+        )
+
+    @property
+    def as_dimensions(self) -> Dimensions:
+        return Dimensions(length=self.length, width=self.width, height=self.height)
 
 
 class Heading(float):
@@ -145,6 +190,20 @@ class Pose:
     position: Sequence  # [x, y, z]
     orientation: Sequence  # [a, b, c, d] -> a + bi + cj + dk = 0
     heading_: Optional[Heading] = None  # cached heading to avoid recomputing
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Pose):
+            return False
+        return (self.position == other.position).all() and (
+            self.orientation == other.orientation
+        ).all()
+
+    def __hash__(self):
+        return hash((*self.position, *self.orientation))
+
+    @cached_property
+    def point(self) -> Point:
+        return Point(*self.position)
 
     @classmethod
     def from_front_bumper(cls, front_bumper_position, heading, length):
