@@ -1,6 +1,6 @@
 import logging
 import pickle
-from smarts.core.controllers import ControllerOutOfLaneException
+import os
 from typing import Any, Dict, Sequence
 
 from envision.client import Client as Envision
@@ -12,6 +12,7 @@ from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.math import radians_to_vec
+from smarts.core.controllers import ControllerOutOfLaneException
 
 logging.basicConfig(level=logging.INFO)
 
@@ -90,8 +91,12 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
             _record_data(smarts.elapsed_sim_time, obs, collected_data)
 
         # an example of how we might save the data per car
+        dataset_source = scenario.traffic_history.dataset_source
+        observation_folder = f"{dataset_source}_collected_observations"
+        if not os.path.exists(observation_folder):
+            os.makedirs(observation_folder)
         for car, data in collected_data.items():
-            outfile = f"data_{scenario.name}_{scenario.traffic_history.name}_{car}.pkl"
+            outfile = f"{observation_folder}/data_{scenario.name}_{scenario.traffic_history.name}_{car}.pkl"
             with open(outfile, "wb") as of:
                 pickle.dump(data, of)
 
