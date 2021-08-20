@@ -26,7 +26,7 @@ import trimesh
 import trimesh.scene
 from cached_property import cached_property
 from functools import lru_cache
-from shapely.geometry import Polygon, mapping
+from shapely.geometry import Polygon
 from shapely.ops import snap, triangulate
 from subprocess import check_output
 from trimesh.exchange import gltf
@@ -768,9 +768,11 @@ class SumoRoadNetwork(RoadMap):
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [
-                mapping(road.buffered_shape(sum([lane._width for lane in road.lanes])))[
-                    "coordinates"
-                ]
+                list(
+                    road.buffered_shape(
+                        sum([lane._width for lane in road.lanes])
+                    ).exterior.coords
+                )
                 for road in self.roads
             ]
 
