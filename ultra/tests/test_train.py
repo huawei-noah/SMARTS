@@ -59,7 +59,7 @@ class TrainTest(unittest.TestCase):
         os.system(
             f"python ultra/train.py --task 00-multiagent --level easy --policy sac,sac,sac --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {multi_agent_model_log_dir} --eval-episodes 1 --headless"
         )
-    
+
     def test_a_folders(self):
         single_agent_model_log_dir = os.path.join(
             TrainTest.OUTPUT_DIRECTORY, "single_agent_model_logs/"
