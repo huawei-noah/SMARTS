@@ -292,7 +292,9 @@ class Episode:
             data = {}
 
             for key, value in agent_info.data.items():
-                if value is not None and not isinstance(value, (str, list, tuple, np.ndarray)):
+                if value is not None and not isinstance(
+                    value, (str, list, tuple, np.ndarray)
+                ):
                     self.tb_writer.add_scalar(
                         "{}/{}/{}".format(self.active_tag, agent_id, key),
                         value,

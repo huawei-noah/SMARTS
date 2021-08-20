@@ -223,13 +223,17 @@ def evaluate(
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
-                if value is not None and not isinstance(value, (str, list, tuple, np.ndarray)):
+                if value is not None and not isinstance(
+                    value, (str, list, tuple, np.ndarray)
+                ):
                     summary_log[agent_id].data[key] += value
 
     # Normalize by the number of evaluation episodes.
     for agent_id, agent_data in summary_log.items():
         for key, value in agent_data.data.items():
-            if value is not None and not isinstance(value, (str, list, tuple, np.ndarray)):
+            if value is not None and not isinstance(
+                value, (str, list, tuple, np.ndarray)
+            ):
                 summary_log[agent_id].data[key] /= num_episodes
 
     env.close()
