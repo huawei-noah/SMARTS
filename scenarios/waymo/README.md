@@ -24,15 +24,14 @@ python scenarios/waymo/gen_sumo_map.py scenarios/waymo/waymo_dataset/uncompresse
 
 This will create a file called `map-{scenario_id}.net.xml` in `scenarios/waymo`. This map will have edges with a single lane for each lane in the map data. You can edit the map using SUMO's [netedit](https://sumo.dlr.de/docs/Netedit/index.html) tool to edit the map manually and make it more usable.
 
-Some tips for editing the SUMO map manually:
+Some tips for editing the SUMO map manually in netedit:
 * Clean up any edges/nodes that are detached from the main roads and/or have no traffic on them during the scenario
-* For intersections, join any overlapping junctions together, then join all the junctions that are part of the intersection using the `junctions.join` command under the 'Processing' menu.
+* For intersections, join any overlapping junctions together, then join all the junctions that are part of the intersection using the `junctions.join` command under the `Processing` menu.
 * Tweak the lane widths as needed. They will all have a default width assigned.
-* Always use the current `map-{scenario_id}.net.xml` as a skeleton and try to create new edges with multiple lanes directly overlapping the old ones by deleting the connections and then joining the nodes
-* You can move the entire polygons or change their lengths from one end by using the `move` tool.
-* Save your changes in a new file called `map.net.xml` in `scenarios/waymo`.
+* Try to create new edges with multiple lanes directly overlapping the old ones by deleting the connections and then joining the nodes
+* You can move the entire polygons or change their lengths from one end by using the `move` tool
 
-Once you have your map ready, place the `map.net.xml` file in the `scenarios/waymo` folder.
+Once you have your map ready, save it as `map.net.xml` in the `scenarios/waymo` folder.
 
 ## Building the scenario
 
