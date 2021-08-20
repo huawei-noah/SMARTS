@@ -136,4 +136,4 @@ ultra/ultra/scenarios/task*/*/
 *.sif
 
 # folder containing Observations collected .pkl files for imitation learning
-observations_collected/
+collected_observations/
