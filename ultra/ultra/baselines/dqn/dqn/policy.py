@@ -292,10 +292,16 @@ class DQNPolicy(Agent):
         needs in order to resume training."""
         extras_dir = pathlib.Path(extras_dir)
 
+        # Save the replay buffer.
         start_time = time.time()
         with open(extras_dir / "latest_replay_buffer.pkl", "wb") as replay_buffer_file:
             pickle.dump(self.replay, replay_buffer_file, pickle.HIGHEST_PROTOCOL)
         print(f"Saved replay buffer in {time.time() - start_time} s.")
+
+        # Save the optimizer.
+        start_time = time.time()
+        torch.save(self.optimizers.state_dict(), extras_dir / "latest_optimizer.pth")
+        print(f"Saved optimizer in {time.time() - start_time} s.")
 
         # Save epsilon object.
         start_time = time.time()
@@ -328,6 +334,11 @@ class DQNPolicy(Agent):
         with open(extras_dir / "latest_replay_buffer.pkl", "rb") as replay_buffer_file:
             self.memory = pickle.load(replay_buffer_file)
         print(f"Loaded replay buffer in {time.time() - start_time} s.")
+
+        # Load the optimizer.
+        start_time = time.time()
+        self.optimizers.load_state_dict(torch.load(extras_dir / "latest_optimizer.pth"))
+        print(f"Loaded optimizer in {time.time() - start_time} s.")
 
         # Load epsilon object.
         start_time = time.time()

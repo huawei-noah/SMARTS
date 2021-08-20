@@ -385,6 +385,27 @@ class TD3Policy(Agent):
             self.memory = pickle.load(replay_buffer_file)
         print(f"Loaded replay buffer in {time.time() - start_time} s.")
 
+        # Load the actor optimizer.
+        start_time = time.time()
+        self.actor_optimizer.load_state_dict(
+            torch.load(extras_dir / "latest_actor_optimizer.pth")
+        )
+        print(f"Loaded actor optimizer in {time.time() - start_time} s.")
+
+        # Load the crtic 1 optimizer.
+        start_time = time.time()
+        self.critic_1_optimizer.load_state_dict(
+            torch.load(extras_dir / "latest_critic_1_optimizer.pth")
+        )
+        print(f"Loaded critic 1 optimizer in {time.time() - start_time} s.")
+
+        # Load the critic 2 optimizer.
+        start_time = time.time()
+        self.critic_2_optimizer.load_state_dict(
+            torch.load(extras_dir / "latest_critic_2_optimizer.pth")
+        )
+        print(f"Loaded critic 2 optimizer in {time.time() - start_time} s.")
+
     def save(self, model_dir):
         model_dir = pathlib.Path(model_dir)
         torch.save(self.actor.state_dict(), model_dir / "actor.pth")
@@ -408,7 +429,31 @@ class TD3Policy(Agent):
         needs in order to resume training."""
         extras_dir = pathlib.Path(extras_dir)
 
+        # Save the replay buffer.
         start_time = time.time()
         with open(extras_dir / "latest_replay_buffer.pkl", "wb") as replay_buffer_file:
             pickle.dump(self.memory, replay_buffer_file, pickle.HIGHEST_PROTOCOL)
         print(f"Saved replay buffer in {time.time() - start_time} s.")
+
+        # Save the actor optimizer.
+        start_time = time.time()
+        torch.save(
+            self.actor_optimizer.state_dict(), extras_dir / "latest_actor_optimizer.pth"
+        )
+        print(f"Saved actor optimizer in {time.time() - start_time} s.")
+
+        # Save the critic 1 optimizer.
+        start_time = time.time()
+        torch.save(
+            self.critic_1_optimizer.state_dict(),
+            extras_dir / "latest_critic_1_optimizer.pth",
+        )
+        print(f"Saved critic 1 optimizer in {time.time() - start_time} s.")
+
+        # Save the critic 2 optimizer.
+        start_time = time.time()
+        torch.save(
+            self.critic_2_optimizer.state_dict(),
+            extras_dir / "latest_critic_2_optimizer.pth",
+        )
+        print(f"Saved critic 2 optimizer in {time.time() - start_time} s.")

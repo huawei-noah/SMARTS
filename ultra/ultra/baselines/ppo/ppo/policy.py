@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # some parts of this implementation is inspired by https://github.com/Khrylx/PyTorch-RL
+import time
 import torch, os, yaml
 import numpy as np
 import ultra.adapters as adapters
@@ -407,7 +408,12 @@ class PPOPolicy(Agent):
     def save_extras(self, extras_dir):
         """Called at the end of training. Used to save any extra data that the agent
         needs in order to resume training."""
-        pass
+        extras_dir = pathlib.Path(extras_dir)
+
+        # Save the optimizer.
+        start_time = time.time()
+        torch.save(self.optimizer.state_dict(), extras_dir / "latest_optimizer.pth")
+        print(f"Saved optimizer in {time.time() - start_time} s.")
 
     def load(self, model_dir):
         print("model loaded:", model_dir)
@@ -422,7 +428,12 @@ class PPOPolicy(Agent):
     def load_extras(self, extras_dir):
         """Called at the beginning of training. Used to load any extra data from the
         last training run that the agent needs in order to resume training."""
-        pass
+        extras_dir = pathlib.Path(extras_dir)
+
+        # Load the optimizer.
+        start_time = time.time()
+        self.optimizer.load_state_dict(torch.load(extras_dir / "latest_optimizer.pth"))
+        print(f"Loaded optimizer in {time.time() - start_time} s.")
 
     def reset(self):
         pass

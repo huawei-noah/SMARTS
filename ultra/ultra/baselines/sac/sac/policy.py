@@ -332,6 +332,27 @@ class SACPolicy(Agent):
             self.memory = pickle.load(replay_buffer_file)
         print(f"Loaded replay buffer in {time.time() - start_time} s.")
 
+        # Load the actor optimizer.
+        start_time = time.time()
+        self.actor_optimizer.load_state_dict(
+            torch.load(extras_dir / "latest_actor_optimizer.pth")
+        )
+        print(f"Loaded actor optimizer in {time.time() - start_time} s.")
+
+        # Load the crtic optimizer.
+        start_time = time.time()
+        self.critic_optimizer.load_state_dict(
+            torch.load(extras_dir / "latest_critic_optimizer.pth")
+        )
+        print(f"Loaded critic optimizer in {time.time() - start_time} s.")
+
+        # Load the log alpha optimizer.
+        start_time = time.time()
+        self.log_alpha_optimizer.load_state_dict(
+            torch.load(extras_dir / "latest_log_alpha_optimizer.pth")
+        )
+        print(f"Loaded log alpha optimizer in {time.time() - start_time} s.")
+
     def save(self, model_dir):
         model_dir = pathlib.Path(model_dir)
         # with open(model_dir / "params.yaml", "w") as file:
@@ -347,10 +368,34 @@ class SACPolicy(Agent):
         needs in order to resume training."""
         extras_dir = pathlib.Path(extras_dir)
 
+        # Save the replay buffer.
         start_time = time.time()
         with open(extras_dir / "latest_replay_buffer.pkl", "wb") as replay_buffer_file:
             pickle.dump(self.memory, replay_buffer_file, pickle.HIGHEST_PROTOCOL)
         print(f"Saved replay buffer in {time.time() - start_time} s.")
+
+        # Save the actor optimizer.
+        start_time = time.time()
+        torch.save(
+            self.actor_optimizer.state_dict(), extras_dir / "latest_actor_optimizer.pth"
+        )
+        print(f"Saved actor optimizer in {time.time() - start_time} s.")
+
+        # Save the critic optimizer.
+        start_time = time.time()
+        torch.save(
+            self.critic_optimizer.state_dict(),
+            extras_dir / "latest_critic_optimizer.pth",
+        )
+        print(f"Saved critic optimizer in {time.time() - start_time} s.")
+
+        # Save the log alpha optimizer.
+        start_time = time.time()
+        torch.save(
+            self.log_alpha_optimizer.state_dict(),
+            extras_dir / "latest_log_alpha_optimizer.pth",
+        )
+        print(f"Saved log alpha optimizer in {time.time() - start_time} s.")
 
     def reset(self):
         pass
