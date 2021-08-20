@@ -48,7 +48,7 @@ class SumoMapGenerator:
             if key is not None:
                 map_features[key].append(getattr(map_feature, key))
 
-        return scenario.scenario_id, map_features
+        return map_features
 
     @staticmethod
     def _convert_polyline(polyline) -> Tuple[List[float], List[float]]:
@@ -81,7 +81,7 @@ class SumoMapGenerator:
         node.set("x", str(x))
         node.set("y", str(y))
 
-    def _create_edge(self, edge_id, start_id, end_id, shape, width=5):
+    def _create_edge(self, edge_id, start_id, end_id, shape_str, width=5):
         edge = ET.SubElement(self.edges_root, "edge")
         edge.set("id", edge_id)
         edge.set("from", start_id)
@@ -92,7 +92,7 @@ class SumoMapGenerator:
         lane = ET.SubElement(edge, "lane")
         lane.set("index", str(0))
         lane.set("width", str(width))
-        lane.set("shape", shape)
+        lane.set("shape", shape_str)
 
     def generate(self, path, scenario_id):
         edge_counter = SumoMapGenerator._make_counter()
@@ -100,7 +100,7 @@ class SumoMapGenerator:
         self.nodes_root = ET.Element("nodes")
         self.edges_root = ET.Element("edges")
 
-        scenario_id, map_features = SumoMapGenerator._read_map_data(path, scenario_id)
+        map_features = SumoMapGenerator._read_map_data(path, scenario_id)
         base_dir = Path(__file__).absolute().parent
         nodes_path = base_dir / f"nodes-{scenario_id}.nod.xml"
         edges_path = base_dir / f"edges-{scenario_id}.edg.xml"
