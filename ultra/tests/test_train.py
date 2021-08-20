@@ -48,29 +48,28 @@ class TrainTest(unittest.TestCase):
         single_agent_model_log_dir = os.path.join(
             TrainTest.OUTPUT_DIRECTORY, "single_agent_model_logs/"
         )
-        try:
-            os.system(
-                f"python ultra/train.py --task 00 --level easy --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {single_agent_model_log_dir} --eval-episodes 1 --headless"
-            )
-        except Exception as err:
-            print(err)
-            self.assertTrue(False)
-
-        if not os.path.exists(single_agent_model_log_dir):
-            self.assertTrue(False)
+        os.system(
+            f"python ultra/train.py --task 00 --level easy --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {single_agent_model_log_dir} --eval-episodes 1 --headless"
+        )
 
         """Generate multi agent models"""
         multi_agent_model_log_dir = os.path.join(
             TrainTest.OUTPUT_DIRECTORY, "multi_agent_model_logs/"
         )
-        try:
-            os.system(
-                f"python ultra/train.py --task 00-multiagent --level easy --policy sac,sac,sac --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {multi_agent_model_log_dir} --eval-episodes 1 --headless"
-            )
-        except Exception as err:
-            print(err)
+        os.system(
+            f"python ultra/train.py --task 00-multiagent --level easy --policy sac,sac,sac --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {multi_agent_model_log_dir} --eval-episodes 1 --headless"
+        )
+    
+    def test_a_folders(self):
+        single_agent_model_log_dir = os.path.join(
+            TrainTest.OUTPUT_DIRECTORY, "single_agent_model_logs/"
+        )
+        if not os.path.exists(single_agent_model_log_dir):
             self.assertTrue(False)
 
+        multi_agent_model_log_dir = os.path.join(
+            TrainTest.OUTPUT_DIRECTORY, "multi_agent_model_logs/"
+        )
         if not os.path.exists(multi_agent_model_log_dir):
             self.assertTrue(False)
 
