@@ -323,21 +323,19 @@ class VehicleIndex:
 
     @clear_cache
     def start_agent_observation(
-        self, sim, vehicle_id, agent_id, agent_interface, mission_planner, boid=False
+        self, sim, vehicle_id, agent_id, agent_interface, plan, boid=False
     ):
         original_agent_id = agent_id
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, mission_planner
-        )
+        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan)
 
         self._2id_to_id[agent_id] = original_agent_id
 
         self._sensor_states[vehicle_id] = SensorState(
             agent_interface.max_episode_steps,
-            mission_planner=mission_planner,
+            plan=plan,
         )
 
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
@@ -455,18 +453,14 @@ class VehicleIndex:
         return vehicle
 
     @clear_cache
-    def attach_sensors_to_vehicle(
-        self, sim, vehicle_id, agent_interface, mission_planner
-    ):
+    def attach_sensors_to_vehicle(self, sim, vehicle_id, agent_interface, plan):
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, mission_planner
-        )
+        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan)
         self._sensor_states[vehicle_id] = SensorState(
             agent_interface.max_episode_steps,
-            mission_planner=mission_planner,
+            plan=plan,
         )
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
             agent_interface.action_space, vehicle.pose, sim
@@ -493,14 +487,14 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         sensor_state = self._sensor_states[vehicle_id]
         controller_state = self._controller_states[vehicle_id]
-        mission_planner = sensor_state.mission_planner
+        plan = sensor_state.plan
 
         # Create a new vehicle to replace the old one
         new_vehicle = Vehicle.build_agent_vehicle(
             sim,
             vehicle.id,
             agent_interface,
-            mission_planner,
+            plan,
             sim.scenario.vehicle_filepath,
             sim.scenario.tire_parameters_filepath,
             # BUG: Both the TrapManager and BubbleManager call into this method but the
@@ -542,7 +536,7 @@ class VehicleIndex:
         sim,
         agent_id,
         agent_interface,
-        mission_planner,
+        plan,
         filepath,
         tire_filepath,
         trainable,
@@ -556,7 +550,7 @@ class VehicleIndex:
             sim,
             vehicle_id,
             agent_interface,
-            mission_planner,
+            plan,
             filepath,
             tire_filepath,
             trainable,
@@ -567,7 +561,7 @@ class VehicleIndex:
 
         sensor_state = SensorState(
             agent_interface.max_episode_steps,
-            mission_planner=mission_planner,
+            plan=plan,
         )
 
         controller_state = ControllerState.from_action_space(
@@ -603,7 +597,7 @@ class VehicleIndex:
         original_agent_id = agent_id
 
         Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, sensor_state.mission_planner
+            sim, vehicle, agent_interface, sensor_state.plan
         )
         if sim.is_rendering:
             vehicle.create_renderer_node(sim.renderer)

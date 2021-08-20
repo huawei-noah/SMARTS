@@ -87,7 +87,6 @@ networkx==2.5.1
 numpy==1.18.5
 nvidia-ml-py3==7.352.0
 oauthlib==3.1.1
-open-agent==0.0.0
 opencensus==0.7.13
 opencensus-context==0.1.2
 opencv-python==4.5.2.54

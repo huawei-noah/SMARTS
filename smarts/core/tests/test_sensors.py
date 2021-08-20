@@ -25,9 +25,9 @@ import numpy as np
 import pytest
 from helpers.scenario import temp_scenario
 
-from smarts.core.agent_interface import AgentBehavior, AgentInterface
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.mission_planner import MissionPlanner
+from smarts.core.plan import Plan
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import DrivenPathSensor, WaypointsSensor
 from smarts.sstudio import gen_scenario
@@ -90,125 +90,10 @@ def test_waypoints_sensor(scenarios):
         heading_=Heading(0),
     )
 
-    mission_planner = MissionPlanner(scenario.road_network)
     mission = scenario.missions[AGENT_ID]
-    mission_planner.plan(mission)
+    plan = Plan(scenario.road_map, mission)
 
-    sensor = WaypointsSensor(sim, vehicle, mission_planner)
+    sensor = WaypointsSensor(vehicle, plan)
     waypoints = sensor()
 
     assert len(waypoints) == 3
-
-
-@pytest.fixture
-def uturn_scenarios():
-    with temp_scenario(name="straight", map="maps/6lane.net.xml") as scenario_root:
-        ego_missions = [
-            t.Mission(
-                route=t.Route(
-                    begin=("edge-west-WE", 0, 30), end=("edge-west-EW", 0, "max")
-                ),
-                task=t.UTurn(initial_speed=15),
-            ),
-        ]
-        gen_scenario(
-            t.Scenario(ego_missions=ego_missions),
-            output_dir=scenario_root,
-        )
-
-        yield Scenario.variations_for_all_scenario_roots(
-            [str(scenario_root)], [AGENT_ID]
-        )
-
-
-def test_waypoints_sensor_with_uturn_task(uturn_scenarios):
-    scenario = next(uturn_scenarios)
-    sim = mock.Mock()
-    vehicle = mock.Mock()
-    sim.elapsed_sim_time = 1
-    sim.fixed_timestep_sec = 0.1
-    nei_vehicle = mock.Mock()
-    nei_vehicle.pose = Pose(
-        position=np.array([93, -59, 0]),
-        orientation=[0, 0, 0, 0],
-        heading_=Heading(0),
-    )
-    nei_vehicle.speed = 13.8
-    sim.neighborhood_vehicles_around_vehicle = mock.MagicMock(
-        return_value=[nei_vehicle]
-    )
-
-    vehicle.pose = Pose(
-        position=np.array([25, -61, 0]),
-        orientation=[0, 0, 0, 0],
-        heading_=Heading(0),
-    )
-    mission_planner = MissionPlanner(
-        scenario.road_network, AgentBehavior(aggressiveness=3)
-    )
-    mission = scenario.missions[AGENT_ID]
-    mission_planner.plan(mission)
-    mission_planner._task_is_triggered = True
-
-    sensor = WaypointsSensor(sim, vehicle, mission_planner)
-    waypoints = sensor()
-
-    assert len(waypoints) == 1
-
-
-@pytest.fixture
-def cut_in_scenarios():
-    with temp_scenario(name="straight", map="maps/6lane.net.xml") as scenario_root:
-        ego_missions = [
-            t.Mission(
-                route=t.Route(
-                    begin=("edge-west-WE", 0, 30), end=("edge-west-EW", 0, "max")
-                ),
-                task=t.CutIn(),
-            ),
-        ]
-        gen_scenario(
-            t.Scenario(ego_missions=ego_missions),
-            output_dir=scenario_root,
-        )
-
-        yield Scenario.variations_for_all_scenario_roots(
-            [str(scenario_root)], [AGENT_ID]
-        )
-
-
-def test_waypoints_sensor_with_cut_in_task(cut_in_scenarios):
-    scenario = next(cut_in_scenarios)
-
-    sim = mock.Mock()
-    nei_vehicle = mock.Mock()
-    nei_vehicle.speed = 10
-    sim.elapsed_sim_time = 4
-    sim.fixed_timestep_sec = 0.08
-    sim.last_dt = 0.08
-    nei_vehicle.pose = Pose(
-        position=np.array([25, -68, 0]),
-        orientation=[0, 0, 0, 0],
-        heading_=Heading(0),
-    )
-    sim.neighborhood_vehicles_around_vehicle = mock.MagicMock(
-        return_value=[nei_vehicle]
-    )
-
-    vehicle = mock.Mock()
-    vehicle.pose = Pose(
-        position=np.array([35, -65, 0]),
-        orientation=[0, 0, 0, 0],
-        heading_=Heading(0),
-    )
-
-    mission_planner = MissionPlanner(
-        scenario.road_network, AgentBehavior(aggressiveness=3)
-    )
-    mission = scenario.missions[AGENT_ID]
-    mission_planner.plan(mission)
-
-    sensor = WaypointsSensor(sim, vehicle, mission_planner)
-    waypoints = sensor()
-
-    assert len(waypoints) == 1

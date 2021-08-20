@@ -26,19 +26,21 @@ import time
 from typing import List, Sequence
 
 import numpy as np
-import traci.constants as tc
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
+
+from smarts.core.utils.sumo import SUMO_PATH, traci
+import traci.constants as tc
 from traci.exceptions import FatalTraCIError, TraCIException
 
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
-from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.provider import Provider, ProviderState
+from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
-from smarts.core.utils.sumo import SUMO_PATH, traci
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -219,7 +221,7 @@ class SumoTrafficSimulation(Provider):
     def _base_sumo_load_params(self):
         load_params = [
             "--num-clients=%d" % self._num_clients,
-            "--net-file=%s" % self._scenario.road_network.net_file,
+            "--net-file=%s" % self._scenario.road_map.source,
             "--quit-on-end",
             "--log=%s" % self._log_file,
             "--error-log=%s" % self._log_file,
@@ -258,12 +260,15 @@ class SumoTrafficSimulation(Provider):
         # restart sumo process only when map file changes
         restart_sumo = (
             not self._scenario
-            or self._scenario.net_file_hash != next_scenario.net_file_hash
+            or self._scenario.road_map_hash != next_scenario.road_map_hash
             or self._current_reload_count >= self._reload_count
         )
         self._current_reload_count = self._current_reload_count % self._reload_count + 1
 
         self._scenario = next_scenario
+        assert isinstance(
+            next_scenario.road_map, SumoRoadNetwork
+        ), "SumoTrafficSimulation requires a SumoRoadNetwork"
         self._log_file = next_scenario.unique_sumo_log_file()
 
         if restart_sumo:
@@ -396,7 +401,7 @@ class SumoTrafficSimulation(Provider):
 
         for vehicle_id in external_vehicles_that_have_joined:
             vehicle_state = provider_vehicles[vehicle_id]
-            dimensions = BoundingBox.copy_with_defaults(
+            dimensions = Dimensions.copy_with_defaults(
                 vehicle_state.dimensions,
                 VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
             )
@@ -484,6 +489,9 @@ class SumoTrafficSimulation(Provider):
             keepRoute=0b010,
         )
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
+
+    def update_route_for_vehicle(self, vehicle_id, new_route_edges):
+        self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
     def _create_vehicle(self, vehicle_id, dimensions):
         assert (
@@ -651,8 +659,8 @@ class SumoTrafficSimulation(Provider):
         self._log.debug(
             f"Teleporting {vehicle_id} to lane_offset={lane_offset} route={route}"
         )
-        spawn_edge = self._scenario.road_network.graph.getEdge(route[0])
-        lane_index = random.randint(0, len(spawn_edge.getLanes()) - 1)
+        spawn_road = self._scenario.road_map.road_by_id(route[0])
+        lane_index = random.randint(0, len(spawn_road.lanes) - 1)
         self._emit_vehicle_by_route(vehicle_id, route, lane_index, lane_offset, type_id)
 
     def _reroute_vehicles(self, vehicle_states):
@@ -669,10 +677,10 @@ class SumoTrafficSimulation(Provider):
                 continue
 
             # Check if these edges forms a loop.
-            from_edge = self._scenario.road_network.graph.getEdge(route_edges[-1])
-            to_edge = self._scenario.road_network.graph.getEdge(route_edges[0])
-            next_edges = from_edge.getOutgoing().keys()
-            if to_edge not in next_edges:
+            from_road = self._scenario.road_map.road_by_id(route_edges[-1])
+            to_road = self._scenario.road_map.road_by_id(route_edges[0])
+            next_roads = [road.road_id for road in from_road.outgoing_roads]
+            if to_road not in next_roads:
                 # Reroute only if it's loop, otherwise, teleport the vehicle.
                 self._to_be_teleported[vehicle_id] = {
                     "route": route_edges,
