@@ -773,7 +773,9 @@ class SumoRoadNetwork(RoadMap):
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [
-                road.buffered_shape(sum([lane._width for lane in road.lanes]))
+                road.buffered_shape(
+                    sum([lane._width for lane in road.lanes])
+                ).exterior.coords
                 for road in self.roads
             ]
 

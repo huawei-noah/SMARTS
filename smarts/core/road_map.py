@@ -380,7 +380,7 @@ class RoadMap:
 
         @property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
-            """A sequence of polygons describing the shape of each road on the route"""
+            """A sequence of polygon vertices describing the shape of each road on the route"""
             return []
 
         def distance_between(self, start: Point, end: Point) -> float:
