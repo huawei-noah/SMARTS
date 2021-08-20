@@ -134,3 +134,6 @@ ultra/ultra/scenarios/task*/*/
 
 # Singularity
 *.sif
+
+# folder containing Observations collected .pkl files for imitation learning
+observations_collected/

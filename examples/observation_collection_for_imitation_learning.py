@@ -91,8 +91,7 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
             _record_data(smarts.elapsed_sim_time, obs, collected_data)
 
         # an example of how we might save the data per car
-        dataset_source = scenario.traffic_history.dataset_source
-        observation_folder = f"{dataset_source}_collected_observations"
+        observation_folder = "collected_observations"
         if not os.path.exists(observation_folder):
             os.makedirs(observation_folder)
         for car, data in collected_data.items():
