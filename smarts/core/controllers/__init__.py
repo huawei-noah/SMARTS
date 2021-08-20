@@ -136,11 +136,11 @@ class ControllerState:
             ActionSpaceType.Lane,
             ActionSpaceType.LaneWithContinuousSpeed,
         ):
-            # TAI: we should probably be fetching these waypoint through the mission planner
-            target_lane_id = sim.road_network.lanepoints.closest_lanepoint(
-                vehicle_pose, filter_from_count=4
-            ).lane_id
-            return LaneFollowingControllerState(target_lane_id)
+            target_lane = sim.road_map.nearest_lane(vehicle_pose.point)
+            assert (
+                target_lane
+            ), "Controller has failed because actor is to far from lane for lane-following."  # maybe increase radius in nearest_lane call?
+            return LaneFollowingControllerState(target_lane.lane_id)
 
         if action_space == ActionSpaceType.ActuatorDynamic:
             return ActuatorDynamicControllerState()

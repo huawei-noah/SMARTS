@@ -1,8 +1,8 @@
 # Setup
 
-ULTRA can be run natively on your machine, or through a Docker container. See instructions below for each method of setup.
+ULTRA can be run natively on a Linux machine, or through a Docker container. ULTRA also supports installation on Windows Subsystem for Linux (i.e. WSL 1 and WSL 2). See instructions below for each method of setup.
 
-## Setup Natively
+## Setup Natively on a Linux machine and/or WSL
 
 ```sh
 # 1 - Navigate to the ULTRA directory.
@@ -23,6 +23,7 @@ $ pip install --upgrade pip
 $ source .venv/bin/activate
 
 # 6 - Install dependencies.
+$ pip install wheel
 $ pip install -e .
 ```
 

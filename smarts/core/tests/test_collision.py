@@ -49,7 +49,13 @@ def bullet_client():
     path = Path(__file__).parent / "../smarts/core/models/plane.urdf"
     with pkg_resources.path(models, "plane.urdf") as path:
         plane_path = str(path.absolute())
-    client.loadURDF(plane_path, useFixedBase=True)
+    # create the ground plane to be big enough that the vehicles can potentially contact the ground too
+    client.loadURDF(
+        plane_path,
+        useFixedBase=True,
+        basePosition=(0, 0, 0),
+        globalScaling=1000.0 / 1e6,
+    )
 
     yield client
     client.disconnect()
@@ -80,15 +86,18 @@ def test_collision(bullet_client: bc.BulletClient):
         bullet_client=chassis._client,
     )
 
-    collisions = step_with_vehicle_commands(chassis, steps=1)
-    assert b_chassis.bullet_id in [c.bullet_id for c in collisions]
+    collisions = step_with_vehicle_commands(chassis, steps=2)
     assert len(collisions) > 0
+    collided_bullet_ids = set([c.bullet_id for c in collisions])
+    GROUND_ID = 0
+    assert b_chassis.bullet_id in collided_bullet_ids
+    assert chassis.bullet_id not in collided_bullet_ids
+    assert GROUND_ID not in collided_bullet_ids
 
 
 def test_non_collision(bullet_client: bc.BulletClient):
     """Spawn without overlap to check for the most basic collision"""
 
-    GROUND_ID = 0
     chassis = AckermannChassis(
         Pose.from_center([0, 0, 0], Heading(-math.pi * 0.5)), bullet_client
     )
@@ -101,13 +110,9 @@ def test_non_collision(bullet_client: bc.BulletClient):
     )
 
     collisions = step_with_vehicle_commands(chassis, steps=1)
-    collided_bullet_ids = [c.bullet_id for c in collisions]
+    collided_bullet_ids = set([c.bullet_id for c in collisions])
     assert b_chassis.bullet_id not in collided_bullet_ids
-    assert (
-        len(collisions) == 0
-        or len(collided_bullet_ids) == 1
-        and GROUND_ID in set(collided_bullet_ids)
-    )
+    assert len(collisions) == 0
 
 
 def test_collision_collide_with_standing_vehicle(bullet_client: bc.BulletClient):
@@ -123,8 +128,12 @@ def test_collision_collide_with_standing_vehicle(bullet_client: bc.BulletClient)
         bullet_client=chassis._client,
     )
     collisions = step_with_vehicle_commands(chassis, steps=1000, throttle=1, steering=0)
+    collided_bullet_ids = set([c.bullet_id for c in collisions])
+    GROUND_ID = 0
     assert len(collisions) > 0
-    assert b_chassis.bullet_id in [c.bullet_id for c in collisions]
+    assert b_chassis.bullet_id in collided_bullet_ids
+    assert chassis.bullet_id not in collided_bullet_ids
+    assert GROUND_ID not in collided_bullet_ids
 
 
 def _joust(wkc: AckermannChassis, bkc: AckermannChassis, steps, throttle=1):
@@ -140,7 +149,6 @@ def _joust(wkc: AckermannChassis, bkc: AckermannChassis, steps, throttle=1):
 
 def test_collision_joust(bullet_client: bc.BulletClient):
     """ Run two agents at each other to test for clipping. """
-    GROUND_ID = 0
     white_knight_chassis = AckermannChassis(
         Pose.from_center([10, 0, 0], Heading(math.pi * 0.5)), bullet_client
     )
@@ -163,7 +171,7 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
     """Test that the ackerman chassis size has not changed accidentally by packing it around itself
     with no forces and then check for collisions after a few steps."""
     bullet_client.setGravity(0, 0, 0)
-    separation_for_collision_error = 0.05
+    separation_for_collision_error = 0.0501
     original_vehicle_dimensions = VEHICLE_CONFIGS["passenger"].dimensions
 
     shared_heading = Heading(0)
@@ -223,7 +231,7 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
         bullet_client=bullet_client,
     )
     collisions = step_with_vehicle_commands(chassis, steps=10)
-    assert len(collisions) < 1
+    assert len(collisions) == 0
 
 
 AGENT_1 = "Agent_007"

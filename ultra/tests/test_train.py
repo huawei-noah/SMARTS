@@ -44,17 +44,34 @@ class TrainTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Generate model"""
-        model_log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/")
+        """Generate single agent model"""
+        single_agent_model_log_dir = os.path.join(
+            TrainTest.OUTPUT_DIRECTORY, "single_agent_model_logs/"
+        )
         try:
             os.system(
-                f"python ultra/train.py --task 00 --level easy --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {model_log_dir} --eval-episodes 1 --headless"
+                f"python ultra/train.py --task 00 --level easy --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {single_agent_model_log_dir} --eval-episodes 1 --headless"
             )
         except Exception as err:
             print(err)
             self.assertTrue(False)
 
-        if not os.path.exists(model_log_dir):
+        if not os.path.exists(single_agent_model_log_dir):
+            self.assertTrue(False)
+
+        """Generate multi agent models"""
+        multi_agent_model_log_dir = os.path.join(
+            TrainTest.OUTPUT_DIRECTORY, "multi_agent_model_logs/"
+        )
+        try:
+            os.system(
+                f"python ultra/train.py --task 00-multiagent --level easy --policy sac,sac,sac --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {multi_agent_model_log_dir} --eval-episodes 1 --headless"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
+
+        if not os.path.exists(multi_agent_model_log_dir):
             self.assertTrue(False)
 
     def test_train_cli(self):
@@ -153,11 +170,11 @@ class TrainTest(unittest.TestCase):
             self.assertTrue(False)
             ray.shutdown()
 
-    def test_train_models(self):
+    def test_single_agent_train_model(self):
         """Further train the trained model"""
         log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         experiment_dir = glob.glob(
-            os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "single_agent_model_logs/*")
         )[0]
 
         try:
@@ -173,9 +190,29 @@ class TrainTest(unittest.TestCase):
 
         shutil.rmtree(log_dir)
 
-    def test_load_model(self):
+    def test_multi_agent_train_model(self):
+        """Further train the trained model"""
+        log_dir = os.path.join(TrainTest.OUTPUT_DIRECTORY, "logs/")
         experiment_dir = glob.glob(
-            os.path.join(TrainTest.OUTPUT_DIRECTORY, "model_logs/*")
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "multi_agent_model_logs/*")
+        )[0]
+
+        try:
+            os.system(
+                f"python ultra/train.py --task 00-multiagent --level easy --policy sac,sac,sac --episodes 1 --eval-episodes 0 --max-episode-steps 2 --experiment-dir {experiment_dir} --log-dir {log_dir} --headless"
+            )
+        except Exception as err:
+            print(err)
+            self.assertTrue(False)
+
+        if not os.path.exists(log_dir):
+            self.assertTrue(False)
+
+        shutil.rmtree(log_dir)
+
+    def test_load_single_agent(self):
+        experiment_dir = glob.glob(
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "single_agent_model_logs/*")
         )[0]
         agent_ids, agent_classes, agent_specs, agents = load_agents(experiment_dir)
 
@@ -184,6 +221,23 @@ class TrainTest(unittest.TestCase):
         self.assertIsInstance(agent_specs[agent_ids[0]], AgentSpec)
         self.assertIsInstance(agents[agent_ids[0]], SACPolicy)
         self.assertGreater(len(agents[agent_ids[0]].memory), 0)
+
+    def test_load_multi_agent(self):
+        experiment_dir = glob.glob(
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "multi_agent_model_logs/*")
+        )[0]
+        agent_ids, agent_classes, agent_specs, agents = load_agents(experiment_dir)
+
+        test_agent_ids = ["000", "001", "002"]
+
+        for index in range(len(agent_ids)):
+            self.assertEqual(agent_ids[index], test_agent_ids[index])
+            self.assertEqual(
+                agent_classes[agent_ids[index]], "ultra.baselines.sac:sac-v0"
+            )
+            self.assertIsInstance(agent_specs[agent_ids[index]], AgentSpec)
+            self.assertIsInstance(agents[agent_ids[index]], SACPolicy)
+            self.assertGreater(len(agents[agent_ids[index]].memory), 0)
 
     def test_check_agents_from_pool(self):
         seed = 2

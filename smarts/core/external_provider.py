@@ -23,7 +23,6 @@ from typing import List, Set, Sequence
 import numpy as np
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Pose
 from .provider import Provider, ProviderState
 from .scenario import Scenario
 from .vehicle import VehicleState
