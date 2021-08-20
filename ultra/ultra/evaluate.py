@@ -200,6 +200,7 @@ def evaluate(
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
+        scenario_name = env.scenario_log["scenario_map"]
         dones = {"__all__": False}
         infos = None
         episode.reset(mode="Evaluation")
@@ -217,17 +218,18 @@ def evaluate(
                 agent_ids_to_record=infos.keys(), infos=infos, rewards=rewards
             )
 
-        episode.record_episode()
+        # TODO: How should we record the scenario name for evaluation?
+        episode.record_episode(scenario_name)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():
             for key, value in agent_data.data.items():
-                if not isinstance(value, (list, tuple, np.ndarray)):
+                if value is not None and not isinstance(value, (str, list, tuple, np.ndarray)):
                     summary_log[agent_id].data[key] += value
 
     # Normalize by the number of evaluation episodes.
     for agent_id, agent_data in summary_log.items():
         for key, value in agent_data.data.items():
-            if not isinstance(value, (list, tuple, np.ndarray)):
+            if value is not None and not isinstance(value, (str, list, tuple, np.ndarray)):
                 summary_log[agent_id].data[key] /= num_episodes
 
     env.close()
