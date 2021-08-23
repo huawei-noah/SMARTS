@@ -62,12 +62,12 @@ jobs:
     strategy:
       matrix:
         tests:
-          # - ./envision
-          # - ./smarts/contrib
-          # - ./smarts/sstudio
+          - ./envision
+          - ./smarts/contrib
+          - ./smarts/sstudio
           # - ./smarts/core
-          - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
-          # - ./smarts/env/tests/test_rllib_hiway_env.py
+          # - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
+          - ./smarts/env/tests/test_rllib_hiway_env.py
           # - ./tests
         os:
           - macos-11
