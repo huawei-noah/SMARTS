@@ -58,3 +58,13 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           . ./utils/setup/test_pip_packages.sh
+      - name: Install dependencies
+        run: |
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip
+          pip install --upgrade wheel
+          pip install -e .[train,test,camera-obs]
+      - name: Test pip packages
+        run: |
+          pip freeze | grep -v -E '^smarts' | grep -v 'pkg-resources==0.0.0' | diff -u requirements.txt -
