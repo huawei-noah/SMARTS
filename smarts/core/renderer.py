@@ -28,6 +28,9 @@ import os
 from threading import Lock
 from typing import NamedTuple
 
+os.environ["PANDA_PRC_DIR"] = os.getcwd()
+os.environ["PANDA_PRC_PATH"] = os.getcwd()
+
 import gltf
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
