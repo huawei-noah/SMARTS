@@ -73,6 +73,7 @@
     - `--save-dir`: The directory for saving the completed scenarios (completed scenarios will be put in the task directory if not specified).
     - `--root-dir`: The directory containing the task to be created (default is ultra/scenarios).
     - `--pool-dir`: The directory containing the maps for the scenarios (default is ultra/scenarios/pool/experiment_pool).
+    - `--seed`: The seed used to generate the random seeds for the scenarios. If set, random seeds for the scenarios will be randomly sampled without replacement from the range `[0, 2 ** 31)`. By default, this argument is `None`, producing scenarios with seeds `0, 1, 2, ...`.
     > Each scenario generates a `metadata.json` file to show the routes, number of vehicles, and types of vehicles that are used in that scenario.
 4. Do the analysis:
    - **Analyze scenarios**:

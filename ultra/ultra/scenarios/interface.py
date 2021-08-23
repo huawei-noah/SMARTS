@@ -53,6 +53,12 @@ if __name__ == "__main__":
         default="ultra/scenarios",
     )
     parser_generate_scenarios.add_argument(
+        "--seed",
+        help="Seed the generation of random seeds for the scenarios",
+        type=int,
+        default=None,
+    )
+    parser_generate_scenarios.add_argument(
         "--pool-dir",
         help="directory for locating maps",
         type=str,
@@ -136,6 +142,7 @@ if __name__ == "__main__":
             save_dir=args.save_dir,
             root_path=args.root_dir,
             pool_dir=args.pool_dir,
+            seed=args.seed,
             shuffle_missions=args.no_mission_shuffle,
         )
     else:
