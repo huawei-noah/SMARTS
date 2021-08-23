@@ -62,16 +62,14 @@ jobs:
     strategy:
       matrix:
         tests:
-          # - ./envision
+          - ./envision
           - ./smarts/contrib
-          # - ./tests
-          # - ./smarts/sstudio
-          # - ./smarts/env/tests/test_rllib_hiway_env.py
-          # - ./smarts/core
-          # - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
-        os:
-          - macos-11
-    runs-on: ${{ matrix.os }}
+          - ./tests
+          - ./smarts/sstudio
+          - ./smarts/env/tests/test_rllib_hiway_env.py
+          - ./smarts/core
+          - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
+    runs-on: macos-11
     steps:
       - name: Checkout
         uses: actions/checkout@v2
