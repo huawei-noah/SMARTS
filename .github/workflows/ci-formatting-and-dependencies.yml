@@ -54,10 +54,6 @@ jobs:
           brew tap dlr-ts/sumo
           brew install sumo spatialindex
           brew install geos
-      - name: Test pip packages
-        run: |
-          cd $GITHUB_WORKSPACE
-          . ./utils/setup/test_pip_packages.sh
       - name: Install dependencies
         run: |
           python3.7 -m venv ${{env.venv_dir}}
