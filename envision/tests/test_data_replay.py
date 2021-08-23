@@ -78,6 +78,7 @@ class Queue(multiprocessing.queues.Queue):
     being raised, but also allows us to implement a reliable version of both
     qsize() and empty().
     """
+
     def __init__(self, *args, **kwargs):
         super(Queue, self).__init__(*args, **kwargs)
         self.size = SharedCounter(0)
@@ -132,7 +133,7 @@ def scenarios_iterator():
 
 def fake_websocket_app_class():
     # Using a closure instead of a class field to give isolation between tests.
-    sent = Queue()
+    sent = Queue(ctx=multiprocessing.get_context())
 
     class FakeWebSocketApp:
         """Mocks out the websockets.WebSocketApp to intercept send(...) calls and just
