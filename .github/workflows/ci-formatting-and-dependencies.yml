@@ -52,9 +52,10 @@ jobs:
         run: |
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
-          pip install --upgrade pip
-          pip install --upgrade wheel
-          pip install .[train,test,camera-obs]
+          pip --version
+          pip3 install --upgrade pip
+          pip3 install --upgrade wheel
+          pip3 install .[train,test,camera-obs]
       - name: Test pip packages
         run: |
-          pip3 freeze | grep -v -E '^smarts' | grep -v 'pkg-resources==0.0.0' | diff -u requirements.txt -
+          pip3 freeze | diff -u requirements.txt -
