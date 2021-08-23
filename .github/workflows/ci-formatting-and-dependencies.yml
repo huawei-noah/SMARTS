@@ -42,6 +42,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Setup Python
+        run: |
+          brew update
+          brew install python@3.7
+          brew unlink python@3.9
+          brew link --force --overwrite python@3.7
+      - name: Setup SUMO
+        run: |
+          brew install xquartz
+          brew tap dlr-ts/sumo
+          brew install sumo spatialindex
+          brew install geos
       - name: Test pip packages
         run: |
           cd $GITHUB_WORKSPACE
