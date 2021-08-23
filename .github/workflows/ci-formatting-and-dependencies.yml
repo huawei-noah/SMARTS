@@ -48,12 +48,6 @@ jobs:
           brew install python@3.7
           brew unlink python@3.9
           brew link --force --overwrite python@3.7
-      - name: Setup SUMO
-        run: |
-          brew install xquartz
-          brew tap dlr-ts/sumo
-          brew install sumo spatialindex
-          brew install geos
       - name: Install dependencies
         run: |
           python3.7 -m venv ${{env.venv_dir}}
