@@ -63,6 +63,7 @@ class LogInfo:
             "reached_goal": 0,
             "timed_out": 0,
             "episode_length": 1,
+            "scenario_name": None,
         }
 
     def add(self, infos, rewards):
@@ -101,6 +102,9 @@ class LogInfo:
 
     def step(self):
         self.data["episode_length"] += 1
+
+    def record_scenario_name(self, scenario_name):
+        self.data["scenario_name"] = scenario_name
 
     def normalize(self):
         steps = self.data["episode_length"]
@@ -259,8 +263,9 @@ class Episode:
         # Increment this episode's step count.
         self.steps += 1
 
-    def record_episode(self):
+    def record_episode(self, scenario_name):
         for _, agent_info in self.info[self.active_tag].items():
+            agent_info.record_scenario_name(scenario_name)
             agent_info.normalize()
 
     def initialize_tb_writer(self):
@@ -293,7 +298,9 @@ class Episode:
             data = {}
 
             for key, value in agent_info.data.items():
-                if not isinstance(value, (list, tuple, np.ndarray)):
+                if value is not None and not isinstance(
+                    value, (str, list, tuple, np.ndarray)
+                ):
                     self.tb_writer.add_scalar(
                         "{}/{}/{}".format(self.active_tag, agent_id, key),
                         value,
