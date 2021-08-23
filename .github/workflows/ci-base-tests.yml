@@ -62,13 +62,13 @@ jobs:
     strategy:
       matrix:
         tests:
-#          - ./envision
+          # - ./envision
           - ./smarts/contrib
-#          - ./smarts/sstudio
-#          - ./smarts/env/tests/test_rllib_hiway_env.py
+          # - ./tests
+          # - ./smarts/sstudio
+          # - ./smarts/env/tests/test_rllib_hiway_env.py
           # - ./smarts/core
           # - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
-          # - ./tests
         os:
           - macos-11
     runs-on: ${{ matrix.os }}
@@ -101,11 +101,13 @@ jobs:
           make build-all-scenarios
           PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
-            --forked \
-            --dist=no \
             -n auto \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_benchmark.py \
+            --ignore=./smarts/env/tests/test_frame_stack.py \
             --ignore=./smarts/env/tests/test_learning.py \
-            -k 'not test_long_determinism'
+            --ignore=./smarts/env/tests/test_determinism.py \
+            --ignore=./smarts/core/tests/test_renderers.py \
+            --ignore=./smarts/core/tests/test_smarts.py \
+            --ignore=./smarts/core/tests/test_observations.py
