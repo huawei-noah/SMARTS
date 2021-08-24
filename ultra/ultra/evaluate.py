@@ -218,7 +218,6 @@ def evaluate(
                 agent_ids_to_record=infos.keys(), infos=infos, rewards=rewards
             )
 
-        # TODO: How should we record the scenario name for evaluation?
         episode.record_episode(scenario_name)
 
         for agent_id, agent_data in episode.info[episode.active_tag].items():

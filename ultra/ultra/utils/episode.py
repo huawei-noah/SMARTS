@@ -175,6 +175,11 @@ class Episode:
     def steps_per_second(self):
         return self.steps / self.wall_time
 
+    # TODO: Clean this up.
+    @property
+    def scenario_name(self):
+        return self.info[self.active_tag][list(self.agents_itr.keys())[0]].data["scenario_name"]
+
     def get_itr(self, agent_id):
         return self.agents_itr[agent_id]
 
@@ -324,7 +329,7 @@ class Episode:
 
 
 def episodes(n, etag=None, log_dir=None):
-    col_width = 18
+    col_width = [15, 15, 15, 15, 18, 18, 60]
     with tp.TableContext(
         [
             f"Episode",
@@ -333,6 +338,7 @@ def episodes(n, etag=None, log_dir=None):
             f"Steps/Sec",
             f"Score",
             f"Goal Completed",
+            f"Scenario Name",
         ],
         width=col_width,
         style="round",
@@ -384,10 +390,11 @@ def episodes(n, etag=None, log_dir=None):
                     f"{e.steps_per_second:.2f}",
                     ", ".join(agent_rewards_strings),
                     ", ".join(agent_goal_completion_strings),
+                    f"{e.scenario_name}",
                 )
                 table(row)
             else:
-                table(("", "", "", "", ""))
+                table(("", "", "", "", "", "", ""))
 
 
 class Callbacks(DefaultCallbacks):
