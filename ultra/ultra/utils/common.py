@@ -24,9 +24,11 @@ import math
 import os
 import random
 import shutil
+from collections import deque
 
 import cv2
 import dill
+import pickle
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
@@ -343,3 +345,62 @@ def clip_angle_to_pi(angle):
 def compute_grad(x, prev_x, dt):
     grad = (x - prev_x) / dt if prev_x is not None else x / dt
     return grad
+
+
+def combine_replay_buffer_dataset_with_episodes_results(
+    experiment_dir, agent_id, active_tag
+):
+
+    replay_buffer_tag = f"extras/{agent_id}/"
+    episode_results_tag = f"pkls/{active_tag}/"
+
+    replay_buffer_path = os.path.join(experiment_dir, replay_buffer_tag)
+    episode_results_path = os.path.join(experiment_dir, episode_results_tag)
+
+    # Check if a latest_replay_buffer.pkl exists
+    if not any(os.scandir(replay_buffer_path)):
+        raise Exception(
+            f"latest_replay_buffer.pkl not found on path: {replay_buffer_path}"
+        )
+
+    # Check if a results.pkl exists
+    if not any(os.scandir(episode_results_path)):
+        raise Exception(f"results.pkl not found on path: {episode_results_path}")
+
+    # Extract replay_buffer object
+    with open(
+        os.path.join(replay_buffer_path, "latest_replay_buffer.pkl"), "rb"
+    ) as replay_buffer_file:
+        replay_buffer = pickle.load(replay_buffer_file)
+
+    # Extract episodes' data
+    with open(os.path.join(episode_results_path, "results.pkl"), "rb") as results_file:
+        results = dill.load(results_file)
+
+    episodes_data = {}
+    for index, episode in results[agent_id].items():
+
+        episode_transitions = []
+        episode_transitions_length = episode["episode_length"] - 1
+        for i in range(episode_transitions_length):
+            # TODO: Should we include information for partially completed episodes?
+            # A partially completed episode occurs when the agent iteration is stopped
+            # midway through an episode because the max_steps for the entire experiment
+            # is reached.
+            #
+            # The current setup will include the transitions and episode results for
+            # potential partially completed episode.
+            episode_transitions.append(
+                replay_buffer.replay_buffer_dataset._memory.popleft()
+            )
+
+        episode_data = {}
+        episode_data["replay_buffer_dataset"] = episode_transitions
+        episode_data["episode_results"] = episode
+
+        episodes_data[index] = episode_data
+        # The length of each replay_buffer_dataset should be
+        # equal to episode_length - 1
+        # print(len(episode_data["replay_buffer_dataset"]))
+
+    return episodes_data
