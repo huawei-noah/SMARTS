@@ -158,6 +158,7 @@ class Episode:
         self.tb_writer = tb_writer
         self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
+        self.current_scenario_name = None
 
     @property
     def sim2wall_ratio(self):
@@ -175,10 +176,9 @@ class Episode:
     def steps_per_second(self):
         return self.steps / self.wall_time
 
-    # TODO: Clean this up.
     @property
     def scenario_name(self):
-        return self.info[self.active_tag][list(self.agents_itr.keys())[0]].data["scenario_name"]
+        return self.current_scenario_name
 
     def get_itr(self, agent_id):
         return self.agents_itr[agent_id]
@@ -263,8 +263,9 @@ class Episode:
         self.steps += 1
 
     def record_episode(self, scenario_name):
+        self.current_scenario_name = scenario_name
         for _, agent_info in self.info[self.active_tag].items():
-            agent_info.record_scenario_name(scenario_name)
+            agent_info.record_scenario_name(self.current_scenario_name)
             agent_info.normalize()
 
     def initialize_tb_writer(self):
