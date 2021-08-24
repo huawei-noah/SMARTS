@@ -295,12 +295,14 @@ class Episode:
                 if value is not None and not isinstance(
                     value, (str, list, tuple, np.ndarray)
                 ):
+                    # Only record scalar data to TensorBoard.
                     self.tb_writer.add_scalar(
                         "{}/{}/{}".format(self.active_tag, agent_id, key),
                         value,
                         agent_itr,
                     )
-                    data[key] = value
+                # Include all the data in the results.
+                data[key] = value
             self.all_data[self.active_tag][agent_id][agent_itr] = data
 
         pkls_dir = f"{self.pkls}/{self.active_tag}"
