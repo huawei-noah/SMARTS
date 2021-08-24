@@ -93,6 +93,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
+          pip install -r utils/setup/mac_requirements.txt
           pip install -e .[train,test,camera-obs]
       - name: Run smoke tests
         run: |
@@ -109,3 +110,6 @@ jobs:
             --ignore=./smarts/env/tests/test_frame_stack.py \
             --ignore=./smarts/env/tests/test_learning.py \
             --ignore=./smarts/env/tests/test_determinism.py \
+            --ignore=./smarts/core/tests/test_renderers.py \
+            --ignore=./smarts/core/tests/test_smarts.py \
+            --ignore=./smarts/core/tests/test_observations.py

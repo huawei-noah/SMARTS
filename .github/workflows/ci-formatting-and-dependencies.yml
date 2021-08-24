@@ -54,7 +54,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          # pip install -r utils/setup/mac_requirements.txt
+          pip install -r utils/setup/mac_requirements.txt
           pip install .[train,test,camera-obs]
       - name: Test pip packages
         run: |
