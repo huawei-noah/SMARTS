@@ -28,7 +28,7 @@ import logging
 import os
 import random
 import sqlite3
-from typing import Dict, Generator, NamedTuple, Set, Tuple, TypeVar
+from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar
 
 T = TypeVar("T")
 
@@ -56,7 +56,7 @@ class TrafficHistory:
             self._db_cnxn.close()
             self._db_cnxn = None
 
-    def _query_val(self, result_type: T, query: str, params: Tuple = ()) -> T:
+    def _query_val(self, result_type: Type[T], query: str, params: Tuple = ()) -> T:
         with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
             sqlite3.connect(self._db)
         ) as dbcnxn:
