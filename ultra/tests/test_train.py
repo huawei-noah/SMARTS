@@ -281,7 +281,6 @@ class TrainTest(unittest.TestCase):
             total_transitions += len(episode_data["replay_buffer_dataset"])
         self.assertEqual(total_transitions, max_steps)
 
-
     def test_check_agents_from_pool(self):
         seed = 2
         policy = ""
