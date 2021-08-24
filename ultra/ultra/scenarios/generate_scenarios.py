@@ -701,6 +701,7 @@ def build_scenarios(
     save_dir,
     root_path,
     shuffle_missions=True,
+    seed=None,
     pool_dir=None,
     dynamic_pattern_func=None,
 ):
@@ -718,16 +719,25 @@ def build_scenarios(
     task_dir = f"{scenarios_dir}/{task}"
     pool_dir = f"{scenarios_dir}/pool/experiment_pool" if pool_dir is None else pool_dir
 
-    train_total, test_total = (
-        int(level_config["train"]["total"]),
-        int(level_config["test"]["total"]),
-    )
+    train_total = int(level_config["train"]["total"])
+    test_total = int(level_config["test"]["total"])
+    if seed is None:
+        # Generate seeds 0, 1, ..., train_total + test_total - 1, and allocate the
+        # first train_total seeds to the training scenarios, and the rest to the testing
+        # scenarios.
+        scenario_seeds = [i for i in range(train_total + test_total)]
+    else:
+        # Generate random seeds for the scenarios by sampling numbers in the range
+        # [0, 2** 31) without replacement. The generation of these seeds is seeded by
+        # the seed passed to this function.
+        _seeded_random = random.Random(seed)
+        scenario_seeds = _seeded_random.sample(range(2 ** 31), train_total + test_total)
     splitted_seeds = {
-        "train": [i for i in range(train_total)],
-        "test": [i for i in range(train_total, train_total + test_total)],
+        "train": scenario_seeds[:train_total],
+        "test": scenario_seeds[train_total : (train_total + test_total)],
     }
+
     jobs = []
-    # print(M)
     start = time.time()
     for mode, mode_seeds in splitted_seeds.items():
         combinations = []
@@ -824,11 +834,8 @@ def build_scenarios(
                 f"real: {intersection_percent}"
             )
             print(generation_stats)
-            # print("--")
             prev_split = cur_split
             main_seed_count += seed_count
-        # print(f"Finished: {mode}  {main_seed_count/(train_total+test_total)}")
-        # print("--------------------------------------------")
     for process in jobs:
         process.join()
     print("*** time took:", time.time() - start)
