@@ -141,11 +141,11 @@ class ScenariosTest(unittest.TestCase):
             self.assertTrue(False)
 
         reference_scenario_dirs = [
-            scenario_dir.split("/")[-1]
+            os.path.basename(os.path.normpath(scenario_dir))
             for scenario_dir in glob.glob(os.path.join(REFERENCE_SAVE_DIR, "*/"))
         ]
         test_scenario_dirs = [
-            scenario_dir.split("/")[-1]
+            os.path.basename(os.path.normpath(scenario_dir))
             for scenario_dir in glob.glob(os.path.join(TEST_SAVE_DIR, "*/"))
         ]
 
@@ -179,8 +179,9 @@ class ScenariosTest(unittest.TestCase):
         scenario_dirs = glob.glob(os.path.join(SAVE_DIR, "*/"))
         scenario_seeds = sorted(
             [
-                int(scenario_name.replace("/", "").split("-")[-1])
-                for scenario_name in scenario_dirs
+                # Get the last part of the scenario directory name (the seed).
+                int(os.path.basename(os.path.normpath(scenario_dir)).split("-")[-1])
+                for scenario_dir in scenario_dirs
             ]
         )
         expected_scenario_seeds = [i for i in range(len(scenario_seeds))]
