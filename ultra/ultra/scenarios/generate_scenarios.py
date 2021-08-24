@@ -730,8 +730,8 @@ def build_scenarios(
         # Generate random seeds for the scenarios by sampling without replacement
         # numbers in the range [0, 2 ** 31). The generation of these seeds is seeded by
         # the seed passed to this function.
-        random.seed(seed)
-        scenario_seeds = random.sample(range(2 ** 31), train_total + test_total)
+        _seeded_random = random.Random(seed)
+        scenario_seeds = _seeded_random.sample(range(2 ** 31), train_total + test_total)
     splitted_seeds = {
         "train": scenario_seeds[:train_total],
         "test": scenario_seeds[train_total : (train_total + test_total)],
