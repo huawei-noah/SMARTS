@@ -722,13 +722,13 @@ def build_scenarios(
     train_total = int(level_config["train"]["total"])
     test_total = int(level_config["test"]["total"])
     if seed is None:
-        # Generate seeds from 0 to train_total + test_total (exclusive), allocating the
+        # Generate seeds 0, 1, ..., train_total + test_total - 1, and allocate the
         # first train_total seeds to the training scenarios, and the rest to the testing
         # scenarios.
         scenario_seeds = [i for i in range(train_total + test_total)]
     else:
-        # Generate random seeds for the scenarios by sampling without replacement
-        # numbers in the range [0, 2 ** 31). The generation of these seeds is seeded by
+        # Generate random seeds for the scenarios by sampling numbers in the range
+        # [0, 2** 31) without replacement. The generation of these seeds is seeded by
         # the seed passed to this function.
         _seeded_random = random.Random(seed)
         scenario_seeds = _seeded_random.sample(range(2 ** 31), train_total + test_total)
