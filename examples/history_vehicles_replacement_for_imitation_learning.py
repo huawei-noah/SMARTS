@@ -83,7 +83,6 @@ def main(
     vehicles_to_replace: int,
     episodes: int,
 ):
-    global history_start_time
     assert vehicles_to_replace > 0
     assert episodes > 0
     logger = logging.getLogger(script)
