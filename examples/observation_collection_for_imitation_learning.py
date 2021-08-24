@@ -95,7 +95,7 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
         if not os.path.exists(observation_folder):
             os.makedirs(observation_folder)
         for car, data in collected_data.items():
-            outfile = f"{observation_folder}/data_{scenario.name}_{scenario.traffic_history.name}_{car}.pkl"
+            outfile = f"{observation_folder}/{scenario.name}_{scenario.traffic_history.name}_{car}.pkl"
             with open(outfile, "wb") as of:
                 pickle.dump(data, of)
 

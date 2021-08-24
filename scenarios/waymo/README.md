@@ -26,9 +26,10 @@ This will create a file called `map-{scenario_id}.net.xml` in `scenarios/waymo`.
 
 Some tips for editing the SUMO map manually in netedit:
 * Clean up any edges/nodes that are detached from the main roads and/or have no traffic on them during the scenario
-* For intersections, join any overlapping junctions together, then join all the junctions that are part of the intersection using the `junctions.join` command under the `Processing` menu.
-* Tweak the lane widths as needed. They will all have a default width assigned.
-* Try to create new edges with multiple lanes directly overlapping the old ones by deleting the connections and then joining the nodes
+* There will likely be a lot of overlapping nodes. Select and join them into a single node using the `junctions.join` command under the `Processing` menu.
+* The generated edges have very complicated shape data and should be deleted and replaced by drawing a new edge that approximates the original shape, preferably by connecting the start and end node of the original edge (and creating new nodes as needed for bends)
+* Tweak the lane widths as needed -- they will all have a default width assigned
+* Try to create new edges with multiple lanes directly overlapping the old ones
 * You can move the entire polygons or change their lengths from one end by using the `move` tool
 
 Once you have your map ready, save it as `map.net.xml` in the `scenarios/waymo` folder.
