@@ -10,8 +10,6 @@ from typing import List, Tuple
 from smarts.sstudio.genhistories import Waymo
 from waymo_open_dataset.protos import scenario_pb2
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
 
 class SumoMapGenerator:
     def __init__(self):
@@ -21,7 +19,7 @@ class SumoMapGenerator:
         self.edges_root = None
 
     @staticmethod
-    def _read_map_data(path, scenario_id):
+    def _read_map_data(path: str, scenario_id: str):
         scenario = None
         dataset = Waymo.read_dataset(path)
         for record in dataset:
@@ -74,14 +72,14 @@ class SumoMapGenerator:
 
         return f
 
-    def _create_node(self, node_id, x, y):
+    def _create_node(self, node_id: str, x, y):
         node = ET.SubElement(self.nodes_root, "node")
         node.set("id", node_id)
         node.set("type", "priority")
         node.set("x", str(x))
         node.set("y", str(y))
 
-    def _create_edge(self, edge_id, start_id, end_id, shape_str, width=5):
+    def _create_edge(self, edge_id: str, start_id: str, end_id: str, shape_str: Tuple[List[float], List[float]], width=5):
         edge = ET.SubElement(self.edges_root, "edge")
         edge.set("id", edge_id)
         edge.set("from", start_id)
@@ -94,7 +92,7 @@ class SumoMapGenerator:
         lane.set("width", str(width))
         lane.set("shape", shape_str)
 
-    def generate(self, path, scenario_id):
+    def generate(self, path: str, scenario_id: str):
         edge_counter = SumoMapGenerator._make_counter()
         node_counter = SumoMapGenerator._make_counter()
         self.nodes_root = ET.Element("nodes")
