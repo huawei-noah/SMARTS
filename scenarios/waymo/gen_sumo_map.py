@@ -79,7 +79,14 @@ class SumoMapGenerator:
         node.set("x", str(x))
         node.set("y", str(y))
 
-    def _create_edge(self, edge_id: str, start_id: str, end_id: str, shape_str: Tuple[List[float], List[float]], width=5):
+    def _create_edge(
+        self,
+        edge_id: str,
+        start_id: str,
+        end_id: str,
+        shape_str: Tuple[List[float], List[float]],
+        width=5,
+    ):
         edge = ET.SubElement(self.edges_root, "edge")
         edge.set("id", edge_id)
         edge.set("from", start_id)
