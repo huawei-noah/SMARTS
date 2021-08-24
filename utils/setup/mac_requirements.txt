@@ -117,6 +117,7 @@ pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pybullet==3.0.6
 pycparser==2.20
+pyglet==1.5.15
 Pygments==2.10.0
 pynput==1.7.3
 pyobjc-core==7.3
