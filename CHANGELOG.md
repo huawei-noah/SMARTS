@@ -17,6 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `dt` to `Observation` class to inform users of the observations of the variable timestep.
 - Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
+- Added Base CI and dependencies requirement tests for the "darwin" platform (MacOS).
 ### Changed
 - Made changes to log sections of the scenario step in `smarts.py` to help evaluate smarts performance problems. See Issue #661.
 - Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
