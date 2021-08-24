@@ -9,8 +9,6 @@ All text added must be human-readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
-### Changed
-- Made changes to log sections of the scenario step in `smarts.py` to help evaluate smarts performance problems. See Issue #661.
 ### Added
 - Added a ROS wrapper/driver example to wrap SMARTS in a ROS (v1) node.
 - Added the ability to pass an optional `time_delta_since_last_step` to SMARTS' `step()` function
@@ -20,10 +18,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
 ### Changed
+- Made changes to log sections of the scenario step in `smarts.py` to help evaluate smarts performance problems. See Issue #661.
 - Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
   and allow for (eventually) supporting other map formats.  See Issue #830 and PR #1048.
   This had multiple cascading ripple effects (especially on Waypoint generation and caching,
-  Missions/Plans/Routes and road/lane-related sensors).
+  Missions/Plans/Routes and road/lane-related sensors).  These include:
+    - Removed the `AgentBehavior` class and the `agent_behavior` parameter to `AgentInterface`.
+    - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
+    - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
 ### Fixed
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
 - Prevent `TrapManager`from trapping vehicles in Bubble airlocks.  See Issue #1064.
