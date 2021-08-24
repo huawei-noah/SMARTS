@@ -83,6 +83,7 @@ def main(
     vehicles_to_replace: int,
     episodes: int,
 ):
+    global history_start_time
     assert vehicles_to_replace > 0
     assert episodes > 0
     logger = logging.getLogger(script)
@@ -132,8 +133,6 @@ def main(
 
         for episode in range(episodes):
             logger.info(f"starting episode {episode}...")
-            # Pick k vehicle missions to hijack with agent
-            # and figure out which one starts the earliest
             agentid_to_vehid = {}
             agent_interfaces = {}
 
@@ -145,18 +144,23 @@ def main(
 
             if scenario.traffic_history.dataset_source == "Waymo":
                 # For Waymo, we only hijack the vehicle that was autonomous in the dataset
-                veh_id = str(scenario.traffic_history.ego_vehicle_id)
-                agent_spec.interface.max_episode_steps = (
-                    scenario.traffic_history.vehicle_final_exit_time(veh_id) / 0.1
-                )
-                logger.info(f"chose vehicles: {veh_id}")
-                agent_id = f"ego-agent-IL-{veh_id}"
-                agentid_to_vehid[agent_id] = veh_id
-                agent_interfaces[agent_id] = agent_spec.interface
-                history_start_time = veh_start_times[veh_id]
+                waymo_ego_id = scenario.traffic_history.ego_vehicle_id
+                if waymo_ego_id is not None:
+                    veh_id = str(waymo_ego_id)
+                    sample = {veh_id}
+                # If Waymo ego vehicle is not mentioned in the dataset, hijack a random vehicle
+                else:
+                    logger.warning(
+                        f"Waymo ego vehicle id not mentioned in the dataset. Hijacking a random vehicle."
+                    )
+                    sample = scenario.traffic_history.random_overlapping_sample(
+                        veh_start_times, 1
+                    )
+
             else:
                 # For other datasets, hijack a sample of the recorded vehicles
-                history_start_time = None
+                # Pick k vehicle missions to hijack with agent
+                # and figure out which one starts the earliest
                 sample = scenario.traffic_history.random_overlapping_sample(
                     veh_start_times, k
                 )
@@ -166,17 +170,24 @@ def main(
                     )
                     leftover = set(veh_start_times.keys()) - sample
                     sample.update(set(random.sample(leftover, k - len(sample))))
-                logger.info(f"chose vehicles: {sample}")
 
-                for veh_id in sample:
-                    agent_id = f"ego-agent-IL-{veh_id}"
-                    agentid_to_vehid[agent_id] = veh_id
-                    agent_interfaces[agent_id] = agent_spec.interface
-                    if (
-                        not history_start_time
-                        or veh_start_times[veh_id] < history_start_time
-                    ):
-                        history_start_time = veh_start_times[veh_id]
+            agent_spec.interface.max_episode_steps = max(
+                [
+                    scenario.traffic_history.vehicle_final_exit_time(veh_id) / 0.1
+                    for veh_id in sample
+                ]
+            )
+            history_start_time = None
+            logger.info(f"chose vehicles: {sample}")
+            for veh_id in sample:
+                agent_id = f"ego-agent-IL-{veh_id}"
+                agentid_to_vehid[agent_id] = veh_id
+                agent_interfaces[agent_id] = agent_spec.interface
+                if (
+                    not history_start_time
+                    or veh_start_times[veh_id] < history_start_time
+                ):
+                    history_start_time = veh_start_times[veh_id]
 
             for agent_id in agent_interfaces.keys():
                 agent = agent_spec.build_agent()

@@ -145,7 +145,7 @@ class ControllerState:
                 # This likely means this is a traffic history vehicle that is out-of-lane.
                 # If not, maybe increase radius in nearest_lane call?
                 raise ControllerOutOfLaneException(
-                    "Controller has failed because actor is to far from lane for lane-following."
+                    "Controller has failed because actor is too far from lane for lane-following."
                 )
             return LaneFollowingControllerState(target_lane.lane_id)
 
