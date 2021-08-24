@@ -159,6 +159,7 @@ class Episode:
         self.tb_writer = tb_writer
         self.last_eval_iterations = last_eval_iterations
         self.agents_itr = agents_itr
+        self.current_scenario_name = None
 
     @property
     def sim2wall_ratio(self):
@@ -175,6 +176,10 @@ class Episode:
     @property
     def steps_per_second(self):
         return self.steps / self.wall_time
+
+    @property
+    def scenario_name(self):
+        return self.current_scenario_name
 
     def get_itr(self, agent_id):
         return self.agents_itr[agent_id]
@@ -264,8 +269,9 @@ class Episode:
         self.steps += 1
 
     def record_episode(self, scenario_name):
+        self.current_scenario_name = scenario_name
         for _, agent_info in self.info[self.active_tag].items():
-            agent_info.record_scenario_name(scenario_name)
+            agent_info.record_scenario_name(self.current_scenario_name)
             agent_info.normalize()
 
     def initialize_tb_writer(self):
@@ -301,12 +307,14 @@ class Episode:
                 if value is not None and not isinstance(
                     value, (str, list, tuple, np.ndarray)
                 ):
+                    # Only record scalar data to TensorBoard.
                     self.tb_writer.add_scalar(
                         "{}/{}/{}".format(self.active_tag, agent_id, key),
                         value,
                         agent_itr,
                     )
-                    data[key] = value
+                # Include all the data in the results.
+                data[key] = value
             self.all_data[self.active_tag][agent_id][agent_itr] = data
 
         pkls_dir = f"{self.pkls}/{self.active_tag}"
@@ -328,7 +336,7 @@ class Episode:
 
 
 def episodes(n, etag=None, log_dir=None):
-    col_width = 18
+    col_width = [15, 15, 15, 15, 18, 18, 60]
     with tp.TableContext(
         [
             f"Episode",
@@ -337,6 +345,7 @@ def episodes(n, etag=None, log_dir=None):
             f"Steps/Sec",
             f"Score",
             f"Goal Completed",
+            f"Scenario Name",
         ],
         width=col_width,
         style="round",
@@ -388,10 +397,11 @@ def episodes(n, etag=None, log_dir=None):
                     f"{e.steps_per_second:.2f}",
                     ", ".join(agent_rewards_strings),
                     ", ".join(agent_goal_completion_strings),
+                    f"{e.scenario_name}",
                 )
                 table(row)
             else:
-                table(("", "", "", "", ""))
+                table(("", "", "", "", "", "", ""))
 
 
 class Callbacks(DefaultCallbacks):
