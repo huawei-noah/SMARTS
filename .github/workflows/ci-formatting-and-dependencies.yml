@@ -58,4 +58,4 @@ jobs:
       - name: Test pip packages
         run: |
           . ${{env.venv_dir}}/bin/activate
-          pip freeze | grep -v -E '^smarts' | grep -v 'pkg-resources==0.0.0' | diff -u requirements.txt -
+          pip freeze | grep -v -E '^smarts' | grep -v 'pkg-resources==0.0.0' | diff -u utils/setup/mac_requirements.txt -
