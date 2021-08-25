@@ -486,6 +486,13 @@ class Waymo(_TrajectoryDataset):
         def lerp(a, b, t):
             return t * (b - a) + a
 
+        def constrain_angle(angle):
+            """Constrain to [-pi, pi]"""
+            angle = angle % (2 * math.pi)
+            if angle > math.pi:
+                angle -= 2 * math.pi
+            return angle
+
         if "scenario_id" not in self._dataset_spec:
             errmsg = "Dataset spec requires scenario_id to be set"
             self._log.error(errmsg)
@@ -510,10 +517,11 @@ class Waymo(_TrajectoryDataset):
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
             vehicle_type = self._lookup_agent_type(scenario.tracks[i].object_type)
+            num_steps = len(scenario.timestamps_seconds)
             rows = []
 
             # First pass -- extract data
-            for j in range(len(scenario.timestamps_seconds)):
+            for j in range(num_steps):
                 obj_state = scenario.tracks[i].states[j]
                 vel = np.array([obj_state.velocity_x, obj_state.velocity_y])
 
@@ -534,68 +542,78 @@ class Waymo(_TrajectoryDataset):
                 rows.append(row)
 
             # Second pass -- align timesteps to 10 Hz and interpolate trajectory data if needed
-            for j in range(len(scenario.timestamps_seconds)):
+            interp_rows = [None] * num_steps
+            for j in range(num_steps):
                 row = rows[j]
-                if row["valid"] == False:
-                    continue
                 timestep = 0.1
                 time_current = row["sim_time"]
                 time_expected = round(j * timestep, 3)
                 time_error = time_current - time_expected
 
-                if time_error == 0:
+                if not row["valid"] or time_error == 0:
                     continue
 
-                # Align to expected timestep
-                row["sim_time"] = time_expected
-
                 if time_error > 0:
-                    # If first element, we can't interpolate backwards
-                    if j == 0:
+                    # We can't interpolate if the previous element doesn't exist or is invalid
+                    if j == 0 or not rows[j - 1]["valid"]:
                         continue
 
                     # Interpolate backwards using previous timestep
+                    interp_row = {}
+                    interp_row["sim_time"] = time_expected
+                    
                     prev_row = rows[j - 1]
-                    if prev_row["valid"]:
-                        prev_time = prev_row["sim_time"]
-                        t = (time_expected - prev_time) / (time_current - prev_time)
-                        row["speed"] = lerp(prev_row["speed"], row["speed"], t)
-                        row["position_x"] = lerp(
-                            prev_row["position_x"], row["position_x"], t
-                        )
-                        row["position_y"] = lerp(
-                            prev_row["position_y"], row["position_y"], t
-                        )
-                        row["heading_rad"] = lerp(
-                            prev_row["heading_rad"], row["heading_rad"], t
-                        )
+                    prev_time = prev_row["sim_time"]
+
+                    t = (time_expected - prev_time) / (time_current - prev_time)
+                    interp_row["speed"] = lerp(prev_row["speed"], row["speed"], t)
+                    interp_row["position_x"] = lerp(
+                        prev_row["position_x"], row["position_x"], t
+                    )
+                    interp_row["position_y"] = lerp(
+                        prev_row["position_y"], row["position_y"], t
+                    )
+                    interp_row["heading_rad"] = lerp(
+                        prev_row["heading_rad"], row["heading_rad"], t
+                    )
+                    interp_rows[j] = interp_row
                 else:
-                    # If last element, we can't interpolate forwards
-                    if j == len(scenario.timestamps_seconds) - 1:
+                    # We can't interpolate if the next element doesn't exist or is invalid
+                    if j == len(scenario.timestamps_seconds) - 1 or not rows[j + 1]["valid"]:
                         continue
 
                     # Interpolate forwards using next timestep
-                    assert time_error < 0
-                    next_row = rows[j + 1]
-                    if next_row["valid"]:
-                        next_time = next_row["sim_time"]
-                        t = (time_expected - time_current) / (next_time - time_current)
-                        row["speed"] = lerp(row["speed"], next_row["speed"], t)
-                        row["position_x"] = lerp(
-                            row["position_x"], next_row["position_x"], t
-                        )
-                        row["position_y"] = lerp(
-                            row["position_y"], next_row["position_y"], t
-                        )
-                        row["heading_rad"] = lerp(
-                            row["heading_rad"], next_row["heading_rad"], t
-                        )
+                    interp_row = {}
+                    interp_row["sim_time"] = time_expected
 
-            # Third pass -- filter invalid states and convert time to ms
-            for j in range(len(scenario.timestamps_seconds)):
+                    next_row = rows[j + 1]
+                    next_time = next_row["sim_time"]
+                    
+                    t = (time_expected - time_current) / (next_time - time_current)
+                    interp_row["speed"] = lerp(row["speed"], next_row["speed"], t)
+                    interp_row["position_x"] = lerp(
+                        row["position_x"], next_row["position_x"], t
+                    )
+                    interp_row["position_y"] = lerp(
+                        row["position_y"], next_row["position_y"], t
+                    )
+                    interp_row["heading_rad"] = lerp(
+                        row["heading_rad"], next_row["heading_rad"], t
+                    )
+                    interp_rows[j] = interp_row
+
+            # Third pass -- filter invalid states, replace interpolated values, convert to ms, constrain angles
+            for j in range(num_steps):
                 if rows[j]["valid"] == False:
                     continue
+                if interp_rows[j] is not None:
+                    rows[j]["sim_time"] = interp_rows[j]["sim_time"]
+                    rows[j]["position_x"] = interp_rows[j]["position_x"]
+                    rows[j]["position_y"] = interp_rows[j]["position_y"]
+                    rows[j]["heading_rad"] = interp_rows[j]["heading_rad"]
+                    rows[j]["speed"] = interp_rows[j]["speed"]
                 rows[j]["sim_time"] *= 1000.0
+                rows[j]["heading_rad"] = constrain_angle(rows[j]["heading_rad"])
                 yield rows[j]
 
     @staticmethod
