@@ -13,8 +13,6 @@ from waymo_open_dataset.protos import map_pb2, scenario_pb2
 
 class SumoMapGenerator:
     def __init__(self):
-        self._edge_counter = None
-        self._node_counter = None
         self.nodes_root = None
         self.edges_root = None
 

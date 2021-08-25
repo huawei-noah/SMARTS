@@ -33,7 +33,7 @@ import pandas as pd
 import yaml
 from numpy.lib.stride_tricks import as_strided as stride
 from waymo_open_dataset.protos import scenario_pb2
-from typing import Union
+from typing import Dict, Generator, Union
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -462,11 +462,11 @@ class OldJSON(_TrajectoryDataset):
 
 
 class Waymo(_TrajectoryDataset):
-    def __init__(self, dataset_spec, output):
+    def __init__(self, dataset_spec: Dict, output: str):
         super().__init__(dataset_spec, output)
 
     @staticmethod
-    def read_dataset(path: str):
+    def read_dataset(path: str) -> Generator[bytes, None, None]:
         """Iterate over the records in a TFRecord file and return the bytes of each record.
 
         path: The path to the TFRecord file
@@ -483,7 +483,7 @@ class Waymo(_TrajectoryDataset):
                 yield record_data
 
     @property
-    def rows(self):
+    def rows(self) -> Generator[Dict, None, None]:
         def lerp(a, b, t):
             return t * (b - a) + a
 
@@ -621,7 +621,7 @@ class Waymo(_TrajectoryDataset):
                 yield rows[j]
 
     @staticmethod
-    def _lookup_agent_type(agent_type: int):
+    def _lookup_agent_type(agent_type: int) -> int:
         if agent_type == 1:
             return 2  # car
         elif agent_type == 2:
@@ -631,7 +631,7 @@ class Waymo(_TrajectoryDataset):
         else:
             return 0  # other
 
-    def column_val_in_row(self, row, col_name):
+    def column_val_in_row(self, row: Dict, col_name: str):
         return row[col_name]
 
 
