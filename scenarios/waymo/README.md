@@ -12,9 +12,8 @@ Follow the instructions for the setup of SMARTS in the main [README](https://git
 pip install -e .[waymo]
 ```
 
-Next, download the dataset files to the folder `scenarios/waymo/waymo_dataset`. It is recommended to download the dataset files from the `training_20s` folder as they have the full traffic capture for each scenario.
-
-Currently, users must supply their own map. We provide a script to generate a simple SUMO map from the map data in the Waymo dataset as a starting point.
+Next, download the dataset files from [WAYMO Motion Database](https://waymo.com/open/download/#) to the folder `scenarios/waymo/waymo_dataset`. It is recommended to download the dataset files from the `uncompressed/scenario/training_20s` folder as they have the full traffic capture for each scenario.
+The basic scenario map we developed is for a scenario from the `training_20s.tfrecord-00001-of-01000` dataset but for other scenarios and datasets, users must supply their own map. We provide a script to generate a simple SUMO map from the map data in the Waymo dataset as a starting point.
 
 Example use of the map script:
 
