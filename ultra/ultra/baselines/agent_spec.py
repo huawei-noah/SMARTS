@@ -129,7 +129,7 @@ class BaselineAgentSpec(AgentSpec):
                         wrong_way=True,
                         on_shoulder=False,
                         not_moving=False,
-                        agents_alive=None,
+                        # agents_alive=None, # works for smarts>=0.4.16
                     ),
                     debug=True,
                 ),
