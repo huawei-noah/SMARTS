@@ -5,10 +5,10 @@ import subprocess
 import xml.dom.minidom
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 from smarts.sstudio.genhistories import Waymo
-from waymo_open_dataset.protos import scenario_pb2
+from waymo_open_dataset.protos import map_pb2, scenario_pb2
 
 
 class SumoMapGenerator:
@@ -19,7 +19,7 @@ class SumoMapGenerator:
         self.edges_root = None
 
     @staticmethod
-    def _read_map_data(path: str, scenario_id: str):
+    def _read_map_data(path: str, scenario_id: str) -> Dict:
         scenario = None
         dataset = Waymo.read_dataset(path)
         for record in dataset:
@@ -49,30 +49,32 @@ class SumoMapGenerator:
         return map_features
 
     @staticmethod
-    def _convert_polyline(polyline) -> Tuple[List[float], List[float]]:
+    def _convert_polyline(
+        polyline: map_pb2.MapPoint,
+    ) -> Tuple[List[float], List[float]]:
         tuples = [(p.x, p.y) for p in polyline]
         xs, ys = zip(*tuples)
         return xs, ys
 
     @staticmethod
-    def _shape_str(xs, ys):
+    def _shape_str(xs: List[float], ys: List[float]) -> str:
         result = ""
         for x, y in zip(xs, ys):
             result += f"{x},{y} "
         return result[:-1]
 
     @staticmethod
-    def _make_counter():
+    def _make_counter() -> Callable[[], int]:
         i = 0
 
-        def f():
+        def f() -> int:
             nonlocal i
             i += 1
             return i
 
         return f
 
-    def _create_node(self, node_id: str, x, y):
+    def _create_node(self, node_id: str, x: float, y: float):
         node = ET.SubElement(self.nodes_root, "node")
         node.set("id", node_id)
         node.set("type", "priority")
@@ -85,7 +87,7 @@ class SumoMapGenerator:
         start_id: str,
         end_id: str,
         shape_str: Tuple[List[float], List[float]],
-        width=5,
+        width: float = 5,
     ):
         edge = ET.SubElement(self.edges_root, "edge")
         edge.set("id", edge_id)

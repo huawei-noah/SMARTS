@@ -561,7 +561,7 @@ class Waymo(_TrajectoryDataset):
                     # Interpolate backwards using previous timestep
                     interp_row = {}
                     interp_row["sim_time"] = time_expected
-                    
+
                     prev_row = rows[j - 1]
                     prev_time = prev_row["sim_time"]
 
@@ -579,7 +579,10 @@ class Waymo(_TrajectoryDataset):
                     interp_rows[j] = interp_row
                 else:
                     # We can't interpolate if the next element doesn't exist or is invalid
-                    if j == len(scenario.timestamps_seconds) - 1 or not rows[j + 1]["valid"]:
+                    if (
+                        j == len(scenario.timestamps_seconds) - 1
+                        or not rows[j + 1]["valid"]
+                    ):
                         continue
 
                     # Interpolate forwards using next timestep
@@ -588,7 +591,7 @@ class Waymo(_TrajectoryDataset):
 
                     next_row = rows[j + 1]
                     next_time = next_row["sim_time"]
-                    
+
                     t = (time_expected - time_current) / (next_time - time_current)
                     interp_row["speed"] = lerp(row["speed"], next_row["speed"], t)
                     interp_row["position_x"] = lerp(
