@@ -33,6 +33,7 @@ import pandas as pd
 import yaml
 from numpy.lib.stride_tricks import as_strided as stride
 from waymo_open_dataset.protos import scenario_pb2
+from typing import Union
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -228,7 +229,7 @@ class Interaction(_TrajectoryDataset):
             self._next_row = None
             yield last_row
 
-    def _lookup_agent_type(self, agent_type):
+    def _lookup_agent_type(self, agent_type: str) -> int:
         # Try to match the NGSIM types...
         if agent_type == "motorcycle":
             return 1
@@ -421,7 +422,7 @@ class OldJSON(_TrajectoryDataset):
                 for state in states.values():
                     yield (t, state)
 
-    def _lookup_agent_type(self, agent_type):
+    def _lookup_agent_type(self, agent_type: Union[int, str]) -> int:
         if isinstance(agent_type, int):
             return agent_type
         # Try to match the NGSIM types...
@@ -465,7 +466,7 @@ class Waymo(_TrajectoryDataset):
         super().__init__(dataset_spec, output)
 
     @staticmethod
-    def read_dataset(path):
+    def read_dataset(path: str):
         """Iterate over the records in a TFRecord file and return the bytes of each record.
 
         path: The path to the TFRecord file
