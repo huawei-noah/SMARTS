@@ -9,6 +9,15 @@ The baseline agents use an observation composed of pure physical metrics, that i
 AgentInterface(
     waypoints=Waypoints(lookahead=20),  # Include the next 20 waypoints on the path of the current mission in the observation.
     neighborhood_vehicles=NeighborhoodVehicles(200),  # Include all social neighbouring vehicles in a radius of 200 in the observation.
+    done_criteria=DoneCriteria(
+        collision=True,
+        off_road=True,
+        off_route=True,
+        wrong_way=True,
+        on_shoulder=False,
+        not_moving=False,
+        agents_alive=None,
+    ), # Custom done_criteria (i.e. toggleable conditions on which to trigger episode end) for ULTRA agents
     ...
     rgb=False,  # Do not include a top-down colour image in the observation.
     ...
