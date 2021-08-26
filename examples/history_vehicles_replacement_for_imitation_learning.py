@@ -145,30 +145,28 @@ def main(
                 # For Waymo, we only hijack the vehicle that was autonomous in the dataset
                 waymo_ego_id = scenario.traffic_history.ego_vehicle_id
                 if waymo_ego_id is not None:
+                    assert k == 1, f"do not specify -k > 1 when just hijacking Waymo ego vehicle (it was {k})"
                     veh_id = str(waymo_ego_id)
                     sample = {veh_id}
-                # If Waymo ego vehicle is not mentioned in the dataset, hijack a random vehicle
                 else:
                     logger.warning(
                         f"Waymo ego vehicle id not mentioned in the dataset. Hijacking a random vehicle."
                     )
-                    sample = scenario.traffic_history.random_overlapping_sample(
-                        veh_start_times, 1
-                    )
 
-            else:
+            if not sample:
                 # For other datasets, hijack a sample of the recorded vehicles
                 # Pick k vehicle missions to hijack with agent
                 # and figure out which one starts the earliest
                 sample = scenario.traffic_history.random_overlapping_sample(
                     veh_start_times, k
                 )
-                if len(sample) < k:
-                    logger.warning(
-                        f"Unable to choose {k} overlapping missions.  allowing non-overlapping."
-                    )
-                    leftover = set(veh_start_times.keys()) - sample
-                    sample.update(set(random.sample(leftover, k - len(sample))))
+
+            if len(sample) < k:
+                logger.warning(
+                    f"Unable to choose {k} overlapping missions.  allowing non-overlapping."
+                )
+                leftover = set(veh_start_times.keys()) - sample
+                sample.update(set(random.sample(leftover, k - len(sample))))
 
             agent_spec.interface.max_episode_steps = max(
                 [
@@ -256,7 +254,7 @@ if __name__ == "__main__":
         "-k",
         help="The number vehicles to randomly replace with agents per episode.",
         type=int,
-        default=3,
+        default=1,
     )
     args = parser.parse_args()
 
