@@ -60,9 +60,6 @@ class BaselineAgentSpec(AgentSpec):
             with open(f"{experiment_dir}/agent_metadata.pkl", "rb") as metadata_file:
                 agent_metadata = dill.load(metadata_file)
                 spec = agent_metadata["agent_specs"][agent_id]
-                # TODO: Do we want to change done_criteria for existing agent_specs?
-                # Will it be unfair for agent trained to encounter a new done_criteria?
-                # spec.interface.done_criteria = DoneCriteria()
 
                 new_spec = AgentSpec(
                     interface=spec.interface,
@@ -118,10 +115,7 @@ class BaselineAgentSpec(AgentSpec):
                 interface=AgentInterface(
                     **adapter_interface_requirements,
                     max_episode_steps=max_episode_steps,
-                    # TODO: Do we want to expose all of the attributes of the DoneCriteria
-                    # or just change the attributes which have different values from that
-                    # of the default DoneCriteria()? (e.g. DoneCriteria(wrong_way=True), the
-                    # wring_way attribute is False by default)
+                    # Custom done_criteria for ULTRA agents
                     done_criteria=DoneCriteria(
                         collision=True,
                         off_road=True,
@@ -129,7 +123,7 @@ class BaselineAgentSpec(AgentSpec):
                         wrong_way=True,
                         on_shoulder=False,
                         not_moving=False,
-                        # agents_alive=None, # works for smarts>=0.4.16
+                        agents_alive=None,
                     ),
                     debug=True,
                 ),
