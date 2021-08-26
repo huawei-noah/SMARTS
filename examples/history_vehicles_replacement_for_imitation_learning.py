@@ -145,7 +145,9 @@ def main(
                 # For Waymo, we only hijack the vehicle that was autonomous in the dataset
                 waymo_ego_id = scenario.traffic_history.ego_vehicle_id
                 if waymo_ego_id is not None:
-                    assert k == 1, f"do not specify -k > 1 when just hijacking Waymo ego vehicle (it was {k})"
+                    assert (
+                        k == 1
+                    ), f"do not specify -k > 1 when just hijacking Waymo ego vehicle (it was {k})"
                     veh_id = str(waymo_ego_id)
                     sample = {veh_id}
                 else:
