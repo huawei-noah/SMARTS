@@ -177,16 +177,6 @@ class SumoRoadNetwork(RoadMap):
             lanepoint_spacing=lanepoint_spacing,
         )
 
-    # TODO:  get rid of this, fix traffic_history_provider
-    @cached_property
-    def xy_offset(self):
-        """ This is our offset from what's in the original net file. """
-        return (
-            self._graph.getLocationOffset()
-            if self._graph and getattr(self._graph, "_shifted_by_smarts", False)
-            else [0, 0]
-        )
-
     @property
     def source(self) -> str:
         """ This is the net.xml file that corresponds with our possibly-offset coordinates. """
