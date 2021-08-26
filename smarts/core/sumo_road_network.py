@@ -19,22 +19,18 @@
 # THE SOFTWARE.
 import logging
 import math
+import numpy as np
 import os
 import random
-import re
-from functools import lru_cache
-from subprocess import check_output
-from tempfile import NamedTemporaryFile
-from typing import List, NamedTuple, Sequence, Tuple, Union
-
-import numpy as np
 import trimesh
 import trimesh.scene
 from cached_property import cached_property
-from shapely import ops
+from functools import lru_cache
 from shapely.geometry import Polygon
 from shapely.ops import snap, triangulate
+from subprocess import check_output
 from trimesh.exchange import gltf
+from typing import List, Sequence, Tuple
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap, Waypoint
@@ -48,7 +44,6 @@ from .utils.math import (
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
 from sumolib.net.edge import Edge  # isort:skip
-from sumolib.net.lane import Lane  # isort:skip
 
 
 def _convert_camera(camera):
@@ -773,7 +768,11 @@ class SumoRoadNetwork(RoadMap):
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [
-                road.buffered_shape(sum([lane._width for lane in road.lanes]))
+                list(
+                    road.buffered_shape(
+                        sum([lane._width for lane in road.lanes])
+                    ).exterior.coords
+                )
                 for road in self.roads
             ]
 

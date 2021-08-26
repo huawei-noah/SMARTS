@@ -489,27 +489,30 @@ class Sensors:
         if not nearest_lane:
             return (True, False)
 
+        # Check whether vehicle is in wrong-way
+        is_wrong_way = cls._check_wrong_way_event(nearest_lane, vehicle)
+
+        # Check whether vehicle has no-route or is on-route
         if (
-            not route_roads
-            or nearest_lane.road in route_roads
+            not route_roads  # Vehicle has no-route. E.g., endless mission with a random route
+            or nearest_lane.road in route_roads  # Vehicle is on-route
             or nearest_lane.in_junction
         ):
-            is_wrong_way = cls._check_wrong_way_event(nearest_lane, sim, vehicle)
             return (False, is_wrong_way)
 
         veh_offset = nearest_lane.offset_along_lane(vehicle_pos)
 
-        # so we're not obviously on the route, but we might have just gone
+        # so we're obviously not on the route, but we might have just gone
         # over the center line into an oncoming lane...
         for on_lane in nearest_lane.oncoming_lanes_at_offset(veh_offset):
             if on_lane.road in route_roads:
-                is_wrong_way = cls._check_wrong_way_event(on_lane, sim, vehicle)
                 return (False, is_wrong_way)
 
-        return (True, False)
+        # Vehicle is completely off-route
+        return (True, is_wrong_way)
 
     @staticmethod
-    def _vehicle_is_wrong_way(sim, vehicle, closest_lane):
+    def _vehicle_is_wrong_way(vehicle, closest_lane):
         target_pose = closest_lane.center_pose_at_point(Point(*vehicle.pose.position))
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
@@ -517,12 +520,12 @@ class Sensors:
         )
 
     @classmethod
-    def _check_wrong_way_event(cls, lane_to_check, sim, vehicle):
+    def _check_wrong_way_event(cls, lane_to_check, vehicle):
         # When the vehicle is in an intersection, turn off the `wrong way` check to avoid
         # false positive `wrong way` events.
         if lane_to_check.in_junction:
             return False
-        return cls._vehicle_is_wrong_way(sim, vehicle, lane_to_check)
+        return cls._vehicle_is_wrong_way(vehicle, lane_to_check)
 
 
 class Sensor:

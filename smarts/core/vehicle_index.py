@@ -665,6 +665,10 @@ class VehicleIndex:
     def sensor_states_items(self):
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._sensor_states.items())
 
+    def check_vehicle_id_has_sensor_state(self, vehicle_id: str) -> bool:
+        v_id = _2id(vehicle_id)
+        return v_id in self._sensor_states
+
     def sensor_state_for_vehicle_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
         return self._sensor_states[vehicle_id]

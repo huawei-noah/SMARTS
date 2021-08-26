@@ -1,5 +1,6 @@
 import logging
 import pickle
+import os
 from typing import Any, Dict, Sequence
 
 from envision.client import Client as Envision
@@ -11,6 +12,7 @@ from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.math import radians_to_vec
+from smarts.core.controllers import ControllerOutOfLaneException
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,7 +39,10 @@ def _record_data(
         collected_data[car][t]["acceleration"] = acc_scalar
 
 
-def main(scenarios: Sequence[str], headless: bool, seed: int):
+def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
+    logger = logging.getLogger(script)
+    logger.setLevel(logging.INFO)
+
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
         agent_builder=None,
@@ -49,40 +54,50 @@ def main(scenarios: Sequence[str], headless: bool, seed: int):
         traffic_sim=SumoTrafficSimulation(headless=headless, auto_start=True),
         envision=None if headless else Envision(),
     )
-    scenarios_iterator = Scenario.scenario_variations(
-        scenarios,
-        list([]),
-    )
 
-    scenario = next(scenarios_iterator)
-    obs = smarts.reset(scenario)
+    scenario_list = Scenario.get_scenario_list(scenarios)
+    scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenario_list, [])
+    for scenario in scenarios_iterator:
+        obs = smarts.reset(scenario)
 
-    collected_data = {}
-    _record_data(smarts.elapsed_sim_time, obs, collected_data)
-
-    # could also include "motorcycle" or "truck" in this set if desired
-    vehicle_types = frozenset({"car"})
-
-    while True:
-        smarts.step({})
-        current_vehicles = smarts.vehicle_index.social_vehicle_ids(
-            vehicle_types=vehicle_types
-        )
-
-        if collected_data and not current_vehicles:
-            print("no more vehicles.  exiting...")
-            break
-
-        smarts.attach_sensors_to_vehicles(agent_spec, current_vehicles)
-        obs, _, _, dones = smarts.observe_from(current_vehicles)
-
+        collected_data = {}
         _record_data(smarts.elapsed_sim_time, obs, collected_data)
 
-    # an example of how we might save the data per car
-    for car, data in collected_data.items():
-        outfile = f"data_{scenario.name}_{scenario.traffic_history.name}_{car}.pkl"
-        with open(outfile, "wb") as of:
-            pickle.dump(data, of)
+        # could also include "motorcycle" or "truck" in this set if desired
+        vehicle_types = frozenset({"car"})
+
+        # filter off-road vehicles from observations
+        vehicles_off_road = set()
+
+        while True:
+            smarts.step({})
+            current_vehicles = smarts.vehicle_index.social_vehicle_ids(
+                vehicle_types=vehicle_types
+            )
+
+            if collected_data and not current_vehicles:
+                print("no more vehicles.  exiting...")
+                break
+
+            for veh_id in current_vehicles:
+                try:
+                    smarts.attach_sensors_to_vehicles(agent_spec, {veh_id})
+                except ControllerOutOfLaneException:
+                    logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
+                    vehicles_off_road.add(veh_id)
+
+            valid_vehicles = {v for v in current_vehicles if v not in vehicles_off_road}
+            obs, _, _, dones = smarts.observe_from(valid_vehicles)
+            _record_data(smarts.elapsed_sim_time, obs, collected_data)
+
+        # an example of how we might save the data per car
+        observation_folder = "collected_observations"
+        if not os.path.exists(observation_folder):
+            os.makedirs(observation_folder)
+        for car, data in collected_data.items():
+            outfile = f"{observation_folder}/{scenario.name}_{scenario.traffic_history.name}_{car}.pkl"
+            with open(outfile, "wb") as of:
+                pickle.dump(data, of)
 
     smarts.destroy()
 
@@ -92,6 +107,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(
+        script=parser.prog,
         scenarios=args.scenarios,
         headless=args.headless,
         seed=args.seed,

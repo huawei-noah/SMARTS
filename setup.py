@@ -86,6 +86,9 @@ setup(
             "Panda3D==1.10.9",
             "panda3d-gltf==0.13",
         ],
+        "waymo": [
+            "waymo-open-dataset-tf-2-2-0",
+        ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
