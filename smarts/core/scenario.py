@@ -111,6 +111,17 @@ class Scenario:
 )"""
 
     @staticmethod
+    def get_scenario_list(scenarios_or_scenarios_dirs: Sequence[str]):
+        scenario_roots = []
+        for root in scenarios_or_scenarios_dirs:
+            if Scenario.is_valid_scenario(root):
+                # This is the single scenario mode, only training against a single scenario
+                scenario_roots.append(root)
+            else:
+                scenario_roots.extend(Scenario.discover_scenarios(root))
+        return scenario_roots
+
+    @staticmethod
     def scenario_variations(
         scenarios_or_scenarios_dirs: Sequence[str],
         agents_to_be_briefed: Sequence[str],
@@ -125,13 +136,7 @@ class Scenario:
             agents_to_be_briefed:
                 Agent IDs that will be assigned a mission ("briefed" on a mission).
         """
-        scenario_roots = []
-        for root in scenarios_or_scenarios_dirs:
-            if Scenario.is_valid_scenario(root):
-                # This is the single scenario mode, only training against a single scenario
-                scenario_roots.append(root)
-            else:
-                scenario_roots.extend(Scenario.discover_scenarios(root))
+        scenario_roots = Scenario.get_scenario_list(scenarios_or_scenarios_dirs)
 
         if shuffle_scenarios:
             np.random.shuffle(scenario_roots)
