@@ -7,6 +7,15 @@ spec = AgentSpec(
     interface=AgentInterface(
         waypoints=Waypoints(lookahead=20),
         neighborhood_vehicles=NeighborhoodVehicles(200),
+        done_criteria=DoneCriteria(
+            collision=True,
+            off_road=True,
+            off_route=True,
+            wrong_way=True,
+            on_shoulder=False,
+            not_moving=False,
+            agents_alive=None,
+        ),
         action=action_type,
         rgb=False,
         max_episode_steps=max_episode_steps,
@@ -23,7 +32,7 @@ spec = AgentSpec(
 )
 ```
 
-- `interface` is a SMARTS `AgentInterface` that specifies how the agent will interface with the environment. For example, the types of observations (whether they include images, neighbouring social vehicles, accelerometer data, etc.), vehicle type, and action type can be specified with the agent interface.
+- `interface` is a SMARTS `AgentInterface` that specifies how the agent will interface with the environment. For example, the types of observations (whether they include images, neighbouring social vehicles, accelerometer data, etc.), conditions on when to end episode, vehicle type, and action type can be specified with the agent interface.
 - `agent_params` are the parameters that are passed to the agent builder class.
 - `agent_builder` is a class inheriting from SMARTS's `Agent`. This class must define `act` and `step` methods.
 - `observation_adapter` is a function that takes a raw environment observation and returns a modified observation readable by the agent. This is an optional parameter for any AgentSpec, but is chosen to be assigned for the baseline agents. See more about observation adapters [here](observations.md).
