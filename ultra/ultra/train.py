@@ -272,6 +272,7 @@ def train(
 
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
+        scenario_name = env.scenario_log["scenario_map"]
         dones = {"__all__": False}
         infos = None
         episode.reset()
@@ -342,7 +343,7 @@ def train(
             total_step += 1
             observations = next_observations
 
-        episode.record_episode()
+        episode.record_episode(scenario_name)
         episode.record_tensorboard(recording_step=episode.index)
 
         if finished:

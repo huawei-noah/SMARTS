@@ -61,6 +61,7 @@ class EpisodeTest(unittest.TestCase):
             }
             for episode in episodes(1, etag="Train", log_dir=log_dir):
                 observations = env.reset()
+                scenario_name = env.scenario_log["scenario_map"]
                 total_step = 0
                 episode.reset()
                 dones, infos = {"__all__": False}, None
@@ -102,7 +103,7 @@ class EpisodeTest(unittest.TestCase):
                     state = next_state
                     total_step += 1
             env.close()
-            episode.record_episode()
+            episode.record_episode(scenario_name)
             return result, episode.info
 
         ray.init(ignore_reinit_error=True)

@@ -125,6 +125,7 @@ def tune_train(
     for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
         # Reset the environment and retrieve the initial observations.
         observations = env.reset()
+        scenario_name = env.scenario_log["scenario_map"]
         dones = {"__all__": False}
         infos = None
         episode.reset()
@@ -187,7 +188,7 @@ def tune_train(
             observations = next_observations
 
         # Normalize the data and record this episode on tensorboard.
-        episode.record_episode()
+        episode.record_episode(scenario_name)
         episode.record_tensorboard(recording_step=episode.index)
 
         # Save the agent if we have reached its save rate.
