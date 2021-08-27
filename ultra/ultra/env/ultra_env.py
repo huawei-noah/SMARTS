@@ -60,26 +60,21 @@ class UltraEnv(HiWayEnv):
         eval_mode=False,
         ordered_scenarios=False,
     ):
-        self.timestep_sec = timestep_sec
-        self.headless = headless
-        self.agent_specs = agent_specs
         self.eval_mode = eval_mode
         self.curriculum_mode = curriculum_mode
 
         if self.curriculum_mode is False:
             self.scenario_info = scenario_info
-            self.scenarios = self.get_task(scenario_info[0], scenario_info[1])
+            scenarios = self.get_task(scenario_info[0], scenario_info[1])
             if not self.eval_mode:
-                _scenarios = glob.glob(f"{self.scenarios['train']}")
+                _scenarios = glob.glob(f"{scenarios['train']}")
             else:
-                _scenarios = glob.glob(f"{self.scenarios['test']}")
+                _scenarios = glob.glob(f"{scenarios['test']}")
         else:
             self.scenario_info = scenario_info
-            _scenarios = self.get_scenarios(scenario_info)
+            scenarios = self.get_scenarios(scenario_info)
 
         self.smarts_observations_stack = deque(maxlen=_STACK_SIZE)
-
-        scenarios = UltraEnv.get_scenarios_from_scenario_info(scenario_info, eval_mode)
 
         super().__init__(
             scenarios=scenarios,
@@ -194,8 +189,9 @@ class UltraEnv(HiWayEnv):
         base_dir = os.path.join(os.path.dirname(__file__), "../")
         config_path = os.path.join(base_dir, "config.yaml")
 
-        self._dones_registered = 0
-        smarts_observations = self._smarts.reset(scenario)
+        with open(config_path, "r") as task_file:
+            scenarios = yaml.safe_load(task_file)["tasks"]
+            task = scenarios[f"task{task_id}"][task_level]
 
         task["train"] = os.path.join(base_dir, task["train"])
         task["test"] = os.path.join(base_dir, task["test"])

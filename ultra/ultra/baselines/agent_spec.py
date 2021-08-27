@@ -24,7 +24,7 @@ import numpy as np
 import torch, yaml, os, inspect, dill
 
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface
+from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from ultra.baselines.common.yaml_loader import load_yaml
 import ultra.adapters as adapters
 

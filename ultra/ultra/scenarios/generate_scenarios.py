@@ -737,7 +737,7 @@ def build_scenarios(
         # the seed passed to this function.
         _seeded_random = random.Random(seed)
         scenario_seeds = _seeded_random.sample(range(2 ** 31), train_total + test_total)
-    
+
     if level_config["train"]["total"] == None:
         try:
             train_total = int(totals["train"])
@@ -753,7 +753,7 @@ def build_scenarios(
             print(e)
     else:
         test_total = level_config["test"]["total"]
-    
+
     splitted_seeds = {
         "train": scenario_seeds[:train_total],
         "test": scenario_seeds[train_total : (train_total + test_total)],

@@ -43,7 +43,6 @@ class TrainTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not os.path.exists(model_log_dir):
         """Generate single agent model"""
         single_agent_model_log_dir = os.path.join(
             TrainTest.OUTPUT_DIRECTORY, "single_agent_model_logs/"
