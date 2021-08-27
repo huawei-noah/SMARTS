@@ -179,6 +179,7 @@ class DefaultImageReplayBufferDataset(ReplayBufferDataset):
 
         state = torch.from_numpy(state).to(self._device)
         next_state = torch.from_numpy(next_state).to(self._device)
+        next_state = next_state[-1].unsqueeze(dim=0)  # Keep only the newest frame.
         action = np.asarray([action]) if not isinstance(action, Iterable) else action
         action = torch.from_numpy(action).float()
         reward = torch.from_numpy(np.asarray([reward])).float()
@@ -187,6 +188,13 @@ class DefaultImageReplayBufferDataset(ReplayBufferDataset):
         new_experience = Transition(state, action, reward, next_state, done, others)
 
         self._memory.append(new_experience)
+
+    def __getitem__(self, index):
+        if torch.is_tensor(index):
+            index = index.tolist()
+        state, action, reward, next_state, done, others = tuple(self._memory[index])
+        next_state = torch.cat((state[1:], next_state))  # Reattach the previous frames.
+        return state, action, reward, next_state, done, others
 
     @staticmethod
     def make_states_batch(states, device):
