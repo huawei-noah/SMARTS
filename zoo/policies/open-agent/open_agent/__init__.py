@@ -1,5 +1,5 @@
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentBehavior, AgentInterface
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import register
 
@@ -28,7 +28,6 @@ def entrypoint(
             waypoints=True,
             neighborhood_vehicles=True,
             max_episode_steps=max_episode_steps,
-            agent_behavior=AgentBehavior(aggressiveness=aggressiveness),
         ),
         agent_params={
             "gains": gains,

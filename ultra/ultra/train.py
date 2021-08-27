@@ -134,17 +134,16 @@ def load_agents(experiment_dir):
         agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
     }
 
-    if len(os.listdir(os.path.join(experiment_dir, "models"))) != 0:
-        latest_checkpoint_directories = {
-            agent_id: sorted(
-                glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
-                key=lambda x: int(x.split("/")[-1]),
-            )[-1]
-            for agent_id in agent_ids
-        }
-    else:
-        print("No models found, building agent_spec without any checkpoint directories")
-        latest_checkpoint_directories = {agent_id: None for agent_id in agent_ids}
+    latest_checkpoint_directories = {}
+    for agent_id in agent_ids:
+        checkpoint_directories = sorted(
+            glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
+            key=lambda x: int(x.split("/")[-1]),
+        )
+        latest_checkpoint_directory = (
+            checkpoint_directories[-1] if len(checkpoint_directories) > 0 else None
+        )
+        latest_checkpoint_directories[agent_id] = latest_checkpoint_directory
 
     # Create the agent specifications matched with their associated ID and corresponding
     # checkpoint directory

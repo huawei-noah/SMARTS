@@ -99,6 +99,95 @@ class ScenariosTest(unittest.TestCase):
                     missions = pickle.load(missions_file)
                 self.assertTrue(len(missions) == 1)
 
+    def test_interface_generate_determinism_with_seed(self):
+        TASK = "00"
+        LEVEL = "determinism_test"
+        ROOT_DIR = "tests/scenarios"
+        REFERENCE_SAVE_DIR = os.path.join(
+            ScenariosTest.OUTPUT_DIRECTORY, "maps/determinism_test_with_seed-reference/"
+        )
+        TEST_SAVE_DIR = os.path.join(
+            ScenariosTest.OUTPUT_DIRECTORY, "maps/determinism_test_with_seed-test/"
+        )
+        SEED = 42
+
+        if os.path.exists(REFERENCE_SAVE_DIR):
+            shutil.rmtree(REFERENCE_SAVE_DIR)
+        if os.path.exists(TEST_SAVE_DIR):
+            shutil.rmtree()
+
+        generate_reference_command = (
+            f"python ultra/scenarios/interface.py generate "
+            f"--task {TASK} "
+            f"--level {LEVEL} "
+            f"--root-dir {ROOT_DIR} "
+            f"--save-dir {REFERENCE_SAVE_DIR} "
+            f"--seed {SEED}"
+        )
+        generate_test_command = (
+            f"python ultra/scenarios/interface.py generate "
+            f"--task {TASK} "
+            f"--level {LEVEL} "
+            f"--root-dir {ROOT_DIR} "
+            f"--save-dir {TEST_SAVE_DIR} "
+            f"--seed {SEED}"
+        )
+
+        try:
+            os.system(generate_reference_command)
+            os.system(generate_test_command)
+        except Exception as error:
+            print(error)
+            self.assertTrue(False)
+
+        reference_scenario_dirs = [
+            os.path.basename(os.path.normpath(scenario_dir))
+            for scenario_dir in glob.glob(os.path.join(REFERENCE_SAVE_DIR, "*/"))
+        ]
+        test_scenario_dirs = [
+            os.path.basename(os.path.normpath(scenario_dir))
+            for scenario_dir in glob.glob(os.path.join(TEST_SAVE_DIR, "*/"))
+        ]
+
+        self.assertEqual(reference_scenario_dirs, test_scenario_dirs)
+
+    def test_interface_generate_determinism_without_seed(self):
+        TASK = "00"
+        LEVEL = "determinism_test"
+        ROOT_DIR = "tests/scenarios"
+        SAVE_DIR = os.path.join(
+            ScenariosTest.OUTPUT_DIRECTORY, "maps/determinism_test_without_seed/"
+        )
+
+        if os.path.exists(SAVE_DIR):
+            shutil.rmtree(SAVE_DIR)
+
+        generate_command = (
+            f"python ultra/scenarios/interface.py generate "
+            f"--task {TASK} "
+            f"--level {LEVEL} "
+            f"--root-dir {ROOT_DIR} "
+            f"--save-dir {SAVE_DIR}"
+        )
+
+        try:
+            os.system(generate_command)
+        except Exception as error:
+            print(error)
+            self.assertTrue(False)
+
+        scenario_dirs = glob.glob(os.path.join(SAVE_DIR, "*/"))
+        scenario_seeds = sorted(
+            [
+                # Get the last part of the scenario directory name (the seed).
+                int(os.path.basename(os.path.normpath(scenario_dir)).split("-")[-1])
+                for scenario_dir in scenario_dirs
+            ]
+        )
+        expected_scenario_seeds = [i for i in range(len(scenario_seeds))]
+
+        self.assertEqual(expected_scenario_seeds, scenario_seeds)
+
     def test_interface_generate_multiagent(self):
         try:
             save_dir = os.path.join(
@@ -137,7 +226,7 @@ class ScenariosTest(unittest.TestCase):
             shutil.rmtree(SAVE_DIR)
 
         generate_command = (
-            "python ultra/scenarios/interface.py generate "
+            f"python ultra/scenarios/interface.py generate "
             f"--task {TASK} "
             f"--level {LEVEL} "
             f"--root-dir {ROOT_DIR} "
@@ -191,8 +280,8 @@ class ScenariosTest(unittest.TestCase):
             shutil.rmtree(SAVE_DIR)
 
         generate_command = (
-            "python ultra/scenarios/interface.py generate "
-            "--no-mission-shuffle "
+            f"python ultra/scenarios/interface.py generate "
+            f"--no-mission-shuffle "
             f"--task {TASK} "
             f"--level {LEVEL} "
             f"--root-dir {ROOT_DIR} "

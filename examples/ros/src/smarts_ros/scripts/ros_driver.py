@@ -8,7 +8,7 @@ import rospy
 import sys
 import time
 from threading import Lock
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
 
 import numpy as np
 
@@ -24,16 +24,16 @@ from smarts_ros.srv import SmartsInfo, SmartsInfoResponse, SmartsInfoRequest
 
 from envision.client import Client as Envision
 from smarts.core.agent import Agent
-from smarts.core.coordinates import BoundingBox, Heading, Pose
-from smarts.core.scenario import (
+from smarts.core.coordinates import Dimensions, Heading, Pose
+from smarts.core.plan import (
     default_entry_tactic,
     EndlessGoal,
     Mission,
     PositionalGoal,
-    Scenario,
     Start,
     VehicleSpec,
 )
+from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.math import (
@@ -68,8 +68,8 @@ class ROSDriver:
         with self._state_lock:
             self._recent_state = deque(maxlen=3)
         with self._control_lock:
+            self._control = None
             self._scenario_path = None
-            self._reset_smarts = False
             self._agents = {}
             self._agents_to_add = {}
 
@@ -148,17 +148,14 @@ class ROSDriver:
         assert self._smarts.external_provider
         self._last_step_time = None
         with self._control_lock:
+            self._control = None
             self._scenario_path = None
-            self._reset_smarts = False
             self._agents = {}
             self._agents_to_add = {}
 
     def _smarts_control_callback(self, control: SmartsControl):
         with self._control_lock:
-            self._scenario_path = control.reset_with_scenario_path
-            self._reset_smarts = True
-            self._agents = {}
-            self._agents_to_add = {}
+            self._control = control
         for ros_agent_spec in control.initial_agents:
             self._agent_spec_callback(ros_agent_spec)
 
@@ -299,7 +296,7 @@ class ROSDriver:
             vehicle_spec=VehicleSpec(
                 veh_id=f"veh_for_agent_{ros_agent_spec.agent_id}",
                 veh_config_type=ROSDriver._decode_vehicle_type(ros_agent_spec.veh_type),
-                dimensions=BoundingBox(
+                dimensions=Dimensions(
                     ros_agent_spec.veh_length,
                     ros_agent_spec.veh_width,
                     ros_agent_spec.veh_height,
@@ -329,7 +326,7 @@ class ROSDriver:
     def _entity_to_vs(entity: EntityState) -> VehicleState:
         veh_id = entity.entity_id
         veh_type = ROSDriver._decode_entity_type(entity.entity_type)
-        veh_dims = BoundingBox(entity.length, entity.width, entity.height)
+        veh_dims = Dimensions(entity.length, entity.width, entity.height)
         vs = VehicleState(
             source="EXTERNAL",
             vehicle_id=veh_id,
@@ -348,46 +345,99 @@ class ROSDriver:
         vs.speed = np.linalg.norm(vs.linear_velocity)
         return vs
 
+    class _VehicleStateVector:
+        def __init__(self, vs: VehicleState, stamp: float):
+            self.vs = vs
+            self.vector = np.concatenate(
+                (
+                    np.array((stamp,)),
+                    vs.pose.position,
+                    np.array((vs.pose.heading,)),
+                    np.array(vs.dimensions.as_lwh),
+                    vs.linear_velocity,
+                    vs.angular_velocity,
+                    vs.linear_acceleration,
+                    vs.angular_acceleration,
+                )
+            )
+
+        @property
+        def stamp(self):
+            return self.vector[0]
+
+        def average_with(self, other_vect: np.ndarray):
+            self.vector += other_vect
+            self.vector /= 2
+            self.update_vehicle_state()
+
+        def update_vehicle_state(self):
+            assert len(self.vector) == 20
+            self.vs.pose = Pose.from_center(
+                self.vector[1:4], Heading(self.vector[4] % (2 * math.pi))
+            )
+            self.vs.dimensions = Dimensions(*self.vector[5:8])
+            self.linear_velocity = self.vector[8:11]
+            self.angular_velocity = self.vector[11:14]
+            self.linear_acceleration = self.vector[14:17]
+            self.angular_acceleration = self.vector[17:]
+            self.vs.speed = np.linalg.norm(self.linear_velocity)
+
+    @staticmethod
+    def _moving_average(
+        vehicle_id: str, states: Sequence[EntitiesStamped]
+    ) -> Tuple[VehicleState, float, float, float]:
+        prev_states = []
+        for s in range(len(states)):
+            prev_state = states[-1 - s]
+            for entity in prev_state.entities:
+                if entity.entity_id == vehicle_id:
+                    vs = ROSDriver._entity_to_vs(entity)
+                    stamp = prev_state.header.stamp.to_sec()
+                    prev_states.append(ROSDriver._VehicleStateVector(vs, stamp))
+        assert prev_states
+        if len(prev_states) == 1:
+            return (prev_states[0].vs, prev_states[0].stamp, 0, 0)
+        prev_states[0].average_with(prev_states[1].vector)
+        if len(prev_states) == 2:
+            return (prev_states[0].vs, prev_states[0].stamp, 0, 0)
+        prev_states[1].average_with(prev_states[2].vector)
+        dt = prev_states[0].stamp - prev_states[1].stamp
+        lin_acc_slope = (
+            prev_states[0].vs.linear_acceleration
+            - prev_states[1].vs.linear_acceleration
+        ) / dt
+        ang_acc_slope = (
+            prev_states[0].vs.angular_acceleration
+            - prev_states[1].vs.angular_acceleration
+        ) / dt
+        return (prev_states[0].vs, prev_states[0].stamp, lin_acc_slope, ang_acc_slope)
+
     @staticmethod
     def _extrapolate_to_now(
-        vs: VehicleState, staleness: float, states: Sequence[EntitiesStamped]
+        vs: VehicleState, staleness: float, lin_acc_slope: float, ang_acc_slope: float
     ):
-        """Here we just linearly extrapolate the acceleration to "now" from the previous two states
-        for each vehicle and then use standard kinematics to project the velocity and position from that.
-        We don't need to do any smoothing here because we haven't snapped to a fixed time grid yet."""
-        prev_entity = None
-        for s in range(len(states) - 1):
-            prev_state = states[-2 - s]
-            for entity in prev_state.entities:
-                if entity.entity_id == vs.vehicle_id:
-                    prev_entity = entity
-                    break
-        if not prev_entity:
-            return vs
-        prev_dt = states[-1].header.stamp.to_sec() - prev_state.header.stamp.to_sec()
-        prev_lin_acc = ROSDriver._xyz_to_vect(prev_entity.acceleration.linear)
-        prev_ang_acc = ROSDriver._xyz_to_vect(prev_entity.acceleration.angular)
-        lin_acc_slope = (vs.linear_acceleration - prev_lin_acc) / prev_dt
-        ang_acc_slope = (vs.angular_acceleration - prev_ang_acc) / prev_dt
-
-        # The following 4 lines are a hack b/c I'm too stupid to figure out
+        """Here we just linearly extrapolate the acceleration to "now" from the previous state for
+        each vehicle and then use standard kinematics to project the velocity and position from that."""
+        # The following ~10 lines are a hack b/c I'm too stupid to figure out
         # how to do calculus on quaternions...
-        heading = yaw_from_quaternion(vs.pose.orientation)
+        heading = vs.pose.heading
         heading_delta_vec = staleness * (
             vs.angular_velocity
             + 0.5 * vs.angular_acceleration * staleness
             + ang_acc_slope * staleness ** 2 / 6.0
         )
-        heading += vec_to_radians(heading_delta_vec[:2])
+        heading += vec_to_radians(heading_delta_vec[:2]) + (0.5 * math.pi)
         heading %= 2 * math.pi
         vs.pose.orientation = fast_quaternion_from_angle(heading)
+        # XXX: also need to remove the cached heading_ since we've changed orientation
+        vs.pose.heading_ = None
 
         # I assume the following should be updated based on changing
         # heading from above, but I'll leave that for now...
         vs.pose.position += staleness * (
             vs.linear_velocity
             + 0.5 * vs.linear_acceleration * staleness
-            + lin_acc_slope * staleness * staleness / 6.0
+            + lin_acc_slope * staleness ** 2 / 6.0
         )
 
         vs.linear_velocity += staleness * (
@@ -400,7 +450,7 @@ class ROSDriver:
         vs.linear_acceleration += staleness * lin_acc_slope
         vs.angular_acceleration += staleness * ang_acc_slope
 
-    def _update_smarts_state(self, step_delta: float) -> bool:
+    def _update_smarts_state(self) -> float:
         with self._state_lock:
             if (
                 not self._recent_state
@@ -409,30 +459,44 @@ class ROSDriver:
                 rospy.logdebug(
                     f"No messages received on topic {self._state_topic} yet to send to SMARTS."
                 )
-                return False
-            states = [s for s in self._recent_state]
+                states = None
+            else:
+                states = [s for s in self._recent_state]
 
-        entities = []
-        most_recent_state = states[-1]
+        rosnow = rospy.get_rostime()
+        if self._last_step_time:
+            step_delta = (rosnow - self._last_step_time).to_sec()
+        else:
+            step_delta = None
+        self._last_step_time = rosnow
+        if not states:
+            return step_delta
+
         # Note: when the source of these states is a co-simulator
         # running on another machine across the network, for accurate
         # extrapolation and staleness-related computations, it is
         # a good idea to either use an external time server or a
         # ROS /clock node (in which case the /use_sim_time parameter
         # shoule be set to True).
-        staleness = (rospy.get_rostime() - most_recent_state.header.stamp).to_sec()
+        entities = []
+        most_recent_state = states[-1]
         for entity in most_recent_state.entities:
-            vs = ROSDriver._entity_to_vs(entity)
-            if len(states) > 1 and staleness > 0:
-                ROSDriver._extrapolate_to_now(vs, staleness, states)
+            vs, stamp, lin_acc_slope, ang_acc_slope = ROSDriver._moving_average(
+                entity.entity_id, states
+            )
+            entity_staleness = rosnow.to_sec() - stamp
+            if entity_staleness > 0:
+                ROSDriver._extrapolate_to_now(
+                    vs, entity_staleness, lin_acc_slope, ang_acc_slope
+                )
             entities.append(vs)
 
         rospy.logdebug(
-            f"sending state to SMARTS w/ step_delta={step_delta}, staleness={staleness}..."
+            f"sending state to SMARTS w/ step_delta={step_delta}, approximate staleness={(rosnow - most_recent_state.header.stamp).to_sec()}..."
         )
         self._smarts.external_provider.state_update(entities, step_delta)
         self._most_recent_state_sent = most_recent_state
-        return True
+        return step_delta
 
     @staticmethod
     def _vector_to_xyz(v, xyz):
@@ -512,9 +576,12 @@ class ROSDriver:
 
     def _check_reset(self) -> Dict[str, Observation]:
         with self._control_lock:
-            if self._reset_smarts:
+            if self._control:
+                self._scenario_path = self._control.reset_with_scenario_path
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
-                self._reset_smarts = False
+                self._agents = {}
+                self._agents_to_add = {}
+                self._control = None
                 if self._scenario_path:
                     observations = self._smarts.reset(Scenario(self._scenario_path))
                     self._last_step_time = None
@@ -553,11 +620,7 @@ class ROSDriver:
 
                 actions = self._do_agents(observations)
 
-                if self._last_step_time:
-                    step_delta = rospy.get_time() - self._last_step_time
-                self._last_step_time = rospy.get_time()
-
-                self._update_smarts_state(step_delta)
+                step_delta = self._update_smarts_state()
 
                 observations, _, dones, _ = self._smarts.step(actions, step_delta)
 

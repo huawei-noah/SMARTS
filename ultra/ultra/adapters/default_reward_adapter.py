@@ -65,10 +65,6 @@ def adapt(observation: Observation, reward: float) -> float:
     linear_jerk = np.linalg.norm(ego_observation.linear_jerk)
     angular_jerk = np.linalg.norm(ego_observation.angular_jerk)
 
-    # Distance to goal
-    ego_2d_position = ego_observation.position[0:2]
-    goal_dist = distance.euclidean(ego_2d_position, goal.position)
-
     closest_wp, _ = get_closest_waypoint(
         num_lookahead=_WAYPOINTS,
         goal_path=path,

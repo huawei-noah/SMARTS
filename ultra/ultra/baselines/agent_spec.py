@@ -24,7 +24,7 @@ import numpy as np
 import torch, yaml, os, inspect, dill
 
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface
+from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from ultra.baselines.common.yaml_loader import load_yaml
 import ultra.adapters as adapters
 
@@ -115,6 +115,16 @@ class BaselineAgentSpec(AgentSpec):
                 interface=AgentInterface(
                     **adapter_interface_requirements,
                     max_episode_steps=max_episode_steps,
+                    # Custom done_criteria for ULTRA agents
+                    done_criteria=DoneCriteria(
+                        collision=True,
+                        off_road=True,
+                        off_route=True,
+                        wrong_way=True,
+                        on_shoulder=False,
+                        not_moving=False,
+                        agents_alive=None,
+                    ),
                     debug=True,
                 ),
                 agent_params=dict(
