@@ -1,23 +1,26 @@
 # Training existing models
 
-ULTRA has supports the process of seperately **evaluating** saved models through the
-`evaluate.py` script. ULTRA now extends support to **training** of previously saved
-models. This will allow users to continue training their saved models from a previous
-experiment. 
+Inside ULTRA, we are able to seperately **evaluate** saved models through the
+`evaluate.py` script. ULTRA now extends the support to **train** those previously saved
+models as well. Thus allowing users to continue training their models from previous
+experiments. 
 
-To use this feature, an existing experiment directory must be specified. Training of
-each agent of this experiment will resume from the most recent model(s) for each agent.
+To use this feature, an existing experiment directory must be specified. 
 
-> The baseline agents save data that is needed for the resumption of training at the end
+> Only the latest model from each of the older agent(s) (i.e. from previous experiment) is 
+chosen to intialize the newer agent(s). This means that the new experiment will begin with
+the agent(s) having an already experienced network.
+
+> The baseline agents saves data that is needed for the resumption of training at the end
 of a training run. This data is saved in the experiment directory under the
 [`extras` directory](getting_started.md#training-a-baseline-agent). An example of this
 data includes the agent's replay buffer experience.
 
 As an example, say we have trained a SAC agent for 10000 episodes where a model
 checkpoint is saved every 200 episodes. The agent's replay buffer is also saved at the
-end of the experiment. After the experiment is complete, the experiment directory has
-been stored in our local directory. By the running the following command, we can resume
-training of the SAC agent starting from the most recent model checkpoint and utilizing
+end of the experiment as well. After the experiment is complete, the experiment directory has
+been stored in our local directory. By running the following command, we can resume
+training of the SAC agent starting from the most recent model checkpoint and utilize
 the replay buffer experience gathered from the previous training run.
 
 ```sh
