@@ -57,7 +57,8 @@ class FrameMonitor:
 
     def stop(self):
         if self._start_time_ms is None:
-            raise FramerateException()
+            print("The monitor has not started yet.")
+            return -1
 
         now = self._time_now()
         delta = now - self._start_time_ms
