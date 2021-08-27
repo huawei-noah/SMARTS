@@ -24,12 +24,16 @@ import logging
 import math
 import os
 import sqlite3
+import struct
+import sys
 
 import ijson
 import numpy as np
 import pandas as pd
 import yaml
 from numpy.lib.stride_tricks import as_strided as stride
+from waymo_open_dataset.protos import scenario_pb2
+from typing import Dict, Generator, Union
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -95,7 +99,9 @@ class _TrajectoryDataset:
                    id INTEGER PRIMARY KEY,
                    type INTEGER NOT NULL,
                    length REAL,
-                   width REAL
+                   width REAL,
+                   height REAL,
+                   is_ego_vehicle INTEGER DEFAULT 0
                ) WITHOUT ROWID"""
         )
         ccur.execute(
@@ -130,7 +136,7 @@ class _TrajectoryDataset:
         iscur.close()
 
         # TAI:  can use executemany() and batch insert rows together if this turns out to be too slow...
-        insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?)"
+        insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?, ?, ?)"
         insert_traj_sql = "INSERT INTO Trajectory VALUES (?, ?, ?, ?, ?, ?, ?)"
         vehicle_ids = set()
         itcur = dbconxn.cursor()
@@ -138,11 +144,18 @@ class _TrajectoryDataset:
             vid = int(self.column_val_in_row(row, "vehicle_id"))
             if vid not in vehicle_ids:
                 ivcur = dbconxn.cursor()
+
+                # These are not available in all datasets
+                height = self.column_val_in_row(row, "height")
+                is_ego = self.column_val_in_row(row, "is_ego_vehicle")
+
                 veh_args = (
                     vid,
                     int(self.column_val_in_row(row, "type")),
                     float(self.column_val_in_row(row, "length")) * self.scale,
                     float(self.column_val_in_row(row, "width")) * self.scale,
+                    float(height) * self.scale if height else None,
+                    int(is_ego) if is_ego else 0,
                 )
                 ivcur.execute(insert_vehicle_sql, veh_args)
                 ivcur.close()
@@ -216,8 +229,7 @@ class Interaction(_TrajectoryDataset):
             self._next_row = None
             yield last_row
 
-    @staticmethod
-    def _lookup_agent_type(agent_type):
+    def _lookup_agent_type(self, agent_type: str) -> int:
         # Try to match the NGSIM types...
         if agent_type == "motorcycle":
             return 1
@@ -239,7 +251,7 @@ class Interaction(_TrajectoryDataset):
         if col_name == "width":
             return row.get("width", 0.0)
         if col_name == "type":
-            return Interaction._lookup_agent_type(row["agent_type"])
+            return self._lookup_agent_type(row["agent_type"])
         if col_name == "speed":
             if self._next_row:
                 # XXX: could try to divide by sim_time delta here instead of assuming .1s
@@ -410,8 +422,7 @@ class OldJSON(_TrajectoryDataset):
                 for state in states.values():
                     yield (t, state)
 
-    @staticmethod
-    def _lookup_agent_type(agent_type):
+    def _lookup_agent_type(self, agent_type: Union[int, str]) -> int:
         if isinstance(agent_type, int):
             return agent_type
         # Try to match the NGSIM types...
@@ -436,7 +447,7 @@ class OldJSON(_TrajectoryDataset):
         if col_name == "id":
             return state["vehicle_id"]
         if col_name == "type":
-            return OldJSON._lookup_agent_type(state["vehicle_type"])
+            return self._lookup_agent_type(state["vehicle_type"])
         if col_name == "length":
             return state.get("vehicle_length", 0.0)
         if col_name == "width":
@@ -448,6 +459,180 @@ class OldJSON(_TrajectoryDataset):
         if col_name == "heading_rad":
             return state.get("heading", -math.pi / 2)
         return None
+
+
+class Waymo(_TrajectoryDataset):
+    def __init__(self, dataset_spec: Dict, output: str):
+        super().__init__(dataset_spec, output)
+
+    @staticmethod
+    def read_dataset(path: str) -> Generator[bytes, None, None]:
+        """Iterate over the records in a TFRecord file and return the bytes of each record.
+
+        path: The path to the TFRecord file
+        """
+        with open(path, "rb") as f:
+            while True:
+                length_bytes = f.read(8)
+                if len(length_bytes) != 8:
+                    return
+                record_len = int(struct.unpack("Q", length_bytes)[0])
+                _ = f.read(4)  # masked_crc32_of_length (ignore)
+                record_data = f.read(record_len)
+                _ = f.read(4)  # masked_crc32_of_data (ignore)
+                yield record_data
+
+    @property
+    def rows(self) -> Generator[Dict, None, None]:
+        def lerp(a, b, t):
+            return t * (b - a) + a
+
+        def constrain_angle(angle):
+            """Constrain to [-pi, pi]"""
+            angle = angle % (2 * math.pi)
+            if angle > math.pi:
+                angle -= 2 * math.pi
+            return angle
+
+        if "scenario_id" not in self._dataset_spec:
+            errmsg = "Dataset spec requires scenario_id to be set"
+            self._log.error(errmsg)
+            raise ValueError(errmsg)
+        scenario_id = self._dataset_spec["scenario_id"]
+
+        # Loop over the scenarios in the TFRecord and check its ID for a match
+        scenario = None
+        dataset = Waymo.read_dataset(self._dataset_spec["input_path"])
+        for record in dataset:
+            parsed_scenario = scenario_pb2.Scenario()
+            parsed_scenario.ParseFromString(bytearray(record))
+            if parsed_scenario.scenario_id == scenario_id:
+                scenario = parsed_scenario
+                break
+
+        if scenario == None:
+            errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
+            self._log.error(errmsg)
+            raise ValueError(errmsg)
+
+        for i in range(len(scenario.tracks)):
+            vehicle_id = scenario.tracks[i].id
+            vehicle_type = self._lookup_agent_type(scenario.tracks[i].object_type)
+            num_steps = len(scenario.timestamps_seconds)
+            rows = []
+
+            # First pass -- extract data
+            for j in range(num_steps):
+                obj_state = scenario.tracks[i].states[j]
+                vel = np.array([obj_state.velocity_x, obj_state.velocity_y])
+
+                row = {}
+                row["valid"] = obj_state.valid
+                row["vehicle_id"] = vehicle_id
+                row["type"] = vehicle_type
+                row["length"] = obj_state.length
+                row["height"] = obj_state.height
+                row["width"] = obj_state.width
+                row["sim_time"] = scenario.timestamps_seconds[j]
+                row["position_x"] = obj_state.center_x
+                row["position_y"] = obj_state.center_y
+                row["heading_rad"] = obj_state.heading - math.pi / 2
+                row["speed"] = np.linalg.norm(vel)
+                row["lane_id"] = 0
+                row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
+                rows.append(row)
+
+            # Second pass -- align timesteps to 10 Hz and interpolate trajectory data if needed
+            interp_rows = [None] * num_steps
+            for j in range(num_steps):
+                row = rows[j]
+                timestep = 0.1
+                time_current = row["sim_time"]
+                time_expected = round(j * timestep, 3)
+                time_error = time_current - time_expected
+
+                if not row["valid"] or time_error == 0:
+                    continue
+
+                if time_error > 0:
+                    # We can't interpolate if the previous element doesn't exist or is invalid
+                    if j == 0 or not rows[j - 1]["valid"]:
+                        continue
+
+                    # Interpolate backwards using previous timestep
+                    interp_row = {}
+                    interp_row["sim_time"] = time_expected
+
+                    prev_row = rows[j - 1]
+                    prev_time = prev_row["sim_time"]
+
+                    t = (time_expected - prev_time) / (time_current - prev_time)
+                    interp_row["speed"] = lerp(prev_row["speed"], row["speed"], t)
+                    interp_row["position_x"] = lerp(
+                        prev_row["position_x"], row["position_x"], t
+                    )
+                    interp_row["position_y"] = lerp(
+                        prev_row["position_y"], row["position_y"], t
+                    )
+                    interp_row["heading_rad"] = lerp(
+                        prev_row["heading_rad"], row["heading_rad"], t
+                    )
+                    interp_rows[j] = interp_row
+                else:
+                    # We can't interpolate if the next element doesn't exist or is invalid
+                    if (
+                        j == len(scenario.timestamps_seconds) - 1
+                        or not rows[j + 1]["valid"]
+                    ):
+                        continue
+
+                    # Interpolate forwards using next timestep
+                    interp_row = {}
+                    interp_row["sim_time"] = time_expected
+
+                    next_row = rows[j + 1]
+                    next_time = next_row["sim_time"]
+
+                    t = (time_expected - time_current) / (next_time - time_current)
+                    interp_row["speed"] = lerp(row["speed"], next_row["speed"], t)
+                    interp_row["position_x"] = lerp(
+                        row["position_x"], next_row["position_x"], t
+                    )
+                    interp_row["position_y"] = lerp(
+                        row["position_y"], next_row["position_y"], t
+                    )
+                    interp_row["heading_rad"] = lerp(
+                        row["heading_rad"], next_row["heading_rad"], t
+                    )
+                    interp_rows[j] = interp_row
+
+            # Third pass -- filter invalid states, replace interpolated values, convert to ms, constrain angles
+            for j in range(num_steps):
+                if rows[j]["valid"] == False:
+                    continue
+                if interp_rows[j] is not None:
+                    rows[j]["sim_time"] = interp_rows[j]["sim_time"]
+                    rows[j]["position_x"] = interp_rows[j]["position_x"]
+                    rows[j]["position_y"] = interp_rows[j]["position_y"]
+                    rows[j]["heading_rad"] = interp_rows[j]["heading_rad"]
+                    rows[j]["speed"] = interp_rows[j]["speed"]
+                rows[j]["sim_time"] *= 1000.0
+                rows[j]["heading_rad"] = constrain_angle(rows[j]["heading_rad"])
+                yield rows[j]
+
+    @staticmethod
+    def _lookup_agent_type(agent_type: int) -> int:
+        if agent_type == 1:
+            return 2  # car
+        elif agent_type == 2:
+            return 4  # pedestrian
+        elif agent_type == 3:
+            return 4  # cyclist
+        else:
+            return 0  # other
+
+    def column_val_in_row(self, row: Dict, col_name: str):
+        return row[col_name]
 
 
 def _check_args(args):
@@ -486,6 +671,9 @@ if __name__ == "__main__":
         parser.print_usage()
         sys.exit(-1)
 
+    if args.force and os.path.exists(args.output):
+        os.remove(args.output)
+
     if args.old:
         dataset_spec = {"source": "OldJSON", "input_path": args.dataset}
     else:
@@ -495,6 +683,8 @@ if __name__ == "__main__":
     source = dataset_spec.get("source", "NGSIM")
     if source == "NGSIM":
         dataset = NGSIM(dataset_spec, args.output)
+    elif source == "Waymo":
+        dataset = Waymo(dataset_spec, args.output)
     elif source == "OldJSON":
         dataset = OldJSON(dataset_spec, args.output)
     else:

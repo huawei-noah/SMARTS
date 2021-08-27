@@ -87,7 +87,6 @@ networkx==2.5.1
 numpy==1.18.5
 nvidia-ml-py3==7.352.0
 oauthlib==3.1.1
-open-agent==0.0.0
 opencensus==0.7.13
 opencensus-context==0.1.2
 opencv-python==4.5.2.54
@@ -172,6 +171,7 @@ tornado==6.1
 traitlets==5.0.5
 trimesh==3.9.20
 Twisted==21.2.0
+typing==3.7.4.3
 typing-extensions==3.10.0.0
 urllib3==1.26.5
 visdom==0.1.8.9

@@ -26,8 +26,9 @@ import pytest
 
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.motion_planner_provider import MotionPlannerProvider
+from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.provider import ProviderState
-from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
+from smarts.core.scenario import Scenario
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 

@@ -26,12 +26,10 @@ from functools import lru_cache
 import numpy as np
 import yaml
 
-from smarts.sstudio.types import UTurn
-
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
-from .coordinates import BoundingBox, Heading, Pose
+from .coordinates import Dimensions, Heading, Pose
 from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
@@ -52,7 +50,7 @@ from .utils.math import rotate_around_point
 class VehicleState:
     vehicle_id: str
     pose: Pose
-    dimensions: BoundingBox
+    dimensions: Dimensions
     vehicle_type: str = None
     vehicle_config_type: str = None  # key into VEHICLE_CONFIGS
     updated: bool = False
@@ -79,7 +77,7 @@ class VehicleState:
 class VehicleConfig:
     vehicle_type: str
     color: tuple
-    dimensions: BoundingBox
+    dimensions: Dimensions
     glb_model: str
 
 
@@ -91,43 +89,43 @@ VEHICLE_CONFIGS = {
     "passenger": VehicleConfig(
         vehicle_type="car",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=3.68, width=1.47, height=1.4),
+        dimensions=Dimensions(length=3.68, width=1.47, height=1.4),
         glb_model="simple_car.glb",
     ),
     "bus": VehicleConfig(
         vehicle_type="bus",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=7, width=2.25, height=3),
+        dimensions=Dimensions(length=7, width=2.25, height=3),
         glb_model="bus.glb",
     ),
     "coach": VehicleConfig(
         vehicle_type="coach",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=8, width=2.4, height=3.5),
+        dimensions=Dimensions(length=8, width=2.4, height=3.5),
         glb_model="coach.glb",
     ),
     "truck": VehicleConfig(
         vehicle_type="truck",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=5, width=1.91, height=1.89),
+        dimensions=Dimensions(length=5, width=1.91, height=1.89),
         glb_model="truck.glb",
     ),
     "trailer": VehicleConfig(
         vehicle_type="trailer",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=10, width=2.5, height=4),
+        dimensions=Dimensions(length=10, width=2.5, height=4),
         glb_model="trailer.glb",
     ),
     "pedestrian": VehicleConfig(
         vehicle_type="pedestrian",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=0.5, width=0.5, height=1.6),
+        dimensions=Dimensions(length=0.5, width=0.5, height=1.6),
         glb_model="pedestrian.glb",
     ),
     "motorcycle": VehicleConfig(
         vehicle_type="motorcycle",
         color=SceneColors.SocialVehicle.value,
-        dimensions=BoundingBox(length=2.5, width=1, height=1.4),
+        dimensions=Dimensions(length=2.5, width=1, height=1.4),
         glb_model="motorcycle.glb",
     ),
 }
@@ -313,11 +311,26 @@ class Vehicle:
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
 
     @staticmethod
+    def agent_vehicle_dims(mission) -> Dimensions:
+        if mission.vehicle_spec:
+            # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
+            # but we use that value here in case we ever expand our history functionality.
+            vehicle_config_type = mission.vehicle_spec.veh_config_type
+            return Dimensions.copy_with_defaults(
+                mission.vehicle_spec.dimensions,
+                VEHICLE_CONFIGS[vehicle_config_type].dimensions,
+            )
+        # non-history agents can currently only control passenger vehicles.
+        vehicle_config_type = "passenger"
+        return VEHICLE_CONFIGS[vehicle_config_type].dimensions
+
+    @classmethod
     def build_agent_vehicle(
+        cls,
         sim,
         vehicle_id,
         agent_interface,
-        mission_planner,
+        plan,
         vehicle_filepath,
         tire_filepath,
         trainable,
@@ -325,31 +338,19 @@ class Vehicle:
         controller_filepath,
         initial_speed=None,
     ):
-        mission = mission_planner.mission
+        mission = plan.mission
 
-        if mission.vehicle_spec:
-            # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
-            # but we use that value here in case we ever expand our history functionality.
-            vehicle_config_type = mission.vehicle_spec.veh_config_type
-            chassis_dims = BoundingBox.copy_with_defaults(
-                mission.vehicle_spec.dimensions,
-                VEHICLE_CONFIGS[vehicle_config_type].dimensions,
-            )
-        else:
-            # non-history agents can currently only control passenger vehicles.
-            vehicle_config_type = "passenger"
-            chassis_dims = VEHICLE_CONFIGS[vehicle_config_type].dimensions
-
-        if isinstance(mission.task, UTurn):
-            if mission.task.initial_speed:
-                initial_speed = mission.task.initial_speed
+        chassis_dims = cls.agent_vehicle_dims(mission)
 
         start = mission.start
-        start_pose = Pose.from_front_bumper(
-            front_bumper_position=np.array(start.position),
-            heading=start.heading,
-            length=chassis_dims.length,
-        )
+        if start.from_front_bumper:
+            start_pose = Pose.from_front_bumper(
+                front_bumper_position=np.array(start.position[:2]),
+                heading=start.heading,
+                length=chassis_dims.length,
+            )
+        else:
+            start_pose = Pose.from_center(start.position, start.heading)
 
         vehicle_color = (
             SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
@@ -378,11 +379,12 @@ class Vehicle:
 
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
-        if (
-            agent_interface
-            and agent_interface.action in sim.dynamic_action_spaces
-            and not mission.vehicle_spec
-        ):
+        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+            if mission.vehicle_spec:
+                logger = logging.getLogger(cls.__name__)
+                logger.warning(
+                    "setting vehicle dimensions on a AckermannChassis not yet supported"
+                )
             chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
@@ -410,7 +412,7 @@ class Vehicle:
 
     @staticmethod
     def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_config_type):
-        dims = BoundingBox.copy_with_defaults(
+        dims = Dimensions.copy_with_defaults(
             vehicle_state.dimensions, VEHICLE_CONFIGS[vehicle_config_type].dimensions
         )
         chassis = BoxChassis(
@@ -424,14 +426,14 @@ class Vehicle:
         )
 
     @staticmethod
-    def attach_sensors_to_vehicle(sim, vehicle, agent_interface, mission_planner):
+    def attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan):
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
         vehicle.attach_trip_meter_sensor(
             TripMeterSensor(
                 vehicle=vehicle,
                 sim=sim,
-                mission_planner=mission_planner,
+                plan=plan,
             )
         )
 
@@ -454,9 +456,8 @@ class Vehicle:
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
                 WaypointsSensor(
-                    sim=sim,
                     vehicle=vehicle,
-                    mission_planner=mission_planner,
+                    plan=plan,
                     lookahead=agent_interface.waypoints.lookahead,
                 )
             )
@@ -466,7 +467,7 @@ class Vehicle:
                 RoadWaypointsSensor(
                     vehicle=vehicle,
                     sim=sim,
-                    mission_planner=mission_planner,
+                    plan=plan,
                     horizon=agent_interface.road_waypoints.horizon,
                 )
             )
@@ -519,7 +520,7 @@ class Vehicle:
         vehicle.attach_via_sensor(
             ViaSensor(
                 vehicle=vehicle,
-                mission_planner=mission_planner,
+                plan=plan,
                 lane_acquisition_range=40,
                 speed_accuracy=1.5,
             )
@@ -533,6 +534,7 @@ class Vehicle:
         self._chassis.control(*args, **kwargs)
 
     def update_state(self, state: VehicleState, dt: float):
+        state.updated = True
         if not state.privileged:
             assert isinstance(self._chassis, BoxChassis)
             self.control(pose=state.pose, speed=state.speed, dt=dt)
@@ -618,7 +620,6 @@ class Vehicle:
             "trip_meter_sensor",
             "drivable_area_grid_map_sensor",
             "neighborhood_vehicles_sensor",
-            "mission_planner_sensor",
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
@@ -629,7 +630,7 @@ class Vehicle:
             def attach_sensor(self, sensor, sensor_name=sensor_name):
                 assert (
                     getattr(self, f"_{sensor_name}", None) is None
-                ), f"{sensor_name} already added"
+                ), f"{sensor_name} already added to {self.id}"
                 setattr(self, f"_{sensor_name}", sensor)
                 self._sensors[sensor_name] = sensor
 

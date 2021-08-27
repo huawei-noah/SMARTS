@@ -36,8 +36,6 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
 
    api/modules.rst
 
-   cutin-uturn-doc.rst
-
 
 Indices and Tables
 ==================

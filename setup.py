@@ -64,6 +64,7 @@ setup(
             "pytest-notebook",
             "pytest-xdist",
             "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
+            "tensorflow==2.2.1",  # For rllib tests
         ],
         "train": [
             "tensorflow==2.2.1",
@@ -82,8 +83,11 @@ setup(
             "sphinxcontrib-apidoc",
         ],
         "camera-obs": [
-            "panda3d",
-            "panda3d-gltf",
+            "Panda3D==1.10.9",
+            "panda3d-gltf==0.13",
+        ],
+        "waymo": [
+            "waymo-open-dataset-tf-2-2-0",
         ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
