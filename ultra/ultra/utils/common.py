@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from typing import List, Dict, Union
 import json
 import math
 import os
@@ -38,6 +39,9 @@ from skimage.transform import resize
 import ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
 import math, datetime
+
+# from ultra.baselines.common.replay_buffer import ReplayBuffer
+# from ultra.utils.episode import Episode
 
 
 def agent_pool_value(agent_name, value_name):
@@ -349,7 +353,9 @@ def compute_grad(x, prev_x, dt):
 
 def combine_replay_buffer_dataset_with_episodes_results(
     experiment_dir, agent_id, active_tag
-):
+) -> Dict[int, Dict[str, Union[List[dict], dict]]]:
+    # I tried to import the ReplayBufferDataset and Episode objects for
+    # type hinting but it seems to be not working
 
     replay_buffer_tag = f"extras/{agent_id}/"
     episode_results_tag = f"pkls/{active_tag}/"
@@ -383,11 +389,6 @@ def combine_replay_buffer_dataset_with_episodes_results(
         episode_transitions = []
         episode_transitions_length = episode["episode_length"] - 1
         for i in range(episode_transitions_length):
-            # TODO: Should we include information for partially completed episodes?
-            # A partially completed episode occurs when the agent iteration is stopped
-            # midway through an episode because the max_steps for the entire experiment
-            # is reached.
-            #
             # The current setup will include the transitions and episode results for
             # potential partially completed episode.
             episode_transitions.append(
@@ -399,8 +400,5 @@ def combine_replay_buffer_dataset_with_episodes_results(
         episode_data["episode_results"] = episode
 
         episodes_data[index] = episode_data
-        # The length of each replay_buffer_dataset should be
-        # equal to episode_length - 1
-        # print(len(episode_data["replay_buffer_dataset"]))
 
     return episodes_data
