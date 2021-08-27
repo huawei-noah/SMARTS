@@ -66,8 +66,9 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   ```
   > This will train our DQN on 10 episodes and evaluate its performance every 5 episodes by running the agent in 2 evaluation episodes. You will notice that it will switch between training episodes and evaluation episodes.
 - During training, a folder `logs/<timestamped_experiment_name>` is produced. It contains:
-  - A tensorboard log (`events.out.tfevents.<...>`)
-  - Models at different observation episodes (`models/000/<observation_number>/online.pth`, `models/000/<observation_number>/target.pth`)
+  - A tensorboard log (`events.out.tfevents.<...>`),
+  - Models at different observation episodes (`models/000/<observation_number>/online.pth`, `models/000/<observation_number>/target.pth`),
+  - Extra data saved by the agents that is needed if training is to resume from the most recent checkpoint (e.g. the experience in the agent's replay buffer),
   - Pickled metadata of your agent (`agent_metadata.pkl`), and
   - Pickled results from training and evaluation (`pkls/Evaluation/resuts.pkl`, `pkls/Evaluation_Training/results.pkl`, and `pkls/Train/results.pkl`).
 

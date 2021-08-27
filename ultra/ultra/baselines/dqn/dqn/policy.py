@@ -22,6 +22,8 @@
 import torch
 from torch import nn
 import numpy as np
+import pickle
+import time
 from smarts.core.agent import Agent
 from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
 import pathlib, os, copy
@@ -285,6 +287,22 @@ class DQNPolicy(Agent):
         torch.save(self.online_q_network.state_dict(), model_dir / "online.pth")
         torch.save(self.target_q_network.state_dict(), model_dir / "target.pth")
 
+    def save_extras(self, extras_dir):
+        """Called at the end of training. Used to save any extra data that the agent
+        needs in order to resume training."""
+        extras_dir = pathlib.Path(extras_dir)
+
+        start_time = time.time()
+        with open(extras_dir / "latest_replay_buffer.pkl", "wb") as replay_buffer_file:
+            pickle.dump(self.replay, replay_buffer_file, pickle.HIGHEST_PROTOCOL)
+        print(f"Saved replay buffer in {time.time() - start_time} s.")
+
+        # Save epsilon object.
+        start_time = time.time()
+        with open(extras_dir / "epsilon.pkl", "wb") as epsilon_file:
+            pickle.dump(self.epsilon_obj, epsilon_file, pickle.HIGHEST_PROTOCOL)
+        print(f"Saved epsilon object in {time.time() - start_time} s.")
+
     def load(self, model_dir, cpu=False):
         model_dir = pathlib.Path(model_dir)
         print("loading from :", model_dir)
@@ -299,6 +317,23 @@ class DQNPolicy(Agent):
             torch.load(model_dir / "target.pth", map_location=map_location)
         )
         print("Model loaded")
+
+    def load_extras(self, extras_dir):
+        """Called at the beginning of training. Used to load any extra data from the
+        last training run that the agent needs in order to resume training."""
+        extras_dir = pathlib.Path(extras_dir)
+
+        # Load the replay buffer.
+        start_time = time.time()
+        with open(extras_dir / "latest_replay_buffer.pkl", "rb") as replay_buffer_file:
+            self.memory = pickle.load(replay_buffer_file)
+        print(f"Loaded replay buffer in {time.time() - start_time} s.")
+
+        # Load epsilon object.
+        start_time = time.time()
+        with open(extras_dir / "epsilon.pkl", "rb") as epsilon_file:
+            self.epsilon_obj = pickle.load(epsilon_file)
+        print(f"Loaded epsilon object in {time.time() - start_time} s.")
 
     def step(self, state, action, reward, next_state, done, info, others=None):
         # dont treat timeout as done equal to True

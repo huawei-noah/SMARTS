@@ -28,6 +28,8 @@ import torch
 import torch.nn.functional as F
 import random
 import numpy as np
+import pickle
+import time
 import torch.optim as optim
 
 from ultra.baselines.td3.td3.cnn_models import ActorNetwork as CNNActorNetwork
@@ -372,6 +374,17 @@ class TD3Policy(Agent):
             torch.load(model_dir / "critic_2_target.pth", map_location=map_location)
         )
 
+    def load_extras(self, extras_dir):
+        """Called at the beginning of training. Used to load any extra data from the
+        last training run that the agent needs in order to resume training."""
+        extras_dir = pathlib.Path(extras_dir)
+
+        # Load the replay buffer.
+        start_time = time.time()
+        with open(extras_dir / "latest_replay_buffer.pkl", "rb") as replay_buffer_file:
+            self.memory = pickle.load(replay_buffer_file)
+        print(f"Loaded replay buffer in {time.time() - start_time} s.")
+
     def save(self, model_dir):
         model_dir = pathlib.Path(model_dir)
         torch.save(self.actor.state_dict(), model_dir / "actor.pth")
@@ -389,3 +402,13 @@ class TD3Policy(Agent):
             self.critic_2_target.state_dict(),
             model_dir / "critic_2_target.pth",
         )
+
+    def save_extras(self, extras_dir):
+        """Called at the end of training. Used to save any extra data that the agent
+        needs in order to resume training."""
+        extras_dir = pathlib.Path(extras_dir)
+
+        start_time = time.time()
+        with open(extras_dir / "latest_replay_buffer.pkl", "wb") as replay_buffer_file:
+            pickle.dump(self.memory, replay_buffer_file, pickle.HIGHEST_PROTOCOL)
+        print(f"Saved replay buffer in {time.time() - start_time} s.")

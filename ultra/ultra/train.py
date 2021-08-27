@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
-
+import glob
 from ultra.utils.ray import default_ray_kwargs
 
 # Set environment to better support Ray
@@ -103,12 +103,73 @@ def create_argument_parser():
         type=str,
     )
     parser.add_argument(
+        "--experiment-dir",
+        help="Path to the base dir of trained model",
+        default=None,
+        type=str,
+    )
+    parser.add_argument(
         "--policy-ids",
         help="Name of each specified policy",
         default=None,
         type=str,
     )
     return parser
+
+
+def load_agents(experiment_dir):
+    # Load relevant agent metadata.
+    with open(
+        os.path.join(experiment_dir, "agent_metadata.pkl"), "rb"
+    ) as metadata_file:
+        agent_metadata = pickle.load(metadata_file)
+
+    for key in agent_metadata.keys():
+        assert key in ["agent_ids", "agent_classes", "agent_specs"]
+
+    # Extract the agent IDs and policy classes from the metadata and given models.
+    agent_ids = [agent_id for agent_id in agent_metadata["agent_ids"]]
+
+    agent_classes = {
+        agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
+    }
+
+    latest_checkpoint_directories = {}
+    for agent_id in agent_ids:
+        checkpoint_directories = sorted(
+            glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
+            key=lambda x: int(x.split("/")[-1]),
+        )
+        latest_checkpoint_directory = (
+            checkpoint_directories[-1] if len(checkpoint_directories) > 0 else None
+        )
+        latest_checkpoint_directories[agent_id] = latest_checkpoint_directory
+
+    # Create the agent specifications matched with their associated ID and corresponding
+    # checkpoint directory
+    agent_specs = {
+        agent_id: make(
+            locator=agent_classes[agent_id],
+            checkpoint_dir=latest_checkpoint_directories[agent_id],
+            experiment_dir=experiment_dir,
+            agent_id=agent_id,
+        )
+        for agent_id in agent_ids
+    }
+
+    # Create the agents matched with their associated ID.
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
+
+    # Load any extra data that the agent needs from its last training run in order to
+    # resume training (e.g. its previous replay buffer experience).
+    for agent_id, agent in agents.items():
+        extras_directory = os.path.join(experiment_dir, "extras", agent_id)
+        agent.load_extras(extras_directory)
+
+    return agent_ids, agent_classes, agent_specs, agents
 
 
 def build_agents(policy_classes, policy_ids, max_episode_steps):
@@ -143,12 +204,7 @@ def build_agents(policy_classes, policy_ids, max_episode_steps):
         for agent_id, agent_spec in agent_specs.items()
     }
 
-    # Define an 'etag' for this experiment's data directory based off policy_classes.
-    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
-    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
-    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
-
-    return agent_ids, agent_classes, agent_specs, agents, etag
+    return agent_ids, agent_classes, agent_specs, agents
 
 
 def _save_agent_metadata(
@@ -180,6 +236,7 @@ def train(
     headless,
     seed,
     log_dir,
+    experiment_dir=None,
     policy_ids=None,
 ):
     torch.set_num_threads(1)
@@ -187,8 +244,18 @@ def train(
     finished = False
     evaluation_task_ids = dict()
 
-    agent_ids, agent_classes, agent_specs, agents, etag = build_agents(
-        policy_classes, policy_ids, max_episode_steps
+    if experiment_dir:
+        agent_ids, agent_classes, agent_specs, agents = load_agents(experiment_dir)
+    else:
+        agent_ids, agent_classes, agent_specs, agents = build_agents(
+            policy_classes, policy_ids, max_episode_steps
+        )
+
+    # Define an 'etag' for this experiment's data directory based off policy_classes.
+    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
+    etag = ":".join(
+        [agent_class.split(":")[-1] for agent_class in agent_classes.values()]
     )
 
     # Create the environment.
@@ -281,6 +348,12 @@ def train(
         if finished:
             break
 
+    # Save any extra data that the agent may need to resume training in a future
+    # training session (e.g. its replay buffer experience).
+    for agent_id, agent in agents.items():
+        extras_directory = episode.extras_dir(agent_id)
+        agent.save_extras(extras_directory)
+
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):
         time.sleep(0.1)
@@ -317,6 +390,7 @@ if __name__ == "__main__":
             policy_classes=policy_classes,
             seed=args.seed,
             log_dir=args.log_dir,
+            experiment_dir=args.experiment_dir,
             policy_ids=policy_ids,
         )
     finally:
