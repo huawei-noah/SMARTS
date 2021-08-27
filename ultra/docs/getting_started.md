@@ -45,7 +45,7 @@ Task 1 Training Scenario|Task 1 Testing Scenario
 
 ## Training a Baseline Agent
 
-Implementations of baseline agents are available in `ultra/baselines/`. Notice, policies such as PPO, SAC, TD3, and DQN are implemented as baselines. We will run a DQN on Task 1's "easy" level in this example.
+Implementations of baseline agents are available in `ultra/baselines/`. Notice, policies such as PPO, SAC, TD3, and DQN are implemented as baselines. We will run a SAC on Task 1's "easy" level in this example.
 
 - Execute `ultra/train.py`. The following is a list of available arguments.
   - `--task`: The task number to run (default is 1).
@@ -60,11 +60,11 @@ Implementations of baseline agents are available in `ultra/baselines/`. Notice, 
   - `--policy`: The policy (agent) to train (default is sac).
   - `--log-dir`: The directory to put models, tensorboard data, and training results (default is logs/).
 
-  Run the following command to train our DQN agent with a quick training session (if you started Envision in the previous section, refresh your browser to observe the training):
+  Run the following command to train our SAC agent with a quick training session (if you started Envision in the previous section, refresh your browser to observe the training):
   ```sh
-  $ python ultra/train.py --task 1 --level easy --episodes 10 --eval-episodes 2 --eval-rate 5 --policy dqn
+  $ python ultra/train.py --task 1 --level easy --episodes 10 --eval-episodes 2 --eval-rate 5 --policy sac
   ```
-  > This will train our DQN on 10 episodes and evaluate its performance every 5 episodes by running the agent in 2 evaluation episodes. You will notice that it will switch between training episodes and evaluation episodes.
+  > This will train our SAC on 10 episodes and evaluate its performance every 5 episodes by running the agent in 2 evaluation episodes. You will notice that it will switch between training episodes and evaluation episodes.
 - During training, a folder `logs/<timestamped_experiment_name>` is produced. It contains:
   - A tensorboard log (`events.out.tfevents.<...>`),
   - Models at different observation episodes (`models/000/<observation_number>/online.pth`, `models/000/<observation_number>/target.pth`),
@@ -88,7 +88,7 @@ After training your agent, your models should be saved under `logs/<timestamped_
   - `--log-dir`: The log directory location (default is logs/).
   - `--models-to-evaluate`: Provide this flag if you wish to evaluate agent(s) at desired checkpoint(s)
 
-  For example, let's re-run our DQN's evaluation with the following command:
+  For example, let's re-run our SAC's evaluation with the following command:
   ```sh
   $ python ultra/evaluate.py --task 1 --level easy --agents <agent_ids> --experiment-dir logs/<timestamed_experiment_name>/ --episodes 5
   ```

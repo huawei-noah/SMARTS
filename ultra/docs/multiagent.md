@@ -66,9 +66,9 @@ The following steps will show how to create a multi-agent task with 4 agents.
 
 Train baseline agents on the train scenarios of your task:
 ```sh
-$ python ultra/train.py --task 0-4agents --level no-traffic --policy bdqn,bdqn,bdqn,bdqn
+$ python ultra/train.py --task 0-4agents --level no-traffic --policy sac,sac,sac,sac
 ```
-> This will train 4 BDQN baseline agents in the task and create an experiment directory. Feel free to try other combinations of agents.
+> This will train 4 SAC baseline agents in the task and create an experiment directory. Feel free to try other combinations of agents.
 
 ## Evaluating Agents
 
