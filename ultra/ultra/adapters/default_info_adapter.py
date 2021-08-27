@@ -80,7 +80,7 @@ def adapt(
 
     # Distance to goal
     ego_2d_position = ego_state.position[0:2]
-    goal_dist = distance.euclidean(ego_2d_position, goal.position)
+    goal_dist = distance.euclidean(ego_2d_position, goal.position[0:2])
 
     angle_error = closest_wp.relative_heading(
         ego_state.heading

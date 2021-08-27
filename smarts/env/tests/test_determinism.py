@@ -59,7 +59,7 @@ def run(agent_spec, callback, scenarios, episode_count, capture_step):
         scenarios=[scenarios],
         agent_specs={AGENT_ID: agent_spec},
         headless=True,
-        timestep_sec=0.01,
+        fixed_timestep_sec=0.01,
         seed=42,
     )
     i = 0

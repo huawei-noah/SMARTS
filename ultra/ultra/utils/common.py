@@ -319,7 +319,7 @@ def get_dist_to_center(env_observation, closest_waypoint):
 
 
 def get_closest_point_index(pts_arr, pts):
-    distance = [euclidean(each, pts) for each in pts_arr]
+    distance = [euclidean(each, pts[0:2]) for each in pts_arr]
     return np.argmin(distance)
 
 

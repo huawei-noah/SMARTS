@@ -19,23 +19,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from itertools import cycle
+
+import os
 import glob, yaml
+
+from itertools import cycle
 from smarts.core.scenario import Scenario
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-import ultra.adapters as adapters
-from ultra.baselines.common.yaml_loader import load_yaml
-import numpy as np
-from scipy.spatial import distance
-import math, os
 from sys import path
 
 path.append("./ultra")
-from ultra.utils.common import (
-    get_closest_waypoint,
-    get_path_to_goal,
-    ego_social_safety,
-)
 
 
 class RLlibUltraEnv(RLlibHiWayEnv):
@@ -50,10 +43,6 @@ class RLlibUltraEnv(RLlibHiWayEnv):
         else:
             _scenarios = glob.glob(f"{self.scenarios['test']}")
         config["scenarios"] = _scenarios
-
-        self.ultra_scores = adapters.adapter_from_type(
-            adapter_type=adapters.AdapterType.DefaultReward
-        )
 
         super().__init__(config=config)
 
@@ -72,63 +61,6 @@ class RLlibUltraEnv(RLlibHiWayEnv):
                     scenario_roots, list(config["agent_specs"].keys())
                 )
             )
-
-    def generate_logs(self, observation, highwayenv_score):
-        ego_state = observation.ego_vehicle_state
-        start = observation.ego_vehicle_state.mission.start
-        goal = observation.ego_vehicle_state.mission.goal
-        path = get_path_to_goal(
-            goal=goal, paths=observation.waypoint_paths, start=start
-        )
-        closest_wp, _ = get_closest_waypoint(
-            num_lookahead=100,
-            goal_path=path,
-            ego_position=ego_state.position,
-            ego_heading=ego_state.heading,
-        )
-        signed_dist_from_center = closest_wp.signed_lateral_error(ego_state.position)
-        lane_width = closest_wp.lane_width * 0.5
-        ego_dist_center = signed_dist_from_center / lane_width
-
-        linear_jerk = np.linalg.norm(ego_state.linear_jerk)
-        angular_jerk = np.linalg.norm(ego_state.angular_jerk)
-
-        # Distance to goal
-        ego_2d_position = ego_state.position[0:2]
-        goal_dist = distance.euclidean(ego_2d_position, goal.position)
-
-        angle_error = closest_wp.relative_heading(
-            ego_state.heading
-        )  # relative heading radians [-pi, pi]
-
-        # number of violations
-        (ego_num_violations, social_num_violations,) = ego_social_safety(
-            observation,
-            d_min_ego=1.0,
-            t_c_ego=1.0,
-            d_min_social=1.0,
-            t_c_social=1.0,
-            ignore_vehicle_behind=True,
-        )
-
-        info = dict(
-            position=ego_state.position,
-            speed=ego_state.speed,
-            steering=ego_state.steering,
-            heading=ego_state.heading,
-            dist_center=abs(ego_dist_center),
-            start=start,
-            goal=goal,
-            closest_wp=closest_wp,
-            events=observation.events,
-            ego_num_violations=ego_num_violations,
-            social_num_violations=social_num_violations,
-            goal_dist=goal_dist,
-            linear_jerk=np.linalg.norm(ego_state.linear_jerk),
-            angular_jerk=np.linalg.norm(ego_state.angular_jerk),
-            env_score=self.ultra_scores(observation, highwayenv_score),
-        )
-        return info
 
     def step(self, agent_actions):
         agent_actions = {
@@ -176,7 +108,6 @@ class RLlibUltraEnv(RLlibHiWayEnv):
             rewards[agent_id] = agent_spec.reward_adapter(observation, reward)
             observations[agent_id] = agent_spec.observation_adapter(observation)
             infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
-            infos[agent_id]["logs"] = self.generate_logs(observation, reward)
 
         for done in agent_dones.values():
             self._dones_registered += 1 if done else 0

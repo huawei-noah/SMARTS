@@ -20,11 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from collections import defaultdict
-from glob import glob
 from os import path
-from pathlib import Path
-
 from setuptools import find_packages, setup
 
 this_dir = path.abspath(path.dirname(__file__))
@@ -39,16 +35,17 @@ setup(
     description="Unprotected Left Turn for Robust Agents",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.2.0",
+    version="0.2.1",
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     zip_safe=True,
     python_requires=">=3.7",
     install_requires=[
-        "smarts[train,test]==0.4.14",
+        "smarts[train,test,camera-obs] @ git+https://git@github.com/huawei-noah/SMARTS@develop",
         "setuptools>=41.0.0,!=50.0",
         "dill",
         "black==20.8b1",
         "ray[rllib]==1.0.1.post1",
+        "opencv-python",
     ],
 )

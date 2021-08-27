@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field, replace
 from enum import IntEnum
-from typing import Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from .controllers import ActionSpaceType
 from .lidar_sensor_params import BasicLidar
@@ -127,6 +127,39 @@ class AgentType(IntEnum):
     """Controls multiple vehicles"""
     MPCTracker = 10
     """Agent performs trajectory tracking using model predictive control."""
+    TrajectoryInterpolator = 11
+    """Agent performs linear trajectory interpolation."""
+    Imitation = 12
+    """Agent sees neighbor vehicles and performs actions based on imitation-learned model (acceleration, angular_velocity)."""
+
+
+@dataclass(frozen=True)
+class AgentsListAlive:
+    agents_list: List[str]
+    """The list of agents to check whether they are alive"""
+    minimum_agents_alive_in_list: int
+    """Triggers the agent to be done if the number of alive agents in agents_list falls below the given value"""
+
+
+@dataclass(frozen=True)
+class AgentsAliveDoneCriteria:
+    minimum_ego_agents_alive: Optional[int] = None
+    """If set, triggers the agent to be done if the total number of alive ego agents falls below the given value."""
+    minimum_total_agents_alive: Optional[int] = None
+    """If set, triggers the agent to be done if total number of alive agents falls below the given value."""
+    agent_lists_alive: Optional[List[AgentsListAlive]] = None
+    """A termination criteria based on the ids of agents. If set, triggers the agent to be done if any list of agents fails 
+    to meet its specified minimum number of alive agents.
+    Example: [
+        AgentsListAlive(
+            agents_list=['agent1','agent2'], minimum_agents_alive_in_list=1
+        ),
+        AgentsListAlive(
+            agents_list=['agent3'], minimum_agents_alive_in_list=1
+        ),
+    ]
+    This agent's done event would be triggered if both 'agent1' and 'agent2' is done *or* 'agent3' is done.
+    """
 
 
 @dataclass(frozen=True)
@@ -149,16 +182,8 @@ class DoneCriteria:
     """End the episode when the agent is not moving for 60 seconds or more. To account
     for controller noise not moving means <= 1 meter of displacement within 60 seconds.
     """
-
-
-@dataclass
-class AgentBehavior:
-    """Agent behavior configuration."""
-
-    aggressiveness: int = 0
-    """The aggressiveness affects the waypoints of a mission task, in terms of
-    the trigger timing.
-    """
+    agents_alive: Optional[AgentsAliveDoneCriteria] = None
+    """If set, triggers the ego agent to be done based on the number of active agents for multi-agent purposes."""
 
 
 @dataclass
@@ -184,6 +209,7 @@ class AgentInterface:
     waypoints: Union[Waypoints, bool] = False
     """Enable the Waypoint Paths sensor, a list of valid waypoint paths along the current mission."""
 
+    # XXX: consider making this return LanePoints instead?
     road_waypoints: Union[RoadWaypoints, bool] = False
     """
     Enable the Road Waypoints sensor, waypoints along all lanes (oncoming included) of the road the
@@ -225,11 +251,6 @@ class AgentInterface:
     accelerometer: Union[Accelerometer, bool] = True
     """
     Enable acceleration and jerk observations.
-    """
-
-    agent_behavior: AgentBehavior = None
-    """
-    The behavior configuration of the agent.
     """
 
     def __post_init__(self):
@@ -297,13 +318,17 @@ class AgentInterface:
                 waypoints=True,
                 action=ActionSpaceType.LaneWithContinuousSpeed,
             )
-        # The trajectory tracking agent wich recieves a series of reference trajectory
+        # The trajectory tracking agent which receives a series of reference trajectory
         # points and speeds to follow
         elif requested_type == AgentType.Tracker:
             interface = AgentInterface(
                 waypoints=True,
                 action=ActionSpaceType.Trajectory,
             )
+        # The trajectory interpolation agent which recieves a with-time-trajectory and move vehicle
+        # with linear time interpolation
+        elif requested_type == AgentType.TrajectoryInterpolator:
+            interface = AgentInterface(action=ActionSpaceType.TrajectoryWithTime)
         # The MPC based trajectory tracking agent wich recieves a series of
         # reference trajectory points and speeds and computes the optimal
         # steering action.
@@ -330,6 +355,12 @@ class AgentInterface:
             interface = AgentInterface(
                 waypoints=True,
                 action=ActionSpaceType.Continuous,
+            )
+        # For testing imitation learners
+        elif requested_type == AgentType.Imitation:
+            interface = AgentInterface(
+                neighborhood_vehicles=True,
+                action=ActionSpaceType.Imitation,
             )
         else:
             raise Exception("Unsupported agent type %s" % requested_type)

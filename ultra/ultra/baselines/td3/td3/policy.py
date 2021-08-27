@@ -28,12 +28,14 @@ import torch
 import torch.nn.functional as F
 import random
 import numpy as np
+import pickle
+import time
 import torch.optim as optim
 
-from ultra.baselines.td3.td3.fc_model import (
-    ActorNetwork,
-    CriticNetwork,
-)
+from ultra.baselines.td3.td3.cnn_models import ActorNetwork as CNNActorNetwork
+from ultra.baselines.td3.td3.cnn_models import CriticNetwork as CNNCriticNetwork
+from ultra.baselines.td3.td3.fc_model import ActorNetwork as FCActorNetwork
+from ultra.baselines.td3.td3.fc_model import CriticNetwork as FCCrtiicNetwork
 from smarts.core.agent import Agent
 from ultra.baselines.td3.td3.noise import (
     OrnsteinUhlenbeckProcess,
@@ -86,39 +88,78 @@ class TD3Policy(Agent):
                 f"TD3 baseline only supports the "
                 f"{adapters.AdapterType.DefaultActionContinuous} action type."
             )
-        if self.observation_type != adapters.AdapterType.DefaultObservationVector:
-            raise Exception(
-                f"TD3 baseline only supports the "
-                f"{adapters.AdapterType.DefaultObservationVector} observation type."
+
+        if self.observation_type == adapters.AdapterType.DefaultObservationVector:
+            observation_space = adapters.space_from_type(self.observation_type)
+            low_dim_states_size = observation_space["low_dim_states"].shape[0]
+            social_capacity = observation_space["social_vehicles"].shape[0]
+            num_social_features = observation_space["social_vehicles"].shape[1]
+
+            # Get information to build the encoder.
+            encoder_key = policy_params["social_vehicles"]["encoder_key"]
+            social_policy_hidden_units = int(
+                policy_params["social_vehicles"].get("social_policy_hidden_units", 0)
             )
+            social_policy_init_std = int(
+                policy_params["social_vehicles"].get("social_policy_init_std", 0)
+            )
+            social_vehicle_config = get_social_vehicle_configs(
+                encoder_key=encoder_key,
+                num_social_features=num_social_features,
+                social_capacity=social_capacity,
+                seed=self.seed,
+                social_policy_hidden_units=social_policy_hidden_units,
+                social_policy_init_std=social_policy_init_std,
+            )
+            social_vehicle_encoder = social_vehicle_config["encoder"]
+            social_feature_encoder_class = social_vehicle_encoder[
+                "social_feature_encoder_class"
+            ]
+            social_feature_encoder_params = social_vehicle_encoder[
+                "social_feature_encoder_params"
+            ]
 
-        self.observation_space = adapters.space_from_type(self.observation_type)
-        self.low_dim_states_size = self.observation_space["low_dim_states"].shape[0]
-        self.social_capacity = self.observation_space["social_vehicles"].shape[0]
-        self.num_social_features = self.observation_space["social_vehicles"].shape[1]
+            # Calculate the state size based on the number of features (ego + social).
+            state_size = low_dim_states_size
+            if social_feature_encoder_class:
+                state_size += social_feature_encoder_class(
+                    **social_feature_encoder_params
+                ).output_dim
+            else:
+                state_size += social_capacity * num_social_features
+            # Add the action size to account for the previous action.
+            state_size += self.action_size
 
-        self.encoder_key = policy_params["social_vehicles"]["encoder_key"]
-        self.social_policy_hidden_units = int(
-            policy_params["social_vehicles"].get("social_policy_hidden_units", 0)
-        )
-        self.social_policy_init_std = int(
-            policy_params["social_vehicles"].get("social_policy_init_std", 0)
-        )
-        self.social_vehicle_config = get_social_vehicle_configs(
-            encoder_key=self.encoder_key,
-            num_social_features=self.num_social_features,
-            social_capacity=self.social_capacity,
-            seed=self.seed,
-            social_policy_hidden_units=self.social_policy_hidden_units,
-            social_policy_init_std=self.social_policy_init_std,
-        )
-        self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.social_feature_encoder_class = self.social_vehicle_encoder[
-            "social_feature_encoder_class"
-        ]
-        self.social_feature_encoder_params = self.social_vehicle_encoder[
-            "social_feature_encoder_params"
-        ]
+            actor_network_class = FCActorNetwork
+            critic_network_class = FCCrtiicNetwork
+            network_params = {
+                "state_space": state_size,
+                "action_space": self.action_size,
+                "seed": self.seed,
+                "social_feature_encoder": social_feature_encoder_class(
+                    **social_feature_encoder_params
+                )
+                if social_feature_encoder_class
+                else None,
+            }
+        elif self.observation_type == adapters.AdapterType.DefaultObservationImage:
+            observation_space = adapters.space_from_type(self.observation_type)
+            stack_size = observation_space.shape[0]
+            image_shape = (observation_space.shape[1], observation_space.shape[2])
+
+            actor_network_class = CNNActorNetwork
+            critic_network_class = CNNCriticNetwork
+            network_params = {
+                "input_channels": stack_size,
+                "input_dimension": image_shape,
+                "action_size": self.action_size,
+                "seed": self.seed,
+            }
+        else:
+            raise Exception(
+                f"TD3 baseline does not support the '{self.observation_type}' "
+                f"observation type."
+            )
 
         # others
         self.checkpoint_dir = checkpoint_dir
@@ -130,30 +171,17 @@ class TD3Policy(Agent):
         self.memory = ReplayBuffer(
             buffer_size=int(policy_params["replay_buffer"]["buffer_size"]),
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
+            observation_type=self.observation_type,
             device_name=self.device_name,
         )
         self.num_actor_updates = 0
         self.current_iteration = 0
         self.step_count = 0
-        self.init_networks()
+        self.init_networks(actor_network_class, critic_network_class, network_params)
         if checkpoint_dir:
             self.load(checkpoint_dir)
 
-    @property
-    def state_size(self):
-        # Adjusting state_size based on number of features (ego+social)
-        size = self.low_dim_states_size
-        if self.social_feature_encoder_class:
-            size += self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            ).output_dim
-        else:
-            size += self.social_capacity * self.num_social_features
-        # adding the previous action
-        size += self.action_size
-        return size
-
-    def init_networks(self):
+    def init_networks(self, actor_network_class, critic_network_class, network_params):
         self.noise = [
             OrnsteinUhlenbeckProcess(
                 size=(1,), theta=0.01, std=LinearSchedule(0.25), mu=0.0, x0=0.0, dt=1.0
@@ -162,74 +190,21 @@ class TD3Policy(Agent):
                 size=(1,), theta=0.1, std=LinearSchedule(0.05), mu=0.0, x0=0.0, dt=1.0
             ),  # steering
         ]
-        self.actor = ActorNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
-        self.actor_target = ActorNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
+
+        self.actor = actor_network_class(**network_params).to(self.device)
+        self.actor_target = actor_network_class(**network_params).to(self.device)
         self.actor_target.load_state_dict(self.actor.state_dict())
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.actor_lr)
 
-        self.critic_1 = CriticNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
-        self.critic_1_target = CriticNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
+        self.critic_1 = critic_network_class(**network_params).to(self.device)
+        self.critic_1_target = critic_network_class(**network_params).to(self.device)
         self.critic_1_target.load_state_dict(self.critic_1.state_dict())
         self.critic_1_optimizer = optim.Adam(
             self.critic_1.parameters(), lr=self.critic_lr
         )
 
-        self.critic_2 = CriticNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
-        self.critic_2_target = CriticNetwork(
-            self.state_size,
-            self.action_size,
-            self.seed,
-            social_feature_encoder=self.social_feature_encoder_class(
-                **self.social_feature_encoder_params
-            )
-            if self.social_feature_encoder_class
-            else None,
-        ).to(self.device)
+        self.critic_2 = critic_network_class(**network_params).to(self.device)
+        self.critic_2_target = critic_network_class(**network_params).to(self.device)
         self.critic_2_target.load_state_dict(self.critic_2.state_dict())
         self.critic_2_optimizer = optim.Adam(
             self.critic_2.parameters(), lr=self.critic_lr
@@ -237,15 +212,20 @@ class TD3Policy(Agent):
 
     def act(self, state, explore=True):
         state = copy.deepcopy(state)
-        state["low_dim_states"] = np.float32(
-            np.append(state["low_dim_states"], self.prev_action)
-        )
-        state["social_vehicles"] = (
-            torch.from_numpy(state["social_vehicles"]).unsqueeze(0).to(self.device)
-        )
-        state["low_dim_states"] = (
-            torch.from_numpy(state["low_dim_states"]).unsqueeze(0).to(self.device)
-        )
+        if self.observation_type == adapters.AdapterType.DefaultObservationVector:
+            # Default vector observation type.
+            state["low_dim_states"] = np.float32(
+                np.append(state["low_dim_states"], self.prev_action)
+            )
+            state["social_vehicles"] = (
+                torch.from_numpy(state["social_vehicles"]).unsqueeze(0).to(self.device)
+            )
+            state["low_dim_states"] = (
+                torch.from_numpy(state["low_dim_states"]).unsqueeze(0).to(self.device)
+            )
+        else:
+            # Default image observation type.
+            state = torch.from_numpy(state).unsqueeze(0).to(self.device)
 
         self.actor.eval()
 
@@ -394,6 +374,17 @@ class TD3Policy(Agent):
             torch.load(model_dir / "critic_2_target.pth", map_location=map_location)
         )
 
+    def load_extras(self, extras_dir):
+        """Called at the beginning of training. Used to load any extra data from the
+        last training run that the agent needs in order to resume training."""
+        extras_dir = pathlib.Path(extras_dir)
+
+        # Load the replay buffer.
+        start_time = time.time()
+        with open(extras_dir / "latest_replay_buffer.pkl", "rb") as replay_buffer_file:
+            self.memory = pickle.load(replay_buffer_file)
+        print(f"Loaded replay buffer in {time.time() - start_time} s.")
+
     def save(self, model_dir):
         model_dir = pathlib.Path(model_dir)
         torch.save(self.actor.state_dict(), model_dir / "actor.pth")
@@ -411,3 +402,13 @@ class TD3Policy(Agent):
             self.critic_2_target.state_dict(),
             model_dir / "critic_2_target.pth",
         )
+
+    def save_extras(self, extras_dir):
+        """Called at the end of training. Used to save any extra data that the agent
+        needs in order to resume training."""
+        extras_dir = pathlib.Path(extras_dir)
+
+        start_time = time.time()
+        with open(extras_dir / "latest_replay_buffer.pkl", "wb") as replay_buffer_file:
+            pickle.dump(self.memory, replay_buffer_file, pickle.HIGHEST_PROTOCOL)
+        print(f"Saved replay buffer in {time.time() - start_time} s.")

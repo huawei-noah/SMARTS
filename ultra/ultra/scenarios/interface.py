@@ -19,25 +19,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import argparse
 import glob
-import json
 import os
-import sys
-import timeit
-from collections import defaultdict
-
-import dill
 import ray
-
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles
-from smarts.core.controllers import ActionSpaceType
+import timeit
 from ultra.scenarios.analysis.behavior_analysis import BehaviorAnalysis
 from ultra.scenarios.analysis.scenario_analysis import ScenarioAnalysis
 from ultra.scenarios.analysis.sumo_experiment import (
     edge_lane_data_function,
-    sumo_rerouting_routine,
     vehicle_data_function,
 )
 from ultra.scenarios.generate_scenarios import build_scenarios
@@ -62,10 +53,16 @@ if __name__ == "__main__":
         default="ultra/scenarios",
     )
     parser_generate_scenarios.add_argument(
+        "--seed",
+        help="Seed the generation of random seeds for the scenarios",
+        type=int,
+        default=None,
+    )
+    parser_generate_scenarios.add_argument(
         "--pool-dir",
         help="directory for locating maps",
         type=str,
-        default=None,
+        default="ultra/scenarios/pool/experiment_pool",
     )
     parser_generate_scenarios.add_argument("--level", help="easy/medium/hard", type=str)
     parser_generate_scenarios.add_argument(
@@ -145,6 +142,7 @@ if __name__ == "__main__":
             save_dir=args.save_dir,
             root_path=args.root_dir,
             pool_dir=args.pool_dir,
+            seed=args.seed,
             shuffle_missions=args.no_mission_shuffle,
         )
     else:

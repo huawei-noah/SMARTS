@@ -24,137 +24,37 @@ import math
 import os
 import pickle
 import random
-import sqlite3
 import uuid
-from dataclasses import dataclass, field
 from functools import lru_cache
-from cached_property import cached_property
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
+from cached_property import cached_property
 
-from smarts.core.coordinates import Heading
+from smarts.core.coordinates import Heading, Dimensions, Pose, RefLinePoint
 from smarts.core.data_model import SocialAgent
-from smarts.core.route import ShortestRoute
+from smarts.core.default_map_factory import create_road_map
+from smarts.core.plan import (
+    default_entry_tactic,
+    EndlessGoal,
+    LapMission,
+    Mission,
+    PositionalGoal,
+    Start,
+    TraverseGoal,
+    VehicleSpec,
+    Via,
+)
+from smarts.core.road_map import RoadMap
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import vec_to_radians
-from smarts.core.waypoints import Waypoints
+from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import CutIn, EntryTactic, UTurn
 from smarts.sstudio.types import Via as SSVia
-
-
-@dataclass(frozen=True)
-class Start:
-    position: Tuple[int, int]
-    heading: Heading
-
-
-@dataclass(frozen=True)
-class Goal:
-    def is_endless(self):
-        return True
-
-    def is_reached(self, vehicle):
-        return False
-
-
-@dataclass(frozen=True)
-class EndlessGoal(Goal):
-    pass
-
-
-@dataclass(frozen=True)
-class PositionalGoal(Goal):
-    position: Tuple[int, int]
-    # target_heading: Heading
-    radius: float
-
-    @classmethod
-    def fromedge(cls, edge_id, road_network, lane_index=0, lane_offset=None, radius=1):
-        edge = road_network.edge_by_id(edge_id)
-        lane = edge.getLanes()[lane_index]
-
-        if lane_offset is None:
-            # Default to the midpoint safely ensuring we are on the lane and not
-            # bordering another
-            lane_offset = lane.getLength() * 0.5
-
-        position = road_network.world_coord_from_offset(lane, lane_offset)
-        return cls(position=position, radius=radius)
-
-    def is_endless(self):
-        return False
-
-    def is_reached(self, vehicle):
-        a = vehicle.position
-        b = self.position
-        dist = math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
-        return dist <= self.radius
-
-
-def default_entry_tactic():
-    return sstudio_types.TrapEntryTactic(
-        wait_to_hijack_limit_s=0, exclusion_prefixes=tuple(), zone=None
-    )
-
-
-@dataclass(frozen=True)
-class Via:
-    lane_id: str
-    edge_id: str
-    lane_index: int
-    position: Tuple[float, float]
-    hit_distance: float
-    required_speed: float
-
-
-@dataclass(frozen=True)
-class Mission:
-    start: Start
-    goal: Goal
-    # An optional list of edge IDs between the start and end goal that we want to
-    # ensure the mission includes
-    route_vias: Tuple[str] = field(default_factory=tuple)
-    start_time: float = 0.1
-    entry_tactic: EntryTactic = None
-    task: Tuple[CutIn, UTurn] = None
-    via: Tuple[Via, ...] = ()
-
-    @property
-    def has_fixed_route(self):
-        return not self.goal.is_endless()
-
-    def is_complete(self, vehicle, distance_travelled):
-        return self.goal.is_reached(vehicle)
-
-
-@dataclass(frozen=True)
-class LapMission:
-    start: Start
-    goal: Goal
-    route_length: float
-    num_laps: int = None  # None means infinite # of laps
-    # An optional list of edge IDs between the start and end goal that we want to
-    # ensure the mission includes
-    route_vias: Tuple[str] = field(default_factory=tuple)
-    start_time: float = 0.1
-    entry_tactic: EntryTactic = None
-    via_points: Tuple[Via, ...] = ()
-
-    @property
-    def has_fixed_route(self):
-        return True
-
-    def is_complete(self, vehicle, distance_travelled):
-        return (
-            self.goal.is_reached(vehicle)
-            and distance_travelled > self.route_length * self.num_laps
-        )
 
 
 class Scenario:
@@ -191,14 +91,16 @@ class Scenario:
         self._log_dir = self._resolve_log_dir(log_dir)
         self._validate_assets_exist()
 
-        self._traffic_history = traffic_history
-        default_lane_width = (
-            self.traffic_history_lane_width if traffic_history else None
+        if traffic_history:
+            self._traffic_history = TrafficHistory(traffic_history)
+            default_lane_width = self.traffic_history.lane_width
+        else:
+            self._traffic_history = None
+            default_lane_width = None
+
+        self._road_map, self._road_map_hash = create_road_map(
+            self._root, 1.0, default_lane_width
         )
-        net_file = os.path.join(self._root, "map.net.xml")
-        self._road_network = SumoRoadNetwork.from_file(net_file, default_lane_width)
-        self._net_file_hash = file_md5_hash(self._road_network.net_file)
-        self._waypoints = Waypoints(self._road_network, spacing=1.0)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
 
     def __repr__(self):
@@ -279,7 +181,7 @@ class Scenario:
                 roll_routes = random.randint(0, len(routes))
                 roll_agent_missions = random.randint(0, len(agent_missions))
                 roll_social_agents = random.randint(0, len(social_agents))
-                roll_traffic_histories = random.randint(0, len(traffic_histories))
+                roll_traffic_histories = 0  # random.randint(0, len(traffic_histories))
 
             for (
                 concrete_route,
@@ -339,8 +241,7 @@ class Scenario:
         len(missions)`. In this case a list of one dictionary is returned.
         """
 
-        net_file = os.path.join(scenario_root, "map.net.xml")
-        road_network = SumoRoadNetwork.from_file(net_file)
+        road_map, _ = create_road_map(scenario_root)
 
         missions = []
         missions_file = os.path.join(scenario_root, "missions.pkl")
@@ -349,7 +250,7 @@ class Scenario:
                 missions = pickle.load(f)
 
             missions = [
-                Scenario._extract_mission(actor_and_mission.mission, road_network)
+                Scenario._extract_mission(actor_and_mission.mission, road_map)
                 for actor_and_mission in missions
             ]
 
@@ -406,8 +307,7 @@ class Scenario:
         scenario_root = (
             scenario.root_filepath if isinstance(scenario, Scenario) else scenario
         )
-        net_file = os.path.join(scenario_root, "map.net.xml")
-        road_network = SumoRoadNetwork.from_file(net_file)
+        road_map, _ = create_road_map(scenario_root)
 
         social_agents_path = os.path.join(scenario_root, "social_agents")
         if not os.path.exists(social_agents_path):
@@ -440,7 +340,7 @@ class Scenario:
 
                 actor = mission_and_actor.actor
                 extracted_mission = Scenario._extract_mission(
-                    mission_and_actor.mission, road_network
+                    mission_and_actor.mission, road_map
                 )
                 namespace = os.path.basename(missions_file_path)
                 namespace = os.path.splitext(namespace)[0]
@@ -514,60 +414,41 @@ class Scenario:
             bubbles = pickle.load(f)
             return bubbles
 
-    def set_ego_missions(self, ego_mission):
-        self._missions.update(ego_mission)
+    def set_ego_missions(self, ego_missions: dict):
+        self._missions = ego_missions
 
-    @cached_property
-    def traffic_history_lane_width(self):
-        histories_db = sqlite3.connect(self._traffic_history)
-        cur = histories_db.cursor()
-        cur.execute("SELECT value FROM Spec where key='map_net.lane_width'")
-        row = cur.fetchone()
-        cur.close()
-        histories_db.close()
-        return float(row[0]) if row else None
-
-    @cached_property
-    def traffic_history_target_speed(self):
-        histories_db = sqlite3.connect(self._traffic_history)
-        cur = histories_db.cursor()
-        cur.execute("SELECT value FROM Spec where key='speed_limit_mps'")
-        row = cur.fetchone()
-        cur.close()
-        histories_db.close()
-        return float(row[0]) if row else None
-
-    def discover_missions_of_traffic_histories(self, vehicle_missions={}):
-        histories_db = sqlite3.connect(self._traffic_history)
-        # For now, limit agent missions to just cars (V.type = 2)
-        st_query = """SELECT T.vehicle_id, min(T.sim_time)
-            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
-            WHERE V.type = 2
-            GROUP BY vehicle_id"""
-        p_query = "SELECT position_x, position_y, heading_rad FROM Trajectory WHERE vehicle_id = ? and sim_time = ?"
-        map_offset = self._road_network.net_offset
-        st_cur = histories_db.cursor()
-        for row in st_cur.execute(st_query):
-            vid = str(row[0])
+    def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
+        vehicle_missions = {}
+        map_offset = self._road_map.xy_offset
+        for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])
-            p_cur = histories_db.cursor()
-            vrow = p_cur.execute(p_query, (int(vid), start_time)).fetchone()
-            assert vrow
-            pos_x, pos_y, heading = vrow
-            vehicle_missions[vid] = Mission(
+            pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
+            assert pphs
+            pos_x, pos_y, heading, speed = pphs
+            entry_tactic = default_entry_tactic(speed)
+            v_id = str(row[0])
+            veh_config_type = self._traffic_history.vehicle_config_type(v_id)
+            veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(v_id)
+            # missions start from front bumper, but pos is center of vehicle
+            hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
+            vehicle_missions[v_id] = Mission(
                 start=Start(
-                    (pos_x + map_offset[0], pos_y + map_offset[1]), Heading(heading)
+                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
+                    Heading(heading),
                 ),
-                goal=EndlessGoal(),
+                entry_tactic=entry_tactic,
+                goal=TraverseGoal(self.road_map),
                 start_time=start_time,
+                vehicle_spec=VehicleSpec(
+                    veh_id=v_id,
+                    veh_config_type=veh_config_type,
+                    dimensions=Dimensions(veh_length, veh_width, veh_height),
+                ),
             )
-            p_cur.close()
-        st_cur.close()
-        histories_db.close()
         return vehicle_missions
 
     @staticmethod
-    def discover_traffic_histories(scenario_root):
+    def discover_traffic_histories(scenario_root: str):
         return [
             entry
             for entry in os.scandir(scenario_root)
@@ -575,7 +456,7 @@ class Scenario:
         ]
 
     @staticmethod
-    def _extract_mission(mission, road_network):
+    def _extract_mission(mission, road_map):
         """Takes a sstudio.types.(Mission, EndlessMission, etc.) and converts it to
         the corresponding SMARTS mission types.
         """
@@ -593,36 +474,33 @@ class Scenario:
             else:
                 return float(offset)
 
-        def to_position_and_heading(edge_id, lane_index, offset, road_network):
-            edge = road_network.edge_by_id(edge_id)
-            lane = edge.getLanes()[lane_index]
-            offset = resolve_offset(offset, lane.getLength())
-            position = road_network.world_coord_from_offset(lane, offset)
-            lane_vector = road_network.lane_vector_at_offset(lane, offset)
-            heading = vec_to_radians(lane_vector)
-            return tuple(position), Heading(heading)
+        def to_position_and_heading(road_id, lane_index, offset, road_map):
+            road = road_map.road_by_id(road_id)
+            lane = road.lane_at_index(lane_index)
+            offset = resolve_offset(offset, lane.length)
+            position = lane.from_lane_coord(RefLinePoint(s=offset))
+            lane_vector = lane.vector_at_offset(offset)
+            heading = vec_to_radians(lane_vector[:2])
+            return position, Heading(heading)
 
         def to_scenario_via(
-            vias: Tuple[SSVia, ...], sumo_road_network: SumoRoadNetwork
+            vias: Tuple[SSVia, ...], road_map: RoadMap
         ) -> Tuple[Via, ...]:
             s_vias = []
             for via in vias:
-                lane = sumo_road_network.lane_by_index_on_edge(
-                    via.edge_id, via.lane_index
-                )
+                road = road_map.road_by_id(via.road_id)
+                lane = road.lane_at_index(via.lane_index)
+                lane_width = lane.width_at_offset(via.lane_offset)
                 hit_distance = (
-                    via.hit_distance if via.hit_distance > 0 else lane.getWidth() / 2
+                    via.hit_distance if via.hit_distance > 0 else lane_width / 2
                 )
-                via_position = sumo_road_network.world_coord_from_offset(
-                    lane,
-                    via.lane_offset,
-                )
+                via_position = lane.from_lane_coord(RefLinePoint(via.lane_offset))
 
                 s_vias.append(
                     Via(
-                        lane_id=lane.getID(),
+                        lane_id=lane.lane_id,
                         lane_index=via.lane_index,
-                        edge_id=via.edge_id,
+                        road_id=via.road_id,
                         position=tuple(via_position),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
@@ -636,13 +514,13 @@ class Scenario:
         if isinstance(mission, sstudio_types.Mission):
             position, heading = to_position_and_heading(
                 *mission.route.begin,
-                road_network,
+                road_map,
             )
             start = Start(position, heading)
 
             position, _ = to_position_and_heading(
                 *mission.route.end,
-                road_network,
+                road_map,
             )
             goal = PositionalGoal(position, radius=2)
 
@@ -652,13 +530,12 @@ class Scenario:
                 goal=goal,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                task=mission.task,
-                via=to_scenario_via(mission.via, road_network),
+                via=to_scenario_via(mission.via, road_map),
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
             position, heading = to_position_and_heading(
                 *mission.begin,
-                road_network,
+                road_map,
             )
             start = Start(position, heading)
 
@@ -667,32 +544,28 @@ class Scenario:
                 goal=EndlessGoal(),
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via=to_scenario_via(mission.via, road_network),
+                via=to_scenario_via(mission.via, road_map),
             )
         elif isinstance(mission, sstudio_types.LapMission):
-            start_edge_id, start_lane, start_edge_offset = mission.route.begin
-            end_edge_id, end_lane, end_edge_offset = mission.route.end
+            start_road_id, start_lane, start_road_offset = mission.route.begin
+            end_road_id, end_lane, end_road_offset = mission.route.end
 
-            travel_edge = road_network.edge_by_id(start_edge_id)
-            if start_edge_id == end_edge_id:
-                travel_edge = list(travel_edge.getOutgoing())[0]
+            travel_road = road_map.road_by_id(start_road_id)
+            if start_road_id == end_road_id:
+                travel_road = travel_road.outgoing_roads[0]
 
-            end_edge = road_network.edge_by_id(end_edge_id)
-            via_edges = [road_network.edge_by_id(e) for e in mission.route.via]
+            end_road = road_map.road_by_id(end_road_id)
+            via_roads = [road_map.road_by_id(r) for r in mission.route.via]
 
-            route_length = ShortestRoute(
-                road_network,
-                edge_constraints=[travel_edge] + via_edges + [end_edge],
-                wraps_around=True,
-            ).length
+            route = road_map.generate_routes(travel_road, end_road, via_roads, 1)[0]
 
             start_position, start_heading = to_position_and_heading(
                 *mission.route.begin,
-                road_network,
+                road_map,
             )
             end_position, _ = to_position_and_heading(
                 *mission.route.end,
-                road_network,
+                road_map,
             )
 
             return LapMission(
@@ -700,10 +573,10 @@ class Scenario:
                 goal=PositionalGoal(end_position, radius=2),
                 route_vias=mission.route.via,
                 num_laps=mission.num_laps,
-                route_length=route_length,
+                route_length=route.road_length,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via_points=to_scenario_via(mission.via, road_network),
+                via_points=to_scenario_via(mission.via, road_map),
             )
 
         raise RuntimeError(
@@ -719,21 +592,12 @@ class Scenario:
         >>> Scenario.is_valid_scenario("scenarios/non_existant")
         False
         """
-        paths = [
-            os.path.join(scenario_root, "map.net.xml"),
-        ]
-
-        for f in paths:
-            if not os.path.exists(f):
-                return False
-
-        # make sure we can load the sumo network
-        net_file = os.path.join(scenario_root, "map.net.xml")
-        net = SumoRoadNetwork.from_file(net_file)
-        if net is None:
+        # just make sure we can load the map
+        try:
+            road_map, _ = create_road_map(scenario_root)
+        except:
             return False
-
-        return True
+        return road_map is not None
 
     @staticmethod
     def next(scenario_iterator, log_id=""):
@@ -756,8 +620,8 @@ class Scenario:
         return self._surface_patches
 
     @property
-    def net_file_hash(self):
-        return self._net_file_hash
+    def road_map_hash(self):
+        return self._road_map_hash
 
     @property
     def plane_filepath(self):
@@ -765,6 +629,8 @@ class Scenario:
 
     @property
     def vehicle_filepath(self):
+        if not os.path.isdir(self._root):
+            return None
         for fname in os.listdir(self._root):
             if fname.endswith(".urdf") and fname != "plane.urdf":
                 return os.path.join(self._root, fname)
@@ -798,12 +664,8 @@ class Scenario:
         return os.path.join(self._log_dir, f"sumo-{str(uuid.uuid4())[:8]}")
 
     @property
-    def waypoints(self):
-        return self._waypoints
-
-    @property
-    def road_network(self):
-        return self._road_network
+    def road_map(self):
+        return self._road_map
 
     @property
     def missions(self):
@@ -837,20 +699,3 @@ class Scenario:
     @property
     def scenario_hash(self):
         return self._scenario_hash
-
-    @property
-    def map_bounding_box(self):
-        # This function returns the following tuple:
-        # (bbox length, bbox width, bbox center)
-        net_file = os.path.join(self._root, "map.net.xml")
-        road_network = SumoRoadNetwork.from_file(net_file)
-        # 2D bbox in format (xmin, ymin, xmax, ymax)
-        bounding_box = road_network.graph.getBoundary()
-        bounding_box_length = bounding_box[2] - bounding_box[0]
-        bounding_box_width = bounding_box[3] - bounding_box[1]
-        bounding_box_center = [
-            (bounding_box[0] + bounding_box[2]) / 2,
-            (bounding_box[1] + bounding_box[3]) / 2,
-            0,
-        ]
-        return (bounding_box_length, bounding_box_width, bounding_box_center)

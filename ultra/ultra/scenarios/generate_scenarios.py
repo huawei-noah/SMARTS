@@ -174,7 +174,7 @@ def bubble_config_to_bubble_object(
         ),
         margin=BUBBLE_MARGIN,
         limit=None,
-        exclusion_prefixes=vehicles_to_not_hijack,
+        exclusion_prefixes=tuple(vehicles_to_not_hijack),
         follow_actor_id=None,
         follow_offset=None,
         keep_alive=False,
@@ -335,8 +335,8 @@ def generate_left_turn_missions(
     intersection_name,
     traffic_density,
 ):
-    # dont worry about these seeds, theyre used by sumo
-    sumo_seed = random.choice([0, 1, 2, 3, 4])
+    # By default the sumo_seed is set to the scenario seed
+    sumo_seed = seed
     stopwatcher_info = None
     stopwatcher_added = False
     if stopwatcher_behavior:
@@ -437,7 +437,17 @@ def generate_left_turn_missions(
         speed_m_per_s = float("".join(filter(str.isdigit, speed))) * 5.0 / 18.0
         hijacking_params = route_distributions["ego_hijacking_params"]
         zone_range = hijacking_params["zone_range"]
-        waiting_time = hijacking_params["wait_to_hijack_limit_s"]
+
+        wait_to_hijack_limit_s = hijacking_params["wait_to_hijack_limit_s"]
+        waiting_time = (
+            np.random.randint(
+                wait_to_hijack_limit_s[0],
+                wait_to_hijack_limit_s[1],
+            )
+            if isinstance(wait_to_hijack_limit_s, (list, tuple))
+            else wait_to_hijack_limit_s
+        )
+
         start_time = (
             hijacking_params["start_time"]
             if hijacking_params["start_time"] != "default"
@@ -459,7 +469,7 @@ def generate_left_turn_missions(
                         length=zone_range[1],
                         n_lanes=(ego_route.begin[1] + 1),
                     ),  # Area to hijack.
-                    exclusion_prefixes=vehicles_to_not_hijack,  # Don't hijack these.
+                    exclusion_prefixes=tuple(vehicles_to_not_hijack),  # Don't hijack.
                 ),
             )
             for ego_route in ego_routes
@@ -584,10 +594,10 @@ def generate_social_vehicles(
             end_lane_id = route_lanes[stopwatcher_info["direction"][1]] - 1
             # To ensure that the stopwatcher spawns in all scenarios the
             # stopwatcher's begin time is bounded between 10s to 50s
-            # (100ts to 500ts, if 1s = 1 ts). During analysis, the
+            # (100ts to 500ts, if 1s = 10 ts). During analysis, the
             # stopwatcher is guaranteed to spawn before the 500ts
             # and no less then 100ts
-            begin_time = random.randint(10, 200)
+            begin_time = random.randint(10, 50)
             flows.append(
                 generate_stopwatcher(
                     stopwatcher_behavior=stopwatcher_info["behavior"],
@@ -696,6 +706,7 @@ def build_scenarios(
     root_path,
     totals=None,
     shuffle_missions=True,
+    seed=None,
     pool_dir=None,
     dynamic_pattern_func=None,
 ):
@@ -711,12 +722,22 @@ def build_scenarios(
     level_config = task_config["levels"][level_name]
     scenarios_dir = os.path.dirname(os.path.realpath(__file__))
     task_dir = f"{scenarios_dir}/{task}"
+    pool_dir = f"{scenarios_dir}/pool/experiment_pool" if pool_dir is None else pool_dir
 
-    if pool_dir is None:
-        pool_path = os.path.join(scenarios_dir, "pool/experiment_pool")
+    train_total = int(level_config["train"]["total"])
+    test_total = int(level_config["test"]["total"])
+    if seed is None:
+        # Generate seeds 0, 1, ..., train_total + test_total - 1, and allocate the
+        # first train_total seeds to the training scenarios, and the rest to the testing
+        # scenarios.
+        scenario_seeds = [i for i in range(train_total + test_total)]
     else:
-        pool_path = os.path.join(scenarios_dir, pool_dir)
-
+        # Generate random seeds for the scenarios by sampling numbers in the range
+        # [0, 2** 31) without replacement. The generation of these seeds is seeded by
+        # the seed passed to this function.
+        _seeded_random = random.Random(seed)
+        scenario_seeds = _seeded_random.sample(range(2 ** 31), train_total + test_total)
+    
     if level_config["train"]["total"] == None:
         try:
             train_total = int(totals["train"])
@@ -732,13 +753,13 @@ def build_scenarios(
             print(e)
     else:
         test_total = level_config["test"]["total"]
-
+    
     splitted_seeds = {
-        "train": [i for i in range(train_total)],
-        "test": [i for i in range(train_total, train_total + test_total)],
+        "train": scenario_seeds[:train_total],
+        "test": scenario_seeds[train_total : (train_total + test_total)],
     }
+
     jobs = []
-    # print(M)
     start = time.time()
     for mode, mode_seeds in splitted_seeds.items():
         combinations = []
@@ -778,7 +799,7 @@ def build_scenarios(
                 reverse=True,
             )
             seed_count = 0
-            map_dir = f"{pool_path}/{intersection_type}"
+            map_dir = f"{pool_dir}/{intersection_type}"
             with open(f"{map_dir}/info.json") as jsonfile:
                 map_metadata = json.load(jsonfile)
                 route_lanes = map_metadata["num_lanes"]
@@ -787,7 +808,7 @@ def build_scenarios(
                 inner_part = math.ceil(float(percent) * len(seeds))
 
                 inner_cur_split = inner_prev_split + inner_part
-                name_additions = [mode, level_name, intersection_type, speed]
+                name_additions = [mode, task, level_name, intersection_type, speed]
 
                 if level_name != "no-traffic":
                     name_additions.append(traffic_density)
@@ -827,14 +848,16 @@ def build_scenarios(
                 jobs.append(sub_proc)
                 sub_proc.start()
                 inner_prev_split = inner_cur_split
-            print(
-                f">> {mode} {intersection_type} count:{seed_count} generated: {seed_count/len(mode_seeds)} real: {intersection_percent}"
+            generated = seed_count / len(mode_seeds) if len(mode_seeds) > 0 else 0
+            generation_stats = (
+                f">> {mode} {intersection_type} "
+                f"count: {seed_count} "
+                f"generated: {generated} "
+                f"real: {intersection_percent}"
             )
-            # print("--")
+            print(generation_stats)
             prev_split = cur_split
             main_seed_count += seed_count
-        # print(f"Finished: {mode}  {main_seed_count/(train_total+test_total)}")
-        # print("--------------------------------------------")
     for process in jobs:
         process.join()
     print("*** time took:", time.time() - start)

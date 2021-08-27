@@ -1,18 +1,19 @@
 tasks:
+  # task00 and task00-multiagent are for unit testing purposes only
   task00: # unittest
     easy:
-      train: "../tests/task/train_mock*"
-      test:  "../tests/task/test_mock*"
+      train: "../tests/task/train_task00_easy*"
+      test:  "../tests/task/test_task00_easy*"
     eval_test:
-      train: "../tests/task/eval_test/train_*"
-      test:  "../tests/task/eval_test/test_*"
+      train: "../tests/task/eval_test/train_task00_eval_test*"
+      test:  "../tests/task/eval_test/test_task00_eval_test*"
   task00-multiagent: # unittest
     easy:
-      train: "../tests/task/train_multiagent_mock*"
-      test:  "../tests/task/test_multiagent_mock*"
+      train: "../tests/task/train_task00-multiagent_easy*"
+      test:  "../tests/task/test_task00-multiagent_easy*"
     eval_test:
-      train: "../tests/task/eval_test_multiagent/train_*"
-      test:  "../tests/task/eval_test_multiagent/test_*"
+      train: "../tests/task/eval_test_multiagent/train_task00-multiagent_eval_test*"
+      test:  "../tests/task/eval_test_multiagent/test_task00-multiagent_eval_test*"
   task00-curriculum: # unittest
     test_grade1:
       train: "../tests/curriculum_test/train_test_grade1*"
@@ -35,52 +36,43 @@ tasks:
     high-density:
       train: "../tests/curriculum_test/train_high-density*"
       test: "../tests/curriculum_test/test_high-density*"
+      
+  # Format of generated scenario directory:
+  #   train: <path_to_train_scenarios>/train_<task_id>_<level_id>*
+  #   test: <path_to_test_scenarios>/train_<task_id>_<level_id>*
   taskX:
     road-blocks:
-      train: "scenarios/taskX/train_road-blocks*"
-      test:  "scenarios/taskX/test_road-blocks*"
+      train: "scenarios/taskX/train_taskX_road-blocks*"
+      test:  "scenarios/taskX/test_taskX_road-blocks*"
     bubbles:
-      train: "scenarios/taskX/train_bubbles*"
-      test:  "scenarios/taskX/test_bubbles*"
+      train: "scenarios/taskX/train_taskX_bubbles*"
+      test:  "scenarios/taskX/test_taskX_bubbles*"
     intersection-specific:
-      train: "scenarios/taskX/train_intersection-specific*"
-      test:  "scenarios/taskX/test_intersection-specific*"
-  task0:
-    no-traffic:
-      train: "scenarios/task1/train_no-traffic*"
-      test:  "scenarios/task1/train_no-traffic*"
-    easy:
-      train: "scenarios/task1/train_easy*"
-      test:  "scenarios/task1/train_easy*"
-    medium:
-      train: "scenarios/task1/train_medium*"
-      test:  "scenarios/task1/train_medium*"
-    hard:
-      train: "scenarios/task1/train_hard*"
-      test:  "scenarios/task1/train_hard*"
+      train: "scenarios/taskX/train_taskX_intersection-specific*"
+      test:  "scenarios/taskX/test_taskX_intersection-specific*"
   task1:
     no-traffic:
-      train: "scenarios/task1/train_no-traffic*"
-      test:  "scenarios/task1/test_no-traffic*"
+      train: "scenarios/task1/train_task1_no-traffic*"
+      test:  "scenarios/task1/test_task1_no-traffic*"
     simple:
-      train: "scenarios/task1/train_simple*"
-      test:  "scenarios/task1/test_simple*"
+      train: "scenarios/task1/train_task1_simple*"
+      test:  "scenarios/task1/test_task1_simple*"
     easy:
-      train: "scenarios/task1/train_easy*"
-      test:  "scenarios/task1/test_easy*"
+      train: "scenarios/task1/train_task1_easy*"
+      test:  "scenarios/task1/test_task1_easy*"
     medium:
-      train: "scenarios/task1/train_medium*"
-      test:  "scenarios/task1/test_medium*"
+      train: "scenarios/task1/train_task1_medium*"
+      test:  "scenarios/task1/test_task1_medium*"
     hard:
-      train: "scenarios/task1/train_hard*"
-      test:  "scenarios/task1/test_hard*"
+      train: "scenarios/task1/train_task1_hard*"
+      test:  "scenarios/task1/test_task1_hard*"
   task2:
-    lo2-high:
-      train: "scenarios/task2/train_lo-hi*"
-      test:  "scenarios/task2/test_lo-hi*"
+    low-high:
+      train: "scenarios/task2/train_task2_low-high*"
+      test:  "scenarios/task2/test_task2_low-high*"
     high-low:
-      train: "scenarios/task2/train_hi-lo*"
-      test:  "scenarios/task2/test_hi-lo*"
+      train: "scenarios/task2/train_task2_high-low*"
+      test:  "scenarios/task2/test_task2_high-low*"
   taskgb:
     grade1:
       train: "scenarios/taskgb/train_grade1*"
@@ -110,3 +102,13 @@ tasks:
     constant-flow:
       train: "scenarios/taskgb/train_constant-flow*"
       test:  "scenarios/taskgb/test_constant-flow*"
+  task3:
+    easy:
+      train: "scenarios/task3/train_task3_easy*"
+      test:  "scenarios/task3/test_task3_easy*"
+    medium:
+      train: "scenarios/task3/train_task3_medium*"
+      test:  "scenarios/task3/test_task3_medium*"
+    hard:
+      train: "scenarios/task3/train_task3_hard*"
+      test:  "scenarios/task3/test_task3_hard*"

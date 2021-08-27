@@ -1,0 +1,145 @@
+levels:
+  easy:
+    # generalizing from 2 lanes to 3 lanes (Same density config)
+    train:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+            percent: 0.5
+            specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                    [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                    [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+            stops: null
+            bubbles: null
+        2lane_c:
+            percent: 0.5
+            specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                    [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                    [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                    [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+            stops: null
+            bubbles: null
+    test:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        3lane_t:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null
+        3lane_c:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null
+  medium:
+    # generalizing from 2 lanes to 4 lanes (Same density config)
+    train:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null
+        2lane_c:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null
+    test:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        4lane_t:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null
+        4lane_c:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null
+  hard:
+    # generalizing from 2 lanes to 5 lanes (Same density config)
+    train:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null
+        2lane_c:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null
+    test:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        5lane_t:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null
+        5lane_c:
+           percent: 0.5
+           specs: [[50kmh,low-density,0.21],[70kmh,low-density,0.20],[100kmh,low-density,0.20], #61%
+                   [50kmh,mid-density,0.11],[70kmh,mid-density,0.11],[100kmh,mid-density,0.11], #33%,
+                   [50kmh,no-traffic,0.01],[70kmh,no-traffic,0.01],[100kmh,no-traffic,0.01], #3%
+                   [50kmh,high-density,0.01],[70kmh,high-density,0.01],[100kmh,high-density,0.01]] # 3%
+           stops: null
+           bubbles: null

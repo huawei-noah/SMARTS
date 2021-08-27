@@ -30,7 +30,7 @@ from shapely.geometry import Point, Polygon
 from shapely.geometry import box as shapely_box
 
 from smarts.core import models
-from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.tire_models import TireForces
 from smarts.core.utils import pybullet
 from smarts.core.utils.bullet import (
@@ -40,7 +40,12 @@ from smarts.core.utils.bullet import (
     JointInfo,
     JointState,
 )
-from smarts.core.utils.math import radians_to_vec, yaw_from_quaternion
+from smarts.core.utils.math import (
+    min_angles_difference_signed,
+    radians_to_vec,
+    vec_to_radians,
+    yaw_from_quaternion,
+)
 from smarts.core.utils.pybullet import bullet_client as bc
 
 with pkg_resources.path(models, "vehicle.urdf") as path:
@@ -54,9 +59,13 @@ with open(controller_filepath, "r") as controller_file:
 def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
     contact_objects = set()
 
-    min_, max_ = bullet_client.getAABB(bullet_id, link_index)
     # `getContactPoints` does not pick up collisions well so we cast a fast box check on the physics
+    min_, max_ = bullet_client.getAABB(bullet_id, link_index)
+    # note that getAABB returns a box around the link_index link only,
+    # which means it's offset from the ground (min_ has a positive z)
+    # if link_index=0 (the chassis link) is used.
     overlapping_objects = bullet_client.getOverlappingObjects(min_, max_)
+    # the pairs returned by getOverlappingObjects() appear to be in the form (body_id, link_idx)
     if overlapping_objects is not None:
         contact_objects = set(oo for oo, _ in overlapping_objects if oo != bullet_id)
 
@@ -74,11 +83,14 @@ class Chassis:
     def control(self, *args, **kwargs):
         raise NotImplementedError
 
+    def reapply_last_control(self):
+        raise NotImplementedError
+
     def teardown(self):
         raise NotImplementedError
 
     @property
-    def dimensions(self) -> BoundingBox:
+    def dimensions(self) -> Dimensions:
         raise NotImplementedError
 
     @property
@@ -94,7 +106,7 @@ class Chassis:
         raise NotImplementedError
 
     @property
-    def speed(self):
+    def speed(self) -> float:
         raise NotImplementedError
 
     @speed.setter
@@ -111,7 +123,7 @@ class Chassis:
         raise NotImplementedError
 
     @property
-    def yaw_rate(self):
+    def yaw_rate(self) -> float:
         raise NotImplementedError
 
     def inherit_physical_values(self, other: "Chassis"):
@@ -130,6 +142,20 @@ class Chassis:
         )
         return shapely_rotate(poly, self.pose.heading, use_radians=True)
 
+    def step(self, current_simulation_time):
+        raise NotImplementedError
+
+    def state_override(
+        self,
+        dt: float,
+        force_pose: Pose,
+        linear_velocity: np.ndarray = None,
+        angular_velocity: np.ndarray = None,
+    ):
+        """Use with care!  In essence, this is tinkering with the physics of the world,
+        and may have unintended behavioural or performance consequences."""
+        raise NotImplementedError
+
 
 class BoxChassis(Chassis):
     """Control a vehicle by setting its absolute position and heading. The collision
@@ -140,7 +166,7 @@ class BoxChassis(Chassis):
         self,
         pose: Pose,
         speed: float,
-        dimensions: BoundingBox,
+        dimensions: Dimensions,
         bullet_client: bc.BulletClient,
     ):
         self._dimensions = dimensions
@@ -151,16 +177,48 @@ class BoxChassis(Chassis):
         bullet_client.setCollisionFilterGroupMask(
             self._bullet_body._bullet_id, -1, 0x0, 0x0
         )
+        self._pose = None
         self.control(pose, speed)
         self._client = bullet_client
 
-    def control(self, pose: Pose, speed: float):
+    def control(self, pose: Pose, speed: float, dt: float = 0):
+        if self._pose:
+            self._last_heading = self._pose.heading
+        self._last_dt = dt
         self._pose = pose
         self._speed = speed
         self._bullet_constraint.move_to(pose)
 
+    def reapply_last_control(self):
+        # no need to do anything here since we're not applying forces
+        pass
+
+    def state_override(
+        self,
+        dt: float,
+        force_pose: Pose,
+        linear_velocity: np.ndarray = None,
+        angular_velocity: np.ndarray = None,
+    ):
+        """Use with care!  In essence, this is tinkering with the physics of the world,
+        and may have unintended behavioural or performance consequences."""
+        if self._pose:
+            self._last_heading = self._pose.heading
+        self._last_dt = dt
+        self._pose = force_pose
+        if linear_velocity is not None or angular_velocity is not None:
+            assert linear_velocity is not None
+            assert angular_velocity is not None
+            self._speed = np.linalg.norm(linear_velocity)
+            self._client.resetBaseVelocity(
+                self.bullet_id,
+                linearVelocity=linear_velocity,
+                angularVelocity=angular_velocity,
+            )
+        self._bullet_constraint.move_to(force_pose)
+
     @property
-    def dimensions(self) -> BoundingBox:
+    def dimensions(self) -> Dimensions:
         return self._dimensions
 
     @property
@@ -176,12 +234,23 @@ class BoxChassis(Chassis):
         return self._bullet_body._bullet_id
 
     @property
-    def speed(self):
+    def speed(self) -> float:
+        # in m/s
         return self._speed
 
     @property
     def velocity_vectors(self):
-        return (None, None)
+        # linear_velocity in m/s, angular_velocity in rad/s
+        vh = radians_to_vec(self.pose.heading)
+        if self._speed is not None:
+            linear_velocity = np.array((vh[0], vh[1], 0.0)) * self._speed
+        else:
+            linear_velocity = None
+        angular_velocity = np.array((0.0, 0.0, 0.0))
+        if self._last_dt and self._last_dt > 0:
+            angular_velocity = vh - radians_to_vec(self._last_heading)
+            angular_velocity = np.append(angular_velocity / self._last_dt, 0.0)
+        return (linear_velocity, angular_velocity)
 
     @speed.setter
     def speed(self, speed: float = None):
@@ -196,13 +265,20 @@ class BoxChassis(Chassis):
         return None
 
     @property
-    def yaw_rate(self):
+    def yaw_rate(self) -> float:
+        # in rad/s
+        if self._last_dt and self._last_dt > 0:
+            delta = min_angles_difference_signed(self._pose.heading, self._last_heading)
+            return delta / self._last_dt
         return None
 
     def inherit_physical_values(self, other: Chassis):
         self._pose = other.pose
         self.speed = other.speed
         # ignore physics
+
+    def step(self, current_simulation_time):
+        pass
 
     def teardown(self):
         self._bullet_constraint.teardown()
@@ -320,7 +396,7 @@ class AckermannChassis(Chassis):
         width, length, height = np.array(
             self._client.getCollisionShapeData(self._bullet_id, 0)[0][3]
         )
-        self._dimensions = BoundingBox(length=length, width=width, height=height)
+        self._dimensions = Dimensions(length=length, width=width, height=height)
         chassis_pos = self._client.getLinkState(self._bullet_id, 0)[4]
         center_offset = np.array(
             self._client.getVisualShapeData(self._bullet_id, 0)[0][5]
@@ -400,7 +476,7 @@ class AckermannChassis(Chassis):
         return -steering_radians
 
     @property
-    def speed(self):
+    def speed(self) -> float:
         """Returns speed in m/s."""
         velocity, _ = np.array(self._client.getBaseVelocity(self._bullet_id))
         speed = math.sqrt(velocity.dot(velocity))
@@ -408,7 +484,7 @@ class AckermannChassis(Chassis):
 
     @property
     def velocity_vectors(self):
-        """Linear velocity vector is in km/h and Angular veclocity is in Rad/sec"""
+        """Linear velocity vector is in m/s and Angular veclocity is in Rad/sec"""
         linear_velocity, angular_velocity = np.array(
             self._client.getBaseVelocity(self._bullet_id)
         )
@@ -418,13 +494,16 @@ class AckermannChassis(Chassis):
     def speed(self, speed: float = None):
         # TODO: Temporary, figure out the required joint velocities to achieve the
         #       requested speed
-        self.control(throttle=1)
+        if not speed or self.speed < speed:
+            self.control(brake=1)
+        elif self.speed > speed:
+            self.control(throttle=1)
 
     @property
-    def yaw_rate(self):
-        """Returns rotational speed in rad/sec."""
+    def yaw_rate(self) -> float:
+        """Returns 2-D rotational speed in rad/sec."""
         _, velocity_rotational = np.array(self._client.getBaseVelocity(self._bullet_id))
-        return velocity_rotational
+        return vec_to_radians(velocity_rotational[:2])
 
     @property
     def longitudinal_lateral_speed(self):
@@ -453,7 +532,7 @@ class AckermannChassis(Chassis):
 
     @property
     def contact_points(self):
-        ## 0 is the chassis link index
+        ## 0 is the chassis link index (which means ground won't be included)
         contact_points = _query_bullet_contact_points(self._client, self._bullet_id, 0)
         return [
             ContactPoint(bullet_id=p[2], contact_point=p[5], contact_point_other=p[6])
@@ -496,6 +575,18 @@ class AckermannChassis(Chassis):
         return self._rear_track_width
 
     @property
+    def max_torque(self):
+        return self._max_torque
+
+    @property
+    def max_btorque(self):
+        return self._max_btorque
+
+    @property
+    def steering_ratio(self):
+        return self._steering_gear_ratio
+
+    @property
     def bullet_id(self) -> str:
         return self._bullet_id
 
@@ -524,6 +615,7 @@ class AckermannChassis(Chassis):
         """Apply throttle [0, 1], brake [0, 1], and steering [-1, 1] values for this
         timestep.
         """
+        self._last_control = (throttle, brake, steering)
 
         if isinstance(throttle, np.ndarray):
             assert all(
@@ -550,6 +642,29 @@ class AckermannChassis(Chassis):
             return
         self._apply_throttle(throttle_list)
         self._apply_brake(brake)
+
+    def reapply_last_control(self):
+        assert self._last_control
+        self.control(*self._last_control)
+
+    def state_override(
+        self,
+        dt: float,
+        force_pose: Pose,
+        linear_velocity: np.ndarray = None,
+        angular_velocity: np.ndarray = None,
+    ):
+        """Use with care!  In essence, this is tinkering with the physics of the world,
+        and may have unintended behavioural or performance consequences."""
+        self.set_pose(force_pose)
+        if linear_velocity is not None or angular_velocity is not None:
+            assert linear_velocity is not None
+            assert angular_velocity is not None
+            self._client.resetBaseVelocity(
+                self._bullet_id,
+                linearVelocity=linear_velocity,
+                angularVelocity=angular_velocity,
+            )
 
     def _apply_throttle(self, throttle_list):
         self._client.setJointMotorControlArray(

@@ -19,7 +19,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import json
 import os
 import sys
 import glob
@@ -29,13 +28,11 @@ from ultra.utils.ray import default_ray_kwargs
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
 import argparse
-import pickle
-import time
-
 import dill
 import gym
-import psutil
+import pickle
 import ray
+import time
 import torch
 import matplotlib.pyplot as plt
 
@@ -51,7 +48,119 @@ from ultra.utils.curriculum.dynamic_scenarios import DynamicScenarios
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-def load_model(experiment_dir):
+def create_argument_parser():
+    parser = argparse.ArgumentParser("intersection-training")
+    parser.add_argument(
+        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
+    )
+    parser.add_argument(
+        "--level",
+        help="Levels available : [easy, medium, hard, no-traffic]",
+        type=str,
+        default="easy",
+    )
+    parser.add_argument(
+        "--policy",
+        help="Policies available : [ppo, sac, td3, dqn, bdqn]",
+        type=str,
+        default="sac",
+    )
+    parser.add_argument(
+        "--episodes", help="Number of training episodes", type=int, default=1000000
+    )
+    parser.add_argument(
+        "--max-episode-steps",
+        help="Maximum number of steps per episode",
+        type=int,
+        default=1200,
+    )
+    parser.add_argument(
+        "--max-steps",
+        help="Maximum total number of training steps",
+        type=int,
+        default=1000000,
+    )
+    parser.add_argument(
+        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
+    )
+    parser.add_argument(
+        "--headless",
+        help="Run without envision",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
+    )
+    parser.add_argument(
+        "--eval-rate",
+        help="The number of training episodes to wait before running the evaluation",
+        type=int,
+        default=200,
+    )
+    parser.add_argument(
+        "--seed",
+        help="Environment seed",
+        default=2,
+        type=int,
+    )
+    parser.add_argument(
+        "--log-dir",
+        help="Log directory location",
+        default="logs",
+        type=str,
+    )
+    parser.add_argument(
+        "--experiment-dir",
+        help="Path to the base dir of trained model",
+        default=None,
+        type=str,
+    )
+    parser.add_argument(
+        "--policy-ids",
+        help="Name of each specified policy",
+        default=None,
+        type=str,
+    )
+    parser.add_argument(
+        "--save-model-only",
+        help="Model is saved at checkpoint, but no evaluation occurs",
+        default=False,
+        type=bool,
+    )
+    parser.add_argument(
+        "--curriculum-mode",
+        help="Toggle grade based mode",
+        default=False,
+        type=bool,
+    )
+    parser.add_argument(
+        "--curriculum-dir",
+        help="local path to grade based (GB) curriculum dir. Local path is path from ultra/",
+        type=str,
+        default="scenarios/curriculum/",
+    )
+    parser.add_argument(
+        "--curriculum-build-scenarios",
+        help="Build all scenarios from curriculum",
+        default=False,
+        type=bool,
+    )
+    parser.add_argument(
+        "--curriculum-scenarios-root-dir",
+        help="Root directory where gb tasks are stored",
+        type=str,
+        default="ultra/scenarios",
+    )
+    parser.add_argument(
+        "--curriculum-scenarios-save-dir",
+        help="Save the scenarios in specified directory",
+        type=str,
+        default=None,
+    )
+    return parser
+
+
+def load_agents(experiment_dir):
     # Load relevant agent metadata.
     with open(
         os.path.join(experiment_dir, "agent_metadata.pkl"), "rb"
@@ -68,41 +177,93 @@ def load_model(experiment_dir):
         agent_id: agent_metadata["agent_classes"][agent_id] for agent_id in agent_ids
     }
 
-    agent_checkpoint_directories = {
-        agent_id: sorted(
+    latest_checkpoint_directories = {}
+    for agent_id in agent_ids:
+        checkpoint_directories = sorted(
             glob.glob(os.path.join(experiment_dir, "models", agent_id, "*")),
             key=lambda x: int(x.split("/")[-1]),
         )
-        for agent_id in agent_ids
-    }
-
-    # Confined to single agent experimens only
-    assert len(agent_ids) == 1, "Cannot load model from multi-agent experiments."
-
-    length_dir = len(agent_checkpoint_directories[agent_ids[0]])
-    if length_dir > 1:
-        print(
-            f"\nThere are {length_dir} models inside in the experiment dir. Only the latest model >>> {agent_checkpoint_directories[agent_ids[0]][length_dir-1]} <<< will be trained\n"
+        latest_checkpoint_directory = (
+            checkpoint_directories[-1] if len(checkpoint_directories) > 0 else None
         )
-
-    current_checkpoint_directory = agent_checkpoint_directories[agent_ids[0]][
-        length_dir - 1
-    ]
+        latest_checkpoint_directories[agent_id] = latest_checkpoint_directory
 
     # Create the agent specifications matched with their associated ID and corresponding
     # checkpoint directory
     agent_specs = {
         agent_id: make(
             locator=agent_classes[agent_id],
-            checkpoint_dir=current_checkpoint_directory,
+            checkpoint_dir=latest_checkpoint_directories[agent_id],
             experiment_dir=experiment_dir,
             agent_id=agent_id,
         )
         for agent_id in agent_ids
     }
 
-    return agent_ids, agent_classes, agent_specs
+    # Create the agents matched with their associated ID.
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
 
+    # Load any extra data that the agent needs from its last training run in order to
+    # resume training (e.g. its previous replay buffer experience).
+    for agent_id, agent in agents.items():
+        extras_directory = os.path.join(experiment_dir, "extras", agent_id)
+        agent.load_extras(extras_directory)
+
+    return agent_ids, agent_classes, agent_specs, agents
+
+def build_agents(policy_classes, policy_ids, max_episode_steps):
+    # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
+    # or use the provided policy_ids if available.
+    agent_ids = (
+        ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
+        if not policy_ids
+        else policy_ids
+    )
+    # Ensure there is an ID for each policy, and a policy for each ID.
+    assert len(agent_ids) == len(policy_classes), (
+        "The number of agent IDs provided ({}) must be equal to "
+        "the number of policy classes provided ({}).".format(
+            len(agent_ids), len(policy_classes)
+        )
+    )
+
+    # Assign the policy classes to their associated ID.
+    agent_classes = {
+        agent_id: policy_class
+        for agent_id, policy_class in zip(agent_ids, policy_classes)
+    }
+    # Create the agent specifications matched with their associated ID.
+    agent_specs = {
+        agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
+        for agent_id, policy_class in agent_classes.items()
+    }
+    # Create the agents matched with their associated ID.
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
+
+    return agent_ids, agent_classes, agent_specs, agents
+
+def _save_agent_metadata(
+    experiment_dir, filename, agent_ids, agent_classes, agent_specs
+):
+    # Save relevant agent metadata.
+    if not os.path.exists(experiment_dir):
+        os.makedirs(experiment_dir)
+    with open(os.path.join(experiment_dir, filename), "wb") as metadata_file:
+        dill.dump(
+            {
+                "agent_ids": agent_ids,
+                "agent_classes": agent_classes,
+                "agent_specs": agent_specs,
+            },
+            metadata_file,
+            pickle.HIGHEST_PROTOCOL,
+        )
 
 def train(
     scenario_info,
@@ -127,38 +288,11 @@ def train(
     evaluation_task_ids = dict()
 
     if experiment_dir:
-        agent_ids, agent_classes, agent_specs = load_model(experiment_dir)
+        agent_ids, agent_classes, agent_specs, agents = load_agents(experiment_dir)
     else:
-        # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
-        # or use the provided policy_ids if available.
-        agent_ids = (
-            ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
-            if not policy_ids
-            else policy_ids
+        agent_ids, agent_classes, agent_specs, agents = build_agents(
+            policy_classes, policy_ids, max_episode_steps
         )
-        # Ensure there is an ID for each policy, and a policy for each ID.
-        assert len(agent_ids) == len(policy_classes), (
-            "The number of agent IDs provided ({}) must be equal to "
-            "the number of policy classes provided ({}).".format(
-                len(agent_ids), len(policy_classes)
-            )
-        )
-        # Assign the policy classes to their associated ID.
-        agent_classes = {
-            agent_id: policy_class
-            for agent_id, policy_class in zip(agent_ids, policy_classes)
-        }
-        # Create the agent specifications matched with their associated ID.
-        agent_specs = {
-            agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
-            for agent_id, policy_class in agent_classes.items()
-        }
-
-    # Create the agents matched with their associated ID.
-    agents = {
-        agent_id: agent_spec.build_agent()
-        for agent_id, agent_spec in agent_specs.items()
-    }
 
     # Define an 'etag' for this experiment's data directory based off policy_classes.
     # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
@@ -241,22 +375,18 @@ def train(
         dones = {"__all__": False}
         infos = None
         episode.reset()
-        experiment_dir = episode.experiment_dir
 
-        # Save relevant agent metadata.
-        if not os.path.exists(f"{experiment_dir}/agent_metadata.pkl"):
-            if not os.path.exists(experiment_dir):
-                os.makedirs(experiment_dir)
-            with open(f"{experiment_dir}/agent_metadata.pkl", "wb") as metadata_file:
-                dill.dump(
-                    {
-                        "agent_ids": agent_ids,
-                        "agent_classes": agent_classes,
-                        "agent_specs": agent_specs,
-                    },
-                    metadata_file,
-                    pickle.HIGHEST_PROTOCOL,
-                )
+        experiment_dir = episode.experiment_dir
+        # Name of agent metadata pickle file
+        filename = "agent_metadata.pkl"
+        if not os.path.exists(os.path.join(experiment_dir, filename)):
+            _save_agent_metadata(
+                experiment_dir,
+                filename,
+                agent_ids,
+                agent_classes,
+                agent_specs,
+            )
 
         if curriculum_mode is True:
             if (CurriculumInfo.static_curriculum_toggle == True) and (
@@ -376,6 +506,11 @@ def train(
     print(
         "\nTotal scenario occurances:", scenario_data_handler.overall_densities_counter
     )
+    # Save any extra data that the agent may need to resume training in a future
+    # training session (e.g. its replay buffer experience).
+    for agent_id, agent in agents.items():
+        extras_directory = episode.extras_dir(agent_id)
+        agent.save_extras(extras_directory)
 
     # Wait on the remaining evaluations to finish.
     while collect_evaluations(evaluation_task_ids):
@@ -439,117 +574,7 @@ def calculate_average_reached_goal(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("intersection-training")
-    parser.add_argument(
-        "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
-    )
-    parser.add_argument(
-        "--level",
-        help="Levels available : [easy, medium, hard, no-traffic]",
-        type=str,
-        default="easy",
-    )
-    parser.add_argument(
-        "--policy",
-        help="Policies available : [ppo, sac, td3, dqn, bdqn]",
-        type=str,
-        default="sac",
-    )
-    parser.add_argument(
-        "--episodes", help="Number of training episodes", type=int, default=1000000
-    )
-    parser.add_argument(
-        "--max-episode-steps",
-        help="Maximum number of steps per episode",
-        type=int,
-        default=200,
-    )
-    parser.add_argument(
-        "--max-steps",
-        help="Maximum total number of training steps",
-        type=int,
-        default=1000000,
-    )
-    parser.add_argument(
-        "--timestep", help="Environment timestep (sec)", type=float, default=0.1
-    )
-    parser.add_argument(
-        "--headless",
-        help="Run without envision",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
-    )
-    parser.add_argument(
-        "--eval-rate",
-        help="The number of training episodes to wait before running the evaluation",
-        type=int,
-        default=200,
-    )
-    parser.add_argument(
-        "--seed",
-        help="Environment seed",
-        default=2,
-        type=int,
-    )
-    parser.add_argument(
-        "--log-dir",
-        help="Log directory location",
-        default="logs",
-        type=str,
-    )
-    parser.add_argument(
-        "--policy-ids",
-        help="Name of each specified policy",
-        default=None,
-        type=str,
-    )
-    parser.add_argument(
-        "--experiment-dir",
-        help="Path to the base dir of trained model",
-        default=None,
-        type=str,
-    )
-    parser.add_argument(
-        "--save-model-only",
-        help="Model is saved at checkpoint, but no evaluation occurs",
-        default=False,
-        type=bool,
-    )
-    parser.add_argument(
-        "--curriculum-mode",
-        help="Toggle grade based mode",
-        default=False,
-        type=bool,
-    )
-    parser.add_argument(
-        "--curriculum-dir",
-        help="local path to grade based (GB) curriculum dir. Local path is path from ultra/",
-        type=str,
-        default="scenarios/curriculum/",
-    )
-    parser.add_argument(
-        "--curriculum-build-scenarios",
-        help="Build all scenarios from curriculum",
-        default=False,
-        type=bool,
-    )
-    parser.add_argument(
-        "--curriculum-scenarios-root-dir",
-        help="Root directory where gb tasks are stored",
-        type=str,
-        default="ultra/scenarios",
-    )
-    parser.add_argument(
-        "--curriculum-scenarios-save-dir",
-        help="Save the scenarios in specified directory",
-        type=str,
-        default=None,
-    )
-
-    base_dir = os.path.dirname(__file__)
-    pool_path = os.path.join(base_dir, "agent_pool.json")
+    parser = create_argument_parser()
     args = parser.parse_args()
 
     # Obtain the policy class strings for each specified policy.
@@ -562,28 +587,31 @@ if __name__ == "__main__":
     policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
     ray.init()
-    train(
-        scenario_info=(args.task, args.level),
-        num_episodes=int(args.episodes),
-        max_episode_steps=int(args.max_episode_steps),
-        max_steps=int(args.max_steps),
-        eval_info={
-            "eval_rate": float(args.eval_rate),
-            "eval_episodes": int(args.eval_episodes),
-        },
-        timestep_sec=float(args.timestep),
-        headless=args.headless,
-        policy_classes=policy_classes,
-        seed=args.seed,
-        log_dir=args.log_dir,
-        experiment_dir=args.experiment_dir,
-        save_model_only=args.save_model_only,
-        curriculum_mode=args.curriculum_mode,
-        curriculum_metadata={
-            "curriculum_dir": args.curriculum_dir,
-            "curriculum_build_scenarios": args.curriculum_build_scenarios,
-            "curriculum_scenarios_root_dir": args.curriculum_scenarios_root_dir,
-            "curriculum_scenarios_save_dir": args.curriculum_scenarios_save_dir,
-        },
-        policy_ids=policy_ids,
-    )
+    try:
+        train(
+            scenario_info=(args.task, args.level),
+            num_episodes=int(args.episodes),
+            max_episode_steps=int(args.max_episode_steps),
+            max_steps=int(args.max_steps),
+            eval_info={
+                "eval_rate": float(args.eval_rate),
+                "eval_episodes": int(args.eval_episodes),
+            },
+            timestep_sec=float(args.timestep),
+            headless=args.headless,
+            policy_classes=policy_classes,
+            seed=args.seed,
+            log_dir=args.log_dir,
+            experiment_dir=args.experiment_dir,
+            save_model_only=args.save_model_only,
+            curriculum_mode=args.curriculum_mode,
+            curriculum_metadata={
+                "curriculum_dir": args.curriculum_dir,
+                "curriculum_build_scenarios": args.curriculum_build_scenarios,
+                "curriculum_scenarios_root_dir": args.curriculum_scenarios_root_dir,
+                "curriculum_scenarios_save_dir": args.curriculum_scenarios_save_dir,
+            },
+            policy_ids=policy_ids,
+        )
+    finally:
+        ray.shutdown()

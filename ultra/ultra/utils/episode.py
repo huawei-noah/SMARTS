@@ -145,6 +145,7 @@ class Episode:
 
         self.experiment_dir = f"{self.log_dir}/{self.experiment_name}"
         self.model_dir = f"{self.log_dir}/{self.experiment_name}/models"
+        self.extra_data_dir = f"{self.log_dir}/{self.experiment_name}/extras"
         self.code_dir = f"{self.log_dir}/{self.experiment_name}/codes"
         self.pkls = f"{self.log_dir}/{self.experiment_name}/pkls"
         self.start_time = time.time()
@@ -176,6 +177,11 @@ class Episode:
 
     def checkpoint_dir(self, agent_id, iteration):
         path = f"{self.model_dir}/{agent_id}/{iteration}"
+        self.make_dir(path)
+        return path
+
+    def extras_dir(self, agent_id):
+        path = f"{self.extra_data_dir}/{agent_id}"
         self.make_dir(path)
         return path
 

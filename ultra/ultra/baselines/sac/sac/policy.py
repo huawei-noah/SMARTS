@@ -23,6 +23,8 @@
 import torch
 import numpy as np
 import torch.nn as nn
+import pickle
+import time
 from sys import path
 from ultra.baselines.sac.sac.network import SACNetwork
 import torch.nn.functional as F
@@ -112,6 +114,7 @@ class SACPolicy(Agent):
         self.memory = ReplayBuffer(
             buffer_size=int(policy_params["replay_buffer"]["buffer_size"]),
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
+            observation_type=self.observation_type,
             device_name=self.device_name,
         )
         self.current_iteration = 0
@@ -318,6 +321,17 @@ class SACPolicy(Agent):
         )
         print("<<<<<<< MODEL LOADED >>>>>>>>>", model_dir)
 
+    def load_extras(self, extras_dir):
+        """Called at the beginning of training. Used to load any extra data from the
+        last training run that the agent needs in order to resume training."""
+        extras_dir = pathlib.Path(extras_dir)
+
+        # Load the replay buffer.
+        start_time = time.time()
+        with open(extras_dir / "latest_replay_buffer.pkl", "rb") as replay_buffer_file:
+            self.memory = pickle.load(replay_buffer_file)
+        print(f"Loaded replay buffer in {time.time() - start_time} s.")
+
     def save(self, model_dir):
         model_dir = pathlib.Path(model_dir)
         # with open(model_dir / "params.yaml", "w") as file:
@@ -327,6 +341,16 @@ class SACPolicy(Agent):
         torch.save(self.sac_net.target.state_dict(), model_dir / "target.pth")
         torch.save(self.sac_net.critic.state_dict(), model_dir / "critic.pth")
         print("<<<<<<< MODEL SAVED >>>>>>>>>", model_dir)
+
+    def save_extras(self, extras_dir):
+        """Called at the end of training. Used to save any extra data that the agent
+        needs in order to resume training."""
+        extras_dir = pathlib.Path(extras_dir)
+
+        start_time = time.time()
+        with open(extras_dir / "latest_replay_buffer.pkl", "wb") as replay_buffer_file:
+            pickle.dump(self.memory, replay_buffer_file, pickle.HIGHEST_PROTOCOL)
+        print(f"Saved replay buffer in {time.time() - start_time} s.")
 
     def reset(self):
         pass

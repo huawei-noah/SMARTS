@@ -31,9 +31,9 @@ from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Wa
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading
 from smarts.core.events import Events
+from smarts.core.road_map import Waypoint
 from smarts.core.scenario import PositionalGoal, Start
 from smarts.core.sensors import Observation
-from smarts.core.waypoints import Waypoint
 import ultra.adapters as adapters
 from ultra.env.ultra_env import UltraEnv
 
@@ -165,7 +165,7 @@ class AdapterTest(unittest.TestCase):
         self.assertIn(AGENT_ID, observations)
         self.assertIsInstance(observations[AGENT_ID], np.ndarray)
         self.assertEqual(observations[AGENT_ID].dtype, "float32")
-        self.assertEqual(observations[AGENT_ID].shape, (1, 64, 64))
+        self.assertEqual(observations[AGENT_ID].shape, (4, 64, 64))
         self.assertEqual(space.dtype, observations[AGENT_ID].dtype)
         self.assertEqual(space.shape, observations[AGENT_ID].shape)
         self.assertTrue(space.contains(observations[AGENT_ID]))

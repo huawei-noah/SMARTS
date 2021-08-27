@@ -19,14 +19,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from collections import deque
+import glob
+import pathlib
 import unittest
 
 import gym
+import numpy as np
 import ray
 
+from smarts.core.agent_interface import (
+    AgentInterface,
+    NeighborhoodVehicles,
+    RGB,
+    Waypoints,
+)
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.controllers import ActionSpaceType
+from smarts.core.sensors import TopDownRGB
 from smarts.zoo.registry import make
 from ultra.baselines.agent_spec import BaselineAgentSpec
+from ultra.env.ultra_env import UltraEnv
 from ultra.baselines.ppo.ppo.policy import PPOPolicy
 
 AGENT_ID = "001"
@@ -34,6 +47,8 @@ timestep_sec = 0.1
 seed = 2
 task_id = "00"
 task_level = "easy"
+prebuilt_scenario1 = "tests/task/test_task00_easy_2lane_t_70kmh_p-test-flow-1"
+prebuilt_scenario2 = "tests/task/train_task00_easy_2lane_t_70kmh_p-test-flow-0"
 
 
 class EnvTest(unittest.TestCase):
@@ -50,6 +65,37 @@ class EnvTest(unittest.TestCase):
         ray.shutdown()
         self.assertTrue(task_id1 == task_id)
         self.assertTrue(task_level1 == task_level)
+
+    def test_get_scenarios_from_scenario_info(self):
+        TASK_LEVEL = ("00", "easy")
+        TASK_LEVEL_TRAIN_SCENARIOS = [
+            str(pathlib.Path(path).resolve())
+            for path in glob.glob("tests/task/train_task00*")
+        ]
+        TASK_LEVEL_TEST_SCENARIOS = [
+            str(pathlib.Path(path).resolve())
+            for path in glob.glob("tests/task/test_task00*")
+        ]
+        FAKE_SCENARIOS = ["folder/scenario_1", "folder/scenario_2", "folder/scenario_3"]
+
+        # Test using a valid (task, level) tuple for training scenarios.
+        scenarios = UltraEnv.get_scenarios_from_scenario_info(TASK_LEVEL, False)
+        for scenario in scenarios:
+            self.assertIn(scenario, TASK_LEVEL_TRAIN_SCENARIOS)
+            self.assertIn("train", str(scenario))
+
+        # Test using a valid (task, level) tuple for testing scenarios.
+        scenarios = UltraEnv.get_scenarios_from_scenario_info(TASK_LEVEL, True)
+        for scenario in scenarios:
+            self.assertIn(scenario, TASK_LEVEL_TEST_SCENARIOS)
+            self.assertIn("test", str(scenarios))
+
+        # Test using multiple sequences of scenario directories of varying length.
+        for num_scenarios in range(1, 4):
+            scenarios = FAKE_SCENARIOS[:num_scenarios]
+            scenarios = UltraEnv.get_scenarios_from_scenario_info(scenarios)
+            for scenario in scenarios:
+                self.assertIn(scenario, FAKE_SCENARIOS)
 
     def test_headless(self):
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
@@ -82,12 +128,99 @@ class EnvTest(unittest.TestCase):
         ray.shutdown()
         self.assertTrue(timestep_sec1 == timestep_sec)
 
+    def test_observations_stacking(self):
+        EPISODES = 3
+        WIDTH = 64
+        HEIGHT = WIDTH
+        RESOLUTION = 50 / WIDTH
+        ENVIRONMENT_STACK_SIZE = 4
+
+        agent_spec = AgentSpec(
+            interface=AgentInterface(
+                waypoints=Waypoints(lookahead=1),
+                neighborhood_vehicles=NeighborhoodVehicles(radius=10.0),
+                rgb=RGB(width=WIDTH, height=HEIGHT, resolution=RESOLUTION),
+                action=ActionSpaceType.Lane,
+            ),
+            agent_builder=TestLaneAgent,
+        )
+        agent = agent_spec.build_agent()
+
+        environment = gym.make(
+            "ultra.env:ultra-v0",
+            agent_specs={AGENT_ID: agent_spec},
+            scenario_info=("00", "easy"),
+            headless=True,
+            timestep_sec=0.1,
+            seed=2,
+        )
+
+        def check_environment_observations_stack(environment):
+            self.assertIsInstance(environment.smarts_observations_stack, deque)
+            self.assertEqual(
+                len(environment.smarts_observations_stack), ENVIRONMENT_STACK_SIZE
+            )
+            self.assertIsInstance(environment.smarts_observations_stack[0], dict)
+            self.assertTrue(
+                all(
+                    str(environment.smarts_observations_stack[0]) == str(observations)
+                    for observations in environment.smarts_observations_stack
+                )
+            )
+
+        def check_stacked_observations(environment, observations):
+            self.assertIn(AGENT_ID, observations)
+            self.assertTrue(AGENT_ID, observations[AGENT_ID].top_down_rgb)
+            self.assertIsInstance(observations[AGENT_ID].top_down_rgb, TopDownRGB)
+            self.assertEqual(
+                observations[AGENT_ID].top_down_rgb.metadata,
+                environment.smarts_observations_stack[-1][
+                    AGENT_ID
+                ].top_down_rgb.metadata,
+            )
+            self.assertEqual(
+                observations[AGENT_ID].top_down_rgb.data.shape,
+                (ENVIRONMENT_STACK_SIZE, HEIGHT, WIDTH, 3),
+            )
+            # Ensure the stacked observation's TopDownRGB data is in the same order, and
+            # and contains the same NumPy arrays as the environment's observation stack.
+            self.assertTrue(
+                all(
+                    np.array_equal(
+                        observations_from_stack[AGENT_ID].top_down_rgb.data,
+                        observations[AGENT_ID].top_down_rgb.data[i],
+                    )
+                    for i, observations_from_stack in enumerate(
+                        environment.smarts_observations_stack
+                    )
+                )
+            )
+
+        for _ in range(EPISODES):
+            dones = {"__all__": False}
+            observations = environment.reset()
+
+            check_environment_observations_stack(environment)
+            check_stacked_observations(environment, observations)
+
+            while not dones["__all__"]:
+                action = agent.act(observations[AGENT_ID])
+                observations, _, dones, _ = environment.step({AGENT_ID: action})
+                check_stacked_observations(environment, observations)
+
+        environment.close()
+
 
 # other attributes are not set
 #'action_space', 'close', 'get_task', 'headless', 'info', 'metadata', 'observation_space', 'render', 'reset', 'reward_range', 'scenario_info', 'scenario_log', 'scenarios', 'seed', 'spec', 'step', 'timestep_sec', 'unwrapped'
 
 
-def prepare_test_env_agent(headless=True):
+class TestLaneAgent(Agent):
+    def act(self, _):
+        return "keep_lane"
+
+
+def prepare_test_env_agent(scenario_info=("00", "easy"), headless=True):
     timestep_sec = 0.1
     # [throttle, brake, steering]
     policy_class = "ultra.baselines.ppo:ppo-v0"
@@ -95,7 +228,7 @@ def prepare_test_env_agent(headless=True):
     env = gym.make(
         "ultra.env:ultra-v0",
         agent_specs={AGENT_ID: spec},
-        scenario_info=("00", "easy"),
+        scenario_info=scenario_info,
         headless=headless,
         timestep_sec=timestep_sec,
         seed=seed,

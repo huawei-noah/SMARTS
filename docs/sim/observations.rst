@@ -22,7 +22,7 @@ is a Python `NamedTuple` with the following fields:
 * `ego_vehicle_state` - a `VehicleObservation` `NamedTuple` for the ego vehicle with the following fields:
     * `id` - a string identifier for this vehicle
     * `position` - A 3D numpy array (x, y, z) of the center of the vehicle bounding box's bottom plane
-    * `bounding_box` - `BoundingBox` data class for the `length`, `width`, `height` of the vehicle
+    * `bounding_box` - `Dimensions` data class for the `length`, `width`, `height` of the vehicle
     * `heading` - vehicle heading in radians
     * `speed` - agent speed in m/s
     * `steering` - angle of front wheels in radians
@@ -66,10 +66,11 @@ is a Python `NamedTuple` with the following fields:
     * `right_of_way` - `True` if this waypoint has right of way, `False` otherwise
     * `lane_index` - index of the lane under this waypoint, right most lane has index 0 and the index increments to the left
 
-See implemention in :class:`smarts.core.sensors`
+See implementation in :class:`smarts.core.sensors`
 
 
 Then, you can choose the observations needed through :class:`smarts.core.agent_interface.AgentInterface` and process these raw observations through :class:`smarts.core.observation_adapter`.
+Note: Some observations like `occupancy_grid_map`, `drivable_area_grid_map` and `top_down_rgb` requires the use of Panda3D package to render agent camera observations during simulations. So you need to install the required dependencies first using the command `pip install -e .[camera-obs]`
 
 =======
 Rewards

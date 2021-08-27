@@ -23,22 +23,16 @@ import os, gym
 import ultra.adapters as adapters
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.utils.ray import default_ray_kwargs
-import timeit, datetime
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
-import time
-import psutil, dill, torch, inspect
+import torch
 import ray, torch, argparse
-import numpy as np
-from ray import tune
-from smarts.zoo.registry import make
 from ultra.env.rllib_ultra_env import RLlibUltraEnv
 from ray.rllib.models import ModelCatalog
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.agent_interface import (
     AgentInterface,
-    OGM,
     Waypoints,
     NeighborhoodVehicles,
 )
@@ -81,6 +75,9 @@ def train(
             f"{adapters.AdapterType.DefaultActionContinuous} action type."
         )
     if observation_type != adapters.AdapterType.DefaultObservationVector:
+        # NOTE: The SMARTS observations adaptation that is done in ULTRA's Gym
+        #       environment is not done in ULTRA's RLlib environment. If other
+        #       observation adapters are used, they may raise an Exception.
         raise Exception(
             f"RLlib training only supports the "
             f"{adapters.AdapterType.DefaultObservationVector} observation type."
@@ -90,6 +87,9 @@ def train(
     observation_space = adapters.space_from_type(adapter_type=observation_type)
 
     action_adapter = adapters.adapter_from_type(adapter_type=action_type)
+    info_adapter = adapters.adapter_from_type(
+        adapter_type=adapters.AdapterType.DefaultInfo
+    )
     observation_adapter = adapters.adapter_from_type(adapter_type=observation_type)
     reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
 
@@ -143,6 +143,7 @@ def train(
             agent_params={},
             agent_builder=None,
             action_adapter=action_adapter,
+            info_adapter=info_adapter,
             observation_adapter=observation_adapter,
             reward_adapter=reward_adapter,
         )

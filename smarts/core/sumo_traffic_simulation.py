@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import atexit
+
 import logging
 import os
 import random
@@ -26,19 +26,21 @@ import time
 from typing import List, Sequence
 
 import numpy as np
-import traci.constants as tc
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
+
+from smarts.core.utils.sumo import SUMO_PATH, traci
+import traci.constants as tc
 from traci.exceptions import FatalTraCIError, TraCIException
 
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
-from smarts.core.coordinates import Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.provider import Provider, ProviderState
+from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils import networking
-from smarts.core.utils.logging import suppress_stdout
-from smarts.core.utils.sumo import SUMO_PATH, traci
+from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -88,6 +90,9 @@ class SumoTrafficSimulation(Provider):
         self._debug = debug
         self._scenario = None
         self._log_file = None
+        assert (
+            time_resolution
+        ), "cannot use SUMO traffic simulation with variable time deltas"
         self._time_resolution = time_resolution
         self._headless = headless
         self._cumulative_sim_seconds = 0
@@ -105,6 +110,12 @@ class SumoTrafficSimulation(Provider):
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
+
+        # TODO: remove when SUMO fixes SUMO reset memory growth bug.
+        # `sumo-gui` memory growth is faster.
+        self._reload_count = 50
+        self._current_reload_count = 0
+        # /TODO
 
     def __repr__(self):
         return f"""SumoTrafficSim(
@@ -163,7 +174,7 @@ class SumoTrafficSimulation(Provider):
             )
             time.sleep(0.05)  # give SUMO time to start
             try:
-                with suppress_stdout():
+                with suppress_output(stdout=False):
                     self._traci_conn = traci.connect(
                         sumo_port,
                         numRetries=100,
@@ -210,7 +221,7 @@ class SumoTrafficSimulation(Provider):
     def _base_sumo_load_params(self):
         load_params = [
             "--num-clients=%d" % self._num_clients,
-            "--net-file=%s" % self._scenario.road_network.net_file,
+            "--net-file=%s" % self._scenario.road_map.source,
             "--quit-on-end",
             "--log=%s" % self._log_file,
             "--error-log=%s" % self._log_file,
@@ -240,20 +251,25 @@ class SumoTrafficSimulation(Provider):
 
         return load_params
 
-    def setup(self, scenario) -> ProviderState:
+    def setup(self, next_scenario) -> ProviderState:
         self._log.debug("Setting up SumoTrafficSim %s" % self)
         assert not self._is_setup, (
             "Can't setup twice, %s, see teardown()" % self._is_setup
         )
 
         # restart sumo process only when map file changes
-        if self._scenario and self._scenario.net_file_hash == scenario.net_file_hash:
-            restart_sumo = False
-        else:
-            restart_sumo = True
+        restart_sumo = (
+            not self._scenario
+            or self._scenario.road_map_hash != next_scenario.road_map_hash
+            or self._current_reload_count >= self._reload_count
+        )
+        self._current_reload_count = self._current_reload_count % self._reload_count + 1
 
-        self._scenario = scenario
-        self._log_file = scenario.unique_sumo_log_file()
+        self._scenario = next_scenario
+        assert isinstance(
+            next_scenario.road_map, SumoRoadNetwork
+        ), "SumoTrafficSimulation requires a SumoRoadNetwork"
+        self._log_file = next_scenario.unique_sumo_log_file()
 
         if restart_sumo:
             self._initialize_traci_conn()
@@ -384,7 +400,11 @@ class SumoTrafficSimulation(Provider):
             self._traci_conn.vehicle.remove(vehicle_id)
 
         for vehicle_id in external_vehicles_that_have_joined:
-            dimensions = provider_vehicles[vehicle_id].dimensions
+            vehicle_state = provider_vehicles[vehicle_id]
+            dimensions = Dimensions.copy_with_defaults(
+                vehicle_state.dimensions,
+                VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
+            )
             self._create_vehicle(vehicle_id, dimensions)
             no_checks = 0b00000
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
@@ -470,6 +490,9 @@ class SumoTrafficSimulation(Provider):
         )
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
+    def update_route_for_vehicle(self, vehicle_id, new_route_edges):
+        self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
+
     def _create_vehicle(self, vehicle_id, dimensions):
         assert (
             type(vehicle_id) == str
@@ -483,7 +506,9 @@ class SumoTrafficSimulation(Provider):
         )
 
         # TODO: Vehicle Id should not be using prefixes this way
-        if vehicle_id.startswith("social-agent"):
+        if vehicle_id.startswith("social-agent") or vehicle_id.startswith(
+            "history-vehicle"
+        ):
             # This is based on ID convention
             vehicle_color = SumoTrafficSimulation._social_agent_vehicle_color()
         else:
@@ -595,19 +620,14 @@ class SumoTrafficSimulation(Provider):
             front_bumper_pos = front_bumper_positions[i]
             heading = Heading.from_sumo(sumo_vehicle[tc.VAR_ANGLE])
             speed = sumo_vehicle[tc.VAR_SPEED]
-            vehicle_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
-            dimensions = VEHICLE_CONFIGS[vehicle_type].dimensions
-            # adjust sumo vehicle location if we shifted the map
-            map_offset = self._scenario.road_network.net_offset
-            assert len(map_offset) == 2
-            front_bumper_pos[0] += map_offset[0]
-            front_bumper_pos[1] += map_offset[1]
+            vehicle_config_type = sumo_vehicle[tc.VAR_VEHICLECLASS]
+            dimensions = VEHICLE_CONFIGS[vehicle_config_type].dimensions
             provider_vehicles.append(
                 VehicleState(
                     # XXX: In the case of the SUMO traffic provider, the vehicle ID is
                     #      the sumo ID is the actor ID.
                     vehicle_id=sumo_id,
-                    vehicle_type=vehicle_type,
+                    vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_front_bumper(
                         front_bumper_pos, heading, dimensions.length
                     ),
@@ -639,8 +659,8 @@ class SumoTrafficSimulation(Provider):
         self._log.debug(
             f"Teleporting {vehicle_id} to lane_offset={lane_offset} route={route}"
         )
-        spawn_edge = self._scenario.road_network.graph.getEdge(route[0])
-        lane_index = random.randint(0, len(spawn_edge.getLanes()) - 1)
+        spawn_road = self._scenario.road_map.road_by_id(route[0])
+        lane_index = random.randint(0, len(spawn_road.lanes) - 1)
         self._emit_vehicle_by_route(vehicle_id, route, lane_index, lane_offset, type_id)
 
     def _reroute_vehicles(self, vehicle_states):
@@ -657,10 +677,10 @@ class SumoTrafficSimulation(Provider):
                 continue
 
             # Check if these edges forms a loop.
-            from_edge = self._scenario.road_network.graph.getEdge(route_edges[-1])
-            to_edge = self._scenario.road_network.graph.getEdge(route_edges[0])
-            next_edges = from_edge.getOutgoing().keys()
-            if to_edge not in next_edges:
+            from_road = self._scenario.road_map.road_by_id(route_edges[-1])
+            to_road = self._scenario.road_map.road_by_id(route_edges[0])
+            next_roads = [road.road_id for road in from_road.outgoing_roads]
+            if to_road not in next_roads:
                 # Reroute only if it's loop, otherwise, teleport the vehicle.
                 self._to_be_teleported[vehicle_id] = {
                     "route": route_edges,
@@ -722,34 +742,5 @@ class SumoTrafficSimulation(Provider):
             typeID=type_id,
             departPos=lane_offset,
             departLane=lane_index,
-        )
-        return vehicle_id
-
-    def _emit_vehicle_near_position(self, position, vehicle_id=None) -> str:
-        wp = self._scenario.waypoints.closest_waypoint(position)
-        lane = self._scenario.road_network.lane_by_id(wp.lane_id)
-        offset_in_lane = self._scenario.road_network.offset_into_lane(
-            lane, tuple(wp.pos)
-        )
-
-        if not vehicle_id:
-            vehicle_id = self._unique_id()
-
-        # XXX: Do not give this a route or it will crash on `moveTo` calls
-        self._traci_conn.vehicle.add(
-            vehicle_id,
-            "",
-            departPos=offset_in_lane,
-            departLane=wp.lane_index,
-        )
-
-        self._traci_conn.vehicle.moveToXY(
-            vehID=vehicle_id,
-            edgeID="",  # let sumo choose the edge
-            lane=-1,  # let sumo choose the lane
-            x=position[0],
-            y=position[1],
-            # angle=sumo_heading,  # only used for visualizing in sumo-gui
-            keepRoute=0b000,  # On lane
         )
         return vehicle_id

@@ -19,32 +19,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import argparse
-import copy
-import glob
+
+import gym
 import json
-import os
-import random
+import matplotlib.pyplot as plt
+import numpy as np
 import re
 import timeit
-from ast import literal_eval
+
 from collections import defaultdict
-
-import dill
-import gym
-import numpy as np
-import ray
-import torch
-from matplotlib import pyplot as plt
-
 from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType, NeighborhoodVehicles
+from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles
 from smarts.core.controllers import ActionSpaceType
 from ultra.scenarios.common.social_vehicle_definitions import get_social_vehicle_color
 from ultra.scenarios.common.visualization import (
     convert_to_gif,
     draw_intersection,
-    profile_vehicles,
 )
 
 
@@ -316,9 +306,9 @@ class BaseAnalysis:
                 with open(f"{scenario_path}/metadata.json", "r") as metadata_rd:
                     metadata = json.load(metadata_rd)
                 visited_scenario.add(scenario_path)
-                all_waypoints = [
-                    [linked_wp.wp.pos[0], linked_wp.wp.pos[1]]
-                    for linked_wp in env._smarts.waypoints._linked_waypoints
+                all_lanepoints = [
+                    [linked_lp.lp.pos[0], linked_lp.lp.pos[1]]
+                    for linked_lp in env._smarts.lanepoints._linked_lanepoints
                 ]
                 dones = {"__all__": False}
                 intersection_name, intersection_tag = (
@@ -388,7 +378,7 @@ class BaseAnalysis:
                                 ego_position=agent_obs.ego_vehicle_state.position,
                                 social_vehicle_states=agent_obs.neighborhood_vehicle_states,
                                 goal_path=path,
-                                all_waypoints=all_waypoints,
+                                all_lanepoints=all_lanepoints,
                                 step=step,
                                 lookaheads_positions=[
                                     waypoint.pos for waypoint in path

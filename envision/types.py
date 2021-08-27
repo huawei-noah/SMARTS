@@ -55,6 +55,7 @@ class TrafficActorState(NamedTuple):
 class State(NamedTuple):
     traffic: Dict[str, TrafficActorState]
     scenario_id: str
+    scenario_name: str
     # sequence of x, y coordinates
     bubbles: Sequence[Sequence[Tuple[float, float]]]
     scene_colors: Dict[str, Tuple[float, float, float, float]]
@@ -64,6 +65,7 @@ class State(NamedTuple):
     speed: Dict[str, float]
     heading: Dict[str, float]
     lane_ids: Dict[str, str]
+    frame_time: float
 
 
 def format_actor_id(actor_id: str, vehicle_id: str, is_multi: bool):

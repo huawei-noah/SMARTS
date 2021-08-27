@@ -17,9 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import warnings
+
 import numpy as np
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
-
+import logging
+from smarts.core.utils.logging import timeit
 import smarts
 from envision.client import Client as Envision
 from smarts.core.scenario import Scenario
@@ -56,7 +59,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
                 true|false for sumo|sumo-gui (default False)
             sumo_port:
                 used to specify a specific sumo port (default None)
-            timestep_sec:
+            fixed_timestep_sec:
                 the step length for all components of the simulation (default 0.1)
     """
 
@@ -91,9 +94,18 @@ class RLlibHiWayEnv(MultiAgentEnv):
         self._envision_record_data_replay_path = config.get(
             "envision_record_data_replay_path", None
         )
-        self._timestep_sec = config.get("timestep_sec", 0.1)
+        timestep_sec = config.get("timestep_sec")
+        if timestep_sec:
+            warnings.warn(
+                "timestep_sec has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
+                category=DeprecationWarning,
+            )
+        self._fixed_timestep_sec = (
+            config.get("fixed_timestep_sec") or timestep_sec or 0.1
+        )
         self._smarts = None  # Created on env.setup()
         self._dones_registered = 0
+        self._log = logging.getLogger(self.__class__.__name__)
 
     def step(self, agent_actions):
         agent_actions = {
@@ -101,7 +113,9 @@ class RLlibHiWayEnv(MultiAgentEnv):
             for agent_id, action in agent_actions.items()
         }
 
-        observations, rewards, dones, extras = self._smarts.step(agent_actions)
+        observations, rewards, dones, extras = None, None, None, None
+        with timeit("SMARTS simulation/scenario step", self._log):
+            observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         # Agent termination: RLlib expects that we return a "last observation"
         # on the step that an agent transitions to "done". All subsequent calls
@@ -190,13 +204,13 @@ class RLlibHiWayEnv(MultiAgentEnv):
             agent_interfaces=agent_interfaces,
             traffic_sim=SumoTrafficSimulation(
                 headless=self._sumo_headless,
-                time_resolution=self._timestep_sec,
+                time_resolution=self._fixed_timestep_sec,
                 num_external_sumo_clients=self._num_external_sumo_clients,
                 sumo_port=self._sumo_port,
                 auto_start=self._sumo_auto_start,
                 endless_traffic=self._endless_traffic,
             ),
             envision=envision,
-            timestep_sec=self._timestep_sec,
+            fixed_timestep_sec=self._fixed_timestep_sec,
         )
         return sim
