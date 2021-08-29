@@ -353,9 +353,30 @@ def compute_grad(x, prev_x, dt):
 
 def combine_replay_buffer_dataset_with_episodes_results(
     experiment_dir, agent_id, active_tag
-) -> Dict[int, Dict[str, Union[List[dict], dict]]]:
-    # I tried to import the ReplayBufferDataset and Episode objects for
-    # type hinting but it seems to be not working
+):
+    """Organizes the replay buffer dataset by the episode index. (i.e Organize
+    replay buffer transitions in terms of episode count). An example:
+
+    {
+        "<episode_index>": {
+                            "replay_buffer_dataset": [list_of_transitions_for_that_episode_index],
+                            "episode_results": {episode_metadata}
+                        },
+    }
+
+    Args:
+        experiment_dir (str): Directory which contains the latest_replay_buffer.pkl
+                              and results.pkl
+        agent_id (str): Representing which agent's replay buffer dataset and episode results
+                        to be used
+        active_tag (str): Identifies the mode of the experiment (Train, Evaluation-Training,
+                          Evaluation), which is needed to get the correct results.pkl
+
+    Return:
+        episodes_data (Dict[int, Dict[str, Union[List[ReplayBufferDataset], Episode]]])):
+        A dictionary with each transition of the replay buffer dataset organized in the
+        episode it occured in. Resembles the example shown above.
+    """
 
     replay_buffer_tag = f"extras/{agent_id}/"
     episode_results_tag = f"pkls/{active_tag}/"
