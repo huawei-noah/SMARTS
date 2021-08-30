@@ -126,9 +126,8 @@ class _TrajectoryDataset:
                    sim_time REAL NOT NULL,
                    position_x REAL NOT NULL,
                    position_y REAL NOT NULL,
-                   traffic_light_state INTEGER NOT NULL,
-                   PRIMARY KEY (traffic_light_id, sim_time)
-               ) WITHOUT ROWID"""
+                   traffic_light_state INTEGER NOT NULL
+               )"""
         )
         dbconxn.commit()
         ccur.close()
