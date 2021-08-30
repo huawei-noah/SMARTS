@@ -194,7 +194,7 @@ class _TrajectoryDataset:
             if not any(a is not None and np.isnan(a) for a in traj_args):
                 itcur.execute(insert_traj_sql, traj_args)
 
-        if self.dataset_spec.get("source") != "Waymo":
+        if self._dataset_spec.get("source") == "Waymo":
             for row in self.tls_rows():
                 tls_args = (
                     int(self.column_val_in_row(row, "tl_id")),
