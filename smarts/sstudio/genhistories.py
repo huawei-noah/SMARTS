@@ -662,10 +662,8 @@ class Waymo(_TrajectoryDataset):
             dynamic_states = scenario.dynamic_map_states[i]
             for j in range(len(dynamic_states.lane_states)):
                 tls = dynamic_states.lane_states[j]
-                if self._lookup_tls_type(tls.state) == 0:
-                    continue
                 row = {}
-                row["state"] = self._lookup_tls_type(tls.state)
+                row["state"] = tls.state
                 row["sim_time"] = scenario.timestamps_seconds[i] * 1000
                 row["position_x"] = tls.stop_point.x
                 row["position_y"] = tls.stop_point.y
@@ -681,17 +679,6 @@ class Waymo(_TrajectoryDataset):
             return 4  # cyclist
         else:
             return 0  # other
-
-    @staticmethod
-    def _lookup_tls_type(tls_type: int) -> int:
-        if tls_type in [1, 4, 7]:
-            return 1  # STOP
-        elif tls_type in [2, 5, 8]:
-            return 2  # CAUTION
-        elif tls_type in [3, 6]:
-            return 3  # GO
-        else:
-            return 0  # UNKNOWN
 
     def column_val_in_row(self, row: Dict, col_name: str):
         return row[col_name]
