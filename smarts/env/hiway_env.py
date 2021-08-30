@@ -95,7 +95,7 @@ class HiWayEnv(gym.Env):
         self._log = logging.getLogger(self.__class__.__name__)
 
         # Set simulation seed
-        smarts_seed(seed)
+        self.seed(seed)
 
         if timestep_sec and not fixed_timestep_sec:
             warnings.warn(
@@ -193,6 +193,9 @@ class HiWayEnv(gym.Env):
             "scenario_routes": scenario.route or "",
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
+
+    def seed(self, seed: int):
+        smarts_seed(seed)
 
     def step(self, agent_actions):
         agent_actions = {

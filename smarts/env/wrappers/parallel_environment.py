@@ -5,13 +5,15 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.frame_stack import FrameStack
-from smarts.env.wrappers.async_vec_env import AsyncVectorEnv
+from smarts.env.wrappers.parallel_env import ParallelEnv
+from typing import Sequence, List
 
 N_AGENTS = 4
 AGENT_IDS = ["Agent %i" % i for i in range(N_AGENTS)]
 
 class KeepLaneAgent(Agent):
     def act(self, obs):
+        assert len(obs) == 3
         return "keep_lane"
 
 
@@ -26,53 +28,53 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         for agent_id in AGENT_IDS
     }
 
-    env = gym.make(
-        "smarts.env:hiway-v0",
-        scenarios=scenarios,
-        agent_specs=agent_specs,
-        sim_name=sim_name,
-        headless=headless,
-        seed=seed,
-    )
+    # env = gym.make(
+    #     "smarts.env:hiway-v0",
+    #     scenarios=scenarios,
+    #     agent_specs=agent_specs,
+    #     sim_name=sim_name,
+    #     headless=headless,
+    #     seed=seed,
+    # )
 
-    env_constructors = lambda : HiWayEnv(
+    env_frame_stack = lambda env : FrameStack(
+        env = env,
+        num_stack=3,
+    )
+    env_constructor = lambda : env_frame_stack(HiWayEnv(
         scenarios=scenarios,
         agent_specs=agent_specs,
         sim_name=sim_name,
         headless=headless,
         seed=seed
-    )
-    env_frame_stack = lambda env : FrameStack(
-        env = env,
-        num_stack=3,
-    )
+    ))
+
 
     # Parallel SMARTS environments
-    # env = AsyncVectorEnv(
-    #     env_constructors = [env_constructors],
-    #     env_wrappers = [env_frame_stack],
-    #     auto_reset = True,
-    # )
-
-
+    env = ParallelEnv(
+        env_fns = [env_constructor, env_constructor],
+        seed = 31,
+    )
 
     for episode in episodes(n=num_episodes):
         agents = {
             agent_id: agent_spec.build_agent()
             for agent_id, agent_spec in agent_specs.items()
         }
-        observations = env.reset()
-        episode.record_scenario(env.scenario_log)
+        batched_observations = env.reset()
 
         dones = {"__all__": False}
-        while not dones["__all__"]:
-            actions = {
-                agent_id: agents[agent_id].act(agent_obs)
-                for agent_id, agent_obs in observations.items()
-            }
+        batched_actions = []
+        batch = 64
+        for step in range(batch):
+            for observations in batched_observations:
+                actions = {
+                    agent_id: agents[agent_id].act(agent_obs)
+                    for agent_id, agent_obs in observations.items()
+                }
+                batched_actions.append(actions)
 
-            observations, rewards, dones, infos = env.step(actions)
-            episode.record_step(observations, rewards, dones, infos)
+            batched_observations, rewards, dones, infos = env.step(batched_actions)
 
     env.close()
 
@@ -85,6 +87,6 @@ if __name__ == "__main__":
         scenarios=args.scenarios,
         sim_name=args.sim_name,
         headless=args.headless,
-        num_episodes=args.episodes,
+        num_episodes=20,
         seed=args.seed,
     )
