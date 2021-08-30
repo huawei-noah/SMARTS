@@ -61,6 +61,10 @@ class _TrajectoryDataset:
     def rows(self):
         raise NotImplementedError
 
+    @property
+    def tls_rows(self):
+        raise NotImplementedError
+
     def column_val_in_row(self, row, col_name):
         raise NotImplementedError
 
@@ -117,6 +121,16 @@ class _TrajectoryDataset:
                    FOREIGN KEY (vehicle_id) REFERENCES Vehicles(id)
                ) WITHOUT ROWID"""
         )
+        ccur.execute(
+            """CREATE TABLE Traffic_Lights (
+                   traffic_light_id INTEGER NOT NULL,
+                   sim_time REAL NOT NULL,
+                   position_x REAL NOT NULL,
+                   position_y REAL NOT NULL,
+                   traffic_light_state REAL NOT NULL,
+                   PRIMARY KEY (traffic_light_id, sim_time)
+               ) WITHOUT ROWID"""
+        )
         dbconxn.commit()
         ccur.close()
 
@@ -138,6 +152,7 @@ class _TrajectoryDataset:
         # TAI:  can use executemany() and batch insert rows together if this turns out to be too slow...
         insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?, ?, ?)"
         insert_traj_sql = "INSERT INTO Trajectory VALUES (?, ?, ?, ?, ?, ?, ?)"
+        insert_traffic_light_Sql = "INSERT INTO Traffic_Lights VALUES (?, ?, ?, ?, ?)"
         vehicle_ids = set()
         itcur = dbconxn.cursor()
         for row in self.rows:
@@ -178,6 +193,21 @@ class _TrajectoryDataset:
             # NGSIM can leave about a kernel-window's-worth of NaNs at the end.
             if not any(a is not None and np.isnan(a) for a in traj_args):
                 itcur.execute(insert_traj_sql, traj_args)
+
+        if self.dataset_spec.get("source") != "Waymo":
+            for row in self.tls_rows():
+                tls_args = (
+                    int(self.column_val_in_row(row, "tl_id")),
+                    round(
+                        float(self.column_val_in_row(row, "sim_time")) / 1000,
+                        time_precision,
+                    ),
+                    float(self.column_val_in_row(row, "position_x")) * self.scale,
+                    float(self.column_val_in_row(row, "position_y")) * self.scale,
+                    int(self.column_val_in_row(row, "state")),
+                )
+                itcur.execute(insert_traffic_light_Sql, tls_args)
+
         itcur.close()
         dbconxn.commit()
 
@@ -482,24 +512,12 @@ class Waymo(_TrajectoryDataset):
                 _ = f.read(4)  # masked_crc32_of_data (ignore)
                 yield record_data
 
-    @property
-    def rows(self) -> Generator[Dict, None, None]:
-        def lerp(a, b, t):
-            return t * (b - a) + a
-
-        def constrain_angle(angle):
-            """Constrain to [-pi, pi]"""
-            angle = angle % (2 * math.pi)
-            if angle > math.pi:
-                angle -= 2 * math.pi
-            return angle
-
+    def get_scenario(self):
         if "scenario_id" not in self._dataset_spec:
             errmsg = "Dataset spec requires scenario_id to be set"
             self._log.error(errmsg)
             raise ValueError(errmsg)
         scenario_id = self._dataset_spec["scenario_id"]
-
         # Loop over the scenarios in the TFRecord and check its ID for a match
         scenario = None
         dataset = Waymo.read_dataset(self._dataset_spec["input_path"])
@@ -514,6 +532,21 @@ class Waymo(_TrajectoryDataset):
             errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
             self._log.error(errmsg)
             raise ValueError(errmsg)
+        return scenario
+
+    @property
+    def rows(self) -> Generator[Dict, None, None]:
+        def lerp(a, b, t):
+            return t * (b - a) + a
+
+        def constrain_angle(angle):
+            """Constrain to [-pi, pi]"""
+            angle = angle % (2 * math.pi)
+            if angle > math.pi:
+                angle -= 2 * math.pi
+            return angle
+
+        scenario = self.get_scenario()
 
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
@@ -620,6 +653,24 @@ class Waymo(_TrajectoryDataset):
                 rows[j]["heading_rad"] = constrain_angle(rows[j]["heading_rad"])
                 yield rows[j]
 
+    @property
+    def tls_rows(self):
+        scenario = self.get_scenario()
+        num_steps = len(scenario.timestamps_seconds)
+        for i in range(num_steps):
+            traffic_light_states = scenario.dynamic_map_states[i]
+            for j in range(len(traffic_light_states)):
+                tls = traffic_light_states.lane_states[j]
+                if tls.state == 0:
+                    continue
+                row = {}
+                row["tl_id"] = tls.lane
+                row["state"] = self._lookup_tls_type(tls.state)
+                row["sim_time"] = round(i * 0.1, 3) * 1000
+                row["position_x"] = tls.stop_point.x
+                row["position_y"] = tls.stop_point.y
+                yield row
+
     @staticmethod
     def _lookup_agent_type(agent_type: int) -> int:
         if agent_type == 1:
@@ -630,6 +681,27 @@ class Waymo(_TrajectoryDataset):
             return 4  # cyclist
         else:
             return 0  # other
+
+    @staticmethod
+    def _lookup_tls_type(tls_type: int) -> int:
+        if tls_type == 1:
+            return 1  # ARROW_STOP
+        elif tls_type == 2:
+            return 2  # ARROW_CAUTION
+        elif tls_type == 3:
+            return 3  # ARROW_GO
+        elif tls_type == 3:
+            return 4  # STOP
+        elif tls_type == 3:
+            return 5  # CAUTION
+        elif tls_type == 3:
+            return 6  # GO
+        elif tls_type == 3:
+            return 7  # FLASHING_STOP
+        elif tls_type == 3:
+            return 8  # FLASHING_CAUTION
+        else:
+            return 0  # UNKNOWN
 
     def column_val_in_row(self, row: Dict, col_name: str):
         return row[col_name]
