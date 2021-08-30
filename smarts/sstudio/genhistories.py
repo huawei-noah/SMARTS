@@ -509,7 +509,7 @@ class Waymo(_TrajectoryDataset):
                 _ = f.read(4)  # masked_crc32_of_data (ignore)
                 yield record_data
 
-    def get_scenario(self):
+    def _get_scenario(self) -> scenario_pb2.Scenario:
         if "scenario_id" not in self._dataset_spec:
             errmsg = "Dataset spec requires scenario_id to be set"
             self._log.error(errmsg)
@@ -543,7 +543,7 @@ class Waymo(_TrajectoryDataset):
                 angle -= 2 * math.pi
             return angle
 
-        scenario = self.get_scenario()
+        scenario = self._get_scenario()
 
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
@@ -651,14 +651,13 @@ class Waymo(_TrajectoryDataset):
                 yield rows[j]
 
     @property
-    def tls_rows(self):
-        scenario = self.get_scenario()
+    def tls_rows(self) -> Generator[Dict, None, None]:
+        scenario = self._get_scenario()
         num_steps = len(scenario.timestamps_seconds)
         for i in range(num_steps):
-            traffic_light_states = scenario.dynamic_map_states[i]
-            for j in range(len(traffic_light_states)):
-                tls = traffic_light_states.lane_states[j]
-                if tls.state == 0:
+            for j in range(len(scenario.dynamic_map_states[i])):
+                tls = scenario.dynamic_map_states[i].lane_states[j]
+                if self._lookup_tls_type(tls.state) == 0:
                     continue
                 row = {}
                 row["state"] = self._lookup_tls_type(tls.state)
