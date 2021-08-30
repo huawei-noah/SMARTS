@@ -690,15 +690,15 @@ class Waymo(_TrajectoryDataset):
             return 2  # ARROW_CAUTION
         elif tls_type == 3:
             return 3  # ARROW_GO
-        elif tls_type == 3:
+        elif tls_type == 4:
             return 4  # STOP
-        elif tls_type == 3:
+        elif tls_type == 5:
             return 5  # CAUTION
-        elif tls_type == 3:
+        elif tls_type == 6:
             return 6  # GO
-        elif tls_type == 3:
+        elif tls_type == 7:
             return 7  # FLASHING_STOP
-        elif tls_type == 3:
+        elif tls_type == 8:
             return 8  # FLASHING_CAUTION
         else:
             return 0  # UNKNOWN
