@@ -123,11 +123,10 @@ class _TrajectoryDataset:
         )
         ccur.execute(
             """CREATE TABLE Traffic_Lights (
-                   traffic_light_id INTEGER NOT NULL,
                    sim_time REAL NOT NULL,
                    position_x REAL NOT NULL,
                    position_y REAL NOT NULL,
-                   traffic_light_state REAL NOT NULL,
+                   traffic_light_state INTEGER NOT NULL,
                    PRIMARY KEY (traffic_light_id, sim_time)
                ) WITHOUT ROWID"""
         )
@@ -197,7 +196,6 @@ class _TrajectoryDataset:
         if self._dataset_spec.get("source") == "Waymo":
             for row in self.tls_rows():
                 tls_args = (
-                    int(self.column_val_in_row(row, "tl_id")),
                     round(
                         float(self.column_val_in_row(row, "sim_time")) / 1000,
                         time_precision,
@@ -664,7 +662,6 @@ class Waymo(_TrajectoryDataset):
                 if tls.state == 0:
                     continue
                 row = {}
-                row["tl_id"] = tls.lane
                 row["state"] = self._lookup_tls_type(tls.state)
                 row["sim_time"] = round(i * 0.1, 3) * 1000
                 row["position_x"] = tls.stop_point.x
