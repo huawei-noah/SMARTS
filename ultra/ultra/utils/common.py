@@ -373,7 +373,7 @@ def combine_replay_buffer_dataset_with_episodes_results(
                           Evaluation), which is needed to get the correct results.pkl
 
     Return:
-        episodes_data (Dict[int, Dict[str, Union[List[ReplayBufferDataset], Episode]]])):
+        episodes_data (Dict[int, Dict[str, Any]])):
         A dictionary with each transition of the replay buffer dataset organized in the
         episode it occured in. Resembles the example shown above.
     """
