@@ -1,0 +1,4 @@
+trajectory_dataset:
+    source: Waymo
+    input_path: ./waymo_dataset/uncompressed_scenario_training_20s_training_20s.tfrecord-00001-of-01000
+    scenario_id: e211c9b4f68ff2c8

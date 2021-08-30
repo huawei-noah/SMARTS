@@ -129,6 +129,10 @@ class Controllers:
             )
 
 
+class ControllerOutOfLaneException(Exception):
+    pass
+
+
 class ControllerState:
     @staticmethod
     def from_action_space(action_space, vehicle_pose, sim):
@@ -137,9 +141,12 @@ class ControllerState:
             ActionSpaceType.LaneWithContinuousSpeed,
         ):
             target_lane = sim.road_map.nearest_lane(vehicle_pose.point)
-            assert (
-                target_lane
-            ), "Controller has failed because actor is to far from lane for lane-following."  # maybe increase radius in nearest_lane call?
+            if not target_lane:
+                # This likely means this is a traffic history vehicle that is out-of-lane.
+                # If not, maybe increase radius in nearest_lane call?
+                raise ControllerOutOfLaneException(
+                    "Controller has failed because actor is too far from lane for lane-following."
+                )
             return LaneFollowingControllerState(target_lane.lane_id)
 
         if action_space == ActionSpaceType.ActuatorDynamic:
