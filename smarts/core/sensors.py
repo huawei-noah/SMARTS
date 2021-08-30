@@ -17,7 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from enum import Enum
 import logging
+from smarts.core.traffic_history import TrafficHistory
 import time
 from collections import deque, namedtuple
 from dataclasses import dataclass
@@ -29,7 +31,12 @@ import numpy as np
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
 from smarts.core.road_map import Waypoint
-from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
+from smarts.core.utils.math import (
+    rounder_for_dt,
+    squared_dist,
+    vec_2d,
+    yaw_from_quaternion,
+)
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .events import Events
@@ -123,6 +130,19 @@ class Vias:
     """List of points that were hit in the previous step"""
 
 
+class TrafficLightState(Enum):
+    UNKNOWN = 0
+    STOP = 1
+    CAUTION = 2
+    GO = 3
+
+
+@dataclass(frozen=True)
+class TrafficLightData:
+    point: Tuple[float, float]
+    state: TrafficLightState
+
+
 @dataclass
 class Observation:
     # dt is the amount of sim_time the last step took .
@@ -148,6 +168,7 @@ class Observation:
     top_down_rgb: TopDownRGB
     road_waypoints: RoadWaypoints = None
     via_data: Vias = None
+    traffic_lights: List[TrafficLightData] = None
 
 
 @dataclass
@@ -301,6 +322,11 @@ class Sensors:
         ogm = vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None
         rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
         lidar = vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
+        traffic_lights = (
+            vehicle.traffic_lights_sensor(sim.last_dt, sim.elapsed_sim_time)
+            if vehicle.subscribed_to_traffic_lights_sensor
+            else None
+        )
 
         done, events = Sensors._is_done_with_events(
             sim, agent_id, vehicle, sensor_state
@@ -329,6 +355,7 @@ class Sensors:
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
+                traffic_lights=traffic_lights,
             ),
             done,
         )
@@ -1047,6 +1074,39 @@ class ViaSensor(Sensor):
             ),
             hit_points,
         )
+
+    def teardown(self):
+        pass
+
+
+class TrafficLightSensor(Sensor):
+    def __init__(self, traffic_history: TrafficHistory):
+        self._traffic_history = traffic_history
+
+    @staticmethod
+    def _to_traffic_light_state(state: int) -> TrafficLightState:
+        if state in [1, 4, 7]:
+            return TrafficLightState.STOP
+        elif state in [2, 5, 8]:
+            return TrafficLightState.CAUTION
+        elif state in [3, 6]:
+            return TrafficLightState.GO
+        return TrafficLightState.UNKNOWN
+
+    def __call__(self, dt: float, elapsed_sim_time: float) -> List[TrafficLightData]:
+        rounder = rounder_for_dt(dt)
+        history_time = rounder(elapsed_sim_time)
+        prev_time = rounder(history_time - dt)
+        rows = self._traffic_history.traffic_light_states_between(
+            prev_time, history_time
+        )
+
+        traffic_light_data = []
+        for row in rows:
+            state = TrafficLightSensor._to_traffic_light_state(row.traffic_light_state)
+            data = TrafficLightData(point=(row.position_x, row.position_y), state=state)
+            traffic_light_data.append(data)
+        return traffic_light_data
 
     def teardown(self):
         pass

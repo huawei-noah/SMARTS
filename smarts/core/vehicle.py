@@ -39,6 +39,7 @@ from .sensors import (
     OGMSensor,
     RGBSensor,
     RoadWaypointsSensor,
+    TrafficLightSensor,
     TripMeterSensor,
     ViaSensor,
     WaypointsSensor,
@@ -526,6 +527,11 @@ class Vehicle:
             )
         )
 
+        if agent_interface.traffic_lights:
+            vehicle.attach_traffic_lights_sensor(
+                TrafficLightSensor(traffic_history=sim.scenario.traffic_history)
+            )
+
     def step(self, current_simulation_time):
         self._has_stepped = True
         self._chassis.step(current_simulation_time)
@@ -624,6 +630,7 @@ class Vehicle:
             "road_waypoints_sensor",
             "accelerometer_sensor",
             "via_sensor",
+            "traffic_lights_sensor",
         ]
         for sensor_name in sensor_names:
 

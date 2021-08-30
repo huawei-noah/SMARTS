@@ -181,6 +181,11 @@ class TrafficHistory:
         heading_rad: float
         speed: float
 
+    class TrafficLightRow(NamedTuple):
+        position_x: float
+        position_y: float
+        traffic_light_state: int
+
     def vehicles_active_between(
         self, start_time: float, end_time: float
     ) -> Generator[TrafficHistory.VehicleRow, None, None]:
@@ -191,6 +196,16 @@ class TrafficHistory:
                    ORDER BY T.sim_time DESC"""
         rows = self._query_list(query, (start_time, end_time))
         return (TrafficHistory.VehicleRow(*row) for row in rows)
+
+    def traffic_light_states_between(
+        self, start_time: float, end_time: float
+    ) -> Generator[TrafficHistory.TrafficLightRow, None, None]:
+        query = """SELECT T.position_x, T.position_y, T.traffic_light_state
+                   FROM Traffic_Lights AS T
+                   WHERE T.sim_time > ? AND T.sim_time <= ?
+                   ORDER BY T.sim_time DESC"""
+        rows = self._query_list(query, (start_time, end_time))
+        return (TrafficHistory.TrafficLightRow(*row) for row in rows)
 
     def random_overlapping_sample(
         self, vehicle_start_times: Dict[str, float], k: int

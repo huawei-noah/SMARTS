@@ -102,6 +102,11 @@ class Accelerometer:
     pass
 
 
+@dataclass
+class TrafficLights:
+    pass
+
+
 class AgentType(IntEnum):
     Buddha = 0
     """Agent sees nothing and does nothing"""
@@ -253,6 +258,11 @@ class AgentInterface:
     Enable acceleration and jerk observations.
     """
 
+    traffic_lights: Union[TrafficLights, bool] = False
+    """
+    Enable the traffic lights sensor.
+    """
+
     def __post_init__(self):
         self.neighborhood_vehicles = AgentInterface._resolve_config(
             self.neighborhood_vehicles, NeighborhoodVehicles
@@ -269,6 +279,9 @@ class AgentInterface:
         self.lidar = AgentInterface._resolve_config(self.lidar, Lidar)
         self.accelerometer = AgentInterface._resolve_config(
             self.accelerometer, Accelerometer
+        )
+        self.traffic_lights = AgentInterface._resolve_config(
+            self.traffic_lights, TrafficLights
         )
         assert self.vehicle_type in {"sedan", "bus"}
 
@@ -360,6 +373,7 @@ class AgentInterface:
         elif requested_type == AgentType.Imitation:
             interface = AgentInterface(
                 neighborhood_vehicles=True,
+                traffic_lights=True,
                 action=ActionSpaceType.Imitation,
             )
         else:
