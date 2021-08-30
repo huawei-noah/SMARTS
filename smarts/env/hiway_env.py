@@ -17,19 +17,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import logging
-from typing import Sequence
-import warnings
 
 import gym
+import logging
+import numpy as np
+import warnings
 
-import smarts
 from envision.client import Client as Envision
+from smarts.core import seed as smarts_seed
+from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
 from smarts.core.utils.logging import timeit
+from typing import Dict, Sequence
 
 
 class HiWayEnv(gym.Env):
@@ -73,7 +75,7 @@ class HiWayEnv(gym.Env):
     def __init__(
         self,
         scenarios: Sequence[str],
-        agent_specs,
+        agent_specs: Dict[str, AgentSpec],
         sim_name=None,
         shuffle_scenarios=True,
         headless=False,
@@ -91,7 +93,9 @@ class HiWayEnv(gym.Env):
         timestep_sec=None,  # for backwards compatibility (deprecated)
     ):
         self._log = logging.getLogger(self.__class__.__name__)
-        smarts.core.seed(seed)
+
+        # Set simulation seed
+        smarts_seed(seed)
 
         if timestep_sec and not fixed_timestep_sec:
             warnings.warn(
@@ -126,6 +130,25 @@ class HiWayEnv(gym.Env):
         visdom_client = None
         if visdom:
             visdom_client = VisdomClient()
+
+        # Action space
+        # TODO : This action spaces needs to be automatically modified
+        # depending on `action_adapter` function used.
+        self.action_space = gym.spaces.Dict(
+            {
+                agent_id: gym.spaces.Box(
+                    np.array([0, 0, -1]), np.array([+1, +1, +1]), dtype=np.float32
+                )  # throttle, break, steering
+                for agent_id in agent_specs.keys()
+            }
+        )
+
+        # Observation space
+        # TODO : This observation space needs to be corrected after the
+        # SMARTS observations are properly typed to be gym compliant.
+        self.observation_space = gym.spaces.Box(
+            low=-1, high=1, shape=(256, 256, 3), dtype=np.float32
+        )
 
         self._smarts = SMARTS(
             agent_interfaces=agent_interfaces,
