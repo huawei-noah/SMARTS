@@ -684,22 +684,12 @@ class Waymo(_TrajectoryDataset):
 
     @staticmethod
     def _lookup_tls_type(tls_type: int) -> int:
-        if tls_type == 1:
+        if tls_type in [1, 4, 7]:
             return 1  # ARROW_STOP
-        elif tls_type == 2:
+        elif tls_type in [2, 5, 8]:
             return 2  # ARROW_CAUTION
-        elif tls_type == 3:
+        elif tls_type in [3, 6]:
             return 3  # ARROW_GO
-        elif tls_type == 4:
-            return 4  # STOP
-        elif tls_type == 5:
-            return 5  # CAUTION
-        elif tls_type == 6:
-            return 6  # GO
-        elif tls_type == 7:
-            return 7  # FLASHING_STOP
-        elif tls_type == 8:
-            return 8  # FLASHING_CAUTION
         else:
             return 0  # UNKNOWN
 
