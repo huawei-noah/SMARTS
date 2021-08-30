@@ -150,7 +150,7 @@ class _TrajectoryDataset:
         # TAI:  can use executemany() and batch insert rows together if this turns out to be too slow...
         insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?, ?, ?)"
         insert_traj_sql = "INSERT INTO Trajectory VALUES (?, ?, ?, ?, ?, ?, ?)"
-        insert_traffic_light_Sql = "INSERT INTO Traffic_Lights VALUES (?, ?, ?, ?, ?)"
+        insert_traffic_light_sql = "INSERT INTO Traffic_Lights VALUES (?, ?, ?, ?)"
         vehicle_ids = set()
         itcur = dbconxn.cursor()
         for row in self.rows:
@@ -192,8 +192,9 @@ class _TrajectoryDataset:
             if not any(a is not None and np.isnan(a) for a in traj_args):
                 itcur.execute(insert_traj_sql, traj_args)
 
+        # Insert traffic light states if available
         try:
-            for row in self.tls_rows():
+            for row in self.tls_rows:
                 tls_args = (
                     round(
                         float(self.column_val_in_row(row, "sim_time")) / 1000,
@@ -203,9 +204,10 @@ class _TrajectoryDataset:
                     float(self.column_val_in_row(row, "position_y")) * self.scale,
                     int(self.column_val_in_row(row, "state")),
                 )
-                itcur.execute(insert_traffic_light_Sql, tls_args)
+                itcur.execute(insert_traffic_light_sql, tls_args)
         except NotImplementedError:
             pass
+
         itcur.close()
         dbconxn.commit()
 
@@ -516,6 +518,7 @@ class Waymo(_TrajectoryDataset):
             self._log.error(errmsg)
             raise ValueError(errmsg)
         scenario_id = self._dataset_spec["scenario_id"]
+
         # Loop over the scenarios in the TFRecord and check its ID for a match
         scenario = None
         dataset = Waymo.read_dataset(self._dataset_spec["input_path"])
@@ -656,13 +659,14 @@ class Waymo(_TrajectoryDataset):
         scenario = self._get_scenario()
         num_steps = len(scenario.timestamps_seconds)
         for i in range(num_steps):
-            for j in range(len(scenario.dynamic_map_states[i])):
-                tls = scenario.dynamic_map_states[i].lane_states[j]
+            dynamic_states = scenario.dynamic_map_states[i]
+            for j in range(len(dynamic_states.lane_states)):
+                tls = dynamic_states.lane_states[j]
                 if self._lookup_tls_type(tls.state) == 0:
                     continue
                 row = {}
                 row["state"] = self._lookup_tls_type(tls.state)
-                row["sim_time"] = round(i * 0.1, 3) * 1000
+                row["sim_time"] = scenario.timestamps_seconds[i] * 1000
                 row["position_x"] = tls.stop_point.x
                 row["position_y"] = tls.stop_point.y
                 yield row
