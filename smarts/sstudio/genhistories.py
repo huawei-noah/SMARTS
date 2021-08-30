@@ -192,7 +192,7 @@ class _TrajectoryDataset:
             if not any(a is not None and np.isnan(a) for a in traj_args):
                 itcur.execute(insert_traj_sql, traj_args)
 
-        if self._dataset_spec.get("source") == "Waymo":
+        try:
             for row in self.tls_rows():
                 tls_args = (
                     round(
@@ -204,7 +204,8 @@ class _TrajectoryDataset:
                     int(self.column_val_in_row(row, "state")),
                 )
                 itcur.execute(insert_traffic_light_Sql, tls_args)
-
+        except NotImplementedError:
+            pass
         itcur.close()
         dbconxn.commit()
 
