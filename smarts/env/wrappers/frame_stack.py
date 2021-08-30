@@ -42,7 +42,7 @@ class FrameStack(gym.Wrapper):
             key: deque(maxlen=self._num_stack) for key in self.env.agent_specs.keys()
         }
 
-        # TODO : self.observation_space and self.action_space needs to be modified appropriately 
+        # TODO : self.observation_space and self.action_space needs to be modified appropriately
 
     def _get_observations(
         self, frame: sensors.Observation

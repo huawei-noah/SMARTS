@@ -23,17 +23,18 @@
 import cloudpickle
 from typing import Any
 
+
 class CloudpickleWrapper(object):
-    """A convenience class for using cloudpickle to serialize and deserialize objects.
-    """
+    """A convenience class for using cloudpickle to serialize and deserialize objects."""
 
     def __init__(self, var: Any):
         self.var = var
-        if callable(self.var):
-            setattr(CloudpickleWrapper, "__call__", self.var)
 
     def __getstate__(self) -> bytes:
         return cloudpickle.dumps(self.var)
 
     def __setstate__(self, var: bytes):
         self.var = cloudpickle.loads(var)
+
+    def __call__(self):
+        return self.var()
