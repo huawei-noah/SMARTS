@@ -1,4 +1,6 @@
 import gym
+gym.logger.set_level(40)
+
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
@@ -39,8 +41,9 @@ def main(
     n_agents: int,
     num_env: int,
     auto_reset: bool,
+    max_episode_steps: int = 150,
     num_steps: int = 128,
-    num_episodes: int = 5,
+    num_episodes: int = 10,
 ):
 
     # Agents' name
@@ -52,6 +55,7 @@ def main(
             interface=AgentInterface(
                 waypoints=True,
                 action=ActionSpaceType.LaneWithContinuousSpeed,
+                max_episode_steps=max_episode_steps,
             ),
             agent_builder=ChaseViaPointsAgent,
         )
@@ -102,8 +106,6 @@ def parallel_env_auto_reset(
     batched_dones = [dones] * num_env
     batched_observations = env.reset()
 
-    print("")
-
     for _ in range(num_steps):
         # Compute actions for all active(i.e., not done) agents
         batched_actions = []
@@ -120,6 +122,12 @@ def parallel_env_auto_reset(
             batched_actions
         )
 
+    # Print score of each agent in each environment after num_steps
+    for index, infos in enumerate(batched_infos):
+        print(f"Environment {index}:")
+        for agent_id, val in infos.items():
+            print(f"{agent_id}: {val['score']}")
+
     env.close()
 
 
@@ -132,10 +140,11 @@ def parallel_env_manual_reset(
         dones.update({"__all__": False})
         batched_dones = [dones] * num_env
         batched_observations = env.reset()
-        batched_actions = []
 
-        while not dones:
+        # Iterate until all environments complete an episode each.
+        while not all(dones['__all__'] for dones in batched_dones):
             # Compute actions for all active(i.e., not done) agents
+            batched_actions = []
             for observations, dones in zip(batched_observations, batched_dones):
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs)
@@ -152,6 +161,12 @@ def parallel_env_manual_reset(
                 batched_infos,
             ) = env.step(batched_actions)
 
+        # Print score of each agent in each environment after num_episodes
+        for index, infos in enumerate(batched_infos):
+            print(f"Environment {index}:")
+            for agent_id, val in infos.items():
+                print(f"{agent_id}: {val['score']}")
+
     env.close()
 
 
@@ -159,21 +174,9 @@ if __name__ == "__main__":
     parser = default_argument_parser("parallel-environment-example")
     args = parser.parse_args()
 
+    print("\nSimulate #num_env SMARTS in parallel with automatic reset of environment.\n")
     # Run multiple environments in parallel with auto_reset==True.
     # Individual environments will automatically reset when their episode ends.
-    main(
-        scenarios=args.scenarios,
-        sim_name=args.sim_name,
-        headless=args.headless,
-        seed=args.seed,
-        n_agents=2,
-        num_env=2,
-        auto_reset=True,
-        num_steps=128,
-    )
-
-    # # Run multiple environments in parallel with auto_reset==False.
-    # # User need to manually reset individual environments when their episode ends.
     # main(
     #     scenarios=args.scenarios,
     #     sim_name=args.sim_name,
@@ -181,6 +184,22 @@ if __name__ == "__main__":
     #     seed=args.seed,
     #     n_agents=2,
     #     num_env=2,
-    #     auto_reset=False,
-    #     num_episodes=args.episodes,
+    #     auto_reset=True,
+    #     max_episode_steps=150,
+    #     num_steps=128,
     # )
+
+    print("\nSimulate #num_env SMARTS in parallel with manual reset of environment.\n")
+    # Run multiple environments in parallel with auto_reset==False.
+    # User need to manually reset individual environments when their episode ends.
+    main(
+        scenarios=args.scenarios,
+        sim_name=args.sim_name,
+        headless=args.headless,
+        seed=args.seed,
+        n_agents=2,
+        num_env=2,
+        auto_reset=False,
+        max_episode_steps=150,
+        num_episodes=3,
+    )

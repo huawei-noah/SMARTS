@@ -117,7 +117,6 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         # Wait for all environments to successfully startup
         _, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
         self._raise_if_errors(successes)
-        print("ENVIRONMENTS STARTUP FINISH ------------------------------------")
 
     # def seed(self, seeds=None):
     #     self._assert_is_running()
@@ -378,8 +377,6 @@ def _worker(
 
         # Environment setup complete
         pipe.send((None, True))
-
-        print(f"ENVIRONMENT >> {index} STARTUP FINISH ------------------------------------")
 
         while True:
             try:
