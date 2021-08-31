@@ -1080,8 +1080,11 @@ class ViaSensor(Sensor):
 
 
 class TrafficLightSensor(Sensor):
-    def __init__(self, traffic_history: TrafficHistory):
+    def __init__(
+        self, traffic_history: TrafficHistory, map_location_offset: Tuple[float, float]
+    ):
         self._traffic_history = traffic_history
+        self._map_location_offset = map_location_offset
 
     @staticmethod
     def _to_traffic_light_state(state: int) -> TrafficLightState:
@@ -1104,7 +1107,11 @@ class TrafficLightSensor(Sensor):
         traffic_light_data = []
         for row in rows:
             state = TrafficLightSensor._to_traffic_light_state(row.state)
-            data = TrafficLightData(point=(row.position_x, row.position_y), state=state)
+            point = (
+                row.position_x + self._map_location_offset[0],
+                row.position_y + self._map_location_offset[1],
+            )
+            data = TrafficLightData(point=point, state=state)
             traffic_light_data.append(data)
         return traffic_light_data
 
