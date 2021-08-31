@@ -184,7 +184,7 @@ class TrafficHistory:
     class TrafficLightRow(NamedTuple):
         position_x: float
         position_y: float
-        traffic_light_state: int
+        state: int
 
     def vehicles_active_between(
         self, start_time: float, end_time: float
@@ -200,7 +200,7 @@ class TrafficHistory:
     def traffic_light_states_between(
         self, start_time: float, end_time: float
     ) -> Generator[TrafficHistory.TrafficLightRow, None, None]:
-        query = """SELECT T.position_x, T.position_y, T.traffic_light_state
+        query = """SELECT T.position_x, T.position_y, T.state
                    FROM Traffic_Lights AS T
                    WHERE T.sim_time > ? AND T.sim_time <= ?
                    ORDER BY T.sim_time DESC"""

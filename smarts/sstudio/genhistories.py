@@ -62,7 +62,7 @@ class _TrajectoryDataset:
         raise NotImplementedError
 
     @property
-    def tls_rows(self):
+    def traffic_light_rows(self):
         raise NotImplementedError
 
     def column_val_in_row(self, row, col_name):
@@ -126,7 +126,7 @@ class _TrajectoryDataset:
                    sim_time REAL NOT NULL,
                    position_x REAL NOT NULL,
                    position_y REAL NOT NULL,
-                   traffic_light_state INTEGER NOT NULL
+                   state INTEGER NOT NULL
                )"""
         )
         dbconxn.commit()
@@ -194,7 +194,7 @@ class _TrajectoryDataset:
 
         # Insert traffic light states if available
         try:
-            for row in self.tls_rows:
+            for row in self.traffic_light_rows:
                 tls_args = (
                     round(
                         float(self.column_val_in_row(row, "sim_time")) / 1000,
@@ -655,18 +655,18 @@ class Waymo(_TrajectoryDataset):
                 yield rows[j]
 
     @property
-    def tls_rows(self) -> Generator[Dict, None, None]:
+    def traffic_light_rows(self) -> Generator[Dict, None, None]:
         scenario = self._get_scenario()
         num_steps = len(scenario.timestamps_seconds)
         for i in range(num_steps):
             dynamic_states = scenario.dynamic_map_states[i]
             for j in range(len(dynamic_states.lane_states)):
-                tls = dynamic_states.lane_states[j]
+                lane_state = dynamic_states.lane_states[j]
                 row = {}
-                row["state"] = tls.state
+                row["state"] = lane_state.state
                 row["sim_time"] = scenario.timestamps_seconds[i] * 1000
-                row["position_x"] = tls.stop_point.x
-                row["position_y"] = tls.stop_point.y
+                row["position_x"] = lane_state.stop_point.x
+                row["position_y"] = lane_state.stop_point.y
                 yield row
 
     @staticmethod

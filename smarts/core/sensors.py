@@ -1103,7 +1103,7 @@ class TrafficLightSensor(Sensor):
 
         traffic_light_data = []
         for row in rows:
-            state = TrafficLightSensor._to_traffic_light_state(row.traffic_light_state)
+            state = TrafficLightSensor._to_traffic_light_state(row.state)
             data = TrafficLightData(point=(row.position_x, row.position_y), state=state)
             traffic_light_data.append(data)
         return traffic_light_data
