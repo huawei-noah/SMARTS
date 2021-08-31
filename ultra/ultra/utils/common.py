@@ -358,7 +358,7 @@ def combine_replay_buffer_dataset_with_episodes_results(
     replay buffer transitions in terms of episode count). An example:
 
     {
-        "<episode_index>": {
+        <episode_index>: {
                             "replay_buffer_dataset": [list_of_transitions_for_that_episode_index],
                             "episode_results": {episode_metadata}
                         },
