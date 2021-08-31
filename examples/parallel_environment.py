@@ -1,4 +1,5 @@
 import gym
+
 gym.logger.set_level(40)
 
 from examples.argument_parser import default_argument_parser
@@ -125,7 +126,10 @@ def parallel_env_async(
             actions = {
                 agent_id: agents[agent_id].act(agent_obs)
                 for agent_id, agent_obs in observations.items()
-                if not dones.get(agent_id, False) or dones["__all__"] # `dones[__all__]==True` implies the env was auto-reset in previous iteration
+                if not dones.get(agent_id, False)
+                or dones[
+                    "__all__"
+                ]  # `dones[__all__]==True` implies the env was auto-reset in previous iteration
             }
             batched_actions.append(actions)
 
@@ -141,7 +145,7 @@ def parallel_env_async(
         for dones, infos in zip(batched_dones, batched_infos):
             for agent_id, val in infos.items():
                 if dones[agent_id]:
-                    tot_scores[agent_id] += val['score']
+                    tot_scores[agent_id] += val["score"]
 
     # Print average episode score of each agent
     ave_scores = {
@@ -200,7 +204,7 @@ def parallel_env_sync(
             for dones, infos in zip(batched_dones, batched_infos):
                 for agent_id, val in infos.items():
                     if dones[agent_id]:
-                        tot_scores[agent_id] += val['score']
+                        tot_scores[agent_id] += val["score"]
 
     # Print average episode score of each agent
     ave_scores = {

@@ -1,11 +1,11 @@
+import gym
+import matplotlib.pyplot as plt
 import multiprocessing as mp
 import time
 import sys
-import matplotlib.pyplot as plt
 
 from enum import Enum
 from gym import logger
-import gym
 from gym.error import (
     AlreadyPendingCallError,
     NoAsyncCallError,
@@ -98,13 +98,12 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
 
         self._state = AsyncState.DEFAULT
 
-        # Observation space and action space
-        dummy_env = env_constructors[0]()
-        self.metadata = dummy_env.metadata
-        observation_space = dummy_env.observation_space
-        action_space = dummy_env.action_space
-        dummy_env.close()
-        del dummy_env
+        # Wait for all environments to successfully startup
+        _, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
+        self._raise_if_errors(successes)
+
+        # Get and check observation and action spaces
+        observation_space, action_space = self._get_spaces()
 
         super(AsyncVectorEnv, self).__init__(
             num_envs=len(env_constructors),
@@ -112,14 +111,10 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
             action_space=action_space,
         )
 
-        # Wait for all environments to successfully startup
-        _, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-        self._raise_if_errors(successes)
-
         # Seed all the environment
         self.seed(seed)
 
-    def seed(self, seed:int):
+    def seed(self, seed: int):
         self._assert_is_running()
         seeds = [seed + i for i in range(self.num_envs)]
         assert len(seeds) == self.num_envs
@@ -250,21 +245,20 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         # else:
         #     rgb1 = np.ones((256,256,3))
 
-        # if "Agent_1" in observations_list[0]: 
+        # if "Agent_1" in observations_list[0]:
         #     rgb2 = observations_list[0]['Agent_1'][-1].top_down_rgb.data
         # else:
         #     rgb2 = np.ones((256,256,3))
-        
-        # if "Agent_0" in observations_list[1]: 
+
+        # if "Agent_0" in observations_list[1]:
         #     rgb3 = observations_list[1]['Agent_0'][-1].top_down_rgb.data
         # else:
         #     rgb3 = np.ones((256,256,3))
 
-        # if "Agent_1" in observations_list[1]: 
+        # if "Agent_1" in observations_list[1]:
         #     rgb4 = observations_list[1]['Agent_1'][-1].top_down_rgb.data
         # else:
         #     rgb4 = np.ones((256,256,3))
-
 
         # fig, axes = plt.subplots(1, 4, figsize=(10, 10))
         # ax = axes.ravel()
@@ -342,19 +336,24 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
                 return False
         return True
 
-    # def _get_spaces(self):
-    #     self._assert_is_running()
-    #     for pipe in self.parent_pipes:
-    #         pipe.send(("_get_spaces", self.single_observation_space))
-    #     same_spaces, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-    #     self._raise_if_errors(successes)
-    #     if not all(same_spaces):
-    #         raise RuntimeError(
-    #             "Some environments have an observation space "
-    #             "different from `{0}`. In order to batch observations, the "
-    #             "observation spaces from all environments must be "
-    #             "equal.".format(self.single_observation_space)
-    #         )
+    def _get_spaces(self) -> Tuple[gym.Space, gym.Space]:
+        for pipe in self.parent_pipes:
+            pipe.send(("_get_spaces", None))
+        spaces, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
+        self._raise_if_errors(successes)
+
+        observation_space = spaces[0][0]
+        action_space = spaces[0][1]
+
+        if not all([space[0] == observation_space for space in spaces]) or not all(
+            [space[1] == action_space for space in spaces]
+        ):
+            raise RuntimeError(
+                f"Expected all environments to have the same observation and action"
+                f"spaces but got {spaces}."
+            )
+
+        return observation_space, action_space
 
     def _assert_is_running(self):
         if self.closed:
@@ -431,7 +430,7 @@ def _worker(
                     # final_obs = info[agent_id]["env_obs"]
                     # ```
                     observation = env.reset()
-                    print("AUTO RESET --------- 333333333333333333444444444444")
+                    print("AUTO RESET !!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 pipe.send(((observation, reward, done, info), True))
             elif command == "seed":
                 env_seed = env.seed(data)
@@ -440,8 +439,8 @@ def _worker(
                 env.close()
                 pipe.send((None, True))
                 break
-            # elif command == "_get_spaces":
-            #     pipe.send((data == env.observation_space, True))
+            elif command == "_get_spaces":
+                pipe.send(((env.observation_space, env.action_space), True))
             else:
                 raise KeyError(f"Received unknown command `{command}`.")
     except Exception:
