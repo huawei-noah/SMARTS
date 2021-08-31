@@ -72,7 +72,7 @@ class ReplayCheckerAgent(Agent):
         # Then get and return the next set of control inputs
         atime = self._rounder(obs_time + self._fixed_timestep_sec)
         data = self._data.get(atime, {"acceleration": 0, "angular_velocity": 0})
-        return (data["acceleration"], data["angular_velocity"])
+        return data["acceleration"], data["angular_velocity"]
 
 
 def main(
@@ -141,6 +141,7 @@ def main(
             dones = {}
             ego_missions = {}
 
+            sample = None
             if scenario.traffic_history.dataset_source == "Waymo":
                 # For Waymo, we only hijack the vehicle that was autonomous in the dataset
                 waymo_ego_id = scenario.traffic_history.ego_vehicle_id
