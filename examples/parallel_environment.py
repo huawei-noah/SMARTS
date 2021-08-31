@@ -4,11 +4,11 @@ gym.logger.set_level(40)
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
+from smarts.core.controllers import ActionSpaceType
 from smarts.core.sensors import Observation
 from smarts.env.hiway_env import HiWayEnv
-from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.async_vector_env import AsyncVectorEnv
-from smarts.core.controllers import ActionSpaceType
+from smarts.env.wrappers.frame_stack import FrameStack
 from typing import Dict, Tuple, Sequence
 
 
@@ -32,6 +32,8 @@ class ChaseViaPointsAgent(Agent):
             1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
         )
 
+def info_adapter(obs, reward, info) -> float:
+    return info['score']
 
 def main(
     scenarios: Sequence[str],
@@ -58,6 +60,7 @@ def main(
                 max_episode_steps=max_episode_steps,
             ),
             agent_builder=ChaseViaPointsAgent,
+            info_adapter=info_adapter,
         )
         for agent_id in agent_ids
     }
@@ -87,22 +90,33 @@ def main(
     # Create parallel environments
     env = AsyncVectorEnv(
         env_constructors=[env_constructor] * num_env,
-        seed=seed,
         auto_reset=auto_reset,
+        seed=seed,
     )
 
     if auto_reset:
-        parallel_env_auto_reset(agents, env, num_env, num_steps)
+        parallel_env_async(agents, env, num_env, num_steps)
     else:
-        parallel_env_manual_reset(agents, env, num_env, num_episodes)
+        parallel_env_sync(agents, env, num_env, num_episodes)
 
 
-def parallel_env_auto_reset(
+def parallel_env_async(
     agents: Dict[str, Agent], env: gym.Env, num_env: int, num_steps: int
 ):
+    """Parallel environments with asynchronous episodes. Run multiple environments
+    in parallel with `auto_reset=True`. Individual environments will automatically 
+    reset when their episode ends. Episodes start asynchronously in each environment.
+
+    Args:
+        agents (Dict[str, Agent]): Ego agents.
+        env (gym.Env): Gym env.
+        num_env (int): Number of environments.
+        num_steps (int): Number of steps to step the environment.
+    """
+
+    tot_scores = {agent_id: 0 for agent_id in agents.keys()}
 
     dones = {"__all__": False}
-    dones.update({agent_id: False for agent_id in agents.keys()})
     batched_dones = [dones] * num_env
     batched_observations = env.reset()
 
@@ -113,7 +127,7 @@ def parallel_env_auto_reset(
             actions = {
                 agent_id: agents[agent_id].act(agent_obs)
                 for agent_id, agent_obs in observations.items()
-                if not dones[agent_id]
+                if not dones.get(agent_id, False)
             }
             batched_actions.append(actions)
 
@@ -122,22 +136,38 @@ def parallel_env_auto_reset(
             batched_actions
         )
 
-    # Print score of each agent in each environment after num_steps
-    for index, infos in enumerate(batched_infos):
-        print(f"Environment {index}:")
-        for agent_id, val in infos.items():
-            print(f"{agent_id}: {val['score']}")
+        print("-------------------------------")
+        print(batched_infos)
+        print(batched_dones)
+
+    # # Print score of each agent in each environment after num_steps
+    # for index, infos in enumerate(batched_infos):
+    #     print(f"Environment {index}:")
+    #     for agent_id, val in infos.items():
+    #         print(f"{agent_id}: {val['score']}")
 
     env.close()
 
 
-def parallel_env_manual_reset(
+def parallel_env_sync(
     agents: Dict[str, Agent], env: gym.Env, num_env: int, num_episodes: int
 ):
+    """Parallel environments with synchronous episodes. Run multiple environments 
+    in parallel with `auto_reset=False`. All environments are reset together when 
+    all their episodes have finised. New episodes start synchronously in all 
+    environments.
+
+    Args:
+        agents (Dict[str, Agent]): Ego agents.
+        env (gym.Env): Gym env.
+        num_env (int): Number of parallel environments.
+        num_episodes (int): Number of episodes.
+    """
+
+    tot_scores = {agent_id: 0 for agent_id in agents.keys()}
 
     for _ in range(num_episodes):
-        dones = {agent_id: False for agent_id in agents.keys()}
-        dones.update({"__all__": False})
+        dones = {"__all__": False}
         batched_dones = [dones] * num_env
         batched_observations = env.reset()
 
@@ -149,7 +179,7 @@ def parallel_env_manual_reset(
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs)
                     for agent_id, agent_obs in observations.items()
-                    if not dones[agent_id]
+                    if not dones.get(agent_id, False)
                 }
                 batched_actions.append(actions)
 
@@ -161,11 +191,19 @@ def parallel_env_manual_reset(
                 batched_infos,
             ) = env.step(batched_actions)
 
-        # Print score of each agent in each environment after num_episodes
-        for index, infos in enumerate(batched_infos):
-            print(f"Environment {index}:")
-            for agent_id, val in infos.items():
-                print(f"{agent_id}: {val['score']}")
+            # Sum the scores
+            for dones, infos in zip(batched_dones, batched_infos):
+                for agent_id, score in infos.items():
+                    if dones[agent_id]:
+                        tot_scores[agent_id] += score
+
+    # Print average episode score of each agent
+    ave_scores = {
+        agent_id: score/(num_episodes*num_env)
+        for agent_id, score in tot_scores.items()
+    }
+    print("Average episode score:")
+    print(f"{ave_scores}")
 
     env.close()
 
@@ -174,24 +212,7 @@ if __name__ == "__main__":
     parser = default_argument_parser("parallel-environment-example")
     args = parser.parse_args()
 
-    print("\nSimulate #num_env SMARTS in parallel with automatic reset of environment.\n")
-    # Run multiple environments in parallel with auto_reset==True.
-    # Individual environments will automatically reset when their episode ends.
-    # main(
-    #     scenarios=args.scenarios,
-    #     sim_name=args.sim_name,
-    #     headless=args.headless,
-    #     seed=args.seed,
-    #     n_agents=2,
-    #     num_env=2,
-    #     auto_reset=True,
-    #     max_episode_steps=150,
-    #     num_steps=128,
-    # )
-
-    print("\nSimulate #num_env SMARTS in parallel with manual reset of environment.\n")
-    # Run multiple environments in parallel with auto_reset==False.
-    # User need to manually reset individual environments when their episode ends.
+    print("\nParallel environments with asynchronous episodes.\n")
     main(
         scenarios=args.scenarios,
         sim_name=args.sim_name,
@@ -199,7 +220,20 @@ if __name__ == "__main__":
         seed=args.seed,
         n_agents=2,
         num_env=2,
-        auto_reset=False,
-        max_episode_steps=150,
-        num_episodes=3,
+        auto_reset=True,
+        max_episode_steps=32,
+        num_steps=100,
     )
+
+    print("\nParallel environments with synchronous episodes.\n")
+    # main(
+    #     scenarios=args.scenarios,
+    #     sim_name=args.sim_name,
+    #     headless=args.headless,
+    #     seed=args.seed,
+    #     n_agents=2,
+    #     num_env=2,
+    #     auto_reset=False,
+    #     max_episode_steps=150,
+    #     num_episodes=3,
+    # )
