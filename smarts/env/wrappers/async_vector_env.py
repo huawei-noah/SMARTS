@@ -1,8 +1,7 @@
 import multiprocessing as mp
-import numpy as np
 import time
 import sys
-import traceback
+import matplotlib.pyplot as plt
 
 from enum import Enum
 from gym import logger
@@ -12,7 +11,6 @@ from gym.error import (
     NoAsyncCallError,
     ClosedEnvironmentError,
 )
-from gym.vector.utils import concatenate
 from smarts.env.wrappers.cloud_pickle import CloudpickleWrapper
 from typing import Any, Callable, Dict, Sequence, Tuple
 
@@ -118,25 +116,25 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         _, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
         self._raise_if_errors(successes)
 
-    # def seed(self, seeds=None):
-    #     self._assert_is_running()
-    #     if seeds is None:
-    #         seeds = [None for _ in range(self.num_envs)]
-    #     if isinstance(seeds, int):
-    #         seeds = [seeds + i for i in range(self.num_envs)]
-    #     assert len(seeds) == self.num_envs
+        # Seed all the environment
+        self.seed(seed)
 
-    #     if self._state != AsyncState.DEFAULT:
-    #         raise AlreadyPendingCallError(
-    #             "Calling `seed` while waiting "
-    #             "for a pending call to `{0}` to complete.".format(self._state.value),
-    #             self._state.value,
-    #         )
+    def seed(self, seed:int):
+        self._assert_is_running()
+        seeds = [seed + i for i in range(self.num_envs)]
+        assert len(seeds) == self.num_envs
 
-    #     for pipe, seed in zip(self.parent_pipes, seeds):
-    #         pipe.send(("seed", seed))
-    #     _, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-    #     self._raise_if_errors(successes)
+        if self._state != AsyncState.DEFAULT:
+            raise AlreadyPendingCallError(
+                "Calling `seed` while waiting "
+                "for a pending call to `{0}` to complete.".format(self._state.value),
+                self._state.value,
+            )
+
+        for pipe, seed in zip(self.parent_pipes, seeds):
+            pipe.send(("seed", seed))
+        _, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
+        self._raise_if_errors(successes)
 
     def reset_async(self):
         self._assert_is_running()
@@ -245,6 +243,41 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         self._raise_if_errors(successes)
         self._state = AsyncState.DEFAULT
         observations_list, rewards, dones, infos = zip(*results)
+
+        # # Plot graph
+        # if "Agent_0" in observations_list[0]:
+        #     rgb1 = observations_list[0]['Agent_0'][-1].top_down_rgb.data
+        # else:
+        #     rgb1 = np.ones((256,256,3))
+
+        # if "Agent_1" in observations_list[0]: 
+        #     rgb2 = observations_list[0]['Agent_1'][-1].top_down_rgb.data
+        # else:
+        #     rgb2 = np.ones((256,256,3))
+        
+        # if "Agent_0" in observations_list[1]: 
+        #     rgb3 = observations_list[1]['Agent_0'][-1].top_down_rgb.data
+        # else:
+        #     rgb3 = np.ones((256,256,3))
+
+        # if "Agent_1" in observations_list[1]: 
+        #     rgb4 = observations_list[1]['Agent_1'][-1].top_down_rgb.data
+        # else:
+        #     rgb4 = np.ones((256,256,3))
+
+
+        # fig, axes = plt.subplots(1, 4, figsize=(10, 10))
+        # ax = axes.ravel()
+        # ax[0].imshow(rgb1)
+        # ax[0].set_title("Env 1: Agent 1")
+        # ax[1].imshow(rgb2)
+        # ax[1].set_title("Env 1; Agent 2")
+        # ax[2].imshow(rgb3)
+        # ax[2].set_title("Env 2; Agent 1")
+        # ax[3].imshow(rgb4)
+        # ax[3].set_title("Env 2; Agent 2")
+        # fig.tight_layout()
+        # plt.show()
 
         return (
             observations_list,
@@ -398,10 +431,11 @@ def _worker(
                     # final_obs = info[agent_id]["env_obs"]
                     # ```
                     observation = env.reset()
+                    print("AUTO RESET --------- 333333333333333333444444444444")
                 pipe.send(((observation, reward, done, info), True))
-            # elif command == "seed":
-            #     env.seed(data)
-            #     pipe.send((None, True))
+            elif command == "seed":
+                env_seed = env.seed(data)
+                pipe.send((env_seed, True))
             elif command == "close":
                 env.close()
                 pipe.send((None, True))

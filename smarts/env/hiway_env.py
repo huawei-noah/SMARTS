@@ -194,8 +194,9 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
-    def seed(self, seed: int):
+    def seed(self, seed: int) -> int:
         smarts_seed(seed)
+        return seed
 
     def step(self, agent_actions):
         agent_actions = {

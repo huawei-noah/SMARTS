@@ -53,6 +53,7 @@ def main(
     agent_specs = {
         agent_id: AgentSpec(
             interface=AgentInterface(
+                rgb=True,
                 waypoints=True,
                 action=ActionSpaceType.LaneWithContinuousSpeed,
                 max_episode_steps=max_episode_steps,
@@ -73,8 +74,8 @@ def main(
             scenarios=scenarios,
             agent_specs=agent_specs,
             sim_name=sim_name,
-            headless=headless,
-            seed=seed,
+            headless=True,
+            visdom=False,
         )
     )
 
@@ -132,6 +133,9 @@ def parallel_env_async(
         batched_observations, batched_rewards, batched_dones, batched_infos = env.step(
             batched_actions
         )
+
+        print("----------------------------------------------")
+        print(batched_dones)
 
         # Sum the scores
         for dones, infos in zip(batched_dones, batched_infos):
@@ -222,19 +226,19 @@ if __name__ == "__main__":
         n_agents=2,
         num_env=2,
         auto_reset=True,
-        max_episode_steps=128,
-        num_steps=384,
+        max_episode_steps=300,
+        num_steps=256,
     )
 
-    print("\nParallel environments with synchronous episodes.\n")
-    main(
-        scenarios=args.scenarios,
-        sim_name=args.sim_name,
-        headless=args.headless,
-        seed=args.seed,
-        n_agents=2,
-        num_env=2,
-        auto_reset=False,
-        max_episode_steps=128,
-        num_episodes=3,
-    )
+    # print("\nParallel environments with synchronous episodes.\n")
+    # main(
+    #     scenarios=args.scenarios,
+    #     sim_name=args.sim_name,
+    #     headless=args.headless,
+    #     seed=args.seed,
+    #     n_agents=2,
+    #     num_env=2,
+    #     auto_reset=False,
+    #     max_episode_steps=128,
+    #     num_episodes=3,
+    # )
