@@ -529,7 +529,9 @@ class Vehicle:
 
         if agent_interface.traffic_lights:
             vehicle.attach_traffic_lights_sensor(
-                TrafficLightSensor(sim.scenario.traffic_history, sim.scenario.road_map.xy_offset)
+                TrafficLightSensor(
+                    sim.scenario.traffic_history, sim.scenario.road_map.xy_offset
+                )
             )
 
     def step(self, current_simulation_time):
