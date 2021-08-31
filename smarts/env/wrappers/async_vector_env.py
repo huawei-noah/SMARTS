@@ -393,7 +393,10 @@ def _worker(
             elif command == "step":
                 observation, reward, done, info = env.step(data)
                 if done["__all__"] and auto_reset:
-                    print("AUTO RESETTING NOW")
+                    # Actual final observations can be obtained from `info`:
+                    # ```
+                    # final_obs = info[agent_id]["env_obs"]
+                    # ```
                     observation = env.reset()
                 pipe.send(((observation, reward, done, info), True))
             # elif command == "seed":
