@@ -18,7 +18,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
 - Extended Imitation Learning codebase to allow importing traffic histories from the Waymo motion dataset and replay in a SMARTS simulation. See PR #1060.
-- Added `ros` and `remote-agent` extension rules to `setup.py`.
+- Added `ros` extension rule to `setup.py`.
 ### Changed
 - Made changes to log sections of the scenario step in `smarts.py` to help evaluate smarts performance problems. See Issue #661.
 - Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
