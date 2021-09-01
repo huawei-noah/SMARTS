@@ -147,6 +147,7 @@ class TrafficLightState(Enum):
 
     UNKNOWN = 0
 
+
 @dataclass(frozen=True)
 class TrafficLightData:
     point: Tuple[float, float]
