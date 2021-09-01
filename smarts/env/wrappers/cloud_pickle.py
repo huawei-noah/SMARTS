@@ -36,5 +36,5 @@ class CloudpickleWrapper(object):
     def __setstate__(self, var: bytes):
         self.var = cloudpickle.loads(var)
 
-    def __call__(self):
-        return self.var()
+    def __call__(self, **kwargs):
+        return self.var(**kwargs)

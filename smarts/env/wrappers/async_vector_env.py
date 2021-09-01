@@ -12,7 +12,7 @@ from gym.error import (
     ClosedEnvironmentError,
 )
 from smarts.env.wrappers.cloud_pickle import CloudpickleWrapper
-from typing import Any, Callable, Dict, Sequence, Tuple
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 __all__ = ["AsyncVectorEnv"]
 
@@ -24,14 +24,6 @@ class AsyncState(Enum):
     DEFAULT = "default"
     WAITING_RESET = "reset"
     WAITING_STEP = "step"
-
-
-class AsyncComm(Enum):
-    READY = 1
-    RESET = 2
-    STEP = 3
-    CLOSE = 4
-    EXCEPTION = 5
 
 
 class AsyncVectorEnv(gym.vector.VectorEnv):
@@ -48,6 +40,7 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         self,
         env_constructors: Sequence[EnvConstructor],
         auto_reset: bool,
+        sim_name: Optional[str] = None,
         seed=42,
     ):
         """The environments can be different but must use the same action and
@@ -80,6 +73,7 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
                 name=f"Worker<{type(self).__name__}>-<{idx}>",
                 args=(
                     idx,
+                    sim_name,
                     CloudpickleWrapper(env_constructor),
                     auto_reset,
                     child_pipe,
@@ -239,40 +233,6 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         self._state = AsyncState.DEFAULT
         observations_list, rewards, dones, infos = zip(*results)
 
-        # # Plot graph
-        # if "Agent_0" in observations_list[0]:
-        #     rgb1 = observations_list[0]['Agent_0'][-1].top_down_rgb.data
-        # else:
-        #     rgb1 = np.ones((256,256,3))
-
-        # if "Agent_1" in observations_list[0]:
-        #     rgb2 = observations_list[0]['Agent_1'][-1].top_down_rgb.data
-        # else:
-        #     rgb2 = np.ones((256,256,3))
-
-        # if "Agent_0" in observations_list[1]:
-        #     rgb3 = observations_list[1]['Agent_0'][-1].top_down_rgb.data
-        # else:
-        #     rgb3 = np.ones((256,256,3))
-
-        # if "Agent_1" in observations_list[1]:
-        #     rgb4 = observations_list[1]['Agent_1'][-1].top_down_rgb.data
-        # else:
-        #     rgb4 = np.ones((256,256,3))
-
-        # fig, axes = plt.subplots(1, 4, figsize=(10, 10))
-        # ax = axes.ravel()
-        # ax[0].imshow(rgb1)
-        # ax[0].set_title("Env 1: Agent 1")
-        # ax[1].imshow(rgb2)
-        # ax[1].set_title("Env 1; Agent 2")
-        # ax[2].imshow(rgb3)
-        # ax[2].set_title("Env 2; Agent 1")
-        # ax[3].imshow(rgb4)
-        # ax[3].set_title("Env 2; Agent 2")
-        # fig.tight_layout()
-        # plt.show()
-
         return (
             observations_list,
             rewards,
@@ -384,6 +344,7 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
 
 def _worker(
     index: int,
+    sim_name: str,
     env_constructor: CloudpickleWrapper,
     auto_reset: bool,
     pipe: mp.connection.Connection,
@@ -403,13 +364,16 @@ def _worker(
         polling_period (float): Time to wait for keyboard interrupts.
     """
 
+    # Name and construct the environment
+    name = f"env_{index}"
+    if sim_name:
+        name = sim_name + "_" + name
+    env = env_constructor(sim_name=name)
+
+    # Environment setup complete
+    pipe.send((None, True))
+
     try:
-        # Construct the environment
-        env = env_constructor()
-
-        # Environment setup complete
-        pipe.send((None, True))
-
         while True:
             try:
                 # Short block for keyboard interrupts
@@ -430,13 +394,11 @@ def _worker(
                     # final_obs = info[agent_id]["env_obs"]
                     # ```
                     observation = env.reset()
-                    print("AUTO RESET !!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 pipe.send(((observation, reward, done, info), True))
             elif command == "seed":
                 env_seed = env.seed(data)
                 pipe.send((env_seed, True))
             elif command == "close":
-                env.close()
                 pipe.send((None, True))
                 break
             elif command == "_get_spaces":

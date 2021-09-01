@@ -70,12 +70,12 @@ def main(
         env=env,
         num_stack=2,
     )
-    env_constructor = lambda: env_frame_stack(
+    env_constructor = lambda name: env_frame_stack(
         HiWayEnv(
             scenarios=scenarios,
             agent_specs=agent_specs,
-            sim_name=sim_name,
-            headless=True,
+            sim_name=name,
+            headless=headless,
             visdom=False,
         )
     )
@@ -89,6 +89,7 @@ def main(
     # Create parallel environments
     env = AsyncVectorEnv(
         env_constructors=[env_constructor] * num_env,
+        sim_name=sim_name,
         auto_reset=auto_reset,
         seed=seed,
     )
@@ -137,9 +138,6 @@ def parallel_env_async(
         batched_observations, batched_rewards, batched_dones, batched_infos = env.step(
             batched_actions
         )
-
-        print("----------------------------------------------")
-        print(batched_dones)
 
         # Sum the scores
         for dones, infos in zip(batched_dones, batched_infos):
