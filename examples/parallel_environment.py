@@ -70,11 +70,11 @@ def main(
         env=env,
         num_stack=2,
     )
-    env_constructor = lambda name: env_frame_stack(
+    env_constructor = lambda sim_name: env_frame_stack(
         HiWayEnv(
             scenarios=scenarios,
             agent_specs=agent_specs,
-            sim_name=name,
+            sim_name=sim_name,
             headless=headless,
             visdom=False,
         )
