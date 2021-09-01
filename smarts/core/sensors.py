@@ -131,10 +131,21 @@ class Vias:
 
 
 class TrafficLightState(Enum):
+    # States for traffic signals with arrows.
+    ARROW_STOP = 1
+    ARROW_CAUTION = 2
+    ARROW_GO = 3
+
+    # Standard round traffic signals.
+    STOP = 4
+    CAUTION = 5
+    GO = 6
+
+    # Flashing light signals.
+    FLASHING_STOP = 7
+    FLASHING_CAUTION = 8
+
     UNKNOWN = 0
-    STOP = 1
-    CAUTION = 2
-    GO = 3
 
 
 @dataclass(frozen=True)
@@ -1086,16 +1097,6 @@ class TrafficLightSensor(Sensor):
         self._traffic_history = traffic_history
         self._map_location_offset = map_location_offset
 
-    @staticmethod
-    def _to_traffic_light_state(state: int) -> TrafficLightState:
-        if state in [1, 4, 7]:
-            return TrafficLightState.STOP
-        elif state in [2, 5, 8]:
-            return TrafficLightState.CAUTION
-        elif state in [3, 6]:
-            return TrafficLightState.GO
-        return TrafficLightState.UNKNOWN
-
     def __call__(self, dt: float, elapsed_sim_time: float) -> List[TrafficLightData]:
         rounder = rounder_for_dt(dt)
         history_time = rounder(elapsed_sim_time)
@@ -1106,7 +1107,7 @@ class TrafficLightSensor(Sensor):
 
         traffic_light_data = []
         for row in rows:
-            state = TrafficLightSensor._to_traffic_light_state(row.state)
+            state = TrafficLightState(row.state)
             point = (
                 row.position_x + self._map_location_offset[0],
                 row.position_y + self._map_location_offset[1],
