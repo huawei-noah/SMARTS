@@ -147,7 +147,6 @@ class TrafficLightState(Enum):
 
     UNKNOWN = 0
 
-
 @dataclass(frozen=True)
 class TrafficLightData:
     point: Tuple[float, float]
@@ -1096,6 +1095,16 @@ class TrafficLightSensor(Sensor):
     ):
         self._traffic_history = traffic_history
         self._map_location_offset = map_location_offset
+
+    @staticmethod
+    def _to_traffic_light_state(state: int) -> TrafficLightState:
+        if state in [1, 4, 7]:
+            return TrafficLightState.STOP
+        elif state in [2, 5, 8]:
+            return TrafficLightState.CAUTION
+        elif state in [3, 6]:
+            return TrafficLightState.GO
+        return TrafficLightState.UNKNOWN
 
     def __call__(self, dt: float, elapsed_sim_time: float) -> List[TrafficLightData]:
         rounder = rounder_for_dt(dt)
