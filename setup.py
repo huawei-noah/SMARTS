@@ -32,7 +32,7 @@ setup(
         "psutil",
         "visdom",
         "pybullet==3.0.6",
-        "sklearn",  # KDTree from sklearn is used by waypoints
+        "sklearn",  # KDTree from sklearn is used by sumo lanepoints
         "tableprint",
         "trimesh",  # Used for writing .glb files
         "pynput",  # Used by HumanKeyboardAgent
@@ -44,15 +44,11 @@ setup(
         "cloudpickle<1.4.0",
         "tornado",
         "websocket-client",
+        # The following is used for imitation learning and envision
+        "ijson",
         # The following are for the /smarts/algorithms
         "matplotlib",
         "scikit-image",
-        # The following are for /smarts/zoo
-        "grpcio==1.37.0",
-        "PyYAML",
-        "twisted",
-        # The following are used for imitation learning
-        "ijson",
     ],
     extras_require={
         "test": [
@@ -86,8 +82,18 @@ setup(
             "Panda3D==1.10.9",
             "panda3d-gltf==0.13",
         ],
+        "ros": [
+            "rospkg",
+            "catkin_pkg",
+        ],
         "waymo": [
             "waymo-open-dataset-tf-2-2-0",
+        ],
+        "remote-agents": [
+            # The following are for /smarts/zoo
+            "grpcio==1.37.0",
+            "protobuf",
+            "PyYAML",
         ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
