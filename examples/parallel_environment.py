@@ -145,6 +145,12 @@ def parallel_env_async(
                 if dones[agent_id]:
                     tot_scores[agent_id] += val["score"]
 
+    # Add the score of not-done agents
+    for dones, infos in zip(batched_dones, batched_infos):
+        for agent_id, val in infos.items():
+            if not dones[agent_id]:
+                tot_scores[agent_id] += val["score"]
+
     # Print average episode score of each agent
     ave_scores = {
         agent_id: score / (num_steps * num_env)
@@ -161,7 +167,7 @@ def parallel_env_sync(
 ):
     """Parallel environments with synchronous episodes. Run multiple environments
     in parallel with `auto_reset=False`. All environments are reset together when
-    all their episodes have finised. New episodes start synchronously in all
+    all their episodes have finished. New episodes start synchronously in all
     environments.
 
     Args:

@@ -12,7 +12,7 @@ from gym.error import (
     ClosedEnvironmentError,
 )
 from smarts.env.wrappers.cloud_pickle import CloudpickleWrapper
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
 __all__ = ["AsyncVectorEnv"]
 
@@ -109,6 +109,14 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         self.seed(seed)
 
     def seed(self, seed: int):
+        """Sets unique seed for each environment.
+
+        Args:
+            seed (int): Seed number.
+
+        Raises:
+            AlreadyPendingCallError: If `seed` is called while another function call is pending.
+        """
         self._assert_is_running()
         seeds = [seed + i for i in range(self.num_envs)]
         assert len(seeds) == self.num_envs
@@ -190,30 +198,32 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         self._state = AsyncState.WAITING_STEP
 
     def step_wait(
-        self, timeout=None
+        self, timeout: Union[int, float, None] = None
     ) -> Tuple[
         Sequence[Dict[str, Any]],
         Sequence[Dict[str, float]],
         Sequence[Dict[str, bool]],
         Sequence[Dict[str, Any]],
     ]:
+        """[summary]
+
+        Args:
+            timeout (Union[int, float, None], optional): Seconds to wait before timing out. 
+                Defaults to None, and never times out.
+
+        Raises:
+            NoAsyncCallError: If `step_wait` is called without calling `step_async`.
+            mp.TimeoutError: When 
+            RuntimeError: [description]
+            ClosedEnvironmentError: [description]
+            exctype: [description]
+            KeyError: [description]
+
+        Returns:
+            Tuple[ Sequence[Dict[str, Any]], Sequence[Dict[str, float]], Sequence[Dict[str, bool]], Sequence[Dict[str, Any]] ]: 
+                Returns (observations, rewards, dones, infos). Each tuple element is a batch from the vectorized environment. 
         """
-        Parameters
-        ----------
-        timeout : int or float, optional
-            Number of seconds before the call to `step_wait` times out. If
-            `None`, the call to `step_wait` never times out.
-        Returns
-        -------
-        observations : sample from `observation_space`
-            A batch of observations from the vectorized environment.
-        rewards : `np.ndarray` instance (dtype `np.float_`)
-            A vector of rewards from the vectorized environment.
-        dones : `np.ndarray` instance (dtype `np.bool_`)
-            A vector whose entries indicate whether the episode has ended.
-        infos : list of dict
-            A list of auxiliary diagnostic information.
-        """
+
         self._assert_is_running()
         if self._state != AsyncState.WAITING_STEP:
             raise NoAsyncCallError(
