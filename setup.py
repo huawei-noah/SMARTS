@@ -49,6 +49,11 @@ setup(
         # The following are for the /smarts/algorithms
         "matplotlib",
         "scikit-image",
+        # The following are for /smarts/zoo and remote agents
+        "grpcio==1.37.0",
+        "protobuf",
+        "PyYAML",
+        "twisted",
     ],
     extras_require={
         "test": [
@@ -88,12 +93,6 @@ setup(
         ],
         "waymo": [
             "waymo-open-dataset-tf-2-2-0",
-        ],
-        "remote-agents": [
-            # The following are for /smarts/zoo
-            "grpcio==1.37.0",
-            "protobuf",
-            "PyYAML",
         ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
