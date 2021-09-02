@@ -251,3 +251,4 @@ class HiWayEnv(gym.Env):
     def close(self):
         if self._smarts is not None:
             self._smarts.destroy()
+            self._smarts = None
