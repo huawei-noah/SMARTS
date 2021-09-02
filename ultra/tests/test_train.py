@@ -33,6 +33,7 @@ from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.train import train, load_agents
+from ultra.utils.common import combine_replay_buffer_dataset_with_episodes_results
 
 AGENT_ID = "001"
 seed = 2
@@ -60,6 +61,14 @@ class TrainTest(unittest.TestCase):
             f"python ultra/train.py --task 00-multiagent --level easy --policy sac,sac,sac --episodes 3 --eval-rate 2 --max-episode-steps 2 --log-dir {multi_agent_model_log_dir} --eval-episodes 1 --headless"
         )
 
+        """Run experiments to generate latest_replay_buffer.pkl and results.pkl"""
+        combine_rb_episode_log_dir = os.path.join(
+            TrainTest.OUTPUT_DIRECTORY, "combine_rb_episode_logs/"
+        )
+        os.system(
+            f"python ultra/train.py --task 00 --level easy --policy sac --max-steps 100 --max-episode-steps 50 --log-dir {combine_rb_episode_log_dir} --eval-episodes 0 --headless"
+        )
+
     def test_a_folders(self):
         single_agent_model_log_dir = os.path.join(
             TrainTest.OUTPUT_DIRECTORY, "single_agent_model_logs/"
@@ -71,6 +80,12 @@ class TrainTest(unittest.TestCase):
             TrainTest.OUTPUT_DIRECTORY, "multi_agent_model_logs/"
         )
         if not os.path.exists(multi_agent_model_log_dir):
+            self.assertTrue(False)
+
+        combine_rb_episode_log_dir = os.path.join(
+            TrainTest.OUTPUT_DIRECTORY, "combine_rb_episode_logs/"
+        )
+        if not os.path.exists(combine_rb_episode_log_dir):
             self.assertTrue(False)
 
     def test_train_cli(self):
@@ -237,6 +252,34 @@ class TrainTest(unittest.TestCase):
             self.assertIsInstance(agent_specs[agent_ids[index]], AgentSpec)
             self.assertIsInstance(agents[agent_ids[index]], SACPolicy)
             self.assertGreater(len(agents[agent_ids[index]].memory), 0)
+
+    def test_combine_replay_buffer_dataset_with_episodes_results(self):
+        experiment_dir = glob.glob(
+            os.path.join(TrainTest.OUTPUT_DIRECTORY, "combine_rb_episode_logs/*")
+        )[0]
+        agent_id = "000"
+        active_tag = "Train"
+        max_steps = 100
+
+        episodes_data = combine_replay_buffer_dataset_with_episodes_results(
+            experiment_dir, agent_id, active_tag
+        )
+
+        # Check if the length of a replay_buffer_dataset at a given episode
+        # is equal to episode_length (or num_steps) - 1. The number of transitions
+        # is always 1 less than the number of steps per episode
+        for _, episode_data in episodes_data.items():
+            self.assertEqual(
+                len(episode_data["replay_buffer_dataset"]),
+                episode_data["episode_results"]["episode_length"] - 1,
+            )
+
+        # The total number of transitions should equate to the max steps for the
+        # entire experiment
+        total_transitions = 0
+        for _, episode_data in episodes_data.items():
+            total_transitions += len(episode_data["replay_buffer_dataset"])
+        self.assertEqual(total_transitions, max_steps)
 
     def test_check_agents_from_pool(self):
         seed = 2

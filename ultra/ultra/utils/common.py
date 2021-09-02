@@ -19,14 +19,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from typing import List, Dict, Union
 import json
 import math
 import os
 import random
 import shutil
+from collections import deque
 
 import cv2
 import dill
+import pickle
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
@@ -36,6 +39,9 @@ from skimage.transform import resize
 import ultra.utils.geometry as geometry
 from scipy.spatial.distance import euclidean
 import math, datetime
+
+# from ultra.baselines.common.replay_buffer import ReplayBuffer
+# from ultra.utils.episode import Episode
 
 
 def agent_pool_value(agent_name, value_name):
@@ -343,3 +349,77 @@ def clip_angle_to_pi(angle):
 def compute_grad(x, prev_x, dt):
     grad = (x - prev_x) / dt if prev_x is not None else x / dt
     return grad
+
+
+def combine_replay_buffer_dataset_with_episodes_results(
+    experiment_dir, agent_id, active_tag
+):
+    """Organizes the replay buffer dataset by the episode index. (i.e Organize
+    replay buffer transitions in terms of episode count). An example:
+
+    {
+        <episode_index>: {
+                            "replay_buffer_dataset": [list_of_transitions_for_that_episode_index],
+                            "episode_results": {episode_metadata}
+                        },
+    }
+
+    Args:
+        experiment_dir (str): Directory which contains the latest_replay_buffer.pkl
+                              and results.pkl
+        agent_id (str): Representing which agent's replay buffer dataset and episode results
+                        to be used
+        active_tag (str): Identifies the mode of the experiment (Train, Evaluation-Training,
+                          Evaluation), which is needed to get the correct results.pkl
+
+    Return:
+        episodes_data (Dict[int, Dict[str, Any]])):
+        A dictionary with each transition of the replay buffer dataset organized in the
+        episode it occured in. Resembles the example shown above.
+    """
+
+    replay_buffer_tag = f"extras/{agent_id}/"
+    episode_results_tag = f"pkls/{active_tag}/"
+
+    replay_buffer_path = os.path.join(experiment_dir, replay_buffer_tag)
+    episode_results_path = os.path.join(experiment_dir, episode_results_tag)
+
+    # Check if a latest_replay_buffer.pkl exists
+    if not any(os.scandir(replay_buffer_path)):
+        raise Exception(
+            f"latest_replay_buffer.pkl not found on path: {replay_buffer_path}"
+        )
+
+    # Check if a results.pkl exists
+    if not any(os.scandir(episode_results_path)):
+        raise Exception(f"results.pkl not found on path: {episode_results_path}")
+
+    # Extract replay_buffer object
+    with open(
+        os.path.join(replay_buffer_path, "latest_replay_buffer.pkl"), "rb"
+    ) as replay_buffer_file:
+        replay_buffer = pickle.load(replay_buffer_file)
+
+    # Extract episodes' data
+    with open(os.path.join(episode_results_path, "results.pkl"), "rb") as results_file:
+        results = dill.load(results_file)
+
+    episodes_data = {}
+    for index, episode in results[agent_id].items():
+
+        episode_transitions = []
+        episode_transitions_length = episode["episode_length"] - 1
+        for i in range(episode_transitions_length):
+            # The current setup will include the transitions and episode results for
+            # potential partially completed episode.
+            episode_transitions.append(
+                replay_buffer.replay_buffer_dataset._memory.popleft()
+            )
+
+        episode_data = {}
+        episode_data["replay_buffer_dataset"] = episode_transitions
+        episode_data["episode_results"] = episode
+
+        episodes_data[index] = episode_data
+
+    return episodes_data
