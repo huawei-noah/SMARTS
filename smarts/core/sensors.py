@@ -131,6 +131,8 @@ class Vias:
 
 
 class TrafficLightState(Enum):
+    UNKNOWN = 0
+
     # States for traffic signals with arrows.
     ARROW_STOP = 1
     ARROW_CAUTION = 2
@@ -144,8 +146,6 @@ class TrafficLightState(Enum):
     # Flashing light signals.
     FLASHING_STOP = 7
     FLASHING_CAUTION = 8
-
-    UNKNOWN = 0
 
 
 @dataclass(frozen=True)

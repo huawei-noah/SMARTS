@@ -528,6 +528,12 @@ class Vehicle:
         )
 
         if agent_interface.traffic_lights:
+            assert (
+                sim.scenario.traffic_history
+            ), "Traffic history required for traffic lights sensor"
+            assert (
+                sim.scenario.traffic_history.dataset_source == "Waymo"
+            ), "Traffic lights observations are only supported for the Waymo dataset currently"
             vehicle.attach_traffic_lights_sensor(
                 TrafficLightSensor(
                     sim.scenario.traffic_history, sim.scenario.road_map.xy_offset
