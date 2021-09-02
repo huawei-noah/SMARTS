@@ -4,8 +4,8 @@ import multiprocessing as mp
 import time
 import sys
 
-from enum import Enum
 from gym import logger
+from gym.vector.async_vector_env import AsyncState
 from gym.error import (
     AlreadyPendingCallError,
     NoAsyncCallError,
@@ -18,12 +18,6 @@ __all__ = ["AsyncVectorEnv"]
 
 
 EnvConstructor = Callable[[], gym.Env]
-
-
-class AsyncState(Enum):
-    DEFAULT = "default"
-    WAITING_RESET = "reset"
-    WAITING_STEP = "step"
 
 
 class AsyncVectorEnv(gym.vector.VectorEnv):
@@ -48,7 +42,12 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
 
         Args:
             env_constructors (Sequence[EnvConstructor]): List of callables that create environments.
-            auto_reset (bool, optional): Automatically resets an environment when episode ends. Defaults to True.
+            auto_reset (bool): Automatically resets an environment when episode ends. Defaults to True.
+            sim_name (Optional[str], optional): Simulation name prefix. Defaults to None.
+            seed (int, optional): Seed for the first environment. Defaults to 42.
+
+        Raises:
+            TypeError: If any environment constructor is not callable.
         """
 
         if any([not callable(ctor) for ctor in env_constructors]):
@@ -146,18 +145,23 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
             pipe.send(("reset", None))
         self._state = AsyncState.WAITING_RESET
 
-    def reset_wait(self, timeout=None):
+    def reset_wait(
+        self, timeout: Union[int, float, None] = None
+    ) -> Sequence[Dict[str, Any]]:
+        """Waits for all environments to reset.
+
+        Args:
+            timeout (Union[int, float, None], optional): Seconds to wait before timing out.
+                Defaults to None, and never times out.
+
+        Raises:
+            NoAsyncCallError: If `reset_wait` is called without calling `reset_async`.
+            mp.TimeoutError: If response is not received from pipe within `timeout` seconds.
+
+        Returns:
+            Sequence[Dict[str, Any]]: A batch of observations from the vetorized environment.
         """
-        Parameters
-        ----------
-        timeout : int or float, optional
-            Number of seconds before the call to `reset_wait` times out. If
-            `None`, the call to `reset_wait` never times out.
-        Returns
-        -------
-        observations : sample from `observation_space`
-            A batch of observations from the vectorized environment.
-        """
+
         self._assert_is_running()
         if self._state != AsyncState.WAITING_RESET:
             raise NoAsyncCallError(
@@ -205,23 +209,23 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         Sequence[Dict[str, bool]],
         Sequence[Dict[str, Any]],
     ]:
-        """[summary]
+        """Waits and returns batched (observations, rewards, dones, infos) from all environments after a single step.
 
         Args:
-            timeout (Union[int, float, None], optional): Seconds to wait before timing out. 
+            timeout (Union[int, float, None], optional): Seconds to wait before timing out.
                 Defaults to None, and never times out.
 
         Raises:
             NoAsyncCallError: If `step_wait` is called without calling `step_async`.
-            mp.TimeoutError: When 
+            mp.TimeoutError: If data is not received from pipe within `timeout` seconds.
             RuntimeError: [description]
             ClosedEnvironmentError: [description]
             exctype: [description]
             KeyError: [description]
 
         Returns:
-            Tuple[ Sequence[Dict[str, Any]], Sequence[Dict[str, float]], Sequence[Dict[str, bool]], Sequence[Dict[str, Any]] ]: 
-                Returns (observations, rewards, dones, infos). Each tuple element is a batch from the vectorized environment. 
+            Tuple[ Sequence[Dict[str, Any]], Sequence[Dict[str, float]], Sequence[Dict[str, bool]], Sequence[Dict[str, Any]] ]:
+                Returns (observations, rewards, dones, infos). Each tuple element is a batch from the vectorized environment.
         """
 
         self._assert_is_running()
