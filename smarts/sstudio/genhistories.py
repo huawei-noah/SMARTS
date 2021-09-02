@@ -124,8 +124,8 @@ class _TrajectoryDataset:
         ccur.execute(
             """CREATE TABLE Traffic_Lights (
                    sim_time REAL NOT NULL,
-                   position_x REAL NOT NULL,
-                   position_y REAL NOT NULL,
+                   stop_point_x REAL NOT NULL,
+                   stop_point_y REAL NOT NULL,
                    state INTEGER NOT NULL
                )"""
         )
@@ -200,8 +200,8 @@ class _TrajectoryDataset:
                         float(self.column_val_in_row(row, "sim_time")) / 1000,
                         time_precision,
                     ),
-                    float(self.column_val_in_row(row, "position_x")) * self.scale,
-                    float(self.column_val_in_row(row, "position_y")) * self.scale,
+                    float(self.column_val_in_row(row, "stop_point_x")) * self.scale,
+                    float(self.column_val_in_row(row, "stop_point_y")) * self.scale,
                     int(self.column_val_in_row(row, "state")),
                 )
                 itcur.execute(insert_traffic_light_sql, tls_args)
@@ -665,8 +665,8 @@ class Waymo(_TrajectoryDataset):
                 row = {}
                 row["state"] = lane_state.state
                 row["sim_time"] = scenario.timestamps_seconds[i] * 1000
-                row["position_x"] = lane_state.stop_point.x
-                row["position_y"] = lane_state.stop_point.y
+                row["stop_point_x"] = lane_state.stop_point.x
+                row["stop_point_y"] = lane_state.stop_point.y
                 yield row
 
     @staticmethod
