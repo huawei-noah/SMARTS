@@ -117,7 +117,7 @@ class ParallelEnv(AsyncVectorEnv):
         # Get and check observation and action spaces
         observation_space, action_space = self._get_spaces()
 
-        # TODO: This dummy observation and action space should be removed after they
+        # TODO: This dummy `observation_space` and `action_space` should be removed after they
         # are properly specified in SMARTS/smarts/env/hiway_env.py:__init__() function.
         action_space = gym.spaces.Dict(
             {
