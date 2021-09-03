@@ -44,7 +44,7 @@ def main(
     auto_reset: bool,
     max_episode_steps: int = 128,
     num_steps: int = 384,
-    num_episodes: int = 10,
+    num_episodes: int = 3,
 ):
 
     # Agents' name
@@ -76,7 +76,6 @@ def main(
             agent_specs=agent_specs,
             sim_name=sim_name,
             headless=headless,
-            visdom=False,
         )
     )
 
@@ -234,19 +233,19 @@ if __name__ == "__main__":
         n_agents=2,
         num_env=2,
         auto_reset=True,
-        max_episode_steps=300,
-        num_steps=256,
+        max_episode_steps=128,
+        num_steps=384,
     )
 
-    # print("\nParallel environments with synchronous episodes.\n")
-    # main(
-    #     scenarios=args.scenarios,
-    #     sim_name=args.sim_name,
-    #     headless=args.headless,
-    #     seed=args.seed,
-    #     n_agents=2,
-    #     num_env=2,
-    #     auto_reset=False,
-    #     max_episode_steps=128,
-    #     num_episodes=3,
-    # )
+    print("\nParallel environments with synchronous episodes.\n")
+    main(
+        scenarios=args.scenarios,
+        sim_name=args.sim_name,
+        headless=args.headless,
+        seed=args.seed,
+        n_agents=2,
+        num_env=2,
+        auto_reset=False,
+        max_episode_steps=128,
+        num_episodes=3,
+    )
