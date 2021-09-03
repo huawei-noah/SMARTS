@@ -21,7 +21,6 @@
 import os
 from typing import Tuple
 from smarts.core.road_map import RoadMap
-from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.file import file_md5_hash
 
 
@@ -50,6 +49,10 @@ def create_road_map(
         map_path = os.path.join(map_source, "map.net.xml")
         if not os.path.exists(map_path):
             raise Exception(f"Unable to find map in map_source={map_source}.")
+
+    # Keep this a conditional import so Sumo does not have to be
+    # imported if not necessary:
+    from smarts.core.sumo_road_network import SumoRoadNetwork
 
     road_map = SumoRoadNetwork.from_file(
         map_path,
