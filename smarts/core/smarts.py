@@ -52,7 +52,6 @@ from .provider import Provider, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensors import Collision
-from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
@@ -80,7 +79,7 @@ class SMARTS:
     def __init__(
         self,
         agent_interfaces,
-        traffic_sim: SumoTrafficSimulation,
+        traffic_sim,  # SumoTrafficSimulation
         envision: EnvisionClient = None,
         visdom: VisdomClient = None,
         fixed_timestep_sec: float = 0.1,
@@ -543,7 +542,7 @@ class SMARTS:
         return self._dynamic_action_spaces
 
     @property
-    def traffic_sim(self) -> SumoTrafficSimulation:
+    def traffic_sim(self):  # -> SumoTrafficSimulation
         return self._traffic_sim
 
     @property

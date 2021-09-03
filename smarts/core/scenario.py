@@ -48,7 +48,6 @@ from smarts.core.plan import (
     Via,
 )
 from smarts.core.road_map import RoadMap
-from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
