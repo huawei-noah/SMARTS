@@ -36,7 +36,7 @@ from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 __all__ = ["ParallelEnv"]
 
 
-EnvConstructor = Callable[[], gym.Env]
+EnvConstructor = Callable[[str], gym.Env]
 
 
 class ParallelEnv(AsyncVectorEnv):
