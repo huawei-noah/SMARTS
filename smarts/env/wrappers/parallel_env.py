@@ -1,25 +1,22 @@
 import gym
 import multiprocessing as mp
-import time
 import sys
 
-from gym import logger
-from gym.vector.async_vector_env import AsyncState
+from gym.vector.async_vector_env import AsyncState, AsyncVectorEnv
 from gym.error import (
     AlreadyPendingCallError,
     NoAsyncCallError,
-    ClosedEnvironmentError,
 )
 from smarts.env.wrappers.cloud_pickle import CloudpickleWrapper
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
-__all__ = ["AsyncVectorEnv"]
+__all__ = ["ParallelEnv"]
 
 
 EnvConstructor = Callable[[], gym.Env]
 
 
-class AsyncVectorEnv(gym.vector.VectorEnv):
+class ParallelEnv(AsyncVectorEnv):    
     """Batch together multiple environments and step them in parallel. Each
     environment is simulated in an external process for lock-free parallelism
     using `multiprocessing` processes, and pipes for communication.
@@ -131,19 +128,6 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         _, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
         self._raise_if_errors(successes)
 
-    def reset_async(self):
-        self._assert_is_running()
-        if self._state != AsyncState.DEFAULT:
-            raise AlreadyPendingCallError(
-                "Calling `reset_async` while waiting "
-                "for a pending call to `{0}` to complete".format(self._state.value),
-                self._state.value,
-            )
-
-        for pipe in self.parent_pipes:
-            pipe.send(("reset", None))
-        self._state = AsyncState.WAITING_RESET
-
     def reset_wait(
         self, timeout: Union[int, float, None] = None
     ) -> Sequence[Dict[str, Any]]:
@@ -181,25 +165,6 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
 
         return observations
 
-    def step_async(self, actions):
-        """
-        Parameters
-        ----------
-        actions : iterable of samples from `action_space`
-            List of actions.
-        """
-        self._assert_is_running()
-        if self._state != AsyncState.DEFAULT:
-            raise AlreadyPendingCallError(
-                "Calling `step_async` while waiting "
-                "for a pending call to `{0}` to complete.".format(self._state.value),
-                self._state.value,
-            )
-
-        for pipe, action in zip(self.parent_pipes, actions):
-            pipe.send(("step", action))
-        self._state = AsyncState.WAITING_STEP
-
     def step_wait(
         self, timeout: Union[int, float, None] = None
     ) -> Tuple[
@@ -217,10 +182,6 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         Raises:
             NoAsyncCallError: If `step_wait` is called without calling `step_async`.
             mp.TimeoutError: If data is not received from pipe within `timeout` seconds.
-            RuntimeError: [description]
-            ClosedEnvironmentError: [description]
-            exctype: [description]
-            KeyError: [description]
 
         Returns:
             Tuple[ Sequence[Dict[str, Any]], Sequence[Dict[str, float]], Sequence[Dict[str, bool]], Sequence[Dict[str, Any]] ]:
@@ -253,62 +214,6 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
             infos,
         )
 
-    def close_extras(self, timeout=None, terminate=False):
-        """
-        Parameters
-        ----------
-        timeout : int or float, optional
-            Number of seconds before the call to `close` times out. If `None`,
-            the call to `close` never times out. If the call to `close` times
-            out, then all processes are terminated.
-        terminate : bool (default: `False`)
-            If `True`, then the `close` operation is forced and all processes
-            are terminated.
-        """
-        timeout = 0 if terminate else timeout
-        try:
-            if self._state != AsyncState.DEFAULT:
-                logger.warn(
-                    "Calling `close` while waiting for a pending "
-                    "call to `{0}` to complete.".format(self._state.value)
-                )
-                function = getattr(self, "{0}_wait".format(self._state.value))
-                function(timeout)
-        except mp.TimeoutError:
-            terminate = True
-
-        if terminate:
-            for process in self.processes:
-                if process.is_alive():
-                    process.terminate()
-        else:
-            for pipe in self.parent_pipes:
-                if (pipe is not None) and (not pipe.closed):
-                    pipe.send(("close", None))
-            for pipe in self.parent_pipes:
-                if (pipe is not None) and (not pipe.closed):
-                    pipe.recv()
-
-        for pipe in self.parent_pipes:
-            if pipe is not None:
-                pipe.close()
-        for process in self.processes:
-            process.join()
-
-    def _poll(self, timeout=None):
-        self._assert_is_running()
-        if timeout is None:
-            return True
-        end_time = time.time() + timeout
-        delta = None
-        for pipe in self.parent_pipes:
-            delta = max(end_time - time.time(), 0)
-            if pipe is None:
-                return False
-            if pipe.closed or (not pipe.poll(delta)):
-                return False
-        return True
-
     def _get_spaces(self) -> Tuple[gym.Space, gym.Space]:
         for pipe in self.parent_pipes:
             pipe.send(("_get_spaces", None))
@@ -327,32 +232,6 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
             )
 
         return observation_space, action_space
-
-    def _assert_is_running(self):
-        if self.closed:
-            raise ClosedEnvironmentError(
-                "Trying to operate on `{0}`, after a "
-                "call to `close()`.".format(type(self).__name__)
-            )
-
-    def _raise_if_errors(self, successes):
-        if all(successes):
-            return
-
-        num_errors = self.num_envs - sum(successes)
-        assert num_errors > 0
-        for _ in range(num_errors):
-            index, exctype, value = self.error_queue.get()
-            logger.error(
-                "Received the following error from Worker-{0}: "
-                "{1}: {2}".format(index, exctype.__name__, value)
-            )
-            logger.error("Shutting down Worker-{0}.".format(index))
-            self.parent_pipes[index].close()
-            self.parent_pipes[index] = None
-
-        logger.error("Raising the last exception back to the main process.")
-        raise exctype(value)
 
 
 def _worker(

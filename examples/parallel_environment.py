@@ -8,7 +8,7 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.sensors import Observation
 from smarts.env.hiway_env import HiWayEnv
-from smarts.env.wrappers.async_vector_env import AsyncVectorEnv
+from smarts.env.wrappers.parallel_env import ParallelEnv
 from smarts.env.wrappers.frame_stack import FrameStack
 from typing import Dict, Tuple, Sequence
 
@@ -87,7 +87,7 @@ def main(
     }
 
     # Create parallel environments
-    env = AsyncVectorEnv(
+    env = ParallelEnv(
         env_constructors=[env_constructor] * num_env,
         sim_name=sim_name,
         auto_reset=auto_reset,
