@@ -22,6 +22,7 @@
 
 import gym
 import multiprocessing as mp
+import numpy as np
 import sys
 
 from gym.vector.async_vector_env import AsyncState, AsyncVectorEnv
@@ -115,6 +116,20 @@ class ParallelEnv(AsyncVectorEnv):
 
         # Get and check observation and action spaces
         observation_space, action_space = self._get_spaces()
+
+        # TODO: This dummy observation and action space should be removed after they
+        # are properly specified in SMARTS/smarts/env/hiway_env.py:__init__() function.
+        action_space = gym.spaces.Dict(
+            {
+                agent_id: gym.spaces.Box(
+                    np.array([0, 0, -1]), np.array([+1, +1, +1]), dtype=np.float32
+                )  # throttle, break, steering
+                for agent_id in ["Agent1", "Agent2"]
+            }
+        )
+        observation_space = gym.spaces.Box(
+            low=-1, high=1, shape=(256, 256, 3), dtype=np.float32
+        )
 
         super(AsyncVectorEnv, self).__init__(
             num_envs=len(env_constructors),
