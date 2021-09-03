@@ -528,6 +528,9 @@ class Vehicle:
         )
 
         if agent_interface.traffic_lights:
+            assert (
+                sim.scenario.traffic_history
+            ), "Traffic history required for traffic lights sensor"
             vehicle.attach_traffic_lights_sensor(
                 TrafficLightSensor(
                     sim.scenario.traffic_history, sim.scenario.road_map.xy_offset

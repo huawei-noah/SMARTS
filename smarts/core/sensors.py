@@ -131,6 +131,8 @@ class Vias:
 
 
 class TrafficLightState(Enum):
+    UNKNOWN = 0
+
     # States for traffic signals with arrows.
     ARROW_STOP = 1
     ARROW_CAUTION = 2
@@ -145,13 +147,14 @@ class TrafficLightState(Enum):
     FLASHING_STOP = 7
     FLASHING_CAUTION = 8
 
-    UNKNOWN = 0
-
 
 @dataclass(frozen=True)
 class TrafficLightData:
-    point: Tuple[float, float]
+    stop_point: Tuple[float, float]
+    """The stopping point along the lane controlled by the traffic signal.
+    This is the point where dynamic objects must stop when the signal is in a stop state."""
     state: TrafficLightState
+    """The state of the traffic signal."""
 
 
 @dataclass
@@ -1109,8 +1112,8 @@ class TrafficLightSensor(Sensor):
         for row in rows:
             state = TrafficLightState(row.state)
             point = (
-                row.position_x + self._map_location_offset[0],
-                row.position_y + self._map_location_offset[1],
+                row.stop_point_x + self._map_location_offset[0],
+                row.stop_point_y + self._map_location_offset[1],
             )
             data = TrafficLightData(point=point, state=state)
             traffic_light_data.append(data)
