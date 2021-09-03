@@ -41,7 +41,8 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
         self._destroy_lock = Lock()
 
     def __del__(self):
-        self._destroy()
+        with self._destroy_lock:
+            self._destroy()
 
     def spawn_worker(self, request, context):
         port = find_free_port()
