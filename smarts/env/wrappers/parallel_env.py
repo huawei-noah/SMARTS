@@ -16,7 +16,7 @@ __all__ = ["ParallelEnv"]
 EnvConstructor = Callable[[], gym.Env]
 
 
-class ParallelEnv(AsyncVectorEnv):    
+class ParallelEnv(AsyncVectorEnv):
     """Batch together multiple environments and step them in parallel. Each
     environment is simulated in an external process for lock-free parallelism
     using `multiprocessing` processes, and pipes for communication.
