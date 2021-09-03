@@ -1,5 +1,4 @@
 import gym
-import matplotlib.pyplot as plt
 import multiprocessing as mp
 import time
 import sys
@@ -165,7 +164,7 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         self._assert_is_running()
         if self._state != AsyncState.WAITING_RESET:
             raise NoAsyncCallError(
-                "Calling `reset_wait` without any prior " "call to `reset_async`.",
+                "Calling `reset_wait` without any prior call to `reset_async`.",
                 AsyncState.WAITING_RESET.value,
             )
 
@@ -231,7 +230,7 @@ class AsyncVectorEnv(gym.vector.VectorEnv):
         self._assert_is_running()
         if self._state != AsyncState.WAITING_STEP:
             raise NoAsyncCallError(
-                "Calling `step_wait` without any prior call " "to `step_async`.",
+                "Calling `step_wait` without any prior call to `step_async`.",
                 AsyncState.WAITING_STEP.value,
             )
 
@@ -389,14 +388,10 @@ def _worker(
 
     try:
         while True:
-            try:
-                # Short block for keyboard interrupts
-                if not pipe.poll(polling_period):
-                    continue
-                command, data = pipe.recv()
-            except (EOFError, KeyboardInterrupt):
-                break
-
+            # Short block for keyboard interrupts
+            if not pipe.poll(polling_period):
+                continue
+            command, data = pipe.recv()
             if command == "reset":
                 observation = env.reset()
                 pipe.send((observation, True))

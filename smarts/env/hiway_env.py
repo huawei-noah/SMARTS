@@ -133,8 +133,9 @@ class HiWayEnv(gym.Env):
 
         # Action space
         # TODO : This action spaces needs to be automatically modified
-        # depending on `action_adapter` function used.
-        self.action_space = gym.spaces.Dict(
+        # depending on `action_adapter` function used. Currently, this
+        # attribute is only for internal use by parallel_env.py .
+        self._action_space = gym.spaces.Dict(
             {
                 agent_id: gym.spaces.Box(
                     np.array([0, 0, -1]), np.array([+1, +1, +1]), dtype=np.float32
@@ -145,8 +146,9 @@ class HiWayEnv(gym.Env):
 
         # Observation space
         # TODO : This observation space needs to be corrected after the
-        # SMARTS observations are properly typed to be gym compliant.
-        self.observation_space = gym.spaces.Box(
+        # SMARTS observations are properly typed to be gym compliant. Currently,
+        # this attribute is only for internal use by parallel_env.py .
+        self._observation_space = gym.spaces.Box(
             low=-1, high=1, shape=(256, 256, 3), dtype=np.float32
         )
 
@@ -165,6 +167,28 @@ class HiWayEnv(gym.Env):
             fixed_timestep_sec=fixed_timestep_sec,
             zoo_addrs=zoo_addrs,
         )
+
+    @property
+    def observation_space(self):
+        import inspect
+
+        if not inspect.stack()[1].function == "__init__":
+            raise Exception(
+                "Currently, observation_space is only for internal use by parallel_env.py code."
+            )
+        else:
+            return self._observation_space
+
+    @property
+    def action_space(self):
+        import inspect
+
+        if not inspect.stack()[1].function == "__init__":
+            raise Exception(
+                "Currently, action_space is only for internal use by parallel_env.py code."
+            )
+        else:
+            return self._action_space
 
     @property
     def agent_specs(self):

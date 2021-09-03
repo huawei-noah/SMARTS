@@ -47,9 +47,9 @@ class RemoteAgent:
             f"{worker_address[0]}:{worker_address[1]}"
         )
         try:
-            # Wait until the grpc server is ready or timeout after 30 seconds.
-            grpc.channel_ready_future(self._manager_channel).result(timeout=30)
-            grpc.channel_ready_future(self._worker_channel).result(timeout=30)
+            # Wait until the grpc server is ready or timeout after 10 seconds.
+            grpc.channel_ready_future(self._manager_channel).result(timeout=10)
+            grpc.channel_ready_future(self._worker_channel).result(timeout=10)
         except grpc.FutureTimeoutError as e:
             raise RemoteAgentException(
                 "Timeout while connecting to remote worker process."
@@ -77,10 +77,16 @@ class RemoteAgent:
         if (self._act_future is not None) and (not self._act_future.done()):
             self._act_future.cancel()
 
-        # Stop the remote worker process
-        response = self._manager_stub.stop_worker(
-            manager_pb2.Port(num=self._worker_address[1])
-        )
-
-        # Close manager channel
-        self._manager_channel.close()
+        try:
+            # Stop the remote worker process
+            response = self._manager_stub.stop_worker(
+                manager_pb2.Port(num=self._worker_address[1])
+            )
+            # Close manager channel
+            self._manager_channel.close()
+        except grpc.RpcError as e:
+            if grpc.StatusCode.UNAVAILABLE == e.code():
+                # RPC server has been terminated. Hence, do nothing.
+                pass
+            else:
+                raise e
