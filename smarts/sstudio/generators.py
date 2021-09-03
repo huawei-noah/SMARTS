@@ -27,7 +27,6 @@ from yattag import Doc, indent
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
-from smarts.core.utils.sumo import sumolib
 
 from . import types
 
@@ -115,6 +114,8 @@ class TrafficGenerator:
         """
         scenario: The path to the scenario directory
         """
+        from smarts.core.utils.sumo import sumolib
+
         self._log = logging.getLogger(self.__class__.__name__)
         self._scenario = scenario_dir
         self._overwrite = overwrite
