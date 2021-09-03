@@ -140,7 +140,7 @@ class ParallelEnv(AsyncVectorEnv):
         # Seed all the environment
         self.seed(seed)
 
-    def seed(self, seed: int):
+    def seed(self, seed: int) -> Tuple[int]:
         """Sets unique seed for each environment.
 
         Args:
@@ -151,7 +151,6 @@ class ParallelEnv(AsyncVectorEnv):
         """
         self._assert_is_running()
         seeds = [seed + i for i in range(self.num_envs)]
-        assert len(seeds) == self.num_envs
 
         if self._state != AsyncState.DEFAULT:
             raise AlreadyPendingCallError(
@@ -162,8 +161,10 @@ class ParallelEnv(AsyncVectorEnv):
 
         for pipe, seed in zip(self.parent_pipes, seeds):
             pipe.send(("seed", seed))
-        _, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
+        seeds, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
         self._raise_if_errors(successes)
+
+        return seeds
 
     def reset_wait(
         self, timeout: Union[int, float, None] = None
