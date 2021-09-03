@@ -37,7 +37,6 @@ from shapely.ops import split, unary_union
 from smarts.core import gen_id
 from smarts.core.coordinates import RefLinePoint
 from smarts.core.road_map import RoadMap
-from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_around_point
 
@@ -329,7 +328,7 @@ class JunctionEdgeIDResolver:
     end_edge_id: str
     end_lane_index: int
 
-    def to_edge(self, sumo_road_network: SumoRoadNetwork) -> str:
+    def to_edge(self, sumo_road_network) -> str:
         return sumo_road_network.get_edge_in_junction(
             self.start_edge_id,
             self.start_lane_index,
