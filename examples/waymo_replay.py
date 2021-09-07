@@ -6,11 +6,8 @@ from smarts.core import seed as random_seed
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.plan import Mission, Start, TraverseGoal, default_entry_tactic
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.traffic_history_provider import TrafficHistoryProvider
-from smarts.core.vehicle import Vehicle
 
 from examples.argument_parser import default_argument_parser
 
@@ -23,42 +20,28 @@ class BasicAgent(Agent):
 
 
 class Trigger:
+    """A basic class that will call a registered callback function when some criteria is met"""
+
     def __init__(
-        self, predicate: Callable[[], bool], callback: Callable[[], Any]
+        self,
+        should_trigger: Callable[[Dict[str, Any]], bool],
+        on_trigger: Callable[[Dict[str, Any]], None],
+        context: Dict[str, Any] = {},
     ) -> None:
         self._fired = False
-        self._predicate = predicate
-        self._callback = callback
+        self._should_trigger = should_trigger
+        self._on_trigger = on_trigger
+        self._context = context
 
-    def update(self):
-        if not self._fired and self._predicate():
-            self._callback()
+    def update(self, **kwargs):
+        self._context.update(kwargs)
+        if not self._fired and self._should_trigger(self._context):
+            self._on_trigger(self._context)
             self._fired = True
 
-
-def hijack_vehicles(
-    smarts, vehicles_to_hijack: Dict[str, AgentSpec], agents, traffic_history_provider
-):
-    for veh_id, agent_spec in vehicles_to_hijack.items():
-        # Save agent/vehicle info
-        agent_id = f"agent-history-vehicle-{veh_id}"
-        agent = agent_spec.build_agent()
-        agents[agent_id] = agent
-
-        # Create trap to be triggered immediately
-        vehicle: Vehicle = smarts.vehicle_index.vehicle_by_id(
-            f"history-vehicle-{veh_id}"
-        )
-        mission = Mission(
-            start=Start(vehicle.position, vehicle.heading),
-            entry_tactic=default_entry_tactic(vehicle.speed),
-            goal=TraverseGoal(smarts.road_map),
-        )
-        # smarts._trap_manager.add_trap_for_agent(agent_id, mission, smarts.road_map)
-        smarts.add_agent_with_mission(agent_id, agent_spec.interface, mission)
-
-    # Register chosen agents and remove from traffic history provider
-    traffic_history_provider.set_replaced_ids(vehicles_to_hijack.keys())
+    @property
+    def context(self):
+        return self._context
 
 
 def main(
@@ -79,43 +62,51 @@ def main(
         envision=None if headless else Envision(),
     )
     random_seed(seed)
-    traffic_history_provider = smarts.get_provider_by_type(TrafficHistoryProvider)
-    assert traffic_history_provider
 
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
     scenario = next(scenarios_iterator)
     assert scenario.traffic_history.dataset_source == "Waymo"
 
-    # select vehicles and assign agents
-    agent_spec = AgentSpec(
-        interface=AgentInterface(waypoints=True, action=ActionSpaceType.Lane),
-        agent_builder=BasicAgent,
-    )
-    vehicles_to_hijack = {
-        "1067": agent_spec,
-        "1069": agent_spec,
-        "1072": agent_spec,
-        "1131": agent_spec,
-    }
-
-    def should_trigger() -> bool:
-        return smarts.elapsed_sim_time > 10
-
-    def on_trigger():
-        # hijack vehicles
-        hijack_vehicles(smarts, vehicles_to_hijack, agents, traffic_history_provider)
-
     for episode in range(episodes):
         logger.info(f"starting episode {episode}...")
-        observations = smarts.reset(scenario)
-        agents = {}
+
+        def should_trigger(ctx: Dict[str, Any]) -> bool:
+            return ctx["elapsed_sim_time"] > 10
+
+        def on_trigger(ctx: Dict[str, Any]):
+            agent_spec = AgentSpec(
+                interface=AgentInterface(waypoints=True, action=ActionSpaceType.Lane),
+                agent_builder=BasicAgent,
+            )
+
+            vehicles_to_trap = {
+                "1067": agent_spec,
+                "1069": agent_spec,
+                "1072": agent_spec,
+                "1131": agent_spec,
+            }
+
+            agents = ctx["agents"]
+            for veh_id, agent_spec in vehicles_to_trap.items():
+                agent_id = f"agent-history-vehicle-{veh_id}"
+                agent = agent_spec.build_agent()
+                agents[agent_id] = agent
+
+            smarts.trap_history_vehicles(vehicles_to_trap)
+
+        context = {"agents": {}}
+        trigger = Trigger(should_trigger, on_trigger, context=context)
+
         dones = {}
-
-        trigger = Trigger(should_trigger, on_trigger)
-
+        observations = smarts.reset(scenario)
         while not dones or not all(done for done in dones.values()):
-            trigger.update()
+            # Step trigger with updated context
+            trigger.update(elapsed_sim_time=smarts.elapsed_sim_time)
 
+            # Get agents from current context
+            agents = trigger.context["agents"]
+
+            # Step simulation as usual
             actions = {
                 agent_id: agents[agent_id].act(agent_obs)
                 for agent_id, agent_obs in observations.items()

@@ -21,9 +21,11 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
+from smarts.core.agent import AgentSpec
+from smarts.core.plan import Start, TraverseGoal, default_entry_tactic
 import warnings
 from collections import defaultdict
-from typing import List, Sequence
+from typing import Dict, List, Sequence
 
 import numpy as np
 
@@ -59,7 +61,7 @@ from .utils.math import rounder_for_dt
 from .utils.id import Id
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
-from .vehicle import VehicleState
+from .vehicle import Vehicle, VehicleState
 from .vehicle_index import VehicleIndex
 
 logging.basicConfig(
@@ -388,6 +390,25 @@ class SMARTS:
             self._log.warning(
                 f"Unable to add entry trap for new agent '{agent_id}' with mission."
             )
+
+    def trap_history_vehicles(self, vehicles_to_trap: Dict[str, AgentSpec]):
+        for veh_id, agent_spec in vehicles_to_trap.items():
+            # Save agent/vehicle info
+            agent_id = f"agent-history-vehicle-{veh_id}"
+
+            # Create trap to be triggered immediately
+            vehicle: Vehicle = self.vehicle_index.vehicle_by_id(
+                f"history-vehicle-{veh_id}"
+            )
+            mission = Mission(
+                start=Start(vehicle.position, vehicle.heading),
+                entry_tactic=default_entry_tactic(vehicle.speed),
+                goal=TraverseGoal(self.road_map),
+            )
+            self.add_agent_with_mission(agent_id, agent_spec.interface, mission)
+
+        # Register chosen agents and remove from traffic history provider
+        self._traffic_history_provider.set_replaced_ids(vehicles_to_trap.keys())
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
