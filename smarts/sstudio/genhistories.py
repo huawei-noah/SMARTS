@@ -37,6 +37,7 @@ try:
     from waymo_open_dataset.protos import scenario_pb2
 except ImportError:
     print(sys.exc_info())
+    print("You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory.")
     pass
 
 METERS_PER_FOOT = 0.3048
@@ -516,7 +517,7 @@ class Waymo(_TrajectoryDataset):
                 _ = f.read(4)  # masked_crc32_of_data (ignore)
                 yield record_data
 
-    def _get_scenario(self) -> scenario_pb2.Scenario:
+    def _get_scenario(self):
         if "scenario_id" not in self._dataset_spec:
             errmsg = "Dataset spec requires scenario_id to be set"
             self._log.error(errmsg)
