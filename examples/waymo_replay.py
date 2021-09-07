@@ -74,24 +74,27 @@ def main(
             return ctx["elapsed_sim_time"] > 10
 
         def on_trigger(ctx: Dict[str, Any]):
+            # Define agent specs to be assigned
             agent_spec = AgentSpec(
                 interface=AgentInterface(waypoints=True, action=ActionSpaceType.Lane),
                 agent_builder=BasicAgent,
             )
 
+            # Select vehicles and map to agent ids & specs
             vehicles_to_trap = {
-                "1067": agent_spec,
-                "1069": agent_spec,
-                "1072": agent_spec,
-                "1131": agent_spec,
+                "1067": ("agent-1067", agent_spec),
+                "1069": ("agent-1069", agent_spec),
+                "1072": ("agent-1072", agent_spec),
+                "1131": ("agent-1131", agent_spec),
             }
 
+            # Build agents and save in result dictionary
             agents = ctx["agents"]
-            for veh_id, agent_spec in vehicles_to_trap.items():
-                agent_id = f"agent-history-vehicle-{veh_id}"
+            for veh_id, (agent_id, agent_spec) in vehicles_to_trap.items():
                 agent = agent_spec.build_agent()
                 agents[agent_id] = agent
 
+            # Create traps for selected vehicles to be triggered immediately
             smarts.trap_history_vehicles(vehicles_to_trap)
 
         context = {"agents": {}}

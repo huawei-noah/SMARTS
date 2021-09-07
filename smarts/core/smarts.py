@@ -25,7 +25,7 @@ from smarts.core.agent import AgentSpec
 from smarts.core.plan import Start, TraverseGoal, default_entry_tactic
 import warnings
 from collections import defaultdict
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Tuple
 
 import numpy as np
 
@@ -391,11 +391,8 @@ class SMARTS:
                 f"Unable to add entry trap for new agent '{agent_id}' with mission."
             )
 
-    def trap_history_vehicles(self, vehicles_to_trap: Dict[str, AgentSpec]):
-        for veh_id, agent_spec in vehicles_to_trap.items():
-            # Save agent/vehicle info
-            agent_id = f"agent-history-vehicle-{veh_id}"
-
+    def trap_history_vehicles(self, vehicles_to_trap: Dict[str, Tuple[str, AgentSpec]]):
+        for veh_id, (agent_id, agent_spec) in vehicles_to_trap.items():
             # Create trap to be triggered immediately
             vehicle: Vehicle = self.vehicle_index.vehicle_by_id(
                 f"history-vehicle-{veh_id}"
@@ -407,7 +404,7 @@ class SMARTS:
             )
             self.add_agent_with_mission(agent_id, agent_spec.interface, mission)
 
-        # Register chosen agents and remove from traffic history provider
+        # Remove chosen agents from traffic history provider
         self._traffic_history_provider.set_replaced_ids(vehicles_to_trap.keys())
 
     def _setup_bullet_client(self, client: bc.BulletClient):
