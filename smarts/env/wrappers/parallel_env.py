@@ -30,7 +30,7 @@ from gym.error import (
     AlreadyPendingCallError,
     NoAsyncCallError,
 )
-from smarts.env.wrappers.cloud_pickle import CloudpickleWrapper
+from smarts.env.utils.cloud_pickle import CloudpickleWrapper
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
 __all__ = ["ParallelEnv"]
@@ -331,6 +331,9 @@ def _worker(
                 pipe.send(((env.observation_space, env.action_space), True))
             else:
                 raise KeyError(f"Received unknown command `{command}`.")
+    except KeyboardInterrupt:
+        error_queue.put((index, sys.exc_info()[0], "Traceback is hidden."))
+        pipe.send((None, False))
     except Exception:
         error_queue.put((index,) + sys.exc_info()[:2])
         pipe.send((None, False))
