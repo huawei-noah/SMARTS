@@ -451,35 +451,6 @@ class Scenario:
             )
         return vehicle_missions
 
-    def define_traffic_history_vehicles_missions(self, vehicles_to_trap, trigger_time):
-        vehicle_missions = {}
-        map_offset = self._road_map.xy_offset
-        for veh_id in vehicles_to_trap:
-            pphs = self._traffic_history.vehicle_pose_at_time(veh_id, trigger_time)
-            assert pphs
-            pos_x, pos_y, heading, speed = pphs
-            entry_tactic = default_entry_tactic(speed)
-            veh_config_type = self._traffic_history.vehicle_config_type(veh_id)
-            veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(
-                veh_id
-            )
-            # missions start from front bumper, but pos is center of vehicle
-            hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
-            vehicle_missions[veh_id] = Mission(
-                start=Start(
-                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
-                    Heading(heading),
-                ),
-                entry_tactic=entry_tactic,
-                goal=TraverseGoal(self.road_map),
-                vehicle_spec=VehicleSpec(
-                    veh_id=veh_id,
-                    veh_config_type=veh_config_type,
-                    dimensions=Dimensions(veh_length, veh_width, veh_height),
-                ),
-            )
-        return vehicle_missions
-
     @staticmethod
     def discover_traffic_histories(scenario_root: str):
         return [
