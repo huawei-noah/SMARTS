@@ -52,7 +52,7 @@ from .motion_planner_provider import MotionPlannerProvider
 from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .provider import Provider, ProviderState
 from .road_map import RoadMap
-from .scenario import Scenario
+from .scenario import Mission, Scenario
 from .sensors import Collision
 from .traffic_history_provider import TrafficHistoryProvider
 from .trap_manager import TrapManager
