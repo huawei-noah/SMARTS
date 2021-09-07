@@ -28,7 +28,7 @@ jobs:
           - ./smarts/core
           - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/env/tests/test_rllib_hiway_env.py
-          - ./smarts/sstudio --ignore=./smarts/sstudio/genhistories.py
+          - ./smarts/sstudio
           - ./tests
     steps:
       - name: Checkout
@@ -64,7 +64,7 @@ jobs:
           - ./envision
           - ./smarts/contrib
           - ./tests
-          - ./smarts/sstudio --ignore=./smarts/sstudio/genhistories.py
+          - ./smarts/sstudio
           - ./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/core
           - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
