@@ -451,7 +451,7 @@ class Scenario:
             )
         return vehicle_missions
 
-    def define_traffic_history_vehicle_mission(self, vehicles_to_trap, trigger_time):
+    def define_traffic_history_vehicles_missions(self, vehicles_to_trap, trigger_time):
         vehicle_missions = {}
         map_offset = self._road_map.xy_offset
         for veh_id in vehicles_to_trap:
