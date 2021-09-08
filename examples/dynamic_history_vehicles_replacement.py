@@ -207,5 +207,6 @@ if __name__ == "__main__":
         scenarios=args.scenarios,
         headless=args.headless,
         seed=args.seed,
+        vehicles_to_replace_randomly=args.random_replacements_per_episode,
         episodes=args.episodes,
     )
