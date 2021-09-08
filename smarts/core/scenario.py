@@ -33,6 +33,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 import numpy as np
 from cached_property import cached_property
 
+from smarts.core.agent import AgentSpec
 from smarts.core.coordinates import Heading, Dimensions, Point, RefLinePoint
 from smarts.core.data_model import SocialAgent
 from smarts.core.default_map_factory import create_road_map
@@ -451,7 +452,9 @@ class Scenario:
             )
         return vehicle_missions
 
-    def create_dynamic_traffic_history_missions(self, vehicles_to_trap, trigger_time):
+    def create_dynamic_traffic_history_missions(
+        self, vehicles_to_trap: Dict[str, Tuple[str, AgentSpec]], trigger_time: float
+    ) -> Dict[str, Tuple[Mission, Mission]]:
         vehicle_missions = {}
         map_offset = self._road_map.xy_offset
         for veh_id in vehicles_to_trap:
