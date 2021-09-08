@@ -65,7 +65,6 @@ def main(
 
     scenarios_iterator = Scenario.scenario_variations(scenarios, [])
     scenario = next(scenarios_iterator)
-    assert scenario.traffic_history.dataset_source == "Waymo"
 
     for episode in range(episodes):
         logger.info(f"starting episode {episode}...")
@@ -81,28 +80,36 @@ def main(
             )
 
             # Select vehicles and map to agent ids & specs
-            vehicles_to_trap = {
-                "1067": ("agent-1067", agent_spec),
-                "1069": ("agent-1069", agent_spec),
-                "1072": ("agent-1072", agent_spec),
-                "1131": ("agent-1131", agent_spec),
-            }
+            vehicles_to_trap = {}
+            for veh_id in ctx["vehicle_candidates"]:
+                agent_id = f"agent-{veh_id}"
+                vehicles_to_trap[veh_id] = (agent_id, agent_spec)
+                ctx["agents"][agent_id] = agent_spec.build_agent()
 
-            # Build agents and save in result dictionary
-            agents = ctx["agents"]
-            for veh_id, (agent_id, agent_spec) in vehicles_to_trap.items():
-                agent = agent_spec.build_agent()
-                agents[agent_id] = agent
-
-            # Create missions for selected vehicles to be hijacked
+            # Create missions for selected vehicles
             veh_missions = scenario.create_dynamic_traffic_history_missions(
-                vehicles_to_trap, smarts.elapsed_sim_time
+                vehicles_to_trap.keys(), ctx["elapsed_sim_time"]
             )
 
             # Create traps for selected vehicles to be triggered immediately
             smarts.trap_history_vehicles(vehicles_to_trap, veh_missions)
 
-        context = {"agents": {}, "elapsed_sim_time": 0.0}
+        # Create a table of vehicle trajectory lengths, filtering out non-moving vehicles
+        traj_lens = []
+        for v_id in scenario.traffic_history.all_vehicle_ids():
+            traj = list(scenario.traffic_history.vehicle_trajectory(str(v_id)))
+            if [row for row in traj if row.speed != 0]:
+                traj_lens.append((v_id, len(traj)))
+
+        # Filter out trajectories with less than 100 timesteps
+        vehicle_candidates = [str(t[0]) for t in traj_lens if t[1] > 100]
+
+        # Initialize trigger and define initial context
+        context = {
+            "agents": {},
+            "elapsed_sim_time": 0.0,
+            "vehicle_candidates": vehicle_candidates,
+        }
         trigger = Trigger(should_trigger, on_trigger, context=context)
 
         dones = {}

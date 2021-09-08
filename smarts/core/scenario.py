@@ -28,7 +28,7 @@ import uuid
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 from cached_property import cached_property
@@ -453,11 +453,11 @@ class Scenario:
         return vehicle_missions
 
     def create_dynamic_traffic_history_missions(
-        self, vehicles_to_trap: Dict[str, Tuple[str, AgentSpec]], trigger_time: float
+        self, vehicle_ids: List[str], trigger_time: float
     ) -> Dict[str, Tuple[Mission, Mission]]:
         vehicle_missions = {}
         map_offset = self._road_map.xy_offset
-        for veh_id in vehicles_to_trap:
+        for veh_id in vehicle_ids:
             pose_at_trigger = self._traffic_history.vehicle_pose_at_time(
                 veh_id, trigger_time
             )
