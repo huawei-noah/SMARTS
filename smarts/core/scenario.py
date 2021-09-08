@@ -485,6 +485,7 @@ class Scenario:
             positional_mission = Mission(
                 start=start,
                 entry_tactic=entry_tactic,
+                start_time=0,
                 goal=PositionalGoal(
                     Point(
                         final_pos_x + map_offset[0] + final_hhx,
@@ -496,6 +497,7 @@ class Scenario:
             traverse_mission = Mission(
                 start=start,
                 entry_tactic=entry_tactic,
+                start_time=0,
                 goal=TraverseGoal(self._road_map),
             )
             vehicle_missions[veh_id] = (positional_mission, traverse_mission)
