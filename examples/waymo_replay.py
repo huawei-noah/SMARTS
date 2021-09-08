@@ -98,10 +98,11 @@ def main(
             veh_missions = scenario.create_dynamic_traffic_history_missions(
                 vehicles_to_trap, smarts.elapsed_sim_time
             )
+
             # Create traps for selected vehicles to be triggered immediately
             smarts.trap_history_vehicles(vehicles_to_trap, veh_missions)
 
-        context = {"agents": {}}
+        context = {"agents": {}, "elapsed_sim_time": 0.0}
         trigger = Trigger(should_trigger, on_trigger, context=context)
 
         dones = {}
