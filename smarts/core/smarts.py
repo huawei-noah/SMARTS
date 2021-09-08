@@ -61,7 +61,7 @@ from .utils.math import rounder_for_dt
 from .utils.id import Id
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
-from .vehicle import Vehicle, VehicleState
+from .vehicle import VehicleState
 from .vehicle_index import VehicleIndex
 
 logging.basicConfig(
@@ -391,18 +391,14 @@ class SMARTS:
                 f"Unable to add entry trap for new agent '{agent_id}' with mission."
             )
 
-    def trap_history_vehicles(self, vehicles_to_trap: Dict[str, Tuple[str, AgentSpec]]):
+    def trap_history_vehicles(
+        self, vehicles_to_trap: Dict[str, Tuple[str, AgentSpec]], veh_missions
+    ):
         for veh_id, (agent_id, agent_spec) in vehicles_to_trap.items():
             # Create trap to be triggered immediately
-            vehicle: Vehicle = self.vehicle_index.vehicle_by_id(
-                f"history-vehicle-{veh_id}"
+            self.add_agent_with_mission(
+                agent_id, agent_spec.interface, veh_missions[veh_id]
             )
-            mission = Mission(
-                start=Start(vehicle.position, vehicle.heading),
-                entry_tactic=default_entry_tactic(vehicle.speed),
-                goal=TraverseGoal(self.road_map),
-            )
-            self.add_agent_with_mission(agent_id, agent_spec.interface, mission)
 
         # Remove chosen agents from traffic history provider
         self._traffic_history_provider.set_replaced_ids(vehicles_to_trap.keys())

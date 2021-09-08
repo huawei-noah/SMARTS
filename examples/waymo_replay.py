@@ -94,8 +94,12 @@ def main(
                 agent = agent_spec.build_agent()
                 agents[agent_id] = agent
 
+            # Create missions for selected vehicles to be hijacked
+            veh_missions = scenario.define_traffic_history_vehicles_mission(
+                vehicles_to_trap, smarts.elapsed_sim_time
+            )
             # Create traps for selected vehicles to be triggered immediately
-            smarts.trap_history_vehicles(vehicles_to_trap)
+            smarts.trap_history_vehicles(vehicles_to_trap, veh_missions)
 
         context = {"agents": {}}
         trigger = Trigger(should_trigger, on_trigger, context=context)
