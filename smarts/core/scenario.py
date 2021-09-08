@@ -461,7 +461,7 @@ class Scenario:
             assert pose_at_trigger
             pos_x, pos_y, heading, speed = pose_at_trigger
 
-            final_exit_time = self._traffic_history.final_exit_time(veh_id)
+            final_exit_time = self._traffic_history.vehicle_final_exit_time(veh_id)
             final_pose = self._traffic_history.vehicle_pose_at_time(
                 veh_id, final_exit_time
             )
