@@ -114,7 +114,7 @@ def main(
             # Get agents from current context
             agents = trigger.context["agents"]
 
-            # Step simulation as usual
+            # Step simulation
             actions = {
                 agent_id: agents[agent_id].act(agent_obs)
                 for agent_id, agent_obs in observations.items()
