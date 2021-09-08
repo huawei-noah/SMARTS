@@ -33,7 +33,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.coordinates import Heading, Dimensions, Pose, RefLinePoint
+from smarts.core.coordinates import Heading, Dimensions, Point, RefLinePoint
 from smarts.core.data_model import SocialAgent
 from smarts.core.default_map_factory import create_road_map
 from smarts.core.plan import (
@@ -455,9 +455,20 @@ class Scenario:
         vehicle_missions = {}
         map_offset = self._road_map.xy_offset
         for veh_id in vehicles_to_trap:
-            pphs = self._traffic_history.vehicle_pose_at_time(veh_id, trigger_time)
-            assert pphs
-            pos_x, pos_y, heading, speed = pphs
+            pose_at_trigger = self._traffic_history.vehicle_pose_at_time(
+                veh_id, trigger_time
+            )
+            assert pose_at_trigger
+            pos_x, pos_y, heading, speed = pose_at_trigger
+
+            final_exit_time = self._traffic_history.final_exit_time(veh_id)
+            final_pose = self._traffic_history.vehicle_pose_at_time(
+                veh_id, final_exit_time
+            )
+            assert final_pose
+            final_pos_x, final_pos_y, final_heading, _ = final_pose
+
+            self._traffic_history.vehicle_pose_at_time(veh_id, trigger_time)
             entry_tactic = default_entry_tactic(speed)
             veh_config_type = self._traffic_history.vehicle_config_type(veh_id)
             veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(
@@ -465,13 +476,23 @@ class Scenario:
             )
             # missions start from front bumper, but pos is center of vehicle
             hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
+
+            # final pos from center of vehicle
+            final_hhx, final_hhy = radians_to_vec(final_heading) * (0.5 * veh_length)
+
             vehicle_missions[veh_id] = Mission(
                 start=Start(
                     (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
                     Heading(heading),
                 ),
                 entry_tactic=entry_tactic,
-                goal=TraverseGoal(self.road_map),
+                goal=PositionalGoal(
+                    Point(
+                        final_pos_x + map_offset[0] + final_hhx,
+                        final_pos_y + map_offset[1] + final_hhy,
+                    ),
+                    radius=2,
+                ),
                 vehicle_spec=VehicleSpec(
                     veh_id=veh_id,
                     veh_config_type=veh_config_type,
