@@ -71,7 +71,7 @@ def main(
         logger.info(f"starting episode {episode}...")
 
         def should_trigger(ctx: Dict[str, Any]) -> bool:
-            return ctx["elapsed_sim_time"] > 10
+            return ctx["elapsed_sim_time"] > 2
 
         def on_trigger(ctx: Dict[str, Any]):
             # Define agent specs to be assigned
@@ -95,7 +95,7 @@ def main(
                 agents[agent_id] = agent
 
             # Create missions for selected vehicles to be hijacked
-            veh_missions = scenario.define_traffic_history_vehicles_missions(
+            veh_missions = scenario.create_dynamic_traffic_history_missions(
                 vehicles_to_trap, smarts.elapsed_sim_time
             )
             # Create traps for selected vehicles to be triggered immediately

@@ -21,8 +21,6 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
-from smarts.core.agent import AgentSpec
-from smarts.core.plan import Start, TraverseGoal, default_entry_tactic
 import warnings
 from collections import defaultdict
 from typing import Dict, List, Sequence, Tuple
@@ -38,7 +36,9 @@ with warnings.catch_warnings():
     from sklearn.metrics.pairwise import euclidean_distances
 
 from smarts import VERSION
+from smarts.core.agent import AgentSpec
 from smarts.core.chassis import AckermannChassis, BoxChassis
+from smarts.core.plan import PlanningError
 
 from . import models
 from .agent_interface import AgentInterface
@@ -392,13 +392,23 @@ class SMARTS:
             )
 
     def trap_history_vehicles(
-        self, vehicles_to_trap: Dict[str, Tuple[str, AgentSpec]], veh_missions
+        self,
+        vehicles_to_trap: Dict[str, Tuple[str, AgentSpec]],
+        veh_missions: Dict[str, Tuple[Mission, Mission]],
     ):
         for veh_id, (agent_id, agent_spec) in vehicles_to_trap.items():
             # Create trap to be triggered immediately
-            self.add_agent_with_mission(
-                agent_id, agent_spec.interface, veh_missions[veh_id]
-            )
+            try:
+                self.add_agent_with_mission(
+                    agent_id, agent_spec.interface, veh_missions[veh_id][0]
+                )
+            except PlanningError:
+                self._log.warning(
+                    f"Unable to create PositionalGoal for vehicle {veh_id}, falling back to TraverseGoal"
+                )
+                self.add_agent_with_mission(
+                    agent_id, agent_spec.interface, veh_missions[veh_id][1]
+                )
 
         # Remove chosen agents from traffic history provider
         self._traffic_history_provider.set_replaced_ids(vehicles_to_trap.keys())

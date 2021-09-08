@@ -451,7 +451,7 @@ class Scenario:
             )
         return vehicle_missions
 
-    def define_traffic_history_vehicles_missions(self, vehicles_to_trap, trigger_time):
+    def create_dynamic_traffic_history_missions(self, vehicles_to_trap, trigger_time):
         vehicle_missions = {}
         map_offset = self._road_map.xy_offset
         for veh_id in vehicles_to_trap:
@@ -468,7 +468,6 @@ class Scenario:
             assert final_pose
             final_pos_x, final_pos_y, final_heading, _ = final_pose
 
-            self._traffic_history.vehicle_pose_at_time(veh_id, trigger_time)
             entry_tactic = default_entry_tactic(speed)
             veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(
                 veh_id
@@ -479,11 +478,12 @@ class Scenario:
             # final pos from center of vehicle
             final_hhx, final_hhy = radians_to_vec(final_heading) * (0.5 * veh_length)
 
-            vehicle_missions[veh_id] = Mission(
-                start=Start(
-                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
-                    Heading(heading),
-                ),
+            start = Start(
+                (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
+                Heading(heading),
+            )
+            positional_mission = Mission(
+                start=start,
                 entry_tactic=entry_tactic,
                 goal=PositionalGoal(
                     Point(
@@ -493,6 +493,12 @@ class Scenario:
                     radius=2,
                 ),
             )
+            traverse_mission = Mission(
+                start=start,
+                entry_tactic=entry_tactic,
+                goal=TraverseGoal(self._road_map),
+            )
+            vehicle_missions[veh_id] = (positional_mission, traverse_mission)
         return vehicle_missions
 
     @staticmethod
