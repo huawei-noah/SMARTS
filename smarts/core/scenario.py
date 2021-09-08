@@ -494,7 +494,7 @@ class Scenario:
                         final_pos_x + map_offset[0] + final_hhx,
                         final_pos_y + map_offset[1] + final_hhy,
                     ),
-                    radius=2,
+                    radius=3,
                 ),
             )
             traverse_mission = Mission(
