@@ -470,7 +470,6 @@ class Scenario:
 
             self._traffic_history.vehicle_pose_at_time(veh_id, trigger_time)
             entry_tactic = default_entry_tactic(speed)
-            veh_config_type = self._traffic_history.vehicle_config_type(veh_id)
             veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(
                 veh_id
             )
@@ -492,11 +491,6 @@ class Scenario:
                         final_pos_y + map_offset[1] + final_hhy,
                     ),
                     radius=2,
-                ),
-                vehicle_spec=VehicleSpec(
-                    veh_id=veh_id,
-                    veh_config_type=veh_config_type,
-                    dimensions=Dimensions(veh_length, veh_width, veh_height),
                 ),
             )
         return vehicle_missions
