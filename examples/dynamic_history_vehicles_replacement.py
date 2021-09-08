@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import Any, Callable, Dict, Sequence
 
 from envision.client import Client as Envision
@@ -49,6 +50,7 @@ def main(
     scenarios: Sequence[str],
     headless: bool,
     seed: int,
+    vehicles_to_replace_randomly: int,
     episodes: int,
 ):
     assert episodes > 0
@@ -78,10 +80,27 @@ def main(
                 interface=AgentInterface(waypoints=True, action=ActionSpaceType.Lane),
                 agent_builder=BasicAgent,
             )
+            if ctx["vehicles_to_replace_randomly"] <= 0:
+                logger.warning(
+                    "default (0) or negative value specified for replacement. Replacing all valid vehicle candidates."
+                )
+                sample = ctx["vehicle_candidates"]
+            else:
+                logger.info(
+                    "Choosing {} vehicles randomly from {} valid vehicle candidates.".format(
+                        ctx["vehicles_to_replace_randomly"],
+                        len(ctx["vehicle_candidates"]),
+                    )
+                )
+                sample = random.sample(
+                    ctx["vehicle_candidates"], ctx["vehicles_to_replace_randomly"]
+                )
+
+            assert len(sample) != 0
 
             # Select vehicles and map to agent ids & specs
             vehicles_to_trap = {}
-            for veh_id in ctx["vehicle_candidates"]:
+            for veh_id in sample:
                 agent_id = f"agent-{veh_id}"
                 vehicles_to_trap[veh_id] = (agent_id, agent_spec)
                 ctx["agents"][agent_id] = agent_spec.build_agent()
@@ -104,11 +123,23 @@ def main(
         # Filter out trajectories with less than 100 timesteps
         vehicle_candidates = [str(t[0]) for t in traj_lens if t[1] > 100]
 
+        assert len(vehicle_candidates) > 0
+
+        k = vehicles_to_replace_randomly
+        if k > len(vehicle_candidates):
+            logger.warning(
+                "vehicles_to_replace_randomly={} is greater than the number of vehicle candidates ({}).".format(
+                    vehicles_to_replace_randomly, len(vehicle_candidates)
+                )
+            )
+            k = len(vehicle_candidates)
+
         # Initialize trigger and define initial context
         context = {
             "agents": {},
             "elapsed_sim_time": 0.0,
             "vehicle_candidates": vehicle_candidates,
+            "vehicles_to_replace_randomly": k,
         }
         trigger = Trigger(should_trigger, on_trigger, context=context)
 
@@ -159,7 +190,16 @@ def main(
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("waymo-replay")
+    parser = default_argument_parser(
+        "history_vehicles_replacement_for_imitation_learning.py"
+    )
+    parser.add_argument(
+        "--random_replacements-per-episode",
+        "-k",
+        help="The number vehicles to randomly replace with agents per episode.",
+        type=int,
+        default=0,
+    )
     args = parser.parse_args()
 
     main(
