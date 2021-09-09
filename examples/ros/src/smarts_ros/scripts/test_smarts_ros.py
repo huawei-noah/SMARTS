@@ -17,7 +17,7 @@ from smarts_ros.msg import (
     AgentsStamped,
     EntitiesStamped,
     EntityState,
-    SmartsControl,
+    SmartsReset,
 )
 from smarts_ros.srv import SmartsInfo
 from smarts.core.coordinates import fast_quaternion_from_angle
@@ -29,7 +29,7 @@ class TestSmartsRos(TestCase):
     def __init__(self):
         super().__init__()
         self._smarts_info_srv = None
-        self._control_publisher = None
+        self._reset_publisher = None
         self._agents = {}
 
     def setup_ros(
@@ -44,8 +44,8 @@ class TestSmartsRos(TestCase):
         # otherwise we use our default.
         namespace = def_namespace if not os.environ.get("ROS_NAMESPACE") else ""
 
-        self._control_publisher = rospy.Publisher(
-            f"{namespace}control", SmartsControl, queue_size=pub_queue_size
+        self._reset_publisher = rospy.Publisher(
+            f"{namespace}reset", SmartsReset, queue_size=pub_queue_size
         )
         self._agents_publisher = rospy.Publisher(
             f"{namespace}agent_spec", AgentSpec, queue_size=pub_queue_size
@@ -77,8 +77,8 @@ class TestSmartsRos(TestCase):
         scenario = rospy.get_param("~scenario")
         rospy.loginfo(f"Tester using scenario:  {scenario}.")
 
-        control_msg = SmartsControl()
-        control_msg.reset_with_scenario_path = scenario
+        reset_msg = SmartsReset()
+        reset_msg.scenario = scenario
         if rospy.get_param("~add_agent", False):
             agent_spec = AgentSpec()
             agent_spec.agent_id = "TestROSAgent"
@@ -96,10 +96,10 @@ class TestSmartsRos(TestCase):
             task.params_json = rospy.get_param("~task_params")
             agent_spec.tasks = [task]
             self._agents[agent_spec.agent_id] = agent_spec
-            control_msg.initial_agents = [agent_spec]
-        self._control_publisher.publish(control_msg)
+            reset_msg.initial_agents = [agent_spec]
+        self._reset_publisher.publish(reset_msg)
         rospy.loginfo(
-            f"SMARTS control message sent with scenario_path=f{control_msg.reset_with_scenario_path} and initial_agents=f{control_msg.initial_agents}."
+            f"SMARTS reset message sent with scenario_path=f{reset_msg.scenario} and initial_agents=f{reset_msg.initial_agents}."
         )
         return scenario
 
