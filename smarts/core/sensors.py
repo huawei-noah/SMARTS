@@ -150,7 +150,7 @@ class TrafficLightState(Enum):
 
 @dataclass(frozen=True)
 class TrafficLightData:
-    stop_point: Tuple[float, float]
+    stop_point: Point
     """The stopping point along the lane controlled by the traffic signal.
     This is the point where dynamic objects must stop when the signal is in a stop state."""
     state: TrafficLightState
@@ -1108,7 +1108,7 @@ class TrafficLightSensor(Sensor):
         traffic_light_data = []
         for row in rows:
             state = TrafficLightState(row.state)
-            point = (
+            point = Point(
                 row.stop_point_x,
                 row.stop_point_y,
             )
