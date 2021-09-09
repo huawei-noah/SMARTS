@@ -75,8 +75,7 @@ class TestSmartsRos(TestCase):
     def _vector_to_xyzw(v, xyzw):
         xyzw.x, xyzw.y, xyzw.z, xyzw.w = v[0], v[1], v[2], v[3]
 
-    @staticmethod
-    def _create_agent():
+    def _create_agent(self):
         agent_spec = AgentSpec()
         agent_spec.agent_id = "TestROSAgent"
         agent_spec.veh_type = AgentSpec.VEHICLE_TYPE_CAR
@@ -104,7 +103,7 @@ class TestSmartsRos(TestCase):
 
         self._agents = {}
         if rospy.get_param("~add_agent", False):
-            agent_spec = TestSmartsRos._create_agent()
+            agent_spec = self._create_agent()
             reset_msg.initial_agents = [agent_spec]
 
         self._reset_publisher.publish(reset_msg)
@@ -128,7 +127,7 @@ class TestSmartsRos(TestCase):
         if reset_msg.initial_agents or not rospy.get_param("~add_agent", False):
             return
         if not self._agents:
-            TestSmartsRos._create_agent()
+            self._create_agent()
         for agent_spec in self._agents.items():
             self._agent_publisher.publish(agent_spec)
 
