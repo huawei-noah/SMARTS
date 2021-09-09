@@ -129,7 +129,7 @@ class _TrajectoryDataset:
                ) WITHOUT ROWID"""
         )
         ccur.execute(
-            """CREATE TABLE Traffic_Lights (
+            """CREATE TABLE TrafficLights (
                    sim_time REAL NOT NULL,
                    stop_point_x REAL NOT NULL,
                    stop_point_y REAL NOT NULL,
@@ -157,7 +157,7 @@ class _TrajectoryDataset:
         # TAI:  can use executemany() and batch insert rows together if this turns out to be too slow...
         insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?, ?, ?)"
         insert_traj_sql = "INSERT INTO Trajectory VALUES (?, ?, ?, ?, ?, ?, ?)"
-        insert_traffic_light_sql = "INSERT INTO Traffic_Lights VALUES (?, ?, ?, ?)"
+        insert_traffic_light_sql = "INSERT INTO TrafficLights VALUES (?, ?, ?, ?)"
         vehicle_ids = set()
         itcur = dbconxn.cursor()
 

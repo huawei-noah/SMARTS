@@ -201,7 +201,7 @@ class TrafficHistory:
         self, start_time: float, end_time: float
     ) -> Generator[TrafficHistory.TrafficLightRow, None, None]:
         query = """SELECT T.stop_point_x, T.stop_point_y, T.state
-                   FROM Traffic_Lights AS T
+                   FROM TrafficLights AS T
                    WHERE T.sim_time > ? AND T.sim_time <= ?
                    ORDER BY T.sim_time DESC"""
         rows = self._query_list(query, (start_time, end_time))
