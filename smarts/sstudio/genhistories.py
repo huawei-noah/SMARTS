@@ -160,6 +160,9 @@ class _TrajectoryDataset:
         insert_traffic_light_sql = "INSERT INTO Traffic_Lights VALUES (?, ?, ?, ?)"
         vehicle_ids = set()
         itcur = dbconxn.cursor()
+
+        x_offset = self._dataset_spec.get("x_offset", 0.0)
+        y_offset = self._dataset_spec.get("y_offset", 0.0)
         for row in self.rows:
             vid = int(self.column_val_in_row(row, "vehicle_id"))
             if vid not in vehicle_ids:
@@ -188,8 +191,10 @@ class _TrajectoryDataset:
                     float(self.column_val_in_row(row, "sim_time")) / 1000,
                     time_precision,
                 ),
-                float(self.column_val_in_row(row, "position_x")) * self.scale,
-                float(self.column_val_in_row(row, "position_y")) * self.scale,
+                float(self.column_val_in_row(row, "position_x") + x_offset)
+                * self.scale,
+                float(self.column_val_in_row(row, "position_y") + y_offset)
+                * self.scale,
                 float(self.column_val_in_row(row, "heading_rad")),
                 float(self.column_val_in_row(row, "speed")) * self.scale,
                 self.column_val_in_row(row, "lane_id"),
@@ -372,8 +377,8 @@ class NGSIM(_TrajectoryDataset):
         df["sim_time"] = df["global_time"] - min(df["global_time"])
 
         # offset of the map from the data...
-        x_offset = self._dataset_spec.get("x_offset_px", 0) / self.scale
-        y_offset = self._dataset_spec.get("y_offset_px", 0) / self.scale
+        x_margin = self._dataset_spec.get("x_margin_px", 0) / self.scale
+        y_margin = self._dataset_spec.get("y_margin_px", 0) / self.scale
 
         df["length"] *= METERS_PER_FOOT
         df["width"] *= METERS_PER_FOOT
@@ -383,10 +388,10 @@ class NGSIM(_TrajectoryDataset):
         df["position_y"] *= METERS_PER_FOOT
         # SMARTS uses center not front
         df["position_x"] = (
-            df["position_x"] * METERS_PER_FOOT - 0.5 * df["length"] - x_offset
+            df["position_x"] * METERS_PER_FOOT - 0.5 * df["length"] - x_margin
         )
-        if y_offset:
-            df["position_x"] = df["position_y"] - y_offset
+        if y_margin:
+            df["position_x"] = df["position_y"] - y_margin
 
         if self._flip_y:
             max_y = self._dataset_spec["map_net"]["max_y"]
@@ -700,6 +705,8 @@ def _check_args(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--x_offset", help="X offset of map", type=float)
+    parser.add_argument("--y_offset", help="Y offset of map", type=float)
     parser.add_argument(
         "--force",
         "-f",
@@ -735,6 +742,12 @@ if __name__ == "__main__":
     else:
         with open(args.dataset, "r") as yf:
             dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
+
+    if args.x_offset:
+        dataset_spec["x_offset"] = args.x_offset
+
+    if args.y_offset:
+        dataset_spec["y_offset"] = args.y_offset
 
     source = dataset_spec.get("source", "NGSIM")
     if source == "NGSIM":

@@ -56,14 +56,6 @@ class RoadMap:
         raise NotImplementedError()
 
     @property
-    def xy_offset(self) -> Tuple[float, float]:
-        """optional: this is the amount that external coordinates must
-        be shifted in order to have the coordinate system (bounding_box)
-        start at the origin.  Will be (0. 0) for most maps."""
-        # TAI:  get rid of this, fix traffic_history_provider instead
-        return (0, 0)
-
-    @property
     def scale_factor(self) -> float:
         # map units per meter
         return 1.0
