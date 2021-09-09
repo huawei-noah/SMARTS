@@ -532,9 +532,7 @@ class Vehicle:
                 sim.scenario.traffic_history
             ), "Traffic history required for traffic lights sensor"
             vehicle.attach_traffic_lights_sensor(
-                TrafficLightSensor(
-                    sim.scenario.traffic_history, sim.scenario.road_map.xy_offset
-                )
+                TrafficLightSensor(sim.scenario.traffic_history)
             )
 
     def step(self, current_simulation_time):

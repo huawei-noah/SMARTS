@@ -212,8 +212,10 @@ class _TrajectoryDataset:
                         float(self.column_val_in_row(row, "sim_time")) / 1000,
                         time_precision,
                     ),
-                    float(self.column_val_in_row(row, "stop_point_x")) * self.scale,
-                    float(self.column_val_in_row(row, "stop_point_y")) * self.scale,
+                    float(self.column_val_in_row(row, "stop_point_x") + x_offset)
+                    * self.scale,
+                    float(self.column_val_in_row(row, "stop_point_y") + y_offset)
+                    * self.scale,
                     int(self.column_val_in_row(row, "state")),
                 )
                 itcur.execute(insert_traffic_light_sql, tls_args)
