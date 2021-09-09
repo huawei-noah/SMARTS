@@ -128,7 +128,7 @@ class TestSmartsRos(TestCase):
             return
         if not self._agents:
             self._create_agent()
-        for agent_spec in self._agents.items():
+        for agent_spec in self._agents.values():
             self._agent_publisher.publish(agent_spec)
 
     def run_forever(self):
