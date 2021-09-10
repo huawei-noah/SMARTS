@@ -239,6 +239,7 @@ class _TrajectoryDataset:
         icur.execute("CREATE INDEX Trajectory_Time ON Trajectory (sim_time)")
         icur.execute("CREATE INDEX Trajectory_Vehicle ON Trajectory (vehicle_id)")
         icur.execute("CREATE INDEX Vehicle_Type ON Vehicle (type)")
+        icur.execute("CREATE INDEX TrafficLights_Time ON TrafficLights (sim_time)")
         dbconxn.commit()
         icur.close()
 
