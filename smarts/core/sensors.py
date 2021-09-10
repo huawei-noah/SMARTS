@@ -1112,9 +1112,9 @@ class TrafficLightSensor(Sensor):
                 row.stop_point_x,
                 row.stop_point_y,
             )
-            data = TrafficLightData(point=point, state=state)
+            data = TrafficLightData(point, state)
             traffic_light_data.append(data)
-        return traffic_light_data
+        return traffic_light_data if traffic_light_data else None
 
     def teardown(self):
         pass
