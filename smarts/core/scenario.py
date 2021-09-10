@@ -455,7 +455,6 @@ class Scenario:
         self, vehicle_ids: List[str], trigger_time: float
     ) -> Dict[str, Tuple[Mission, Mission]]:
         vehicle_missions = {}
-        map_offset = self._road_map.xy_offset
         for veh_id in vehicle_ids:
             pose_at_trigger = self._traffic_history.vehicle_pose_at_time(
                 veh_id, trigger_time
@@ -481,7 +480,7 @@ class Scenario:
             final_hhx, final_hhy = radians_to_vec(final_heading) * (0.5 * veh_length)
 
             start = Start(
-                (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
+                (pos_x + hhx, pos_y + hhy),
                 Heading(heading),
             )
             positional_mission = Mission(
@@ -490,8 +489,8 @@ class Scenario:
                 start_time=0,
                 goal=PositionalGoal(
                     Point(
-                        final_pos_x + map_offset[0] + final_hhx,
-                        final_pos_y + map_offset[1] + final_hhy,
+                        final_pos_x + final_hhx,
+                        final_pos_y + final_hhy,
                     ),
                     radius=3,
                 ),
