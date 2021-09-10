@@ -1,0 +1,95 @@
+<h1>ULTRA 2021 Competition</h1>
+
+<h2>Overview</h2>
+
+<h3>Background</h3>
+
+<p>
+    Self-driving cars have been a hot topic in recent years, and is a thriving and
+    booming research area holding the promise of a new generation in transportation
+    development. Intending to further research in autonomous driving and in identifying
+    rising stars, <strong>HUAWEI</strong> is hosting this competition using the
+    open-source <strong>ULTRA</strong> platform.
+</p>
+
+<h3>Environment</h3>
+
+<p>
+    <strong>ULTRA</strong>, is an open-source Reinforcement Learning (RL) framework for
+    autonomous driving built upon the&nbsp;<strong>SMARTS</strong> simulator. It
+    provides a generalization benchmark for RL driving agents undergoing intersection
+    navigation, specificlly in unprotected left turns.
+</p>
+
+<p>ULTRA supports</p>
+<ul>
+<li>Building of customizable scenarios with different levels of difficulty</li>
+<li>Analysis tools to evaluate traffic designs</li>
+<li>Configurable train and test parameters</li>
+<li>Baseline implementations of common RL algorithms</li>
+<li>Benchmark results to train and test custom RL algorithms against</li>
+</ul>
+
+<h3>Task</h3>
+
+<p>
+    For training, your goal is to design an agent that is capable of driving safely and
+    efficiently across a variety of simulated intersection maps. Competitors will create
+    (and optionally train) a driverless car from scratch or from one of the provided
+    baselines, that is capable of traversing multi-lane intersections both safely and
+    efficiently. Success will require the creation and/or training of intelligent
+    driving behaviours which allow for precise manipulation of the car's controls, and
+    account for the behaviour of nearby vehicles.
+</p>
+
+<p>
+    For evaluation, we are following a scoring metric that takes into account whether
+    agent completed the left-turn, how fast the agent completed the left-turn, and also
+    how safely the agent acted while completing the left-turn. We will evaluate your
+    agent on hidden evaluation scenarios and determine a score for your agent
+    submission. These hidden evaluation scenarios may range in the number of lanes, type
+    of traffic density, seeding, and road speed. Though they differ in these aspects,
+    they remain the same in the fact that all evaluation scenarios will be intersections
+    that require your agent to undergo an unprotected left-turn. See the evaluation
+    section for more information.
+</p>
+
+<h3>Procedure</h3>
+
+<p>
+    Your challenge is to come up with an agent that can complete as many of the
+    evaluation scenarios as quickly and as safely as it can. Your agent is allowed to
+    use one of two observation types: either vector-based or image-based.
+</p>
+
+<p>
+    This competition provides two different tracks: Track 1 and Track 2. Evaluation
+    scenarios will differ depending on which track you have submitted your agent to.
+</p>
+<ul>
+<li>
+    Track 1 will evaluate your agent on its ability to complete an unprotected left-turn
+    with no traffic. That is, your agent must learn how to drive and complete a
+    left-turn, but does not have to worry about collisions with other vehicles.
+</li>
+<li>
+    Track 2 is meant to push your agent to its limits. Like Track 1, Track 2 will
+    evaluate your agent in unprotected left-turn scenarios, but this time with varying
+    degrees of traffic in the intersection. That is, your agent must now not only be
+    able to complete a left-turn, but it must also be mindful of neighboring vehicles
+    and their movement.
+</li>
+</ul>
+
+<h3>Contact</h3>
+
+<p>
+    For any questions, do not hesitate to raise them as issues in the SMARTS repository
+    (https://github.com/huawei-noah/SMARTS/issues).
+</p>
+
+<p>
+    For more information about ULTRA, and how to get started please see the ULTRA
+    documentation (https://github.com/huawei-noah/SMARTS/tree/master/ultra/docs) and
+    this competition's starting kit.
+</p>
