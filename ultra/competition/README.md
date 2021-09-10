@@ -46,9 +46,7 @@ Alternatively, you can ask the SMARTS developers for evaluation scenarios that a
   - Click "Create Competition"
   - Upload the compressed competition bundle
 
-**NOTE:** Most aspects of the competition can then be edited on the CodaLab website.
-Noteable parts of the competition that cannot be edited once the competition bundle is
-uploaded include the number phases, and the number of leaderboard columns.
+**NOTE:** Most aspects of the competition can then be edited on the CodaLab website. Notable parts of the competition that cannot be edited once the competition bundle is uploaded include the number phases, and the number of leaderboard columns.
 
 ## Uploading the Starting Kit
 
@@ -62,26 +60,17 @@ uploaded include the number phases, and the number of leaderboard columns.
   - Go to your competition's page
   - Click "Edit"
   - Wait for page to fully load (takes ~ 2 minutes)
-  - Once fully loaded, under one of the phases under the "Phases" header, click
-    "My Datasets"
+  - Once fully loaded, under one of the phases under the "Phases" header, click "My Datasets"
   - Upload the starting kit as a starting kit
-  - Go back to the edit page and add the new starting kit as the starting kit for the
-    desired phases
+  - Go back to the edit page and add the new starting kit as the starting kit for the desired phases
 
 ## Testing the Scoring Program
-
 The scoring program can be run in two ways.
 
 ### CodaLab-like Evaluation
+The first is how CodaLab would use the scoring program. CodaLab provides an input and output directory to the scoring program, and the scoring program then takes the submission and scenarios from the input directory, evaluates the submission, and outputs the scores in a text file in the output directory (see [here](https://github.com/codalab/codalab-competitions/wiki/User_Building-a-Scoring-Program-for-a-Competition)).
 
-The first is how CodaLab would use the scoring program. CodaLab provides an input and
-output directory to the scoring program, and the scoring program then takes the
-submission and scenarios from the input directory, evaluates the submission, and outputs
-the scores in a text file in the output directory
-(see [here](https://github.com/codalab/codalab-competitions/wiki/User_Building-a-Scoring-Program-for-a-Competition)).
-
-To run the scoring program in this way on one of the baseline agents in the starting
-kit, the directory setup that CodaLab provides must be setup:
+To run the scoring program in this way on one of the baseline agents in the starting kit, the directory setup that CodaLab provides must be setup:
 
 ```bash
 $ mkdir test_submission_dir/
@@ -91,24 +80,19 @@ $ mkdir test_submission_dir/input/res/
 $ mkdir test_submission_dir/output/
 ```
 
-As outlined in the link above, the `input/ref/` directory contains all the data that the
-submission will be evaluated on. As an example, we can copy the Track 1 scenarios to
-this directory:
+As outlined in the link above, the `input/ref/` directory contains all the data that the submission will be evaluated on. As an example, we can copy the Track 1 scenarios to this directory:
 
 ```bash
 $ cp -r competition_bundle/track1_evaluation_scenarios/* test_submission_dir/input/ref/
 ```
 
-As outlined in the link above, the `input/res/` directory contains all the data that for
-the submission. As an example, we can copy all the files the random baseline agent needs
-in order to run:
+As outlined in the link above, the `input/res/` directory contains all the data that for the submission. As an example, we can copy all the files the random baseline agent needs in order to run:
 
 ```bash
 $ cp starting_kit/agents/random_baseline_agent/agent.py test_submission_dir/input/res/
 ```
 
-Finally, we can run the scoring program, passing the input and output directory to the
-scoring program: 
+Finally, we can run the scoring program, passing the input and output directory to the scoring program: 
 
 ```bash
 $ python competition_bundle/scoring_program/evaluate.py codalab \
@@ -116,15 +100,10 @@ $ python competition_bundle/scoring_program/evaluate.py codalab \
   --output-dir test_submission_dir/output/
 ```
 
-After evaluation is complete, `test_submission_dir/output/` should contain a
-`scores.txt`.
+After evaluation is complete, `test_submission_dir/output/` should contain a `scores.txt`.
 
 ### Local Evaluation
-
-Alternatively, the scoring program can be run in a more natural way where a submission
-directory, evaluation scenarios directory, and scores directory arguments provide
-directories for the scoring program to identify the submission, evaluation scenarios,
-and output directory, respectively:
+Alternatively, the scoring program can be run in a more natural way where a submission directory, evaluation scenarios directory, and scores directory arguments provide directories for the scoring program to identify the submission, evaluation scenarios, and output directory, respectively:
 
 ```bash
 $ python competition_bundle/scoring_program/evaluate.py local \
@@ -134,6 +113,4 @@ $ python competition_bundle/scoring_program/evaluate.py local \
 ```
 
 ### Testing the Scripts in the Starting Kit
-
-Follow the starting kit's [README.md](starting_kit/README.md) to test the scripts in the
-starting kit.
+Follow the starting kit's [README.md](starting_kit/README.md) to test the scripts in the starting kit.
