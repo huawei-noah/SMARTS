@@ -71,7 +71,7 @@ class IDMAgent(Agent):
         T: float = 1.5,
         a: float = 3.0,
         b: float = 4.0,
-        delta: float = 4.0
+        delta: float = 4.0,
     ):
         self._v0 = v0  # The desired velocity.
         self._s0 = s0  # A minimum desired net distance from the car ahead.
@@ -84,7 +84,8 @@ class IDMAgent(Agent):
         # Get all vehicles that are in front of this ego vehicle, and that are facing
         # approximately the same direction (within +/- pi / 4 of the ego's heading).
         vehicles_to_look_at = [
-            vehicle for vehicle in observation["social_vehicles"]
+            vehicle
+            for vehicle in observation["social_vehicles"]
             if (
                 not all(attribute == 0.0 for attribute in vehicle)
                 and vehicle[1] > 0.0
@@ -119,9 +120,8 @@ class IDMAgent(Agent):
                 + (this_speed * (this_speed - other_speed))
                 / (2 * math.sqrt(self._a * self._b))
             )
-            acceleration = (
-                self._a * (1 - (this_speed / self._v0) ** self._delta
-                - (s_star / s_alpha) ** 2)
+            acceleration = self._a * (
+                1 - (this_speed / self._v0) ** self._delta - (s_star / s_alpha) ** 2
             )
             speed = this_speed + acceleration * TIMESTEP_SEC
         else:

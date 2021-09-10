@@ -25,7 +25,10 @@ from typing import Dict
 import numpy as np
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import (
-    AgentInterface, DoneCriteria, NeighborhoodVehicles, Waypoints
+    AgentInterface,
+    DoneCriteria,
+    NeighborhoodVehicles,
+    Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.sensors import Observation
@@ -45,7 +48,7 @@ class RandomAgent(Agent):
 def random_agent_info_adapter(
     observation: Observation, reward: float, info: Dict
 ) -> Dict:
-    """Add whether the random agent reached the goal to its info.""" 
+    """Add whether the random agent reached the goal to its info."""
     info["random_agent_reached_goal"] = observation.events.reached_goal
     return info
 

@@ -33,7 +33,10 @@ from typing import Any, Dict, List, Tuple
 import gym
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import (
-    DoneCriteria, NeighborhoodVehicles, RGB, Waypoints
+    DoneCriteria,
+    NeighborhoodVehicles,
+    RGB,
+    Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
 import ultra.adapters as adapters
@@ -113,9 +116,9 @@ class Scores:
         self.score = (
             (self.reached_goal == 1.0)
             * (self.speed_violation == 0.0)
-            * expected_steps / self.episode_length
+            * expected_steps
+            / self.episode_length
         )
-
 
     def __iadd__(self, other_scores):
         """Support the "+=" operation with another Scores object."""
@@ -226,11 +229,9 @@ def _load_agent_spec_submission(submission_dir: str) -> AgentSpec:
     agent_spec: AgentSpec = agent_submission.agent_spec
 
     # Ensure that the submission uses one of the allowed observation adapters.
-    assert (
-        inspect.getsource(agent_spec.observation_adapter) in (
-            inspect.getsource(adapters.default_observation_image_adapter.adapt),
-            inspect.getsource(adapters.default_observation_vector_adapter.adapt),
-        )
+    assert inspect.getsource(agent_spec.observation_adapter) in (
+        inspect.getsource(adapters.default_observation_image_adapter.adapt),
+        inspect.getsource(adapters.default_observation_vector_adapter.adapt),
     ), "Your agent is not using one of the default observation adapters."
 
     # Ensure that the submission uses the Continuous action space.
@@ -239,9 +240,8 @@ def _load_agent_spec_submission(submission_dir: str) -> AgentSpec:
     ), f"Your agent must use the `{ActionSpaceType.Continuous}` action space."
 
     # Ensure the submission uses the valid RGB sensor.
-    assert (
-        agent_spec.interface.rgb is False
-        or agent_spec.interface.rgb == RGB(width=64, height=64, resolution=(50 / 64))
+    assert agent_spec.interface.rgb is False or agent_spec.interface.rgb == RGB(
+        width=64, height=64, resolution=(50 / 64)
     ), (
         f"Your agent must use `{RGB(width=64, height=64, resolution=(50 / 64))}`, not "
         f"`{agent_spec.interface.rgb}`."
@@ -250,7 +250,8 @@ def _load_agent_spec_submission(submission_dir: str) -> AgentSpec:
     # Ensure the submission uses the valid NeighborhoodVehicles sensor.
     assert (
         agent_spec.interface.neighborhood_vehicles is False
-        or agent_spec.interface.neighborhood_vehicles == NeighborhoodVehicles(radius=200.0)
+        or agent_spec.interface.neighborhood_vehicles
+        == NeighborhoodVehicles(radius=200.0)
     ), (
         f"Your agent must use `{NeighborhoodVehicles(radius=200.0)}`, not "
         f"`{agent_spec.interface.neighborhood_vehicles}`."

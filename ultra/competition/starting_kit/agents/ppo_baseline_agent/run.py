@@ -35,7 +35,7 @@ def run(
     save_rate: int,
     save_dir: str,
     headless: bool,
-    seed: int = 1
+    seed: int = 1,
 ):
     AGENT_ID = "AGENT-007"
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         "--save-rate",
         help="The rate at which to save the agent, measured in number of episodes.",
         type=int,
-        default=5
+        default=5,
     )
     parser.add_argument(
         "--save-dir",
