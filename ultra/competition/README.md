@@ -96,7 +96,7 @@ Finally, we can run the scoring program, passing the input and output directory 
 
 ```bash
 $ python competition_bundle/scoring_program/evaluate.py codalab \
-  --input-dir test_submission_dir/input/
+  --input-dir test_submission_dir/input/ \
   --output-dir test_submission_dir/output/
 ```
 
@@ -107,9 +107,9 @@ Alternatively, the scoring program can be run in a more natural way where a subm
 
 ```bash
 $ python competition_bundle/scoring_program/evaluate.py local \
-  --submission-dir starting_kit/agents/random_baseline_agent/
-  --evaluation-sceanarios-dir ultra_2021_competition/track1_evaluation_scenarios/
-  --scores-dir ./exxample_scores
+  --submission-dir starting_kit/agents/random_baseline_agent/ \
+  --evaluation-sceanarios-dir ultra_2021_competition/track1_evaluation_scenarios/ \
+  --scores-dir ./example_scores
 ```
 
 ### Testing the Scripts in the Starting Kit
