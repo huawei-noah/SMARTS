@@ -44,6 +44,7 @@ def main(
     headless: bool,
     seed: int,
     vehicles_to_replace_randomly: int,
+    min_timestep_count: int,
     positional_radius: int,
     episodes: int,
 ):
@@ -76,7 +77,7 @@ def main(
             )
 
             # Select a random sample from candidates
-            k = ctx.get("k", 0)
+            k = ctx.get("vehicles_to_replace_randomly", 0)
             if k <= 0:
                 logger.warning(
                     "default (0) or negative value specified for replacement. Replacing all valid vehicle candidates."
@@ -99,7 +100,7 @@ def main(
 
             # Create missions for selected vehicles
             veh_missions = scenario.create_dynamic_traffic_history_missions(
-                sample, ctx["elapsed_sim_time"], positional_radius
+                sample, ctx["elapsed_sim_time"], ctx["positional_radius"]
             )
 
             # Create traps for selected vehicles to be triggered immediately
@@ -109,8 +110,10 @@ def main(
         vehicle_candidates = []
         for v_id in (str(id) for id in scenario.traffic_history.all_vehicle_ids()):
             traj = list(scenario.traffic_history.vehicle_trajectory(v_id))
-            # Find moving vehicles with more than 100 timesteps
-            if [row for row in traj if row.speed != 0] and len(traj) >= 100:
+            # Find moving vehicles with more than the minimum number of timesteps
+            if [row for row in traj if row.speed != 0] and len(
+                traj
+            ) >= min_timestep_count:
                 vehicle_candidates.append(v_id)
 
         assert len(vehicle_candidates) > 0
@@ -127,7 +130,8 @@ def main(
             "agents": {},
             "elapsed_sim_time": 0.0,
             "vehicle_candidates": vehicle_candidates,
-            "k": k,
+            "vehicles_to_replace_randomly": k,
+            "positional_radius": positional_radius,
         }
         trigger = Trigger(should_trigger, on_trigger)
 
@@ -153,7 +157,7 @@ def main(
             )
             observations, rewards, dones, infos = smarts.step(actions)
 
-            for agent_id in agents:
+            for agent_id in agents.keys():
                 if dones.get(agent_id, False):
                     if not observations[agent_id].events.reached_goal:
                         logger.warning(
@@ -180,6 +184,13 @@ if __name__ == "__main__":
         default=0,
     )
     parser.add_argument(
+        "--min_timestep_count",
+        "-t",
+        help="The minimum number of timesteps a vehicle must have in its recorded trajectory to become a candidate for selection.",
+        type=int,
+        default=100,
+    )
+    parser.add_argument(
         "--positional_radius",
         "-r",
         help="The maximum radial distance (in metres) from the end position for which the PositionalGoal mission will end.",
@@ -193,6 +204,7 @@ if __name__ == "__main__":
         headless=args.headless,
         seed=args.seed,
         vehicles_to_replace_randomly=args.random_replacements_per_episode,
-        positional_radius=args.postional_radius,
+        min_timestep_count=args.min_timestep_count,
+        positional_radius=args.positional_radius,
         episodes=args.episodes,
     )
