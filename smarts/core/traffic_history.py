@@ -94,9 +94,9 @@ class TrafficHistory:
         query = "SELECT value FROM Spec where key='speed_limit_mps'"
         return self._query_val(float, query)
 
-    def all_vehicle_ids(self) -> List[int]:
+    def all_vehicle_ids(self) -> Generator[int, None, None]:
         query = "SELECT id FROM Vehicle"
-        return [row[0] for row in self._query_list(query)]
+        return (row[0] for row in self._query_list(query))
 
     @cached_property
     def ego_vehicle_id(self) -> int:
