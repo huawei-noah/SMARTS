@@ -44,6 +44,7 @@ def main(
     headless: bool,
     seed: int,
     vehicles_to_replace_randomly: int,
+    positional_radius: int,
     episodes: int,
 ):
     assert episodes > 0
@@ -98,7 +99,7 @@ def main(
 
             # Create missions for selected vehicles
             veh_missions = scenario.create_dynamic_traffic_history_missions(
-                vehicles_to_trap.keys(), ctx["elapsed_sim_time"]
+                sample, ctx["elapsed_sim_time"], positional_radius
             )
 
             # Create traps for selected vehicles to be triggered immediately
@@ -148,7 +149,7 @@ def main(
                 for agent_id, agent_obs in observations.items()
             }
             logger.debug(
-                "stepping @ sim_time={smarts.elapsed_sim_time} for agents={list(observations.keys())}..."
+                f"stepping @ sim_time={smarts.elapsed_sim_time} for agents={list(observations.keys())}..."
             )
             observations, rewards, dones, infos = smarts.step(actions)
 
@@ -178,13 +179,20 @@ if __name__ == "__main__":
         type=int,
         default=0,
     )
+    parser.add_argument(
+        "--positional_radius",
+        "-r",
+        help="The maximum radial distance (in metres) from the end position for which the PositionalGoal mission will end.",
+        type=int,
+        default=3,
+    )
     args = parser.parse_args()
-
     main(
         script=parser.prog,
         scenarios=args.scenarios,
         headless=args.headless,
         seed=args.seed,
         vehicles_to_replace_randomly=args.random_replacements_per_episode,
+        positional_radius=args.postional_radius,
         episodes=args.episodes,
     )
