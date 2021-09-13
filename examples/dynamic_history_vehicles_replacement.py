@@ -153,7 +153,7 @@ def main(
             )
             observations, rewards, dones, infos = smarts.step(actions)
 
-            for agent_id in agents.keys():
+            for agent_id in agents:
                 if dones.get(agent_id, False):
                     if not observations[agent_id].events.reached_goal:
                         logger.warning(
