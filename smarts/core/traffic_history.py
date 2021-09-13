@@ -28,7 +28,7 @@ import logging
 import os
 import random
 import sqlite3
-from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar
+from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar, List
 
 T = TypeVar("T")
 
@@ -94,7 +94,7 @@ class TrafficHistory:
         query = "SELECT value FROM Spec where key='speed_limit_mps'"
         return self._query_val(float, query)
 
-    def all_vehicle_ids(self) -> Generator[int, None, None]:
+    def all_vehicle_ids(self) -> List[int]:
         query = "SELECT id FROM Vehicle"
         return [row[0] for row in self._query_list(query)]
 
