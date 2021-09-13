@@ -452,7 +452,7 @@ class Scenario:
         return vehicle_missions
 
     def create_dynamic_traffic_history_missions(
-        self, vehicle_ids: List[str], trigger_time: float
+        self, vehicle_ids: List[str], trigger_time: float, positional_radius=3
     ) -> Dict[str, Tuple[Mission, Mission]]:
         vehicle_missions = {}
         for veh_id in vehicle_ids:
@@ -492,7 +492,7 @@ class Scenario:
                         final_pos_x + final_hhx,
                         final_pos_y + final_hhy,
                     ),
-                    radius=3,
+                    radius=positional_radius,
                 ),
             )
             traverse_mission = Mission(
