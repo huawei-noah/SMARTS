@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Set
+from typing import Set, Optional
 
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Pose
@@ -59,7 +59,7 @@ class TrafficHistoryProvider(Provider):
     def set_replaced_ids(self, vehicle_ids: list):
         self._replaced_vehicle_ids.update(vehicle_ids)
 
-    def get_history_id(self, vehicle_id: str) -> str:
+    def get_history_id(self, vehicle_id: str) -> Optional[str]:
         if vehicle_id in self._last_step_vehicles:
             return self._vehicle_id_prefix + vehicle_id
         return None
