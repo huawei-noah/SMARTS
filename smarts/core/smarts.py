@@ -23,7 +23,7 @@ import math
 import os
 import warnings
 from collections import defaultdict
-from typing import Dict, List, Sequence, Tuple
+from typing import List, Sequence
 
 import numpy as np
 
@@ -36,9 +36,8 @@ with warnings.catch_warnings():
     from sklearn.metrics.pairwise import euclidean_distances
 
 from smarts import VERSION
-from smarts.core.agent import AgentSpec
 from smarts.core.chassis import AckermannChassis, BoxChassis
-from smarts.core.plan import PlanningError
+from smarts.core.plan import Plan
 
 from . import models
 from .agent_interface import AgentInterface
@@ -391,27 +390,50 @@ class SMARTS:
                 f"Unable to add entry trap for new agent '{agent_id}' with mission."
             )
 
-    def trap_history_vehicles(
+    def hijack_vehicle(
         self,
-        vehicles_to_trap: Dict[str, Tuple[str, AgentSpec]],
-        veh_missions: Dict[str, Tuple[Mission, Mission]],
+        vehicle_id: str,
+        agent_id: str,
+        agent_interface: AgentInterface,
+        mission: Mission,
     ):
-        for veh_id, (agent_id, agent_spec) in vehicles_to_trap.items():
-            # Create trap to be triggered immediately
-            try:
-                self.add_agent_with_mission(
-                    agent_id, agent_spec.interface, veh_missions[veh_id][0]
-                )
-            except PlanningError:
-                self._log.warning(
-                    f"Unable to create PositionalGoal for vehicle {veh_id}, falling back to TraverseGoal"
-                )
-                self.add_agent_with_mission(
-                    agent_id, agent_spec.interface, veh_missions[veh_id][1]
-                )
+        # Check if this is a history vehicle
+        history_veh_id = self._traffic_history_provider.get_history_id(vehicle_id)
+        canonical_veh_id = history_veh_id if history_veh_id else vehicle_id
 
-        # Remove chosen agents from traffic history provider
-        self._traffic_history_provider.set_replaced_ids(vehicles_to_trap.keys())
+        # Switch control to agent
+        plan = Plan(self.road_map, mission)
+        self.agent_manager.add_ego_agent(agent_id, agent_interface, for_trap=False)
+        interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
+        self.vehicle_index.start_agent_observation(
+            self, canonical_veh_id, agent_id, interface, plan
+        )
+        vehicle = self.vehicle_index.switch_control_to_agent(
+            self,
+            canonical_veh_id,
+            agent_id,
+            recreate=False,
+            hijacking=False,
+            agent_interface=interface,
+        )
+
+        # Remove vehicle from traffic history provider
+        if history_veh_id:
+            self._traffic_history_provider.set_replaced_ids([vehicle_id])
+
+        # Create vehicle in providers with matching action space
+        for provider in self.providers:
+            if interface.action_space in provider.action_spaces:
+                provider.create_vehicle(
+                    VehicleState(
+                        vehicle_id=canonical_veh_id,
+                        vehicle_config_type="passenger",
+                        pose=vehicle.pose,
+                        dimensions=vehicle.chassis.dimensions,
+                        speed=vehicle.speed,
+                        source="HIJACK",
+                    )
+                )
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()

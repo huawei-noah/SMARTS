@@ -1,5 +1,6 @@
 import logging
 import random
+from smarts.core.plan import PlanningError
 from typing import Any, Callable, Dict, Sequence
 
 from envision.client import Client as Envision
@@ -88,23 +89,37 @@ def main(
                     f"Choosing {k} vehicles randomly from {len(ctx['vehicle_candidates'])} valid vehicle candidates."
                 )
                 sample = random.sample(ctx["vehicle_candidates"], k)
-
             assert len(sample) != 0
 
-            # Map selected vehicles to agent ids & specs
-            vehicles_to_trap = {}
             for veh_id in sample:
+                # Map selected vehicles to agent ids & specs
                 agent_id = f"agent-{veh_id}"
-                vehicles_to_trap[veh_id] = (agent_id, agent_spec)
                 ctx["agents"][agent_id] = agent_spec.build_agent()
 
-            # Create missions for selected vehicles
-            veh_missions = scenario.create_dynamic_traffic_history_missions(
-                sample, ctx["elapsed_sim_time"], ctx["positional_radius"]
-            )
+                # Create missions based on current state and traffic history
+                positional, traverse = scenario.create_dynamic_traffic_history_mission(
+                    veh_id, ctx["elapsed_sim_time"], ctx["positional_radius"]
+                )
 
-            # Create traps for selected vehicles to be triggered immediately
-            smarts.trap_history_vehicles(vehicles_to_trap, veh_missions)
+                # Hijack vehicles immediately
+                try:
+                    # Try to assign a PositionalGoal at the last recorded timestep
+                    smarts.hijack_vehicle(
+                        veh_id,
+                        agent_id,
+                        agent_spec.interface,
+                        positional,
+                    )
+                except PlanningError:
+                    logger.warning(
+                        f"Unable to create PositionalGoal for vehicle {veh_id}, falling back to TraverseGoal"
+                    )
+                    smarts.hijack_vehicle(
+                        veh_id,
+                        agent_id,
+                        agent_spec.interface,
+                        traverse,
+                    )
 
         # Create a table of vehicle trajectory lengths, filtering out non-moving vehicles
         vehicle_candidates = []
