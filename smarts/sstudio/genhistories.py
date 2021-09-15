@@ -32,8 +32,15 @@ import numpy as np
 import pandas as pd
 import yaml
 from numpy.lib.stride_tricks import as_strided as stride
-from waymo_open_dataset.protos import scenario_pb2
 from typing import Dict, Generator, Union
+
+try:
+    from waymo_open_dataset.protos import scenario_pb2
+except ImportError:
+    print(sys.exc_info())
+    print(
+        "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
+    )
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide

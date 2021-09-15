@@ -17,6 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `dt` to `Observation` class to inform users of the observations of the variable timestep.
 - Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
+- Added Base CI and dependencies requirement tests for the "darwin" platform (MacOS).
 - Extended Imitation Learning codebase to allow importing traffic histories from the Waymo motion dataset and replay in a SMARTS simulation. See PR #1060.
 - Added `ros` extension rule to `setup.py`.
 ### Changed
