@@ -1,4 +1,4 @@
-name: SMARTS CI Base Tests Mac
+name: SMARTS CI Mac
 
 on:
   schedule:
@@ -12,7 +12,7 @@ env:
   venv_dir: .venv
 
 jobs:
-  mac:
+  base-tests-mac:
     runs-on: macos-11
     strategy:
       matrix:
@@ -67,3 +67,29 @@ jobs:
             --ignore=./smarts/core/tests/test_renderers.py \
             --ignore=./smarts/core/tests/test_smarts.py \
             --ignore=./smarts/core/tests/test_observations.py
+
+  test-requirements-mac:
+    runs-on: macos-11
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: develop        
+      - name: Setup Python
+        run: |
+          brew update
+          brew install python@3.7
+          brew unlink python@3.9
+          brew link --force --overwrite python@3.7
+      - name: Install dependencies
+        run: |
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip
+          pip install --upgrade wheel
+          pip install -r utils/setup/mac_requirements.txt
+          pip install .[train,test,camera-obs]
+      - name: Test pip packages
+        run: |
+          . ${{env.venv_dir}}/bin/activate
+          pip freeze | grep -v -E '^smarts' | grep -v 'pkg-resources==0.0.0' | diff -u utils/setup/mac_requirements.txt -

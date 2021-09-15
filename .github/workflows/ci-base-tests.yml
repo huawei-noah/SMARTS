@@ -1,4 +1,4 @@
-name: SMARTS CI Base Tests Linux
+name: SMARTS CI Base Tests
 
 on:
   push:
