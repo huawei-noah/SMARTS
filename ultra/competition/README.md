@@ -28,40 +28,40 @@ $ python starting_kit/scenarios/build_scenarios.py --task track2_evaluation_scen
 
 Alternatively, you can ask the SMARTS developers for evaluation scenarios that are currently held in a private repository. These private evaluation scenarios use the scoring function that is already implemented in `competition_bundle/scoring_program/evaluate.py`.
 
-## Creating the Competition
+## Create the competition
 1. Sign up for a CodaLab account on the [CodaLab site](https://codalab.org/).
 
 2. Create the competition bundle:
     ```bash
+    $ cd /path/to/SMARTS/ultra/competition
     $ make competition_bundle.zip
     ```
 
 3. Upload `competition_bundle.zip` to CodaLab.
-  - Go to the [CodaLab competition page](https://competitions.codalab.org)
-  - Click "My Competitions" at the top right
-  - Click "Competitions I'm Running"
-  - Click "Create Competition"
-  - Upload the compressed competition bundle
+    - Go to the [CodaLab competition page](https://competitions.codalab.org)
+    - Click "My Competitions" at the top right
+    - Click "Competitions I'm Running"
+    - Click "Create Competition"
+    - Upload the compressed competition bundle
 
-**NOTE:** Most aspects of the competition can then be edited on the CodaLab website. Notable parts of the competition that cannot be edited once the competition bundle is uploaded include the number phases, and the number of leaderboard columns.
+4. Most aspects of the competition can then be edited on the CodaLab website. Notable parts of the competition that cannot be edited once the competition bundle is uploaded include the number of phases, and the number of leaderboard columns.
 
-## Uploading the Starting Kit
-
+## Upload the starting kit
 1. Create the starting kit:
-
-  ```bash
-  $ make starting_kit.zip
-  ```
+    ```bash
+    $ cd /path/to/SMARTS/ultra/competition
+    $ make starting_kit.zip
+    ```
 
 2. Upload `starting_kit.zip` to the competition.
-  - Go to your competition's page
-  - Click "Edit"
-  - Wait for page to fully load (takes ~ 2 minutes)
-  - Once fully loaded, under one of the phases under the "Phases" header, click "My Datasets"
-  - Upload the starting kit as a starting kit
-  - Go back to the edit page and add the new starting kit as the starting kit for the desired phases
+    - Go to your competition's page
+    - Click "Edit"
+    - Wait for page to fully load (takes ~ 2 minutes)
+    - Once fully loaded, under one of the phases under the "Phases" header, click "My Datasets"
+    - Upload the starting kit as a starting kit
+    - Go back to the edit page and add the new starting kit as the starting kit for the desired phases
 
-## Testing the Scoring Program
+## Test the scoring program
 The scoring program can be run in two ways.
 
 ### CodaLab-like Evaluation
