@@ -106,3 +106,7 @@ def test_sumo_map(scenario):
     route = routes[0]
     db = route.distance_between(point, (198, 65.20, 0))
     assert db == 134.01
+
+    cands = route.project_along(point, 134.01)
+    for r2lane in r2.lanes:
+        assert (r2lane, 53.6) in cands

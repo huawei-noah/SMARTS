@@ -30,7 +30,7 @@ from shapely.geometry import Polygon
 from shapely.ops import snap, triangulate
 from subprocess import check_output
 from trimesh.exchange import gltf
-from typing import List, Sequence, Tuple
+from typing import List, Set, Sequence, Tuple
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap, Waypoint
@@ -793,6 +793,33 @@ class SumoRoadNetwork(RoadMap):
                 elif d > 0:
                     d += road.length
             return d
+
+        @lru_cache(maxsize=8)
+        def project_along(
+            self, start: Point, distance: float
+        ) -> Set[Tuple[RoadMap.Lane, float]]:
+            route_roads = set(self._roads)
+            for cand_start_lane, _ in self._map.nearest_lanes(start, 30.0, False):
+                if cand_start_lane.road in route_roads:
+                    break
+            else:
+                logging.warning("unable to find road on route near start point")
+                return None
+            started = False
+            for road in self._roads:
+                if not started:
+                    if road != cand_start_lane.road:
+                        continue
+                    started = True
+                    lane_pt = cand_start_lane.to_lane_coord(start)
+                    start_offset = lane_pt.s
+                else:
+                    start_offset = 0
+                if distance > road.length - start_offset:
+                    distance -= road.length - start_offset
+                    continue
+                return {(lane, distance) for lane in road.lanes}
+            return set()
 
     def _compute_road_polygons(self):
         lane_to_poly = {}

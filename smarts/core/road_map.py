@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
-from typing import NamedTuple, List, Sequence, Tuple
+from typing import NamedTuple, List, Set, Sequence, Tuple
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -376,7 +376,15 @@ class RoadMap:
             return []
 
         def distance_between(self, start: Point, end: Point) -> float:
-            """ Distance along route between two points.  """
+            """Distance along route between two points."""
+            raise NotImplementedError()
+
+        def project_along(
+            self, start: Point, distance: float
+        ) -> Set[Tuple[RoadMap.Lane, float]]:
+            """Starting at point on the route, returns a set of possible
+            locations (lane and offset pairs) further along the route that
+            are distance away, not including lane changes."""
             raise NotImplementedError()
 
 
