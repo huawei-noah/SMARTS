@@ -1,24 +1,24 @@
 # Hosting A Competition For ULTRA In CodaLab
 
-This folder contains files to organize a CodaLab competition for ULTRA. It contains two main directories:
-- `competition_bundle/`: Contains the files needed to create a CodaLab competition
-  bundle (see [here](https://github.com/codalab/codalab-competitions/wiki/User_Building-a-Competition-Bundle)).
-  - `scoring_program/`: Contains the Python script that CodaLab will use to evaluate the agent submissions (see [here](https://github.com/codalab/codalab-competitions/wiki/User_Building-a-Scoring-Program-for-a-Competition)).
-- `starting_kit`: Contains all the files that participants need to install all
-  the dependencies, build and/or train their submissions, and evaluate them on test scenarios (see [here](https://github.com/codalab/codalab-competitions/wiki/User_Competition-Roadmap#creating-a-starting-kit)).
+This folder contains files to organize a competition for Ultra in CodaLab. It contains two main directories:
+- [`competition_bundle/`](https://github.com/codalab/codalab-competitions/wiki/User_Building-a-Competition-Bundle): Contains the files needed to create a CodaLab competition bundle.
+  - [`scoring_program/`](https://github.com/codalab/codalab-competitions/wiki/User_Building-a-Scoring-Program-for-a-Competition): Contains the Python script that CodaLab will use to evaluate the agent submissions. 
+- [`starting_kit`](https://github.com/codalab/codalab-competitions/wiki/User_Competition-Roadmap#creating-a-starting-kit): Contains all the files that participants need to install, build, train, and evaluate their submissions on test scenarios.
 
 ## Setup
-For steps to install and run the evaluation and starting kit scripts, see [Setup](./starting_kit/README.md#Setup).
+For steps to install and run the starting-kit scripts, see [Setup](./starting_kit/README.md#Setup).
 
-## Creating the evaluation scenarios
+## Creating evaluation scenarios
 Evaluation scenarios for Track 1 and Track 2 are defined by the configs in `competition_bundle/track1_evaluation_scenarios/` and `competition_bundle/track2_evaluation_scenarios/`, respectively. Generate the levels of these two tracks using the following commands:
 
 ```bash
 # Generate Track 1 scenarios:
+$ cd /path/to/SMARTS/ultra/competition
 $ python starting_kit/scenarios/build_scenarios.py --task track1_evaluation_scenarios --level no-traffic-south-west --save-dir competition_bundle/track1_evaluation_scenarios/ --root-dir competition_bundle --pool-dir starting_kit/scenarios/pool/
 $ python starting_kit/scenarios/build_scenarios.py --task track1_evaluation_scenarios --level no-traffic-east-south --save-dir competition_bundle/track1_evaluation_scenarios/ --root-dir competition_bundle --pool-dir starting_kit/scenarios/pool/
 
 # Generate Track 2 scenarios:
+$ cd /path/to/SMARTS/ultra/competition
 $ python starting_kit/scenarios/build_scenarios.py --task track2_evaluation_scenarios --level low-density --save-dir competition_bundle/track2_evaluation_scenarios/ --root-dir competition_bundle --pool-dir starting_kit/scenarios/pool/
 $ python starting_kit/scenarios/build_scenarios.py --task track2_evaluation_scenarios --level mid-density --save-dir competition_bundle/track2_evaluation_scenarios/ --root-dir competition_bundle --pool-dir starting_kit/scenarios/pool/
 $ python starting_kit/scenarios/build_scenarios.py --task track2_evaluation_scenarios --level high-density --save-dir competition_bundle/track2_evaluation_scenarios/ --root-dir competition_bundle --pool-dir starting_kit/scenarios/pool/
@@ -26,18 +26,15 @@ $ python starting_kit/scenarios/build_scenarios.py --task track2_evaluation_scen
 
 **NOTE:** If you use these evaluation scenarios (or any other configuration), the scoring function in `competition_bundle/scoring_program/evaluate.py` will likely have to be changed or tuned.
 
-Alternatively, you can ask the SMARTS developers for evaluation scenarios that are currently held in a private repository. These private evaluation scenarios use the scoring function that is already implemented in
-`competition_bundle/scoring_program/evaluate.py`.
+Alternatively, you can ask the SMARTS developers for evaluation scenarios that are currently held in a private repository. These private evaluation scenarios use the scoring function that is already implemented in `competition_bundle/scoring_program/evaluate.py`.
 
 ## Creating the Competition
-
 1. Sign up for a CodaLab account on the [CodaLab site](https://codalab.org/).
 
 2. Create the competition bundle:
-
-  ```bash
-  $ make competition_bundle.zip
-  ```
+    ```bash
+    $ make competition_bundle.zip
+    ```
 
 3. Upload `competition_bundle.zip` to CodaLab.
   - Go to the [CodaLab competition page](https://competitions.codalab.org)
@@ -108,7 +105,7 @@ Alternatively, the scoring program can be run in a more natural way where a subm
 ```bash
 $ python competition_bundle/scoring_program/evaluate.py local \
   --submission-dir starting_kit/agents/random_baseline_agent/ \
-  --evaluation-sceanarios-dir ultra_2021_competition/track1_evaluation_scenarios/ \
+  --evaluation-sceanarios-dir ultra_competition/track1_evaluation_scenarios/ \
   --scores-dir ./example_scores
 ```
 
