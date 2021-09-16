@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on Tue Sep  8 21:17:05 2020 by Eclipse SUMO duarouter Version 1.6.0
+<!-- generated on 2021-09-16 14:35:19 by Eclipse SUMO duarouter Version 1.10.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
 
     <input>
-        <net-file value="scenarios/intersections/2lane_t/map.net.xml"/>
-        <route-files value="/tmp/tmpvauebp9k/trips.trips.xml"/>
+        <net-file value="scenarios/intersections/4lane_t/map.net.xml"/>
+        <route-files value="/tmp/tmpbjfalps9/trips.trips.xml"/>
     </input>
 
     <output>
@@ -19,7 +19,7 @@
     </processing>
 
     <report>
-        <error-log value="/tmp/smarts/_duarouter_routing/traffic/generated.log"/>
+        <error-log value="/home/saul/.smarts/_duarouter_routing/traffic/generated.log"/>
         <no-step-log value="true"/>
     </report>
 
@@ -31,18 +31,18 @@
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
-    <vType id="actor-car-5974851877247858186" minGap="2.50" maxSpeed="55.50" speedFactor="normc(1.00,0.20,0.20,2.00)" vClass="passenger" accel="2.6" decel="4.5" sigma="0.5"/>
-    <vehicle id="car-flow-route-edge-east-EW_0_30-edge-west-EW_0_-30--4117495477927931840--9115604273415384466--1-0.0" type="actor-car-5974851877247858186" depart="0.00" departLane="0" departPos="30.00" departSpeed="max" arrivalLane="0" arrivalPos="-30.00">
+    <vType id="actor-car-170490069500684938" minGap="2.50" maxSpeed="55.50" speedFactor="normc(1.00,0.20,0.20,2.00)" vClass="passenger" accel="2.6" decel="4.5" sigma="0.5"/>
+    <vehicle id="car-flow-route-edge-east-EW_0_30-edge-west-EW_0_-30-112670310863024920460051116542568968190--314985435287235156732952963285730887978--1-0.0" type="actor-car-170490069500684938" depart="0.00" departLane="0" departPos="30.00" departSpeed="max" arrivalLane="0" arrivalPos="-30.00">
         <route edges="edge-east-EW edge-west-EW"/>
     </vehicle>
-    <vType id="actor-car--1856733372394314985" minGap="2.50" maxSpeed="55.50" speedFactor="normc(0.80,0.20,0.20,2.00)" vClass="passenger" impatience="0.50" lcCooperative="0.25" lcImpatience="1" jmDriveAfterYellowTime="1.0" accel="2.6" decel="4.5" sigma="0.5"/>
-    <vehicle id="car-flow-route-edge-east-EW_0_30-edge-west-EW_0_-30--4117495477927931840--9115604273415384466--1-1.0" type="actor-car--1856733372394314985" depart="0.00" departLane="0" departPos="30.00" departSpeed="max" arrivalLane="0" arrivalPos="-30.00">
+    <vType id="actor-car-1628151229987693029" minGap="2.50" maxSpeed="55.50" speedFactor="normc(0.80,0.20,0.20,2.00)" vClass="passenger" impatience="0.50" lcCooperative="0.25" lcImpatience="1" jmDriveAfterYellowTime="1.0" accel="2.6" decel="4.5" sigma="0.5"/>
+    <vehicle id="car-flow-route-edge-east-EW_0_30-edge-west-EW_0_-30-112670310863024920460051116542568968190--314985435287235156732952963285730887978--1-1.0" type="actor-car-1628151229987693029" depart="0.00" departLane="0" departPos="30.00" departSpeed="max" arrivalLane="0" arrivalPos="-30.00">
         <route edges="edge-east-EW edge-west-EW"/>
     </vehicle>
-    <vehicle id="car-flow-route-edge-west-WE_0_30-edge-east-WE_0_-30--6121202786866783653--9115604273415384466--0-0.0" type="actor-car-5974851877247858186" depart="0.00" departLane="0" departPos="30.00" departSpeed="max" arrivalLane="0" arrivalPos="-30.00">
+    <vehicle id="car-flow-route-edge-west-WE_0_30-edge-east-WE_0_-30-327793626907654756799069529522845818864--314985435287235156732952963285730887978--0-0.0" type="actor-car-170490069500684938" depart="0.00" departLane="0" departPos="30.00" departSpeed="max" arrivalLane="0" arrivalPos="-30.00">
         <route edges="edge-west-WE edge-east-WE"/>
     </vehicle>
-    <vehicle id="car-flow-route-edge-west-WE_0_30-edge-east-WE_0_-30--6121202786866783653--9115604273415384466--0-1.0" type="actor-car--1856733372394314985" depart="0.00" departLane="0" departPos="30.00" departSpeed="max" arrivalLane="0" arrivalPos="-30.00">
+    <vehicle id="car-flow-route-edge-west-WE_0_30-edge-east-WE_0_-30-327793626907654756799069529522845818864--314985435287235156732952963285730887978--0-1.0" type="actor-car-1628151229987693029" depart="0.00" departLane="0" departPos="30.00" departSpeed="max" arrivalLane="0" arrivalPos="-30.00">
         <route edges="edge-west-WE edge-east-WE"/>
     </vehicle>
 </routes>
