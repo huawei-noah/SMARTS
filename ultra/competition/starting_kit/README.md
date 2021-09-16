@@ -16,17 +16,17 @@ $ docker build --no-cache --network=host -f Dockerfile -t starting_kit:latest .
 $ docker run --rm -it --network=host -v ${PWD}:/starting_kit starting_kit:latest
 
 # Inside the Docker container
-(docker) $ cd /starting_kit
+$ cd /starting_kit
 ```
 
 ### Run a quick example
-Try running a quick example:
+Try running a quick example.
 
 ```bash
 # Generate the maps (this only has to be done once).
 $ scl scenario build-all scenarios/pool/
 
-# Build the example scenarios (this only has to be done again when the config.yaml changes). See the "Creating your own Scenarios" section for more information.
+# Build the example scenarios (this only has to be done again when the config.yaml changes). See the "Creating your own scenarios" section for more information.
 $ python scenarios/build_scenarios.py --task example_scenarios --level example --save-dir scenarios/example_scenarios/ --root-dir scenarios/ --pool-dir scenarios/pool/
 
 # Optional: Start Envision to allow viewing of experiments.
@@ -35,12 +35,11 @@ $ scl envision start -s ./scenarios -p 8081 &
 # Run the random agent baseline in one of the scenarios you just created.
 $ python agents/random_baseline_agent/run.py scenarios/example_scenarios/test_example_2lane_c_50kmh_low-density-flow-10
 ```
-> If you have started Envision, open localhost:8081 in your browser to view the example.
+> If you have started Envision, open `localhost:8081` in your browser to view the example.
 
 ## Creating your own Agent
 
-### The Agent
-
+### Agent
 A bare agent looks like:
 
 ```python
@@ -48,54 +47,49 @@ from smarts.core.agent import Agent
 
 
 class MyAgent(Agent):
-  def __init__(self):
-    pass
+    def __init__(self):
+        pass
 
-  def act(self, observation):
-    """Returns an action in the form of a NumPy array with shape (3,), where this action
-    represents the [throttle, brake, steering] of the agent.
+    def act(self, observation):
+        """Returns an action in the form of a numpy array with shape (3,), where this action
+        represents the [throttle, brake, steering] of the agent. Range of throttle, brake, 
+        and steering are [0, 1], [0, 1], and [-1, 1], respectively.
 
-    Throttle is an element of the interval [0, 1] (representing the extent to which the
-    gas is pushed down), brake is an element of the interval [0, 1] (representing the
-    extent to which the brake is pushed down), and steering is an element of the
-    interval [-1, 1] (representing the extent to which the steering wheel is turned).
+        Args:
+        observation: The observation provided to the agent from the environment. This
+            observation will be the adapted observation, that is, it will be what is
+            returned from the agent's observation adapter.
 
-    Args:
-      observation: The observation provided to the agent through the environment. This
-        observation will be the adapted observation, that is, it will be what is
-        returned from the agent's observation adapter.
-
-    Returns:
-      Union[Sequence[float], np.ndarray]: Either a Sequence of three float values, or a
-        NumPy array with shape (3,). The action is the [throttle, brake, steering] of
-        the agent's vehicle.
-    """
-    pass
+        Returns:
+        Union[Sequence[float], np.ndarray]: Either a Sequence of three float values, or a 
+            numpy array with shape (3,). The action is the [throttle, brake, steering] of 
+            the agent's vehicle.
+        """
+        pass
 ```
 
 The agent must contain an act method that returns an action given an observation.
 
-### The AgentSpec
-
+### AgentSpec
 In addition to the agent class, a `smarts.core.agent.AgentSpec` will be needed. The `AgentSpec` defines how this agent class will be instantiated and how it will interact with the environment.
 
-The `AgentSpec` takes a few specific parameters:
+The `AgentSpec` takes a few specific parameters.
 
 - `interface`:
 
-  The `AgentInterface` provides the SMARTS simulator with information about what sensors the vehicle needs and also what action the agent outputs. Recall that we restrict the agent's observation to either be the "vector" or "image" type, and that the agent should be using a continuous action space. So depending on the type of observation you would like to use, your `AgentInterface` will look like:
+  The `AgentInterface` provides the SMARTS simulator with information about what sensors the vehicle needs and also what action the agent outputs. Recall that we restrict the agent's observation to either be of "vector" or "image" type, and that the agent should use a continuous action space. So depending on the type of observation you would like to use, your `AgentInterface` will look like:
 
   ```python
   from smarts.core.controllers import ActionSpaceType
   from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, RGB, Waypoints
 
-  # If using the image observation...
+  # If using the image observation
   AgentInterface(
     rgb=RGB(width=64, height=64, resolution=(50 / 64)),
     action=ActionSpaceType.Continuous,
   )
 
-  # If using the vector observation...
+  # If using the vector observation
   AgentInterface(
     neighborhood_vehicles=NeighborhoodVehicles(radius=200.0),
     waypoints=Waypoints(lookahead=20),
@@ -103,11 +97,11 @@ The `AgentSpec` takes a few specific parameters:
   )
   ```
 
-  The image observation adapter requires the car to have an RGB sensor that produces an image with width of 64 pixels and height of 64 pixels. The resolution of the image is also recommended to be 50 / 64. That is, the sensor will produce a 64x64 image that spans 50 meters by 50 meters. The values of 64, 64, and 50 / 64 for the `width`, `height`, and `resolution`, respectively, are what will be used for the evaluation on CodaLab, so it is recommended that these values be used. If your agent does not have these values for the `width`, `height`, and `resolution` when submitted for evaluation on CodaLab, the evaluation will fail.
+  The image observation adapter requires the car to have an RGB sensor that produces an image with width of 64 pixels and height of 64 pixels. The resolution of the image is recommended to be 50 / 64. That is, the sensor will produce a 64x64 image that spans 50 meters by 50 meters. The values of 64, 64, and 50 / 64 for the `width`, `height`, and `resolution`, respectively, are what will be used for the evaluation on CodaLab, so it is recommended that these values be used. If your agent does not have these values for the `width`, `height`, and `resolution` when submitted for evaluation on CodaLab, the evaluation will fail.
 
   The vector observation adapter requires the car to have a NeighborhoodVehicles sensor that senses all nearby vehicles within a certain `radius`, and a Waypoints sensor that produces waypoints up to a certain `lookahead` distance along the vehicle's mission path. The values of 200.0 and 20 for the `radius` and `lookahead`, respectively, can be changed. However, these are the values that will be used for the evaluation on CodaLab, so it is recommended that these values be used. If your agent does not have these values for the `radius` and `lookahead` when submitted for evaluation on CodaLab, the evaluation will fail.
 
-  The `AgentInterface` also has a `done_criteria` argument that can be used to specify a `smarts.core.agent_interface.DoneCriteria` object that tells the simulation under which circumstances the agent is done the episode:
+  The `AgentInterface` also has a `done_criteria` argument that can be used to specify a `smarts.core.agent_interface.DoneCriteria` object that tells the simulation under which circumstances the agent becomes done in the episode:
 
   ```python
   from smarts.core.agent_interface import AgentInterface, DoneCriteria
@@ -118,7 +112,7 @@ The `AgentSpec` takes a few specific parameters:
       off_road=...,  # End the episode if the agent drives off the road.
       off_route=...,  # End the episode if the agent drives off the specified mission route.
       on_shoulder=...,  # End the episode if the agent drives on the shoulder.
-      wrong_way=...,  # End the episode if the agent drives off the specified lane in the mission route.
+      wrong_way=...,  # End the episode if the agent drives in a lane with oncoming traffic.
       not_moving=...,  # End the episode if the agent is not moving for 60 seconds or more.
     ),
     ...
@@ -139,20 +133,20 @@ The `AgentSpec` takes a few specific parameters:
 
 - `observation_adapter`:
 
-  An observation adapter is a `Callable` object (like a function) that takes a [raw environment observation](https://smarts.readthedocs.io/en/latest/sim/observations.html#id1) (a `smarts.core.sensors.Observation`) and preprocesses it into something the agent can use. For this competition, we restrict agents to only use an "image" observation or a "vector" observation defined by observation adapters in ULTRA:
+  An observation adapter is a `Callable` object that takes a [raw environment observation](https://smarts.readthedocs.io/en/latest/sim/observations.html#id1) (a `smarts.core.sensors.Observation`) and preprocesses it into something the agent can use. For this competition, we restrict agents to only use an "image" observation or a "vector" observation defined by observation adapters in ULTRA:
 
   ```python
   import ultra.adapters as adapters
   from smarts.core.agent import AgentSpec
 
-  # If using the image observation...
+  # If using the image observation
   AgentSpec(
     ...
     observation_adapter=adapters.default_observation_image_adapter.adapt,
     ...
   )
 
-  # If using the vector observation...
+  # If using the vector observation
   AgentSpec(
     ...
     observation_adapter=adapters.default_observation_vector_adapter.adapt,
@@ -160,26 +154,25 @@ The `AgentSpec` takes a few specific parameters:
   )
   ```
 
-  See the [ULTRA adapters documentation](https://github.com/huawei-noah/SMARTS/blob/master/ultra/docs/adapters.md) to see what these adapters produce. The output of these observation adapters is what is passed into your agent's `act` method.
+  See the [ULTRA adapters documentation](https://github.com/huawei-noah/SMARTS/blob/master/ultra/docs/adapters.md) to see what these adapters produce. The output of these observation adapters is passed into your agent's `act` method.
 
   > NOTE: If your agent does not use one of these ULTRA adapters, it will fail the
   evaluation.
 
 - `action_adapter`:
 
-  The action adapter is a `Callable` object (like a function) that takes the action that is returned from your agent's `act` method and attempts to do some post-processing on the action so that it can be interpreted by the SMARTS environment. Of course, if you wanted, you could simply return a valid action from your agent's `act` method and you would then have no need for an action adapter.
+  The action adapter is a `Callable` object that takes the action returned from your agent's `act` method and attempts to do some post-processing on the action so that it can be interpreted by the SMARTS environment. Of course, if you wanted, you could simply return a valid action from your agent's `act` method and you would then have no need for an action adapter.
 
 - `reward_adapter`:
 
-  The reward adapter is a `Callable` object (like a function) that takes the raw environment observation (a `smarts.core.sensors.Observation`) and the [raw environment reward](https://smarts.readthedocs.io/en/latest/sim/observations.html?highlight=reward#rewards) (a `float`) in order to produce a processed reward. This allows you to create a custom reward function for your agent.
+  The reward adapter is a `Callable` object that takes the raw environment observation (a `smarts.core.sensors.Observation`) and the [raw environment reward](https://smarts.readthedocs.io/en/latest/sim/observations.html?highlight=reward#rewards) (a `float`) in order to produce a processed reward. This allows you to create a custom reward function for your agent.
 
 - `info_adapter`:
 
-  Conforming to OpenAI's Gym interface, we allow the agent to specify what information they would like to receive from the environment. An info adapter is a `Callable` object (like a function) that takes a raw environment observation (a `smarts.core.sensors.Observation`), the raw environment reward (a `float`), and environment information from the ULTRA environment (a `Dict`). The info adapter is meant to return further processed information, if needed.
+  Conforming to OpenAI's Gym interface, we allow the agent to specify what information they would like to receive from the environment. An info adapter is a `Callable` object that takes a raw environment observation (a `smarts.core.sensors.Observation`), the raw environment reward (a `float`), and environment information from the ULTRA environment (a `Dict`). The info adapter is meant to return further processed information, if needed.
 
-### An Example
-
-See below for a full-fledged example of what an `agent.py` file could look like:
+### Example
+See below for a full-fledged example of what an `agent.py` file could look like.
 
 ```python
 from typing import Dict
@@ -193,63 +186,62 @@ import ultra.adapters as adapters
 
 
 class MyAgent(Agent):
-  def __init__(self, my_param1, my_param2):
-    """Make an agent that will try and go as fast as it can."""
-    self._my_param1 = my_param1
-    self._my_param2 = my_param2
+    def __init__(self, my_param1, my_param2):
+        """Make an agent that will attempt to go as fast as it can."""
+        self._my_param1 = my_param1
+        self._my_param2 = my_param2
 
-  def act(self, observation) -> np.ndarray:
-    """Return the action that corresponds to fully pressing down the gas pedal. Also
-    note that this `observation` that is passed to the `act` method is NOT a
-    `smarts.core.sensors.Observation`. It is actually the observation that is returned
-    by our observation adapter."""
-    return np.ndarray([1.0, 0.0, 0.0])
+    def act(self, observation) -> np.ndarray:
+        """Return the action that corresponds to fully pressing down the gas pedal. Also
+        note that this `observation` that is passed to the `act` method is NOT a
+        `smarts.core.sensors.Observation`. It is actually the observation that is returned
+        by our observation adapter."""
+        return np.ndarray([1.0, 0.0, 0.0])
 
 
 def my_action_adapter(self, action: np.ndarray):
-  """Don't change the action. The `action` we receive is the action that our agent's
-  `act` method returns. We assume the action that our agent's `act` method returns is
-  is already valid."""
-  return action
+    """Don't change the action. The `action` we receive is the action that our agent's
+    `act` method returns. We assume the action that our agent's `act` method returns is
+    is already valid."""
+    return action
 
 
 def my_reward_adapter(self, observation: Observation, reward: float):
-  """Add the vehicle's speed to the reward. This is the reward that the environment will
-  return for our agent upon each step."""
-  return reward + observation.ego_vehicle_state.speed
+    """Add the vehicle's speed to the reward. This is the reward that the environment will
+    return for our agent upon each step."""
+    return reward + observation.ego_vehicle_state.speed
 
 
 def my_info_adapter(self, observation: Observation, reward: float, info: Dict):
-  """Add the reward and raw environment observation to the info. This is the info that
-  the environment will return for our agent upon each step."""
-  info["reward"] = reward
-  info["observation"] = observation
-  return info
+    """Add the reward and raw environment observation to the info. This is the info that
+    the environment will return for our agent after each step."""
+    info["reward"] = reward
+    info["observation"] = observation
+    return info
 
 
 agent_spec = AgentSpec(
-  interface=AgentInterface(
-    max_episode_steps=100,
-    neighborhood_vehicles=NeighborhoodVehicles(radius=200.0),
-    waypoints=Waypoints(lookahead=20.0),
-    action=ActionSpaceType.Continuous,  # Must use the Continuous action space.
-  ),
-  agent_builder=MyAgent,
-  agent_params={"my_param1": 1.0, "my_param2": True},
-  observation_adapter=adapters.default_observation_vector_adapter.adapt,  # Must use one of the allowed observations.
-  action_adapter=my_action_adapter,  # Use the custom action adapter.
-  reward_adapter=my_reward_adapter,  # Use the custom reward adapter.
-  info_adapter=my_info_adapter,  # Use the custom info adapter.
+    interface=AgentInterface(
+        max_episode_steps=100,
+        neighborhood_vehicles=NeighborhoodVehicles(radius=200.0),
+        waypoints=Waypoints(lookahead=20.0),
+        action=ActionSpaceType.Continuous,  # Must use continuous action space.
+    ),
+    agent_builder=MyAgent,
+    agent_params={"my_param1": 1.0, "my_param2": True},
+    observation_adapter=adapters.default_observation_vector_adapter.adapt,  # Must use one of the allowed observations.
+    action_adapter=my_action_adapter,  # Use the custom action adapter.
+    reward_adapter=my_reward_adapter,  # Use the custom reward adapter.
+    info_adapter=my_info_adapter,  # Use the custom info adapter.
 )
 ```
 
-## Creating your own Scenarios
+## Creating your own scenarios
 
-### Specifying Scenarios through a `config.yaml`
-
+### Specify scenarios
 Scenarios can be defined through a `config.yaml` file.
 
-The `config.yaml` has a specific format that is used to define multiple aspects about the scenarios it creates:
+The `config.yaml` has a specific format that is used to define multiple aspects about the scenarios it creates.
 
 ```yaml
 levels:
@@ -283,11 +275,9 @@ levels:
   ...
 ```
 
-The `config.yaml` consists of multiple levels, each with definitions for scenarios for training and testing.
+The `config.yaml` consists of multiple levels. Each level is given a name, `<level-name>`, and has training and testing scenarios.
 
-Each level is given a name, `<level-name>`, and has training and testing scenarios.
-
-Both training and testing scenarios require a `<total>` number of scenarios you would like to create for either training or testing.
+Both training and testing scenarios require a `<total>` number of scenarios to be generated.
 
 Additionally, you can specify a mission for your ego agent. This is done by setting a `<start-lane>` and an `<end-lane>` under `ego_missions`. The intersections that are provided allow for multiple values for these two attributes. For t-intersections, the available values for these attributes are `south-SN`, `south-NS`, `west-EW`, `west-WE`, `east-EW`, and `east-WE`. The same values exist for cross-intersections in addition to `north-NS` and `north-SN`. These names, although at first confusing, can be easily interpreted. For example, `south-SN` means "start on the South (`south`) road, and move from South to North (`SN`)". Some combinations of `<start-lane>` and `<end-lane>` are unsupported. However, the combination of `south-SN` for the `<start-lane>` and `<west-EW>` will always work on all intersections. For evaluation, your agent will only be tested on South to West left-turns and East to South left-turns.
 
@@ -333,7 +323,6 @@ The arguments for `build_scenarios.py` are as follows:
 - `--pool-dir`: Where the maps used to build the scenarios can be found.
 
 ## Submitting an Agent for Evaluation
-
 1. Ensure you have an `agent.py` file and an `agent_spec` variable in that file
 
    Your agent submission should contain at least one file called `agent.py`. In this file should be a variable called `agent_spec` that references a `smarts.core.agent.AgentSpec` instance. The `agent_spec` defines how your agent will be built.
