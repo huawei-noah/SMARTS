@@ -1,14 +1,13 @@
 # Starting Kit
 
-Welcome to the ULTRA competition! This README provides instructions on how to get started by installing all the dependencies and running a quick example. Additionally, it will walk through the basics of creating your own agent, creating your own scenarios, and submitting your agent for evaluation.
+Welcome to the ULTRA competition! This README provides instructions on how to get started by installing the dependencies and running a quick example. Additionally, it will walk through the basics of creating your own agent, creating your own scenarios, and submitting your agent for evaluation.
 
 For more comprehensive documentation on SMARTS and ULTRA, please visit these links:
-- https://smarts.readthedocs.io/
-- https://github.com/huawei-noah/SMARTS/tree/ultra-develop/ultra/docs
+- SMARTS : https://smarts.readthedocs.io/
+- ULTRA : https://github.com/huawei-noah/SMARTS/tree/ultra-develop/ultra/docs
 
 ## Setup
-If not available, install Docker from:
-https://docs.docker.com/get-docker/.
+If not available, install Docker from https://docs.docker.com/get-docker/.
 
 Build and run Docker container:
 ```bash

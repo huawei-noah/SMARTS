@@ -65,11 +65,12 @@ Alternatively, you can ask the SMARTS developers for evaluation scenarios that a
 The scoring program can be run in two ways.
 
 ### CodaLab-like Evaluation
-The first is how CodaLab would use the scoring program. CodaLab provides an input and output directory to the scoring program, and the scoring program then takes the submission and scenarios from the input directory, evaluates the submission, and outputs the scores in a text file in the output directory (see [here](https://github.com/codalab/codalab-competitions/wiki/User_Building-a-Scoring-Program-for-a-Competition)).
+The first method is how CodaLab would use the scoring program. CodaLab provides an input and output directory to the scoring program, and the scoring program then takes the submission and scenarios from the input directory, evaluates the submission, and outputs the scores in a text file to the output directory (see [here](https://github.com/codalab/codalab-competitions/wiki/User_Building-a-Scoring-Program-for-a-Competition)).
 
-To run the scoring program in this way on one of the baseline agents in the starting kit, the directory setup that CodaLab provides must be setup:
+To run the scoring program in this manner on one of the baseline agents in the starting kit, the directory structure that CodaLab provides must be setup.
 
 ```bash
+$ cd /path/to/SMARTS/ultra/competition
 $ mkdir test_submission_dir/
 $ mkdir test_submission_dir/input/
 $ mkdir test_submission_dir/input/ref/
@@ -77,21 +78,24 @@ $ mkdir test_submission_dir/input/res/
 $ mkdir test_submission_dir/output/
 ```
 
-As outlined in the link above, the `input/ref/` directory contains all the data that the submission will be evaluated on. As an example, we can copy the Track 1 scenarios to this directory:
+The `input/ref/` directory contains all the data that the submission will be evaluated on. As an example, we can copy the Track 1 scenarios to this directory.
 
 ```bash
+$ cd /path/to/SMARTS/ultra/competition
 $ cp -r competition_bundle/track1_evaluation_scenarios/* test_submission_dir/input/ref/
 ```
 
-As outlined in the link above, the `input/res/` directory contains all the data that for the submission. As an example, we can copy all the files the random baseline agent needs in order to run:
+The `input/res/` directory contains the submission data. As an example, we can copy files neede by the the random baseline agent.
 
 ```bash
+$ cd /path/to/SMARTS/ultra/competition
 $ cp starting_kit/agents/random_baseline_agent/agent.py test_submission_dir/input/res/
 ```
 
-Finally, we can run the scoring program, passing the input and output directory to the scoring program: 
+Finally, we can run the scoring program, by passing the input and output directory to the scoring program. 
 
 ```bash
+$ cd /path/to/SMARTS/ultra/competition
 $ python competition_bundle/scoring_program/evaluate.py codalab \
   --input-dir test_submission_dir/input/ \
   --output-dir test_submission_dir/output/
@@ -100,14 +104,15 @@ $ python competition_bundle/scoring_program/evaluate.py codalab \
 After evaluation is complete, `test_submission_dir/output/` should contain a `scores.txt`.
 
 ### Local Evaluation
-Alternatively, the scoring program can be run in a more natural way where a submission directory, evaluation scenarios directory, and scores directory arguments provide directories for the scoring program to identify the submission, evaluation scenarios, and output directory, respectively:
+Alternatively, the scoring program can be run directly by providing a submission, evaluation-scenarios, and scores directory in the arguments.
 
 ```bash
+$ cd /path/to/SMARTS/ultra/competition
 $ python competition_bundle/scoring_program/evaluate.py local \
   --submission-dir starting_kit/agents/random_baseline_agent/ \
-  --evaluation-sceanarios-dir ultra_competition/track1_evaluation_scenarios/ \
+  --evaluation-scenarios-dir ultra_competition/track1_evaluation_scenarios/ \
   --scores-dir ./example_scores
 ```
 
-### Testing the Scripts in the Starting Kit
+### Testing the scripts in the starting kit
 Follow the starting kit's [README.md](starting_kit/README.md) to test the scripts in the starting kit.
