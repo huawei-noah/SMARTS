@@ -28,7 +28,6 @@ jobs:
           pip install --upgrade pip
           pip install wheel
           pip install pympler
-          pip install -r requirements.txt
           pip install -e .[train,test,camera-obs]
       - name: Test memory growth
         run: |

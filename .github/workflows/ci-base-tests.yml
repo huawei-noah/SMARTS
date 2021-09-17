@@ -39,7 +39,6 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install --upgrade -r requirements.txt
           pip install --upgrade -e .[train,test,camera-obs]
       - name: Run smoke tests
         run: |

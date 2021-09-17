@@ -26,7 +26,6 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
-          pip install -r requirements.txt
           pip install -e .[train,test,camera-obs]
       - name: Verify long determinism
         run: |

@@ -22,7 +22,6 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel
-          pip install -r requirements.txt
           pip install -e .[train,test,camera-obs]
       - name: SMARTS benchmark
         run: |
