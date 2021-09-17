@@ -20,6 +20,12 @@ jobs:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
+    strategy:
+      matrix:
+        tests:         
+          - ./tests/test_analysis.py
+          - ./tests/test_evaluate.py 
+          - ./tests/test_train.py
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -38,21 +44,13 @@ jobs:
           pip install -e .
           pip install --upgrade numpy
       - name: Run ultra tests (heavy)
-        # To prevent segmentation faults and/or termination signals (i.e. SIGABRT), the
-        # train and evaluate tests are forked into separate subprocesses. Hence, the
-        # heavy tests are divided up into two parts (forked and unforked).
         run: |
           cd ultra
           . ${{env.venv_dir}}/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          --durations=0 \
-          ./tests/test_analysis.py
-          pytest -v \
-          --durations=0 \
-          --forked \
-          ./tests/test_train.py \
-          ./tests/test_evaluate.py
+            --durations=0 \
+            ${{matrix.tests}}
 
   test-light-base-tests:
     runs-on: ubuntu-18.04
@@ -91,9 +89,9 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          --durations=0 \
-          --forked \
-          ${{matrix.tests}}
+            --durations=0 \
+            --forked \
+            ${{matrix.tests}}
 
   test-package-via-setup:
     runs-on: ubuntu-18.04
@@ -121,8 +119,8 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          --durations=0 \
-          ./tests/test_ultra_package.py
+            --durations=0 \
+            ./tests/test_ultra_package.py
 
   test-package-via-wheel:
     runs-on: ubuntu-18.04
@@ -155,8 +153,8 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v \
-          --durations=0 \
-          ./tests/test_ultra_package.py
+            --durations=0 \
+            ./tests/test_ultra_package.py
 
   test-package-via-pypi:
     runs-on: ubuntu-18.04
