@@ -10,16 +10,17 @@ function check_python_version_gte_3_7 {
 
 function do_install_for_linux {
     echo "Installing sumo (used for traffic simulation and road network)"
-    sudo add-apt-repository ppa:sumo/stable
-    sudo apt-get update
-
     if  [[ $1 = "-y" ]]; then
          echo "Default accept of installation. Prompts will default to Yes"
+         sudo add-apt-repository --yes ppa:sumo/stable
+         sudo apt-get update
          sudo apt-get install -y --yes\
               libspatialindex-dev \
               sumo sumo-tools sumo-doc \
               build-essential cmake
     else
+         sudo add-apt-repository ppa:sumo/stable
+         sudo apt-get update
          sudo apt-get install -y \
               libspatialindex-dev \
               sumo sumo-tools sumo-doc \
