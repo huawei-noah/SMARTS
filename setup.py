@@ -26,18 +26,18 @@ setup(
         "click",  # used in scl
         "gym==0.18.3",
         "numpy",
-        "rich",
-        "rtree",  # Used by sumolib
         "pandas",
         "psutil",
-        "visdom",
         "pybullet==3.0.6",
+        "pynput",  # Used by HumanKeyboardAgent
+        "rich",
+        "rtree",  # Used by sumolib
+        "sh",
+        "shapely",
         "sklearn",  # KDTree from sklearn is used by sumo lanepoints
         "tableprint",
         "trimesh==3.9.29",  # Used for writing .glb files
-        "pynput",  # Used by HumanKeyboardAgent
-        "sh",
-        "shapely",
+        "visdom",
         # The following are for Scenario Studio
         "yattag",
         # The following are for /envision
@@ -69,12 +69,12 @@ setup(
             "tensorflow==2.2.1",  # For rllib tests
         ],
         "train": [
-            "tensorflow==2.2.1",
+            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
             # XXX: TF requires specific version of scipy
             "scipy==1.4.1",
+            "tensorflow==2.2.1",
             "torch==1.4.0",
             "torchvision==0.5.0",
-            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
         ],
         "dev": [
             "black==20.8b1",
@@ -89,8 +89,8 @@ setup(
             "panda3d-gltf==0.13",
         ],
         "ros": [
-            "rospkg",
             "catkin_pkg",
+            "rospkg",
         ],
         "waymo": [
             "waymo-open-dataset-tf-2-2-0",
