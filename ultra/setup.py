@@ -41,11 +41,9 @@ setup(
     zip_safe=True,
     python_requires=">=3.7",
     install_requires=[
-        "smarts[train,test,camera-obs] @ git+https://git@github.com/huawei-noah/SMARTS#4d91e18665e1ed226258c78b797e12cd20204b4a",
         "setuptools>=41.0.0,!=50.0",
-        "dill",
+        "smarts[train,test,camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@4d91e18665e1ed226258c78b797e12cd20204b4a",
+        "dill==0.3.4",
         "black==20.8b1",
-        "ray[rllib]==1.0.1.post1",
-        "opencv-python",
     ],
 )
