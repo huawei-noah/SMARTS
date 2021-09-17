@@ -34,7 +34,7 @@ setup(
         "pybullet==3.0.6",
         "sklearn",  # KDTree from sklearn is used by sumo lanepoints
         "tableprint",
-        "trimesh==3.9.29", # Used for writing .glb files
+        "trimesh==3.9.29",  # Used for writing .glb files
         "pynput",  # Used by HumanKeyboardAgent
         "sh",
         "shapely",

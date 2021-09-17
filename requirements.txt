@@ -2,7 +2,6 @@ absl-py==0.13.0
 aiohttp==3.7.4.post0
 aiohttp-cors==0.7.0
 aioredis==2.0.0
-ale-py==0.7
 anyio==3.3.1
 argcomplete==1.12.3
 argon2-cffi==21.1.0
@@ -92,6 +91,7 @@ nvidia-ml-py3==7.352.0
 oauthlib==3.1.1
 opencensus==0.7.13
 opencensus-context==0.1.2
+opencv-python==4.5.3.56
 opencv-python-headless==4.3.0.36
 opt-einsum==3.3.0
 packaging==21.0
@@ -103,7 +103,7 @@ pandocfilters==1.5.0
 parso==0.8.2
 pexpect==4.8.0
 pickleshare==0.7.5
-Pillow==8.3.2
+Pillow==8.2.0
 pluggy==1.0.0
 prometheus-client==0.11.0
 prompt-toolkit==3.0.20
@@ -117,6 +117,7 @@ pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pybullet==3.0.6
 pycparser==2.20
+pyglet==1.5.15
 Pygments==2.10.0
 pynput==1.7.3
 pyparsing==2.4.7
