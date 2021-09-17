@@ -19,15 +19,21 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `dt` to `Observation` class to inform users of the observations of the variable timestep.
 - Added the ability to externally update SMARTS state via a new privileged-access `ExternalProvider`.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
+- Added Base CI and dependencies requirement tests for the "darwin" platform (MacOS).
+- Extended Imitation Learning codebase to allow importing traffic histories from the Waymo motion dataset and replay in a SMARTS simulation. See PR #1060.
+- Added `ros` extension rule to `setup.py`.
 ### Changed
-- Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
-  and allow for (eventually) supporting other map formats.  See Issue #830 and PR #1048.
-  This had multiple cascading ripple effects (especially on Waypoint generation and caching,
-  Missions/Plans/Routes and road/lane-related sensors).
+- Made changes to log sections of the scenario step in `smarts.py` to help evaluate smarts performance problems. See Issue #661.
+- Introduced `RoadMap` class to abstract away from `SumoRoadNetwork` 
+  and allow for (eventually) supporting other map formats. See Issue #830 and PR #1048. This had multiple cascading ripple effects (especially on Waypoint generation and caching, Missions/Plans/Routes and road/lane-related sensors). These include:
+    - Removed the `AgentBehavior` class and the `agent_behavior` parameter to `AgentInterface`.
+    - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
+    - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
 ### Fixed
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
 - Prevent `TrapManager`from trapping vehicles in Bubble airlocks.  See Issue #1064.
 - Social-agent-buffer is instantiated only if the scenario requires social agents
+- Mapped Polygon object output of Route.geometry() to sequence of coordinates.
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.

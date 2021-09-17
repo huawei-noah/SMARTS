@@ -16,7 +16,7 @@ env:
   venv_dir: .venv
 
 jobs:
-  test:
+  linux:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal

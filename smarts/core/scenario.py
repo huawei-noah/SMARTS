@@ -48,7 +48,6 @@ from smarts.core.plan import (
     Via,
 )
 from smarts.core.road_map import RoadMap
-from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
@@ -111,6 +110,17 @@ class Scenario:
 )"""
 
     @staticmethod
+    def get_scenario_list(scenarios_or_scenarios_dirs: Sequence[str]):
+        scenario_roots = []
+        for root in scenarios_or_scenarios_dirs:
+            if Scenario.is_valid_scenario(root):
+                # This is the single scenario mode, only training against a single scenario
+                scenario_roots.append(root)
+            else:
+                scenario_roots.extend(Scenario.discover_scenarios(root))
+        return scenario_roots
+
+    @staticmethod
     def scenario_variations(
         scenarios_or_scenarios_dirs: Sequence[str],
         agents_to_be_briefed: Sequence[str],
@@ -125,13 +135,7 @@ class Scenario:
             agents_to_be_briefed:
                 Agent IDs that will be assigned a mission ("briefed" on a mission).
         """
-        scenario_roots = []
-        for root in scenarios_or_scenarios_dirs:
-            if Scenario.is_valid_scenario(root):
-                # This is the single scenario mode, only training against a single scenario
-                scenario_roots.append(root)
-            else:
-                scenario_roots.extend(Scenario.discover_scenarios(root))
+        scenario_roots = Scenario.get_scenario_list(scenarios_or_scenarios_dirs)
 
         if shuffle_scenarios:
             np.random.shuffle(scenario_roots)
@@ -419,7 +423,6 @@ class Scenario:
 
     def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
         vehicle_missions = {}
-        map_offset = self._road_map.xy_offset
         for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])
             pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
@@ -433,7 +436,7 @@ class Scenario:
             hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
             vehicle_missions[v_id] = Mission(
                 start=Start(
-                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
+                    (pos_x + hhx, pos_y + hhy),
                     Heading(heading),
                 ),
                 entry_tactic=entry_tactic,

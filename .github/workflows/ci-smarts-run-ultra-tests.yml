@@ -34,7 +34,7 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/
-
+  
   test-package-via-setup:
     runs-on: ubuntu-18.04
     container: huaweinoah/smarts:v0.4.18-minimal
@@ -55,7 +55,7 @@ jobs:
           . .venv/bin/activate
           scl scenario build-all ultra/scenarios/pool
           pytest -v ./tests/test_ultra_package.py
-
+  
   test-package-via-wheel:
     runs-on: ubuntu-18.04
     container: huaweinoah/smarts:v0.4.18-minimal

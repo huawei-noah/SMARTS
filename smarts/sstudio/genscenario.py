@@ -397,6 +397,18 @@ def _validate_entry_tactic(mission):
 
 
 def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
+    # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
+    xy_offset = None
+    road_network_path = os.path.join(scenario, "map.net.xml")
+    if os.path.exists(road_network_path):
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        road_network = SumoRoadNetwork.from_file(road_network_path)
+        if road_network._graph and getattr(
+            road_network._graph, "_shifted_by_smarts", False
+        ):
+            xy_offset = road_network._graph.getLocationOffset()
+
     genhistories_py = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
     )
@@ -417,6 +429,9 @@ def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
         th_file = f"{base}.shf"
         if overwrite:
             cmd += ["-f"]
+        if xy_offset:
+            cmd += ["--x_offset", str(xy_offset[0])]
+            cmd += ["--y_offset", str(xy_offset[1])]
         elif os.path.exists(os.path.join(scenario, th_file)):
             continue
         cmd += [th_file]

@@ -25,7 +25,6 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import Plan
-from smarts.core.remote_agent_buffer import RemoteAgentBuffer
 from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
@@ -126,7 +125,12 @@ class AgentManager:
         for v_id in vehicle_ids:
             vehicle = sim.vehicle_index.vehicle_by_id(v_id)
             agent_id = self._vehicle_with_sensors[v_id]
+
+            if not sim.vehicle_index.check_vehicle_id_has_sensor_state(vehicle.id):
+                continue
+
             sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+
             observations[agent_id], dones[agent_id] = Sensors.observe(
                 sim, agent_id, sensor_state, vehicle
             )
@@ -343,6 +347,8 @@ class AgentManager:
         social_agents = sim.scenario.social_agents
         if social_agents:
             if not self._remote_agent_buffer:
+                from smarts.core.remote_agent_buffer import RemoteAgentBuffer
+
                 self._remote_agent_buffer = RemoteAgentBuffer(
                     zoo_manager_addrs=self._zoo_addrs
                 )
@@ -460,6 +466,8 @@ class AgentManager:
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
         if not self._remote_agent_buffer:
+            from smarts.core.remote_agent_buffer import RemoteAgentBuffer
+
             self._remote_agent_buffer = RemoteAgentBuffer(
                 zoo_manager_addrs=self._zoo_addrs
             )
