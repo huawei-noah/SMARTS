@@ -325,6 +325,21 @@ The arguments for `build_scenarios.py` are as follows:
 
    If you are using a reinforcement learning baseline agent (or an agent which takes a checkpoint directory as an argument to load from), ensure that this checkpoint directory is specified in the `AgentSpec`. For example, the SAC baseline `Agent` takes a `checkpoint_dir` argument that can be specified through its `agent_spec`'s `policy_params`. Ensure that this `policy_params` specifies the `checkpoint_dir` argument to be the directory in which your desired neural network weights are saved.
 
+1. Ensure your agent works with the provided evaluation script.
+
+   This starting kit comes with an `evaluation/evaluate.py` script which can be used to verify whether your agent complies with CodaLab evaluation requirements.
+
+   The `evaluate.py` script takes the following arguments:
+   - `--submission-dir`: Directory of your `agent.py` file and other files needed for your submission.
+   - `--evaluation-scenarios-dir`: Directory containing scenarios for evaluating your agent.
+   - `--scores-dir`: Directory in which a `scores.txt` file will be saved. The evaluation metrics in `scores.txt` are the same metrics that CodaLab will use to evaluate your submission.
+   - `--verbose`: Print extra information regarding the evaluation.
+
+   ```bash
+   $ python evaluation/evaluate.py local --submission-dir agents/my_agent/ --evaluation-scenarios-dir scenarios/example_scenarios/ --scores-dir ./my_scores/
+   ```
+   > This evalutes the agent in `my_agent` directory on the scenarios in the `scenarios/example_scenarios/` directory, and outputs evaluation metrics in a `scores.txt` file which is saved in the `my_scores/` directory.
+
 1. Zip the `agent.py` and all other files your agent needs.
 
    ```bash
