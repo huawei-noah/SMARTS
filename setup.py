@@ -34,7 +34,7 @@ setup(
         "pybullet==3.0.6",
         "sklearn",  # KDTree from sklearn is used by sumo lanepoints
         "tableprint",
-        "trimesh",  # Used for writing .glb files
+        "trimesh==3.9.29", # Used for writing .glb files
         "pynput",  # Used by HumanKeyboardAgent
         "sh",
         "shapely",
@@ -50,7 +50,7 @@ setup(
         "matplotlib",
         "scikit-image",
         # The following are for /smarts/zoo and remote agents
-        "grpcio==1.37.0",
+        "grpcio==1.32.0",
         "protobuf",
         "PyYAML",
         "twisted",
