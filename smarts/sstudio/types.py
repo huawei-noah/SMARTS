@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections.abc as collections_abc
+from ctypes import c_int64
 import hashlib
 import logging
 import pickle
@@ -43,11 +44,12 @@ from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_around_point
 
 
-def _pickle_hash(obj):
+def _pickle_hash(obj) -> int:
     pickle_bytes = pickle.dumps(obj, protocol=4)
     hasher = hashlib.md5()
     hasher.update(pickle_bytes)
-    return int(hasher.hexdigest(), 16)
+    val = int(hasher.hexdigest(), 16)
+    return c_int64(val).value
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -319,7 +321,8 @@ class Flow:
     @property
     def id(self) -> str:
         return "flow-{}-{}-".format(
-            self.route.id, str(_pickle_hash(frozenset(self.actors.items())))
+            self.route.id,
+            str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
         )
 
     def __hash__(self):
