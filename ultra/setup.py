@@ -35,7 +35,7 @@ setup(
     description="Unprotected Left Turn for Robust Agents",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.2.1a1",
+    version="0.2.1rc0",
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     zip_safe=True,

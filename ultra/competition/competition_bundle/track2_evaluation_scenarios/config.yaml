@@ -1,0 +1,136 @@
+levels:
+  low-density:
+    train:
+      total: 18
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        3lane_t:
+          percent: 0.25
+          specs: [[50kmh,low-density,0.5], [100kmh,low-density,0.5]]
+          stops: null
+          bubbles: null
+        3lane_c:
+          percent: 0.25
+          specs: [[50kmh,low-density,0.5], [100kmh,low-density,0.5]]
+          stops: null
+          bubbles: null
+        4lane_t:
+          percent: 0.25
+          specs: [[50kmh,low-density,0.5], [100kmh,low-density,0.5]]
+          stops: null
+          bubbles: null
+        4lane_c:
+          percent: 0.25
+          specs: [[50kmh,low-density,0.5], [100kmh,low-density,0.5]]
+          stops: null
+          bubbles: null
+    test:
+      total: 0
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+          percent: 0.5
+          specs: [[70kmh,low-density,1.0]]
+          stops: null
+          bubbles: null
+        2lane_c:
+          percent: 0.5
+          specs: [[70kmh,low-density,1.0]]
+          stops: null
+          bubbles: null
+  mid-density:
+    train:
+      total: 18
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        3lane_t:
+          percent: 0.25
+          specs: [[50kmh,mid-density,0.5], [100kmh,mid-density,0.5]]
+          stops: null
+          bubbles: null
+        3lane_c:
+          percent: 0.25
+          specs: [[50kmh,mid-density,0.5], [100kmh,mid-density,0.5]]
+          stops: null
+          bubbles: null
+        4lane_t:
+          percent: 0.25
+          specs: [[50kmh,mid-density,0.5], [100kmh,mid-density,0.5]]
+          stops: null
+          bubbles: null
+        4lane_c:
+          percent: 0.25
+          specs: [[50kmh,mid-density,0.5], [100kmh,mid-density,0.5]]
+          stops: null
+          bubbles: null
+    test:
+      total: 0
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+          percent: 0.5
+          specs: [[70kmh,mid-density,1.0]]
+          stops: null
+          bubbles: null
+        2lane_c:
+          percent: 0.5
+          specs: [[70kmh,mid-density,1.0]]
+          stops: null
+          bubbles: null
+  high-density:
+    train:
+      total: 18
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        3lane_t:
+          percent: 0.25
+          specs: [[50kmh,high-density,0.5], [100kmh,high-density,0.5]]
+          stops: null
+          bubbles: null
+        3lane_c:
+          percent: 0.25
+          specs: [[50kmh,high-density,0.5], [100kmh,high-density,0.5]]
+          stops: null
+          bubbles: null
+        4lane_t:
+          percent: 0.25
+          specs: [[50kmh,high-density,0.5], [100kmh,high-density,0.5]]
+          stops: null
+          bubbles: null
+        4lane_c:
+          percent: 0.25
+          specs: [[50kmh,high-density,0.5], [100kmh,high-density,0.5]]
+          stops: null
+          bubbles: null
+    test:
+      total: 0
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        2lane_t:
+          percent: 0.5
+          specs: [[70kmh,high-density,1.0]]
+          stops: null
+          bubbles: null
+        2lane_c:
+          percent: 0.5
+          specs: [[70kmh,high-density,1.0]]
+          stops: null
+          bubbles: null

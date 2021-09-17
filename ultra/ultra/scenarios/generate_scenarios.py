@@ -19,29 +19,23 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import argparse
-import copy
-import itertools
+
 import json
 import math
+import numpy as np
 import os
 import random
 import shutil
 import time
-from collections import Counter, defaultdict
+import yaml
+
 from dataclasses import replace
 from multiprocessing import Manager, Process
 from shutil import copyfile
-from typing import Any, Dict, Sequence
-
-import numpy as np
-import yaml
-
 from smarts.core.utils.sumo import sumolib
 from smarts.sstudio import gen_bubbles, gen_missions, gen_traffic
 from smarts.sstudio.types import (
     Bubble,
-    Distribution,
     Flow,
     MapZone,
     Mission,
@@ -56,6 +50,8 @@ from ultra.scenarios.common.distributions import get_pattern
 from ultra.scenarios.common.social_vehicle_definitions import (
     get_social_vehicle_behavior,
 )
+from typing import Any, Dict, Sequence
+
 
 LANE_LENGTH = 137.85
 
