@@ -49,7 +49,7 @@ google-pasta==0.2.0
 googleapis-common-protos==1.53.0
 gpustat==0.6.0
 grpcio==1.32.0
-gym==0.20.0
+gym==0.18.3
 h5py==2.10.0
 hyperlink==21.0.0
 idna==3.2
@@ -172,7 +172,6 @@ tornado==6.1
 traitlets==5.1.0
 trimesh==3.9.29
 Twisted==21.7.0
-typing==3.7.4.3
 typing-extensions==3.10.0.2
 urllib3==1.26.6
 visdom==0.1.8.9

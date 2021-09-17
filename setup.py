@@ -24,7 +24,7 @@ setup(
         "setuptools>=41.0.0,!=50.0",
         "cached-property",
         "click",  # used in scl
-        "gym",
+        "gym==0.18.3",
         "numpy",
         "rich",
         "rtree",  # Used by sumolib
