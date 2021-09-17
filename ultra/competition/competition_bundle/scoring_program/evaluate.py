@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # MIT License
 #
 # Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
@@ -20,17 +22,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-#!/usr/bin/env python3
 import argparse
 import dataclasses
+import gym
 import inspect
 import logging
 import os
 import sys
 import time
-from typing import Any, Dict, List, Tuple
+import ultra.adapters as adapters
 
-import gym
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import (
     DoneCriteria,
@@ -39,7 +40,8 @@ from smarts.core.agent_interface import (
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
-import ultra.adapters as adapters
+from typing import Any, Dict, List, Tuple
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__file__)
@@ -74,7 +76,7 @@ class Scores:
                     * expected_steps / episode_length
                 )
 
-            Where:
+            Here:
             - reached_goal is 1.0 if the agent has reached the goal, 0.0 otherwise
             - speed_violation is 1.0 if the agent's speed has ever gone 10% over the
                 speed limit in the episode, 0.0 otherwise
@@ -84,7 +86,7 @@ class Scores:
                 scenario
 
         Args:
-            info_trajectory (List[Dict[str, Any]]): A list of dictionaries where each
+            info_trajectory (List[Dict[str, Any]]): A list of dictionaries, where each
                 dictionary contains information about a step of the agent's episode.
                 The dictionaries should contain information according to ULTRA's default
                 info adapter (https://github.com/huawei-noah/SMARTS/blob/master/ultra/docs/adapters.md#info-adapters).
@@ -176,12 +178,11 @@ def resolve_codalab_dirs(
         ouptut_dir (str): The path to output the scores.txt file.
 
     Returns:
-        Tuple[str, str, str]: The submission directory, evaluation scenarios directory,
-            and the scores directory respectively. The submission directory contains the
-            user's submitted files, the evaluation scenarios directory contains the
-            contents of the unzipped evaluation scenarios, and the scores directory is
-            the directory in which to write the scores.txt file that is used to update
-            the leaderboard.
+        Tuple[str, str, str]: The submission, evaluation-scenarios, and the scores directory,
+            respectively. The submission directory contains the user submitted files,
+            the evaluation scenarios directory contains the contents of the unzipped
+            evaluation scenarios, and the scores directory is the directory in which
+            to write the scores.txt file that is used to update the leaderboard.
     """
     logger.info(f"root_path={root_path}")
     logger.info(f"input_dir={input_dir}")
@@ -234,7 +235,7 @@ def _load_agent_spec_submission(submission_dir: str) -> AgentSpec:
         inspect.getsource(adapters.default_observation_vector_adapter.adapt),
     ), "Your agent is not using one of the default observation adapters."
 
-    # Ensure that the submission uses the Continuous action space.
+    # Ensure that the submission uses the continuous action space.
     assert (
         agent_spec.interface.action == ActionSpaceType.Continuous
     ), f"Your agent must use the `{ActionSpaceType.Continuous}` action space."
@@ -416,7 +417,7 @@ if __name__ == "__main__":
     codalab_parser.add_argument(
         "--output-dir",
         help=(
-            "The path to the directory where the submission's scores.txt file will be "
+            "Path to the directory where the submission's scores.txt file will be "
             "written to."
         ),
         required=True,
@@ -428,19 +429,19 @@ if __name__ == "__main__":
     local_parser = subparsers.add_parser("local", parents=[common_parser])
     local_parser.add_argument(
         "--submission-dir",
-        help="The path to the your agent.py file (and other relevant files).",
+        help="Path to your agent.py file (and other relevant files).",
         required=True,
         type=str,
     )
     local_parser.add_argument(
         "--evaluation-scenarios-dir",
-        help="The path to the scenarios that will be used for evaluation.",
+        help="Path to the scenarios that will be used for evaluation.",
         required=True,
         type=str,
     )
     local_parser.add_argument(
         "--scores-dir",
-        help="The path to the directory where the scores text file will be saved.",
+        help="Path to the directory where the scores text file will be saved.",
         required=True,
         type=str,
     )

@@ -18,9 +18,7 @@ function do_install_for_linux {
          sumo sumo-tools sumo-doc \
          build-essential cmake
 
-    #only a problem for linux
     if ! check_python_version_gte_3_7; then
-
          echo "A >=3.7 python version not found"
          read -p "Install python3.7? [Yn]" should_add_python_3_7
          if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then
@@ -75,13 +73,12 @@ function do_install_for_macos {
 }
 
 function do_install_for_WSL {
-    # We currently only support Ubuntu distribution (v18.04) 
+    # Only Ubuntu distribution (v18.04) has been tested 
     # for WSL (Windows subsystem for Linux). 
     echo "Installing in WSL"
     
     local UBUNTU_VERSION=$(lsb_release -rs)
     if [[ $UBUNTU_VERSION == "18.04" ]]; then
-    
         echo "Installing sumo (used for traffic simulation and road network)"
         sudo add-apt-repository ppa:sumo/stable
         sudo apt-get update
@@ -91,9 +88,7 @@ function do_install_for_WSL {
             sumo sumo-tools sumo-doc \
             build-essential cmake
 
-        #only a problem for linux
         if ! check_python_version_gte_3_7; then
-
             echo "A >=3.7 python version not found"
             read -p "Install python3.7? [Yn]" should_add_python_3_7
             if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then

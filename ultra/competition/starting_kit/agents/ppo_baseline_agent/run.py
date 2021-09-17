@@ -20,13 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import argparse
-import os
-from typing import List
-
-import gym
-
 import agent as baseline_agent
+import argparse
+import gym
+import os
+
+from typing import List
 
 
 def run(

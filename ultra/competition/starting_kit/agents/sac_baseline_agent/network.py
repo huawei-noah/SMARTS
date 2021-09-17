@@ -21,10 +21,10 @@
 # THE SOFTWARE.
 
 import torch
+import torch.nn.functional as F
+
 from torch import nn
 from torch.distributions.normal import Normal
-import numpy as np
-import torch.nn.functional as F
 
 
 class SACNetwork(nn.Module):

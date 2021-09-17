@@ -20,12 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import agent as baseline_agent
 import argparse
-from typing import List
-
 import gym
 
-import agent as baseline_agent
+from typing import List
 
 
 def run(scenarios: List[str], episodes: int, headless: bool, seed: int = 1):

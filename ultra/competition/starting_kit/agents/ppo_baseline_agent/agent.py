@@ -20,21 +20,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# some parts of this implementation is inspired by https://github.com/Khrylx/PyTorch-RL
-import os
-import pathlib
-from smarts.core.controllers import ActionSpaceType
+# Parts of this implementation are inspired by https://github.com/Khrylx/PyTorch-RL
 
-import torch
 import numpy as np
-
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
+import pathlib
+import torch
 import ultra.adapters as adapters
-from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
 
 from network import PPONetwork
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
+from smarts.core.controllers import ActionSpaceType
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
 
 
 class PPOPolicy(Agent):

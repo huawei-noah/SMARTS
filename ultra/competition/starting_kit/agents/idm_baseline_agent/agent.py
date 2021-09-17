@@ -24,15 +24,15 @@
 # https://en.wikipedia.org/wiki/Intelligent_driver_model for more details.
 
 import math
-from typing import Sequence, Tuple
-
 import numpy as np
+import ultra.adapters as adapters
+
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
 from smarts.core.controllers import ActionSpaceType
-import ultra.adapters as adapters
+from typing import Sequence, Tuple
 
-TIMESTEP_SEC = 0.1  # The environment timestep.
+TIMESTEP_SEC = 0.1  # Environment timestep.
 VEHICLE_LENGTH = 3.6
 MAX_EPISODE_STEPS = 500
 

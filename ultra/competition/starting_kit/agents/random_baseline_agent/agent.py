@@ -20,9 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from typing import Dict
-
 import numpy as np
+import ultra.adapters as adapters
+
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import (
     AgentInterface,
@@ -32,7 +32,7 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.sensors import Observation
-import ultra.adapters as adapters
+from typing import Dict
 
 
 class RandomAgent(Agent):

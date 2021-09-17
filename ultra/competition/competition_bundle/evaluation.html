@@ -1,62 +1,36 @@
 <h2>Evaluation</h2>
 
-<!--Taken from https://stackoverflow.com/questions/12431339/how-to-write-equations-in-html-->
 <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
 
 <p>
-    Evaluation of your submission will be performed exactly the same as outlined in this
+    Evaluation of your submission will be performed in the same manner as outlined in this
     competition's starting kit. However, the scenarios that are used for evaluation will
     be different.
 </p>
 
 <p>
     Evaluation will run your agent in multiple scenarios to evaluate its performance.
-    The type of scenarios that are used will depend on which track your agent has been
-    submitted to.
+    The type of scenarios that are used will depend on your submission track.
 </p>
 <ul>
-<li>
-    Track 1 will consist of left-turn scenarios with no traffic.
-</li>
-<li>
-    Track 2 will consist of left-turn scenarios with varying degrees and types of
-    traffic.
-</li>
+<li>Track 1 will consist of left-turn scenarios with no traffic.</li>
+<li>Track 2 will consist of left-turn scenarios with varying degrees and types of traffic.</li>
 </ul>
 
 <p>
-    During evaluation, multiple metrics will be logged that can then be
-    displayed on the leaderboard alongside your submission.
+    During evaluation, multiple metrics are logged and displayed on the leaderboard 
+    alongside your submission.
 </p>
 <ul>
-<li>Score: The average score your agent achieved</li>
-<li>Reached Goal: The proportion of evaluation scenarios completed</li>
-<li>
-    Collision: The proportion of evaluation scenarios that ended because of a collision
-</li>
-<li>
-    Off Road: The proportion of evaluation scenarios that ended because the agent went
-    off road
-</li>
-<li>
-    Off Route: The proportion of evaluation scenarios that ended because the agent went
-    off route
-</li>
-<li>
-    Wrong Way: The proportion of evaluation scenarios that ended because the agent went
-    the wrong way
-</li>
-<li>
-    Timed Out: The proportion of evaluation scenarios that ended because the agent timed
-    out
-</li>
-<li>
-    Speed Violation: The proportion of scenarios that the agent went greater than 10%
-    over the speed limit.
-</li>
-<li>
-    Episode Length: The average number of timesteps the agent lasted
-</li>
+<li>Score: Average score of your agent</li>
+<li>Reached Goal: Proportion of evaluation scenarios completed</li>
+<li>Collision: Proportion of evaluation scenarios that ended because of a collision</li>
+<li>Off Road: Proportion of evaluation scenarios that ended because the agent went off road</li>
+<li>Off Route: Proportion of evaluation scenarios that ended because the agent went off route</li>
+<li>Wrong Way: Proportion of evaluation scenarios that ended because the agent went the wrong way</li>
+<li>Timed Out: Proportion of evaluation scenarios that ended because the agent timed out</li>
+<li>Speed Violation: Proportion of scenarios where the agent exceeded the speed limit by more than 10%</li>
+<li>Episode Length: Average episode length in terms of timesteps</li>
 </ul>
 
 <p>
@@ -71,7 +45,7 @@ $$ {\text{score}=\big(\text{reached_goal == 1.0}\big)\times\big(\text{speed_viol
 <p>
     The score for the evaluation scenario will be 0 if the agent fails to reach the goal
     (an agent fails to reach the goal if they collide, go off road, go off route, go the
-    wrong way, or time out), or if they have gone more than 10% over the speed limit.
+    wrong way, or time out), or if they have exceeded the speed limit by more than 10%.
     Otherwise, the score will be inversely proportional to the number of steps the agent
     took to complete the evaluation scenario ("steps"). The score will be scaled by
     "EXPECTED_STEPS", which is the average number of steps it takes a SUMO controlled
