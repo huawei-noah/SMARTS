@@ -19,7 +19,7 @@ $ docker run --rm -it --network=host -v ${PWD}:/starting_kit starting_kit:latest
 $ cd /starting_kit
 ```
 
-### Run a quick example
+## Run a quick example
 Try running a quick example.
 
 ```bash
@@ -241,8 +241,6 @@ agent_spec = AgentSpec(
 ### Specify scenarios
 Scenarios can be defined through a `config.yaml` file.
 
-The `config.yaml` has a specific format that is used to define multiple aspects about the scenarios it creates.
-
 ```yaml
 levels:
   <level-name>:
@@ -275,65 +273,61 @@ levels:
   ...
 ```
 
-The `config.yaml` consists of multiple levels. Each level is given a name, `<level-name>`, and has training and testing scenarios.
+The `config.yaml` consists of multiple levels. Each level is given a name `<level-name>`, and has training and testing scenarios. Both training and testing scenarios require a `<total>` number of scenarios to be generated.
 
-Both training and testing scenarios require a `<total>` number of scenarios to be generated.
-
-Additionally, you can specify a mission for your ego agent. This is done by setting a `<start-lane>` and an `<end-lane>` under `ego_missions`. The intersections that are provided allow for multiple values for these two attributes. For t-intersections, the available values for these attributes are `south-SN`, `south-NS`, `west-EW`, `west-WE`, `east-EW`, and `east-WE`. The same values exist for cross-intersections in addition to `north-NS` and `north-SN`. These names, although at first confusing, can be easily interpreted. For example, `south-SN` means "start on the South (`south`) road, and move from South to North (`SN`)". Some combinations of `<start-lane>` and `<end-lane>` are unsupported. However, the combination of `south-SN` for the `<start-lane>` and `<west-EW>` will always work on all intersections. For evaluation, your agent will only be tested on South to West left-turns and East to South left-turns.
+Additionally, you can specify a mission for your ego agent. This is done by setting a `<start-lane>` and an `<end-lane>` under `ego_missions`. For t-intersections, the available values for these attributes are `south-SN`, `south-NS`, `west-EW`, `west-WE`, `east-EW`, and `east-WE`. The same values are applicable for cross-intersections in addition to `north-NS` and `north-SN`. These names are interpreted as follows. For example, `south-SN` means "start on the South (`south`) road, and move from South to North (`SN`)". Some combinations of `<start-lane>` and `<end-lane>` are unsupported. However, the combination of `south-SN` for the `<start-lane>` and `<west-EW>` will always work on all intersections. For evaluation, your agent will only be tested on South to West left-turns and East to South left-turns.
 
 Finally, the actual intersections can be specified. Values for the `<intersection-type>` attribute include all directory names under the `scenarios/pool/` directory. For example, `2lane_c` and `4lane_t`.
 
-For each intersection type, the percentage of the scenarios with that intersection type can be specified with the `<percentage>` attribute. This number is an element of the interval [0.0, 1.0] and specifies the proportion of scenarios that will have the given intersection type.
+For each intersection type, the percentage of scenarios with that intersection type can be specified with the `<percentage>` attribute. This is a float in [0.0, 1.0] and specifies the proportion of scenarios that will have the given intersection type.
 
-The `<specs>` attribute is a list of lists that describe the road speed, traffic density, and proportion of scenarios with this intersection type that have this speciifc road speed and traffic density. For example, a valid value for `<specs>` would be `[[50kmh,no-traffic,0.33],[70kmh,mid-density,0.33],[100kmh,high-density,0.34]]`. This indicates that 33% of the scenarios with this intersection type, are on 50 km/h roads with no traffic, 33% are on 70 km/h roads with medium-density traffic, and 34% of the scenarios with this intersection type are on 100 km/h roads with high-density traffic. The available values for the road speed are `50kmh`, `70kmh`, and `100kmh`. And the available values for the traffic density are `no-traffic`, `low-density`, `mid-density`, `high-density`, `low-interaction`, `mid-interaction`, and `high-interaction`. The "`-interaction`" distributions are meant for the agent to experience interaction in the intersection, and only in the intersection. They use a more limited number of social vehicles, and their are no social vehicles in the default ego mission route.
+The `<specs>` attribute is a list of lists that describe the road speed, traffic density, and proportion of scenarios with this intersection type that have this specific road speed and traffic density. For example, a valid value for `<specs>` would be `[[50kmh,no-traffic,0.33],[70kmh,mid-density,0.33],[100kmh,high-density,0.34]]`. This indicates that 33% of the scenarios with this intersection type, are on 50 km/h roads with no traffic, 33% are on 70 km/h roads with medium-density traffic, and 34% of the scenarios with this intersection type are on 100 km/h roads with high-density traffic. The available values for the road speed are `50kmh`, `70kmh`, and `100kmh`. And the available values for the traffic density are `no-traffic`, `low-density`, `mid-density`, `high-density`, `low-interaction`, `mid-interaction`, and `high-interaction`. The "`-interaction`" distributions are meant for the agent to experience interaction in the intersection, and only in the intersection. They use a limited number of social vehicles, and there are no social vehicles in the default ego mission route.
 
 The `stop` and `bubbles` are higher-level features that allow you to specify stopped vehicles and utilize zoo agents in your scenario, respectively. We imagine that these will not necessarily be needed for the competition, however, ways to implement them can be found in the main ULTRA code in the [SMARTS repository](https://github.com/huawei-noah/SMARTS).
 
-A level can have multiple intersection types, and a `config.yaml` can have multiple levels. You can find an example of a task's `config.yaml` under `scenarios/example_scenarios/`.
+A level can have multiple intersection types. You can find an example of a task's `config.yaml` under `scenarios/example_scenarios/`.
 
-### Building Scenarios
-First, ensure that the maps used to create the scenarios are built. This step only has to be done once, and only again if the maps change.
+### Building scenarios
+First, build the maps used in the scenarios. This step has to be done only once at the beginning, and whenever the maps change.
 
 ```bash
 $ scl scenario build-all scenarios/pool/
 ```
 
-Once your task's `config.yaml` is created, you can build your scenarios with the provided `scenarios/build_scenarios.py`. Using this script allows you to build scenarios quickly and easily.
-
-Say, for example, we have a `config.yaml` describing scenarios for a level called "`my_level`". We can create a new directory to hold our (to-be-created) scenarios and our task's `config.yaml`:
-
-```bash
-$ mkdir scenarios/my_task/
-$ mv config.yaml scenarios/my_task/
+Assume we have a task called `my_task`, for which a `config.yaml` is available with a level name "`my_level`". Create a new directory structure as follows:
+```
+scenarios
+└── my_task
+    └── config.yaml
 ```
 
-Next, we can run the `build_scenarios.py` script which will read our `config.yaml` and create the `my_level` scenarios:
+Next, run the `scenarios/build_scenarios.py` script which will read our `config.yaml` and create the `my_level` scenarios:
 
 ```bash
 $ python scenarios/build_scenarios.py --task my_task --level my_level --save-dir scenarios/my_task/ --root-dir scenarios/ --pool-dir scenarios/pool/
 ```
 
-After this command is run, you should see scenarios for your `my_level` under `scenarios/my_task/`.
+Now, you should see scenarios for your `my_level` under `scenarios/my_task/`.
 
 The arguments for `build_scenarios.py` are as follows:
-- `--task`: The name of the task to build. It should match a directory name under the specified `--root-dir` argument.
-- `--level`: The level to build from the task's `config.yaml`.
-- `--save-dir`: The directory in which to save the created scenarios.
-- `--root-dir`: The directory containing the task's folder.
-- `--pool-dir`: Where the maps used to build the scenarios can be found.
+- `--task`: Name of the task to build. It should match a directory name under the specified `--root-dir` argument.
+- `--level`: Level to build from the task's `config.yaml`.
+- `--save-dir`: Directory in which to save the created scenarios.
+- `--root-dir`: Directory containing the task's folder.
+- `--pool-dir`: Location of the maps used to build the scenarios.
 
-## Submitting an Agent for Evaluation
+## Submitting an agent for evaluation
 1. Ensure you have an `agent.py` file and an `agent_spec` variable in that file
 
-   Your agent submission should contain at least one file called `agent.py`. In this file should be a variable called `agent_spec` that references a `smarts.core.agent.AgentSpec` instance. The `agent_spec` defines how your agent will be built.
+   Your agent submission should contain at least one file called `agent.py`. This file should contain a variable called `agent_spec` that references a `smarts.core.agent.AgentSpec` instance. The `agent_spec` defines how your agent will be built.
 
-2. If it is one of the baselines (or similar), ensure that the agent has access to your desired checkpoint.
+1. If the agent is built upon a baseline, ensure that the agent has access to your desired checkpoint.
 
    If you are using a reinforcement learning baseline agent (or an agent which takes a checkpoint directory as an argument to load from), ensure that this checkpoint directory is specified in the `AgentSpec`. For example, the SAC baseline `Agent` takes a `checkpoint_dir` argument that can be specified through its `agent_spec`'s `policy_params`. Ensure that this `policy_params` specifies the `checkpoint_dir` argument to be the directory in which your desired neural network weights are saved.
 
-3. Ensure your agent works with the provided evaluation script
+1. Ensure your agent works with the provided evaluation script
 
-   This starting kit comes provided with an `evaluation` directory containing an `evaluate.py` script that can be used to verify that your agent will work with the evaluation that CodaLab will do on your submission.
+   This starting kit comes with an `evaluation` directory containing an `evaluate.py` script that can be used to verify that your agent will work with the evaluation that CodaLab will do on your submission.
 
    The `evaluate.py` script takes the following arguments:
    - `--submission-dir`: The directory of your `agent.py` file and other files needed for your submission.
@@ -346,14 +340,14 @@ The arguments for `build_scenarios.py` are as follows:
    ```bash
    $ python evaluation/evaluate.py local --submission-dir agents/my_agent/ --evaluation-scenarios-dir scenarios/example_scenarios/ --scores-dir ./my_scores/
    ```
-   > This will evalute the agent in the `my_agent` directory on the scenarios in the `scenarios/example_scenarios/` directory, and output evaluation metrics in a `scores.txt` file that will by saved in the `my_scores/` directory.
+   > This will evaluate the agent in the `my_agent` directory on the scenarios in the `scenarios/example_scenarios/` directory, and output evaluation metrics in a `scores.txt` file that will by saved in the `my_scores/` directory.
 
-4. Zip up the `agent.py` and all other files your agent needs in order to run
+1. Zip up the `agent.py` and all other files your agent needs.
 
    ```bash
    $ cd agents/my_agent/
    $ zip my_agent.zip *
    ```
-   > You can verify that the submission was zipped properly by unzipping your compressed submission. You should see all the files and directories you zipped when you uncompress `my_agent.zip`, that is, make sure extra directories are not created within the zip.
+   > Ensure there is no extra directories created within the zip. Uncompressing `my_agent.zip` should only yield the files and directories you zipped.
 
-5. Go to the competition page on CodaLab and upload your zipped agent submission
+1. Go to the competition page on CodaLab and upload your zipped agent submission
