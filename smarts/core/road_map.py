@@ -221,6 +221,13 @@ class RoadMap:
         def width_at_offset(self, offset: float) -> float:
             raise NotImplementedError()
 
+        def project_along(
+            self, start_offset: float, distance: float
+        ) -> Set[Tuple[RoadMap.Lane, float]]:
+            """Starting at start_offset along the lane, project locations (lane, offset tuples)
+            reachable within distance, not including lane changes."""
+            raise NotImplementedError()
+
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             raise NotImplementedError()
 
@@ -390,10 +397,9 @@ class RoadMap:
 
 @dataclass(frozen=True)
 class Waypoint:
-    """Dynamic, based on map and vehicle.  Waypoints
-    start abreast of a vehicle's present location in the nearest Lane
-    and are then interpolated such that they're evenly spaced.
-    These are returned through a vehicle's sensors."""
+    """Dynamic, based on map and vehicle.  Waypoints start abreast of
+    (or near) a vehicle's present location in the nearest Lane and
+    are evenly spaced.  These are returned through a vehicle's sensors."""
 
     # XXX: consider renaming lane_id, lane_index, lane_width
     #      to nearest_lane_id, nearest_lane_index, nearest_lane_width

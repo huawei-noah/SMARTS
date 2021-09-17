@@ -110,3 +110,11 @@ def test_sumo_map(scenario):
     cands = route.project_along(point, 134.01)
     for r2lane in r2.lanes:
         assert (r2lane, 53.6) in cands
+
+    cands = left_lane.project_along(offset, 134.01)
+    assert len(cands) == 2
+    for r2lane in r2.lanes:
+        if r2lane.index == 1:
+            assert any(
+                r2lane == cand[0] and math.isclose(cand[1], 53.6) for cand in cands
+            )

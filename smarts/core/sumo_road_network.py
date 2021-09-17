@@ -388,6 +388,33 @@ class SumoRoadNetwork(RoadMap):
             return self._width
 
         @lru_cache(maxsize=8)
+        def project_along(
+            self, start_offset: float, distance: float
+        ) -> Set[Tuple[RoadMap.Lane, float]]:
+            lookahead = int(np.ceil(distance / self._map._lanepoints.spacing)) + 1
+            result = set()
+            for path in self.waypoint_paths_at_offset(start_offset, lookahead):
+                # can't just look at the final waypoint here since
+                # wp spacing isn't always equal/exact across junctions
+                # nor can we just sum up distances between waypoints.
+                dist = 0
+                prev_offset = start_offset
+                prev_lane = self
+                for wp in path:
+                    wp_lane = self._map.lane_by_id(wp.lane_id)
+                    if wp_lane != prev_lane:
+                        ll = prev_lane.length - prev_offset
+                        if dist + ll >= distance:
+                            wp_lane = prev_lane
+                            break
+                        dist += ll
+                        prev_offset = 0
+                        prev_lane = wp_lane
+                left = distance - dist
+                result.add((wp_lane, left))
+            return result
+
+        @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             shape = self._sumo_lane.getShape(False)
             x, y = sumolib.geomhelper.positionAtShapeOffset(shape, lane_point.s)
