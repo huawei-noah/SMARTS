@@ -59,6 +59,7 @@ setup(
         "test": [
             # The following are for testing
             "ipykernel",
+            "jupyter-client==6.1.12",
             "pytest",
             "pytest-benchmark",
             "pytest-cov",
