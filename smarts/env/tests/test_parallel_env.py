@@ -108,6 +108,17 @@ def test_non_callable_env_constructors(env_constructor):
         env.close()
 
 
+def _get_batched_actions(agents, batched_observations):
+    batched_actions = []
+    for observations in batched_observations:
+        actions = {
+            agent_id: agents[agent_id].act(agent_obs)
+            for agent_id, agent_obs in observations.items()
+        }
+        batched_actions.append(actions)
+    return batched_actions
+
+
 @pytest.mark.parametrize("num_env", [1, 2])
 @pytest.mark.parametrize("auto_reset", [True, False])
 def test_step_parallel_env(env_constructor, num_env, auto_reset, agent_specs, agents):
@@ -121,13 +132,7 @@ def test_step_parallel_env(env_constructor, num_env, auto_reset, agent_specs, ag
             assert observations.keys() == agent_specs.keys()
 
         # Compute batched actions
-        batched_actions = []
-        for observations in batched_observations:
-            actions = {
-                agent_id: agents[agent_id].act(agent_obs)
-                for agent_id, agent_obs in observations.items()
-            }
-            batched_actions.append(actions)
+        batched_actions = _get_batched_actions(agents, batched_observations)
 
         # Verify batched output of environment step
         batched_observations, batched_rewards, batched_dones, batched_infos = env.step(
@@ -157,41 +162,30 @@ def test_step_parallel_env(env_constructor, num_env, auto_reset, agent_specs, ag
 
 @pytest.mark.parametrize("auto_reset", [True, False])
 def test_sync_async_episodes(env_constructor, agents, auto_reset):
-    # Compute batched actions
-    def get_batched_actions(batched_observations):
-        batched_actions = []
-        for observations in batched_observations:
-            actions = {
-                agent_id: agents[agent_id].act(agent_obs)
-                for agent_id, agent_obs in observations.items()
-            }
-            batched_actions.append(actions)
-        return batched_actions
-
     env_constructors = [env_constructor] * 2
     env = ParallelEnv(env_constructors=env_constructors, auto_reset=auto_reset)
     try:
         # Step 1
         batched_observations = env.reset()
-        batched_actions = get_batched_actions(batched_observations)
+        batched_actions = _get_batched_actions(agents, batched_observations)
         # Step 2
         batched_observations, _, batched_dones, _ = env.step(batched_actions)
-        batched_actions = get_batched_actions(batched_observations)
+        batched_actions = _get_batched_actions(agents, batched_observations)
         assert all(dones["__all__"] == False for dones in batched_dones)
         # Step 3
         batched_observations, _, batched_dones, _ = env.step(batched_actions)
-        batched_actions = get_batched_actions(batched_observations)
+        batched_actions = _get_batched_actions(agents, batched_observations)
         assert all(dones["__all__"] == True for dones in batched_dones)
         # Step 4
         batched_observations, _, batched_dones, _ = env.step(batched_actions)
-        batched_actions = get_batched_actions(batched_observations)
+        batched_actions = _get_batched_actions(agents, batched_observations)
         if auto_reset:
             assert all(dones["__all__"] == False for dones in batched_dones)
         else:
             assert all(dones["__all__"] == True for dones in batched_dones)
         # Step 5
         batched_observations, _, batched_dones, _ = env.step(batched_actions)
-        batched_actions = get_batched_actions(batched_observations)
+        batched_actions = _get_batched_actions(agents, batched_observations)
         assert all(dones["__all__"] == True for dones in batched_dones)
     finally:
         env.close()

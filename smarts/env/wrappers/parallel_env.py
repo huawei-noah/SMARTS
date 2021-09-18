@@ -24,6 +24,7 @@ import gym
 import multiprocessing as mp
 import numpy as np
 import sys
+import warnings
 
 from gym.vector.async_vector_env import AsyncState, AsyncVectorEnv
 from gym.error import (
@@ -45,8 +46,8 @@ class ParallelEnv(AsyncVectorEnv):
     using `multiprocessing` processes, and pipes for communication.
 
     Note:
-        Number of environments should not exceed the number of available CPU
-        logical cores.
+        Simulation might slow down when number of parallel environments
+        requested exceed number of available CPU logical cores.
     """
 
     def __init__(
@@ -69,10 +70,18 @@ class ParallelEnv(AsyncVectorEnv):
             TypeError: If any environment constructor is not callable.
         """
 
+        if len(env_constructors) > mp.cpu_count():
+            warnings.warn(
+                f"Simulation might slow down, since the requested number of parallel "
+                f"environments ({len(env_constructors)}) exceed the number of available "
+                f"CPU cores ({mp.cpu_count()}).",
+                ResourceWarning,
+            )
+
         if any([not callable(ctor) for ctor in env_constructors]):
             raise TypeError(
-                "Found non-callable `env_constructors`. Expected `env_constructors` of type `Sequence[Callable[[], gym.Env]]`,"
-                "but got {}".format(env_constructors)
+                f"Found non-callable `env_constructors`. Expected `env_constructors` of type "
+                f"`Sequence[Callable[[], gym.Env]]`, but got {env_constructors})."
             )
 
         # Worker polling period in seconds.
@@ -180,7 +189,7 @@ class ParallelEnv(AsyncVectorEnv):
             mp.TimeoutError: If response is not received from pipe within `timeout` seconds.
 
         Returns:
-            Sequence[Dict[str, Any]]: A batch of observations from the vetorized environment.
+            Sequence[Dict[str, Any]]: A batch of observations from the vectorized environment.
         """
 
         self._assert_is_running()
@@ -266,7 +275,7 @@ class ParallelEnv(AsyncVectorEnv):
         ):
             raise RuntimeError(
                 f"Expected all environments to have the same observation and action"
-                f"spaces but got {spaces}."
+                f"spaces, but got {spaces}."
             )
 
         return observation_space, action_space

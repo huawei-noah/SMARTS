@@ -39,16 +39,17 @@ def main(
     sim_name: str,
     headless: bool,
     seed: int,
-    n_agents: int,
+    num_agents: int,
+    num_stack: int,
     num_env: int,
     auto_reset: bool,
     max_episode_steps: int = 128,
-    num_steps: int = 384,
-    num_episodes: int = 3,
+    num_steps: int = 1280,
+    num_episodes: int = 10,
 ):
 
     # Agents' name
-    agent_ids = [f"Agent_{i}" for i in range(n_agents)]
+    agent_ids = [f"Agent_{i}" for i in range(num_agents)]
 
     # Define agent specification
     agent_specs = {
@@ -68,7 +69,7 @@ def main(
     # wrapped with a FrameStack wrapper which returns stacked observations for each environment.
     env_frame_stack = lambda env: FrameStack(
         env=env,
-        num_stack=2,
+        num_stack=num_stack,
     )
     env_constructor = lambda sim_name: env_frame_stack(
         HiWayEnv(
@@ -222,6 +223,36 @@ def parallel_env_sync(
 
 if __name__ == "__main__":
     parser = default_argument_parser("parallel-environment-example")
+    parser.add_argument(
+        "--num-agents",
+        default=2,
+        type=int,
+        help="Number of ego agents to simulate in each environment.",
+    )
+    parser.add_argument(
+        "--num-stack",
+        default=2,
+        type=int,
+        help="Number of consecutive frames to stack in each environment's observation.",
+    )
+    parser.add_argument(
+        "--num-env",
+        default=2,
+        type=int,
+        help="Number of parallel environments to simulate.",
+    )
+    parser.add_argument(
+        "--max-episode-steps",
+        default=128,
+        type=int,
+        help="Maximum number of steps per episode.",
+    )
+    parser.add_argument(
+        "--num-steps",
+        default=1280,
+        type=int,
+        help="Total number of steps to simulate per environment in parallel asynchronous simulation.",
+    )
     args = parser.parse_args()
 
     print("\nParallel environments with asynchronous episodes.\n")
@@ -230,11 +261,12 @@ if __name__ == "__main__":
         sim_name=args.sim_name,
         headless=args.headless,
         seed=args.seed,
-        n_agents=2,
-        num_env=2,
+        num_agents=args.num_agents,
+        num_stack=args.num_stack,
+        num_env=args.num_env,
         auto_reset=True,
-        max_episode_steps=128,
-        num_steps=384,
+        max_episode_steps=args.max_episode_steps,
+        num_steps=args.num_steps,
     )
 
     print("\nParallel environments with synchronous episodes.\n")
@@ -243,9 +275,10 @@ if __name__ == "__main__":
         sim_name=args.sim_name,
         headless=args.headless,
         seed=args.seed,
-        n_agents=2,
-        num_env=2,
+        num_agents=args.num_agents,
+        num_stack=args.num_stack,
+        num_env=args.num_env,
         auto_reset=False,
-        max_episode_steps=128,
-        num_episodes=3,
+        max_episode_steps=args.max_episode_steps,
+        num_episodes=args.episodes,
     )
