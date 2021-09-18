@@ -78,7 +78,7 @@ setup(
         ],
         "dev": [
             "black==20.8b1",
-            "grpcio-tools==1.37.0",
+            "grpcio-tools==1.32.0",
             "isort==5.7.0",
             "sphinx",
             "sphinx-rtd-theme",
