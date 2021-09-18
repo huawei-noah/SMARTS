@@ -321,11 +321,11 @@ The arguments for `build_scenarios.py` are as follows:
 
    Your agent submission should contain at least one file called `agent.py`. This file should contain a variable called `agent_spec` that references a `smarts.core.agent.AgentSpec` instance. The `agent_spec` defines how your agent will be built.
 
-1. If the agent is built upon a baseline, ensure that the agent has access to your desired checkpoint.
+2. If the agent is built upon a baseline, ensure that the agent has access to your desired checkpoint.
 
    If you are using a reinforcement learning baseline agent (or an agent which takes a checkpoint directory as an argument to load from), ensure that this checkpoint directory is specified in the `AgentSpec`. For example, the SAC baseline `Agent` takes a `checkpoint_dir` argument that can be specified through its `agent_spec`'s `policy_params`. Ensure that this `policy_params` specifies the `checkpoint_dir` argument to be the directory in which your desired neural network weights are saved.
 
-1. Ensure your agent works with the provided evaluation script.
+3. Ensure your agent works with the provided evaluation script.
 
    This starting kit comes with an `evaluation/evaluate.py` script which can be used to verify whether your agent complies with CodaLab evaluation requirements.
 
@@ -340,7 +340,7 @@ The arguments for `build_scenarios.py` are as follows:
    ```
    > This evalutes the agent in `my_agent` directory on the scenarios in the `scenarios/example_scenarios/` directory, and outputs evaluation metrics in a `scores.txt` file which is saved in the `my_scores/` directory.
 
-1. Zip the `agent.py` and all other files your agent needs.
+4. Zip the `agent.py` and all other files your agent needs.
 
    ```bash
    $ cd agents/my_agent/
@@ -348,4 +348,4 @@ The arguments for `build_scenarios.py` are as follows:
    ```
    > Ensure there is no extra directories created within the zip. Uncompressing `my_agent.zip` should only yield the files and directories you zipped.
 
-1. Go to the competition page on CodaLab and upload your zipped agent code.
+5. Go to the competition page on CodaLab and upload your zipped agent code.
