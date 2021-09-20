@@ -4,7 +4,7 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
 
     <input>
-        <net-file value="scenarios/intersections/4lane_t/map.net.xml"/>
+        <net-file value="scenarios/intersections/2lane_t/map.net.xml"/>
         <route-files value="/tmp/tmp6925s2db/trips.trips.xml"/>
     </input>
 
@@ -19,7 +19,7 @@
     </processing>
 
     <report>
-        <error-log value="/home/saul/.smarts/_duarouter_routing/traffic/generated.log"/>
+        <error-log value="/tmp/smarts/_duarouter_routing/traffic/generated.log"/>
         <no-step-log value="true"/>
     </report>
 
