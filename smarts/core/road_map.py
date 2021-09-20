@@ -370,7 +370,7 @@ class RoadMap:
     class Route:
         @property
         def roads(self) -> List[RoadMap.Road]:
-            """An (unordered) list of roads that this route covers"""
+            """A possibly-unordered list of roads that this route covers"""
             return []
 
         @property
