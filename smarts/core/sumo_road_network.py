@@ -285,7 +285,9 @@ class SumoRoadNetwork(RoadMap):
         @cached_property
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
             return [
-                self._map.lane_by_id(outgoing.getToLane().getID())
+                self._map.lane_by_id(
+                    outgoing.getViaLaneID() or outgoing.getToLane().getID()
+                )
                 for outgoing in self._sumo_lane.getOutgoing()
             ]
 
@@ -393,25 +395,22 @@ class SumoRoadNetwork(RoadMap):
         ) -> Set[Tuple[RoadMap.Lane, float]]:
             lookahead = int(np.ceil(distance / self._map._lanepoints.spacing)) + 1
             result = set()
-            for path in self.waypoint_paths_at_offset(start_offset, lookahead):
-                # can't just look at the final waypoint here since
-                # wp spacing isn't always equal/exact across junctions
-                # nor can we just sum up distances between waypoints.
-                dist = 0
-                prev_offset = start_offset
-                prev_lane = self
-                for wp in path:
-                    wp_lane = self._map.lane_by_id(wp.lane_id)
-                    if wp_lane != prev_lane:
-                        ll = prev_lane.length - prev_offset
-                        if dist + ll >= distance:
-                            wp_lane = prev_lane
-                            break
-                        dist += ll
-                        prev_offset = 0
-                        prev_lane = wp_lane
-                left = distance - dist
-                result.add((wp_lane, left))
+            path_stack = {(self, self.length - start_offset)}
+            for lane in self.lanes_in_same_direction:
+                path_stack.add((lane, lane.length - start_offset))
+            while len(path_stack):
+                new_stack = set()
+                for lane, dist in path_stack:
+                    if dist > distance:
+                        offset = lane.length + (distance - dist)
+                        result.add((lane, offset))
+                        continue
+                    for out_lane in lane.outgoing_lanes:
+                        # TODO:  junction laned not in outgoing_lanes?
+                        new_stack.add((out_lane, dist + out_lane.length))
+                        for adj_lane in out_lane.lanes_in_same_direction:
+                            new_stack.add((adj_lane, dist + adj_lane.length))
+                path_stack = new_stack
             return result
 
         @lru_cache(maxsize=8)
