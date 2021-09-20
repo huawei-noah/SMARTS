@@ -406,7 +406,6 @@ class SumoRoadNetwork(RoadMap):
                         result.add((lane, offset))
                         continue
                     for out_lane in lane.outgoing_lanes:
-                        # TODO:  junction laned not in outgoing_lanes?
                         new_stack.add((out_lane, dist + out_lane.length))
                         for adj_lane in out_lane.lanes_in_same_direction:
                             new_stack.add((adj_lane, dist + adj_lane.length))
@@ -794,31 +793,46 @@ class SumoRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def distance_between(self, start: Point, end: Point) -> float:
-            route_roads = set(self._roads)
             for cand_start_lane, _ in self._map.nearest_lanes(start, 30.0, False):
-                if cand_start_lane.road in route_roads:
+                try:
+                    sind = self._roads.index(cand_start_lane.road)
                     break
+                except ValueError:
+                    pass
             else:
                 logging.warning("unable to find road on route near start point")
                 return None
             start_road = cand_start_lane.road
             for cand_end_lane, _ in self._map.nearest_lanes(end, 30.0, False):
-                if cand_end_lane.road in route_roads:
+                try:
+                    eind = self._roads.index(cand_end_lane.road)
                     break
+                except ValueError:
+                    pass
             else:
                 logging.warning("unable to find road on route near end point")
                 return None
             end_road = cand_end_lane.road
             d = 0
+            start_offset = cand_start_lane.offset_along_lane(start)
+            end_offset = cand_end_lane.offset_along_lane(end)
+            if start_road == end_road:
+                return end_offset - start_offset
+            negate = False
+            if sind > eind:
+                cand_start_lane = cand_end_lane
+                start_road, end_road = end_road, start_road
+                start_offset, end_offset = end_offset, start_offset
+                negate = True
             for road in self._roads:
                 if d == 0 and road == start_road:
-                    start_offset = cand_start_lane.offset_along_lane(start)
                     d += cand_start_lane.length - start_offset
                 elif road == end_road:
-                    d += cand_end_lane.offset_along_lane(end)
+                    d += end_offset
+                    break
                 elif d > 0:
                     d += road.length
-            return d
+            return -d if negate else d
 
         @lru_cache(maxsize=8)
         def project_along(
