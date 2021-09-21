@@ -24,7 +24,7 @@ jobs:
           black --check .
           npx prettier --check envision/web/src
 
-  test-requirements:
+  test-requirements-linux:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
@@ -35,3 +35,4 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           . ./utils/setup/test_pip_packages.sh
+
