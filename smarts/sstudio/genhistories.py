@@ -30,7 +30,6 @@ import ijson
 import numpy as np
 import pandas as pd
 import yaml
-import traceback
 from numpy.lib.stride_tricks import as_strided as stride
 from typing import Dict, Generator, Union
 
