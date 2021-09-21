@@ -41,7 +41,7 @@ gast==0.3.3
 gitdb==4.0.7
 GitPython==3.1.24
 google==3.0.0
-google-api-core==1.31.2
+google-api-core==1.31.3
 google-auth==1.35.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
@@ -106,7 +106,7 @@ Pillow==8.2.0
 pluggy==1.0.0
 prometheus-client==0.11.0
 prompt-toolkit==3.0.20
-protobuf==3.18.0
+protobuf==3.17.3
 psutil==5.8.0
 ptyprocess==0.7.0
 py==1.10.0
