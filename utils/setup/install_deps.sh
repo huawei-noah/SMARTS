@@ -27,12 +27,9 @@ function set_SUMO_HOME {
 
 function do_install_for_linux {
     echo "Installing sumo (used for traffic simulation and road network)"
-     if  [[ $1 = "-y" ]]; then
-         confirm_yes="--yes"
-    fi
-    sudo add-apt-repository ${confirm_yes} ppa:sumo/stable
+    sudo add-apt-repository "$1" ppa:sumo/stable
     sudo apt-get update
-    sudo apt-get install ${confirm_yes}\
+    sudo apt-get install "$1"\
          libspatialindex-dev \
          sumo sumo-tools sumo-doc \
          build-essential cmake
@@ -40,7 +37,7 @@ function do_install_for_linux {
     #only a problem for linux
     if ! check_python_version_gte_3_7; then
          echo "A >=3.7 python version not found"
-         if  [[ $1 = "-y" ]]; then
+         if  [[ "$1" = "-y" ]]; then
               install_python_3_7
          else
               read -p "Install python3.7? [Yn]" should_add_python_3_7
@@ -79,7 +76,7 @@ function do_install_for_macos {
     echo ""
     echo "-- dependencies have been installed --"
     echo ""
-    if  [[ $1 = "-y" ]]; then
+    if  [[ "$1" = "-y" ]]; then
          set_SUMO_HOME
     else
          read -p "Add SUMO_HOME to ~/.bash_profile? [Yn]" should_add_SUMO_HOME
