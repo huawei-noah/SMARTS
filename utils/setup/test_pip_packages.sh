@@ -5,7 +5,7 @@ python3.7 -m venv ${venv_dir}
 . ${venv_dir}/bin/activate
 pip install --upgrade pip
 
-# Install minimum packages
+# Install packages
 pip install .[test,train,camera-obs]
 
 # Compare with requirements.txt
