@@ -143,6 +143,8 @@ def build_all_scenarios(clean, allow_offset_maps, scenarios):
         path = Path(scenarios_path)
         for p in path.rglob("*.net.xml"):
             scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
+            if scenario == f"{scenarios_path}/waymo":
+                continue
             builder_thread = Thread(
                 target=_build_single_scenario, args=(clean, allow_offset_maps, scenario)
             )

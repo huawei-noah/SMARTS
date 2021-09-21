@@ -1,0 +1,95 @@
+name: SMARTS CI Mac
+
+on:
+  schedule:
+    - cron: '0 23 * * 1'
+      # Time is in UTC
+      # Runs at 11.00pm, UTC  , every Monday
+      # Runs at  7.00pm, UTC-4, every Monday
+  workflow_dispatch:
+
+env:
+  venv_dir: .venv
+
+jobs:
+  base-tests-mac:
+    runs-on: macos-11
+    strategy:
+      matrix:
+        tests:
+          - ./envision
+          - ./smarts/contrib
+          - ./tests
+          - ./smarts/sstudio
+          - ./smarts/env/tests/test_rllib_hiway_env.py
+          - ./smarts/core
+          - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: develop
+      - name: Setup Python
+        run: |
+          brew update
+          brew install python@3.7
+          brew unlink python@3.9
+          brew link --force --overwrite python@3.7
+      - name: Setup SUMO
+        run: |
+          brew install xquartz
+          brew tap dlr-ts/sumo
+          brew install sumo spatialindex
+          brew install geos
+      - name: Install dependencies
+        run: |
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip
+          pip install --upgrade wheel
+          pip install -r utils/setup/mac_requirements.txt
+          pip install -e .[train,test,camera-obs]
+      - name: Run smoke tests
+        run: |
+          . ${{env.venv_dir}}/bin/activate
+          export SUMO_HOME="/usr/local/opt/sumo/share/sumo"
+          open -g -a XQuartz.app
+          make build-all-scenarios
+          PYTHONHASHSEED=42 pytest -v \
+            --doctest-modules \
+            -n auto \
+            ${{matrix.tests}} \
+            --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+            --ignore=./smarts/env/tests/test_benchmark.py \
+            --ignore=./smarts/env/tests/test_learning.py \
+            --ignore=./smarts/env/tests/test_frame_stack.py \
+            --ignore=./smarts/env/tests/test_determinism.py \
+            --ignore=./smarts/core/tests/test_renderers.py \
+            --ignore=./smarts/core/tests/test_smarts.py \
+            --ignore=./smarts/core/tests/test_observations.py
+
+  test-requirements-mac:
+    runs-on: macos-11
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: develop        
+      - name: Setup Python
+        run: |
+          brew update
+          brew install python@3.7
+          brew unlink python@3.9
+          brew link --force --overwrite python@3.7
+      - name: Install dependencies
+        run: |
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip
+          pip install --upgrade wheel
+          pip install -r utils/setup/mac_requirements.txt
+          pip install .[train,test,camera-obs]
+      - name: Test pip packages
+        run: |
+          . ${{env.venv_dir}}/bin/activate
+          pip freeze | grep -v -E '^smarts' | grep -v 'pkg-resources==0.0.0' | diff -u utils/setup/mac_requirements.txt -
