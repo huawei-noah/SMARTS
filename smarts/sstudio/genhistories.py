@@ -37,16 +37,6 @@ from typing import Dict, Generator, Union
 try:
     from waymo_open_dataset.protos import scenario_pb2
 except ImportError:
-
-    def trace_except(sysexecinfo, smessage=""):
-        """ Trace exceptions """
-        exc_type, exc_value, exc_traceback = sysexecinfo
-        i, j = (traceback.extract_tb(exc_traceback, 1))[0][0:2]
-        k = (traceback.format_exception_only(exc_type, exc_value))[0]
-        print("E:" + "Err : " + smessage + k + i + ", line " + str(j))
-        return k
-
-    response = trace_except(sys.exc_info())
     print(
         "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
     )

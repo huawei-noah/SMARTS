@@ -24,7 +24,6 @@ from collections import deque, namedtuple
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
-
 import numpy as np
 
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
