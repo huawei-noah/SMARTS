@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 from enum import Enum
 import logging
-from smarts.core.traffic_history import TrafficHistory
 import time
 from collections import deque, namedtuple
 from dataclasses import dataclass
@@ -31,6 +30,7 @@ import numpy as np
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
 from smarts.core.road_map import Waypoint
+from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.math import (
     rounder_for_dt,
     squared_dist,
