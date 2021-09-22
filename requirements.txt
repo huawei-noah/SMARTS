@@ -1,4 +1,4 @@
-absl-py==0.13.0
+absl-py>=0.14.0
 aiohttp==3.7.4.post0
 aiohttp-cors==0.7.0
 aioredis==2.0.0
