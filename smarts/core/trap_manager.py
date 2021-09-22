@@ -239,26 +239,6 @@ class TrapManager:
         return self._traps
 
     @staticmethod
-    def _hijack_vehicle(sim, vehicle_id, agent_id, mission):
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        plan = Plan(sim.road_map, mission)
-
-        # Apply agent vehicle association.
-        sim.vehicle_index.start_agent_observation(
-            sim, vehicle_id, agent_id, agent_interface, plan
-        )
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        vehicle = sim.vehicle_index.switch_control_to_agent(
-            sim,
-            vehicle_id,
-            agent_id,
-            recreate=True,
-            hijacking=False,
-            agent_interface=agent_interface,
-        )
-        return vehicle
-
-    @staticmethod
     def _make_vehicle(sim, agent_id, mission, initial_speed):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         plan = Plan(sim.road_map, mission)
