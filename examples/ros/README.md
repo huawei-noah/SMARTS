@@ -88,6 +88,8 @@ ROS private node parameters if used via `rosrun`:
 
 - `_seed`:  Seed to use when initializing SMARTS' random number generator(s).  Defaults to `42`.
 
+- `_batch_mode`:  If `True`, the node will stay alive even if SMARTS crashes/dies, waiting for a new `SmartsReset` message on the `SMARTS/reset` topic.  Defaults to `False`.
+
 
 To specify these via the command line, use syntax like:
 ```bash
