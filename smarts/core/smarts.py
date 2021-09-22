@@ -397,7 +397,7 @@ class SMARTS:
         mission: Mission,
         recreate: bool,
         is_hijacked: bool,
-    ):
+    ) -> Vehicle:
         # Check if this is a history vehicle
         history_veh_id = self._traffic_history_provider.get_history_id(vehicle_id)
         canonical_veh_id = history_veh_id if history_veh_id else vehicle_id
@@ -414,7 +414,7 @@ class SMARTS:
             self._traffic_history_provider.set_replaced_ids([vehicle_id])
 
         # Switch control to agent and create a vehicle in providers with matching action space
-        self.create_hijacked_vehicle_in_providers(
+        return self.create_hijacked_vehicle_in_providers(
             agent_id, canonical_veh_id, recreate, is_hijacked
         )
 
