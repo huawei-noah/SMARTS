@@ -419,13 +419,19 @@ class SMARTS:
         )
 
     def create_hijacked_vehicle_in_providers(
-        self, agent_id: str, vehicle_id: str, recreate: bool, is_hijacked: bool
+        self,
+        agent_id: str,
+        vehicle_id: str,
+        recreate: bool,
+        is_hijacked: bool,
+        is_boid=False,
     ) -> Vehicle:
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         vehicle = self.vehicle_index.switch_control_to_agent(
             self,
             vehicle_id,
             agent_id,
+            boid=is_boid,
             recreate=recreate,
             hijacking=is_hijacked,
             agent_interface=interface,

@@ -487,7 +487,7 @@ class BubbleManager:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
         vehicle = sim.create_hijacked_vehicle_in_providers(
-            agent_id, vehicle_id, False, True
+            agent_id, vehicle_id, False, True, bubble.is_boid
         )
 
     def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str, bubble: Bubble):
