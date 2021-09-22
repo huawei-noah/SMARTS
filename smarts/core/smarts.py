@@ -390,7 +390,20 @@ class SMARTS:
                 f"Unable to add entry trap for new agent '{agent_id}' with mission."
             )
 
-    def hijack_vehicle(
+    def add_agent_and_switch_control(
+        self,
+        vehicle_id: str,
+        agent_id: str,
+        agent_interface: AgentInterface,
+        mission: Mission,
+    ) -> Vehicle:
+        self.agent_manager.add_ego_agent(agent_id, agent_interface, for_trap=False)
+        vehicle = self.switch_control_to_agent(
+            vehicle_id, agent_id, mission, recreate=False, is_hijacked=False
+        )
+        self.create_vehicle_in_providers(vehicle, agent_id)
+
+    def switch_control_to_agent(
         self,
         vehicle_id: str,
         agent_id: str,
@@ -402,46 +415,39 @@ class SMARTS:
         history_veh_id = self._traffic_history_provider.get_history_id(vehicle_id)
         canonical_veh_id = history_veh_id if history_veh_id else vehicle_id
 
+        # Remove vehicle from traffic history provider
+        if history_veh_id:
+            self._traffic_history_provider.set_replaced_ids([vehicle_id])
+
         # Switch control to agent
         plan = Plan(self.road_map, mission)
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         self.vehicle_index.start_agent_observation(
             self, canonical_veh_id, agent_id, interface, plan
         )
-
-        # Remove vehicle from traffic history provider
-        if history_veh_id:
-            self._traffic_history_provider.set_replaced_ids([vehicle_id])
-
-        # Switch control to agent and create a vehicle in providers with matching action space
-        return self.create_hijacked_vehicle_in_providers(
-            agent_id, canonical_veh_id, recreate, is_hijacked
-        )
-
-    def create_hijacked_vehicle_in_providers(
-        self,
-        agent_id: str,
-        vehicle_id: str,
-        recreate: bool,
-        is_hijacked: bool,
-        is_boid=False,
-    ) -> Vehicle:
-        interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         vehicle = self.vehicle_index.switch_control_to_agent(
             self,
-            vehicle_id,
+            canonical_veh_id,
             agent_id,
-            boid=is_boid,
+            boid=False,
             recreate=recreate,
             hijacking=is_hijacked,
             agent_interface=interface,
         )
 
+        return vehicle
+
+    def create_vehicle_in_providers(
+        self,
+        vehicle: Vehicle,
+        agent_id: str,
+    ):
+        interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         for provider in self.providers:
             if interface.action_space in provider.action_spaces:
                 provider.create_vehicle(
                     VehicleState(
-                        vehicle_id=vehicle_id,
+                        vehicle_id=vehicle.id,
                         vehicle_config_type="passenger",
                         pose=vehicle.pose,
                         dimensions=vehicle.chassis.dimensions,
@@ -449,8 +455,6 @@ class SMARTS:
                         source="HIJACK",
                     )
                 )
-
-        return vehicle
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
