@@ -581,6 +581,8 @@ class ROSDriver:
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
                 self._reset_msg = None
                 self._last_step_time = None
+                self._recent_state = deque(maxlen=3)
+                self._most_recent_state_sent = None
                 return self._smarts.reset(Scenario(self._scenario_path))
         return None
 
@@ -613,14 +615,28 @@ class ROSDriver:
                 if obs is not None:
                     observations = obs
 
-                actions = self._do_agents(observations)
+                try:
+                    actions = self._do_agents(observations)
 
-                step_delta = self._update_smarts_state()
+                    step_delta = self._update_smarts_state()
 
-                observations, _, dones, _ = self._smarts.step(actions, step_delta)
+                    observations, _, dones, _ = self._smarts.step(actions, step_delta)
 
-                self._publish_state()
-                self._publish_agents(observations, dones)
+                    self._publish_state()
+                    self._publish_agents(observations, dones)
+                except Exception as e:
+                    if isinstance(e, rospy.ROSInterruptException):
+                        raise e
+                    batch_mode = rospy.get_param("~batch_mode", False)
+                    if not batch_mode:
+                        raise e
+                    import traceback
+
+                    rospy.logerr(f"SMARTS raised exception:  {e}")
+                    rospy.logerr(traceback.format_exc())
+                    rospy.logerr("Will wait for next reset...")
+                    self._smarts = None
+                    self.setup_smarts()
 
                 if self._target_freq:
                     if rate.remaining().to_sec() <= 0.0:
