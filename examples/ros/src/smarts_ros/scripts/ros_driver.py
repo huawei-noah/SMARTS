@@ -632,7 +632,8 @@ class ROSDriver:
                         raise e
                     rospy.logerr(f"SMARTS raised exception:  {e}")
                     rospy.logerr("Will wait for next reset...")
-                    self._scenario_path = None
+                    self._smarts = None
+                    self.setup_smarts()
 
                 if self._target_freq:
                     if rate.remaining().to_sec() <= 0.0:
