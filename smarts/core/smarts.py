@@ -399,7 +399,7 @@ class SMARTS:
     ) -> Vehicle:
         self.agent_manager.add_ego_agent(agent_id, agent_interface, for_trap=False)
         vehicle = self.switch_control_to_agent(
-            vehicle_id, agent_id, mission, recreate=False, is_hijacked=False
+            vehicle_id, agent_id, mission, recreate=False, is_hijacked=True
         )
         self.create_vehicle_in_providers(vehicle, agent_id)
 
@@ -414,6 +414,13 @@ class SMARTS:
         # Check if this is a history vehicle
         history_veh_id = self._traffic_history_provider.get_history_id(vehicle_id)
         canonical_veh_id = history_veh_id if history_veh_id else vehicle_id
+
+        assert not self.vehicle_index.vehicle_is_hijacked(
+            canonical_veh_id
+        ), f"Vehicle has already been hijacked: {canonical_veh_id}"
+        assert (
+            not canonical_veh_id in self.vehicle_index.agent_vehicle_ids()
+        ), f"Can't hijack vehicle that is already controlled by an agent: {canonical_veh_id}"
 
         # Remove vehicle from traffic history provider
         if history_veh_id:
