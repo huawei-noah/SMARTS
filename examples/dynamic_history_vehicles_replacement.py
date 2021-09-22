@@ -107,20 +107,12 @@ def main(
                 )
                 try:
                     # Try to assign a PositionalGoal at the last recorded timestep
-                    smarts.hijack_vehicle(
-                        veh_id,
-                        agent_id,
-                        positional,
-                    )
+                    smarts.hijack_vehicle(veh_id, agent_id, positional, False, False)
                 except PlanningError:
                     logger.warning(
                         f"Unable to create PositionalGoal for vehicle {veh_id}, falling back to TraverseGoal"
                     )
-                    smarts.hijack_vehicle(
-                        veh_id,
-                        agent_id,
-                        traverse,
-                    )
+                    smarts.hijack_vehicle(veh_id, agent_id, traverse, False, False)
 
         # Create a table of vehicle trajectory lengths, filtering out non-moving vehicles
         vehicle_candidates = []
