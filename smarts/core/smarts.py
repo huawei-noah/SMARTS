@@ -413,7 +413,7 @@ class SMARTS:
 
         # Switch control to agent and create a vehicle in providers with matching action space
         self.create_hijacked_vehicle_in_providers(
-            agent_id, canonical_veh_id, recreate=False, is_hijacked=False
+            agent_id, canonical_veh_id, False, False
         )
 
     def create_hijacked_vehicle_in_providers(

@@ -185,9 +185,7 @@ class TrapManager:
             vehicle = None
             if len(captures) > 0:
                 vehicle_id, trap, mission = rand.choice(captures)
-                vehicle = sim.hijack_vehicle(
-                    vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
-                )
+                vehicle = sim.hijack_vehicle(vehicle_id, agent_id, mission, True, False)
 
             elif trap.patience_expired:
                 # Make sure there is not a vehicle in the same location
