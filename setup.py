@@ -24,20 +24,20 @@ setup(
         "setuptools>=41.0.0,!=50.0",
         "cached-property",
         "click",  # used in scl
-        "gym",
+        "gym==0.18.3",
         "numpy",
-        "rich",
-        "rtree",  # Used by sumolib
         "pandas",
         "psutil",
-        "visdom",
         "pybullet==3.0.6",
-        "sklearn",  # KDTree from sklearn is used by sumo lanepoints
-        "tableprint",
-        "trimesh",  # Used for writing .glb files
         "pynput",  # Used by HumanKeyboardAgent
+        "rich",
+        "rtree",  # Used by sumolib
         "sh",
         "shapely",
+        "sklearn",  # KDTree from sklearn is used by sumo lanepoints
+        "tableprint",
+        "trimesh==3.9.29",  # Used for writing .glb files
+        "visdom",
         # The following are for Scenario Studio
         "yattag",
         # The following are for /envision
@@ -50,7 +50,7 @@ setup(
         "matplotlib",
         "scikit-image",
         # The following are for /smarts/zoo and remote agents
-        "grpcio==1.37.0",
+        "grpcio==1.32.0",
         "protobuf",
         "PyYAML",
         "twisted",
@@ -59,6 +59,7 @@ setup(
         "test": [
             # The following are for testing
             "ipykernel",
+            "jupyter-client==6.1.12",
             "pytest",
             "pytest-benchmark",
             "pytest-cov",
@@ -68,16 +69,16 @@ setup(
             "tensorflow==2.2.1",  # For rllib tests
         ],
         "train": [
-            "tensorflow==2.2.1",
+            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
             # XXX: TF requires specific version of scipy
             "scipy==1.4.1",
+            "tensorflow==2.2.1",
             "torch==1.4.0",
             "torchvision==0.5.0",
-            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
         ],
         "dev": [
             "black==20.8b1",
-            "grpcio-tools==1.37.0",
+            "grpcio-tools==1.32.0",
             "isort==5.7.0",
             "sphinx",
             "sphinx-rtd-theme",
@@ -88,8 +89,8 @@ setup(
             "panda3d-gltf==0.13",
         ],
         "ros": [
-            "rospkg",
             "catkin_pkg",
+            "rospkg",
         ],
         "waymo": [
             "waymo-open-dataset-tf-2-2-0",
