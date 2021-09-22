@@ -33,6 +33,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from envision.utils.multiprocessing_queue import Queue
 
 AGENT_ID = "Agent-007"
 NUM_EPISODES = 3
@@ -68,7 +69,7 @@ def scenarios_iterator():
 
 def fake_websocket_app_class():
     # Using a closure instead of a class field to give isolation between tests.
-    sent = multiprocessing.Queue()
+    sent = Queue(ctx=multiprocessing.get_context())
 
     class FakeWebSocketApp:
         """Mocks out the websockets.WebSocketApp to intercept send(...) calls and just
@@ -90,7 +91,7 @@ def fake_websocket_app_class():
         def close(self):
             pass
 
-    return (FakeWebSocketApp, sent)
+    return FakeWebSocketApp, sent
 
 
 def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypatch):

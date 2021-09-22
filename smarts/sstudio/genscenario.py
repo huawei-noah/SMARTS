@@ -26,7 +26,6 @@ import itertools
 import logging
 import os
 import pickle
-from smarts.core.sumo_road_network import SumoRoadNetwork
 import subprocess
 import sys
 from dataclasses import replace
@@ -402,6 +401,8 @@ def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
     xy_offset = None
     road_network_path = os.path.join(scenario, "map.net.xml")
     if os.path.exists(road_network_path):
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
         road_network = SumoRoadNetwork.from_file(road_network_path)
         if road_network._graph and getattr(
             road_network._graph, "_shifted_by_smarts", False
