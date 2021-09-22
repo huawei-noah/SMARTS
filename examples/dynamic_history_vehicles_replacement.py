@@ -102,12 +102,12 @@ def main(
                 )
 
                 # Hijack vehicles immediately
+                smarts.agent_manager.add_ego_agent(agent_id, agent_spec.interface, for_trap=False)
                 try:
                     # Try to assign a PositionalGoal at the last recorded timestep
                     smarts.hijack_vehicle(
                         veh_id,
                         agent_id,
-                        agent_spec.interface,
                         positional,
                     )
                 except PlanningError:
@@ -117,7 +117,6 @@ def main(
                     smarts.hijack_vehicle(
                         veh_id,
                         agent_id,
-                        agent_spec.interface,
                         traverse,
                     )
 

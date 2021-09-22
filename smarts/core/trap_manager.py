@@ -185,9 +185,8 @@ class TrapManager:
             vehicle = None
             if len(captures) > 0:
                 vehicle_id, trap, mission = rand.choice(captures)
-                vehicle = TrapManager._hijack_vehicle(
-                    sim, vehicle_id, agent_id, mission
-                )
+                vehicle = sim.hijack_vehicle(vehicle_id, agent_id, mission, recreate=True, is_hijacked=False)
+
             elif trap.patience_expired:
                 # Make sure there is not a vehicle in the same location
                 mission = trap.mission
@@ -207,6 +206,21 @@ class TrapManager:
                 vehicle = TrapManager._make_vehicle(
                     sim, agent_id, mission, trap.default_entry_speed
                 )
+                agent_interface = sim.agent_manager.agent_interface_for_agent_id(
+                    agent_id
+                )
+                for provider in sim.providers:
+                    if agent_interface.action_space in provider.action_spaces:
+                        provider.create_vehicle(
+                            VehicleState(
+                                vehicle_id=vehicle.id,
+                                vehicle_config_type="passenger",
+                                pose=vehicle.pose,
+                                dimensions=vehicle.chassis.dimensions,
+                                speed=vehicle.speed,
+                                source="EGO-HIJACK",
+                            )
+                        )
             else:
                 continue
 
@@ -216,23 +230,6 @@ class TrapManager:
             agents_given_vehicle.add(agent_id)
             used_traps.append((agent_id, trap))
 
-            for provider in sim.providers:
-                if (
-                    sim.agent_manager.agent_interface_for_agent_id(
-                        agent_id
-                    ).action_space
-                    in provider.action_spaces
-                ):
-                    provider.create_vehicle(
-                        VehicleState(
-                            vehicle_id=vehicle.id,
-                            vehicle_config_type="passenger",
-                            pose=vehicle.pose,
-                            dimensions=vehicle.chassis.dimensions,
-                            speed=vehicle.speed,
-                            source="EGO-HIJACK",
-                        )
-                    )
         if len(agents_given_vehicle) > 0:
             self.reset_traps(used_traps)
             sim.agent_manager.remove_pending_agent_ids(agents_given_vehicle)

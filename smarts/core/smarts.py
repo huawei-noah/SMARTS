@@ -60,7 +60,7 @@ from .utils.math import rounder_for_dt
 from .utils.id import Id
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
-from .vehicle import VehicleState
+from .vehicle import Vehicle, VehicleState
 from .vehicle_index import VehicleIndex
 
 logging.basicConfig(
@@ -394,7 +394,6 @@ class SMARTS:
         self,
         vehicle_id: str,
         agent_id: str,
-        agent_interface: AgentInterface,
         mission: Mission,
     ):
         # Check if this is a history vehicle
@@ -403,30 +402,34 @@ class SMARTS:
 
         # Switch control to agent
         plan = Plan(self.road_map, mission)
-        self.agent_manager.add_ego_agent(agent_id, agent_interface, for_trap=False)
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         self.vehicle_index.start_agent_observation(
             self, canonical_veh_id, agent_id, interface, plan
-        )
-        vehicle = self.vehicle_index.switch_control_to_agent(
-            self,
-            canonical_veh_id,
-            agent_id,
-            recreate=False,
-            hijacking=False,
-            agent_interface=interface,
         )
 
         # Remove vehicle from traffic history provider
         if history_veh_id:
             self._traffic_history_provider.set_replaced_ids([vehicle_id])
 
-        # Create vehicle in providers with matching action space
+        # Switch control to agent and create a vehicle in providers with matching action space
+        self.create_hijacked_vehicle_in_providers(agent_id, canonical_veh_id, recreate=False, is_hijacked=False)
+
+    def create_hijacked_vehicle_in_providers(self, agent_id: str, vehicle_id: str, recreate: bool, is_hijacked: bool) -> Vehicle:
+        interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
+        vehicle = self.vehicle_index.switch_control_to_agent(
+            self,
+            vehicle_id,
+            agent_id,
+            recreate=recreate,
+            hijacking=is_hijacked,
+            agent_interface=interface,
+        )
+
         for provider in self.providers:
             if interface.action_space in provider.action_spaces:
                 provider.create_vehicle(
                     VehicleState(
-                        vehicle_id=canonical_veh_id,
+                        vehicle_id=vehicle_id,
                         vehicle_config_type="passenger",
                         pose=vehicle.pose,
                         dimensions=vehicle.chassis.dimensions,
@@ -434,6 +437,8 @@ class SMARTS:
                         source="HIJACK",
                     )
                 )
+
+        return vehicle
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
