@@ -101,18 +101,19 @@ def main(
                     veh_id, ctx["elapsed_sim_time"], ctx["positional_radius"]
                 )
 
-                # Hijack vehicles immediately
-                smarts.agent_manager.add_ego_agent(
-                    agent_id, agent_spec.interface, for_trap=False
-                )
+                # Take control of vehicles immediately
                 try:
                     # Try to assign a PositionalGoal at the last recorded timestep
-                    smarts.hijack_vehicle(veh_id, agent_id, positional, False, False)
+                    smarts.add_agent_and_switch_control(
+                        veh_id, agent_id, agent_spec.interface, positional
+                    )
                 except PlanningError:
                     logger.warning(
                         f"Unable to create PositionalGoal for vehicle {veh_id}, falling back to TraverseGoal"
                     )
-                    smarts.hijack_vehicle(veh_id, agent_id, traverse, False, False)
+                    smarts.add_agent_and_switch_control(
+                        veh_id, agent_id, agent_spec.interface, traverse
+                    )
 
         # Create a table of vehicle trajectory lengths, filtering out non-moving vehicles
         vehicle_candidates = []
