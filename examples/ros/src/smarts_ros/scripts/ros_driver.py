@@ -630,7 +630,10 @@ class ROSDriver:
                     batch_mode = rospy.get_param("~batch_mode", False)
                     if not batch_mode:
                         raise e
+                    import traceback
+
                     rospy.logerr(f"SMARTS raised exception:  {e}")
+                    rospy.logerr(traceback.format_exc())
                     rospy.logerr("Will wait for next reset...")
                     self._smarts = None
                     self.setup_smarts()
