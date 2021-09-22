@@ -173,7 +173,7 @@ traitlets==5.1.0
 trimesh==3.9.29
 Twisted==21.7.0
 typing-extensions==3.10.0.2
-urllib3==1.26.6
+urllib3==1.26.7
 visdom==0.1.8.9
 wcwidth==0.2.5
 webencodings==0.5.1
