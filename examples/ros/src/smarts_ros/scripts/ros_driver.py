@@ -581,6 +581,8 @@ class ROSDriver:
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
                 self._reset_msg = None
                 self._last_step_time = None
+                self._recent_state = deque(maxlen=3)
+                self._most_recent_state_sent = None
                 return self._smarts.reset(Scenario(self._scenario_path))
         return None
 
