@@ -188,7 +188,6 @@ class TrapManager:
                 vehicle = sim.switch_control_to_agent(
                     vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
                 )
-                sim.create_vehicle_in_providers(vehicle, agent_id)
             elif trap.patience_expired:
                 # Make sure there is not a vehicle in the same location
                 mission = trap.mission
@@ -208,13 +207,11 @@ class TrapManager:
                 vehicle = TrapManager._make_vehicle(
                     sim, agent_id, mission, trap.default_entry_speed
                 )
-                sim.create_vehicle_in_providers(vehicle, agent_id)
             else:
                 continue
-
             if vehicle == None:
                 continue
-
+            sim.create_vehicle_in_providers(vehicle, agent_id)
             agents_given_vehicle.add(agent_id)
             used_traps.append((agent_id, trap))
 
