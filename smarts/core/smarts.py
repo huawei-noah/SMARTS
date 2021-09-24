@@ -421,6 +421,9 @@ class SMARTS:
         assert (
             not canonical_veh_id in self.vehicle_index.agent_vehicle_ids()
         ), f"Can't hijack vehicle that is already controlled by an agent: {canonical_veh_id}"
+        assert (
+            not agent_id in self.agent_manager.pending_agent_ids()
+        ), f"we should only have a single vehicle under agent_id={agent_id} (vehicle_ids={canonical_veh_id})"
 
         # Remove vehicle from traffic history provider
         if history_veh_id:
