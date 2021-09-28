@@ -2,7 +2,7 @@ absl-py==0.14.0
 aiohttp==3.7.4.post0
 aiohttp-cors==0.7.0
 aioredis==2.0.0
-anyio==3.3.1
+anyio==3.3.2
 argcomplete==1.12.3
 argon2-cffi==21.1.0
 astunparse==1.6.3
@@ -35,7 +35,7 @@ dm-tree==0.1.6
 entrypoints==0.3
 evdev==1.4.0
 execnet==1.9.0
-filelock==3.0.12
+filelock==3.1.0
 future==0.18.2
 gast==0.3.3
 gitdb==4.0.7
