@@ -43,6 +43,7 @@ def main(
     script: str,
     scenarios: Sequence[str],
     headless: bool,
+    envision_record_data_replay_path: str,
     seed: int,
     vehicles_to_replace_randomly: int,
     min_timestep_count: int,
@@ -52,12 +53,16 @@ def main(
     assert episodes > 0
     logger = logging.getLogger(script)
     logger.setLevel(logging.INFO)
-
     logger.debug("initializing SMARTS")
+
+    envision_client = None
+    if not headless or envision_record_data_replay_path:
+        envision_client = Envision(output_dir=envision_record_data_replay_path)
+
     smarts = SMARTS(
         agent_interfaces={},
         traffic_sim=None,
-        envision=None if headless else Envision(),
+        envision=envision_client,
     )
     random_seed(seed)
 
@@ -206,11 +211,19 @@ if __name__ == "__main__":
         type=int,
         default=3,
     )
+    parser.add_argument(
+        "--envision_record_data_path",
+        help="Envisions data replay output directory where the recording will be stored.",
+        type=str,
+        default=None,
+    )
+
     args = parser.parse_args()
     main(
         script=parser.prog,
         scenarios=args.scenarios,
         headless=args.headless,
+        envision_record_data_replay_path=args.envision_record_data_path,
         seed=args.seed,
         vehicles_to_replace_randomly=args.random_replacements_per_episode,
         min_timestep_count=args.min_timestep_count,
