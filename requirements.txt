@@ -59,7 +59,7 @@ importlib-resources==5.2.2
 incremental==21.3.0
 iniconfig==1.1.1
 ipykernel==6.4.1
-ipython==7.27.0
+ipython==7.28.0
 ipython-genutils==0.2.0
 jedi==0.18.0
 Jinja2==3.0.1
@@ -111,7 +111,7 @@ psutil==5.8.0
 ptyprocess==0.7.0
 py==1.10.0
 py-cpuinfo==8.0.0
-py-spy==0.3.9
+py-spy==0.3.10
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pybullet==3.0.6
