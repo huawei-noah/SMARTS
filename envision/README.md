@@ -63,7 +63,7 @@ env = gym.make(
 )
 ```
 
-then run with `supervisord` (currently Envision server needs to be up for data recording to work).
+then run with `scl run --envision <examples/script_path> <scenarios/path>` (currently Envision server needs to be up for data recording to work).
 
 For replay make sure you have Envision server running then use the following tool - passing in your replay files,
 
