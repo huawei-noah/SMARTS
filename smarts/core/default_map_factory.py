@@ -31,6 +31,11 @@ from smarts.core.utils.file import file_md5_hash
 # map formats (by extending the RoadMap base class) can replace this
 # file with their own version and shouldn't have to change much else.
 
+supported_maps = [
+    "map.net.xml",  # SUMO
+    "map.xodr",  # OpenDRIVE
+]
+
 
 def create_road_map(
     map_source: str,
@@ -46,19 +51,29 @@ def create_road_map(
 
     map_path = map_source
     if not os.path.isfile(map_path):
-        map_path = os.path.join(map_source, "map.net.xml")
-        if not os.path.exists(map_path):
-            raise Exception(f"Unable to find map in map_source={map_source}.")
+        for i, map_name in enumerate(supported_maps):
+            map_path = os.path.join(map_source, map_name)
+            if os.path.exists(map_path):
+                break
+            if i == len(supported_maps) - 1:
+                raise Exception(f"Unable to find map in map_source={map_source}.")
 
-    # Keep this a conditional import so Sumo does not have to be
-    # imported if not necessary:
-    from smarts.core.sumo_road_network import SumoRoadNetwork
+    if map_path.endswith("map.net.xml"):
+        # Keep this a conditional import so Sumo does not have to be
+        # imported if not necessary:
+        from smarts.core.sumo_road_network import SumoRoadNetwork
 
-    road_map = SumoRoadNetwork.from_file(
-        map_path,
-        default_lane_width=default_lane_width,
-        lanepoint_spacing=lanepoint_spacing,
-    )
+        road_map = SumoRoadNetwork.from_file(
+            map_path,
+            default_lane_width=default_lane_width,
+            lanepoint_spacing=lanepoint_spacing,
+        )
+    elif map_path.endswith("map.xodr"):
+        from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+
+        road_map = OpenDriveRoadNetwork.from_file(
+            map_path,
+        )
 
     road_map_hash = file_md5_hash(road_map.source)
 

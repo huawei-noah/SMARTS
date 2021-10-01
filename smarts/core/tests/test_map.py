@@ -24,16 +24,22 @@ import pytest
 
 from smarts.core.scenario import Scenario
 from smarts.core.default_map_factory import create_road_map
+from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
 
 @pytest.fixture
-def scenario():
+def sumo_scenario():
     return Scenario(scenario_root="scenarios/intersections/4lane")
 
 
-def test_sumo_map(scenario):
-    road_map = scenario.road_map
+@pytest.fixture
+def opendrive_scenario():
+    return Scenario(scenario_root="scenarios/opendrive")
+
+
+def test_sumo_map(sumo_scenario):
+    road_map = sumo_scenario.road_map
     assert isinstance(road_map, SumoRoadNetwork)
 
     point = (125.20, 139.0, 0)
@@ -106,3 +112,8 @@ def test_sumo_map(scenario):
     route = routes[0]
     db = route.distance_between(point, (198, 65.20, 0))
     assert db == 134.01
+
+
+def test_sumo_map(opendrive_scenario):
+    road_map = opendrive_scenario.road_map
+    assert isinstance(road_map, OpenDriveRoadNetwork)

@@ -54,6 +54,7 @@ setup(
         "protobuf",
         "PyYAML",
         "twisted",
+        "opendrive2lanelet",
     ],
     extras_require={
         "test": [
