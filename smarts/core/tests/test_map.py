@@ -114,6 +114,6 @@ def test_sumo_map(sumo_scenario):
     assert db == 134.01
 
 
-def test_sumo_map(opendrive_scenario):
+def test_opendrive_map(opendrive_scenario):
     road_map = opendrive_scenario.road_map
     assert isinstance(road_map, OpenDriveRoadNetwork)
