@@ -100,10 +100,11 @@ class OpenDriveRoadNetwork(RoadMap):
 
         for lane_section in road_elem.lanes.lane_sections:
             for od_lane in lane_section.allLanes:
-                if od_lane.id == od_lane_id:
+                if od_lane.id == int(od_lane_id):
                     lane_elem = od_lane
                     break
-
+            if lane_elem:
+                break
         if not lane_elem:
             self._log.warning(
                 f"OpenDriveRoadNetwork got request for unknown lane_id '{lane_id}'"
