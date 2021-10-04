@@ -20,11 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-import pytest
 
-from smarts.core.scenario import Scenario
-from smarts.core.default_map_factory import create_road_map
+import pytest
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
 
@@ -117,3 +116,6 @@ def test_sumo_map(sumo_scenario):
 def test_opendrive_map(opendrive_scenario):
     road_map = opendrive_scenario.road_map
     assert isinstance(road_map, OpenDriveRoadNetwork)
+
+    r1 = road_map.road_by_id("0")
+    assert r1
