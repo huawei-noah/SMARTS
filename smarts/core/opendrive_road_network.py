@@ -83,11 +83,14 @@ class OpenDriveRoadNetwork(RoadMap):
             self._road = road_map.road_by_id(lane_elem.parentRoad.id)
             assert self._road
 
-    def lane_by_id(self, lane_id: str, road_id: str) -> RoadMap.Lane:
+    def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
         if lane:
             return lane
         lane_elem = None
+        split_lst = lane_id.split("_")
+        road_id, od_lane_id = split_lst[0], split_lst[1]
+
         road_elem = self._network.getRoad(int(road_id))
         if not road_elem:
             self._log.warning(
@@ -97,7 +100,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         for lane_section in road_elem.lanes.lane_sections:
             for od_lane in lane_section.allLanes:
-                if od_lane.id == lane_id:
+                if od_lane.id == od_lane_id:
                     lane_elem = od_lane
                     break
 
