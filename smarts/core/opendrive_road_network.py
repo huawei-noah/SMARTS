@@ -88,6 +88,18 @@ class OpenDriveRoadNetwork(RoadMap):
             return self._road_id
 
         @cached_property
+        def lanes(self) -> List[RoadMap.Lane]:
+            lanes = []
+            for lane_section in self._road_elem.lanes.lane_sections:
+                for od_lane in lane_section.allLanes:
+                    lane_id = self.road_id + "_" + str(od_lane.id)
+                    lanes.append(self._map.lane_by_id(lane_id))
+            return lanes
+
+        def lane_at_index(self, index: int) -> RoadMap.Lane:
+            return self.lanes[index]
+
+        @cached_property
         def incoming_roads(self) -> List[RoadMap.Road]:
             in_roads = []
             if self._predecessor_elem:
