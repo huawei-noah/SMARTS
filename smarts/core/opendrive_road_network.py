@@ -92,7 +92,9 @@ class OpenDriveRoadNetwork(RoadMap):
             in_roads = []
             if self._predecessor_elem:
                 if self._predecessor_elem.elementType == "road":
-                    in_roads.append(self._map.road_by_id(str(self._predecessor_elem.element_id)))
+                    in_roads.append(
+                        self._map.road_by_id(str(self._predecessor_elem.element_id))
+                    )
             return in_roads
 
         @cached_property
@@ -100,7 +102,9 @@ class OpenDriveRoadNetwork(RoadMap):
             og_roads = []
             if self._successor_elem:
                 if self._successor_elem.elementType == "road":
-                    og_roads.append(self._map.road_by_id(str(self._successor_elem.element_id)))
+                    og_roads.append(
+                        self._map.road_by_id(str(self._successor_elem.element_id))
+                    )
             return og_roads
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
@@ -149,7 +153,11 @@ class OpenDriveRoadNetwork(RoadMap):
                 road_predecessor = self._road.get_predecessor
                 if road_predecessor:
                     if road_predecessor.elementType == "road":
-                        pred_lane_id = str(road_predecessor.element_id) + "_" + str(lane_link.predecessorId)
+                        pred_lane_id = (
+                            str(road_predecessor.element_id)
+                            + "_"
+                            + str(lane_link.predecessorId)
+                        )
                         il.append(self._map.lane_by_id(pred_lane_id))
             return il
 
@@ -161,7 +169,11 @@ class OpenDriveRoadNetwork(RoadMap):
                 road_successor = self._road.get_successor
                 if road_successor:
                     if road_successor.elementType == "road":
-                        succ_lane_id = str(road_successor.element_id) + "_" + str(lane_link.successorId)
+                        succ_lane_id = (
+                            str(road_successor.element_id)
+                            + "_"
+                            + str(lane_link.successorId)
+                        )
                         ol.append(self._map.lane_by_id(succ_lane_id))
             return ol
 
