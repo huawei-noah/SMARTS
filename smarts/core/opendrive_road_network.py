@@ -110,6 +110,6 @@ class OpenDriveRoadNetwork(RoadMap):
                 f"OpenDriveRoadNetwork got request for unknown lane_id '{lane_id}'"
             )
             return None
-        lane = OpenDriveRoadNetwork.Road(lane_id, lane_elem, self)
+        lane = OpenDriveRoadNetwork.Lane(lane_id, lane_elem, self)
         self._lanes[lane_id] = lane
         return lane
