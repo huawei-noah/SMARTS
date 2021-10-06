@@ -196,7 +196,7 @@ class OpenDriveRoadNetwork(RoadMap):
             il = []
             lane_link = self._lane_elem.link
             if lane_link.predecessorId:
-                ls_index = self._lane_elem.lane_section.idx
+                ls_index = self._curr_lane_section.idx
                 if ls_index == 0:
                     road_predecessor = self._road.predecessor
                     if road_predecessor and road_predecessor.elementType == "road":
@@ -226,7 +226,7 @@ class OpenDriveRoadNetwork(RoadMap):
             ol = []
             lane_link = self._lane_elem.link
             if lane_link.successorId:
-                ls_index = self._lane_elem.lane_section.idx
+                ls_index = self._curr_lane_section.idx
                 if ls_index == len(self._road.lane_sections) - 1:
                     road_successor = self._road.successor
                     if road_successor and road_successor.elementType == "road":
@@ -268,7 +268,7 @@ class OpenDriveRoadNetwork(RoadMap):
             )
             return None
 
-        lane_section = road_elem.lanes.lane_sections[lane_section_index]
+        lane_section = road_elem.lanes.lane_sections[int(lane_section_index)]
         for od_lane in lane_section.allLanes:
             if od_lane.id == int(od_lane_id):
                 lane_elem = od_lane
