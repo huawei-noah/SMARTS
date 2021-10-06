@@ -119,5 +119,5 @@ def test_opendrive_map(opendrive_scenario):
 
     r1 = road_map.road_by_id("0")
     assert r1
-    l1 = road_map.lane_by_id("0_1")
+    l1 = road_map.lane_by_id("0_0_1")
     assert l1
