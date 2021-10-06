@@ -165,6 +165,7 @@ testpath==0.5.0
 threadpoolctl==3.0.0
 tifffile==2021.8.30
 toml==0.10.2
+tomli==1.2.1
 torch==1.4.0
 torchfile==0.1.0
 torchvision==0.5.0
