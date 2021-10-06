@@ -168,12 +168,12 @@ class OpenDriveRoadNetwork(RoadMap):
     class Lane(RoadMap.Lane):
         def __init__(self, lane_id: str, lane_elem: LaneElement, road_map):
             self._lane_id = lane_id
-            self._lane_elem = lane_elem
             self._map = road_map
             self._road = road_map.road_by_id(lane_elem.parentRoad.id)
-            self._curr_lane_section = self._lane_elem.lane_section
-
             assert self._road
+            self._lane_elem = lane_elem
+            self._curr_lane_section = self._lane_elem.lane_section
+            self.type = self._lane_elem.type
 
         @property
         def lane_id(self) -> str:
@@ -190,6 +190,58 @@ class OpenDriveRoadNetwork(RoadMap):
         @cached_property
         def index(self) -> int:
             return self._lane_elem.id
+
+        @cached_property
+        def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
+            if not self.in_junction:
+                # When not in an intersection, all Opendrive Lanes for a Road with same index sign go in same direction.
+                if self.index > 0:
+                    return [
+                        l
+                        for l in self._curr_lane_section.allLanes
+                        if l.index > 0 and l != self
+                    ]
+                elif self.index < 0:
+                    return [
+                        l
+                        for l in self._curr_lane_section.allLanes
+                        if l.index < 0 and l != self
+                    ]
+                else:
+                    return []
+            # TODO: Add lanes_in_same_direction for junctions
+
+        @cached_property
+        def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
+            if self.index == 0:
+                return None, True
+            result = None
+            for other in self.lanes_in_same_direction:
+                if self.index > 0:
+                    if self.index - other.index == 1:
+                        result = other
+                        break
+                elif self.index < 0:
+                    if self.index - other.index == -1:
+                        result = other
+                        break
+            return result, True
+
+        @cached_property
+        def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
+            if self.index == 0:
+                return None, True
+            result = None
+            for other in self.lanes_in_same_direction:
+                if self.index > 0:
+                    if self.index - other.index == -1:
+                        result = other
+                        break
+                elif self.index < 0:
+                    if self.index - other.index == 1:
+                        result = other
+                        break
+            return result, True
 
         @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
