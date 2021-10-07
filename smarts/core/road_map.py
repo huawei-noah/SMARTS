@@ -163,14 +163,14 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def abstract_lane(self) -> RoadMap.Lane:
+        def composite_lane(self) -> RoadMap.Lane:
             """Return an abstract Lane composed of one or more RoadMap.Lane segments
-            that has been inferred to corresupond to one continuous real-world lane.
+            that has been inferred to correspond to one continuous real-world lane.
             May return same object as self."""
             return self
 
         @property
-        def is_abstract(self) -> bool:
+        def is_composite(self) -> bool:
             """Returns True if this Lane object was inferred
             and composed out of subordinate Lane objects."""
             return False
@@ -340,14 +340,14 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def abstract_road(self) -> RoadMap.Road:
+        def composite_road(self) -> RoadMap.Road:
             """Return an abstract Road composed of one or more RoadMap.Road segments
-            that has been inferred to corresupond to one continuous real-world road.
+            that has been inferred to correspond to one continuous real-world road.
             May return same object as self."""
             return self
 
         @property
-        def is_abstract(self) -> bool:
+        def is_composite(self) -> bool:
             """Returns True if this Road object was inferred
             and composed out of subordinate Road objects."""
             return False
