@@ -393,7 +393,6 @@ class SumoRoadNetwork(RoadMap):
         def project_along(
             self, start_offset: float, distance: float
         ) -> Set[Tuple[RoadMap.Lane, float]]:
-            lookahead = int(np.ceil(distance / self._map._lanepoints.spacing)) + 1
             result = set()
             path_stack = {(self, self.length - start_offset)}
             for lane in self.lanes_in_same_direction:
