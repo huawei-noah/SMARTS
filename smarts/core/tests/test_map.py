@@ -80,19 +80,16 @@ def test_sumo_map(scenario):
     out_lanes = lane.outgoing_lanes
     assert out_lanes
     assert len(out_lanes) == 2
-    assert out_lanes[0].lane_id == "edge-west-EW_0"
-    assert out_lanes[1].lane_id == "edge-south-NS_0"
+    assert out_lanes[0].lane_id == ":junction-intersection_0_0"
+    assert out_lanes[1].lane_id == ":junction-intersection_1_0"
 
-    foes = lane.foes
+    foes = out_lanes[0].foes
     assert foes
-    assert len(foes) == 6
+    assert len(foes) == 3
     foe_set = set(f.lane_id for f in foes)
-    assert "edge-west-WE_0" in foe_set
-    assert "edge-east-EW_0" in foe_set
-    assert ":junction-intersection_0_0" in foe_set
-    assert ":junction-intersection_1_0" in foe_set
-    assert ":junction-intersection_5_0" in foe_set
-    assert ":junction-intersection_12_0" in foe_set
+    assert "edge-east-EW_0" in foe_set  # engering from east
+    assert "edge-north-NS_0" in foe_set  # entering from north
+    assert ":junction-intersection_5_0" in foe_set  # crossing from east-to-west
 
     r1 = road_map.road_by_id("edge-north-NS")
     assert r1
@@ -106,3 +103,15 @@ def test_sumo_map(scenario):
     route = routes[0]
     db = route.distance_between(point, (198, 65.20, 0))
     assert db == 134.01
+
+    cands = route.project_along(point, 134.01)
+    for r2lane in r2.lanes:
+        assert (r2lane, 53.6) in cands
+
+    cands = left_lane.project_along(offset, 134.01)
+    assert len(cands) == 6
+    for r2lane in r2.lanes:
+        if r2lane.index == 1:
+            assert any(
+                r2lane == cand[0] and math.isclose(cand[1], 53.6) for cand in cands
+            )
