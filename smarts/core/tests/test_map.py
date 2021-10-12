@@ -83,16 +83,13 @@ def test_sumo_map(scenario):
     assert out_lanes[0].lane_id == ":junction-intersection_0_0"
     assert out_lanes[1].lane_id == ":junction-intersection_1_0"
 
-    # foes = lane.foes
-    # assert foes
-    # assert len(foes) == 6
-    # foe_set = set(f.lane_id for f in foes)
-    # assert "edge-west-WE_0" in foe_set
-    # assert "edge-east-EW_0" in foe_set
-    # assert ":junction-intersection_0_0" in foe_set
-    # assert ":junction-intersection_1_0" in foe_set
-    # assert ":junction-intersection_5_0" in foe_set
-    # assert ":junction-intersection_12_0" in foe_set
+    foes = out_lanes[0].foes
+    assert foes
+    assert len(foes) == 3
+    foe_set = set(f.lane_id for f in foes)
+    assert "edge-east-EW_0" in foe_set  # engering from east
+    assert "edge-north-NS_0" in foe_set  # entering from north
+    assert ":junction-intersection_5_0" in foe_set  # crossing from east-to-west
 
     r1 = road_map.road_by_id("edge-north-NS")
     assert r1
