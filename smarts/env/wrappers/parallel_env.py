@@ -87,7 +87,11 @@ class ParallelEnv(AsyncVectorEnv):
         # Worker polling period in seconds.
         self._polling_period = 0.1
 
-        mp_ctx = mp.get_context()
+        # Fork is not a thread safe method.
+        forkserver_available = "forkserver" in mp.get_all_start_methods()
+        start_method = "forkserver" if forkserver_available else "spawn"
+        mp_ctx = mp.get_context(start_method)
+
         self.env_constructors = env_constructors
 
         self.error_queue = mp_ctx.Queue()
