@@ -137,3 +137,6 @@ ultra/ultra/scenarios/task*/*/
 
 # folder containing Observations collected .pkl files for imitation learning
 collected_observations/
+
+# vim swap files
+*.swp
