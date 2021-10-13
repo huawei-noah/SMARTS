@@ -117,9 +117,9 @@ def _build_single_scenario(
                 pip_index_proc.terminate()
                 pip_index_proc.wait()
 
-    # scenario_py = scenario_root / "scenario.py"
-    # if scenario_py.exists():
-    #     subprocess.check_call([sys.executable, scenario_py])
+    scenario_py = scenario_root / "scenario.py"
+    if scenario_py.exists():
+        subprocess.check_call([sys.executable, scenario_py])
 
 
 @scenario_cli.command(
