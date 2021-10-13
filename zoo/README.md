@@ -23,7 +23,7 @@ Under your scenario directory, create a requirements.txt
 ```
 # we'll be serving packages from a local pip index
 --extra-index-url http://localhost:8080
-open-agent==0.1.187
+open-agent==0.1.195
 ```
 
 Then in your scenario.py:

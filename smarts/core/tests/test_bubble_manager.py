@@ -93,6 +93,7 @@ def test_bubble_manager_state_change(smarts, mock_provider):
     state_at_position = {
         # Outside airlock and bubble
         (92, 0, 0): (False, False),
+        (93, 0, 0): (False, False),  # need a step for new route to "take"
         # Inside airlock, begin collecting experiences, but don't hijack
         (94, 0, 0): (True, False),
         # Entered bubble, now hijack
@@ -121,6 +122,10 @@ def test_bubble_manager_state_change(smarts, mock_provider):
                 smarts.step({})
         else:
             smarts.step({})
+
+            # XXX: this is necessary because the bubble manager doesn't know
+            # XXX: what route to give the agent when it hijacks vehicle.
+            smarts.traffic_sim.update_route_for_vehicle(vehicle_id, ["west", "east"])
 
         got_shadowed = index.vehicle_is_shadowed(vehicle_id)
         got_hijacked = index.vehicle_is_hijacked(vehicle_id)

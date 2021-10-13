@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 from smarts.core.chassis import BoxChassis
-from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
@@ -72,7 +72,7 @@ def provider_vehicle(position, heading, speed):
         vehicle_id="sv-132",
         vehicle_config_type="truck",
         pose=Pose.from_center(position, heading),
-        dimensions=BoundingBox(length=3, width=1, height=2),
+        dimensions=Dimensions(length=3, width=1, height=2),
         speed=speed,
         source="TESTS",
     )
@@ -104,7 +104,7 @@ def test_create_social_vehicle(bullet_client):
     chassis = BoxChassis(
         pose=Pose.from_center((0, 0, 0), Heading(0)),
         speed=0,
-        dimensions=BoundingBox(length=3, width=1, height=1),
+        dimensions=Dimensions(length=3, width=1, height=1),
         bullet_client=bullet_client,
     )
 
@@ -128,7 +128,7 @@ def test_vehicle_bounding_box(bullet_client):
     chassis = BoxChassis(
         pose=pose,
         speed=0,
-        dimensions=BoundingBox(length=3, width=1, height=1),
+        dimensions=Dimensions(length=3, width=1, height=1),
         bullet_client=bullet_client,
     )
 

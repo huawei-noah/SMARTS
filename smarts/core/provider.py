@@ -21,7 +21,6 @@ from dataclasses import dataclass, field
 from typing import List, Set
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Pose
 from .scenario import Scenario
 from .vehicle import VehicleState
 

@@ -30,7 +30,7 @@ from shapely.geometry import Point, Polygon
 from shapely.geometry import box as shapely_box
 
 from smarts.core import models
-from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.tire_models import TireForces
 from smarts.core.utils import pybullet
 from smarts.core.utils.bullet import (
@@ -59,9 +59,13 @@ with open(controller_filepath, "r") as controller_file:
 def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
     contact_objects = set()
 
-    min_, max_ = bullet_client.getAABB(bullet_id, link_index)
     # `getContactPoints` does not pick up collisions well so we cast a fast box check on the physics
+    min_, max_ = bullet_client.getAABB(bullet_id, link_index)
+    # note that getAABB returns a box around the link_index link only,
+    # which means it's offset from the ground (min_ has a positive z)
+    # if link_index=0 (the chassis link) is used.
     overlapping_objects = bullet_client.getOverlappingObjects(min_, max_)
+    # the pairs returned by getOverlappingObjects() appear to be in the form (body_id, link_idx)
     if overlapping_objects is not None:
         contact_objects = set(oo for oo, _ in overlapping_objects if oo != bullet_id)
 
@@ -86,7 +90,7 @@ class Chassis:
         raise NotImplementedError
 
     @property
-    def dimensions(self) -> BoundingBox:
+    def dimensions(self) -> Dimensions:
         raise NotImplementedError
 
     @property
@@ -162,7 +166,7 @@ class BoxChassis(Chassis):
         self,
         pose: Pose,
         speed: float,
-        dimensions: BoundingBox,
+        dimensions: Dimensions,
         bullet_client: bc.BulletClient,
     ):
         self._dimensions = dimensions
@@ -214,7 +218,7 @@ class BoxChassis(Chassis):
         self._bullet_constraint.move_to(force_pose)
 
     @property
-    def dimensions(self) -> BoundingBox:
+    def dimensions(self) -> Dimensions:
         return self._dimensions
 
     @property
@@ -392,7 +396,7 @@ class AckermannChassis(Chassis):
         width, length, height = np.array(
             self._client.getCollisionShapeData(self._bullet_id, 0)[0][3]
         )
-        self._dimensions = BoundingBox(length=length, width=width, height=height)
+        self._dimensions = Dimensions(length=length, width=width, height=height)
         chassis_pos = self._client.getLinkState(self._bullet_id, 0)[4]
         center_offset = np.array(
             self._client.getVisualShapeData(self._bullet_id, 0)[0][5]
@@ -528,7 +532,7 @@ class AckermannChassis(Chassis):
 
     @property
     def contact_points(self):
-        ## 0 is the chassis link index
+        ## 0 is the chassis link index (which means ground won't be included)
         contact_points = _query_bullet_contact_points(self._client, self._bullet_id, 0)
         return [
             ContactPoint(bullet_id=p[2], contact_point=p[5], contact_point_other=p[6])

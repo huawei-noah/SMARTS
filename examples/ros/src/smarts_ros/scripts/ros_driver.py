@@ -18,22 +18,22 @@ from smarts_ros.msg import (
     AgentsStamped,
     EntitiesStamped,
     EntityState,
-    SmartsControl,
+    SmartsReset,
 )
 from smarts_ros.srv import SmartsInfo, SmartsInfoResponse, SmartsInfoRequest
 
 from envision.client import Client as Envision
 from smarts.core.agent import Agent
-from smarts.core.coordinates import BoundingBox, Heading, Pose
-from smarts.core.scenario import (
+from smarts.core.coordinates import Dimensions, Heading, Pose
+from smarts.core.plan import (
     default_entry_tactic,
     EndlessGoal,
     Mission,
     PositionalGoal,
-    Scenario,
     Start,
     VehicleSpec,
 )
+from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.math import (
@@ -52,7 +52,7 @@ class ROSDriver:
 
     def __init__(self):
         self._state_lock = Lock()
-        self._control_lock = Lock()
+        self._reset_lock = Lock()
         self._smarts = None
         self._reset()
 
@@ -67,8 +67,8 @@ class ROSDriver:
         self._most_recent_state_sent = None
         with self._state_lock:
             self._recent_state = deque(maxlen=3)
-        with self._control_lock:
-            self._control = None
+        with self._reset_lock:
+            self._reset_msg = None
             self._scenario_path = None
             self._agents = {}
             self._agents_to_add = {}
@@ -102,9 +102,7 @@ class ROSDriver:
             f"{namespace}agents_out", AgentsStamped, queue_size=pub_queue_size
         )
 
-        rospy.Subscriber(
-            f"{namespace}control", SmartsControl, self._smarts_control_callback
-        )
+        rospy.Subscriber(f"{namespace}reset", SmartsReset, self._smarts_reset_callback)
 
         self._state_topic = f"{namespace}entities_in"
         rospy.Subscriber(self._state_topic, EntitiesStamped, self._entities_callback)
@@ -147,16 +145,18 @@ class ROSDriver:
         )
         assert self._smarts.external_provider
         self._last_step_time = None
-        with self._control_lock:
-            self._control = None
+        with self._reset_lock:
+            self._reset_msg = None
             self._scenario_path = None
             self._agents = {}
             self._agents_to_add = {}
 
-    def _smarts_control_callback(self, control: SmartsControl):
-        with self._control_lock:
-            self._control = control
-        for ros_agent_spec in control.initial_agents:
+    def _smarts_reset_callback(self, reset_msg: SmartsReset):
+        with self._reset_lock:
+            self._reset_msg = reset_msg
+            self._agents = {}
+            self._agents_to_add = {}
+        for ros_agent_spec in reset_msg.initial_agents:
             self._agent_spec_callback(ros_agent_spec)
 
     def _get_smarts_info(self, req: SmartsInfoRequest) -> SmartsInfoResponse:
@@ -296,14 +296,14 @@ class ROSDriver:
             vehicle_spec=VehicleSpec(
                 veh_id=f"veh_for_agent_{ros_agent_spec.agent_id}",
                 veh_config_type=ROSDriver._decode_vehicle_type(ros_agent_spec.veh_type),
-                dimensions=BoundingBox(
+                dimensions=Dimensions(
                     ros_agent_spec.veh_length,
                     ros_agent_spec.veh_width,
                     ros_agent_spec.veh_height,
                 ),
             ),
         )
-        with self._control_lock:
+        with self._reset_lock:
             if (
                 ros_agent_spec.agent_id in self._agents
                 or ros_agent_spec.agent_id in self._agents_to_add
@@ -326,7 +326,7 @@ class ROSDriver:
     def _entity_to_vs(entity: EntityState) -> VehicleState:
         veh_id = entity.entity_id
         veh_type = ROSDriver._decode_entity_type(entity.entity_type)
-        veh_dims = BoundingBox(entity.length, entity.width, entity.height)
+        veh_dims = Dimensions(entity.length, entity.width, entity.height)
         vs = VehicleState(
             source="EXTERNAL",
             vehicle_id=veh_id,
@@ -375,7 +375,7 @@ class ROSDriver:
             self.vs.pose = Pose.from_center(
                 self.vector[1:4], Heading(self.vector[4] % (2 * math.pi))
             )
-            self.vs.dimensions = BoundingBox(*self.vector[5:8])
+            self.vs.dimensions = Dimensions(*self.vector[5:8])
             self.linear_velocity = self.vector[8:11]
             self.angular_velocity = self.vector[11:14]
             self.linear_acceleration = self.vector[14:17]
@@ -558,7 +558,7 @@ class ROSDriver:
         self._agents_publisher.publish(agents)
 
     def _do_agents(self, observations: Dict[str, Observation]) -> Dict[str, Any]:
-        with self._control_lock:
+        with self._reset_lock:
             actions = {
                 agent_id: self._agents[agent_id].act(agent_obs)
                 for agent_id, agent_obs in observations.items()
@@ -575,18 +575,15 @@ class ROSDriver:
             return actions
 
     def _check_reset(self) -> Dict[str, Observation]:
-        with self._control_lock:
-            if self._control:
-                self._scenario_path = self._control.reset_with_scenario_path
+        with self._reset_lock:
+            if self._reset_msg:
+                self._scenario_path = self._reset_msg.scenario
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
-                self._agents = {}
-                self._agents_to_add = {}
-                self._control = None
-                if self._scenario_path:
-                    observations = self._smarts.reset(Scenario(self._scenario_path))
-                    self._last_step_time = None
-                    return observations
-                return {}
+                self._reset_msg = None
+                self._last_step_time = None
+                self._recent_state = deque(maxlen=3)
+                self._most_recent_state_sent = None
+                return self._smarts.reset(Scenario(self._scenario_path))
         return None
 
     def run_forever(self):
@@ -609,7 +606,7 @@ class ROSDriver:
                 obs = self._check_reset()
                 if not self._scenario_path:
                     if not warned_scenario:
-                        rospy.loginfo("waiting for scenario on control channel...")
+                        rospy.loginfo("waiting for scenario on reset channel...")
                         warned_scenario = True
                     elif self._last_step_time:
                         rospy.loginfo("no more scenarios.  exiting...")
@@ -618,14 +615,28 @@ class ROSDriver:
                 if obs is not None:
                     observations = obs
 
-                actions = self._do_agents(observations)
+                try:
+                    actions = self._do_agents(observations)
 
-                step_delta = self._update_smarts_state()
+                    step_delta = self._update_smarts_state()
 
-                observations, _, dones, _ = self._smarts.step(actions, step_delta)
+                    observations, _, dones, _ = self._smarts.step(actions, step_delta)
 
-                self._publish_state()
-                self._publish_agents(observations, dones)
+                    self._publish_state()
+                    self._publish_agents(observations, dones)
+                except Exception as e:
+                    if isinstance(e, rospy.ROSInterruptException):
+                        raise e
+                    batch_mode = rospy.get_param("~batch_mode", False)
+                    if not batch_mode:
+                        raise e
+                    import traceback
+
+                    rospy.logerr(f"SMARTS raised exception:  {e}")
+                    rospy.logerr(traceback.format_exc())
+                    rospy.logerr("Will wait for next reset...")
+                    self._smarts = None
+                    self.setup_smarts()
 
                 if self._target_freq:
                     if rate.remaining().to_sec() <= 0.0:

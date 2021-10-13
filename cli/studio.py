@@ -65,7 +65,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
 
     scenario_root = Path(scenario)
     map_net = str(scenario_root / "map.net.xml")
-    if not allow_offset_map:
+    if not allow_offset_map or scenario.traffic_histories:
         SumoRoadNetwork.from_file(map_net, shift_to_origin=True)
     elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
         click.echo(
@@ -143,6 +143,8 @@ def build_all_scenarios(clean, allow_offset_maps, scenarios):
         path = Path(scenarios_path)
         for p in path.rglob("*.net.xml"):
             scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
+            if scenario == f"{scenarios_path}/waymo":
+                continue
             builder_thread = Thread(
                 target=_build_single_scenario, args=(clean, allow_offset_maps, scenario)
             )

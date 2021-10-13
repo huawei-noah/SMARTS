@@ -24,8 +24,7 @@ from envision.types import format_actor_id
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
-from smarts.core.mission_planner import MissionPlanner
-from smarts.core.remote_agent_buffer import RemoteAgentBuffer
+from smarts.core.plan import Plan
 from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
@@ -78,7 +77,6 @@ class AgentManager:
         if self._remote_agent_buffer:
             self._remote_agent_buffer.destroy()
             self._remote_agent_buffer = None
-        Sensors.clean_up()
 
     @property
     def agent_ids(self):
@@ -127,7 +125,12 @@ class AgentManager:
         for v_id in vehicle_ids:
             vehicle = sim.vehicle_index.vehicle_by_id(v_id)
             agent_id = self._vehicle_with_sensors[v_id]
+
+            if not sim.vehicle_index.check_vehicle_id_has_sensor_state(vehicle.id):
+                continue
+
             sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+
             observations[agent_id], dones[agent_id] = Sensors.observe(
                 sim, agent_id, sensor_state, vehicle
             )
@@ -339,6 +342,8 @@ class AgentManager:
         social_agents = sim.scenario.social_agents
         if social_agents:
             if not self._remote_agent_buffer:
+                from smarts.core.remote_agent_buffer import RemoteAgentBuffer
+
                 self._remote_agent_buffer = RemoteAgentBuffer(
                     zoo_manager_addrs=self._zoo_addrs
                 )
@@ -414,17 +419,13 @@ class AgentManager:
 
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
-        planner = MissionPlanner(
-            scenario.road_network,
-            agent_behavior=agent_interface.agent_behavior,
-        )
-        planner.plan(mission)
+        plan = Plan(sim.road_map, mission)
 
         vehicle = sim.vehicle_index.build_agent_vehicle(
             sim,
             agent_id,
             agent_interface,
-            planner,
+            plan,
             scenario.vehicle_filepath,
             scenario.tire_parameters_filepath,
             trainable,
@@ -460,6 +461,8 @@ class AgentManager:
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
         if not self._remote_agent_buffer:
+            from smarts.core.remote_agent_buffer import RemoteAgentBuffer
+
             self._remote_agent_buffer = RemoteAgentBuffer(
                 zoo_manager_addrs=self._zoo_addrs
             )
@@ -531,14 +534,12 @@ class AgentManager:
             if sv_id in self._vehicle_with_sensors:
                 continue
 
-            mission_planner = MissionPlanner(sim.scenario.road_network)
-
-            mission_planner.plan(mission=None)
+            plan = Plan(sim.road_map, None)
 
             agent_id = f"Agent-{sv_id}"
             self._vehicle_with_sensors[sv_id] = agent_id
             self._agent_interfaces[agent_id] = agent_interface
 
             sim.vehicle_index.attach_sensors_to_vehicle(
-                sim, sv_id, agent_interface, mission_planner
+                sim, sv_id, agent_interface, plan
             )

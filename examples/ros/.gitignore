@@ -1,0 +1,11 @@
+# ROS and catkin
+/build/
+/devel/
+/install/
+cmake.lock
+*.cmake
+/src/CMakeLists.txt
+cmake/
+gennodejs/
+common-lisp/
+roseus/

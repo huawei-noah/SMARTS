@@ -57,7 +57,7 @@ for _ in range(1000):
 # git clone ...
 cd <path/to/SMARTS>
 
-# Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
+# Install the system requirements, then follow the instructions for setting up the SUMO_HOME environment variable. You may use the `-y` option to enable automatic assumption of "yes" to all prompts to avoid timeout from waiting for user input. 
 bash utils/setup/install_deps.sh
 
 # verify sumo is >= 1.5.0
