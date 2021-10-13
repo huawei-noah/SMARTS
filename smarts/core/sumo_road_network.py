@@ -942,7 +942,8 @@ class SumoRoadNetwork(RoadMap):
                         break
                 else:
                     new_coords.append(shPoint(x, y))
-            lane_to_poly[lane_id] = Polygon(new_coords)
+            if new_coords:
+                lane_to_poly[lane_id] = Polygon(new_coords)
 
     def _snap_external_holes(self, lane_to_poly, snap_threshold=2):
         for lane_id in lane_to_poly:
@@ -977,7 +978,8 @@ class SumoRoadNetwork(RoadMap):
                         break
                 else:
                     new_coords.append(shPoint(x, y))
-            lane_to_poly[lane_id] = Polygon(new_coords)
+            if new_coords:
+                lane_to_poly[lane_id] = Polygon(new_coords)
 
     @staticmethod
     def _triangulate(polygon):
