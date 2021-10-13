@@ -116,8 +116,7 @@ def parallel_env_async(
 
     tot_scores = {agent_id: 0 for agent_id in agents.keys()}
 
-    dones = {"__all__": False}
-    batched_dones = [dones] * num_env
+    batched_dones = [{"__all__": False} for _ in range(num_env)]
     batched_observations = env.reset()
 
     for _ in range(num_steps):
@@ -180,8 +179,7 @@ def parallel_env_sync(
     tot_scores = {agent_id: 0 for agent_id in agents.keys()}
 
     for _ in range(num_episodes):
-        dones = {"__all__": False}
-        batched_dones = [dones] * num_env
+        batched_dones = [{"__all__": False} for _ in range(num_env)]
         batched_observations = env.reset()
 
         # Iterate until all environments complete an episode each.
