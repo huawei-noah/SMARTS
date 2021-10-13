@@ -10,7 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
-- Fixed NGSIM map holes. See Issue #969.
+- Added `--avoid-snapping-holes` option to `scl scenario build` command to fix NGSIM map holes. See Issue #969.
 - Added a ROS wrapper/driver example to wrap SMARTS in a ROS (v1) node.
 - Added the ability to pass an optional `time_delta_since_last_step` to SMARTS' `step()` function
   to support variable timesteps for co-simulation.
