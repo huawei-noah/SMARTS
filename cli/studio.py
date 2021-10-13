@@ -49,12 +49,20 @@ def scenario_cli():
         SumoRoadNetwork.shifted_net_file_name
     ),
 )
+@click.option(
+    "--avoid-snapping-holes",
+    is_flag=True,
+    default=False,
+    help="Don't try snapping internal and external edge holes created due to crude geometry of SUMO's road network polygons (.glb file). Only set this to true if holes are created by snapping",
+)
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build_scenario(clean, allow_offset_map, scenario):
-    _build_single_scenario(clean, allow_offset_map, scenario)
+def build_scenario(clean, allow_offset_map, avoid_snapping_holes, scenario):
+    _build_single_scenario(clean, allow_offset_map, scenario, avoid_snapping_holes)
 
 
-def _build_single_scenario(clean, allow_offset_map, scenario):
+def _build_single_scenario(
+    clean, allow_offset_map, scenario, avoid_snapping_holes=False
+):
     import importlib.resources as pkg_resources
 
     from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
@@ -74,7 +82,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
             )
         )
     map_glb = scenario_root / "map.glb"
-    generate_glb_from_sumo_network(map_net, str(map_glb))
+    generate_glb_from_sumo_network(map_net, str(map_glb), avoid_snapping_holes)
 
     requirements_txt = scenario_root / "requirements.txt"
     if requirements_txt.exists():
@@ -109,9 +117,9 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
                 pip_index_proc.terminate()
                 pip_index_proc.wait()
 
-    scenario_py = scenario_root / "scenario.py"
-    if scenario_py.exists():
-        subprocess.check_call([sys.executable, scenario_py])
+    # scenario_py = scenario_root / "scenario.py"
+    # if scenario_py.exists():
+    #     subprocess.check_call([sys.executable, scenario_py])
 
 
 @scenario_cli.command(

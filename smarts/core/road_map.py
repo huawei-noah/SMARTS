@@ -60,7 +60,7 @@ class RoadMap:
         # map units per meter
         return 1.0
 
-    def to_glb(self, at_path):
+    def to_glb(self, at_path, avoid_snapping_holes):
         """ build a glb file for camera rendering and envision """
         raise NotImplementedError()
 

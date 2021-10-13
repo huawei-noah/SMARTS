@@ -195,9 +195,9 @@ class SumoRoadNetwork(RoadMap):
         # map units per meter
         return self._default_lane_width / SumoRoadNetwork.DEFAULT_LANE_WIDTH
 
-    def to_glb(self, at_path):
+    def to_glb(self, at_path, avoid_snapping_holes):
         """ build a glb file for camera rendering and envision """
-        polys = self._compute_road_polygons()
+        polys = self._compute_road_polygons(avoid_snapping_holes)
         glb = self._make_glb_from_polys(polys)
         glb.write_glb(at_path)
 
@@ -860,7 +860,7 @@ class SumoRoadNetwork(RoadMap):
                 return {(lane, distance) for lane in road.lanes}
             return set()
 
-    def _compute_road_polygons(self):
+    def _compute_road_polygons(self, avoid_snapping_holes: bool):
         lane_to_poly = {}
         for edge in self._graph.getEdges():
             for lane in edge.getLanes():
@@ -874,11 +874,12 @@ class SumoRoadNetwork(RoadMap):
 
                 lane_to_poly[lane.getID()] = shape
 
-        # Remove holes created at tight junctions due to crude map geometry
-        # NOTE: If you don't want snapping of a particular edge, set its type to "ignore_snapping" in
-        # the scenario's map.net.xml file. See scnenario/ngsim/map.net.xml for example.
-        self._snap_internal_holes(lane_to_poly)
-        self._snap_external_holes(lane_to_poly)
+        # Remove holes created in at tight junctions .glb rendering due to crude map geometry of SUMO Road Network polygon
+        # NOTE: If you don't want to snap the holes of a map, or the below functions cause snapping of merging lanes creating
+        # more holes, use the option --avoid-snapping-holes i.e. scl build scenario --clean --avoid-snapping-holes <scenario_path>
+        if not avoid_snapping_holes:
+            self._snap_internal_holes(lane_to_poly)
+            self._snap_external_holes(lane_to_poly)
 
         # Remove break in visible lane connections created when lane enters an intersection
         self._snap_internal_edges(lane_to_poly)
@@ -926,9 +927,7 @@ class SumoRoadNetwork(RoadMap):
             lane = self._graph.getLane(lane_id)
 
             # Only do snapping for internal edge lane holes
-            if (not lane.getEdge().isSpecial()) or (
-                lane.getEdge().getType() == "ignore_snapping"
-            ):
+            if not lane.getEdge().isSpecial():
                 continue
             lane_shape = lane_to_poly[lane_id]
             for x, y in lane_shape.exterior.coords:
@@ -941,6 +940,7 @@ class SumoRoadNetwork(RoadMap):
                     nl_shape = lane_to_poly.get(nl.lane_id)
                     if nl_shape:
                         lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
+                        break
             lane_to_poly[lane_id] = lane_shape
 
     def _snap_external_holes(self, lane_to_poly, snap_threshold=2):
@@ -948,10 +948,7 @@ class SumoRoadNetwork(RoadMap):
             lane = self._graph.getLane(lane_id)
 
             # Only do snapping for external edge lane holes
-            if (
-                lane.getEdge().isSpecial()
-                or lane.getEdge().getType() == "ignore_snapping"
-            ):
+            if lane.getEdge().isSpecial():
                 continue
 
             incoming = self._graph.getLane(lane_id).getIncoming()

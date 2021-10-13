@@ -22,9 +22,9 @@ import argparse
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
 
-def generate_glb_from_sumo_network(sumo_net_file, out_glb_file):
+def generate_glb_from_sumo_network(sumo_net_file, out_glb_file, avoid_snapping_holes):
     road_network = SumoRoadNetwork.from_file(net_file=sumo_net_file)
-    road_network.to_glb(out_glb_file)
+    road_network.to_glb(out_glb_file, avoid_snapping_holes)
 
 
 if __name__ == "__main__":
@@ -34,6 +34,14 @@ if __name__ == "__main__":
     )
     parser.add_argument("net", help="sumo net file (*.net.xml)", type=str)
     parser.add_argument("output_path", help="where to write the mesh file", type=str)
+    parser.add_argument(
+        "--avoid_snapping_holes",
+        default=False,
+        action="store_true",
+        help="Don't try snapping internal and external edge holes created due to crude geometry of SUMO's road network polygons (.glb file). Only set this to true if holes are created by snapping",
+    )
     args = parser.parse_args()
 
-    generate_glb_from_sumo_network(args.net, args.output_path)
+    generate_glb_from_sumo_network(
+        args.net, args.output_path, args.avoid_snapping_holes
+    )
