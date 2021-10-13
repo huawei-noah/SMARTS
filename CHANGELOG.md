@@ -53,7 +53,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fix the case where mapping a blank repository to the docker container `/src` directory via `-v $SMARTS_REPO/src` as directed in the `README` will cause `scl` and other commands to not work.
 - Fix case where multiple outgoing edges could cause non-determinism.
 
-
 ## [0.4.17] - 2021-07-02
 ### Added 
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
