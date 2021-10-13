@@ -55,7 +55,7 @@ class ParallelEnv(AsyncVectorEnv):
         env_constructors: Sequence[EnvConstructor],
         auto_reset: bool,
         sim_name: Optional[str] = None,
-        seed=42,
+        seed: int = 42,
     ):
         """The environments can be different but must use the same action and
         observation specs.
@@ -161,6 +161,9 @@ class ParallelEnv(AsyncVectorEnv):
 
         Raises:
             AlreadyPendingCallError: If `seed` is called while another function call is pending.
+
+        Returns:
+            Tuple[int]: Seed of each environment.
         """
         self._assert_is_running()
         seeds = [seed + i for i in range(self.num_envs)]
