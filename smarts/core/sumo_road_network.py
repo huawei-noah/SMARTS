@@ -27,6 +27,7 @@ import trimesh.scene
 from cached_property import cached_property
 from functools import lru_cache
 from shapely.geometry import Polygon
+from shapely.geometry import Point as shPoint
 from shapely.ops import snap, triangulate
 from subprocess import check_output
 from trimesh.exchange import gltf
@@ -875,8 +876,6 @@ class SumoRoadNetwork(RoadMap):
                 lane_to_poly[lane.getID()] = shape
 
         # Remove holes created at tight junctions due to crude map geometry
-        # NOTE: If you don't want snapping of a particular edge, set its type to "ignore_snapping" in
-        # the scenario's map.net.xml file. See scnenario/ngsim/map.net.xml for example.
         self._snap_internal_holes(lane_to_poly)
         self._snap_external_holes(lane_to_poly)
 
@@ -926,11 +925,10 @@ class SumoRoadNetwork(RoadMap):
             lane = self._graph.getLane(lane_id)
 
             # Only do snapping for internal edge lane holes
-            if (not lane.getEdge().isSpecial()) or (
-                lane.getEdge().getType() == "ignore_snapping"
-            ):
+            if not lane.getEdge().isSpecial():
                 continue
             lane_shape = lane_to_poly[lane_id]
+            new_coords = []
             for x, y in lane_shape.exterior.coords:
                 for nl, dist in self.nearest_lanes(
                     Point(x, y),
@@ -940,31 +938,32 @@ class SumoRoadNetwork(RoadMap):
                         continue
                     nl_shape = lane_to_poly.get(nl.lane_id)
                     if nl_shape:
-                        lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
-            lane_to_poly[lane_id] = lane_shape
+                        new_coords.append(snap(shPoint(x, y), nl_shape, snap_threshold))
+                        break
+                else:
+                    new_coords.append(shPoint(x, y))
+            lane_to_poly[lane_id] = Polygon(new_coords)
 
     def _snap_external_holes(self, lane_to_poly, snap_threshold=2):
         for lane_id in lane_to_poly:
             lane = self._graph.getLane(lane_id)
 
             # Only do snapping for external edge lane holes
-            if (
-                lane.getEdge().isSpecial()
-                or lane.getEdge().getType() == "ignore_snapping"
-            ):
+            if lane.getEdge().isSpecial():
                 continue
 
-            incoming = self._graph.getLane(lane_id).getIncoming()
+            incoming = lane.getIncoming()
             if incoming and incoming[0].getEdge().isSpecial():
                 continue
 
-            outgoing = self._graph.getLane(lane_id).getOutgoing()
+            outgoing = lane.getOutgoing()
             if outgoing:
                 outgoing_lane = outgoing[0].getToLane()
                 if outgoing_lane.getEdge().isSpecial():
                     continue
 
             lane_shape = lane_to_poly[lane_id]
+            new_coords = []
             for x, y in lane_shape.exterior.coords:
                 for nl, dist in self.nearest_lanes(
                     Point(x, y),
@@ -974,8 +973,11 @@ class SumoRoadNetwork(RoadMap):
                         continue
                     nl_shape = lane_to_poly.get(nl.lane_id)
                     if nl_shape:
-                        lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
-            lane_to_poly[lane_id] = lane_shape
+                        new_coords.append(snap(shPoint(x, y), nl_shape, snap_threshold))
+                        break
+                else:
+                    new_coords.append(shPoint(x, y))
+            lane_to_poly[lane_id] = Polygon(new_coords)
 
     @staticmethod
     def _triangulate(polygon):
