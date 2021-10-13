@@ -934,7 +934,7 @@ class SumoRoadNetwork(RoadMap):
                     Point(x, y),
                     include_junctions=False,
                 ):
-                    if not nl:
+                    if not nl or nl.lane_id == lane_id:
                         continue
                     nl_shape = lane_to_poly.get(nl.lane_id)
                     if nl_shape:
@@ -969,7 +969,7 @@ class SumoRoadNetwork(RoadMap):
                     Point(x, y),
                     include_junctions=False,
                 ):
-                    if (not nl) or (nl and nl.in_junction):
+                    if not nl or nl.in_junction or nl.lane_id == lane_id:
                         continue
                     nl_shape = lane_to_poly.get(nl.lane_id)
                     if nl_shape:
