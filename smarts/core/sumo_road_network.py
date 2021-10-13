@@ -972,6 +972,12 @@ class SumoRoadNetwork(RoadMap):
                 ):
                     if not nl or nl.in_junction or nl.lane_id == lane_id:
                         continue
+                    ll, _ = nl.lane_to_left
+                    rl, _ = nl.lane_to_right
+                    if (not ll or ll.lane_id != lane_id) and (
+                        not rl or rl.lane_id != lane_id
+                    ):
+                        continue
                     nl_shape = lane_to_poly.get(nl.lane_id)
                     if nl_shape:
                         new_coords.append(snap(shPoint(x, y), nl_shape, snap_threshold))
