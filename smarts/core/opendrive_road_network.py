@@ -18,39 +18,103 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+from typing import Dict, List, Sequence, Tuple
 
-from lxml import etree
+import numpy as np
 from cached_property import cached_property
-from typing import List, Sequence, Tuple
-from opendrive2lanelet.opendriveparser.elements.opendrive import OpenDrive
+from lxml import etree
+from numpy.core.defchararray import index
+from opendrive2lanelet.opendriveparser.elements.opendrive import \
+    OpenDrive as OpenDriveElement
 from opendrive2lanelet.opendriveparser.elements.road import Road as RoadElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import Lane as LaneElement
+from opendrive2lanelet.opendriveparser.elements.roadLanes import \
+    Lane as LaneElement
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 
 from smarts.core.road_map import RoadMap
 
 
 class OpenDriveRoadNetwork(RoadMap):
-    def __init__(self, network: OpenDrive, xodr_file: str):
+    def __init__(self, xodr_file: str):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._network = network
         self._xodr_file = xodr_file
-        self._lanes = {}
-        self._roads = {}
+        self._roads: Dict[str, OpenDriveRoadNetwork.Road] = {}
+        self._lanes: Dict[str, OpenDriveRoadNetwork.Lane]  = {}
         self._lanepoints = None
-        self._junctions = network.junctions
+        self._junctions = {}
+        # self._junctions = network.junctions
         self._junction_connections = {}
-        self._precompute_junction_connections()
+        # self._precompute_junction_connections()
 
     @classmethod
     def from_file(
         cls,
         xodr_file,
     ):
-        with open(xodr_file, "r") as f:
-            network = parse_opendrive(etree.parse(f).getroot())
+        map = cls(xodr_file)
+        map.load()
+        return map
 
-        return cls(network, xodr_file)
+    @staticmethod
+    def _elem_id(elem):
+        if type(elem) == RoadElement:
+            return str(elem.id)
+        elif type(elem) == LaneElement:
+            return f"{elem.parentRoad.id}_{elem.lane_section.idx}_{elem.id}"
+        else:
+            return None
+
+    def load(self):
+        # Parse the xml definition into an initial representation
+        od: OpenDriveElement = None
+        with open(self._xodr_file, "r") as f:
+            od = parse_opendrive(etree.parse(f).getroot())
+
+        # First pass: create all Road and Lane elements
+        for road_elem in od.roads:
+            road_id = OpenDriveRoadNetwork._elem_id(road_elem)
+            road = OpenDriveRoadNetwork.Road(road_id, road_elem, None)
+            self._roads[road_id] = road
+            for section_elem in road_elem.lanes.lane_sections:
+                for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
+                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
+                    lane = OpenDriveRoadNetwork.Lane(lane_id, road, lane_elem.id)
+                    self._lanes[lane_id] = lane
+        
+        # Second pass: fill in references
+        for road_elem in od.roads:
+            road_id = OpenDriveRoadNetwork._elem_id(road_elem)
+            road = self._roads[road_id]
+            for section_elem in road_elem.lanes.lane_sections:
+                for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
+                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
+                    lane = self._lanes[lane_id]
+
+                    if not lane.in_junction:
+                        # When not in an intersection, all OpenDrive Lanes for a Road
+                        # with the same index sign go in the same direction.
+                        sign = np.sign(lane.index)
+                        elems = [elem for elem in section_elem.allLanes if np.sign(elem.id) == sign and elem.id != lane.index]
+                        same_dir_lanes = [self._lanes[OpenDriveRoadNetwork._elem_id(elem)] for elem in elems]
+                        lane.lanes_in_same_direction = same_dir_lanes
+                    else:
+                        pass
+
+                        # TODO
+                        
+                        # result = []
+                        # in_roads = set(il.road for il in self.incoming_lanes)
+                        # out_roads = set(il.road for il in self.outgoing_lanes)
+                        # for lane in self.road.lanes:
+                        #     if self == lane:
+                        #         continue
+                        #     other_in_roads = set(il.road for il in lane.incoming_lanes)
+                        #     if in_roads & other_in_roads:
+                        #         other_out_roads = set(il.road for il in self.outgoing_lanes)
+                        #         if out_roads & other_out_roads:
+                        #             result.append(lane)
+                        # lane.lanes_in_same_direction = result
+
 
     def _precompute_junction_connections(self):
         for road in self._network.roads:
@@ -102,18 +166,21 @@ class OpenDriveRoadNetwork(RoadMap):
 
     @property
     def source(self) -> str:
-        """ This is the .xodr file of the OpenDRIVE map. """
+        """This is the .xodr file of the OpenDRIVE map."""
         return self._xodr_file
 
     class Lane(RoadMap.Lane):
-        def __init__(self, lane_id: str, lane_elem: LaneElement, road_map):
+        def __init__(self, lane_id: str, road: RoadMap.Road, index: int):
             self._lane_id = lane_id
-            self._map = road_map
-            self._road = road_map.road_by_id(str(lane_elem.parentRoad.id))
-            assert self._road
-            self._lane_elem = lane_elem
-            self._curr_lane_section = self._lane_elem.lane_section
-            self.type = self._lane_elem.type
+            self._road = road
+            self._index = index
+            self._lanes_in_same_dir = []
+            # self._map = road_map
+            # self._road = road_map.road_by_id(str(lane_elem.parentRoad.id))
+            # assert self._road
+            # self._lane_elem = lane_elem
+            # self._curr_lane_section = self._lane_elem.lane_section
+            # self.type = self._lane_elem.type
 
         @property
         def lane_id(self) -> str:
@@ -127,52 +194,18 @@ class OpenDriveRoadNetwork(RoadMap):
         def in_junction(self) -> bool:
             return self._road.is_junction
 
-        @cached_property
+        @property
         def index(self) -> int:
-            return self._lane_elem.id
+            # TODO: convert to expected convention?
+            return self._index
 
-        @cached_property
+        @property
         def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
-            if not self.in_junction:
-                # When not in an intersection, all Opendrive Lanes for a Road with same index sign
-                # go in same direction.
-                same_direction_lanes = []
-                lane_section_id = self.lane_id.split("_")[1]
-                if self.index > 0:
-                    for l in self._curr_lane_section.allLanes:
-                        if l.id > 0 and l.id != self.index:
-                            lane_id = (
-                                self.road.road_id
-                                + "_"
-                                + lane_section_id
-                                + "_"
-                                + str(l.id)
-                            )
-                            same_direction_lanes.append(self._map.lane_by_id(lane_id))
-                elif self.index < 0:
-                    for l in self._curr_lane_section.allLanes:
-                        if l.id < 0 and l.id != self.index:
-                            lane_id = (
-                                self.road.road_id
-                                + "_"
-                                + lane_section_id
-                                + "_"
-                                + str(l.id)
-                            )
-                            same_direction_lanes.append(self._map.lane_by_id(lane_id))
-                return same_direction_lanes
-            result = []
-            in_roads = set(il.road for il in self.incoming_lanes)
-            out_roads = set(il.road for il in self.outgoing_lanes)
-            for lane in self.road.lanes:
-                if self == lane:
-                    continue
-                other_in_roads = set(il.road for il in lane.incoming_lanes)
-                if in_roads & other_in_roads:
-                    other_out_roads = set(il.road for il in self.outgoing_lanes)
-                    if out_roads & other_out_roads:
-                        result.append(lane)
-            return result
+            return self._lanes_in_same_dir
+
+        @lanes_in_same_direction.setter
+        def lanes_in_same_direction(self, lanes):
+            self._lanes_in_same_dir = lanes 
 
         @cached_property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
@@ -291,35 +324,10 @@ class OpenDriveRoadNetwork(RoadMap):
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
-        if lane:
-            return lane
-        lane_elem = None
-        split_lst = lane_id.split("_")
-        road_id, lane_section_index, od_lane_id = (
-            split_lst[0],
-            split_lst[1],
-            split_lst[2],
-        )
-        road = self.road_by_id(road_id)
-        if not road:
-            self._log.warning(
-                f"OpenDriveRoadNetwork got request for unknown road_id '{road_id}'"
-            )
-            return None
-        road_elem = self._network.getRoad(int(road_id))
-
-        lane_section = road_elem.lanes.lane_sections[int(lane_section_index)]
-        for od_lane in lane_section.allLanes:
-            if od_lane.id == int(od_lane_id):
-                lane_elem = od_lane
-                break
-        if not lane_elem:
+        if not lane:
             self._log.warning(
                 f"OpenDriveRoadNetwork got request for unknown lane_id '{lane_id}'"
             )
-            return None
-        lane = OpenDriveRoadNetwork.Lane(lane_id, lane_elem, self)
-        self._lanes[lane_id] = lane
         return lane
 
     class Road(RoadMap.Road):
@@ -436,14 +444,8 @@ class OpenDriveRoadNetwork(RoadMap):
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
-        if road:
-            return road
-        road_elem = self._network.getRoad(int(road_id))
-        if not road_elem:
+        if not road:
             self._log.warning(
                 f"OpenDriveRoadNetwork got request for unknown road_id '{road_id}'"
             )
-            return None
-        road = OpenDriveRoadNetwork.Road(road_id, road_elem, self)
-        self._roads[road_id] = road
         return road
