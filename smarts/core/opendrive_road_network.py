@@ -80,7 +80,7 @@ class OpenDriveRoadNetwork(RoadMap):
             road_elem: RoadElement = road_elem
             road_id = OpenDriveRoadNetwork._elem_id(road_elem)
             road = OpenDriveRoadNetwork.Road(
-                road_id, road_elem.junction is not None, road_elem._length
+                road_id, road_elem.junction is not None, road_elem.length
             )
             self._roads[road_id] = road
             for section_elem in road_elem.lanes.lane_sections:
@@ -122,7 +122,7 @@ class OpenDriveRoadNetwork(RoadMap):
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
 
-        # Third pass: Fill in Dependent Attributes
+        # Third pass: fill in remaining properties
         start = time.time()
         for road_elem in od.roads:
             road_id = OpenDriveRoadNetwork._elem_id(road_elem)
