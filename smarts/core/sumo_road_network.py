@@ -28,7 +28,7 @@ from cached_property import cached_property
 from functools import lru_cache
 from shapely.geometry import Polygon
 from shapely.geometry import Point as shPoint
-from shapely.ops import snap, triangulate
+from shapely.ops import nearest_points, snap, triangulate
 from subprocess import check_output
 from trimesh.exchange import gltf
 from typing import List, Set, Sequence, Tuple
@@ -938,8 +938,10 @@ class SumoRoadNetwork(RoadMap):
                         continue
                     nl_shape = lane_to_poly.get(nl.lane_id)
                     if nl_shape:
-                        new_coords.append(snap(shPoint(x, y), nl_shape, snap_threshold))
-                        break
+                        p, np = nearest_points(shPoint(x, y), nl_shape)
+                        if p.distance(np) < snap_threshold:
+                            new_coords.append(np)
+                            break
                 else:
                     new_coords.append(shPoint(x, y))
             if new_coords:
@@ -980,8 +982,10 @@ class SumoRoadNetwork(RoadMap):
                         continue
                     nl_shape = lane_to_poly.get(nl.lane_id)
                     if nl_shape:
-                        new_coords.append(snap(shPoint(x, y), nl_shape, snap_threshold))
-                        break
+                        p, np = nearest_points(shPoint(x, y), nl_shape)
+                        if p.distance(np) < snap_threshold:
+                            new_coords.append(np)
+                            break
                 else:
                     new_coords.append(shPoint(x, y))
             if new_coords:
