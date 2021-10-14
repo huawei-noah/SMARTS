@@ -16,22 +16,9 @@ from typing import Dict, Tuple, Sequence
 class ChaseViaPointsAgent(Agent):
     def act(self, obs: Sequence[Observation]) -> Tuple[float, int]:
         # Here, we only utilise the newest frame from the stacked observations.
-        obs = obs[-1]
-
-        if (
-            len(obs.via_data.near_via_points) < 1
-            or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
-        ):
-            return (obs.waypoint_paths[0][0].speed_limit, 0)
-
-        nearest = obs.via_data.near_via_points[0]
-        if nearest.lane_index == obs.ego_vehicle_state.lane_index:
-            return (nearest.required_speed, 0)
-
-        return (
-            nearest.required_speed,
-            1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
-        )
+        newest_obs = obs[-1]
+        speed_limit = newest_obs.waypoint_paths[0][0].speed_limit
+        return (speed_limit, 0)
 
 
 def main(
