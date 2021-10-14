@@ -80,7 +80,7 @@ class OpenDriveRoadNetwork(RoadMap):
             road_elem: RoadElement = road_elem
             road_id = OpenDriveRoadNetwork._elem_id(road_elem)
             road = OpenDriveRoadNetwork.Road(
-                road_id, road_elem.junction is not None, road_elem.length
+                road_id, road_elem.junction is not None, road_elem._length
             )
             self._roads[road_id] = road
             for section_elem in road_elem.lanes.lane_sections:
@@ -151,8 +151,22 @@ class OpenDriveRoadNetwork(RoadMap):
                         ]
                         lane.lanes_in_same_direction = same_dir_lanes
                     else:
-                        # TODO
-                        pass
+                        result = []
+                        in_roads = set(il.road for il in lane.incoming_lanes)
+                        out_roads = set(il.road for il in lane.outgoing_lanes)
+                        for rd_lane in lane.road.lanes:
+                            if self == rd_lane:
+                                continue
+                            other_in_roads = set(
+                                il.road for il in rd_lane.incoming_lanes
+                            )
+                            if in_roads & other_in_roads:
+                                other_out_roads = set(
+                                    il.road for il in lane.outgoing_lanes
+                                )
+                                if out_roads & other_out_roads:
+                                    result.append(rd_lane)
+                        lane.lanes_in_same_direction = result
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
