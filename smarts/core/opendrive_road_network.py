@@ -50,9 +50,9 @@ class OpenDriveRoadNetwork(RoadMap):
         cls,
         xodr_file,
     ):
-        map = cls(xodr_file)
-        map.load()
-        return map
+        od_map = cls(xodr_file)
+        od_map.load()
+        return od_map
 
     @staticmethod
     def _elem_id(elem):
@@ -80,10 +80,35 @@ class OpenDriveRoadNetwork(RoadMap):
                     lane = OpenDriveRoadNetwork.Lane(lane_id, road, lane_elem.id)
                     self._lanes[lane_id] = lane
 
-        # Intermediate pass: precompute junction connections
+        # Second pass: compute road and lane connections
         self._precompute_junction_connections(od)
+        for road_elem in od.roads:
+            road_id = OpenDriveRoadNetwork._elem_id(road_elem)
+            road = self._roads[road_id]
 
-        # Second pass: fill in references
+            # Set is_junction for roads
+            if road_elem.junction:
+                road.is_junction = True
+            else:
+                road.is_junction = False
+
+            # TODO: compute road connections
+
+            for section_elem in road_elem.lanes.lane_sections:
+                for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
+                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
+                    lane = self._lanes[lane_id]
+
+                    # Set in_junction for lanes
+                    lane.in_junction = road.is_junction
+
+                    # Compute incoming lanes
+                    lane.incoming_lanes = self._compute_incoming_lane_connections(od, lane, lane_elem, road_elem)
+
+                    # Compute outgoing lanes
+                    lane.outgoing_lanes = self._compute_outgoing_lane_connections(lane, lane_elem, road_elem)
+
+        # Third pass: fill in references
         for road_elem in od.roads:
             road_id = OpenDriveRoadNetwork._elem_id(road_elem)
             road = self._roads[road_id]
@@ -124,6 +149,56 @@ class OpenDriveRoadNetwork(RoadMap):
                         #         if out_roads & other_out_roads:
                         #             result.append(lane)
                         # lane.lanes_in_same_direction = result
+
+    def _compute_incoming_lane_connections(self, od, lane, lane_elem, road_elem) -> List[RoadMap.Lane]:
+        il = []
+        if lane.lane_id in self._junction_connections:
+            for pred_lane_id in self._junction_connections[lane.lane_id][0]:
+                il.append(self.lane_by_id(pred_lane_id))
+
+        if lane.in_junction:
+            return il
+
+        lane_link = lane_elem.link
+        if lane_link.predecessorId:
+            ls_index = lane_elem.lane_section.idx
+            if ls_index == 0:
+                road_predecessor = road_elem.link.predecessor
+                if road_predecessor and road_predecessor.elementType == "road":
+                    pred_road_elem = od.getRoad(road_predecessor.element_id)
+                    last_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
+                    pred_lane_id = f"{road_predecessor.element_id}_{last_ls_index}_{lane_link.predecessorId}"
+                    il.append(self.lane_by_id(pred_lane_id))
+
+            else:
+                pred_lane_id = f"{road_elem.id}_{ls_index - 1}_{lane_link.predecessorId}"
+                il.append(self.lane_by_id(pred_lane_id))
+
+        return il
+
+    def _compute_outgoing_lane_connections(self, lane, lane_elem, road_elem) -> List[RoadMap.Lane]:
+        ol = []
+        if lane in self._junction_connections:
+            for succ_lane_id in self._junction_connections[lane.lane_id][1]:
+                ol.append(self.lane_by_id(succ_lane_id))
+
+        if lane.in_junction:
+            return ol
+
+        lane_link = lane_elem.link
+        if lane_link.successorId:
+            ls_index = lane_elem.lane_section.idx
+            if ls_index == len(road_elem.lanes.lane_sections) - 1:
+                road_successor = road_elem.link.successor
+                if road_successor:
+                    if road_successor.elementType == "road":
+                        succ_lane_id = f"{road_successor.element_id}_{0}_{lane_link.successorId}"
+                        ol.append(self.lane_by_id(succ_lane_id))
+            else:
+                succ_lane_id = f"{road_elem.id}_{ls_index + 1}_{lane_link.successorId}"
+                ol.append(self.lane_by_id(succ_lane_id))
+
+        return ol
 
     def _precompute_junction_connections(self, od: OpenDriveElement):
         for road_elem in od.roads:
@@ -175,7 +250,10 @@ class OpenDriveRoadNetwork(RoadMap):
             self._lane_id = lane_id
             self._road = road
             self._index = index
+            self._incoming_lanes = []
+            self._outgoing_lanes = []
             self._lanes_in_same_dir = []
+            self._in_junction = None
             # self._map = road_map
             # self._road = road_map.road_by_id(str(lane_elem.parentRoad.id))
             # assert self._road
@@ -193,12 +271,32 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @property
         def in_junction(self) -> bool:
-            return self._road.is_junction
+            return self._in_junction
+
+        @in_junction.setter
+        def in_junction(self, value):
+            self._in_junction = value
 
         @property
         def index(self) -> int:
             # TODO: convert to expected convention?
             return self._index
+
+        @property
+        def incoming_lanes(self) -> List[RoadMap.Lane]:
+            return self._incoming_lanes
+
+        @incoming_lanes.setter
+        def incoming_lanes(self, value):
+            self._incoming_lanes = value
+
+        @property
+        def outgoing_lanes(self) -> List[RoadMap.Lane]:
+            return self._outgoing_lanes
+
+        @outgoing_lanes.setter
+        def outgoing_lanes(self, value):
+            self._outgoing_lanes = value
 
         @property
         def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
@@ -207,6 +305,7 @@ class OpenDriveRoadNetwork(RoadMap):
         @lanes_in_same_direction.setter
         def lanes_in_same_direction(self, lanes):
             self._lanes_in_same_dir = lanes
+
 
         @cached_property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
@@ -243,87 +342,6 @@ class OpenDriveRoadNetwork(RoadMap):
             return result, True
 
         @cached_property
-        def incoming_lanes(self) -> List[RoadMap.Lane]:
-            il = []
-            if self.lane_id in self._map.junction_connections:
-                for pred_lane_id in self._map.junction_connections[self.lane_id][0]:
-                    il.append(self._map.lane_by_id(pred_lane_id))
-
-            if self.in_junction:
-                return il
-
-            lane_link = self._lane_elem.link
-            if lane_link.predecessorId:
-                ls_index = self._curr_lane_section.idx
-                if ls_index == 0:
-                    road_predecessor = self._road.predecessor
-                    if road_predecessor and road_predecessor.elementType == "road":
-                        pred_road = self._map.road_by_id(
-                            str(road_predecessor.element_id)
-                        )
-                        if len(pred_road.lane_sections) > 1:
-                            last_ls_index = len(pred_road.lane_sections) - 1
-                        else:
-                            last_ls_index = 0
-                        pred_lane_id = (
-                            str(road_predecessor.element_id)
-                            + "_"
-                            + str(last_ls_index)
-                            + "_"
-                            + str(lane_link.predecessorId)
-                        )
-                        il.append(self._map.lane_by_id(pred_lane_id))
-
-                else:
-                    pred_lane_id = (
-                        self._road.road_id
-                        + "_"
-                        + str(ls_index - 1)
-                        + "_"
-                        + str(lane_link.predecessorId)
-                    )
-                    il.append(self._map.lane_by_id(pred_lane_id))
-
-            return il
-
-        @cached_property
-        def outgoing_lanes(self) -> List[RoadMap.Lane]:
-            ol = []
-            if self.lane_id in self._map.junction_connections:
-                for succ_lane_id in self._map.junction_connections[self.lane_id][1]:
-                    ol.append(self._map.lane_by_id(succ_lane_id))
-
-            if self.in_junction:
-                return ol
-
-            lane_link = self._lane_elem.link
-            if lane_link.successorId:
-                ls_index = self._curr_lane_section.idx
-                if ls_index == len(self._road.lane_sections) - 1:
-                    road_successor = self._road.successor
-                    if road_successor:
-                        if road_successor.elementType == "road":
-                            succ_lane_id = (
-                                str(road_successor.element_id)
-                                + "_"
-                                + str(0)
-                                + "_"
-                                + str(lane_link.successorId)
-                            )
-                            ol.append(self._map.lane_by_id(succ_lane_id))
-                else:
-                    succ_lane_id = (
-                        self._road.road_id
-                        + "_"
-                        + str(ls_index + 1)
-                        + "_"
-                        + str(lane_link.successorId)
-                    )
-                    ol.append(self._map.lane_by_id(succ_lane_id))
-
-            return ol
-
-        @cached_property
         def foes(self) -> List[RoadMap.Lane]:
             result = [
                 incoming
@@ -351,15 +369,16 @@ class OpenDriveRoadNetwork(RoadMap):
         def __init__(self, road_id: str, road_elem: RoadElement, road_map):
             self._road_id = road_id
             self._road_elem = road_elem
+            self._is_junction = None
             self._predecessor_elem = self._road_elem.link.predecessor
             self._successor_elem = self._road_elem.link.successor
             self._lane_sections = self._road_elem.lanes.lane_sections
             self._map = road_map
 
-        def _find_junction_connections(self, junction):
+        def _find_junction_connections(self, junction, contact_point):
             junction_conns = []
             for connection in junction.connections:
-                if connection.incomingRoad == self.road_id:
+                if connection.incomingRoad == self.road_id and connection.contactPoint == contact_point:
                     junction_conns.append(
                         self._map.road_by_id(str(connection.connectingRoad))
                     )
@@ -410,11 +429,13 @@ class OpenDriveRoadNetwork(RoadMap):
         def road_id(self) -> str:
             return self._road_id
 
-        @cached_property
+        @property
         def is_junction(self) -> bool:
-            if self._road_elem.junction:
-                return True
-            return False
+            return self._is_junction
+
+        @is_junction.setter
+        def is_junction(self, value):
+            self._is_junction = value
 
         @cached_property
         def length(self) -> float:
@@ -430,7 +451,7 @@ class OpenDriveRoadNetwork(RoadMap):
                     )
                 elif self._predecessor_elem.elementType == "junction":
                     junction = self._map.get_junction(self._predecessor_elem.element_id)
-                    in_roads.extend(self._find_junction_connections(junction))
+                    in_roads.extend(self._find_junction_connections(junction, "start"))
 
             return in_roads
 
@@ -444,7 +465,7 @@ class OpenDriveRoadNetwork(RoadMap):
                     )
                 elif self._successor_elem.elementType == "junction":
                     junction = self._map.get_junction(self._successor_elem.element_id)
-                    og_roads.extend(self._find_junction_connections(junction))
+                    og_roads.extend(self._find_junction_connections(junction, "end"))
             return og_roads
 
         @cached_property
