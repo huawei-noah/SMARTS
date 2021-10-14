@@ -120,6 +120,16 @@ def test_opendrive_map():
     # road_map = opendrive_scenario.road_map
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
+
     r1 = road_map.road_by_id("0")
     assert r1
     assert r1.is_junction == False

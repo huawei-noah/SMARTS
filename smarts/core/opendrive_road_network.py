@@ -86,7 +86,9 @@ class OpenDriveRoadNetwork(RoadMap):
             for section_elem in road_elem.lanes.lane_sections:
                 for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
-                    lane = OpenDriveRoadNetwork.Lane(lane_id, road, lane_elem.id)
+                    lane = OpenDriveRoadNetwork.Lane(
+                        lane_id, road, lane_elem.id, section_elem.length
+                    )
                     self._lanes[lane_id] = lane
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -120,8 +122,8 @@ class OpenDriveRoadNetwork(RoadMap):
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
 
-        start = time.time()
         # Third pass: Fill in Dependent Attributes
+        start = time.time()
         for road_elem in od.roads:
             road_id = OpenDriveRoadNetwork._elem_id(road_elem)
             road = self._roads[road_id]
@@ -260,10 +262,11 @@ class OpenDriveRoadNetwork(RoadMap):
         return self._xodr_file
 
     class Lane(RoadMap.Lane):
-        def __init__(self, lane_id: str, road: RoadMap.Road, index: int):
+        def __init__(self, lane_id: str, road: RoadMap.Road, index: int, length: float):
             self._lane_id = lane_id
             self._road = road
             self._index = index
+            self._length = length
             self._incoming_lanes = []
             self._outgoing_lanes = []
             self._lanes_in_same_dir = []
@@ -276,6 +279,10 @@ class OpenDriveRoadNetwork(RoadMap):
         @property
         def road(self) -> RoadMap.Road:
             return self._road
+
+        @property
+        def length(self) -> float:
+            return self._length
 
         @property
         def in_junction(self) -> bool:
