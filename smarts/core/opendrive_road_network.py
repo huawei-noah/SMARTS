@@ -178,7 +178,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
     def _compute_outgoing_lane_connections(self, lane, lane_elem, road_elem) -> List[RoadMap.Lane]:
         ol = []
-        if lane in self._junction_connections:
+        if lane.lane_id in self._junction_connections:
             for succ_lane_id in self._junction_connections[lane.lane_id][1]:
                 ol.append(self.lane_by_id(succ_lane_id))
 
