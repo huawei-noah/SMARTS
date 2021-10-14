@@ -114,12 +114,18 @@ def test_sumo_map(sumo_scenario):
 
 
 def test_opendrive_map():
-    road_map = OpenDriveRoadNetwork.from_file("/home/saul/code/SMARTS/scenarios/opendrive/map.xodr")
+    road_map = OpenDriveRoadNetwork.from_file(
+        "/home/saul/code/SMARTS/scenarios/opendrive/map.xodr"
+    )
     # road_map = opendrive_scenario.road_map
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
     r1 = road_map.road_by_id("0")
     assert r1
+    assert r1.is_junction == False
+    assert r1.length == 103
+    assert len(r1.lanes) == 8
+
     l1 = road_map.lane_by_id("0_0_1")
     assert l1
     assert l1.road.road_id == "0"
