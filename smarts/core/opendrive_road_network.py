@@ -107,13 +107,31 @@ class OpenDriveRoadNetwork(RoadMap):
                     lane = self._lanes[lane_id]
                     road.lanes.append(lane)
 
-                    # Compute incoming & outgoing lanes
+                    # Compute incoming lanes
                     lane.incoming_lanes = self._compute_incoming_lane_connections(
                         od, lane, lane_elem, road_elem
                     )
+
+                    # Compute outgoing lanes
                     lane.outgoing_lanes = self._compute_outgoing_lane_connections(
                         lane, lane_elem, road_elem
                     )
+        end = time.time()
+        elapsed = round((end - start) * 1000.0, 3)
+        self._log.info(f"Second pass: {elapsed} ms")
+
+        start = time.time()
+        # Third pass: Fill in Dependent Attributes
+        for road_elem in od.roads:
+            road_id = OpenDriveRoadNetwork._elem_id(road_elem)
+            road = self._roads[road_id]
+
+            # TODO: compute road dependent attributes
+
+            for section_elem in road_elem.lanes.lane_sections:
+                for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
+                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
+                    lane = self._lanes[lane_id]
 
                     # Compute lanes in same direction
                     if not lane.in_junction:
@@ -133,9 +151,10 @@ class OpenDriveRoadNetwork(RoadMap):
                     else:
                         # TODO
                         pass
+
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
-        self._log.info(f"Second pass: {elapsed} ms")
+        self._log.info(f"Third pass: {elapsed} ms")
 
     def _compute_incoming_lane_connections(
         self, od, lane, lane_elem, road_elem
@@ -171,7 +190,7 @@ class OpenDriveRoadNetwork(RoadMap):
         self, lane, lane_elem, road_elem
     ) -> List[RoadMap.Lane]:
         ol = []
-        if lane in self._junction_connections:
+        if lane.lane_id in self._junction_connections:
             for succ_lane_id in self._junction_connections[lane.lane_id][1]:
                 ol.append(self.lane_by_id(succ_lane_id))
 
