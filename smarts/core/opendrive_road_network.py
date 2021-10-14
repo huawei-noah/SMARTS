@@ -24,11 +24,11 @@ import numpy as np
 from cached_property import cached_property
 from lxml import etree
 from numpy.core.defchararray import index
-from opendrive2lanelet.opendriveparser.elements.opendrive import \
-    OpenDrive as OpenDriveElement
+from opendrive2lanelet.opendriveparser.elements.opendrive import (
+    OpenDrive as OpenDriveElement,
+)
 from opendrive2lanelet.opendriveparser.elements.road import Road as RoadElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import \
-    Lane as LaneElement
+from opendrive2lanelet.opendriveparser.elements.roadLanes import Lane as LaneElement
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 
 from smarts.core.road_map import RoadMap
@@ -39,12 +39,11 @@ class OpenDriveRoadNetwork(RoadMap):
         self._log = logging.getLogger(self.__class__.__name__)
         self._xodr_file = xodr_file
         self._roads: Dict[str, OpenDriveRoadNetwork.Road] = {}
-        self._lanes: Dict[str, OpenDriveRoadNetwork.Lane]  = {}
+        self._lanes: Dict[str, OpenDriveRoadNetwork.Lane] = {}
         self._lanepoints = None
         self._junctions = {}
         # self._junctions = network.junctions
         self._junction_connections = {}
-        # self._precompute_junction_connections()
 
     @classmethod
     def from_file(
@@ -80,7 +79,10 @@ class OpenDriveRoadNetwork(RoadMap):
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                     lane = OpenDriveRoadNetwork.Lane(lane_id, road, lane_elem.id)
                     self._lanes[lane_id] = lane
-        
+
+        # Intermediate pass: precompute junction connections
+        self._precompute_junction_connections(od)
+
         # Second pass: fill in references
         for road_elem in od.roads:
             road_id = OpenDriveRoadNetwork._elem_id(road_elem)
@@ -94,14 +96,22 @@ class OpenDriveRoadNetwork(RoadMap):
                         # When not in an intersection, all OpenDrive Lanes for a Road
                         # with the same index sign go in the same direction.
                         sign = np.sign(lane.index)
-                        elems = [elem for elem in section_elem.allLanes if np.sign(elem.id) == sign and elem.id != lane.index]
-                        same_dir_lanes = [self._lanes[OpenDriveRoadNetwork._elem_id(elem)] for elem in elems]
+                        elems = [
+                            elem
+                            for elem in section_elem.allLanes
+                            if np.sign(elem.id) == sign and elem.id != lane.index
+                        ]
+                        same_dir_lanes = [
+                            self._lanes[OpenDriveRoadNetwork._elem_id(elem)]
+                            for elem in elems
+                        ]
+                        # Set lanes_in_same_direction attribute
                         lane.lanes_in_same_direction = same_dir_lanes
                     else:
                         pass
 
                         # TODO
-                        
+
                         # result = []
                         # in_roads = set(il.road for il in self.incoming_lanes)
                         # out_roads = set(il.road for il in self.outgoing_lanes)
@@ -115,9 +125,8 @@ class OpenDriveRoadNetwork(RoadMap):
                         #             result.append(lane)
                         # lane.lanes_in_same_direction = result
 
-
-    def _precompute_junction_connections(self):
-        for road in self._network.roads:
+    def _precompute_junction_connections(self, od: OpenDriveElement):
+        for road in od.roads:
             if road.junction:
                 for lane in road.lanes.lane_sections[0].allLanes:
                     lane_id = str(road.id) + "_" + str(0) + "_" + str(lane.id)
@@ -125,7 +134,7 @@ class OpenDriveRoadNetwork(RoadMap):
                         self._junction_connections[lane_id] = [[], []]
                     if lane.link.predecessorId:
                         road_predecessor = road.link.predecessor
-                        road_elem = self._network.getRoad(road_predecessor.element_id)
+                        road_elem = od.getRoad(road_predecessor.element_id)
                         last_ls_index = road_elem.lanes.getLastLaneSectionIdx()
                         pred_lane_id = (
                             str(road_predecessor.element_id)
@@ -205,7 +214,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lanes_in_same_direction.setter
         def lanes_in_same_direction(self, lanes):
-            self._lanes_in_same_dir = lanes 
+            self._lanes_in_same_dir = lanes
 
         @cached_property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
@@ -322,6 +331,22 @@ class OpenDriveRoadNetwork(RoadMap):
 
             return ol
 
+        @cached_property
+        def foes(self) -> List[RoadMap.Lane]:
+            result = [
+                incoming
+                for outgoing in self.outgoing_lanes
+                for incoming in outgoing.incoming_lanes
+                if incoming != self
+            ]
+            if self.in_junction:
+                in_roads = set(il.road for il in self.incoming_lanes)
+                for foe in self.road.lanes:
+                    foe_in_roads = set(il.road for il in foe.incoming_lanes)
+                    if not bool(in_roads & foe_in_roads):
+                        result.append(foe)
+            return list(set(result))
+
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
         if not lane:
@@ -434,7 +459,9 @@ class OpenDriveRoadNetwork(RoadMap):
         def lanes(self) -> List[RoadMap.Lane]:
             lanes = []
             for i in range(len(self._lane_sections)):
-                for od_lane in self._lane_sections[i].allLanes:
+                for od_lane in (
+                    self._lane_sections[i].rightLanes + self._lane_sections[i].leftLanes
+                ):
                     lane_id = self.road_id + "_" + str(i) + "_" + str(od_lane.id)
                     lanes.append(self._map.lane_by_id(lane_id))
             return lanes
