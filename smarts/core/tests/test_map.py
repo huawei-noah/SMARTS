@@ -124,6 +124,7 @@ def test_opendrive_map():
         assert road.is_junction is not None
         assert road.length is not None
         assert road.length >= 0
+        assert road.parallel_roads == []
         for lane in road.lanes:
             assert lane.in_junction is not None
             assert lane.length is not None

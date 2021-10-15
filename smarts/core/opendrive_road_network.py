@@ -502,6 +502,10 @@ class OpenDriveRoadNetwork(RoadMap):
             self._outgoing_roads = value
 
         @property
+        def parallel_roads(self) -> List[RoadMap.Road]:
+            return []
+
+        @property
         def lanes(self) -> List[RoadMap.Lane]:
             return self._lanes
 
