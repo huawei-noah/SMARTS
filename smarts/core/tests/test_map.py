@@ -181,10 +181,10 @@ def test_opendrive_map():
     l2_out_lanes = l2.outgoing_lanes
     assert not l2_out_lanes
 
-    # l3 = road_map.lane_by_id("9_0_-1")
-    # foes = l3.foes
-    # assert foes
-    # assert len(foes) == 2
-    # foe_set = set(f.lane_id for f in foes)
-    # assert "7_0_-1" in foe_set
-    # assert "5_0_-1" in foe_set
+    l3 = road_map.lane_by_id("9_0_-1")
+    foes = l3.foes
+    assert foes
+    assert len(foes) == 2
+    foe_set = set(f.lane_id for f in foes)
+    assert "7_0_-1" in foe_set
+    assert "5_0_-1" in foe_set

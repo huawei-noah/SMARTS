@@ -196,6 +196,21 @@ class OpenDriveRoadNetwork(RoadMap):
                                 break
                     lane.lane_to_right = result, True
 
+                    # Compute lane foes
+                    result = [
+                        incoming
+                        for outgoing in lane.outgoing_lanes
+                        for incoming in outgoing.incoming_lanes
+                        if incoming != lane
+                    ]
+                    if lane.in_junction:
+                        in_roads = set(il.road for il in lane.incoming_lanes)
+                        for foe in lane.road.lanes:
+                            foe_in_roads = set(il.road for il in foe.incoming_lanes)
+                            if not bool(in_roads & foe_in_roads):
+                                result.append(foe)
+                    lane.foes = list(set(result))
+
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Third pass: {elapsed} ms")
@@ -312,6 +327,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._incoming_lanes = []
             self._outgoing_lanes = []
             self._lanes_in_same_dir = []
+            self._foes = []
             self._lane_to_left = None, True
             self._lane_to_right = None, True
             self._in_junction = None
@@ -377,21 +393,13 @@ class OpenDriveRoadNetwork(RoadMap):
         def lane_to_right(self, value):
             self._lane_to_right = value
 
-        @cached_property
+        @property
         def foes(self) -> List[RoadMap.Lane]:
-            result = [
-                incoming
-                for outgoing in self.outgoing_lanes
-                for incoming in outgoing.incoming_lanes
-                if incoming != self
-            ]
-            if self.in_junction:
-                in_roads = set(il.road for il in self.incoming_lanes)
-                for foe in self.road.lanes:
-                    foe_in_roads = set(il.road for il in foe.incoming_lanes)
-                    if not bool(in_roads & foe_in_roads):
-                        result.append(foe)
-            return list(set(result))
+            return self._foes
+
+        @foes.setter
+        def foes(self, value):
+            self._foes = value
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
