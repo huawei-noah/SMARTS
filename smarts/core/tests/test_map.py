@@ -132,7 +132,7 @@ def test_opendrive_map():
     # Road tests
     r0 = road_map.road_by_id("0")
     assert r0
-    assert r0.is_junction == False
+    assert not r0.is_junction
     assert r0.length == 103
     assert len(r0.lanes) == 8
     assert r0.lane_at_index(0) is None
@@ -144,7 +144,7 @@ def test_opendrive_map():
 
     r13 = road_map.road_by_id("13")
     assert r13
-    assert r13.is_junction == False
+    assert not r13.is_junction
     assert r13.length == 103
     assert len(r13.lanes) == 8
     assert r13.lane_at_index(0) is None
