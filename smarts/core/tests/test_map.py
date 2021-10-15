@@ -139,8 +139,8 @@ def test_opendrive_map():
     assert r0.lane_at_index(1).road.road_id == "0"
     r0_in_road_ids = set([r.road_id for r in r0.incoming_roads])
     r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
-    assert r0_in_road_ids == set(["5", "7", "9"])
-    assert r0_out_road_ids == set(["3", "8", "15"])
+    assert r0_in_road_ids == {"5", "7", "9"}
+    assert r0_out_road_ids == {"3", "8", "15"}
 
     r13 = road_map.road_by_id("13")
     assert r13
@@ -151,8 +151,8 @@ def test_opendrive_map():
     assert r13.lane_at_index(1).road.road_id == "13"
     r13_in_road_ids = set([r.road_id for r in r13.incoming_roads])
     r13_out_road_ids = set([r.road_id for r in r13.outgoing_roads])
-    assert r13_in_road_ids == set(["10", "12", "15"])
-    assert r13_out_road_ids == set(["9", "11", "14"])
+    assert r13_in_road_ids == {"10", "12", "15"}
+    assert r13_out_road_ids == {"9", "11", "14"}
 
     # Lane tests
     l1 = road_map.lane_by_id("0_0_1")
