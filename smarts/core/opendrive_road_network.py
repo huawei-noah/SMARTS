@@ -403,6 +403,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
     class Road(RoadMap.Road):
         def __init__(self, road_id: str, is_junction: bool, length: float):
+            self._log = logging.getLogger(self.__class__.__name__)
             self._road_id = road_id
             self._is_junction = is_junction
             self._length = length
@@ -506,8 +507,15 @@ class OpenDriveRoadNetwork(RoadMap):
         def lanes(self, value):
             self._lanes = value
 
-        # def lane_at_index(self, index: int) -> RoadMap.Lane:
-        #     return self.lanes[index]
+        def lane_at_index(self, index: int) -> RoadMap.Lane:
+            lanes_with_index = [lane for lane in self.lanes if lane.index == index]
+            if len(lanes_with_index) == 0:
+                self._log.warning(
+                    f"Road with id {self.road_id} has no lane at index {index}"
+                )
+                return None
+            assert len(lanes_with_index) == 1
+            return lanes_with_index[0]
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
