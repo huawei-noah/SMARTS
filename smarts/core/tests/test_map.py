@@ -115,10 +115,26 @@ def test_sumo_map(sumo_scenario):
 
 def test_opendrive_map(opendrive_scenario):
     road_map = opendrive_scenario.road_map
+
+    # road_map = opendrive_scenario.road_map
     assert isinstance(road_map, OpenDriveRoadNetwork)
+
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
 
     r1 = road_map.road_by_id("0")
     assert r1
+    assert r1.is_junction == False
+    assert r1.length == 103
+    assert len(r1.lanes) == 8
+
     l1 = road_map.lane_by_id("0_0_1")
     assert l1
     assert l1.road.road_id == "0"
@@ -161,8 +177,8 @@ def test_opendrive_map(opendrive_scenario):
     assert l2_in_lanes[1].lane_id == "7_0_-1"
     assert l2_in_lanes[2].lane_id == "9_0_-1"
 
-    # l2_out_lanes = l2.outgoing_lanes
-    # assert not l2_out_lanes
+    l2_out_lanes = l2.outgoing_lanes
+    assert not l2_out_lanes
 
     # l3 = road_map.lane_by_id("9_0_-1")
     # foes = l3.foes
