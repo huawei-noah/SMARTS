@@ -148,14 +148,14 @@ def test_opendrive_map():
     assert right_lane.lane_id == "0_0_2"
     assert right_lane.index == 2
 
-    # left_lane, direction = l1.lane_to_left
-    # assert not left_lane
+    left_lane, direction = l1.lane_to_left
+    assert not left_lane
 
-    # further_right_lane, direction = right_lane.lane_to_right
-    # assert further_right_lane
-    # assert direction
-    # assert further_right_lane.lane_id == "0_0_3"
-    # assert further_right_lane.index == 3
+    further_right_lane, direction = right_lane.lane_to_right
+    assert further_right_lane
+    assert direction
+    assert further_right_lane.lane_id == "0_0_3"
+    assert further_right_lane.index == 3
 
     l1_in_lanes = l1.incoming_lanes
     assert not l1_in_lanes
