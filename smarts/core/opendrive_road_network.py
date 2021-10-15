@@ -168,6 +168,34 @@ class OpenDriveRoadNetwork(RoadMap):
                                     result.append(rd_lane)
                         lane.lanes_in_same_direction = result
 
+                    # Compute lane to the left
+                    result = None
+                    if lane.index > 0:
+                        for other in lane.lanes_in_same_direction:
+                            if lane.index - other.index == 1:
+                                result = other
+                                break
+                    elif lane.index < 0:
+                        for other in lane.lanes_in_same_direction:
+                            if lane.index - other.index == -1:
+                                result = other
+                                break
+                    lane.lane_to_left = result, True
+
+                    # Compute lane to right
+                    result = None
+                    if lane.index > 0:
+                        for other in lane.lanes_in_same_direction:
+                            if lane.index - other.index == -1:
+                                result = other
+                                break
+                    elif lane.index < 0:
+                        for other in lane.lanes_in_same_direction:
+                            if lane.index - other.index == 1:
+                                result = other
+                                break
+                    lane.lane_to_right = result, True
+
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Third pass: {elapsed} ms")
@@ -284,6 +312,8 @@ class OpenDriveRoadNetwork(RoadMap):
             self._incoming_lanes = []
             self._outgoing_lanes = []
             self._lanes_in_same_dir = []
+            self._lane_to_left = None, True
+            self._lane_to_right = None, True
             self._in_junction = None
 
         @property
@@ -331,39 +361,21 @@ class OpenDriveRoadNetwork(RoadMap):
         def lanes_in_same_direction(self, lanes):
             self._lanes_in_same_dir = lanes
 
-        @cached_property
+        @property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
-            if self.index == 0:
-                return None, True
-            result = None
-            if self.index > 0:
-                for other in self.lanes_in_same_direction:
-                    if self.index - other.index == 1:
-                        result = other
-                        break
-            elif self.index < 0:
-                for other in self.lanes_in_same_direction:
-                    if self.index - other.index == -1:
-                        result = other
-                        break
-            return result, True
+            return self._lane_to_left
 
-        @cached_property
+        @lane_to_left.setter
+        def lane_to_left(self, value):
+            self._lane_to_left = value
+
+        @property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
-            if self.index == 0:
-                return None, True
-            result = None
-            if self.index > 0:
-                for other in self.lanes_in_same_direction:
-                    if self.index - other.index == -1:
-                        result = other
-                        break
-            elif self.index < 0:
-                for other in self.lanes_in_same_direction:
-                    if self.index - other.index == 1:
-                        result = other
-                        break
-            return result, True
+            return self._lane_to_right
+
+        @lane_to_right.setter
+        def lane_to_right(self, value):
+            self._lane_to_right = value
 
         @cached_property
         def foes(self) -> List[RoadMap.Lane]:
