@@ -69,16 +69,6 @@ class OpenDriveRoadNetwork(RoadMap):
         else:
             return None
 
-    def _find_junction_connections(self, junction_elem, contact_point):
-        junction_conns = []
-        for connection in junction_elem.connections:
-            if (
-                connection.incomingRoad == self.road_id
-                and connection.contactPoint == contact_point
-            ):
-                junction_conns.append(self.road_by_id(str(connection.connectingRoad)))
-        return junction_conns
-
     def load(self):
         # Parse the xml definition into an initial representation
         start = time.time()
