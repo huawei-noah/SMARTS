@@ -20,7 +20,6 @@
 
 import gym
 import logging
-import numpy as np
 import warnings
 
 from envision.client import Client as Envision
@@ -93,8 +92,6 @@ class HiWayEnv(gym.Env):
         timestep_sec=None,  # for backwards compatibility (deprecated)
     ):
         self._log = logging.getLogger(self.__class__.__name__)
-
-        # Set simulation seed
         self.seed(seed)
 
         if timestep_sec and not fixed_timestep_sec:
@@ -130,14 +127,6 @@ class HiWayEnv(gym.Env):
         visdom_client = None
         if visdom:
             visdom_client = VisdomClient()
-
-        # Action space
-        # TODO : `self.action_space` needs to be added and be automatically
-        # modified depending on `action_adapter` function used.
-
-        # Observation space
-        # TODO : `self.observation_space` needs to be added after the
-        # SMARTS observations are properly typed to be gym compliant.
 
         self._smarts = SMARTS(
             agent_interfaces=agent_interfaces,

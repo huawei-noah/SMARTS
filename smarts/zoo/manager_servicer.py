@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +29,6 @@ import sys
 
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import manager_pb2, manager_pb2_grpc
-from threading import Lock
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"manager_servicer.py - pid({os.getpid()})")
@@ -38,10 +39,9 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
 
     def __init__(self):
         self._workers = {}
-        self._destroy_lock = Lock()
 
     def __del__(self):
-        self._destroy()
+        self.destroy()
 
     def spawn_worker(self, request, context):
         port = find_free_port()
@@ -63,10 +63,6 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
         return manager_pb2.Port()
 
     def stop_worker(self, request, context):
-        with self._destroy_lock:
-            return self._stop_worker(request, context)
-
-    def _stop_worker(self, request, context):
         log.debug(
             f"Manager - pid({os.getpid()}), received stop signal for worker at port {request.num}."
         )
@@ -90,10 +86,6 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
         return manager_pb2.Status()
 
     def destroy(self):
-        with self._destroy_lock:
-            self._destroy()
-
-    def _destroy(self):
         log.debug(
             f"Manager - pid({os.getpid()}), shutting down remaining agent worker processes."
         )
