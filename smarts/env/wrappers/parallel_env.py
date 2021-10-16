@@ -20,19 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import cloudpickle
 import gym
 import multiprocessing as mp
-import numpy as np
 import sys
+import traceback
 import warnings
 
-from gym.vector.async_vector_env import AsyncState, AsyncVectorEnv
-from gym.error import (
-    AlreadyPendingCallError,
-    NoAsyncCallError,
-)
-from smarts.env.utils.cloud_pickle import CloudpickleWrapper
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
+from enum import Enum
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 __all__ = ["ParallelEnv"]
 
@@ -40,14 +36,24 @@ __all__ = ["ParallelEnv"]
 EnvConstructor = Callable[[str], gym.Env]
 
 
-class ParallelEnv(AsyncVectorEnv):
-    """Batch together multiple environments and step them in parallel. Each
-    environment is simulated in an external process for lock-free parallelism
-    using `multiprocessing` processes, and pipes for communication.
+class _Message(Enum):
+    SEED = 1
+    ACCESS = 2
+    RESET = 3
+    STEP = 4
+    RESULT = 5
+    CLOSE = 6
+    EXCEPTION = 7
+
+
+class ParallelEnv(object):
+    """Batch together multiple environments and step them in parallel. Each environment
+    is simulated in an external process for lock-free parallelism using `multiprocessing`
+    processes, and pipes for communication.
 
     Note:
-        Simulation might slow down when number of parallel environments
-        requested exceed number of available CPU logical cores.
+        Simulation might slow down when number of parallel environments requested
+        exceed number of available CPUs.
     """
 
     def __init__(
@@ -58,23 +64,24 @@ class ParallelEnv(AsyncVectorEnv):
         seed: int = 42,
     ):
         """The environments can be different but must use the same action and
-        observation specs.
+        observation spaces.
 
         Args:
             env_constructors (Sequence[EnvConstructor]): List of callables that create environments.
-            auto_reset (bool): Automatically resets an environment when episode ends. Defaults to True.
+            auto_reset (bool): Automatically resets an environment when episode ends.
             sim_name (Optional[str], optional): Simulation name prefix. Defaults to None.
             seed (int, optional): Seed for the first environment. Defaults to 42.
 
         Raises:
             TypeError: If any environment constructor is not callable.
+            ValueError: If the action or observation spaces do not match.
         """
 
         if len(env_constructors) > mp.cpu_count():
             warnings.warn(
-                f"Simulation might slow down, since the requested number of parallel "
+                f"Simulation might slow down, as the requested number of parallel "
                 f"environments ({len(env_constructors)}) exceed the number of available "
-                f"CPU cores ({mp.cpu_count()}).",
+                f"CPUs ({mp.cpu_count()}).",
                 ResourceWarning,
             )
 
@@ -84,36 +91,33 @@ class ParallelEnv(AsyncVectorEnv):
                 f"`Sequence[Callable[[], gym.Env]]`, but got {env_constructors})."
             )
 
-        # Worker polling period in seconds.
+        self._num_envs = len(env_constructors)
         self._polling_period = 0.1
+        self._closed = False
 
         # Fork is not a thread safe method.
         forkserver_available = "forkserver" in mp.get_all_start_methods()
         start_method = "forkserver" if forkserver_available else "spawn"
         mp_ctx = mp.get_context(start_method)
 
-        self.env_constructors = env_constructors
-
-        self.error_queue = mp_ctx.Queue()
-        self.parent_pipes = []
-        self.processes = []
-        for idx, env_constructor in enumerate(self.env_constructors):
+        self._parent_pipes = []
+        self._processes = []
+        for idx, env_constructor in enumerate(env_constructors):
             parent_pipe, child_pipe = mp_ctx.Pipe()
             process = mp_ctx.Process(
                 target=_worker,
-                name=f"Worker<{type(self).__name__}>-<{idx}>",
+                name=f"Worker-<{type(self).__name__}>-<{idx}>",
                 args=(
                     idx,
                     sim_name,
-                    CloudpickleWrapper(env_constructor),
+                    cloudpickle.dumps(env_constructor),
                     auto_reset,
                     child_pipe,
-                    self.error_queue,
                     self._polling_period,
                 ),
             )
-            self.parent_pipes.append(parent_pipe)
-            self.processes.append(process)
+            self._parent_pipes.append(parent_pipe)
+            self._processes.append(process)
 
             # Daemonic subprocesses quit when parent process quits. However, daemonic
             # processes cannot spawn children. Hence, `process.daemon` is set to False.
@@ -121,180 +125,156 @@ class ParallelEnv(AsyncVectorEnv):
             process.start()
             child_pipe.close()
 
-        self._state = AsyncState.DEFAULT
-
-        # Wait for all environments to successfully startup
-        _, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-        self._raise_if_errors(successes)
-
-        # Get and check observation and action spaces
-        observation_space, action_space = self._get_spaces()
-
-        # TODO: This dummy `observation_space` and `action_space` should be removed after they
-        # are properly specified in SMARTS/smarts/env/hiway_env.py:__init__() function.
-        action_space = gym.spaces.Dict(
-            {
-                agent_id: gym.spaces.Box(
-                    np.array([0, 0, -1]), np.array([+1, +1, +1]), dtype=np.float32
-                )  # throttle, break, steering
-                for agent_id in ["Agent1", "Agent2"]
-            }
-        )
-        observation_space = gym.spaces.Box(
-            low=-1, high=1, shape=(256, 256, 3), dtype=np.float32
-        )
-
-        super(AsyncVectorEnv, self).__init__(
-            num_envs=len(env_constructors),
-            observation_space=observation_space,
-            action_space=action_space,
-        )
-
-        # Seed all the environment
+        self._wait_start()
         self.seed(seed)
+        self._single_observation_space, self._single_action_space = self._get_spaces()
 
-    def seed(self, seed: int) -> Tuple[int]:
+    @property
+    def batch_size(self) -> int:
+        return self._num_envs
+
+    @property
+    def observation_space(self) -> gym.Space:
+        if self._single_observation_space:
+            return gym.spaces.Tuple([self._single_observation_space] * self._num_envs)
+        return None
+
+    @property
+    def action_space(self) -> gym.Space:
+        if self._single_action_space:
+            return gym.spaces.Tuple([self._single_action_space] * self._num_envs)
+        return None
+
+    def _call(self, msg: _Message, payloads: Sequence[Any]) -> Sequence[Any]:
+        assert len(payloads) == self._num_envs
+        for pipe, payload in zip(self._parent_pipes, payloads):
+            pipe.send((msg, payload))
+
+        return self._recv()
+
+    def _recv(self) -> Sequence[Any]:
+        messages = []
+        payloads = []
+        for pipe in self._parent_pipes:
+            message, payload = pipe.recv()
+            messages.append(message)
+            payloads.append(payload)
+
+        for messages, payload in zip(messages, payloads):
+            if message == _Message.EXCEPTION:
+                worker_name, stacktrace = payload
+                self.close()
+                raise Exception(f"\n{worker_name}\n{stacktrace}")
+
+        return payloads
+
+    def _wait_start(self):
+        self._recv()
+
+    def _get_spaces(self) -> Tuple[gym.Space, gym.Space]:
+        observation_spaces = self._call(
+            _Message.ACCESS, ["observation_space"] * self._num_envs
+        )
+        observation_space = observation_spaces[0]
+        if any([space != observation_space for space in observation_spaces]):
+            raise ValueError(
+                f"Expected all environments to have the same observation space, "
+                f"but got {observation_spaces}."
+            )
+
+        action_spaces = self._call(_Message.ACCESS, ["action_space"] * self._num_envs)
+        action_space = action_spaces[0]
+        if any([space != action_space for space in action_spaces]):
+            raise ValueError(
+                f"Expected all environments to have the same action space, "
+                f"but got {action_spaces}."
+            )
+
+        return observation_space, action_space
+
+    def seed(self, seed: int) -> Sequence[int]:
         """Sets unique seed for each environment.
 
         Args:
             seed (int): Seed number.
 
-        Raises:
-            AlreadyPendingCallError: If `seed` is called while another function call is pending.
-
         Returns:
-            Tuple[int]: Seed of each environment.
+            Sequence[int]: Seed of each environment.
         """
-        self._assert_is_running()
-        seeds = [seed + i for i in range(self.num_envs)]
+        seeds = [seed + i for i in range(self._num_envs)]
 
-        if self._state != AsyncState.DEFAULT:
-            raise AlreadyPendingCallError(
-                "Calling `seed` while waiting "
-                "for a pending call to `{0}` to complete.".format(self._state.value),
-                self._state.value,
-            )
-
-        for pipe, seed in zip(self.parent_pipes, seeds):
-            pipe.send(("seed", seed))
-        seeds, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-        self._raise_if_errors(successes)
-
+        seeds = self._call(_Message.SEED, seeds)
         return seeds
 
-    def reset_wait(
-        self, timeout: Union[int, float, None] = None
-    ) -> Sequence[Dict[str, Any]]:
-        """Waits for all environments to reset.
-
-        Args:
-            timeout (Union[int, float, None], optional): Seconds to wait before timing out.
-                Defaults to None, and never times out.
-
-        Raises:
-            NoAsyncCallError: If `reset_wait` is called without calling `reset_async`.
-            mp.TimeoutError: If response is not received from pipe within `timeout` seconds.
+    def reset(self) -> Sequence[Dict[str, Any]]:
+        """Reset all environments.
 
         Returns:
             Sequence[Dict[str, Any]]: A batch of observations from the vectorized environment.
         """
 
-        self._assert_is_running()
-        if self._state != AsyncState.WAITING_RESET:
-            raise NoAsyncCallError(
-                "Calling `reset_wait` without any prior call to `reset_async`.",
-                AsyncState.WAITING_RESET.value,
-            )
-
-        if not self._poll(timeout):
-            self._state = AsyncState.DEFAULT
-            raise mp.TimeoutError(
-                "The call to `reset_wait` has timed out after "
-                "{0} second{1}.".format(timeout, "s" if timeout > 1 else "")
-            )
-
-        observations, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-        self._raise_if_errors(successes)
-        self._state = AsyncState.DEFAULT
-
+        observations = self._call(_Message.RESET, [None] * self._num_envs)
         return observations
 
-    def step_wait(
-        self, timeout: Union[int, float, None] = None
+    def step(
+        self, actions: Sequence[Dict[str, Any]]
     ) -> Tuple[
         Sequence[Dict[str, Any]],
         Sequence[Dict[str, float]],
         Sequence[Dict[str, bool]],
         Sequence[Dict[str, Any]],
     ]:
-        """Waits and returns batched (observations, rewards, dones, infos) from all environments after a single step.
+        """Steps all environments.
 
         Args:
-            timeout (Union[int, float, None], optional): Seconds to wait before timing out.
-                Defaults to None, and never times out.
-
-        Raises:
-            NoAsyncCallError: If `step_wait` is called without calling `step_async`.
-            mp.TimeoutError: If data is not received from pipe within `timeout` seconds.
+            actions (Sequence[Dict[str,Any]]): Actions for each environment.
 
         Returns:
             Tuple[ Sequence[Dict[str, Any]], Sequence[Dict[str, float]], Sequence[Dict[str, bool]], Sequence[Dict[str, Any]] ]:
-                Returns (observations, rewards, dones, infos). Each tuple element is a batch from the vectorized environment.
+                A batch of (observations, rewards, dones, infos) from the vectorized environment.
+        """
+        result = self._call(_Message.STEP, actions)
+        observations, rewards, dones, infos = zip(*result)
+        return (observations, rewards, dones, infos)
+
+    def close(self, terminate=False):
+        """Sends a close message to all external processes.
+
+        Args:
+            terminate (bool, optional): If `True`, then the `close` operation is
+                forced and all processes are terminated. Defaults to False.
         """
 
-        self._assert_is_running()
-        if self._state != AsyncState.WAITING_STEP:
-            raise NoAsyncCallError(
-                "Calling `step_wait` without any prior call to `step_async`.",
-                AsyncState.WAITING_STEP.value,
-            )
+        if terminate:
+            for process in self._processes:
+                if process.is_alive():
+                    process.terminate()
+        else:
+            for pipe in self._parent_pipes:
+                try:
+                    pipe.send((_Message.CLOSE, None))
+                    pipe.close()
+                except IOError:
+                    # The connection was already closed.
+                    pass
 
-        if not self._poll(timeout):
-            self._state = AsyncState.DEFAULT
-            raise mp.TimeoutError(
-                "The call to `step_wait` has timed out after "
-                "{0} second{1}.".format(timeout, "s" if timeout > 1 else "")
-            )
+        for process in self._processes:
+            if process.is_alive():
+                process.join()
 
-        results, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-        self._raise_if_errors(successes)
-        self._state = AsyncState.DEFAULT
-        observations_list, rewards, dones, infos = zip(*results)
+        self._closed = True
 
-        return (
-            observations_list,
-            rewards,
-            dones,
-            infos,
-        )
-
-    def _get_spaces(self) -> Tuple[gym.Space, gym.Space]:
-        for pipe in self.parent_pipes:
-            pipe.send(("_get_spaces", None))
-        spaces, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-        self._raise_if_errors(successes)
-
-        observation_space = spaces[0][0]
-        action_space = spaces[0][1]
-
-        if not all([space[0] == observation_space for space in spaces]) or not all(
-            [space[1] == action_space for space in spaces]
-        ):
-            raise RuntimeError(
-                f"Expected all environments to have the same observation and action"
-                f"spaces, but got {spaces}."
-            )
-
-        return observation_space, action_space
+    def __del__(self):
+        if not self._closed:
+            self.close(terminate=True)
 
 
 def _worker(
     index: int,
     sim_name: str,
-    env_constructor: CloudpickleWrapper,
+    env_constructor: bytes,
     auto_reset: bool,
     pipe: mp.connection.Connection,
-    error_queue: mp.Queue,
     polling_period: float = 0.1,
 ):
     """Process to build and run an environment. Using a pipe to
@@ -303,56 +283,56 @@ def _worker(
 
     Args:
         index (int): Environment index number.
-        env_constructor (CloudpickleWrapper): Callable which constructs the environment.
+        sim_name (str): Simulation name.
+        env_constructor (bytes): Cloudpickled callable which constructs the environment.
         auto_reset (bool): If True, auto resets environment when episode ends.
         pipe (mp.connection.Connection): Child's end of the pipe.
-        error_queue (mp.Queue): Queue to communicate error messages.
-        polling_period (float): Time to wait for keyboard interrupts.
-    """
+        polling_period (float, optional): Time to wait for keyboard interrupts. Defaults to 0.1.
 
-    # Name and construct the environment
+    Raises:
+        KeyError: If unknown message type is received.
+    """
     name = f"env_{index}"
     if sim_name:
         name = sim_name + "_" + name
-    env = env_constructor(sim_name=name)
-
-    # Environment setup complete
-    pipe.send((None, True))
+    env = cloudpickle.loads(env_constructor)(sim_name=name)
+    pipe.send((_Message.RESULT, None))
 
     try:
         while True:
-            # Short block for keyboard interrupts
             if not pipe.poll(polling_period):
                 continue
-            command, data = pipe.recv()
-            if command == "reset":
+            message, payload = pipe.recv()
+            if message == _Message.SEED:
+                env_seed = env.seed(payload)
+                pipe.send((_Message.RESULT, env_seed))
+            elif message == _Message.ACCESS:
+                result = getattr(env, payload, None)
+                pipe.send((_Message.RESULT, result))
+            elif message == _Message.RESET:
                 observation = env.reset()
-                pipe.send((observation, True))
-            elif command == "step":
-                observation, reward, done, info = env.step(data)
+                pipe.send((_Message.RESULT, observation))
+            elif message == _Message.STEP:
+                observation, reward, done, info = env.step(payload)
                 if done["__all__"] and auto_reset:
-                    # Actual final observations can be obtained from `info`:
-                    # ```
-                    # final_obs = info[agent_id]["env_obs"]
-                    # ```
+                    # Final observation can be obtained from `info` as follows:
+                    # `final_obs = info[agent_id]["env_obs"]`
                     observation = env.reset()
-                pipe.send(((observation, reward, done, info), True))
-            elif command == "seed":
-                env_seed = env.seed(data)
-                pipe.send((env_seed, True))
-            elif command == "close":
-                pipe.send((None, True))
+                pipe.send((_Message.RESULT, (observation, reward, done, info)))
+            elif message == _Message.CLOSE:
                 break
-            elif command == "_get_spaces":
-                pipe.send(((env.observation_space, env.action_space), True))
             else:
-                raise KeyError(f"Received unknown command `{command}`.")
-    except KeyboardInterrupt:
-        error_queue.put((index, sys.exc_info()[0], "Traceback is hidden."))
-        pipe.send((None, False))
-    except Exception:
-        error_queue.put((index,) + sys.exc_info()[:2])
-        pipe.send((None, False))
+                raise KeyError(
+                    f"Expected message from {_Message.__members__}, but got unknown message `{message}`."
+                )
+    except (Exception, KeyboardInterrupt):
+        etype, evalue, tb = sys.exc_info()
+        if etype == KeyboardInterrupt:
+            stacktrace = "".join(traceback.format_exception(etype, evalue, None))
+        else:
+            stacktrace = "".join(traceback.format_exception(etype, evalue, tb))
+        payload = (mp.current_process().name, stacktrace)
+        pipe.send((_Message.EXCEPTION, payload))
     finally:
         env.close()
         pipe.close()
