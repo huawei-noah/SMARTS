@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
-from typing import NamedTuple, List, Sequence, Tuple
+from typing import NamedTuple, List, Set, Sequence, Tuple
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -54,14 +54,6 @@ class RoadMap:
     def bounding_box(self) -> BoundingBox:
         # may return None to indicate the map is unbounded.
         raise NotImplementedError()
-
-    @property
-    def xy_offset(self) -> Tuple[float, float]:
-        """optional: this is the amount that external coordinates must
-        be shifted in order to have the coordinate system (bounding_box)
-        start at the origin.  Will be (0. 0) for most maps."""
-        # TAI:  get rid of this, fix traffic_history_provider instead
-        return (0, 0)
 
     @property
     def scale_factor(self) -> float:
@@ -229,6 +221,13 @@ class RoadMap:
         def width_at_offset(self, offset: float) -> float:
             raise NotImplementedError()
 
+        def project_along(
+            self, start_offset: float, distance: float
+        ) -> Set[Tuple[RoadMap.Lane, float]]:
+            """Starting at start_offset along the lane, project locations (lane, offset tuples)
+            reachable within distance, not including lane changes."""
+            raise NotImplementedError()
+
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             raise NotImplementedError()
 
@@ -371,7 +370,7 @@ class RoadMap:
     class Route:
         @property
         def roads(self) -> List[RoadMap.Road]:
-            """An (unordered) list of roads that this route covers"""
+            """A possibly-unordered list of roads that this route covers"""
             return []
 
         @property
@@ -384,16 +383,23 @@ class RoadMap:
             return []
 
         def distance_between(self, start: Point, end: Point) -> float:
-            """ Distance along route between two points.  """
+            """Distance along route between two points."""
+            raise NotImplementedError()
+
+        def project_along(
+            self, start: Point, distance: float
+        ) -> Set[Tuple[RoadMap.Lane, float]]:
+            """Starting at point on the route, returns a set of possible
+            locations (lane and offset pairs) further along the route that
+            are distance away, not including lane changes."""
             raise NotImplementedError()
 
 
 @dataclass(frozen=True)
 class Waypoint:
-    """Dynamic, based on map and vehicle.  Waypoints
-    start abreast of a vehicle's present location in the nearest Lane
-    and are then interpolated such that they're evenly spaced.
-    These are returned through a vehicle's sensors."""
+    """Dynamic, based on map and vehicle.  Waypoints start abreast of
+    (or near) a vehicle's present location in the nearest Lane and
+    are evenly spaced.  These are returned through a vehicle's sensors."""
 
     # XXX: consider renaming lane_id, lane_index, lane_width
     #      to nearest_lane_id, nearest_lane_index, nearest_lane_width

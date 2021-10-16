@@ -56,7 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
    AgentTask.msg
    AgentReport.msg
    AgentsStamped.msg
-   SmartsControl.msg
+   SmartsReset.msg
  )
 
 ## Generate services in the 'srv' folder

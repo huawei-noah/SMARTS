@@ -423,7 +423,6 @@ class Scenario:
 
     def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
         vehicle_missions = {}
-        map_offset = self._road_map.xy_offset
         for row in self._traffic_history.first_seen_times():
             start_time = float(row[1])
             pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
@@ -437,7 +436,7 @@ class Scenario:
             hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
             vehicle_missions[v_id] = Mission(
                 start=Start(
-                    (pos_x + map_offset[0] + hhx, pos_y + map_offset[1] + hhy),
+                    (pos_x + hhx, pos_y + hhy),
                     Heading(heading),
                 ),
                 entry_tactic=entry_tactic,
