@@ -118,24 +118,44 @@ def test_opendrive_map():
     road_map = OpenDriveRoadNetwork.from_file("scenarios/opendrive/map.xodr")
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
+    # Expected properties for all roads and lanes
     for road_id, road in road_map._roads.items():
         assert type(road_id) == str
         assert road.is_junction is not None
         assert road.length is not None
         assert road.length >= 0
+        assert road.parallel_roads == []
         for lane in road.lanes:
             assert lane.in_junction is not None
             assert lane.length is not None
             assert lane.length >= 0
 
-    r1 = road_map.road_by_id("0")
-    assert r1
-    assert r1.is_junction == False
-    assert r1.length == 103
-    assert len(r1.lanes) == 8
-    assert r1.lane_at_index(0) is None
-    assert r1.lane_at_index(1).road.road_id == "0"
+    # Road tests
+    r0 = road_map.road_by_id("0")
+    assert r0
+    assert not r0.is_junction
+    assert r0.length == 103
+    assert len(r0.lanes) == 8
+    assert r0.lane_at_index(0) is None
+    assert r0.lane_at_index(1).road.road_id == "0"
+    r0_in_road_ids = set([r.road_id for r in r0.incoming_roads])
+    r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
+    assert r0_in_road_ids == {"5", "7", "9"}
+    assert r0_out_road_ids == {"3", "8", "15"}
 
+    r13 = road_map.road_by_id("13")
+    assert r13
+    assert not r13.is_junction
+    assert r13.length == 103
+    assert len(r13.lanes) == 8
+    assert r13.lane_at_index(0) is None
+    assert r13.lane_at_index(1).road.road_id == "13"
+    r13_in_road_ids = set([r.road_id for r in r13.incoming_roads])
+    r13_out_road_ids = set([r.road_id for r in r13.outgoing_roads])
+    assert r13_in_road_ids == {"10", "12", "15"}
+    assert r13_out_road_ids == {"9", "11", "14"}
+
+    # Lane tests
     l1 = road_map.lane_by_id("0_0_1")
     assert l1
     assert l1.road.road_id == "0"
