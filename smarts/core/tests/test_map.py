@@ -181,30 +181,30 @@ def test_od_map_junction():
     # assert further_right_lane.lane_id == "0_0_3"
     # assert further_right_lane.index == 3
     #
-    # l1_in_lanes = l1.incoming_lanes
-    # assert not l1_in_lanes
-    #
-    # l1_out_lanes = l1.outgoing_lanes
-    # assert l1_out_lanes
-    # assert len(l1_out_lanes) == 3
-    # assert l1_out_lanes[0].lane_id == "3_0_-1"
-    # assert l1_out_lanes[1].lane_id == "8_0_-1"
-    # assert l1_out_lanes[2].lane_id == "15_0_-1"
+    l1_in_lanes = l1.incoming_lanes
+    assert not l1_in_lanes
+
+    l1_out_lanes = l1.outgoing_lanes
+    assert l1_out_lanes
+    assert len(l1_out_lanes) == 3
+    assert l1_out_lanes[0].lane_id == "3_0_-1"
+    assert l1_out_lanes[1].lane_id == "8_0_-1"
+    assert l1_out_lanes[2].lane_id == "15_0_-1"
     #
     l2 = road_map.lane_by_id("0_0_-1")
     assert l2
     assert l2.road.road_id == "0_0"
     assert l2.index == -1
-    # l2_in_lanes = l2.incoming_lanes
-    # assert l2_in_lanes
-    # assert len(l2_in_lanes) == 3
-    # assert l2_in_lanes[0].lane_id == "5_0_-1"
-    # assert l2_in_lanes[1].lane_id == "7_0_-1"
-    # assert l2_in_lanes[2].lane_id == "9_0_-1"
-    #
-    # l2_out_lanes = l2.outgoing_lanes
-    # assert not l2_out_lanes
-    #
+    l2_in_lanes = l2.incoming_lanes
+    assert l2_in_lanes
+    assert len(l2_in_lanes) == 3
+    assert l2_in_lanes[0].lane_id == "5_0_-1"
+    assert l2_in_lanes[1].lane_id == "7_0_-1"
+    assert l2_in_lanes[2].lane_id == "9_0_-1"
+
+    l2_out_lanes = l2.outgoing_lanes
+    assert not l2_out_lanes
+
     l3 = road_map.lane_by_id("9_0_-1")
     assert l3
     assert l3.road.road_id == "9_0"
@@ -251,15 +251,15 @@ def test_od_map_figure_eight():
     assert l1.index == -1
     # assert len(l1.lanes_in_same_direction) == 3
 
-    # l1_out_lanes = l1.outgoing_lanes
-    # assert l1_out_lanes
-    # assert len(l1_out_lanes) == 1
-    # assert l1_out_lanes[0].lane_id == "501_0_1"
-    #
-    # l1_in_lanes = l1.incoming_lanes
-    # assert l1_in_lanes
-    # assert len(l1_in_lanes) == 1
-    # assert l1_in_lanes[0].lane_id == "516_0_-1"
+    l1_out_lanes = l1.outgoing_lanes
+    assert l1_out_lanes
+    assert len(l1_out_lanes) == 1
+    assert l1_out_lanes[0].lane_id == "501_0_1"
+
+    l1_in_lanes = l1.incoming_lanes
+    assert l1_in_lanes
+    assert len(l1_in_lanes) == 1
+    assert l1_in_lanes[0].lane_id == "516_0_-1"
 
 
 def test_od_map_lane_offset():
@@ -318,8 +318,8 @@ def test_od_map_lane_offset():
     assert l0
     assert l0.road.road_id == "1_1"
     assert l0.index == 1
-    # assert set([lane.lane_id for lane in l0.incoming_lanes]) == {"1_0_1"}
-    # assert set([lane.lane_id for lane in l0.outgoing_lanes]) == set()
+    assert set([lane.lane_id for lane in l0.incoming_lanes]) == {"1_0_1"}
+    assert set([lane.lane_id for lane in l0.outgoing_lanes]) == set()
 
     # right_lane, direction = l0.lane_to_right
     # assert right_lane
@@ -339,9 +339,9 @@ def test_od_map_lane_offset():
     l1 = road_map.lane_by_id("1_1_-2")
     assert l1
     assert l1.road.road_id == "1_1"
-    # assert l1.index == -2
-    # assert set([lane.lane_id for lane in l1.incoming_lanes]) == set()
-    # assert set([lane.lane_id for lane in l1.outgoing_lanes]) == {"1_2_-2"}
+    assert l1.index == -2
+    assert set([lane.lane_id for lane in l1.incoming_lanes]) == set()
+    assert set([lane.lane_id for lane in l1.outgoing_lanes]) == {"1_2_-2"}
     #
     # right_lane, direction = l1.lane_to_right
     # assert right_lane

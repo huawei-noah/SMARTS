@@ -121,15 +121,15 @@ class OpenDriveRoadNetwork(RoadMap):
                 road_id = OpenDriveRoadNetwork._elem_id(section_elem)
                 road = self._roads[road_id]
                 self._compute_road_connections(od, road, road_elem)
-        #         for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
-        #             lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
-        #             lane = self._lanes[lane_id]
-        #             lane.incoming_lanes = self._compute_incoming_lanes(
-        #                 od, lane, lane_elem, road_elem
-        #             )
-        #             lane.outgoing_lanes = self._compute_outgoing_lanes(
-        #                 lane, lane_elem, road_elem
-        #             )
+                for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
+                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
+                    lane = self._lanes[lane_id]
+                    lane.incoming_lanes = self._compute_incoming_lanes(
+                        od, lane, lane_elem, road_elem
+                    )
+                    lane.outgoing_lanes = self._compute_outgoing_lanes(
+                        lane, lane_elem, road_elem
+                    )
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
@@ -228,7 +228,6 @@ class OpenDriveRoadNetwork(RoadMap):
             junction_elems[junction_elem.id] = junction_elem
 
         lane_section_idx = int(road.road_id.split("_")[1])
-        print(lane_section_idx)
         # Incoming roads
         # For OpenDRIVE lane sections with idx = 0
         if lane_section_idx == 0:
@@ -361,7 +360,10 @@ class OpenDriveRoadNetwork(RoadMap):
                 assert (
                     len(road_elem.lanes.lane_sections) == 1
                 ), "Junction connecting roads must have a single lane section"
-                for lane_elem in road_elem.lanes.lane_sections[0].allLanes:
+                for lane_elem in (
+                    road_elem.lanes.lane_sections[0].leftLanes
+                    + road_elem.lanes.lane_sections[0].rightLanes
+                ):
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
 
                     if lane_id not in self._junction_connections:
