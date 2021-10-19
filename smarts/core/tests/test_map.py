@@ -282,7 +282,7 @@ def test_od_map_lane_offset():
             assert lane.length >= 0
 
     # Road tests
-    r0 = road_map.road_by_id("1_0")
+    r0 = road_map.road_by_id("1_1")
     assert r0
     assert len(r0.lanes) == 6
     assert not r0.is_junction
