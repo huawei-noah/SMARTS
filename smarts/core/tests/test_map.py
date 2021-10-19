@@ -300,7 +300,7 @@ def test_od_map_lane_offset():
 
     r1_in_road_ids = set([r.road_id for r in r1.incoming_roads])
     r1_out_road_ids = set([r.road_id for r in r1.outgoing_roads])
-    assert r1_in_road_ids == {}
+    assert len(r1_in_road_ids) == 0
     assert r1_out_road_ids == {"1_1"}
 
     r2 = road_map.road_by_id("1_2")
@@ -311,7 +311,7 @@ def test_od_map_lane_offset():
     r2_in_road_ids = set([r.road_id for r in r2.incoming_roads])
     r2_out_road_ids = set([r.road_id for r in r2.outgoing_roads])
     assert r2_in_road_ids == {"1_1"}
-    assert r2_out_road_ids == {}
+    assert len(r2_out_road_ids) == 0
 
     # Lane tests
     l0 = road_map.lane_by_id("1_1_1")
