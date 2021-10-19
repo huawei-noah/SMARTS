@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+from os import path
+from pathlib import Path
 
 import pytest
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
@@ -113,9 +115,11 @@ def test_sumo_map(sumo_scenario):
     assert db == 134.01
 
 
-def test_opendrive_map():
-    # TODO: change back to use the scenario
-    road_map = OpenDriveRoadNetwork.from_file("scenarios/opendrive/map.xodr")
+def test_od_map_junction():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    road_map = OpenDriveRoadNetwork.from_file(
+        path.join(root, "UC_Simple-X-Junction.xodr")
+    )
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
     # Expected properties for all roads and lanes
@@ -208,3 +212,48 @@ def test_opendrive_map():
     foe_set = set(f.lane_id for f in foes)
     assert "7_0_-1" in foe_set
     assert "5_0_-1" in foe_set
+
+
+def test_od_map_figure_eight():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    road_map = OpenDriveRoadNetwork.from_file(path.join(root, "Figure-Eight.xodr"))
+    assert isinstance(road_map, OpenDriveRoadNetwork)
+
+    # Expected properties for all roads and lanes
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        assert road.parallel_roads == []
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
+
+    # Road tests
+    r0 = road_map.road_by_id("508")
+    assert r0
+    assert not r0.is_junction
+    assert len(r0.lanes) == 8
+    r0_in_road_ids = set([r.road_id for r in r0.incoming_roads])
+    r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
+    assert r0_in_road_ids == {"516"}
+    assert r0_out_road_ids == {"501"}
+
+    # Lane tests
+    l1 = road_map.lane_by_id("508_0_-1")
+    assert l1
+    assert l1.road.road_id == "508"
+    assert l1.index == -1
+    assert len(l1.lanes_in_same_direction) == 3
+
+    l1_out_lanes = l1.outgoing_lanes
+    assert l1_out_lanes
+    assert len(l1_out_lanes) == 1
+    assert l1_out_lanes[0].lane_id == "501_0_1"
+
+    l1_in_lanes = l1.incoming_lanes
+    assert l1_in_lanes
+    assert len(l1_in_lanes) == 1
+    assert l1_in_lanes[0].lane_id == "516_0_-1"
