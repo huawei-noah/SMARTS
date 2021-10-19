@@ -243,7 +243,7 @@ class OpenDriveRoadNetwork(RoadMap):
             ) or OpenDriveRoadNetwork._succ_junction(road_elem):
                 for junction_elem in junction_elems:
                     # Loop over all roads in junction, and check if they're incoming or outgoing for the current road
-                    for connection in junction_elem.connections:
+                    for connection in junction_elems[junction_elem].connections:
                         cr_elem = od.getRoad(connection.connectingRoad)
                         if cr_elem.link.successor and cr_elem.link.successor.element_id == int(
                                 road.road_id
