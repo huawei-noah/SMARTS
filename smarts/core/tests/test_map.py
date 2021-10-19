@@ -291,9 +291,39 @@ def test_od_map_lane_offset():
     assert set([lane.lane_id for lane in l0.incoming_lanes]) == {"1_0_1"}
     assert set([lane.lane_id for lane in l0.outgoing_lanes]) == set()
 
+    right_lane, direction = l0.lane_to_right
+    assert right_lane
+    assert direction
+    assert right_lane.lane_id == "1_1_2"
+    assert right_lane.index == 2
+
+    left_lane, direction = l0.lane_to_left
+    assert not left_lane
+
+    further_right_lane, direction = right_lane.lane_to_right
+    assert further_right_lane
+    assert direction
+    assert further_right_lane.lane_id == "1_1_3"
+    assert further_right_lane.index == 3
+
     l1 = road_map.lane_by_id("1_1_-2")
     assert l1
     assert l1.road.road_id == "1"
     assert l1.index == -2
     assert set([lane.lane_id for lane in l1.incoming_lanes]) == set()
     assert set([lane.lane_id for lane in l1.outgoing_lanes]) == {"1_2_-2"}
+
+    right_lane, direction = l1.lane_to_right
+    assert right_lane
+    assert direction
+    assert right_lane.lane_id == "1_1_-3"
+    assert right_lane.index == -3
+
+    left_lane, direction = l1.lane_to_left
+    assert left_lane
+    assert direction
+    assert left_lane.lane_id == "1_1_-1"
+    assert left_lane.index == -1
+
+    further_left_lane, direction = left_lane.lane_to_left
+    assert not further_left_lane
