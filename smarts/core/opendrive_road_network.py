@@ -274,7 +274,7 @@ class OpenDriveRoadNetwork(RoadMap):
                                 cr_elem.link.predecessor
                                 and cr_elem.link.predecessor.element_id == int(road.road_id)
                         ):
-                            road.outgoing_roads.append(f"{connection.connectingRoad}_{0}")
+                            road.outgoing_roads.append(self.road_by_id(f"{connection.connectingRoad}_{0}"))
 
         else:
             succ_road_id = f"{road_elem.id}_{lane_section_idx + 1}"
