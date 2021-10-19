@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+from os import path
+from pathlib import Path
 
 import pytest
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
@@ -113,9 +115,11 @@ def test_sumo_map(sumo_scenario):
     assert db == 134.01
 
 
-def test_opendrive_map():
-    # TODO: change back to use the scenario
-    road_map = OpenDriveRoadNetwork.from_file("scenarios/opendrive/map.xodr")
+def test_od_map_junction():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    road_map = OpenDriveRoadNetwork.from_file(
+        path.join(root, "UC_Simple-X-Junction.xodr")
+    )
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
     # Expected properties for all roads and lanes
@@ -131,80 +135,165 @@ def test_opendrive_map():
             assert lane.length >= 0
 
     # Road tests
-    r0 = road_map.road_by_id("0_0")
+    r0 = road_map.road_by_id("0")
     assert r0
     assert not r0.is_junction
     assert r0.length == 103
     assert len(r0.lanes) == 8
     assert r0.lane_at_index(0) is None
-    assert r0.lane_at_index(1).road.road_id == "0_0"
-    # r0_in_road_ids = set([r.road_id for r in r0.incoming_roads])
-    # r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
-    # assert r0_in_road_ids == {"5", "7", "9"}
-    # assert r0_out_road_ids == {"3", "8", "15"}
+    assert r0.lane_at_index(1).road.road_id == "0"
+    r0_in_road_ids = set([r.road_id for r in r0.incoming_roads])
+    r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
+    assert r0_in_road_ids == {"5", "7", "9"}
+    assert r0_out_road_ids == {"3", "8", "15"}
 
-    r13 = road_map.road_by_id("13_0")
+    r13 = road_map.road_by_id("13")
     assert r13
     assert not r13.is_junction
     assert r13.length == 103
     assert len(r13.lanes) == 8
     assert r13.lane_at_index(0) is None
-    assert r13.lane_at_index(1).road.road_id == "13_0"
-    # r13_in_road_ids = set([r.road_id for r in r13.incoming_roads])
-    # r13_out_road_ids = set([r.road_id for r in r13.outgoing_roads])
-    # assert r13_in_road_ids == {"10", "12", "15"}
-    # assert r13_out_road_ids == {"9", "11", "14"}
+    assert r13.lane_at_index(1).road.road_id == "13"
+    r13_in_road_ids = set([r.road_id for r in r13.incoming_roads])
+    r13_out_road_ids = set([r.road_id for r in r13.outgoing_roads])
+    assert r13_in_road_ids == {"10", "12", "15"}
+    assert r13_out_road_ids == {"9", "11", "14"}
 
     # Lane tests
-    # l1 = road_map.lane_by_id("0_0_1")
-    # assert l1
-    # assert l1.road.road_id == "0"
-    # assert l1.index == 1
-    # assert len(l1.lanes_in_same_direction) == 3
-    #
-    # right_lane, direction = l1.lane_to_right
-    # assert right_lane
-    # assert direction
-    # assert right_lane.lane_id == "0_0_2"
-    # assert right_lane.index == 2
-    #
-    # left_lane, direction = l1.lane_to_left
-    # assert not left_lane
-    #
-    # further_right_lane, direction = right_lane.lane_to_right
-    # assert further_right_lane
-    # assert direction
-    # assert further_right_lane.lane_id == "0_0_3"
-    # assert further_right_lane.index == 3
-    #
-    # l1_in_lanes = l1.incoming_lanes
-    # assert not l1_in_lanes
-    #
-    # l1_out_lanes = l1.outgoing_lanes
-    # assert l1_out_lanes
-    # assert len(l1_out_lanes) == 3
-    # assert l1_out_lanes[0].lane_id == "3_0_-1"
-    # assert l1_out_lanes[1].lane_id == "8_0_-1"
-    # assert l1_out_lanes[2].lane_id == "15_0_-1"
-    #
-    # l2 = road_map.lane_by_id("0_0_-1")
-    # assert l2
-    # assert l2.road.road_id == "0"
-    # assert l2.index == -1
-    # l2_in_lanes = l2.incoming_lanes
-    # assert l2_in_lanes
-    # assert len(l2_in_lanes) == 3
-    # assert l2_in_lanes[0].lane_id == "5_0_-1"
-    # assert l2_in_lanes[1].lane_id == "7_0_-1"
-    # assert l2_in_lanes[2].lane_id == "9_0_-1"
-    #
-    # l2_out_lanes = l2.outgoing_lanes
-    # assert not l2_out_lanes
-    #
-    # l3 = road_map.lane_by_id("9_0_-1")
-    # foes = l3.foes
-    # assert foes
-    # assert len(foes) == 2
-    # foe_set = set(f.lane_id for f in foes)
-    # assert "7_0_-1" in foe_set
-    # assert "5_0_-1" in foe_set
+    l1 = road_map.lane_by_id("0_0_1")
+    assert l1
+    assert l1.road.road_id == "0"
+    assert l1.index == 1
+    assert len(l1.lanes_in_same_direction) == 3
+
+    right_lane, direction = l1.lane_to_right
+    assert right_lane
+    assert direction
+    assert right_lane.lane_id == "0_0_2"
+    assert right_lane.index == 2
+
+    left_lane, direction = l1.lane_to_left
+    assert not left_lane
+
+    further_right_lane, direction = right_lane.lane_to_right
+    assert further_right_lane
+    assert direction
+    assert further_right_lane.lane_id == "0_0_3"
+    assert further_right_lane.index == 3
+
+    l1_in_lanes = l1.incoming_lanes
+    assert not l1_in_lanes
+
+    l1_out_lanes = l1.outgoing_lanes
+    assert l1_out_lanes
+    assert len(l1_out_lanes) == 3
+    assert l1_out_lanes[0].lane_id == "3_0_-1"
+    assert l1_out_lanes[1].lane_id == "8_0_-1"
+    assert l1_out_lanes[2].lane_id == "15_0_-1"
+
+    l2 = road_map.lane_by_id("0_0_-1")
+    assert l2
+    assert l2.road.road_id == "0"
+    assert l2.index == -1
+    l2_in_lanes = l2.incoming_lanes
+    assert l2_in_lanes
+    assert len(l2_in_lanes) == 3
+    assert l2_in_lanes[0].lane_id == "5_0_-1"
+    assert l2_in_lanes[1].lane_id == "7_0_-1"
+    assert l2_in_lanes[2].lane_id == "9_0_-1"
+
+    l2_out_lanes = l2.outgoing_lanes
+    assert not l2_out_lanes
+
+    l3 = road_map.lane_by_id("9_0_-1")
+    foes = l3.foes
+    assert foes
+    assert len(foes) == 2
+    foe_set = set(f.lane_id for f in foes)
+    assert "7_0_-1" in foe_set
+    assert "5_0_-1" in foe_set
+
+
+def test_od_map_figure_eight():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    road_map = OpenDriveRoadNetwork.from_file(path.join(root, "Figure-Eight.xodr"))
+    assert isinstance(road_map, OpenDriveRoadNetwork)
+
+    # Expected properties for all roads and lanes
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        assert road.parallel_roads == []
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
+
+    # Road tests
+    r0 = road_map.road_by_id("508")
+    assert r0
+    assert not r0.is_junction
+    assert len(r0.lanes) == 8
+    r0_in_road_ids = set([r.road_id for r in r0.incoming_roads])
+    r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
+    assert r0_in_road_ids == {"516"}
+    assert r0_out_road_ids == {"501"}
+
+    # Lane tests
+    l1 = road_map.lane_by_id("508_0_-1")
+    assert l1
+    assert l1.road.road_id == "508"
+    assert l1.index == -1
+    assert len(l1.lanes_in_same_direction) == 3
+
+    l1_out_lanes = l1.outgoing_lanes
+    assert l1_out_lanes
+    assert len(l1_out_lanes) == 1
+    assert l1_out_lanes[0].lane_id == "501_0_1"
+
+    l1_in_lanes = l1.incoming_lanes
+    assert l1_in_lanes
+    assert len(l1_in_lanes) == 1
+    assert l1_in_lanes[0].lane_id == "516_0_-1"
+
+
+def test_od_map_lane_offset():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    road_map = OpenDriveRoadNetwork.from_file(
+        path.join(root, "Ex_Simple-LaneOffset.xodr")
+    )
+    assert isinstance(road_map, OpenDriveRoadNetwork)
+
+    # Expected properties for all roads and lanes
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        assert road.parallel_roads == []
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
+
+    # Road tests
+    r0 = road_map.road_by_id("1")
+    assert r0
+    assert not r0.is_junction
+
+    # Lane tests
+    l0 = road_map.lane_by_id("1_1_1")
+    assert l0
+    assert l0.road.road_id == "1"
+    assert l0.index == 1
+    assert set([lane.lane_id for lane in l0.incoming_lanes]) == {"1_0_1"}
+    assert set([lane.lane_id for lane in l0.outgoing_lanes]) == set()
+
+    l1 = road_map.lane_by_id("1_1_-2")
+    assert l1
+    assert l1.road.road_id == "1"
+    assert l1.index == -2
+    assert set([lane.lane_id for lane in l1.incoming_lanes]) == set()
+    assert set([lane.lane_id for lane in l1.outgoing_lanes]) == {"1_2_-2"}
