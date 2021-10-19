@@ -254,7 +254,7 @@ class OpenDriveRoadNetwork(RoadMap):
                         cr_elem = od.getRoad(connection.connectingRoad)
                         if (
                             cr_elem.link.successor
-                            and cr_elem.link.successor.element_id == int(road_elem.road_id)
+                            and cr_elem.link.successor.element_id == int(road_elem.id)
                         ):
                             road.incoming_roads.append(
                                 self.road_by_id(f"{connection.connectingRoad}_{0}")
@@ -285,7 +285,7 @@ class OpenDriveRoadNetwork(RoadMap):
                         cr_elem = od.getRoad(connection.connectingRoad)
                         if (
                             cr_elem.link.predecessor
-                            and cr_elem.link.predecessor.element_id == int(road_elem.road_id)
+                            and cr_elem.link.predecessor.element_id == int(road_elem.id)
                         ):
                             road.outgoing_roads.append(
                                 self.road_by_id(f"{connection.connectingRoad}_{0}")
