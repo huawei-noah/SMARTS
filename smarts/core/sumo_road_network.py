@@ -929,21 +929,33 @@ class SumoRoadNetwork(RoadMap):
                 continue
             lane_shape = lane_to_poly[lane_id]
             new_coords = []
+            last_added = None
             for x, y in lane_shape.exterior.coords:
-                for nl, dist in self.nearest_lanes(
-                    Point(x, y),
-                    include_junctions=False,
-                ):
-                    if not nl or nl.lane_id == lane_id:
-                        continue
-                    nl_shape = lane_to_poly.get(nl.lane_id)
-                    if nl_shape:
-                        p, np = nearest_points(shPoint(x, y), nl_shape)
-                        if p.distance(np) < snap_threshold:
-                            new_coords.append(np)
-                            break
-                else:
-                    new_coords.append(shPoint(x, y))
+                p = shPoint(x, y)
+                snapped_to = set()
+                moved = True
+                thresh = snap_threshold
+                while moved:
+                    moved = False
+                    for nl, dist in self.nearest_lanes(
+                        Point(p.x, p.y),
+                        include_junctions=False,
+                    ):
+                        if not nl or nl.lane_id == lane_id or nl in snapped_to:
+                            continue
+                        nl_shape = lane_to_poly.get(nl.lane_id)
+                        if nl_shape:
+                            _, np = nearest_points(p, nl_shape)
+                            if p.distance(np) < thresh:
+                                p = np  # !!!! :)
+                                # allow vertices to snap to more than one thing, but
+                                # try to avoid infinite loops and making things worse instead of better here...
+                                moved = True
+                                snapped_to.add(nl)
+                                thresh *= 0.75
+                if p != last_added:
+                    new_coords.append(p)
+                    last_added = p
             if new_coords:
                 lane_to_poly[lane_id] = Polygon(new_coords)
 
@@ -967,27 +979,38 @@ class SumoRoadNetwork(RoadMap):
 
             lane_shape = lane_to_poly[lane_id]
             new_coords = []
+            last_added = None
             for x, y in lane_shape.exterior.coords:
-                for nl, dist in self.nearest_lanes(
-                    Point(x, y),
-                    include_junctions=False,
-                ):
-                    if not nl or nl.in_junction or nl.lane_id == lane_id:
-                        continue
-                    ll, _ = nl.lane_to_left
-                    rl, _ = nl.lane_to_right
-                    if (not ll or ll.lane_id != lane_id) and (
-                        not rl or rl.lane_id != lane_id
+                p = shPoint(x, y)
+                snapped_to = set()
+                moved = True
+                thresh = snap_threshold
+                while moved:
+                    moved = False
+                    for nl, dist in self.nearest_lanes(
+                        Point(p.x, p.y),
+                        include_junctions=False,
                     ):
-                        continue
-                    nl_shape = lane_to_poly.get(nl.lane_id)
-                    if nl_shape:
-                        p, np = nearest_points(shPoint(x, y), nl_shape)
-                        if p.distance(np) < snap_threshold:
-                            new_coords.append(np)
-                            break
-                else:
-                    new_coords.append(shPoint(x, y))
+                        if (
+                            not nl
+                            or nl.in_junction
+                            or nl.lane_id == lane_id
+                            or nl in snapped_to
+                        ):
+                            continue
+                        nl_shape = lane_to_poly.get(nl.lane_id)
+                        if nl_shape:
+                            _, np = nearest_points(p, nl_shape)
+                            if p.distance(np) < thresh:
+                                p = np  # !!!! :)
+                                # allow vertices to snap to more than one thing, but
+                                # try to avoid infinite loops and making things worse instead of better here...
+                                moved = True
+                                snapped_to.add(nl)
+                                thresh *= 0.75
+                if p != last_added:
+                    new_coords.append(p)
+                    last_added = p
             if new_coords:
                 lane_to_poly[lane_id] = Polygon(new_coords)
 
