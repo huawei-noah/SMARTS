@@ -158,29 +158,29 @@ def test_od_map_junction():
     r13_out_road_ids = set([r.road_id for r in r13.outgoing_roads])
     assert r13_in_road_ids == {"10_0", "12_0", "15_0"}
     assert r13_out_road_ids == {"9_0", "11_0", "14_0"}
-    #
+
     # Lane tests
     l1 = road_map.lane_by_id("0_0_1")
     assert l1
     assert l1.road.road_id == "0_0"
     assert l1.index == 1
-    # assert len(l1.lanes_in_same_direction) == 3
-    #
-    # right_lane, direction = l1.lane_to_right
-    # assert right_lane
-    # assert direction
-    # assert right_lane.lane_id == "0_0_2"
-    # assert right_lane.index == 2
-    #
-    # left_lane, direction = l1.lane_to_left
-    # assert not left_lane
-    #
-    # further_right_lane, direction = right_lane.lane_to_right
-    # assert further_right_lane
-    # assert direction
-    # assert further_right_lane.lane_id == "0_0_3"
-    # assert further_right_lane.index == 3
-    #
+    assert len(l1.lanes_in_same_direction) == 3
+
+    right_lane, direction = l1.lane_to_right
+    assert right_lane
+    assert direction
+    assert right_lane.lane_id == "0_0_2"
+    assert right_lane.index == 2
+
+    left_lane, direction = l1.lane_to_left
+    assert not left_lane
+
+    further_right_lane, direction = right_lane.lane_to_right
+    assert further_right_lane
+    assert direction
+    assert further_right_lane.lane_id == "0_0_3"
+    assert further_right_lane.index == 3
+
     l1_in_lanes = l1.incoming_lanes
     assert not l1_in_lanes
 
@@ -209,12 +209,12 @@ def test_od_map_junction():
     assert l3
     assert l3.road.road_id == "9_0"
     assert l3.index == -1
-    # foes = l3.foes
-    # assert foes
-    # assert len(foes) == 2
-    # foe_set = set(f.lane_id for f in foes)
-    # assert "7_0_-1" in foe_set
-    # assert "5_0_-1" in foe_set
+    foes = l3.foes
+    assert foes
+    assert len(foes) == 2
+    foe_set = set(f.lane_id for f in foes)
+    assert "7_0_-1" in foe_set
+    assert "5_0_-1" in foe_set
 
 
 def test_od_map_figure_eight():
@@ -321,20 +321,20 @@ def test_od_map_lane_offset():
     assert set([lane.lane_id for lane in l0.incoming_lanes]) == {"1_0_1"}
     assert set([lane.lane_id for lane in l0.outgoing_lanes]) == set()
 
-    # right_lane, direction = l0.lane_to_right
-    # assert right_lane
-    # assert direction
-    # assert right_lane.lane_id == "1_1_2"
-    # assert right_lane.index == 2
-    #
-    # left_lane, direction = l0.lane_to_left
-    # assert not left_lane
-    #
-    # further_right_lane, direction = right_lane.lane_to_right
-    # assert further_right_lane
-    # assert direction
-    # assert further_right_lane.lane_id == "1_1_3"
-    # assert further_right_lane.index == 3
+    right_lane, direction = l0.lane_to_right
+    assert right_lane
+    assert direction
+    assert right_lane.lane_id == "1_1_2"
+    assert right_lane.index == 2
+
+    left_lane, direction = l0.lane_to_left
+    assert not left_lane
+
+    further_right_lane, direction = right_lane.lane_to_right
+    assert further_right_lane
+    assert direction
+    assert further_right_lane.lane_id == "1_1_3"
+    assert further_right_lane.index == 3
 
     l1 = road_map.lane_by_id("1_1_-2")
     assert l1
@@ -342,18 +342,18 @@ def test_od_map_lane_offset():
     assert l1.index == -2
     assert set([lane.lane_id for lane in l1.incoming_lanes]) == set()
     assert set([lane.lane_id for lane in l1.outgoing_lanes]) == {"1_2_-2"}
-    #
-    # right_lane, direction = l1.lane_to_right
-    # assert right_lane
-    # assert direction
-    # assert right_lane.lane_id == "1_1_-3"
-    # assert right_lane.index == -3
-    #
-    # left_lane, direction = l1.lane_to_left
-    # assert left_lane
-    # assert direction
-    # assert left_lane.lane_id == "1_1_-1"
-    # assert left_lane.index == -1
-    #
-    # further_left_lane, direction = left_lane.lane_to_left
-    # assert not further_left_lane
+
+    right_lane, direction = l1.lane_to_right
+    assert right_lane
+    assert direction
+    assert right_lane.lane_id == "1_1_-3"
+    assert right_lane.index == -3
+
+    left_lane, direction = l1.lane_to_left
+    assert left_lane
+    assert direction
+    assert left_lane.lane_id == "1_1_-1"
+    assert left_lane.index == -1
+
+    further_left_lane, direction = left_lane.lane_to_left
+    assert not further_left_lane

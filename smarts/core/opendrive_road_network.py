@@ -95,6 +95,7 @@ class OpenDriveRoadNetwork(RoadMap):
         for road_elem in od.roads:
             road_elem: RoadElement = road_elem
             for section_elem in road_elem.lanes.lane_sections:
+                section_elem: LaneSectionElement = section_elem
                 road_id = OpenDriveRoadNetwork._elem_id(section_elem)
                 road = OpenDriveRoadNetwork.Road(
                     road_id,
@@ -133,93 +134,93 @@ class OpenDriveRoadNetwork(RoadMap):
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
-        #
-        # # Third pass: fill in remaining properties
-        # start = time.time()
-        # for road_elem in od.roads:
-        #     road_id = OpenDriveRoadNetwork._elem_id(road_elem)
-        #     road = self._roads[road_id]
-        #
-        #     # Parallel roads
-        #     if OpenDriveRoadNetwork._pred_junction(
-        #         road_elem
-        #     ) and OpenDriveRoadNetwork._succ_junction(road_elem):
-        #         pred_id = road_elem.link.predecessor.element_id
-        #         succ_id = road_elem.link.successor.element_id
-        #         for outgoing in road.outgoing_roads:
-        #             outgoing_elem = od.getRoad(int(outgoing.road_id))
-        #             if (
-        #                 OpenDriveRoadNetwork._pred_junction(outgoing_elem)
-        #                 and OpenDriveRoadNetwork._succ_junction(outgoing_elem)
-        #                 and pred_id == outgoing_elem.link.predecessor.element_id
-        #                 and succ_id == outgoing_elem.link.successor.element_id
-        #             ):
-        #                 road.parallel_roads.append(outgoing)
-        #
-        #     for section_elem in road_elem.lanes.lane_sections:
-        #         for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
-        #             lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
-        #             lane = self._lanes[lane_id]
-        #
-        #             # Compute lanes in same direction
-        #             sign = np.sign(lane.index)
-        #             elems = [
-        #                 elem
-        #                 for elem in section_elem.allLanes
-        #                 if np.sign(elem.id) == sign and elem.id != lane.index
-        #             ]
-        #             same_dir_lanes = [
-        #                 self._lanes[OpenDriveRoadNetwork._elem_id(elem)]
-        #                 for elem in elems
-        #             ]
-        #             lane.lanes_in_same_direction = same_dir_lanes
-        #
-        #             # Compute lane to the left
-        #             result = None
-        #             if lane.index > 0:
-        #                 for other in lane.lanes_in_same_direction:
-        #                     if lane.index - other.index == 1:
-        #                         result = other
-        #                         break
-        #             elif lane.index < 0:
-        #                 for other in lane.lanes_in_same_direction:
-        #                     if lane.index - other.index == -1:
-        #                         result = other
-        #                         break
-        #             lane.lane_to_left = result, True
-        #
-        #             # Compute lane to right
-        #             result = None
-        #             if lane.index > 0:
-        #                 for other in lane.lanes_in_same_direction:
-        #                     if lane.index - other.index == -1:
-        #                         result = other
-        #                         break
-        #             elif lane.index < 0:
-        #                 for other in lane.lanes_in_same_direction:
-        #                     if lane.index - other.index == 1:
-        #                         result = other
-        #                         break
-        #             lane.lane_to_right = result, True
-        #
-        #             # Compute lane foes
-        #             result = [
-        #                 incoming
-        #                 for outgoing in lane.outgoing_lanes
-        #                 for incoming in outgoing.incoming_lanes
-        #                 if incoming != lane
-        #             ]
-        #             if lane.in_junction:
-        #                 in_roads = set(il.road for il in lane.incoming_lanes)
-        #                 for foe in lane.road.lanes:
-        #                     foe_in_roads = set(il.road for il in foe.incoming_lanes)
-        #                     if not bool(in_roads & foe_in_roads):
-        #                         result.append(foe)
-        #             lane.foes = list(set(result))
-        #
-        # end = time.time()
-        # elapsed = round((end - start) * 1000.0, 3)
-        # self._log.info(f"Third pass: {elapsed} ms")
+
+        # Third pass: fill in remaining properties
+        start = time.time()
+        for road_elem in od.roads:
+            for section_elem in road_elem.lanes.lane_sections:
+                road_id = OpenDriveRoadNetwork._elem_id(section_elem)
+                road = self._roads[road_id]
+
+                # Parallel roads
+                # if OpenDriveRoadNetwork._pred_junction(
+                #     road_elem
+                # ) and OpenDriveRoadNetwork._succ_junction(road_elem):
+                #     pred_id = road_elem.link.predecessor.element_id
+                #     succ_id = road_elem.link.successor.element_id
+                #     for outgoing in road.outgoing_roads:
+                #         outgoing_elem = od.getRoad(int(outgoing.road_id))
+                #         if (
+                #             OpenDriveRoadNetwork._pred_junction(outgoing_elem)
+                #             and OpenDriveRoadNetwork._succ_junction(outgoing_elem)
+                #             and pred_id == outgoing_elem.link.predecessor.element_id
+                #             and succ_id == outgoing_elem.link.successor.element_id
+                #         ):
+                #             road.parallel_roads.append(outgoing)
+
+                for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
+                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
+                    lane = self._lanes[lane_id]
+
+                    # Compute lanes in same direction
+                    sign = np.sign(lane.index)
+                    elems = [
+                        elem
+                        for elem in section_elem.allLanes
+                        if np.sign(elem.id) == sign and elem.id != lane.index
+                    ]
+                    same_dir_lanes = [
+                        self._lanes[OpenDriveRoadNetwork._elem_id(elem)]
+                        for elem in elems
+                    ]
+                    lane.lanes_in_same_direction = same_dir_lanes
+
+                    # Compute lane to the left
+                    result = None
+                    if lane.index > 0:
+                        for other in lane.lanes_in_same_direction:
+                            if lane.index - other.index == 1:
+                                result = other
+                                break
+                    elif lane.index < 0:
+                        for other in lane.lanes_in_same_direction:
+                            if lane.index - other.index == -1:
+                                result = other
+                                break
+                    lane.lane_to_left = result, True
+
+                    # Compute lane to right
+                    result = None
+                    if lane.index > 0:
+                        for other in lane.lanes_in_same_direction:
+                            if lane.index - other.index == -1:
+                                result = other
+                                break
+                    elif lane.index < 0:
+                        for other in lane.lanes_in_same_direction:
+                            if lane.index - other.index == 1:
+                                result = other
+                                break
+                    lane.lane_to_right = result, True
+
+                    # Compute lane foes
+                    result = [
+                        incoming
+                        for outgoing in lane.outgoing_lanes
+                        for incoming in outgoing.incoming_lanes
+                        if incoming != lane
+                    ]
+                    if lane.in_junction:
+                        in_roads = set(il.road for il in lane.incoming_lanes)
+                        for foe in lane.road.lanes:
+                            foe_in_roads = set(il.road for il in foe.incoming_lanes)
+                            if not bool(in_roads & foe_in_roads):
+                                result.append(foe)
+                    lane.foes = list(set(result))
+
+        end = time.time()
+        elapsed = round((end - start) * 1000.0, 3)
+        self._log.info(f"Third pass: {elapsed} ms")
 
     def _compute_road_connections(self, od, road, road_elem):
         # Cache junction elements
