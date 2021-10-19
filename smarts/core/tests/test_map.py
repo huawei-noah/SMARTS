@@ -257,3 +257,43 @@ def test_od_map_figure_eight():
     assert l1_in_lanes
     assert len(l1_in_lanes) == 1
     assert l1_in_lanes[0].lane_id == "516_0_-1"
+
+
+def test_od_map_lane_offset():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    road_map = OpenDriveRoadNetwork.from_file(
+        path.join(root, "Ex_Simple-LaneOffset.xodr")
+    )
+    assert isinstance(road_map, OpenDriveRoadNetwork)
+
+    # Expected properties for all roads and lanes
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        assert road.parallel_roads == []
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
+
+    # Road tests
+    r0 = road_map.road_by_id("1")
+    assert r0
+    assert not r0.is_junction
+
+    # Lane tests
+    l0 = road_map.lane_by_id("1_1_1")
+    assert l0
+    assert l0.road.road_id == "1"
+    assert l0.index == 1
+    assert set([lane.lane_id for lane in l0.incoming_lanes]) == {"1_0_1"}
+    assert set([lane.lane_id for lane in l0.outgoing_lanes]) == set()
+
+    l1 = road_map.lane_by_id("1_1_-2")
+    assert l1
+    assert l1.road.road_id == "1"
+    assert l1.index == -2
+    assert set([lane.lane_id for lane in l1.incoming_lanes]) == set()
+    assert set([lane.lane_id for lane in l1.outgoing_lanes]) == {"1_2_-2"}
