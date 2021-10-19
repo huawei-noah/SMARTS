@@ -293,7 +293,7 @@ def test_od_map_lane_offset():
     assert r0_in_road_ids == {"1_0"}
     assert r0_out_road_ids == {"1_2"}
 
-    r1 = road_map.road_by_id("1_1")
+    r1 = road_map.road_by_id("1_0")
     assert r1
     assert len(r1.lanes) == 5
     assert not r1.is_junction
