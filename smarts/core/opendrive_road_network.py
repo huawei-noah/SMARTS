@@ -331,7 +331,9 @@ class OpenDriveRoadNetwork(RoadMap):
                 incoming_lanes.append(self.lane_by_id(pred_lane_id))
         return incoming_lanes
 
-    def _compute_outgoing_lanes(self, od, lane, lane_elem, road_elem) -> List[RoadMap.Lane]:
+    def _compute_outgoing_lanes(
+        self, od, lane, lane_elem, road_elem
+    ) -> List[RoadMap.Lane]:
         outgoing_lanes = []
 
         if lane.lane_id in self._junction_connections:
@@ -353,9 +355,7 @@ class OpenDriveRoadNetwork(RoadMap):
                         succ_ls_index = succ_road_elem.lanes.getLastLaneSectionIdx()
                     else:
                         succ_ls_index = 0
-                    succ_lane_id = (
-                        f"{road_successor.element_id}_{succ_ls_index}_{lane_link.successorId}"
-                    )
+                    succ_lane_id = f"{road_successor.element_id}_{succ_ls_index}_{lane_link.successorId}"
                     outgoing_lanes.append(self.lane_by_id(succ_lane_id))
             else:
                 # Otherwise, get the next lane section in the current road
