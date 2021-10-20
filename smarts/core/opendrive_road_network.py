@@ -129,7 +129,7 @@ class OpenDriveRoadNetwork(RoadMap):
                         od, lane, lane_elem, road_elem
                     )
                     lane.outgoing_lanes = self._compute_outgoing_lanes(
-                        lane, lane_elem, road_elem
+                        od, lane, lane_elem, road_elem
                     )
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -316,9 +316,12 @@ class OpenDriveRoadNetwork(RoadMap):
                 # This is the first lane section, so get the last lane section of the incoming road
                 road_predecessor = road_elem.link.predecessor
                 if road_predecessor and road_predecessor.elementType == "road":
-                    pred_road_elem = od.getRoad(road_predecessor.element_id)
-                    last_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
-                    pred_lane_id = f"{road_predecessor.element_id}_{last_ls_index}_{lane_link.predecessorId}"
+                    if road_predecessor.contactPoint == "end":
+                        pred_road_elem = od.getRoad(road_predecessor.element_id)
+                        pred_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
+                    else:
+                        pred_ls_index = 0
+                    pred_lane_id = f"{road_predecessor.element_id}_{pred_ls_index}_{lane_link.predecessorId}"
                     incoming_lanes.append(self.lane_by_id(pred_lane_id))
             else:
                 # Otherwise, get the previous lane section of the current road
@@ -328,7 +331,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 incoming_lanes.append(self.lane_by_id(pred_lane_id))
         return incoming_lanes
 
-    def _compute_outgoing_lanes(self, lane, lane_elem, road_elem) -> List[RoadMap.Lane]:
+    def _compute_outgoing_lanes(self, od, lane, lane_elem, road_elem) -> List[RoadMap.Lane]:
         outgoing_lanes = []
 
         if lane.lane_id in self._junction_connections:
@@ -345,8 +348,13 @@ class OpenDriveRoadNetwork(RoadMap):
                 # This is the last lane section, so get the first lane section of the outgoing road
                 road_successor = road_elem.link.successor
                 if road_successor and road_successor.elementType == "road":
+                    if road_successor.contactPoint == "end":
+                        succ_road_elem = od.getRoad(road_successor.element_id)
+                        succ_ls_index = succ_road_elem.lanes.getLastLaneSectionIdx()
+                    else:
+                        succ_ls_index = 0
                     succ_lane_id = (
-                        f"{road_successor.element_id}_0_{lane_link.successorId}"
+                        f"{road_successor.element_id}_{succ_ls_index}_{lane_link.successorId}"
                     )
                     outgoing_lanes.append(self.lane_by_id(succ_lane_id))
             else:
@@ -374,9 +382,12 @@ class OpenDriveRoadNetwork(RoadMap):
 
                     if lane_elem.link.predecessorId:
                         road_predecessor = road_elem.link.predecessor
-                        pred_road_elem = od.getRoad(road_predecessor.element_id)
-                        last_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
-                        pred_lane_id = f"{road_predecessor.element_id}_{last_ls_index}_{lane_elem.link.predecessorId}"
+                        if road_predecessor.contactPoint == "end":
+                            pred_road_elem = od.getRoad(road_predecessor.element_id)
+                            pred_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
+                        else:
+                            pred_ls_index = 0
+                        pred_lane_id = f"{road_predecessor.element_id}_{pred_ls_index}_{lane_elem.link.predecessorId}"
 
                         if pred_lane_id not in self._junction_connections:
                             self._junction_connections[pred_lane_id] = ([], [])
@@ -386,7 +397,12 @@ class OpenDriveRoadNetwork(RoadMap):
 
                     if lane_elem.link.successorId:
                         road_successor = road_elem.link.successor
-                        succ_lane_id = f"{road_successor.element_id}_0_{lane_elem.link.successorId}"
+                        if road_successor.contactPoint == "end":
+                            succ_road_elem = od.getRoad(road_successor.element_id)
+                            succ_ls_index = succ_road_elem.lanes.getLastLaneSectionIdx()
+                        else:
+                            succ_ls_index = 0
+                        succ_lane_id = f"{road_successor.element_id}_{succ_ls_index}_{lane_elem.link.successorId}"
 
                         if succ_lane_id not in self._junction_connections:
                             self._junction_connections[succ_lane_id] = ([], [])
