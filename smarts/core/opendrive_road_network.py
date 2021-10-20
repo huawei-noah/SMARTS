@@ -350,8 +350,8 @@ class OpenDriveRoadNetwork(RoadMap):
                     if succ_road_id not in self._junction_road_connections:
                         self._junction_road_connections[succ_road_id] = ([], [])
 
-                    self._junction_road_connections[succ_road_id][1].append(road_id)
-                    self._junction_road_connections[road_id][0].append(succ_road_id)
+                    self._junction_road_connections[succ_road_id][0].append(road_id)
+                    self._junction_road_connections[road_id][1].append(succ_road_id)
 
                 # precompute junction lane connections
                 for lane_elem in (
