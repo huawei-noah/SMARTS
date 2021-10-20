@@ -243,12 +243,13 @@ class OpenDriveRoadNetwork(RoadMap):
                 # This is the first lane section, so get the last lane section of the incoming road
                 road_predecessor = road_elem.link.predecessor
                 if road_predecessor and road_predecessor.elementType == "road":
-                    if road_predecessor.contactPoint == "end":
-                        pred_road_elem = od.getRoad(road_predecessor.element_id)
-                        pred_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
-                    else:
-                        pred_ls_index = 0
-                    pred_lane_id = f"{road_predecessor.element_id}_{pred_ls_index}_{lane_link.predecessorId}"
+                    pred_road_elem = od.getRoad(road_predecessor.element_id)
+                    section_index = (
+                        pred_road_elem.lanes.getLastLaneSectionIdx()
+                        if road_predecessor.contactPoint == "end"
+                        else 0
+                    )
+                    pred_lane_id = f"{road_predecessor.element_id}_{section_index}_{lane_link.predecessorId}"
                     lane.incoming_lanes.append(self.lane_by_id(pred_lane_id))
             else:
                 # Otherwise, get the previous lane section of the current road
@@ -263,12 +264,13 @@ class OpenDriveRoadNetwork(RoadMap):
                 # This is the last lane section, so get the first lane section of the outgoing road
                 road_successor = road_elem.link.successor
                 if road_successor and road_successor.elementType == "road":
-                    if road_successor.contactPoint == "end":
-                        succ_road_elem = od.getRoad(road_successor.element_id)
-                        succ_ls_index = succ_road_elem.lanes.getLastLaneSectionIdx()
-                    else:
-                        succ_ls_index = 0
-                    succ_lane_id = f"{road_successor.element_id}_{succ_ls_index}_{lane_link.successorId}"
+                    succ_road_elem = od.getRoad(road_successor.element_id)
+                    section_index = (
+                        succ_road_elem.lanes.getLastLaneSectionIdx()
+                        if road_successor.contactPoint == "end"
+                        else 0
+                    )
+                    succ_lane_id = f"{road_successor.element_id}_{section_index}_{lane_link.successorId}"
                     lane.outgoing_lanes.append(self.lane_by_id(succ_lane_id))
             else:
                 # Otherwise, get the next lane section in the current road
