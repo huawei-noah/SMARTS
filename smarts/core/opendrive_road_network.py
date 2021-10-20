@@ -196,9 +196,9 @@ class OpenDriveRoadNetwork(RoadMap):
     def _compute_road_connections(self, od, road, road_elem):
         if road.road_id in self._junction_road_connections:
             for pred_road_id in self._junction_road_connections[road.road_id][0]:
-                road.incoming_roads.append(self.lane_by_id(pred_road_id))
+                road.incoming_roads.append(self.road_by_id(pred_road_id))
             for succ_road_id in self._junction_road_connections[road.road_id][1]:
-                road.outgoing_roads.append(self.lane_by_id(succ_road_id))
+                road.outgoing_roads.append(self.road_by_id(succ_road_id))
 
         if road.is_junction:
             return
