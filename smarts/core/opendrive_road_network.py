@@ -142,23 +142,6 @@ class OpenDriveRoadNetwork(RoadMap):
                 road_id = OpenDriveRoadNetwork._elem_id(section_elem)
                 road = self._roads[road_id]
 
-                # TODO: Fix Parallel roads or remove it!
-                # Parallel roads
-                # if OpenDriveRoadNetwork._pred_junction(
-                #     road_elem
-                # ) and OpenDriveRoadNetwork._succ_junction(road_elem):
-                #     pred_id = road_elem.link.predecessor.element_id
-                #     succ_id = road_elem.link.successor.element_id
-                #     for outgoing in road.outgoing_roads:
-                #         outgoing_elem = od.getRoad(int(outgoing.road_id))
-                #         if (
-                #             OpenDriveRoadNetwork._pred_junction(outgoing_elem)
-                #             and OpenDriveRoadNetwork._succ_junction(outgoing_elem)
-                #             and pred_id == outgoing_elem.link.predecessor.element_id
-                #             and succ_id == outgoing_elem.link.successor.element_id
-                #         ):
-                #             road.parallel_roads.append(outgoing)
-
                 for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                     lane = self._lanes[lane_id]
@@ -234,14 +217,16 @@ class OpenDriveRoadNetwork(RoadMap):
         # For OpenDRIVE lane sections with idx = 0
         if lane_section_idx == 0:
             # Incoming roads - simple case
-            if (
-                road_elem.link.predecessor
-                and road_elem.link.predecessor.elementType == "road"
-            ):
-                pred_road_elem = od.getRoad(road_elem.link.predecessor.element_id)
-                last_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
+            predecessor = road_elem.link.predecessor
+            if predecessor and predecessor.elementType == "road":
+                pred_road_elem = od.getRoad(predecessor.element_id)
+                section_index = (
+                    pred_road_elem.lanes.getLastLaneSectionIdx()
+                    if predecessor.contactPoint == "end"
+                    else 0
+                )
                 in_road = self.road_by_id(
-                    f"{road_elem.link.predecessor.element_id}_{last_ls_index}"
+                    f"{road_elem.link.predecessor.element_id}_{section_index}"
                 )
                 road.incoming_roads = [in_road]
 
@@ -253,12 +238,17 @@ class OpenDriveRoadNetwork(RoadMap):
                     # Loop over all roads in junction, and check if they're incoming or outgoing for the current road
                     for connection in junction_elems[junction_elem].connections:
                         cr_elem = od.getRoad(connection.connectingRoad)
-                        if (
-                            cr_elem.link.successor
-                            and cr_elem.link.successor.element_id == int(road_elem.id)
-                        ):
+                        successor = cr_elem.link.successor
+                        if successor and successor.element_id == int(road_elem.id):
+                            section_index = (
+                                road_elem.lanes.getLastLaneSectionIdx()
+                                if successor.contactPoint == "end"
+                                else 0
+                            )
                             road.incoming_roads.append(
-                                self.road_by_id(f"{connection.connectingRoad}_{0}")
+                                self.road_by_id(
+                                    f"{connection.connectingRoad}_{section_index}"
+                                )
                             )
         else:
             pred_road_id = f"{road_elem.id}_{lane_section_idx - 1}"
@@ -269,11 +259,15 @@ class OpenDriveRoadNetwork(RoadMap):
         # For OpenDRIVE lane sections with last idx
         if lane_section_idx == road_elem.lanes.getLastLaneSectionIdx():
             # Outgoing roads - simple case
-            if (
-                road_elem.link.successor
-                and road_elem.link.successor.elementType == "road"
-            ):
-                out_road = self.road_by_id(f"{road_elem.link.successor.element_id}_{0}")
+            successor = road_elem.link.successor
+            if successor and successor.elementType == "road":
+                succ_road_elem = od.getRoad(successor.element_id)
+                section_index = (
+                    succ_road_elem.lanes.getLastLaneSectionIdx()
+                    if successor.contactPoint == "end"
+                    else 0
+                )
+                out_road = self.road_by_id(f"{successor.element_id}_{0}")
                 road.outgoing_roads = [out_road]
 
             # Outgoing roads - junction case
@@ -284,12 +278,17 @@ class OpenDriveRoadNetwork(RoadMap):
                     # Loop over all roads in junction, and check if they're incoming or outgoing for the current road
                     for connection in junction_elems[junction_elem].connections:
                         cr_elem = od.getRoad(connection.connectingRoad)
-                        if (
-                            cr_elem.link.predecessor
-                            and cr_elem.link.predecessor.element_id == int(road_elem.id)
-                        ):
+                        predecessor = cr_elem.link.predecessor
+                        if predecessor and predecessor.element_id == int(road_elem.id):
+                            section_index = (
+                                road_elem.lanes.getLastLaneSectionIdx()
+                                if predecessor.contactPoint == "end"
+                                else 0
+                            )
                             road.outgoing_roads.append(
-                                self.road_by_id(f"{connection.connectingRoad}_{0}")
+                                self.road_by_id(
+                                    f"{connection.connectingRoad}_{section_index}"
+                                )
                             )
 
         else:
