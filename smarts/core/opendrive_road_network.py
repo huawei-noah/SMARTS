@@ -110,8 +110,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                     lane = self._lanes[lane_id]
-                    self._compute_incoming_lanes(od, lane, lane_elem, road_elem)
-                    self._compute_outgoing_lanes(od, lane, lane_elem, road_elem)
+                    self._compute_lane_connections(od, lane, lane_elem, road_elem)
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
@@ -233,7 +232,7 @@ class OpenDriveRoadNetwork(RoadMap):
             out_road = self.road_by_id(succ_road_id)
             road.outgoing_roads.append(out_road)
 
-    def _compute_incoming_lanes(self, od, lane, lane_elem, road_elem):
+    def _compute_lane_connections(self, od, lane, lane_elem, road_elem):
         if lane.in_junction:
             return
 
@@ -258,11 +257,6 @@ class OpenDriveRoadNetwork(RoadMap):
                 )
                 lane.incoming_lanes.append(self.lane_by_id(pred_lane_id))
 
-    def _compute_outgoing_lanes(self, od, lane, lane_elem, road_elem):
-        if lane.in_junction:
-            return
-
-        lane_link = lane_elem.link
         if lane_link.successorId:
             ls_index = lane_elem.lane_section.idx
             if ls_index == len(road_elem.lanes.lane_sections) - 1:
