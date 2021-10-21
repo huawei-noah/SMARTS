@@ -21,6 +21,36 @@ import math
 from math import factorial
 import numpy as np
 from typing import Callable
+from dataclasses import dataclass
+from typing import List
+
+
+@dataclass(frozen=True)
+class CubicPolynomial:
+    a: float
+    b: float
+    c: float
+    d: float
+
+    @classmethod
+    def from_list(cls, coefficients: List[float]):
+        return cls(
+            a=coefficients[0],
+            b=coefficients[1],
+            c=coefficients[2],
+            d=coefficients[3],
+        )
+
+    def eval(self, ds: float) -> float:
+        return self.a + self.b * ds + self.c * ds * ds + self.d * ds * ds * ds
+
+
+def constrain_angle(angle):
+    """Constrain to [-pi, pi]"""
+    angle %= 2 * math.pi
+    if angle > math.pi:
+        angle -= 2 * math.pi
+    return angle
 
 
 def batches(list_, n):
