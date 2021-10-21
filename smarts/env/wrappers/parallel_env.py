@@ -134,13 +134,13 @@ class ParallelEnv(object):
         return self._num_envs
 
     @property
-    def observation_space(self) -> gym.Space:
+    def observation_space(self) -> Optional[gym.Space]:
         if self._single_observation_space:
             return gym.spaces.Tuple([self._single_observation_space] * self._num_envs)
         return None
 
     @property
-    def action_space(self) -> gym.Space:
+    def action_space(self) -> Optional[gym.Space]:
         if self._single_action_space:
             return gym.spaces.Tuple([self._single_action_space] * self._num_envs)
         return None
