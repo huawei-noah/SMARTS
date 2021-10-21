@@ -20,22 +20,64 @@
 import logging
 import time
 from typing import Dict, List, Tuple
-
+from dataclasses import dataclass
+import math
 import numpy as np
-from cached_property import cached_property
 from lxml import etree
-from numpy.core.defchararray import index
 from opendrive2lanelet.opendriveparser.elements.opendrive import (
     OpenDrive as OpenDriveElement,
 )
+from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
 from opendrive2lanelet.opendriveparser.elements.road import Road as RoadElement
 from opendrive2lanelet.opendriveparser.elements.roadLanes import Lane as LaneElement
 from opendrive2lanelet.opendriveparser.elements.roadLanes import (
     LaneSection as LaneSectionElement,
 )
+from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
+    PlanView as PlanViewElement,
+)
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 
 from smarts.core.road_map import RoadMap
+from smarts.core.utils.math import CubicPolynomial, constrain_angle
+
+
+@dataclass
+class LaneBoundary:
+    refline: PlanViewElement
+    inner: "LaneBoundary"
+    poly: CubicPolynomial
+
+    def refline_to_linear_segments(self, s_start: float, s_end: float) -> List[float]:
+        s_vals = []
+        for geom in self.refline._geometries:
+            if type(geom) == LineGeometry:
+                s_vals.extend([s_start, s_end])
+            else:
+                num_segments = int((s_end - s_start) / 0.1)
+                for seg in range(num_segments):
+                    s_vals.append(seg * 0.1)
+        return sorted(s_vals)
+
+    def calc_t(self, ds: float) -> float:
+        if not self.inner:
+            return 0
+        return self.poly.eval(ds) + self.inner.calc_t(ds)
+
+    def to_linear_segments(self, s_start: float, s_end: float):
+        if self.inner:
+            inner_s_vals = self.inner.to_linear_segments(s_start, s_end)
+        else:
+            return self.refline_to_linear_segments(s_start, s_end)
+
+        if self.poly.c == 0 and self.poly.d == 0:
+            outer_s_vals = [s_start, s_end]
+        else:
+            num_segments = int((s_end - s_start) / 0.1)
+            outer_s_vals = []
+            for seg in range(num_segments):
+                outer_s_vals.append(seg * 0.1)
+        return sorted(set(inner_s_vals + outer_s_vals))
 
 
 class OpenDriveRoadNetwork(RoadMap):
@@ -99,18 +141,49 @@ class OpenDriveRoadNetwork(RoadMap):
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"First pass: {elapsed} ms")
 
-        # Second pass: compute road and lane connections
+        # Second pass: compute road and lane connections, compute lane boundaries and polygon
         start = time.time()
         self._precompute_junction_connections(od)
         for road_elem in od.roads:
             for section_elem in road_elem.lanes.lane_sections:
                 road_id = OpenDriveRoadNetwork._elem_id(section_elem)
                 road = self._roads[road_id]
+
+                # Compute road's incoming and outgoing roads
                 self._compute_road_connections(od, road, road_elem)
+
+                road_plan_view = road_elem.planView
+
+                # Compute left lanes connections and polygon
+                inner_boundary = LaneBoundary(road_plan_view, None, None)
+                right_lanes_iteration = False
                 for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                     lane = self._lanes[lane_id]
+
+                    # Compute lane's incoming and outgoing lanes
                     self._compute_lane_connections(od, lane, lane_elem, road_elem)
+
+                    # Reset inner_boundary if rightLane iteration begins
+                    if (
+                        lane_elem in section_elem.rightLanes
+                        and not right_lanes_iteration
+                    ):
+                        inner_boundary = LaneBoundary(road_plan_view, None, None)
+                        right_lanes_iteration = True
+
+                    # Computer lane's boundary
+                    for width in lane_elem.widths:
+                        poly = CubicPolynomial.from_list(width.polynomial_coefficients)
+                        outer_boundary = LaneBoundary(None, inner_boundary, poly)
+                        lane.lane_boundaries.append((inner_boundary, outer_boundary))
+                        inner_boundary = outer_boundary
+
+                    # Compute lane's polygon
+                    OpenDriveRoadNetwork._compute_lane_polygon(
+                        lane, lane_elem, road_plan_view
+                    )
+
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
@@ -185,6 +258,69 @@ class OpenDriveRoadNetwork(RoadMap):
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Third pass: {elapsed} ms")
+
+    def _precompute_junction_connections(self, od: OpenDriveElement):
+        for road_elem in od.roads:
+            if road_elem.junction:
+                # TODO: handle multiple lane sections in connecting roads?
+                assert (
+                    len(road_elem.lanes.lane_sections) == 1
+                ), "Junction connecting roads must have a single lane section"
+                # precompute junction road connections
+                road_id = OpenDriveRoadNetwork._elem_id(
+                    road_elem.lanes.lane_sections[0]
+                )
+                road = self.road_by_id(road_id)
+                pred_road_id = None
+                succ_road_id = None
+
+                if road_elem.link.predecessor:
+                    road_predecessor = road_elem.link.predecessor
+                    if road_predecessor.contactPoint == "end":
+                        pred_road_elem = od.getRoad(road_predecessor.element_id)
+                        pred_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
+                    else:
+                        pred_ls_index = 0
+                    pred_road_id = f"{road_predecessor.element_id}_{pred_ls_index}"
+                    pred_road = self.road_by_id(pred_road_id)
+                    pred_road.outgoing_roads.append(road)
+                    road.incoming_roads.append(pred_road)
+
+                if road_elem.link.successor:
+                    road_successor = road_elem.link.successor
+                    if road_successor.contactPoint == "end":
+                        succ_road_elem = od.getRoad(road_successor.element_id)
+                        succ_ls_index = succ_road_elem.lanes.getLastLaneSectionIdx()
+                    else:
+                        succ_ls_index = 0
+                    succ_road_id = f"{road_successor.element_id}_{succ_ls_index}"
+                    succ_road = self.road_by_id(succ_road_id)
+                    succ_road.incoming_roads.append(road)
+                    road.outgoing_roads.append(succ_road)
+
+                # precompute junction lane connections
+                for lane_elem in (
+                    road_elem.lanes.lane_sections[0].leftLanes
+                    + road_elem.lanes.lane_sections[0].rightLanes
+                ):
+                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
+                    lane = self.lane_by_id(lane_id)
+
+                    if lane_elem.link.predecessorId:
+                        assert pred_road_id
+                        pred_lane_id = f"{pred_road_id}_{lane_elem.link.predecessorId}"
+                        pred_lane = self.lane_by_id(pred_lane_id)
+
+                        pred_lane.outgoing_lanes.append(lane)
+                        lane.incoming_lanes.append(pred_lane)
+
+                    if lane_elem.link.successorId:
+                        assert succ_road_id
+                        succ_lane_id = f"{succ_road_id}_{lane_elem.link.successorId}"
+                        succ_lane = self.lane_by_id(succ_lane_id)
+
+                        succ_lane.incoming_lanes.append(lane)
+                        lane.outgoing_lanes.append(succ_lane)
 
     def _compute_road_connections(self, od, road, road_elem):
         if road.is_junction:
@@ -277,68 +413,45 @@ class OpenDriveRoadNetwork(RoadMap):
                 succ_lane_id = f"{road_elem.id}_{ls_index + 1}_{lane_link.successorId}"
                 lane.outgoing_lanes.append(self.lane_by_id(succ_lane_id))
 
-    def _precompute_junction_connections(self, od: OpenDriveElement):
-        for road_elem in od.roads:
-            if road_elem.junction:
-                # TODO: handle multiple lane sections in connecting roads?
-                assert (
-                    len(road_elem.lanes.lane_sections) == 1
-                ), "Junction connecting roads must have a single lane section"
-                # precompute junction road connections
-                road_id = OpenDriveRoadNetwork._elem_id(
-                    road_elem.lanes.lane_sections[0]
-                )
-                road = self.road_by_id(road_id)
-                pred_road_id = None
-                succ_road_id = None
+    @staticmethod
+    def _compute_lane_polygon(
+        lane, lane_elem: LaneElement, road_planview: PlanViewElement
+    ):
+        xs, ys = [], []
+        section: LaneSectionElement = lane_elem.lane_section
+        section_len = section.length
+        section_s_start = section.sPos
+        section_s_end = section_s_start + section_len
 
-                if road_elem.link.predecessor:
-                    road_predecessor = road_elem.link.predecessor
-                    if road_predecessor.contactPoint == "end":
-                        pred_road_elem = od.getRoad(road_predecessor.element_id)
-                        pred_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
-                    else:
-                        pred_ls_index = 0
-                    pred_road_id = f"{road_predecessor.element_id}_{pred_ls_index}"
-                    pred_road = self.road_by_id(pred_road_id)
-                    pred_road.outgoing_roads.append(road)
-                    road.incoming_roads.append(pred_road)
+        for i in range(len(lane_elem.widths)):
+            (inner_boundary, outer_boundary) = lane.lane_boundaries[i]
+            inner_s_vals = inner_boundary.to_linear_segments(
+                section_s_start, section_s_end
+            )
+            outer_s_vals = outer_boundary.to_linear_segments(
+                section_s_start, section_s_end
+            )
+            s_vals = sorted(set(inner_s_vals + outer_s_vals))
 
-                if road_elem.link.successor:
-                    road_successor = road_elem.link.successor
-                    if road_successor.contactPoint == "end":
-                        succ_road_elem = od.getRoad(road_successor.element_id)
-                        succ_ls_index = succ_road_elem.lanes.getLastLaneSectionIdx()
-                    else:
-                        succ_ls_index = 0
-                    succ_road_id = f"{road_successor.element_id}_{succ_ls_index}"
-                    succ_road = self.road_by_id(succ_road_id)
-                    succ_road.incoming_roads.append(road)
-                    road.outgoing_roads.append(succ_road)
+            xs_inner, ys_inner = [], []
+            xs_outer, ys_outer = [], []
+            for s in s_vals:
+                ds = s - lane_elem.widths[i].start_offset
+                t_inner = inner_boundary.calc_t(ds)
+                t_outer = outer_boundary.calc_t(ds)
+                (x_ref, y_ref), heading = road_planview.calc(s)
+                angle = lane.t_angle(heading)
+                xs_inner.append(x_ref + t_inner * math.cos(angle))
+                ys_inner.append(y_ref + t_inner * math.sin(angle))
+                xs_outer.append(x_ref + t_outer * math.cos(angle))
+                ys_outer.append(y_ref + t_outer * math.sin(angle))
+            inner_boundary = outer_boundary
+            xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
+            ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
 
-                # precompute junction lane connections
-                for lane_elem in (
-                    road_elem.lanes.lane_sections[0].leftLanes
-                    + road_elem.lanes.lane_sections[0].rightLanes
-                ):
-                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
-                    lane = self.lane_by_id(lane_id)
-
-                    if lane_elem.link.predecessorId:
-                        assert pred_road_id
-                        pred_lane_id = f"{pred_road_id}_{lane_elem.link.predecessorId}"
-                        pred_lane = self.lane_by_id(pred_lane_id)
-
-                        pred_lane.outgoing_lanes.append(lane)
-                        lane.incoming_lanes.append(pred_lane)
-
-                    if lane_elem.link.successorId:
-                        assert succ_road_id
-                        succ_lane_id = f"{succ_road_id}_{lane_elem.link.successorId}"
-                        succ_lane = self.lane_by_id(succ_lane_id)
-
-                        succ_lane.incoming_lanes.append(lane)
-                        lane.outgoing_lanes.append(succ_lane)
+        assert len(xs) == len(ys)
+        for i in range(len(xs)):
+            lane.lane_polygon.append((xs[i], ys[i]))
 
     @property
     def source(self) -> str:
@@ -355,6 +468,8 @@ class OpenDriveRoadNetwork(RoadMap):
             self._outgoing_lanes = []
             self._lanes_in_same_dir = []
             self._foes = []
+            self._lane_boundaries = []
+            self._lane_polygon = []
             self._lane_to_left = None, True
             self._lane_to_right = None, True
             self._in_junction = None
@@ -427,6 +542,31 @@ class OpenDriveRoadNetwork(RoadMap):
         @foes.setter
         def foes(self, value):
             self._foes = value
+
+        @property
+        def lane_boundaries(self) -> List[Tuple[LaneBoundary, LaneBoundary]]:
+            return self._lane_boundaries
+
+        @lane_boundaries.setter
+        def lane_boundaries(self, value):
+            self._lane_boundaries = value
+
+        @property
+        def lane_polygon(self) -> List[Tuple[float, float]]:
+            return self._lane_polygon
+
+        @lane_polygon.setter
+        def lane_polygon(self, value):
+            self._lane_polygon = value
+
+        def t_angle(self, s_heading: float):
+            lane_elem_id = int(self.lane_id.split("_")[2])
+            angle = (
+                (s_heading - math.pi / 2)
+                if lane_elem_id < 0
+                else (s_heading + math.pi / 2)
+            )
+            return constrain_angle(angle)
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
