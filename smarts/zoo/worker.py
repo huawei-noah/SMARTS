@@ -51,7 +51,7 @@ from smarts.zoo import worker_pb2_grpc, worker_servicer
 modules = [
     "smarts.core.utils.pybullet",
     "smarts.core.utils.sumo",
-    "smarts.core.sumo_road_network",
+    "smarts.core.road_map",
     "numpy",
     "sklearn",
     "shapely",
@@ -66,7 +66,16 @@ for mod in modules:
     try:
         importlib.import_module(mod)
     except ImportError:
+        if mod == "ray":
+            print(
+                "You need to install the ray dependency using pip install -e .[train] first"
+            )
+        if mod == "panda3d":
+            print(
+                "You need to install the panda3d dependency using pip install -e .[camera-obs] first"
+            )
         pass
+
 
 # End front-loaded imports
 

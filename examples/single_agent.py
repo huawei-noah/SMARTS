@@ -2,7 +2,7 @@ import logging
 
 import gym
 
-from examples import default_argument_parser
+from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
@@ -48,7 +48,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         sim_name=sim_name,
         headless=headless,
         visdom=False,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
         # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.

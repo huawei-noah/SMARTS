@@ -20,11 +20,11 @@
 from typing import Sequence, Set
 
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.provider import ProviderState
+from smarts.core.provider import Provider, ProviderState
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class MockProvider:
+class MockProvider(Provider):
     def __init__(self):
         self._next_provider_state = None
 
@@ -33,7 +33,7 @@ class MockProvider:
             vehicles=[
                 VehicleState(
                     vehicle_id=vehicle_id,
-                    vehicle_type="passenger",
+                    vehicle_config_type="passenger",
                     pose=pose,
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,
@@ -41,7 +41,6 @@ class MockProvider:
                 )
                 for vehicle_id, pose, speed in vehicles
             ],
-            traffic_light_systems=[],
         )
 
     def clear_next_provider_state(self):
@@ -59,7 +58,7 @@ class MockProvider:
 
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
         if self._next_provider_state is None:
-            return ProviderState(vehicles=[], traffic_light_systems=[])
+            return ProviderState(vehicles=[])
 
         return self._next_provider_state
 

@@ -17,14 +17,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import NamedTuple
+from typing import NamedTuple, Sequence
 
 
 class Events(NamedTuple):
-    collisions: bool
-    off_route: bool
-    reached_goal: bool
-    reached_max_episode_steps: bool
+    collisions: Sequence  # Sequence[Collision]
     off_road: bool
+    off_route: bool
+    on_shoulder: bool
     wrong_way: bool
     not_moving: bool
+    reached_goal: bool
+    reached_max_episode_steps: bool
+    agents_alive_done: bool

@@ -29,7 +29,7 @@ import html2canvas from "html2canvas";
 import { RecordRTCPromisesHandler, invokeSaveAsDialog } from "recordrtc";
 import { Layout } from "antd";
 const { Content } = Layout;
-import Header from "./header";
+import Header, { PLAYMODES } from "./header";
 import Simulation from "./simulation";
 import SimulationGroup from "./simulation_group";
 import { attrs, agentModes } from "./control_panel";
@@ -56,17 +56,25 @@ function App({ client }) {
   const [currentElapsedTime, setCurrentElapsedTime] = useState(0);
   const [totalElapsedTime, setTotalElapsedTime] = useState(1);
   const [playing, setPlaying] = useState(true);
+  const [playingMode, setPlayingMode] = useState(PLAYMODES.near_real_time);
   const simulationCanvasRef = useRef(null);
   const recorderRef = useRef(null);
   const { addToast } = useToasts();
   const history = useHistory();
+  const [totalSimIds, setTotalSimIds] = useState(0);
+
+  let getSimIdsLength = async () => {
+    let ids = await client.fetchSimulationIds();
+    setTotalSimIds(ids.length);
+  };
+  setInterval(getSimIdsLength, 3000);
 
   // also includes all
   const routeMatch = useRouteMatch("/:simulation");
   const matchedSimulationId = routeMatch ? routeMatch.params.simulation : null;
 
   useEffect(() => {
-    const fetchRunningSim = async () => {
+    (async () => {
       let ids = await client.fetchSimulationIds();
       if (ids.length > 0) {
         if (!matchedSimulationId || !ids.includes(matchedSimulationId)) {
@@ -74,12 +82,8 @@ function App({ client }) {
         }
       }
       setSimulationIds(ids);
-    };
-
-    // checks if there is new simulation running every 3 seconds.
-    const interval = setInterval(fetchRunningSim, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    })();
+  }, [totalSimIds]);
 
   async function onStartRecording() {
     recorderRef.current = new RecordRTCPromisesHandler(
@@ -120,6 +124,7 @@ function App({ client }) {
     <Layout className="layout" style={{ width: "100%", height: "100%" }}>
       <Header
         simulationIds={simulationIds}
+        onSelectPlayingMode={setPlayingMode}
         matchedSimulationId={matchedSimulationId}
         onSelectSimulation={onSelectSimulation}
         onStartRecording={onStartRecording}
@@ -133,7 +138,8 @@ function App({ client }) {
             <SimulationGroup
               client={client}
               simulationIds={simulationIds}
-              showControls={showControls}
+              controlModes={controlModes}
+              playingMode={playingMode}
               egoView={egoView}
             />
           </Route>
@@ -164,7 +170,6 @@ function App({ client }) {
                       canvasRef={simulationCanvasRef}
                       client={client}
                       simulationId={matchedSimulationId}
-                      showControls={showControls}
                       controlModes={controlModes}
                       egoView={egoView}
                       onElapsedTimesChanged={(current, total) => {
@@ -173,6 +178,7 @@ function App({ client }) {
                       }}
                       style={{ flex: "1" }}
                       playing={playing}
+                      playingMode={playingMode}
                     />
                   </div>
                   <PlaybackBar

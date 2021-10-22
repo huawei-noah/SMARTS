@@ -20,11 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # Inspired by https://github.com/fxia22/pointnet.pytorch/blob/master/pointnet/model.py
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+import numpy as np
 
 
 class STNkd(nn.Module):

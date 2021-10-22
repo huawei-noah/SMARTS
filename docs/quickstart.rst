@@ -73,7 +73,7 @@ This is done by implementing the :class:`smarts.core.agent.Agent` interface:
            )
            return traj
 
-Here we are implementing a simple lane following agent using the BezierMotionPlanner. The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActipnSpaceType` chosen as well. (This constraint is relaxed when adapters are introduced.)
+Here we are implementing a simple lane following agent using the BezierMotionPlanner. The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActionSpaceType` chosen as well. (This constraint is relaxed when adapters are introduced.)
 
 
 AgentSpec :class:`smarts.core.agent.AgentSpec`

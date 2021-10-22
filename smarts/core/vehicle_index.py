@@ -21,7 +21,7 @@ import logging
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from typing import NamedTuple
+from typing import FrozenSet, NamedTuple
 
 import numpy as np
 import tableprint as tp
@@ -164,11 +164,15 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
-    def social_vehicle_ids(self):
+    def social_vehicle_ids(self, vehicle_types: FrozenSet[str] = None):
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Social
         ]["vehicle_id"]
-        vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
+        vehicle_ids = [
+            self._2id_to_id[id_]
+            for id_ in vehicle_ids
+            if not vehicle_types or self._vehicles[id_].vehicle_type in vehicle_types
+        ]
         return set(vehicle_ids)
 
     @cache
@@ -319,21 +323,19 @@ class VehicleIndex:
 
     @clear_cache
     def start_agent_observation(
-        self, sim, vehicle_id, agent_id, agent_interface, mission_planner, boid=False
+        self, sim, vehicle_id, agent_id, agent_interface, plan, boid=False
     ):
         original_agent_id = agent_id
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, mission_planner
-        )
+        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan)
 
         self._2id_to_id[agent_id] = original_agent_id
 
         self._sensor_states[vehicle_id] = SensorState(
             agent_interface.max_episode_steps,
-            mission_planner=mission_planner,
+            plan=plan,
         )
 
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
@@ -451,18 +453,14 @@ class VehicleIndex:
         return vehicle
 
     @clear_cache
-    def attach_sensors_to_vehicle(
-        self, sim, vehicle_id, agent_interface, mission_planner
-    ):
+    def attach_sensors_to_vehicle(self, sim, vehicle_id, agent_interface, plan):
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, mission_planner
-        )
+        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan)
         self._sensor_states[vehicle_id] = SensorState(
             agent_interface.max_episode_steps,
-            mission_planner=mission_planner,
+            plan=plan,
         )
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
             agent_interface.action_space, vehicle.pose, sim
@@ -489,14 +487,14 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         sensor_state = self._sensor_states[vehicle_id]
         controller_state = self._controller_states[vehicle_id]
-        mission_planner = sensor_state.mission_planner
+        plan = sensor_state.plan
 
         # Create a new vehicle to replace the old one
         new_vehicle = Vehicle.build_agent_vehicle(
             sim,
             vehicle.id,
             agent_interface,
-            mission_planner,
+            plan,
             sim.scenario.vehicle_filepath,
             sim.scenario.tire_parameters_filepath,
             # BUG: Both the TrapManager and BubbleManager call into this method but the
@@ -538,7 +536,7 @@ class VehicleIndex:
         sim,
         agent_id,
         agent_interface,
-        mission_planner,
+        plan,
         filepath,
         tire_filepath,
         trainable,
@@ -552,7 +550,7 @@ class VehicleIndex:
             sim,
             vehicle_id,
             agent_interface,
-            mission_planner,
+            plan,
             filepath,
             tire_filepath,
             trainable,
@@ -563,7 +561,7 @@ class VehicleIndex:
 
         sensor_state = SensorState(
             agent_interface.max_episode_steps,
-            mission_planner=mission_planner,
+            plan=plan,
         )
 
         controller_state = ControllerState.from_action_space(
@@ -599,9 +597,11 @@ class VehicleIndex:
         original_agent_id = agent_id
 
         Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, sensor_state.mission_planner
+            sim, vehicle, agent_interface, sensor_state.plan
         )
-        vehicle.np.reparentTo(sim.vehicles_np)
+        if sim.is_rendering:
+            vehicle.create_renderer_node(sim.renderer)
+            sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=True)
 
         vehicle_id = _2id(vehicle.id)
         agent_id = _2id(original_agent_id)
@@ -625,17 +625,19 @@ class VehicleIndex:
 
     @clear_cache
     def build_social_vehicle(
-        self, sim, vehicle_state, actor_id, vehicle_type, vehicle_id=None
-    ):
+        self, sim, vehicle_state, actor_id, vehicle_config_type, vehicle_id=None
+    ) -> Vehicle:
         if vehicle_id is None:
             vehicle_id = gen_id()
 
         vehicle = Vehicle.build_social_vehicle(
-            sim, vehicle_id, vehicle_state, vehicle_type
+            sim, vehicle_id, vehicle_state, vehicle_config_type
         )
 
         vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id)
-        vehicle.np.reparentTo(sim._root_np)
+        if sim.is_rendering:
+            vehicle.create_renderer_node(sim.renderer)
+            sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=False)
 
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
@@ -652,8 +654,20 @@ class VehicleIndex:
 
         return vehicle
 
+    def begin_rendering_vehicles(self, renderer):
+        agent_ids = self.agent_vehicle_ids()
+        for vehicle in self._vehicles.values():
+            if not vehicle.renderer:
+                vehicle.create_renderer_node(renderer)
+                is_agent = vehicle.id in agent_ids
+                renderer.begin_rendering_vehicle(vehicle.id, is_agent)
+
     def sensor_states_items(self):
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._sensor_states.items())
+
+    def check_vehicle_id_has_sensor_state(self, vehicle_id: str) -> bool:
+        v_id = _2id(vehicle_id)
+        return v_id in self._sensor_states
 
     def sensor_state_for_vehicle_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)

@@ -24,6 +24,7 @@ wheels/
 .installed.cfg
 .DS_Store
 MANIFEST
+sanity_test_result.xml
 pip-wheel-metadata/
 
 # PyInstaller
@@ -96,15 +97,16 @@ venv
 *.rou.alt.xml
 *.rou.xml
 *.trips.xml
+shifted_map-AUTOGEN.net.xml
 *.egg
 *.glb
 *flamegraph-perf.log
 *flamegraph.svg
 *flamegraph.html
-bubbles.pkl
-missions.pkl
-traffic_histories.pkl
 **/social_agents/*
+*.pkl
+*.shf
+*.tfrecord*
 
 # Manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml
@@ -112,6 +114,7 @@ traffic_histories.pkl
 
 # but keep model assets
 !**/models/*.glb
+*.blend1
 
 # run logs
 _run_logs
@@ -128,3 +131,12 @@ OpEn_build/
 
 # Ignore generated ULTRA tasks
 ultra/ultra/scenarios/task*/*/
+
+# Singularity
+*.sif
+
+# folder containing Observations collected .pkl files for imitation learning
+collected_observations/
+
+# vim swap files
+*.swp

@@ -26,6 +26,7 @@ of a baseline from a past (baseline) commit. It is set to run for one hour.
 import multiprocessing
 from pathlib import Path
 
+# Make sure to install rllib dependencies using the command "pip install -e .[test]" before running the test
 from ray import tune
 from ray.rllib.models import ModelCatalog
 

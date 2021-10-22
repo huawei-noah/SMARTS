@@ -19,32 +19,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import inspect
-import os
-
-import dill
+import json
 import numpy as np
-import torch
-import yaml
+import torch, yaml, os, inspect, dill
 
 from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import (
-    OGM,
-    AgentInterface,
-    AgentType,
-    NeighborhoodVehicles,
-    Waypoints,
-)
-from smarts.core.controllers import ActionSpaceType
-from ultra.baselines.adapter import BaselineAdapter
+from smarts.core.agent_interface import AgentInterface
 from ultra.baselines.common.yaml_loader import load_yaml
+import ultra.adapters as adapters
 
 
 class BaselineAgentSpec(AgentSpec):
     def __init__(
         self,
         policy_class,
-        action_type,
+        # action_type,
+        policy_params=None,
         checkpoint_dir=None,
         task=None,
         max_episode_steps=1200,
@@ -55,16 +45,22 @@ class BaselineAgentSpec(AgentSpec):
     def __new__(
         self,
         policy_class,
-        action_type,
+        # action_type,
+        policy_params=None,
         checkpoint_dir=None,
-        task=None,
+        # task=None,
         max_episode_steps=1200,
         experiment_dir=None,
+        agent_id="",
     ):
         if experiment_dir:
-            print(f"LOADING SPEC from {experiment_dir}/spec.pkl")
-            with open(f"{experiment_dir}/spec.pkl", "rb") as input:
-                spec = dill.load(input)
+            print(
+                f"Loading spec for {agent_id} from {experiment_dir}/agent_metadata.pkl"
+            )
+            with open(f"{experiment_dir}/agent_metadata.pkl", "rb") as metadata_file:
+                agent_metadata = dill.load(metadata_file)
+                spec = agent_metadata["agent_specs"][agent_id]
+
                 new_spec = AgentSpec(
                     interface=spec.interface,
                     agent_params=dict(
@@ -74,18 +70,46 @@ class BaselineAgentSpec(AgentSpec):
                     agent_builder=spec.policy_builder,
                     observation_adapter=spec.observation_adapter,
                     reward_adapter=spec.reward_adapter,
+                    info_adapter=spec.info_adapter,
                 )
+
                 spec = new_spec
         else:
-            adapter = BaselineAdapter()
-            policy_dir = "/".join(inspect.getfile(policy_class).split("/")[:-1])
-            policy_params = load_yaml(f"{policy_dir}/params.yaml")
+            # If policy_params is None, then there must be a params.yaml file in the
+            # same directory as the policy_class module.
+            if not policy_params:
+                policy_class_module_file = inspect.getfile(policy_class)
+                policy_class_module_directory = os.path.dirname(
+                    policy_class_module_file
+                )
+                policy_params = load_yaml(
+                    os.path.join(policy_class_module_directory, "params.yaml")
+                )
+
+            action_type = adapters.type_from_string(
+                string_type=policy_params["action_type"]
+            )
+            observation_type = adapters.type_from_string(
+                string_type=policy_params["observation_type"]
+            )
+            reward_type = adapters.type_from_string(
+                string_type=policy_params["reward_type"]
+            )
+            info_type = adapters.AdapterType.DefaultInfo
+
+            adapter_interface_requirements = adapters.required_interface_from_types(
+                action_type, observation_type, reward_type, info_type
+            )
+            action_adapter = adapters.adapter_from_type(adapter_type=action_type)
+            observation_adapter = adapters.adapter_from_type(
+                adapter_type=observation_type
+            )
+            reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
+            info_adapter = adapters.adapter_from_type(adapter_type=info_type)
+
             spec = AgentSpec(
                 interface=AgentInterface(
-                    waypoints=Waypoints(lookahead=20),
-                    neighborhood_vehicles=NeighborhoodVehicles(200),
-                    action=action_type,
-                    rgb=False,
+                    **adapter_interface_requirements,
                     max_episode_steps=max_episode_steps,
                     debug=True,
                 ),
@@ -93,7 +117,10 @@ class BaselineAgentSpec(AgentSpec):
                     policy_params=policy_params, checkpoint_dir=checkpoint_dir
                 ),
                 agent_builder=policy_class,
-                observation_adapter=adapter.observation_adapter,
-                reward_adapter=adapter.reward_adapter,
+                action_adapter=action_adapter,
+                observation_adapter=observation_adapter,
+                reward_adapter=reward_adapter,
+                info_adapter=info_adapter,
             )
+
         return spec

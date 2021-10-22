@@ -3,10 +3,20 @@ import tempfile
 
 import gym
 import numpy as np
-import ray
 import torch
 
-from examples import default_argument_parser
+# ray[rllib] is not the part of main dependency of the SMARTS package. It needs to be installed separately
+# as a part of the smarts[train] dependency using the command "pip install -e .[train]. The following try block checks
+# whether ray[rllib] was installed by user and raises an Exception warning the user to install it if not so.
+try:
+    import ray
+except Exception as e:
+    from examples import RayException
+
+    raise RayException.required_to("multi_instance.py")
+
+
+from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
@@ -82,7 +92,7 @@ def train(
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         seed=seed,
     )
 
@@ -132,7 +142,7 @@ def evaluate(agent_spec, evaluation_scenarios, headless, seed):
         scenarios=evaluation_scenarios,  # we evaluate against the loop scenario
         agent_specs={AGENT_ID: agent_spec},
         headless=headless,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         seed=seed,
     )
     agent = agent_spec.build_agent()
@@ -189,6 +199,6 @@ if __name__ == "__main__":
         evaluation_scenarios=[args.evaluation_scenario],
         sim_name=args.sim_name,
         headless=args.headless,
-        num_episodes=args.num_episodes,
+        num_episodes=args.episodes,
         seed=args.seed,
     )

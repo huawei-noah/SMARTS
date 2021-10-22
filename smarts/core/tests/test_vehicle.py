@@ -23,20 +23,12 @@ import math
 
 import numpy as np
 import pytest
-from direct.showbase.ShowBase import ShowBase
 
 from smarts.core.chassis import BoxChassis
-from smarts.core.coordinates import BoundingBox, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
-
-
-@pytest.fixture
-def showbase():
-    showbase = ShowBase()
-    yield showbase
-    showbase.destroy()
 
 
 @pytest.fixture
@@ -63,7 +55,7 @@ def speed():
 
 
 @pytest.fixture
-def social_vehicle(position, heading, speed, showbase, bullet_client):
+def social_vehicle(position, heading, speed, bullet_client):
     pose = Pose.from_center(position, heading)
     chassis = BoxChassis(
         pose=pose,
@@ -71,16 +63,16 @@ def social_vehicle(position, heading, speed, showbase, bullet_client):
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
         bullet_client=bullet_client,
     )
-    return Vehicle(id="sv-132", pose=pose, showbase=showbase, chassis=chassis)
+    return Vehicle(id="sv-132", chassis=chassis)
 
 
 @pytest.fixture
 def provider_vehicle(position, heading, speed):
     return VehicleState(
         vehicle_id="sv-132",
-        vehicle_type="truck",
+        vehicle_config_type="truck",
         pose=Pose.from_center(position, heading),
-        dimensions=BoundingBox(length=3, width=1, height=2),
+        dimensions=Dimensions(length=3, width=1, height=2),
         speed=speed,
         source="TESTS",
     )
@@ -108,48 +100,42 @@ def test_update_from_traffic_sim(social_vehicle, provider_vehicle):
     assert social_vehicle.speed == provider_vehicle.speed
 
 
-def test_create_social_vehicle(showbase, bullet_client):
+def test_create_social_vehicle(bullet_client):
     chassis = BoxChassis(
         pose=Pose.from_center((0, 0, 0), Heading(0)),
         speed=0,
-        dimensions=BoundingBox(length=3, width=1, height=1),
+        dimensions=Dimensions(length=3, width=1, height=1),
         bullet_client=bullet_client,
     )
 
     car = Vehicle(
         id="sv-132",
-        pose=Pose.from_center((0, 0, 0), Heading(0)),
-        showbase=showbase,
         chassis=chassis,
-        sumo_vehicle_type="passenger",
+        vehicle_config_type="passenger",
     )
     assert car.vehicle_type == "car"
 
     truck = Vehicle(
         id="sv-132",
-        pose=Pose.from_center((0, 0, 0), Heading(0)),
-        showbase=showbase,
         chassis=chassis,
-        sumo_vehicle_type="truck",
+        vehicle_config_type="truck",
     )
     assert truck.vehicle_type == "truck"
 
 
-def test_vehicle_bounding_box(showbase, bullet_client):
+def test_vehicle_bounding_box(bullet_client):
     pose = Pose.from_center((1, 1, 0), Heading(0))
     chassis = BoxChassis(
         pose=pose,
         speed=0,
-        dimensions=BoundingBox(length=3, width=1, height=1),
+        dimensions=Dimensions(length=3, width=1, height=1),
         bullet_client=bullet_client,
     )
 
     vehicle = Vehicle(
         id="vehicle-0",
-        pose=pose,
-        showbase=showbase,
         chassis=chassis,
-        sumo_vehicle_type="passenger",
+        vehicle_config_type="passenger",
     )
     for coordinates in zip(
         vehicle.bounding_box, [[0.5, 2.5], (1.5, 2.5), (1.5, -0.5), (0.5, -0.5)]

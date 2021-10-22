@@ -12,9 +12,14 @@ import gym
 
 from smarts.core.utils.episodes import episodes
 
-open_agent = importlib.import_module("zoo.policies.open-agent.open_agent")
+try:
+    open_agent = importlib.import_module("open_agent")
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        f"Ensure that the open-agent has been installed with `pip install open-agent"
+    )
 
-from examples import default_argument_parser
+from examples.argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,7 +35,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed):
         sim_name=sim_name,
         headless=headless,
         visdom=False,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
         # envision_record_data_replay_path="./data_replay",

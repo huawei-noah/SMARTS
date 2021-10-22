@@ -18,44 +18,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Set
 
-import numpy as np
-
-from .coordinates import BoundingBox, Pose
+from .controllers import ActionSpaceType
+from .scenario import Scenario
 from .vehicle import VehicleState
-
-
-@dataclass
-class ProviderTrafficLight:
-    lane_in: str
-    lane_via: str
-    lane_out: str
-    state: str
-
-
-@dataclass
-class ProviderTLS:
-    tls_id: str
-    lights: List[ProviderTrafficLight]
 
 
 @dataclass
 class ProviderState:
     vehicles: List[VehicleState] = field(default_factory=list)
-    traffic_light_systems: List[ProviderTLS] = field(default_factory=list)
+    dt: float = None  # most Providers can leave this blank
 
     def merge(self, other: "ProviderState"):
         our_vehicles = {v.vehicle_id for v in self.vehicles}
         other_vehicles = {v.vehicle_id for v in other.vehicles}
         assert our_vehicles.isdisjoint(other_vehicles)
 
-        our_tlss = {tls.tls_id for tls in self.traffic_light_systems}
-        other_tlss = {tls.tls_id for tls in other.traffic_light_systems}
-        assert our_tlss.isdisjoint(other_tlss)
-
         self.vehicles += other.vehicles
-        self.traffic_light_systems += other.traffic_light_systems
+        self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 
     def filter(self, vehicle_ids):
         provider_vehicle_ids = [v.vehicle_id for v in self.vehicles]
@@ -66,3 +47,32 @@ class ProviderState:
                 del self.vehicles[index]
             except ValueError:
                 continue
+
+
+class Provider:
+    """A Provider tracks a (sub)set of vehicles that all share the same action space.
+    This is a base class (interface) from which all Providers should inherit."""
+
+    ## TAI: Consider renaming to VehicleSet or somesuch.
+
+    @property
+    def action_spaces(self) -> Set[ActionSpaceType]:
+        raise NotImplementedError
+
+    def setup(self, scenario: Scenario) -> ProviderState:
+        raise NotImplementedError
+
+    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+        raise NotImplementedError
+
+    def sync(self, provider_state: ProviderState):
+        raise NotImplementedError
+
+    def create_vehicle(self, provider_vehicle: VehicleState):
+        raise NotImplementedError
+
+    def reset(self):
+        raise NotImplementedError
+
+    def teardown(self):
+        raise NotImplementedError

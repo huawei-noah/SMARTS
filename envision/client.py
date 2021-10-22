@@ -123,6 +123,10 @@ class Client:
             self._process.daemon = True
             self._process.start()
 
+    @property
+    def headless(self):
+        return self._headless
+
     @staticmethod
     def _write_log_state(queue, path):
         with path.open("w", encoding="utf-8") as f:
@@ -141,7 +145,7 @@ class Client:
     def read_and_send(
         path: str,
         endpoint: str = "ws://localhost:8081",
-        timestep_sec: float = 0.1,
+        fixed_timestep_sec: float = 0.1,
         wait_between_retries: float = 0.5,
     ):
         client = Client(
@@ -151,7 +155,7 @@ class Client:
         with open(path, "r") as f:
             for line in f:
                 line = line.rstrip("\n")
-                time.sleep(timestep_sec)
+                time.sleep(fixed_timestep_sec)
                 client._send_raw(line)
 
             client.teardown()
@@ -164,6 +168,7 @@ class Client:
         wait_between_retries: float = 0.05,
     ):
         connection_established = False
+        warned_about_connection = False
 
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
             # if not already serialized
@@ -173,16 +178,28 @@ class Client:
 
             ws.send(state)
 
-        def on_close(ws):
+        def on_close(ws, code=None, reason=None):
             self._log.debug("Connection to Envision closed")
 
         def on_error(ws, error):
+            nonlocal connection_established, warned_about_connection
             if str(error) == "'NoneType' object has no attribute 'sock'":
                 # XXX: websocket-client library outputs some strange logs, just
                 #      surpress them for now.
                 return
 
-            self._log.error(f"Connection to Envision terminated with: {error}")
+            if connection_established:
+                self._log.error(f"Connection to Envision terminated with: {error}")
+            else:
+                logmsg = f"Connection to Envision failed with: {error}."
+                if not warned_about_connection:
+                    self._log.warning(
+                        logmsg
+                        + "  Try using `--headless` if not using Envision server."
+                    )
+                    warned_about_connection = True
+                else:
+                    self._log.info(logmsg)
 
         def on_open(ws):
             nonlocal connection_established
@@ -200,6 +217,7 @@ class Client:
             nonlocal connection_established
             tries = 1
             while True:
+                # TODO: use a real network socket instead (probably UDP)
                 ws = websocket.WebSocketApp(
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
@@ -213,6 +231,9 @@ class Client:
                 if not connection_established:
                     self._log.info(f"Attempt {tries} to connect to Envision.")
                 else:
+                    # No information left to send, connection is likely done
+                    if state_queue.empty():
+                        break
                     # When connection lost, retry again every 3 seconds
                     wait_between_retries = 3
                     self._log.info(
@@ -237,14 +258,16 @@ class Client:
         self._state_queue.put(state)
 
     def teardown(self):
-        if not self._headless:
+        if not self._headless and self._state_queue:
             self._state_queue.put(Client.QueueDone())
             self._process.join(timeout=3)
             self._process = None
             self._state_queue.close()
+            self._state_queue = None
 
-        if self._logging_process:
+        if self._logging_process and self._logging_queue:
             self._logging_queue.put(Client.QueueDone())
             self._logging_process.join(timeout=3)
             self._logging_process = None
             self._logging_queue.close()
+            self._logging_queue = None

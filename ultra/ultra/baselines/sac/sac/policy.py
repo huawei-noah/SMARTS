@@ -20,23 +20,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # some parts of this implementation is inspired by https://github.com/openai/spinningup
-import os
-import pathlib
-from sys import path
-
-import numpy as np
 import torch
+import numpy as np
 import torch.nn as nn
+from sys import path
+from ultra.baselines.sac.sac.network import SACNetwork
 import torch.nn.functional as F
-import yaml
-
+import pathlib, os, yaml, copy
+from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
 from smarts.core.agent import Agent
+import ultra.adapters as adapters
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.state_preprocessor import *
 from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.sac.sac.network import SACNetwork
-from ultra.utils.common import compute_sum_aux_losses, to_2d_action, to_3d_action
 
 
 class SACPolicy(Agent):
@@ -59,38 +55,46 @@ class SACPolicy(Agent):
         self.tau = float(policy_params["tau"])
         self.initial_alpha = float(policy_params["initial_alpha"])
         self.logging_freq = int(policy_params["logging_freq"])
-        self.action_size = int(policy_params["action_size"])
+        self.action_size = 2
         self.prev_action = np.zeros(self.action_size)
+        self.action_type = adapters.type_from_string(policy_params["action_type"])
+        self.observation_type = adapters.type_from_string(
+            policy_params["observation_type"]
+        )
+        self.reward_type = adapters.type_from_string(policy_params["reward_type"])
 
-        # state preprocessing
+        if self.action_type != adapters.AdapterType.DefaultActionContinuous:
+            raise Exception(
+                f"SAC baseline only supports the "
+                f"{adapters.AdapterType.DefaultActionContinuous} action type."
+            )
+        if self.observation_type != adapters.AdapterType.DefaultObservationVector:
+            raise Exception(
+                f"SAC baseline only supports the "
+                f"{adapters.AdapterType.DefaultObservationVector} observation type."
+            )
+
+        self.observation_space = adapters.space_from_type(self.observation_type)
+        self.low_dim_states_size = self.observation_space["low_dim_states"].shape[0]
+        self.social_capacity = self.observation_space["social_vehicles"].shape[0]
+        self.num_social_features = self.observation_space["social_vehicles"].shape[1]
+
+        self.encoder_key = policy_params["social_vehicles"]["encoder_key"]
         self.social_policy_hidden_units = int(
             policy_params["social_vehicles"].get("social_policy_hidden_units", 0)
         )
-        self.social_capacity = int(
-            policy_params["social_vehicles"].get("social_capacity", 0)
-        )
-        self.observation_num_lookahead = int(
-            policy_params.get("observation_num_lookahead", 0)
-        )
-        self.social_polciy_init_std = int(
-            policy_params["social_vehicles"].get("social_polciy_init_std", 0)
-        )
-        self.num_social_features = int(
-            policy_params["social_vehicles"].get("num_social_features", 0)
+        self.social_policy_init_std = int(
+            policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
         self.social_vehicle_config = get_social_vehicle_configs(
-            **policy_params["social_vehicles"]
+            encoder_key=self.encoder_key,
+            num_social_features=self.num_social_features,
+            social_capacity=self.social_capacity,
+            seed=self.seed,
+            social_policy_hidden_units=self.social_policy_hidden_units,
+            social_policy_init_std=self.social_policy_init_std,
         )
-
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.state_description = get_state_description(
-            policy_params["social_vehicles"],
-            policy_params["observation_num_lookahead"],
-            self.action_size,
-        )
-        self.state_preprocessor = StatePreprocessor(
-            preprocess_state, to_2d_action, self.state_description
-        )
         self.social_feature_encoder_class = self.social_vehicle_encoder[
             "social_feature_encoder_class"
         ]
@@ -108,7 +112,7 @@ class SACPolicy(Agent):
         self.memory = ReplayBuffer(
             buffer_size=int(policy_params["replay_buffer"]["buffer_size"]),
             batch_size=int(policy_params["replay_buffer"]["batch_size"]),
-            state_preprocessor=self.state_preprocessor,
+            observation_type=self.observation_type,
             device_name=self.device_name,
         )
         self.current_iteration = 0
@@ -120,13 +124,15 @@ class SACPolicy(Agent):
     @property
     def state_size(self):
         # Adjusting state_size based on number of features (ego+social)
-        size = sum(self.state_description["low_dim_states"].values())
+        size = self.low_dim_states_size
         if self.social_feature_encoder_class:
             size += self.social_feature_encoder_class(
                 **self.social_feature_encoder_params
             ).output_dim
         else:
             size += self.social_capacity * self.num_social_features
+        # adding the previous action
+        size += self.action_size
         return size
 
     def init_networks(self):
@@ -153,15 +159,15 @@ class SACPolicy(Agent):
         )
 
     def act(self, state, explore=True):
-        state = self.state_preprocessor(
-            state=state,
-            normalize=True,
-            unsqueeze=True,
-            device=self.device_name,
-            social_capacity=self.social_capacity,
-            observation_num_lookahead=self.observation_num_lookahead,
-            social_vehicle_config=self.social_vehicle_config,
-            prev_action=self.prev_action,
+        state = copy.deepcopy(state)
+        state["low_dim_states"] = np.float32(
+            np.append(state["low_dim_states"], self.prev_action)
+        )
+        state["social_vehicles"] = (
+            torch.from_numpy(state["social_vehicles"]).unsqueeze(0).to(self.device)
+        )
+        state["low_dim_states"] = (
+            torch.from_numpy(state["low_dim_states"]).unsqueeze(0).to(self.device)
         )
 
         action, _, mean = self.sac_net.sample(state)
@@ -174,9 +180,9 @@ class SACPolicy(Agent):
             action = mean.detach().cpu().numpy()
         return to_3d_action(action)
 
-    def step(self, state, action, reward, next_state, done):
+    def step(self, state, action, reward, next_state, done, info):
         # dont treat timeout as done equal to True
-        max_steps_reached = state["events"].reached_max_episode_steps
+        max_steps_reached = info["logs"]["events"].reached_max_episode_steps
         if max_steps_reached:
             done = False
         action = to_2d_action(action)
@@ -186,9 +192,6 @@ class SACPolicy(Agent):
             reward=reward,
             next_state=next_state,
             done=float(done),
-            social_capacity=self.social_capacity,
-            observation_num_lookahead=self.observation_num_lookahead,
-            social_vehicle_config=self.social_vehicle_config,
             prev_action=self.prev_action,
         )
         self.steps += 1
@@ -197,7 +200,6 @@ class SACPolicy(Agent):
             states, actions, rewards, next_states, dones, others = self.memory.sample(
                 device=self.device_name
             )
-
             if self.steps % self.critic_update_rate == 0:
                 critic_loss = self.update_critic(
                     states, actions, rewards, next_states, dones

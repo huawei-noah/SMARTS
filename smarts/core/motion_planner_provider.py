@@ -24,11 +24,11 @@ import numpy as np
 from .bezier_motion_planner import BezierMotionPlanner
 from .controllers import ActionSpaceType
 from .coordinates import Heading, Pose
-from .provider import ProviderState
+from .provider import Provider, ProviderState
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class MotionPlannerProvider:
+class MotionPlannerProvider(Provider):
     def __init__(self):
         self._is_setup = False
 
@@ -82,24 +82,23 @@ class MotionPlannerProvider:
         speeds = first_point_of_traj[:, 3]
         poses = first_point_of_traj[:, :3]
         self._poses[indices] = poses
-        vehicle_type = "passenger"  # TODO: allow for multiple vehicle types
+        vehicle_config_type = "passenger"  # TODO: allow for multiple vehicle types
 
         return ProviderState(
             vehicles=[
                 VehicleState(
                     vehicle_id=v_id,
-                    vehicle_type=vehicle_type,
+                    vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_center(
                         [*poses[idx][:2], 0],
                         Heading(poses[idx][2]),
                     ),
-                    dimensions=VEHICLE_CONFIGS[vehicle_type].dimensions,
+                    dimensions=VEHICLE_CONFIGS[vehicle_config_type].dimensions,
                     speed=speeds[idx],
                     source="BEZIER",
                 )
                 for idx, v_id in enumerate(self._vehicle_id_to_index.keys())
             ],
-            traffic_light_systems=[],
         )
 
     def _normalize_target_pose(self, vehicle_index, target_poses, dt):

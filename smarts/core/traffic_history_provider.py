@@ -17,42 +17,63 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import numpy as np
+import sqlite3
 from itertools import cycle
-from typing import Set
+from typing import NamedTuple, Set
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Heading, Pose
-from .provider import ProviderState
+from .coordinates import Dimensions, Heading, Pose
+from .provider import Provider, ProviderState
+from .utils.math import rounder_for_dt
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class TrafficHistoryProvider:
+class TrafficHistoryProvider(Provider):
     def __init__(self):
+        self._histories = None
         self._is_setup = False
-        self._current_traffic_history = None
-        self.replaced_vehicle_ids = set()
-        self.start_time_offset = 0
+        self._replaced_vehicle_ids = set()
+        self._last_step_vehicles = set()
+        self._this_step_dones = set()
+        self._vehicle_id_prefix = "history-vehicle-"
+        self._start_time_offset = 0
 
-    def set_start_time(self, start_time: float):
+    @property
+    def start_time(self):
+        return self._start_time_offset
+
+    @start_time.setter
+    def start_time(self, start_time: float):
         assert start_time >= 0, "start_time should be positive"
-        self.start_time_offset = start_time
+        self._start_time_offset = start_time
+
+    @property
+    def done_this_step(self):
+        return self._this_step_dones
 
     def setup(self, scenario) -> ProviderState:
+        self._histories = scenario.traffic_history
+        if self._histories:
+            self._histories.connect_for_multiple_queries()
         self._is_setup = True
-        self._current_traffic_history = scenario.traffic_history
         return ProviderState()
 
     def set_replaced_ids(self, vehicle_ids: list):
-        self.replaced_vehicle_ids.update(vehicle_ids)
+        self._replaced_vehicle_ids.update(vehicle_ids)
+
+    def create_vehicle(self, provider_vehicle: VehicleState):
+        pass
 
     def reset(self):
         pass
 
     def teardown(self):
         self._is_setup = False
-        self._frame = None
-        self._current_traffic_history = None
-        self.replaced_vehicle_ids = set()
+        if self._histories:
+            self._histories.disconnect()
+            self._histories = None
+        self._replaced_vehicle_ids = set()
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -62,62 +83,44 @@ class TrafficHistoryProvider:
         # Ignore other sim state
         pass
 
-    def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
-        timestamp = min(
-            (
-                float(ts)
-                for ts in self._current_traffic_history
-                if float(ts) >= elapsed_sim_time
-            ),
-            default=None,
-        )
-        if not self._current_traffic_history or timestamp is None:
-            return ProviderState(vehicles=[], traffic_light_systems=[])
-
-        time_with_offset = str(round(timestamp + self.start_time_offset, 1))
-        if time_with_offset not in self._current_traffic_history:
-            return ProviderState(vehicles=[], traffic_light_systems=[])
-
-        vehicle_type = "passenger"
-        states = ProviderState(
-            vehicles=[
+    def step(
+        self, provider_actions, dt: float, elapsed_sim_time: float
+    ) -> ProviderState:
+        if not self._histories:
+            return ProviderState(vehicles=[])
+        vehicles = []
+        vehicle_ids = set()
+        rounder = rounder_for_dt(dt)
+        history_time = rounder(self._start_time_offset + elapsed_sim_time)
+        prev_time = rounder(history_time - dt)
+        rows = self._histories.vehicles_active_between(prev_time, history_time)
+        for hr in rows:
+            v_id = str(hr.vehicle_id)
+            if v_id in vehicle_ids or v_id in self._replaced_vehicle_ids:
+                continue
+            vehicle_ids.add(v_id)
+            vehicle_config_type = self._histories.decode_vehicle_type(hr.vehicle_type)
+            vehicles.append(
                 VehicleState(
-                    vehicle_id=v_id,
-                    vehicle_type=vehicle_type,
+                    vehicle_id=self._vehicle_id_prefix + v_id,
+                    vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_center(
-                        [
-                            *vehicle_state["position"][:2],
-                            0,
-                        ],
-                        Heading(vehicle_state["heading"]),
+                        (hr.position_x, hr.position_y, 0), Heading(hr.heading_rad)
                     ),
-                    dimensions=BoundingBox(
-                        length=vehicle_state.get(
-                            "vehicle_length",
-                            VEHICLE_CONFIGS[vehicle_type].dimensions.length,
-                        ),
-                        width=vehicle_state.get(
-                            "vehicle_width",
-                            VEHICLE_CONFIGS[vehicle_type].dimensions.width,
-                        ),
-                        # Note: Neither NGSIM nor INTERACTION provide
-                        #       the height of the vehicles.
-                        height=vehicle_state.get(
-                            "vehicle_height",
-                            VEHICLE_CONFIGS[vehicle_type].dimensions.height,
-                        ),
+                    # Note: Neither NGSIM nor INTERACTION provide the vehicle height
+                    dimensions=Dimensions.init_with_defaults(
+                        hr.vehicle_length,
+                        hr.vehicle_width,
+                        hr.vehicle_height,
+                        defaults=VEHICLE_CONFIGS[vehicle_config_type].dimensions,
                     ),
-                    speed=vehicle_state["speed"],
+                    speed=hr.speed,
                     source="HISTORY",
                 )
-                for v_id, vehicle_state in self._current_traffic_history[
-                    time_with_offset
-                ].items()
-                if v_id not in self.replaced_vehicle_ids
-            ],
-            traffic_light_systems=[],
-        )
-        return states
-
-    def create_vehicle(self, provider_vehicle: VehicleState):
-        pass
+            )
+        self._this_step_dones = {
+            self._vehicle_id_prefix + v_id
+            for v_id in self._last_step_vehicles - vehicle_ids
+        }
+        self._last_step_vehicles = vehicle_ids
+        return ProviderState(vehicles=vehicles)

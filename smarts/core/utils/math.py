@@ -19,8 +19,8 @@
 # THE SOFTWARE.
 import math
 from math import factorial
-
 import numpy as np
+from typing import Callable
 
 
 def batches(list_, n):
@@ -69,6 +69,34 @@ def fast_quaternion_from_angle(angle: float) -> np.ndarray:
 
     half_angle = angle * 0.5
     return np.array([0, 0, math.sin(half_angle), math.cos(half_angle)])
+
+
+def mult_quat(q1, q2):
+    """
+    Quaternion multiplication.
+    """
+    q3 = np.copy(q1)
+    q3[0] = q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3]
+    q3[1] = q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2]
+    q3[2] = q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1]
+    q3[3] = q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0]
+    return q3
+
+
+def rotate_quat(quat, vect):
+    """
+    Rotate a vector with the rotation defined by a quaternion.
+    """
+    # Transform vect into an quaternion
+    vect = np.append([0], vect)
+    # Normalize it
+    norm_vect = np.linalg.norm(vect)
+    vect /= norm_vect
+    # Computes the conjugate of quat
+    quat_ = np.append(quat[0], -quat[1:])
+    # The result is given by: quat * vect * quat_
+    res = mult_quat(quat, mult_quat(vect, quat_)) * norm_vect
+    return res[1:]
 
 
 def clip(val, min_val, max_val):
@@ -254,3 +282,37 @@ def evaluate_bezier(points, total):
     bezier = get_bezier_curve(points)
     new_points = np.array([bezier(t) for t in np.linspace(0, 1, total)])
     return new_points[:, 0], new_points[:, 1]
+
+
+def inplace_unwrap(wp_array):
+    ## minor optimization hack adapted from
+    ##  https://github.com/numpy/numpy/blob/v1.20.0/numpy/lib/function_base.py#L1492-L1546
+    ## to avoid unnecessary (slow) np array copy
+    ## (as seen in profiling).
+    p = np.asarray(wp_array)
+    dd = np.subtract(p[1:], p[:-1])
+    ddmod = np.mod(dd + math.pi, 2 * math.pi) - math.pi
+    np.copyto(ddmod, math.pi, where=(ddmod == -math.pi) & (dd > 0))
+    ph_correct = ddmod - dd
+    np.copyto(ph_correct, 0, where=abs(dd) < math.pi)
+    p[1:] += ph_correct.cumsum(axis=-1)
+    return p
+
+
+def round_param_for_dt(dt: float) -> int:
+    """for a given dt, returns what to pass as the second parameter
+    to the `round()` function in order to not lose precision.
+    Note that for whole numbers, like 100, the result will be negative.
+    For example, `round_param_for_dt(100) == -2`,
+    such that `round(190, -2) = 200`."""
+    strep = np.format_float_positional(dt)
+    decimal = strep.find(".")
+    if decimal >= len(strep) - 1:
+        return 1 - decimal
+    return len(strep) - decimal - 1
+
+
+def rounder_for_dt(dt: float) -> Callable[[float], float]:
+    """return a rounding function appropriate for timestepping."""
+    rp = round_param_for_dt(dt)
+    return lambda f: round(f, rp)

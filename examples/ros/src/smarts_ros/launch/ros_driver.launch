@@ -1,0 +1,38 @@
+<launch>
+
+  <arg name="target_freq" default="0" doc="The target frequencey in Hz.  If not specified, the node will publish as quickly as SMARTS permits." />
+  <arg name="zoo_module" default="zoo" doc="A python module where the zoo registry containing agents resides." />
+  <arg name="buffer_size" default="3" doc="The number of entity messages to buffer to use for smoothing/extrapolation.  Must be a positive integer." />
+  <arg name="headless" default="true" doc="Controls whether SMARTS should also emit its state to an Envision server." />
+  <arg name="seed" default="42" doc="Seed to use when initializing SMARTS' random number generator(s)." />
+  <arg name="batch_mode" default="false" doc="If true, the node will stay alive even if SMARTS crashes/dies, waiting for a new SmartsReset message on the SMARTS/reset topic." />
+
+  <node pkg="smarts_ros" name="SMARTS" type="ros_driver.py" output="screen">
+    <param name="target_freq" type="double" value="$(arg target_freq)" />
+    <param name="zoo_module" type="string" value="$(arg zoo_module)" />
+    <param name="buffer_size" type="int" value="$(arg buffer_size)" />
+    <param name="headless" type="bool" value="$(arg headless)" />
+    <param name="seed" type="int" value="$(arg seed)" />
+    <param name="batch_mode" type="bool" value="$(arg batch_mode)" />
+  </node>
+
+
+  <arg name="test_scenario" default="scenarios/loop" doc="A path to scenario to test with." />
+  <arg name="add_test_agent" default="false" doc="Whether or not to add a test agent with the following parameters." />
+  <arg name="test_task_ref" default="agent" doc="The name of the test agent in the zoo registry." />
+  <arg name="test_task_ver" default="" doc="A version string to identify the test agent in the zoo registry." />
+  <arg name="test_task_params" default="" doc="Optional JSON string containing parameters to configure the test agent task." />
+  <arg name="test_agent_start_pose" default="[[0.0, 0.0, 0.0], 0.0]" doc="The starting pose for the test agent." />
+  <arg name="test_agent_speed" default="0" doc="Optional starting speed for the test agent." />
+
+  <test test-name="test_smarts_ros" pkg="smarts_ros" type="test_smarts_ros.py" time-limit="5000.0">
+    <param name="scenario" type="str" value="$(arg test_scenario)" />
+    <param name="add_agent" type="bool" value="$(arg add_test_agent)" />
+    <param name="task_ref" type="str" value="$(arg test_task_ref)" />
+    <param name="task_ver" type="str" value="$(arg test_task_ver)" />
+    <param name="task_params" type="str" value="$(arg test_task_params)" />
+    <param name="agent_start_pose" type="str" value="$(arg test_agent_start_pose)" />
+    <param name="agent_speed" type="double" value="$(arg test_agent_speed)" />
+  </test>
+
+</launch>

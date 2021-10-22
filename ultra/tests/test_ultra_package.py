@@ -30,14 +30,15 @@ from ultra.train import train
 
 
 class UltraPackageTest(unittest.TestCase):
+    # Put generated files and folders in this directory.
+    OUTPUT_DIRECTORY = "tests/ultra_package_test/"
+
     def test_simple_train_run(self):
         save_dir = "tests/task/eval_test/"
-        log_dir = "tests/logs"
+        log_dir = os.path.join(UltraPackageTest.OUTPUT_DIRECTORY, "tests/logs")
 
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
-
-        save_dir = "tests/task/eval_test/eval"
 
         try:
             build_scenarios(
@@ -56,23 +57,20 @@ class UltraPackageTest(unittest.TestCase):
         ray.shutdown()
         try:
             ray.init(ignore_reinit_error=True)
-            ray.wait(
-                [
-                    train.remote(
-                        scenario_info=("00", "eval_test"),
-                        policy_class=policy_class,
-                        num_episodes=1,
-                        max_episode_steps=2,
-                        eval_info={
-                            "eval_rate": 1000,
-                            "eval_episodes": 2,
-                        },
-                        timestep_sec=0.1,
-                        headless=True,
-                        seed=2,
-                        log_dir=log_dir,
-                    )
-                ]
+            train(
+                scenario_info=("00", "eval_test"),
+                policy_classes=[policy_class],
+                num_episodes=1,
+                max_episode_steps=2,
+                max_steps=5,
+                eval_info={
+                    "eval_rate": 1000,
+                    "eval_episodes": 2,
+                },
+                timestep_sec=0.1,
+                headless=True,
+                seed=2,
+                log_dir=log_dir,
             )
             ray.shutdown()
             self.assertTrue(True)
@@ -94,3 +92,10 @@ class UltraPackageTest(unittest.TestCase):
             shutil.rmtree(log_dir)
         else:
             self.assertTrue(False)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(UltraPackageTest.OUTPUT_DIRECTORY):
+            shutil.rmtree(UltraPackageTest.OUTPUT_DIRECTORY)
+        if os.path.exists("tests/task/eval_test/"):
+            shutil.rmtree("tests/task/eval_test/")

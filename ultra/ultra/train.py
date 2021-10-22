@@ -38,102 +38,15 @@ import ray
 import torch
 
 from smarts.zoo.registry import make
-from ultra.evaluate import evaluation_check
+from ultra.evaluate import evaluation_check, collect_evaluations
+from ultra.utils.common import agent_pool_value
 from ultra.utils.episode import episodes
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
 
-# @ray.remote(num_gpus=num_gpus / 2, max_calls=1)
-@ray.remote(num_gpus=num_gpus / 2)
-def train(
-    scenario_info,
-    num_episodes,
-    max_episode_steps,
-    policy_class,
-    eval_info,
-    timestep_sec,
-    headless,
-    seed,
-    log_dir,
-):
-    torch.set_num_threads(1)
-    total_step = 0
-    finished = False
-
-    AGENT_ID = "007"
-
-    spec = make(locator=policy_class, max_episode_steps=max_episode_steps)
-    env = gym.make(
-        "ultra.env:ultra-v0",
-        agent_specs={AGENT_ID: spec},
-        scenario_info=scenario_info,
-        headless=headless,
-        timestep_sec=timestep_sec,
-        seed=seed,
-    )
-
-    agent = spec.build_agent()
-
-    for episode in episodes(num_episodes, etag=policy_class, log_dir=log_dir):
-        observations = env.reset()
-        state = observations[AGENT_ID]
-        dones, infos = {"__all__": False}, None
-        episode.reset()
-        experiment_dir = episode.experiment_dir
-
-        # save entire spec [ policy_params, reward_adapter, observation_adapter]
-        if not os.path.exists(f"{experiment_dir}/spec.pkl"):
-            if not os.path.exists(experiment_dir):
-                os.makedirs(experiment_dir)
-            with open(f"{experiment_dir}/spec.pkl", "wb") as spec_output:
-                dill.dump(spec, spec_output, pickle.HIGHEST_PROTOCOL)
-
-        while not dones["__all__"]:
-            if episode.get_itr(AGENT_ID) >= 1000000:
-                finished = True
-                break
-            evaluation_check(
-                agent=agent,
-                agent_id=AGENT_ID,
-                policy_class=policy_class,
-                episode=episode,
-                log_dir=log_dir,
-                max_episode_steps=max_episode_steps,
-                **eval_info,
-                **env.info,
-            )
-            action = agent.act(state, explore=True)
-            observations, rewards, dones, infos = env.step({AGENT_ID: action})
-            next_state = observations[AGENT_ID]
-
-            loss_output = agent.step(
-                state=state,
-                action=action,
-                reward=rewards[AGENT_ID],
-                next_state=next_state,
-                done=dones[AGENT_ID],
-            )
-            episode.record_step(
-                agent_id=AGENT_ID,
-                infos=infos,
-                rewards=rewards,
-                total_step=total_step,
-                loss_output=loss_output,
-            )
-            total_step += 1
-            state = next_state
-
-        episode.record_episode()
-        episode.record_tensorboard()
-        if finished:
-            break
-
-    env.close()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser("intersection-single-agent")
+def create_argument_parser():
+    parser = argparse.ArgumentParser("intersection-training")
     parser.add_argument(
         "--task", help="Tasks available : [0, 1, 2]", type=str, default="1"
     )
@@ -145,7 +58,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--policy",
-        help="Policies available : [ppo, sac, ddpg, dqn, bdqn]",
+        help="Policies available : [ppo, sac, td3, dqn, bdqn]",
         type=str,
         default="sac",
     )
@@ -156,22 +69,30 @@ if __name__ == "__main__":
         "--max-episode-steps",
         help="Maximum number of steps per episode",
         type=int,
-        default=10000,
+        default=200,
+    )
+    parser.add_argument(
+        "--max-steps",
+        help="Maximum total number of training steps",
+        type=int,
+        default=1000000,
     )
     parser.add_argument(
         "--timestep", help="Environment timestep (sec)", type=float, default=0.1
     )
     parser.add_argument(
-        "--headless", help="Run without envision", type=bool, default=False
+        "--headless",
+        help="Run without envision",
+        action="store_true",
     )
     parser.add_argument(
         "--eval-episodes", help="Number of evaluation episodes", type=int, default=200
     )
     parser.add_argument(
         "--eval-rate",
-        help="Evaluation rate based on number of observations",
+        help="The number of training episodes to wait before running the evaluation",
         type=int,
-        default=10000,
+        default=200,
     )
     parser.add_argument(
         "--seed",
@@ -185,38 +106,233 @@ if __name__ == "__main__":
         default="logs",
         type=str,
     )
+    parser.add_argument(
+        "--policy-ids",
+        help="Name of each specified policy",
+        default=None,
+        type=str,
+    )
+    return parser
 
-    base_dir = os.path.dirname(__file__)
-    pool_path = os.path.join(base_dir, "agent_pool.json")
+
+def build_agents(policy_classes, policy_ids, max_episode_steps):
+    # Make agent_ids in the form of 000, 001, ..., 010, 011, ..., 999, 1000, ...;
+    # or use the provided policy_ids if available.
+    agent_ids = (
+        ["0" * max(0, 3 - len(str(i))) + str(i) for i in range(len(policy_classes))]
+        if not policy_ids
+        else policy_ids
+    )
+    # Ensure there is an ID for each policy, and a policy for each ID.
+    assert len(agent_ids) == len(policy_classes), (
+        "The number of agent IDs provided ({}) must be equal to "
+        "the number of policy classes provided ({}).".format(
+            len(agent_ids), len(policy_classes)
+        )
+    )
+
+    # Assign the policy classes to their associated ID.
+    agent_classes = {
+        agent_id: policy_class
+        for agent_id, policy_class in zip(agent_ids, policy_classes)
+    }
+    # Create the agent specifications matched with their associated ID.
+    agent_specs = {
+        agent_id: make(locator=policy_class, max_episode_steps=max_episode_steps)
+        for agent_id, policy_class in agent_classes.items()
+    }
+    # Create the agents matched with their associated ID.
+    agents = {
+        agent_id: agent_spec.build_agent()
+        for agent_id, agent_spec in agent_specs.items()
+    }
+
+    # Define an 'etag' for this experiment's data directory based off policy_classes.
+    # E.g. From a ["ultra.baselines.dqn:dqn-v0", "ultra.baselines.ppo:ppo-v0"]
+    # policy_classes list, transform it to an etag of "dqn-v0:ppo-v0".
+    etag = ":".join([policy_class.split(":")[-1] for policy_class in policy_classes])
+
+    return agent_ids, agent_classes, agent_specs, agents, etag
+
+
+def _save_agent_metadata(
+    experiment_dir, filename, agent_ids, agent_classes, agent_specs
+):
+    # Save relevant agent metadata.
+    if not os.path.exists(experiment_dir):
+        os.makedirs(experiment_dir)
+    with open(os.path.join(experiment_dir, filename), "wb") as metadata_file:
+        dill.dump(
+            {
+                "agent_ids": agent_ids,
+                "agent_classes": agent_classes,
+                "agent_specs": agent_specs,
+            },
+            metadata_file,
+            pickle.HIGHEST_PROTOCOL,
+        )
+
+
+def train(
+    scenario_info,
+    num_episodes,
+    policy_classes,
+    max_episode_steps,
+    max_steps,
+    eval_info,
+    timestep_sec,
+    headless,
+    seed,
+    log_dir,
+    policy_ids=None,
+):
+    torch.set_num_threads(1)
+    total_step = 0
+    finished = False
+    evaluation_task_ids = dict()
+
+    agent_ids, agent_classes, agent_specs, agents, etag = build_agents(
+        policy_classes, policy_ids, max_episode_steps
+    )
+
+    # Create the environment.
+    env = gym.make(
+        "ultra.env:ultra-v0",
+        agent_specs=agent_specs,
+        scenario_info=scenario_info,
+        headless=headless,
+        timestep_sec=timestep_sec,
+        seed=seed,
+    )
+
+    for episode in episodes(num_episodes, etag=etag, log_dir=log_dir):
+
+        # Reset the environment and retrieve the initial observations.
+        observations = env.reset()
+        dones = {"__all__": False}
+        infos = None
+        episode.reset()
+
+        experiment_dir = episode.experiment_dir
+        # Name of agent metadata pickle file
+        filename = "agent_metadata.pkl"
+        if not os.path.exists(os.path.join(experiment_dir, filename)):
+            _save_agent_metadata(
+                experiment_dir,
+                filename,
+                agent_ids,
+                agent_classes,
+                agent_specs,
+            )
+
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            evaluation_task_ids=evaluation_task_ids,
+            **eval_info,
+            **env.info,
+        )
+
+        collect_evaluations(evaluation_task_ids=evaluation_task_ids)
+
+        evaluation_check(
+            agents=agents,
+            agent_ids=agent_ids,
+            policy_classes=agent_classes,
+            episode=episode,
+            log_dir=log_dir,
+            max_episode_steps=max_episode_steps,
+            evaluation_task_ids=evaluation_task_ids,
+            **eval_info,
+            **env.info,
+        )
+
+        collect_evaluations(evaluation_task_ids=evaluation_task_ids)
+
+        while not dones["__all__"]:
+            # Break if any of the agent's step counts is max_steps (default is 1000000) or greater.
+            if any([episode.get_itr(agent_id) >= max_steps for agent_id in agents]):
+                finished = True
+                break
+            # Request and perform actions on each agent that received an observation.
+            actions = {
+                agent_id: agents[agent_id].act(observation, explore=True)
+                for agent_id, observation in observations.items()
+            }
+            next_observations, rewards, dones, infos = env.step(actions)
+
+            # Active agents are those that receive observations in this step and the next
+            # step. Step each active agent (obtaining their network loss if applicable).
+            active_agent_ids = observations.keys() & next_observations.keys()
+            loss_outputs = {
+                agent_id: agents[agent_id].step(
+                    state=observations[agent_id],
+                    action=actions[agent_id],
+                    reward=rewards[agent_id],
+                    next_state=next_observations[agent_id],
+                    done=dones[agent_id],
+                    info=infos[agent_id],
+                )
+                for agent_id in active_agent_ids
+            }
+
+            # Record the data from this episode.
+            episode.record_step(
+                agent_ids_to_record=active_agent_ids,
+                infos=infos,
+                rewards=rewards,
+                total_step=total_step,
+                loss_outputs=loss_outputs,
+            )
+
+            # Update variables for the next step.
+            total_step += 1
+            observations = next_observations
+
+        episode.record_episode()
+        episode.record_tensorboard(recording_step=episode.index)
+
+        if finished:
+            break
+
+    # Wait on the remaining evaluations to finish.
+    while collect_evaluations(evaluation_task_ids):
+        time.sleep(0.1)
+
+    env.close()
+
+
+if __name__ == "__main__":
+    parser = create_argument_parser()
     args = parser.parse_args()
 
-    with open(pool_path, "r") as f:
-        data = json.load(f)
-        if args.policy in data["agents"].keys():
-            policy_path = data["agents"][args.policy]["path"]
-            policy_locator = data["agents"][args.policy]["locator"]
-        else:
-            raise ImportError("Invalid policy name. Please try again")
+    # Obtain the policy class strings for each specified policy.
+    policy_classes = [
+        agent_pool_value(agent_name, "policy_class")
+        for agent_name in args.policy.split(",")
+    ]
 
-    # Required string for smarts' class registry
-    policy_class = str(policy_path) + ":" + str(policy_locator)
+    # Obtain the policy class IDs from the arguments.
+    policy_ids = args.policy_ids.split(",") if args.policy_ids else None
 
     ray.init()
-    ray.wait(
-        [
-            train.remote(
-                scenario_info=(args.task, args.level),
-                num_episodes=int(args.episodes),
-                max_episode_steps=int(args.max_episode_steps),
-                eval_info={
-                    "eval_rate": float(args.eval_rate),
-                    "eval_episodes": int(args.eval_episodes),
-                },
-                timestep_sec=float(args.timestep),
-                headless=args.headless,
-                policy_class=policy_class,
-                seed=args.seed,
-                log_dir=args.log_dir,
-            )
-        ]
+    train(
+        scenario_info=(args.task, args.level),
+        num_episodes=int(args.episodes),
+        max_episode_steps=int(args.max_episode_steps),
+        max_steps=int(args.max_steps),
+        eval_info={
+            "eval_rate": float(args.eval_rate),
+            "eval_episodes": int(args.eval_episodes),
+        },
+        timestep_sec=float(args.timestep),
+        headless=args.headless,
+        policy_classes=policy_classes,
+        seed=args.seed,
+        log_dir=args.log_dir,
+        policy_ids=policy_ids,
     )

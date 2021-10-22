@@ -36,10 +36,13 @@ from ultra.scenarios.generate_scenarios import *
 
 
 class AnalysisTest(unittest.TestCase):
+    # Put generated files and folders in this directory.
+    OUTPUT_DIRECTORY = "tests/analysis_test/"
+
     def test_interface_analyze(self):
         try:
-            save_dir = "tests/analysis_test/scenarios/"
-            output = "tests/analysis_test/output/"
+            save_dir = os.path.join(AnalysisTest.OUTPUT_DIRECTORY, "scenarios/")
+            output = os.path.join(AnalysisTest.OUTPUT_DIRECTORY, "output/")
             if os.path.exists(save_dir):
                 shutil.rmtree(save_dir)
             if os.path.exists(output):
@@ -51,13 +54,14 @@ class AnalysisTest(unittest.TestCase):
                 stopwatcher_route="south-west",
                 root_path="tests/scenarios",
                 save_dir=save_dir,
+                pool_dir="ultra/scenarios/pool/analysis_pool",
             )
 
             if not os.path.exists(output):
                 os.makedirs(output)
 
             os.system(
-                f"python ultra/scenarios/interface.py analyze --scenarios {save_dir} --max-steps 600 --end-by-stopwatcher --output {output}"
+                f"python ultra/scenarios/interface.py analyze --scenarios {save_dir} --max-steps 600 --end-by-stopwatcher --output {output} --video 1"
             )
             for dirpath, dirnames, files in os.walk(save_dir):
                 if "traffic" in dirpath:
@@ -71,14 +75,18 @@ class AnalysisTest(unittest.TestCase):
         if os.path.exists(save_dir):
             self.assertTrue(True)
             shutil.rmtree(save_dir)
+        else:
+            self.assertTrue(False)
 
         if os.path.exists(output):
             self.assertTrue(True)
             shutil.rmtree(output)
+        else:
+            self.assertTrue(False)
 
     def test_analyze_scenario(self):
-        save_dir = "tests/analysis_test/scenarios/"
-        output = "tests/analysis_test/output/"
+        save_dir = os.path.join(AnalysisTest.OUTPUT_DIRECTORY, "scenarios/")
+        output = os.path.join(AnalysisTest.OUTPUT_DIRECTORY, "output/")
         if os.path.exists(save_dir):
             shutil.rmtree(save_dir)
         if os.path.exists(output):
@@ -91,6 +99,7 @@ class AnalysisTest(unittest.TestCase):
             stopwatcher_route="south-west",
             root_path="tests/scenarios",
             save_dir=save_dir,
+            pool_dir="ultra/scenarios/pool/analysis_pool",
         )
         scenarios = glob.glob(f"{save_dir}")
         try:
@@ -130,14 +139,18 @@ class AnalysisTest(unittest.TestCase):
         if os.path.exists(save_dir):
             self.assertTrue(True)
             shutil.rmtree(save_dir)
+        else:
+            self.assertTrue(False)
 
         if os.path.exists(output):
             self.assertTrue(True)
             shutil.rmtree(output)
+        else:
+            self.assertTrue(False)
 
     def test_save_histogram(self):
         try:
-            figure_name = "tests/scenarios/output"
+            figure_name = os.path.join(AnalysisTest.OUTPUT_DIRECTORY, "histogram")
             if not os.path.exists(figure_name):
                 os.makedirs(figure_name)
             analyzer = BaseAnalysis()
@@ -153,5 +166,5 @@ class AnalysisTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists("tests/analysis_test"):
-            shutil.rmtree("tests/analysis_test")
+        if os.path.exists(AnalysisTest.OUTPUT_DIRECTORY):
+            shutil.rmtree(AnalysisTest.OUTPUT_DIRECTORY)

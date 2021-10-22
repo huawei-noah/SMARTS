@@ -10,11 +10,6 @@
             "name" : "sac",
             "locator" : "sac-v0"
         },
-        "ddpg" : {
-            "path" : "ultra.baselines.ddpg",
-            "name" : "ddpg",
-            "locator" : "ddpg-v0"
-        },
         "dqn" : {
             "path" : "ultra.baselines.dqn",
             "name" : "dqn",
@@ -24,6 +19,11 @@
             "path" : "ultra.baselines.bdqn",
             "name" : "bdqn",
             "locator" : "bdqn-v0"
+        },
+        "td3" : {
+            "path" : "ultra.baselines.td3",
+            "name" : "td3",
+            "locator" : "td3-v0"
         }
     }
 }

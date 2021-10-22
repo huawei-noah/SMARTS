@@ -26,6 +26,8 @@ import itertools
 import logging
 import os
 import pickle
+import subprocess
+import sys
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Sequence, Tuple, Union
@@ -41,7 +43,7 @@ def gen_scenario(
     scenario: types.Scenario,
     output_dir: Path,
     seed: int = 42,
-    ovewrite: bool = False,
+    overwrite: bool = False,
 ):
     """This is now the preferred way to generate a scenario. Instead of calling the
     gen_* methods directly, we provide this higher-level abstraction that takes care
@@ -59,7 +61,7 @@ def gen_scenario(
                 traffic=traffic,
                 name=name,
                 seed=seed,
-                overwrite=ovewrite,
+                overwrite=overwrite,
             )
 
     if scenario.ego_missions:
@@ -75,7 +77,7 @@ def gen_scenario(
                     vehicle_count=mission.actor_count,
                     num_laps=mission.num_laps,
                     seed=seed,
-                    overwrite=ovewrite,
+                    overwrite=overwrite,
                 )
             else:
                 missions.append(mission)
@@ -85,14 +87,14 @@ def gen_scenario(
                 scenario=output_dir,
                 missions=missions,
                 seed=seed,
-                overwrite=ovewrite,
+                overwrite=overwrite,
             )
 
     if scenario.social_agent_missions:
         for name, (actors, missions) in scenario.social_agent_missions.items():
             if not (
-                isinstance(actors, collections.Sequence)
-                and isinstance(missions, collections.Sequence)
+                isinstance(actors, collections.abc.Sequence)
+                and isinstance(missions, collections.abc.Sequence)
             ):
                 raise ValueError("Actors and missions must be sequences")
 
@@ -110,7 +112,13 @@ def gen_scenario(
         gen_friction_map(scenario=output_dir, surface_patches=scenario.friction_maps)
 
     if scenario.traffic_histories:
-        gen_traffic_histories(scenario=output_dir, histories=scenario.traffic_histories)
+        # TODO:  pass in Sumo graph offset and use to offset history coordinates
+        #    if sumo_road_network._graph._shifted_by_smarts: sumo_road_network._graph.getLocationOffset()
+        gen_traffic_histories(
+            scenario=output_dir,
+            histories_datasets=scenario.traffic_histories,
+            overwrite=overwrite,
+        )
 
 
 def gen_traffic(
@@ -165,7 +173,7 @@ def gen_social_agent_missions(
 
     # For backwards compatibility we support both a single value and a sequence
     actors = social_agent_actor
-    if not isinstance(actors, collections.Sequence):
+    if not isinstance(actors, collections.abc.Sequence):
         actors = [actors]
 
     # This doesn't support BoidAgentActor. Here we make that explicit
@@ -259,8 +267,8 @@ def gen_group_laps(
             The amount of laps before finishing
     """
 
-    start_edge_id, start_lane, start_offset = begin
-    end_edge_id, end_lane, end_offset = end
+    start_road_id, start_lane, start_offset = begin
+    end_road_id, end_lane, end_offset = end
 
     missions = []
     for i in range(vehicle_count):
@@ -269,11 +277,11 @@ def gen_group_laps(
             types.LapMission(
                 types.Route(
                     begin=(
-                        start_edge_id,
+                        start_road_id,
                         s_lane,
                         start_offset - grid_offset * i,
                     ),
-                    end=(end_edge_id, (end_lane + i) % used_lanes, end_offset),
+                    end=(end_road_id, (end_lane + i) % used_lanes, end_offset),
                 ),
                 num_laps=num_laps,
                 # route_length=route_length,
@@ -324,10 +332,6 @@ def _gen_missions(
         if route:
             kwargs["route"] = generator.resolve_route(route)
 
-        task = getattr(mission, "task", None)
-        if task:
-            kwargs["task"] = _resolve_task(task, generator=generator)
-
         via = getattr(mission, "via", ())
         if via is not ():
             kwargs["via"] = _resolve_vias(via, generator=generator)
@@ -351,26 +355,15 @@ def _gen_missions(
     with open(output_path, "wb") as f:
         pickle.dump(missions, f)
 
-
-def _resolve_task(task, generator):
-    if isinstance(task, types.CutIn):
-        if isinstance(task.complete_on_edge_id, types.JunctionEdgeIDResolver):
-            task = replace(
-                task,
-                complete_on_edge_id=task.complete_on_edge_id.to_edge(
-                    generator.road_network
-                ),
-            )
-
-    return task
+    return True
 
 
 def _resolve_vias(via: Tuple[types.Via], generator):
     vias = [*via]
     for i in range(len(vias)):
         v = vias[i]
-        if isinstance(v.edge_id, types.JunctionEdgeIDResolver):
-            vias[i] = replace(v, edge_id=v.edge_id.to_edge(generator.road_network))
+        if isinstance(v.road_id, types.JunctionEdgeIDResolver):
+            vias[i] = replace(v, road_id=v.road_id.to_edge(generator.road_network))
     return tuple(vias)
 
 
@@ -403,7 +396,43 @@ def _validate_entry_tactic(mission):
             ), f"Zone edge `{z_edge}` is not the same edge as `types.Mission` route begin edge `{edge}`"
 
 
-def gen_traffic_histories(scenario: str, histories):
-    output_path = os.path.join(scenario, "traffic_histories.pkl")
-    with open(output_path, "wb") as f:
-        pickle.dump(histories, f)
+def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
+    # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
+    xy_offset = None
+    road_network_path = os.path.join(scenario, "map.net.xml")
+    if os.path.exists(road_network_path):
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        road_network = SumoRoadNetwork.from_file(road_network_path)
+        if road_network._graph and getattr(
+            road_network._graph, "_shifted_by_smarts", False
+        ):
+            xy_offset = road_network._graph.getLocationOffset()
+
+    genhistories_py = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
+    )
+    for hdsr in histories_datasets:
+        hds = os.path.join(scenario, hdsr)
+        if not os.path.exists(hds):
+            raise ValueError(f"Traffic history dataset file missing: {hds}")
+        cmd = [sys.executable, genhistories_py, hdsr]
+        base, ext = os.path.splitext(os.path.basename(hds))
+        if ext == ".json":
+            logger.warn(
+                """
+                Converting old smarts JSON format history file.
+                scenario.py should be updated with new YAML dataset spec.
+                See SMARTS Issue #732."""
+            )
+            cmd += ["--old"]
+        th_file = f"{base}.shf"
+        if overwrite:
+            cmd += ["-f"]
+        if xy_offset:
+            cmd += ["--x_offset", str(xy_offset[0])]
+            cmd += ["--y_offset", str(xy_offset[1])]
+        elif os.path.exists(os.path.join(scenario, th_file)):
+            continue
+        cmd += [th_file]
+        subprocess.check_call(cmd, cwd=scenario)
