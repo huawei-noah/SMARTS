@@ -24,7 +24,8 @@ from dataclasses import dataclass
 import math
 import numpy as np
 from lxml import etree
-from functools import lru_cache, cached_property
+from functools import lru_cache
+from cached_property import cached_property
 from shapely.geometry import Polygon
 from shapely.geometry import Point as shPoint
 from opendrive2lanelet.opendriveparser.elements.opendrive import (
