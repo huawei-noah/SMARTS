@@ -17,19 +17,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import logging
-from typing import Sequence
-import warnings
 
 import gym
+import logging
+import warnings
 
-import smarts
 from envision.client import Client as Envision
+from smarts.core import seed as smarts_seed
+from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
 from smarts.core.utils.logging import timeit
+from typing import Dict, Sequence
 
 
 class HiWayEnv(gym.Env):
@@ -73,7 +74,7 @@ class HiWayEnv(gym.Env):
     def __init__(
         self,
         scenarios: Sequence[str],
-        agent_specs,
+        agent_specs: Dict[str, AgentSpec],
         sim_name=None,
         shuffle_scenarios=True,
         headless=False,
@@ -91,7 +92,7 @@ class HiWayEnv(gym.Env):
         timestep_sec=None,  # for backwards compatibility (deprecated)
     ):
         self._log = logging.getLogger(self.__class__.__name__)
-        smarts.core.seed(seed)
+        self.seed(seed)
 
         if timestep_sec and not fixed_timestep_sec:
             warnings.warn(
@@ -171,6 +172,10 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
+    def seed(self, seed: int) -> int:
+        smarts_seed(seed)
+        return seed
+
     def step(self, agent_actions):
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
@@ -224,3 +229,4 @@ class HiWayEnv(gym.Env):
     def close(self):
         if self._smarts is not None:
             self._smarts.destroy()
+            self._smarts = None

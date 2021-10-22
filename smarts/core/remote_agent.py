@@ -26,6 +26,7 @@ import grpc
 
 from smarts.core.agent import AgentSpec
 from smarts.zoo import manager_pb2, manager_pb2_grpc, worker_pb2, worker_pb2_grpc
+from typing import Tuple
 
 
 class RemoteAgentException(Exception):
@@ -33,7 +34,23 @@ class RemoteAgentException(Exception):
 
 
 class RemoteAgent:
-    def __init__(self, manager_address, worker_address):
+    def __init__(
+        self,
+        manager_address: Tuple[str, int],
+        worker_address: Tuple[str, int],
+        timeout: float = 10,
+    ):
+        """Executes an agent in a worker (i.e., a gRPC server).
+
+        Args:
+            manager_address (Tuple[str,int]): Manager's server address (ip, port).
+            worker_address (Tuple[str,int]): Worker's server address (ip, port).
+            timeout (float, optional): Time (seconds) to wait for startup or response from
+                server. Defaults to 10.
+
+        Raises:
+            RemoteAgentException: If timeout occurs while connecting to the manager or worker.
+        """
         self._log = logging.getLogger(self.__class__.__name__)
 
         # Track the last action future.
@@ -47,9 +64,9 @@ class RemoteAgent:
             f"{worker_address[0]}:{worker_address[1]}"
         )
         try:
-            # Wait until the grpc server is ready or timeout after 30 seconds.
-            grpc.channel_ready_future(self._manager_channel).result(timeout=30)
-            grpc.channel_ready_future(self._worker_channel).result(timeout=30)
+            # Wait until the grpc server is ready or timeout seconds.
+            grpc.channel_ready_future(self._manager_channel).result(timeout=timeout)
+            grpc.channel_ready_future(self._worker_channel).result(timeout=timeout)
         except grpc.FutureTimeoutError as e:
             raise RemoteAgentException(
                 "Timeout while connecting to remote worker process."
@@ -77,10 +94,16 @@ class RemoteAgent:
         if (self._act_future is not None) and (not self._act_future.done()):
             self._act_future.cancel()
 
-        # Stop the remote worker process
-        response = self._manager_stub.stop_worker(
-            manager_pb2.Port(num=self._worker_address[1])
-        )
-
-        # Close manager channel
-        self._manager_channel.close()
+        try:
+            # Stop the remote worker process
+            self._manager_stub.stop_worker(
+                manager_pb2.Port(num=self._worker_address[1])
+            )
+            # Close manager channel
+            self._manager_channel.close()
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                # Do nothing as RPC server has been terminated.
+                pass
+            else:
+                raise e

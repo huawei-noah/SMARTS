@@ -25,11 +25,9 @@ import logging
 import multiprocessing
 import re
 import time
-import uuid
 import warnings
 from datetime import datetime
 from pathlib import Path
-from queue import Queue
 from typing import Union
 
 import numpy as np
