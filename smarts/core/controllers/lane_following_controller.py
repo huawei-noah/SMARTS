@@ -38,8 +38,6 @@ from smarts.core.utils.math import (
     signed_dist_to_line,
 )
 
-import examples.profiler as profiler
-
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
 
@@ -66,7 +64,6 @@ class LaneFollowingController:
     side_slip_angle = -3
 
     @classmethod
-    # @profiler.profile_line
     def perform_lane_following(
         cls,
         sim,
@@ -423,7 +420,6 @@ class LaneFollowingController:
             state.lateral_error_gain = 0.36
 
     @staticmethod
-    # @profiler.profile_line
     def _update_target_lane_if_reached_end_of_lane(
         agent_id, vehicle, controller_state, sensor_state
     ):

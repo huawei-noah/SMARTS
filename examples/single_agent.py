@@ -81,18 +81,3 @@ if __name__ == "__main__":
         num_episodes=args.episodes,
         seed=args.seed,
     )
-
-# cd /path/to/SMARTS
-# docker build --network=host -t smarts:test .
-# docker run -it --gpus all --network=host --env DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v /home/kyber/workspaces/SMARTS/examples:/src/examples --device=/dev/input:/dev/input smarts:test
-
-# docker run -it --gpus all --network=host --env DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v /home/kyber/workspaces/SMARTS/examples:/src/examples -v /home/kyber/workspaces/SMARTS/smarts/core:/src/smarts/core/ --device=/dev/input:/dev/input smarts:test
-
-# scl envision start -s ./scenarios -p 8081 &
-# pip install line_profiler
-# python3.7 ./examples/single_agent.py ./scenarios/straight/ --headless
-
-
-# tracii error
-# not from /examples
-# not from /smarts/core
