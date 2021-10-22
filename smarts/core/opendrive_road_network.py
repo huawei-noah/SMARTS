@@ -24,6 +24,9 @@ from dataclasses import dataclass
 import math
 import numpy as np
 from lxml import etree
+from functools import lru_cache, cached_property
+from shapely.geometry import Polygon
+from shapely.geometry import Point as shPoint
 from opendrive2lanelet.opendriveparser.elements.opendrive import (
     OpenDrive as OpenDriveElement,
 )
@@ -40,6 +43,8 @@ from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import CubicPolynomial, constrain_angle
+from .utils.geometry import buffered_shape
+from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 
 
 @dataclass
@@ -183,6 +188,13 @@ class OpenDriveRoadNetwork(RoadMap):
                     OpenDriveRoadNetwork._compute_lane_polygon(
                         lane, lane_elem, road_plan_view
                     )
+
+                    # Compute lane's bounding box
+                    x_coordinates, y_coordinates = zip(*lane.lane_polygon)
+                    lane.bounding_box = [
+                        (min(x_coordinates), min(y_coordinates)),
+                        (max(x_coordinates), max(y_coordinates)),
+                    ]
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -458,6 +470,21 @@ class OpenDriveRoadNetwork(RoadMap):
         """This is the .xodr file of the OpenDRIVE map."""
         return self._xodr_file
 
+    @cached_property
+    def bounding_box(self) -> BoundingBox:
+        x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
+        for lane_id in self._lanes:
+            lane = self._lanes[lane_id]
+            x_mins.append(lane.bounding_box[0][0])
+            y_mins.append(lane.bounding_box[0][1])
+            x_maxs.append(lane.bounding_box[1][0])
+            y_maxs.append(lane.bounding_box[1][1])
+
+        return BoundingBox(
+            min_pt=Point(x=min(x_mins), y=min(y_mins)),
+            max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
+        )
+
     class Lane(RoadMap.Lane):
         def __init__(self, lane_id: str, road: RoadMap.Road, index: int, length: float):
             self._lane_id = lane_id
@@ -470,6 +497,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._foes = []
             self._lane_boundaries = []
             self._lane_polygon = []
+            self._bounding_box = []
             self._lane_to_left = None, True
             self._lane_to_right = None, True
             self._in_junction = None
@@ -559,6 +587,14 @@ class OpenDriveRoadNetwork(RoadMap):
         def lane_polygon(self, value):
             self._lane_polygon = value
 
+        @property
+        def bounding_box(self) -> List[Tuple[float, float]]:
+            return self._bounding_box
+
+        @bounding_box.setter
+        def bounding_box(self, value):
+            self._bounding_box = value
+
         def t_angle(self, s_heading: float):
             lane_elem_id = int(self.lane_id.split("_")[2])
             angle = (
@@ -567,6 +603,20 @@ class OpenDriveRoadNetwork(RoadMap):
                 else (s_heading + math.pi / 2)
             )
             return constrain_angle(angle)
+
+        def buffered_shape(self, width: float = 1.0) -> Polygon:
+            return buffered_shape(self._lane_polygon, width)
+
+        @lru_cache(maxsize=8)
+        def point_in_lane(self, point: Point) -> bool:
+            if (
+                self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
+                and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
+            ):
+                point = shPoint((point[0], point[1]))
+                polygon = Polygon(self._lane_polygon)
+                return polygon.contains(point)
+            return False
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
