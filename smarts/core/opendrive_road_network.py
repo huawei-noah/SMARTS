@@ -616,7 +616,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
             ):
                 path = mpltPath.Path(self._lane_polygon)
-                return path.contains_points(point)[0]
+                return path.contains_points([point])[0]
             return False
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
