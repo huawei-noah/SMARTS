@@ -28,6 +28,7 @@ from functools import lru_cache
 from cached_property import cached_property
 from shapely.geometry import Polygon
 from shapely.geometry import Point as shPoint
+import matplotlib.path as mpltPath
 from opendrive2lanelet.opendriveparser.elements.opendrive import (
     OpenDrive as OpenDriveElement,
 )
@@ -614,9 +615,8 @@ class OpenDriveRoadNetwork(RoadMap):
                 self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
                 and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
             ):
-                point = shPoint((point[0], point[1]))
-                polygon = Polygon(self._lane_polygon)
-                return polygon.contains(point)
+                path = mpltPath.Path(self._lane_polygon)
+                return path.contains_points(point)[0]
             return False
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
