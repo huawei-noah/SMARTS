@@ -611,12 +611,13 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def point_in_lane(self, point: Point) -> bool:
+            point_array = [point[0], point[1]]
             if (
                 self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
                 and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
             ):
                 path = mpltPath.Path(self._lane_polygon)
-                return path.contains_points([point])[0]
+                return path.contains_points([point_array])[0]
             return False
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
