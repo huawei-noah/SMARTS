@@ -193,6 +193,7 @@ def test_od_map_junction():
 
     point = (118.0, 170.0, 0)
     assert l1.point_in_lane(point)
+    assert l1.road.point_on_road(point)
 
     l2 = road_map.lane_by_id("0_0_-1")
     assert l2
@@ -266,6 +267,7 @@ def test_od_map_figure_eight():
 
     point = (13.0, -17.0, 0)
     assert l1.point_in_lane(point)
+    assert l1.road.point_on_road(point)
 
 
 def test_od_map_lane_offset():

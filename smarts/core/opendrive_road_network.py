@@ -164,6 +164,10 @@ class OpenDriveRoadNetwork(RoadMap):
                 # Compute left lanes connections and polygon
                 inner_boundary = LaneBoundary(road_plan_view, None, None)
                 right_lanes_iteration = False
+                road.bounding_box = [
+                    (float("inf"), float("inf")),
+                    (float("-inf"), float("-inf")),
+                ]
                 for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                     lane = self._lanes[lane_id]
@@ -196,6 +200,17 @@ class OpenDriveRoadNetwork(RoadMap):
                     lane.bounding_box = [
                         (min(x_coordinates), min(y_coordinates)),
                         (max(x_coordinates), max(y_coordinates)),
+                    ]
+
+                    road.bounding_box = [
+                        (
+                            min(road.bounding_box[0][0], lane.bounding_box[0][0]),
+                            min(road.bounding_box[0][1], lane.bounding_box[0][1]),
+                        ),
+                        (
+                            max(road.bounding_box[1][0], lane.bounding_box[1][0]),
+                            max(road.bounding_box[1][1], lane.bounding_box[1][1]),
+                        ),
                     ]
 
         end = time.time()
@@ -635,6 +650,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._is_junction = is_junction
             self._length = length
             self._lanes = []
+            self._bounding_box = []
             self._incoming_roads = []
             self._outgoing_roads = []
             self._parallel_roads = []
@@ -682,6 +698,26 @@ class OpenDriveRoadNetwork(RoadMap):
         @lanes.setter
         def lanes(self, value):
             self._lanes = value
+
+        @property
+        def bounding_box(self) -> List[Tuple[float, float]]:
+            return self._bounding_box
+
+        @bounding_box.setter
+        def bounding_box(self, value):
+            self._bounding_box = value
+
+        @lru_cache(maxsize=8)
+        def point_on_road(self, point: Point) -> bool:
+            if (
+                self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
+                and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
+            ):
+                for lane in self.lanes:
+                    if lane.point_in_lane(point):
+                        return True
+                return False
+            return False
 
         def lane_at_index(self, index: int) -> RoadMap.Lane:
             lanes_with_index = [lane for lane in self.lanes if lane.index == index]
