@@ -33,9 +33,9 @@ laner_actor = t.SocialAgentActor(
 gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
-        social_agent_missions={
-            "all": ([laner_actor, open_agent_actor], [t.Mission(route=t.RandomRoute())])
-        },
+        # social_agent_missions={
+        #     "all": ([laner_actor, open_agent_actor], [t.Mission(route=t.RandomRoute())])
+        # },
         bubbles=[
             t.Bubble(
                 zone=t.PositionalZone(pos=(50, 0), size=(10, 15)),
