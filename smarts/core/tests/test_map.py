@@ -285,7 +285,6 @@ def test_od_map_figure_eight():
     assert l1.road.point_on_road(point)
 
 
-
 def test_od_map_lane_offset():
     root = path.join(Path(__file__).parent.absolute(), "maps")
     road_map = OpenDriveRoadNetwork.from_file(
