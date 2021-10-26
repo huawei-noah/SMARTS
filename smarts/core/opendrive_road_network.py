@@ -714,7 +714,8 @@ class OpenDriveRoadNetwork(RoadMap):
             inner_boundary, outer_boundary = self._lane_boundaries[i]
             ds = offset - self._lane_widths[i].start_offset
             t_outer = outer_boundary.calc_t(ds)
-            return abs(t_outer)
+            t_inner = inner_boundary.calc_t(ds)
+            return abs(t_outer -t_inner)
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
