@@ -198,7 +198,7 @@ def test_od_map_junction():
     assert round(refline_pt.t, 2) == 2.0
 
     offset = refline_pt.s
-    assert l1.width_at_offset(offset) == 3.2
+    assert l1.width_at_offset(offset) == 3.75
     assert l1.curvature_radius_at_offset(offset) == math.inf
     assert l1.point_in_lane(point)
     assert l1.road.point_on_road(point)
