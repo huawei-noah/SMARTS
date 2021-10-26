@@ -658,8 +658,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def offset_along_lane(self, world_point: Point) -> float:
-            reference_line_vertices_len = (len(self._lane_polygon) - 1) / 2
-            print(reference_line_vertices_len)
+            reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
             shape = self._lane_polygon[:reference_line_vertices_len]
             point = world_point[:2]
             if point not in shape:
