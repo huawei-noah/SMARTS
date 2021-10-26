@@ -382,6 +382,7 @@ class SumoRoadNetwork(RoadMap):
                 tuple(point),
             )
 
+        @lru_cache(maxsize=4)
         def shape(self, buffer_width: float = 0.0) -> Polygon:
             assert buffer_width >= 0.0
             if buffer_width > 0:
@@ -554,6 +555,7 @@ class SumoRoadNetwork(RoadMap):
             left_edge, _ = lanes[-1].edges_at_point(point)
             return left_edge, right_edge
 
+        @lru_cache(maxsize=4)
         def shape(self, buffer_width: float = 0.0) -> Polygon:
             assert buffer_width >= 0.0
             if buffer_width > 0:
