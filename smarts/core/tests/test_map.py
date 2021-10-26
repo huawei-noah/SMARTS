@@ -311,6 +311,8 @@ def test_od_map_figure_eight():
     l2 = road_map.lane_by_id("508_0_-4")
     point = (12.0, -28.0, 0)
     refline_pt = l2.to_lane_coord(point)
+    offset = refline_pt.s
+    assert l1.width_at_offset(offset) == 3.75
     assert round(refline_pt.s, 2) == 14.28
     assert round(refline_pt.t, 2) == -5.71
 
