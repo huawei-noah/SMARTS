@@ -307,6 +307,15 @@ def test_od_map_figure_eight():
     assert not l1.point_in_lane(point)
     assert l1.road.point_on_road(point)
 
+    # point not on lane, not on road
+    point = (12.0, -28, 0)
+    refline_pt = l1.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 355.95
+    assert round(refline_pt.t, 2) == 1.68
+
+    assert not l1.point_in_lane(point)
+    assert not l1.road.point_on_road(point)
+
 
 def test_od_map_lane_offset():
     root = path.join(Path(__file__).parent.absolute(), "maps")
