@@ -8,31 +8,48 @@ function check_python_version_gte_3_7 {
     || hash python3.9 2>/dev/null;
 }
 
+function install_python_3_7 {
+    echo "Installing python3.7"
+    sudo apt-get install software-properties-common
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt-get install python3.7 python3.7-dev python3.7-tk python3.7-venv
+}
+
+function set_SUMO_HOME {
+    echo "Adding SUMO_HOME to ~/.bash_profile."
+    echo 'export SUMO_HOME="/usr/local/opt/sumo/share/sumo"' >> ~/.bash_profile
+    echo "We've updated your ~/.bash_profile. Be sure to run:"
+    echo ""
+    echo "  source ~/.bash_profile"
+    echo ""
+    echo "in order to set the SUMO_HOME variable in your current session"
+}
+
 function do_install_for_linux {
     echo "Installing sumo (used for traffic simulation and road network)"
-    sudo add-apt-repository ppa:sumo/stable
+    sudo add-apt-repository "$1" ppa:sumo/stable
     sudo apt-get update
-
-    sudo apt-get install -y \
+    sudo apt-get install "$1"\
          libspatialindex-dev \
          sumo sumo-tools sumo-doc \
          build-essential cmake
 
     #only a problem for linux
     if ! check_python_version_gte_3_7; then
-
          echo "A >=3.7 python version not found"
-         read -p "Install python3.7? [Yn]" should_add_python_3_7
-         if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then
-              echo ""
-              printf "This will run the following commands:\n$ sudo apt-get update\n$ sudo apt-get install software-properties-common\n$ sudo add-apt-repository ppa:deadsnakes/ppa\n$ sudo apt-get install python3.7 python3.7-dev python3.7-tk python3.7-venv"
-              echo ""
-              read -p "WARNING. Is this OK? If you are unsure choose no. [Yn]" should_add_python_3_7
-              # second check to make sure they really want to
+         if  [[ "$1" = "-y" ]]; then
+              install_python_3_7
+         else
+              read -p "Install python3.7? [Yn]" should_add_python_3_7
               if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then
-                    sudo apt-get install software-properties-common
-                    sudo add-apt-repository ppa:deadsnakes/ppa
-                    sudo apt-get install python3.7 python3.7-dev python3.7-tk python3.7-venv
+                   echo ""
+                   printf "This will run the following commands:\n$ sudo apt-get update\n$ sudo apt-get install software-properties-common\n$ sudo add-apt-repository ppa:deadsnakes/ppa\n$ sudo apt-get install python3.7 python3.7-dev python3.7-tk python3.7-venv"
+                   echo ""
+                   read -p "WARNING. Is this OK? If you are unsure choose no. [Yn]" should_add_python_3_7
+                   # second check to make sure they really want to
+                   if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then
+                       install_python_3_7
+                   fi
               fi
          fi
     fi
@@ -59,27 +76,29 @@ function do_install_for_macos {
     echo ""
     echo "-- dependencies have been installed --"
     echo ""
-    read -p "Add SUMO_HOME to ~/.bash_profile? [Yn]" should_add_SUMO_HOME
-    echo "should_add_SUMO_HOME $should_add_SUMO_HOME"
-    if [[ $should_add_SUMO_HOME =~ ^[yY\w]*$ ]]; then
-        echo 'export SUMO_HOME="/usr/local/opt/sumo/share/sumo"' >> ~/.bash_profile
-        echo "We've updated your ~/.bash_profile. Be sure to run:"
-        echo ""
-        echo "  source ~/.bash_profile"
-        echo ""
-        echo "in order to set the SUMO_HOME variable in your current session"
+    if  [[ "$1" = "-y" ]]; then
+         set_SUMO_HOME
     else
-        echo "Not updating ~/.bash_profile"
-        echo "Make sure SUMO_HOME is set before proceeding"
+         read -p "Add SUMO_HOME to ~/.bash_profile? [Yn]" should_add_SUMO_HOME
+         echo "should_add_SUMO_HOME $should_add_SUMO_HOME"
+         if [[ $should_add_SUMO_HOME =~ ^[yY\w]*$ ]]; then
+              set_SUMO_HOME
+         else
+              echo "Not updating ~/.bash_profile"
+              echo "Make sure SUMO_HOME is set before proceeding"
+         fi
     fi
 }
 
+if  [[ $1 = "-y" ]]; then
+    echo "Automatic \"yes\" assumed for all prompts and runs non-interactively."
+fi
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     echo "Detected Linux"
-    do_install_for_linux
+    do_install_for_linux "$1"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Detected macOS"
-    do_install_for_macos
+    do_install_for_macos "$1"
 else
     echo "Unsupported platform: $OSTYPE"
     exit 1

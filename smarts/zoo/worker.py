@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 """
 Run an agent in it's own (independent) process.
 
@@ -36,15 +39,13 @@ The protocal is as follows:
 """
 
 import argparse
+import grpc
 import importlib
 import logging
 import os
 import signal
-import sys
+
 from concurrent import futures
-
-import grpc
-
 from smarts.zoo import worker_pb2_grpc, worker_servicer
 
 # Front-load some expensive imports as to not block the simulation
@@ -93,7 +94,7 @@ def serve(port):
     server.start()
     log.debug(f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Started serving.")
 
-    def stop_server(unused_signum, unused_frame):
+    def stop_server(*args):
         server.stop(0)
         log.debug(
             f"Worker - ip({ip}), port({port}), pid({os.getpid()}): Received interrupt signal."
