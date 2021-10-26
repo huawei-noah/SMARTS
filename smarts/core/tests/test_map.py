@@ -312,7 +312,7 @@ def test_od_map_figure_eight():
     point = (12.0, -28.0, 0)
     refline_pt = l2.to_lane_coord(point)
     assert round(refline_pt.s, 2) == 14.28
-    assert round(refline_pt.t, 2) == -11.31
+    assert round(refline_pt.t, 2) == -5.71
 
     assert not l2.point_in_lane(point)
     print(l2.road.point_on_road(point))
