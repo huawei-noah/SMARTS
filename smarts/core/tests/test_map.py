@@ -317,8 +317,7 @@ def test_od_map_figure_eight():
     assert round(refline_pt.t, 2) == -5.71
 
     assert not l2.point_in_lane(point)
-    print(l2.road.point_on_road(point))
-    assert l2.road.point_on_road(point)
+    assert not l2.road.point_on_road(point)
 
 
 def test_od_map_lane_offset():
