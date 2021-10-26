@@ -165,7 +165,7 @@ def test_od_map_junction():
     assert l1.road.road_id == "0_0"
     assert l1.index == 1
     assert len(l1.lanes_in_same_direction) == 3
-    assert l1.length == 180
+    assert l1.length == 103
 
     right_lane, direction = l1.lane_to_right
     assert right_lane
@@ -193,11 +193,11 @@ def test_od_map_junction():
     assert l1_out_lanes[2].lane_id == "15_0_-1"
 
     point = (118.0, 170.0, 0)
-    reflinept = l1.to_lane_coord(point)
-    assert round(reflinept.s, 2) == 176.50
-    assert reflinept.t == 0.0
+    refline_pt = l1.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 176.50
+    assert refline_pt.t == 0.0
 
-    offset = reflinept.s
+    offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.2
     assert l1.curvature_radius_at_offset(offset) == math.inf
     assert l1.point_in_lane(point)

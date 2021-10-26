@@ -259,21 +259,6 @@ def vec_to_radians(v) -> float:
     return (r - (math.pi) * 0.5) % (2 * math.pi)
 
 
-def line_offset_with_minimum_distance_to_point(point, line_start, line_end):
-    """Return the offset from line (line_start, line_end) where the distance to
-    point is minimal"""
-    p = point
-    p1 = line_start
-    p2 = line_end
-    d = euclidean_distance(p1, p2)
-    u = ((p[0] - p1[0]) * (p2[0] - p1[0])) + ((p[1] - p1[1]) * (p2[1] - p1[1]))
-    if d == 0.0 or u < 0.0 or u > d * d:
-        if u < 0.0:
-            return 0.0
-        return d
-    return u / d
-
-
 def is_close(a, b, rel_tol=1e-09, abs_tol=0.0):
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
@@ -311,6 +296,21 @@ def position_at_shape_offset(shape, offset):
         seenLength += nextLength
         curr = next_p
     return shape[-1]
+
+
+def line_offset_with_minimum_distance_to_point(point, line_start, line_end):
+    """Return the offset from line (line_start, line_end) where the distance to
+    point is minimal"""
+    p = point
+    p1 = line_start
+    p2 = line_end
+    d = euclidean_distance(p1, p2)
+    u = ((p[0] - p1[0]) * (p2[0] - p1[0])) + ((p[1] - p1[1]) * (p2[1] - p1[1]))
+    if d == 0.0 or u < 0.0 or u > d * d:
+        if u < 0.0:
+            return 0.0
+        return d
+    return u / d
 
 
 def polygon_offset_with_minimum_distance_to_point(point, polygon):
