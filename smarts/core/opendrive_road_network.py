@@ -645,8 +645,10 @@ class OpenDriveRoadNetwork(RoadMap):
             ):
                 lane_point = self.to_lane_coord(point)
                 width_at_offset = self.width_at_offset(lane_point.s)
+                lane_elem_id = int(self.lane_id.split("_")[2])
                 return (
-                    abs(lane_point.t) <= width_at_offset
+                    np.sign(lane_point.t) == np.sign(lane_elem_id)
+                    and abs(lane_point.t) <= width_at_offset
                     and 0 <= lane_point.s < self.length
                 )
             return False
@@ -712,7 +714,7 @@ class OpenDriveRoadNetwork(RoadMap):
             inner_boundary, outer_boundary = self._lane_boundaries[i]
             ds = offset - self._lane_widths[i].start_offset
             t_outer = outer_boundary.calc_t(ds)
-            return t_outer
+            return abs(t_outer)
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
