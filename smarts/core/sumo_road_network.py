@@ -26,7 +26,7 @@ import trimesh
 import trimesh.scene
 from cached_property import cached_property
 from functools import lru_cache
-from shapely.geometry import Polygon
+from shapely.geometry import LineString, Polygon
 from shapely.ops import snap, triangulate
 from subprocess import check_output
 from trimesh.exchange import gltf
@@ -382,8 +382,13 @@ class SumoRoadNetwork(RoadMap):
                 tuple(point),
             )
 
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
-            return buffered_shape(self._sumo_lane.getShape(), width)
+        def shape(self, buffer_width: float = 0.0) -> Polygon:
+            assert buffer_width >= 0.0
+            if buffer_width > 0:
+                return buffered_shape(self._sumo_lane.getShape(), buffer_width)
+            line = self._sumo_lane.getShape()
+            bline = buffered_shape(line, 0.0)
+            return line if bline.is_empty else bline
 
         @lru_cache(maxsize=8)
         def contains_point(self, point: Point) -> bool:
@@ -549,8 +554,13 @@ class SumoRoadNetwork(RoadMap):
             left_edge, _ = lanes[-1].edges_at_point(point)
             return left_edge, right_edge
 
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
-            return buffered_shape(self._sumo_edge.getShape(), width)
+        def shape(self, buffer_width: float = 0.0) -> Polygon:
+            assert buffer_width >= 0.0
+            if buffer_width > 0:
+                return buffered_shape(self._sumo_edge.getShape(), buffer_width)
+            line = self._sumo_edge.getShape()
+            bline = buffered_shape(line, 0.0)
+            return line if bline.is_empty else bline
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
@@ -799,8 +809,8 @@ class SumoRoadNetwork(RoadMap):
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [
                 list(
-                    road.buffered_shape(
-                        sum([lane._width for lane in road.lanes])
+                    road.shape(
+                        sum([lane._width for lane in road.lanes]), 1.0
                     ).exterior.coords
                 )
                 for road in self.roads

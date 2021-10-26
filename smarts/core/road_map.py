@@ -144,8 +144,8 @@ class RoadMap:
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
             raise NotImplementedError()
 
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
-            """Returns a convex polygon, buffered by width, around this surface."""
+        def shape(self, buffer_width: float = 0.0) -> Polygon:
+            """Returns a convex polygon, buffered by width (which must be non-negative), around this surface."""
             raise NotImplementedError()
 
         def contains_point(self, point: Point) -> bool:

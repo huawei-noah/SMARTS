@@ -564,7 +564,7 @@ class MapZone(Zone):
             lane_offset += buffer_from_ends
 
             width = lane.width_at_offset(lane_offset)
-            lane_shape = lane.buffered_shape(width + 0.3)
+            lane_shape = lane.shape(width + 0.3, 1.0)
 
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
