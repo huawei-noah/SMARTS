@@ -262,7 +262,7 @@ def test_od_map_figure_eight():
     assert l1.road.road_id == "508_0"
     assert l1.index == -1
     assert len(l1.lanes_in_same_direction) == 3
-
+    assert l1.length == 10
     l1_out_lanes = l1.outgoing_lanes
     assert l1_out_lanes
     assert len(l1_out_lanes) == 1
@@ -286,7 +286,7 @@ def test_od_map_figure_eight():
 
     point = (163.56, 75.84, 0)
     refline_pt = l1.to_lane_coord(point)
-    assert round(refline_pt.s, 2) == 7.21
+    assert round(refline_pt.s, 2) == 358.08
     assert round(refline_pt.t, 2) == -2.83
 
     offset = refline_pt.s
