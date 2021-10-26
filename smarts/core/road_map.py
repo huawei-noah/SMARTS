@@ -61,7 +61,7 @@ class RoadMap:
         return 1.0
 
     def to_glb(self, at_path):
-        """ build a glb file for camera rendering and envision """
+        """build a glb file for camera rendering and envision"""
         raise NotImplementedError()
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
@@ -91,7 +91,7 @@ class RoadMap:
         via: Sequence[RoadMap.Road] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
-        """ Routes will be returned in order of increasing length """
+        """Routes will be returned in order of increasing length"""
         raise NotImplementedError()
 
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
@@ -244,8 +244,8 @@ class RoadMap:
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             offset = self.offset_along_lane(point)
             width = self.width_at_offset(offset)
-            left_edge = RefLanePoint(s=offset, t=width / 2)
-            right_edge = RefLanePoint(s=offset, t=-width / 2)
+            left_edge = RefLinePoint(s=offset, t=width / 2)
+            right_edge = RefLinePoint(s=offset, t=-width / 2)
             return (self.from_lane_coord(left_edge), self.from_lane_coord(right_edge))
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
@@ -376,7 +376,7 @@ class RoadMap:
             return []
 
         def distance_between(self, start: Point, end: Point) -> float:
-            """ Distance along route between two points.  """
+            """Distance along route between two points."""
             raise NotImplementedError()
 
 

@@ -165,6 +165,7 @@ def test_od_map_junction():
     assert l1.road.road_id == "0_0"
     assert l1.index == 1
     assert len(l1.lanes_in_same_direction) == 3
+    assert l1.length == 103
 
     right_lane, direction = l1.lane_to_right
     assert right_lane
@@ -190,7 +191,18 @@ def test_od_map_junction():
     assert l1_out_lanes[0].lane_id == "3_0_-1"
     assert l1_out_lanes[1].lane_id == "8_0_-1"
     assert l1_out_lanes[2].lane_id == "15_0_-1"
-    #
+
+    point = (118.0, 170.0, 0)
+    refline_pt = l1.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 33.0
+    assert round(refline_pt.t, 2) == 2.0
+
+    offset = refline_pt.s
+    assert l1.width_at_offset(offset) == 3.75
+    assert l1.curvature_radius_at_offset(offset) == math.inf
+    assert l1.point_in_lane(point)
+    assert l1.road.point_on_road(point)
+
     l2 = road_map.lane_by_id("0_0_-1")
     assert l2
     assert l2.road.road_id == "0_0"
@@ -249,7 +261,8 @@ def test_od_map_figure_eight():
     assert l1
     assert l1.road.road_id == "508_0"
     assert l1.index == -1
-    # assert len(l1.lanes_in_same_direction) == 3
+    assert len(l1.lanes_in_same_direction) == 3
+    assert round(l1.length, 2) == 541.50
 
     l1_out_lanes = l1.outgoing_lanes
     assert l1_out_lanes
@@ -260,6 +273,51 @@ def test_od_map_figure_eight():
     assert l1_in_lanes
     assert len(l1_in_lanes) == 1
     assert l1_in_lanes[0].lane_id == "516_0_-1"
+
+    # point on straight part of the lane
+    point = (13.0, -17.0, 0)
+    refline_pt = l1.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 7.21
+    assert round(refline_pt.t, 2) == -2.83
+
+    offset = refline_pt.s
+    assert l1.width_at_offset(offset) == 3.75
+    assert l1.curvature_radius_at_offset(offset) == math.inf
+    assert l1.point_in_lane(point)
+    assert l1.road.point_on_road(point)
+
+    # point on curved part of the lane
+    point = (163.56, 75.84, 0)
+    refline_pt = l1.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 358.08
+    assert round(refline_pt.t, 2) == -1.75
+
+    offset = refline_pt.s
+    assert l1.width_at_offset(offset) == 3.75
+    assert round(l1.curvature_radius_at_offset(offset), 2) == 100.0
+    assert l1.point_in_lane(point)
+    assert l1.road.point_on_road(point)
+
+    # point not on lane but on road
+    point = (163.48, 71.80, 0)
+    refline_pt = l1.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 355.95
+    assert round(refline_pt.t, 2) == 1.68
+
+    assert not l1.point_in_lane(point)
+    assert l1.road.point_on_road(point)
+
+    # point not on lane, not on road
+    l2 = road_map.lane_by_id("508_0_-4")
+    point = (12.0, -28.0, 0)
+    refline_pt = l2.to_lane_coord(point)
+    offset = refline_pt.s
+    assert round(l2.width_at_offset(offset), 2) == 4.7
+    assert round(refline_pt.s, 2) == 14.28
+    assert round(refline_pt.t, 2) == -5.71
+
+    assert not l2.point_in_lane(point)
+    assert not l2.road.point_on_road(point)
 
 
 def test_od_map_lane_offset():

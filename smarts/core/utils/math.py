@@ -55,7 +55,6 @@ def constrain_angle(angle):
 
 def batches(list_, n):
     """Split an indexable container into `n` batches.
-
     Args:
       list_:
         The iterable to split into parts
@@ -68,10 +67,8 @@ def batches(list_, n):
 
 def yaw_from_quaternion(quaternion) -> float:
     """Converts a quaternion to the yaw value.
-
     Args:
       np.narray: np.array([x, y, z, w])
-
     Returns:
       A float angle in radians.
     """
@@ -89,10 +86,8 @@ def yaw_from_quaternion(quaternion) -> float:
 
 def fast_quaternion_from_angle(angle: float) -> np.ndarray:
     """Converts a float to a quaternion.
-
     Args:
       angle: An angle in radians.
-
     Returns:
       np.ndarray: np.array([x, y, z, w])
     """
@@ -138,7 +133,6 @@ def clip(val, min_val, max_val):
 
 def squared_dist(a, b) -> float:
     """Computes the squared distance between a and b.
-
     Args:
       a, b: same dimension numpy.array([..])
     Returns:
@@ -150,11 +144,9 @@ def squared_dist(a, b) -> float:
 
 def signed_dist_to_line(point, line_point, line_dir_vec) -> float:
     """Computes the signed distance to a directed line
-
     The signed of the distance is:
       - negative if point is on the right of the line
       - positive if point is on the left of the line
-
     >>> import numpy as np
     >>> signed_dist_to_line(np.array([2, 0]), np.array([0, 0]), np.array([0, 1.]))
     -2.0
@@ -184,7 +176,6 @@ def vec_2d(v) -> np.ndarray:
 
 def sign(x) -> int:
     """Finds the sign of a numeric type.
-
     Args:
         x: A signed numeric type
     Returns:
@@ -196,9 +187,7 @@ def sign(x) -> int:
 
 def lerp(a, b, p):
     """Linear interpolation between a and b with p
-
     .. math:: a * (1.0 - p) + b * p
-
     Args:
         a, b: interpolated values
         p: [0..1] float describing the weight of a to b
@@ -259,6 +248,81 @@ def vec_to_radians(v) -> float:
     return (r - (math.pi) * 0.5) % (2 * math.pi)
 
 
+def is_close(a, b, rel_tol=1e-09, abs_tol=0.0):
+    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+
+def euclidean_distance(p1, p2):
+    dx = p1[0] - p2[0]
+    dy = p1[1] - p2[1]
+    return math.sqrt(dx * dx + dy * dy)
+
+
+def position_at_offset(p1, p2, offset):
+    if is_close(offset, 0.0):  # for pathological cases with dist == 0 and offset == 0
+        return p1
+
+    dist = euclidean_distance(p1, p2)
+
+    if is_close(dist, offset):
+        return p2
+
+    if offset > dist:
+        return None
+
+    return p1[0] + (p2[0] - p1[0]) * (offset / dist), p1[1] + (p2[1] - p1[1]) * (
+        offset / dist
+    )
+
+
+def position_at_shape_offset(shape, offset):
+    seenLength = 0
+    curr = shape[0]
+    for next_p in shape[1:]:
+        nextLength = euclidean_distance(curr, next_p)
+        if seenLength + nextLength > offset:
+            return position_at_offset(curr, next_p, offset - seenLength)
+        seenLength += nextLength
+        curr = next_p
+    return shape[-1]
+
+
+def line_offset_with_minimum_distance_to_point(point, line_start, line_end):
+    """Return the offset from line (line_start, line_end) where the distance to
+    point is minimal"""
+    p = point
+    p1 = line_start
+    p2 = line_end
+    d = euclidean_distance(p1, p2)
+    u = ((p[0] - p1[0]) * (p2[0] - p1[0])) + ((p[1] - p1[1]) * (p2[1] - p1[1]))
+    if d == 0.0 or u < 0.0 or u > d * d:
+        if u < 0.0:
+            return 0.0
+        return d
+    return u / d
+
+
+def polygon_offset_with_minimum_distance_to_point(point, polygon):
+    """ "Return the offset and the distance from the polygon start where the distance to the point is minimal"""
+    p = point
+    s = polygon
+    seen = 0
+    minDist = 1e400
+    minOffset = -1
+    for i in range(len(s) - 1):
+        pos = line_offset_with_minimum_distance_to_point(p, s[i], s[i + 1])
+        dist = (
+            minDist
+            if pos == -1
+            else euclidean_distance(p, position_at_offset(s[i], s[i + 1], pos))
+        )
+        if dist < minDist:
+            minDist = dist
+            minOffset = pos + seen
+        seen += euclidean_distance(s[i], s[i + 1])
+    return minOffset
+
+
 def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
     """Rotate a point around a given origin."""
     x, y = point
@@ -282,7 +346,6 @@ def position_to_ego_frame(position, ego_position, ego_heading):
         position: [x,y,z]
         ego_position: Ego vehicle [x,y,z]
         ego_heading: Ego vehicle heading in radians
-
     Returns:
         new_pose: The pose [x,y,z] in egocentric view
     """
