@@ -309,7 +309,7 @@ def test_od_map_figure_eight():
 
     # point not on lane, not on road
     l2 = road_map.lane_by_id("508_0_-4")
-    point = (12.0, -28, 0)
+    point = (12.0, -28.0, 0)
     refline_pt = l2.to_lane_coord(point)
     assert round(refline_pt.s, 2) == 14.28
     assert round(refline_pt.t, 2) == -11.31
