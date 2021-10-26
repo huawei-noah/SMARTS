@@ -244,8 +244,8 @@ class RoadMap:
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             offset = self.offset_along_lane(point)
             width = self.width_at_offset(offset)
-            left_edge = RefLanePoint(s=offset, t=width / 2)
-            right_edge = RefLanePoint(s=offset, t=-width / 2)
+            left_edge = RefLinePoint(s=offset, t=width / 2)
+            right_edge = RefLinePoint(s=offset, t=-width / 2)
             return (self.from_lane_coord(left_edge), self.from_lane_coord(right_edge))
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
