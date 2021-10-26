@@ -262,7 +262,8 @@ def test_od_map_figure_eight():
     assert l1.road.road_id == "508_0"
     assert l1.index == -1
     assert len(l1.lanes_in_same_direction) == 3
-    assert l1.length == 10
+    assert round(l1.length, 2) == 548.50
+
     l1_out_lanes = l1.outgoing_lanes
     assert l1_out_lanes
     assert len(l1_out_lanes) == 1
