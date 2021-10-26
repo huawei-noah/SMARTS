@@ -312,7 +312,7 @@ def test_od_map_figure_eight():
     point = (12.0, -28.0, 0)
     refline_pt = l2.to_lane_coord(point)
     offset = refline_pt.s
-    assert round(l2.width_at_offset(offset), 2) == 10.30
+    assert round(l2.width_at_offset(offset), 2) == 4.7
     assert round(refline_pt.s, 2) == 14.28
     assert round(refline_pt.t, 2) == -5.71
 
