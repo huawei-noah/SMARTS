@@ -41,7 +41,9 @@ def test_sumo_map(scenario):
     assert lane.lane_id == "edge-north-NS_0"
     assert lane.road.road_id == "edge-north-NS"
     assert lane.index == 0
-    assert lane.road.point_on_road(point)
+    assert lane.road.contains_point(point)
+    assert lane.is_drivable
+    assert len(lane.shape()) >= 2
 
     right_lane, direction = lane.lane_to_right
     assert not right_lane
@@ -93,8 +95,12 @@ def test_sumo_map(scenario):
 
     r1 = road_map.road_by_id("edge-north-NS")
     assert r1
+    assert r1.is_drivable
+    assert len(r1.shape()) >= 2
     r2 = road_map.road_by_id("edge-east-WE")
     assert r2
+    assert r2.is_drivable
+    assert len(r2.shape()) >= 2
 
     routes = road_map.generate_routes(r1, r2)
     assert routes

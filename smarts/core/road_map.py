@@ -64,6 +64,9 @@ class RoadMap:
         """ build a glb file for camera rendering and envision """
         raise NotImplementedError()
 
+    def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
+        raise NotImplementedError()
+
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         raise NotImplementedError()
 
@@ -113,14 +116,64 @@ class RoadMap:
         Constrains paths to the supplied route if specified."""
         raise NotImplementedError()
 
-    class Lane:
+    class Surface:
+        @property
+        def surface_id(self) -> str:
+            """Unique identifier for a surface."""
+            raise NotImplementedError()
+
+        @property
+        def is_drivable(self) -> bool:
+            """Returns true iff this surface is legally and physically drivable."""
+            raise NotImplementedError()
+
+        @property
+        def entry_surfaces(self) -> List[RoadMap.Surface]:
+            """Surfaces by which one might enter this surface."""
+            raise NotImplementedError()
+
+        @property
+        def exit_surfaces(self) -> List[RoadMap.Surface]:
+            """Surfaces by which one might exit this surface."""
+            raise NotImplementedError()
+
+        @property
+        def features(self) -> List[RoadMap.Feature]:
+            raise NotImplementedError()
+
+        def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
+            raise NotImplementedError()
+
+        def shape(self, buffer_width: float = 0.0) -> Polygon:
+            """Returns a convex polygon, buffered by width (which must be non-negative), around this surface."""
+            raise NotImplementedError()
+
+        def contains_point(self, point: Point) -> bool:
+            """Returns True iff this point is fully contained by this surface."""
+            raise NotImplementedError()
+
+    class Lane(Surface):
         @property
         def lane_id(self) -> str:
+            """Unique identifier for a Lane."""
             raise NotImplementedError()
 
         @property
         def road(self) -> RoadMap.Road:
             raise NotImplementedError()
+
+        @property
+        def composite_lane(self) -> RoadMap.Lane:
+            """Return an abstract Lane composed of one or more RoadMap.Lane segments
+            that has been inferred to correspond to one continuous real-world lane.
+            May return same object as self."""
+            return self
+
+        @property
+        def is_composite(self) -> bool:
+            """Returns True if this Lane object was inferred
+            and composed out of subordinate Lane objects."""
+            return False
 
         @property
         def speed_limit(self) -> float:
@@ -202,19 +255,6 @@ class RoadMap:
             Constrains paths to the supplied route if specified."""
             raise NotImplementedError()
 
-        @property
-        def features(self) -> List[RoadMap.Feature]:
-            raise NotImplementedError()
-
-        def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
-            raise NotImplementedError()
-
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
-            raise NotImplementedError()
-
-        def point_in_lane(self, point: Point) -> bool:
-            raise NotImplementedError()
-
         def offset_along_lane(self, world_point: Point) -> float:
             raise NotImplementedError()
 
@@ -290,7 +330,7 @@ class RoadMap:
                 prev_heading_rad = heading_rad
             return lookahead / heading_deltas if heading_deltas else math.inf
 
-    class Road:
+    class Road(Surface):
         """This is akin to a 'road segment' in real life.
         Many of these might correspond to a single named road in reality."""
 
@@ -305,6 +345,19 @@ class RoadMap:
         @property
         def type_as_str(self) -> str:
             raise NotImplementedError()
+
+        @property
+        def composite_road(self) -> RoadMap.Road:
+            """Return an abstract Road composed of one or more RoadMap.Road segments
+            that has been inferred to correspond to one continuous real-world road.
+            May return same object as self."""
+            return self
+
+        @property
+        def is_composite(self) -> bool:
+            """Returns True if this Road object was inferred
+            and composed out of subordinate Road objects."""
+            return False
 
         @property
         def is_junction(self) -> bool:
@@ -341,13 +394,7 @@ class RoadMap:
         def lane_at_index(self, index: int) -> RoadMap.Lane:
             raise NotImplementedError()
 
-        def point_on_road(self, point: Point) -> bool:
-            raise NotImplementedError()
-
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            raise NotImplementedError()
-
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
             raise NotImplementedError()
 
     class Feature:
