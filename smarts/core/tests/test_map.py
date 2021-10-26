@@ -194,7 +194,7 @@ def test_od_map_junction():
 
     point = (118.0, 170.0, 0)
     refline_pt = l1.to_lane_coord(point)
-    assert round(refline_pt.s, 2) == 176.50
+    assert round(refline_pt.s) == 33.0
     assert refline_pt.t == 0.0
 
     offset = refline_pt.s
