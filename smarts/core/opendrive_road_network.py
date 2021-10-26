@@ -667,7 +667,8 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            shape = self._lane_polygon
+            reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
+            shape = self._lane_polygon[:reference_line_vertices_len]
             x, y = position_at_shape_offset(shape, lane_point.s)
             return Point(x=x, y=y)
 
