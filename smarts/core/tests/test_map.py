@@ -315,6 +315,7 @@ def test_od_map_figure_eight():
 
     assert not l1.point_in_lane(point)
     print(l1.road.point_on_road(point))
+    assert l1.road.point_on_road(point)
 
 
 def test_od_map_lane_offset():
