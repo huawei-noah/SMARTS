@@ -469,4 +469,7 @@ def test_od_map_lane_offset():
     assert left_lane.index == -1
 
     further_left_lane, direction = left_lane.lane_to_left
-    assert not further_left_lane
+    assert further_left_lane
+    assert not direction
+    assert further_left_lane.lane_id == "1_1_1"
+    assert further_left_lane.index == 1
