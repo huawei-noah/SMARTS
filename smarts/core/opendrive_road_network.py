@@ -260,6 +260,10 @@ class OpenDriveRoadNetwork(RoadMap):
                     ]
                     lane.lanes_in_same_direction = same_dir_lanes
 
+                    # Lanes with positive lane_elem ID run on the left side of the center lane, while lanes with
+                    # lane_elem negative ID run on the right side of the center lane. This implies that lanes with
+                    # lane_elem negative ID run in the direction of increasing s or in the direction of the center lane
+
                     # Compute lane to the left
                     result = None
                     if lane.index > 0:
@@ -694,6 +698,8 @@ class OpenDriveRoadNetwork(RoadMap):
                 lane_point = self.to_lane_coord(point)
                 width_at_offset = self.width_at_offset(lane_point.s)
                 lane_elem_id = int(self.lane_id.split("_")[2])
+                # t-direction is negative for right side and positive for left side of the
+                # inner boundary reference line, So the sign of lane_point.t and lane_elem_id should match
                 return (
                     np.sign(lane_point.t) == np.sign(lane_elem_id)
                     and abs(lane_point.t) <= width_at_offset

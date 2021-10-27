@@ -191,7 +191,10 @@ def test_od_map_junction():
     assert right_lane.index == 2
 
     left_lane, direction = l1.lane_to_left
-    assert not left_lane
+    # assert left_lane
+    # assert not direction
+    # assert left_lane.lane_id == "0_0_-1"
+    # assert left_lane.index == -1
 
     further_right_lane, direction = right_lane.lane_to_right
     assert further_right_lane
@@ -226,6 +229,12 @@ def test_od_map_junction():
     assert l2.road.road_id == "0_0"
     assert l2.index == -1
     assert l2.is_drivable
+
+    left_lane, direction = l1.lane_to_right
+    # assert left_lane
+    # assert not direction
+    # assert left_lane.lane_id == "0_0_-1"
+    # assert left_lane.index == -1
 
     l2_in_lanes = l2.incoming_lanes
     assert l2_in_lanes
@@ -298,6 +307,20 @@ def test_od_map_figure_eight():
     assert len(l1_in_lanes) == 1
     assert l1_in_lanes[0].lane_id == "516_0_-1"
 
+    l2 = road_map.lane_by_id("501_0_1")
+
+    l2_out_lanes = l2.outgoing_lanes
+    assert l2_out_lanes
+    assert len(l2_out_lanes) == 3
+    assert l2_out_lanes[0].lane_id == "501_0_1"
+    assert l2_out_lanes[1].lane_id == "504_0_-1"
+    assert l2_out_lanes[2].lane_id == "513_0_-1"
+
+    l2_in_lanes = l2.incoming_lanes
+    assert l2_in_lanes
+    assert len(l2_in_lanes) == 1
+    assert l2_in_lanes[0].lane_id == "513_0_-1"
+
     # point on straight part of the lane
     point = (13.0, -17.0, 0)
     refline_pt = l1.to_lane_coord(point)
@@ -332,17 +355,17 @@ def test_od_map_figure_eight():
     assert l1.road.contains_point(point)
 
     # point not on lane, not on road
-    l2 = road_map.lane_by_id("508_0_-4")
-    assert not l2.is_drivable
+    l3 = road_map.lane_by_id("508_0_-4")
+    assert not l3.is_drivable
     point = (12.0, -28.0, 0)
-    refline_pt = l2.to_lane_coord(point)
+    refline_pt = l3.to_lane_coord(point)
     offset = refline_pt.s
-    assert round(l2.width_at_offset(offset), 2) == 4.7
+    assert round(l3.width_at_offset(offset), 2) == 4.7
     assert round(refline_pt.s, 2) == 14.28
     assert round(refline_pt.t, 2) == -5.71
 
-    assert not l2.contains_point(point)
-    assert not l2.road.contains_point(point)
+    assert not l3.contains_point(point)
+    assert not l3.road.contains_point(point)
 
 
 def test_od_map_lane_offset():
