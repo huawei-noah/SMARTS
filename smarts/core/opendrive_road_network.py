@@ -438,13 +438,21 @@ class OpenDriveRoadNetwork(RoadMap):
                         else 0
                     )
                     pred_lane_id = f"{road_predecessor.element_id}_{section_index}_{lane_link.predecessorId}"
-                    lane.incoming_lanes.append(self.lane_by_id(pred_lane_id))
+                    pred_lane = self.lane_by_id(pred_lane_id)
+                    if pred_lane not in lane.incoming_lanes:
+                        lane.incoming_lanes.append(pred_lane)
+                    if lane not in pred_lane.outgoing_lanes:
+                        pred_lane.outgoing_lanes.append(lane)
             else:
                 # Otherwise, get the previous lane section of the current road
                 pred_lane_id = (
                     f"{road_elem.id}_{ls_index - 1}_{lane_link.predecessorId}"
                 )
-                lane.incoming_lanes.append(self.lane_by_id(pred_lane_id))
+                pred_lane = self.lane_by_id(pred_lane_id)
+                if pred_lane not in lane.incoming_lanes:
+                    lane.incoming_lanes.append(pred_lane)
+                if lane not in pred_lane.outgoing_lanes:
+                    pred_lane.outgoing_lanes.append(lane)
 
         if lane_link.successorId:
             ls_index = lane_elem.lane_section.idx
@@ -459,11 +467,19 @@ class OpenDriveRoadNetwork(RoadMap):
                         else 0
                     )
                     succ_lane_id = f"{road_successor.element_id}_{section_index}_{lane_link.successorId}"
-                    lane.outgoing_lanes.append(self.lane_by_id(succ_lane_id))
+                    succ_lane = self.lane_by_id(succ_lane_id)
+                    if succ_lane not in lane.outgoing_lanes:
+                        lane.outgoing_lanes.append(succ_lane)
+                    if lane not in succ_lane.incoming_lanes:
+                        succ_lane.incoming_lanes.append(lane)
             else:
                 # Otherwise, get the next lane section in the current road
                 succ_lane_id = f"{road_elem.id}_{ls_index + 1}_{lane_link.successorId}"
-                lane.outgoing_lanes.append(self.lane_by_id(succ_lane_id))
+                succ_lane = self.lane_by_id(succ_lane_id)
+                if succ_lane not in lane.outgoing_lanes:
+                    lane.outgoing_lanes.append(succ_lane)
+                if lane not in succ_lane.incoming_lanes:
+                    succ_lane.incoming_lanes.append(lane)
 
     @staticmethod
     def _compute_lane_polygon(
