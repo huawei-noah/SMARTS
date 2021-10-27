@@ -60,7 +60,7 @@ class Start:
         )
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Goal:
     def is_endless(self) -> bool:
         return True
@@ -69,12 +69,12 @@ class Goal:
         return False
 
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class EndlessGoal(Goal):
     pass
 
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class PositionalGoal(Goal):
     position: Point
     # target_heading: Heading

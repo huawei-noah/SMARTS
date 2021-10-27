@@ -85,5 +85,4 @@ class ExternalProvider(Provider):
                     self._last_step_delta,
                 )
             result.append(vehicle.state)
-        # TODO: include done, events and reward (if agent)?
         return result
