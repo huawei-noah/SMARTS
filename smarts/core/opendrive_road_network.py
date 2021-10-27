@@ -26,7 +26,6 @@ import numpy as np
 from lxml import etree
 from functools import lru_cache
 from cached_property import cached_property
-from shapely.geometry import Polygon
 from opendrive2lanelet.opendriveparser.elements.opendrive import (
     OpenDrive as OpenDriveElement,
 )
@@ -49,7 +48,6 @@ from smarts.core.utils.math import (
     euclidean_distance,
     position_at_shape_offset,
 )
-from .utils.geometry import buffered_shape
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 
 
@@ -96,6 +94,7 @@ class OpenDriveRoadNetwork(RoadMap):
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(logging.INFO)
         self._xodr_file = xodr_file
+        self._surfaces: Dict[str, OpenDriveRoadNetwork.Surface] = {}
         self._roads: Dict[str, OpenDriveRoadNetwork.Road] = {}
         self._lanes: Dict[str, OpenDriveRoadNetwork.Lane] = {}
         self._lanepoints = None
@@ -140,14 +139,29 @@ class OpenDriveRoadNetwork(RoadMap):
                     section_elem.parentRoad.junction is not None,
                     section_elem.length,
                 )
+
                 self._roads[road_id] = road
+                assert road_id not in self._surfaces
+                self._surfaces[road_id] = road
+
                 for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                     lane = OpenDriveRoadNetwork.Lane(
-                        lane_id, road, lane_elem.id, section_elem.length
+                        lane_id,
+                        road,
+                        lane_elem.id,
+                        section_elem.length,
+                        lane_elem.type == "driving",
                     )
+                    # Set road as drivable if it has at least one lane drivable
+                    if not road.is_drivable:
+                        road.is_drivable = lane_elem.type == "driving"
+
                     self._lanes[lane_id] = lane
+                    assert lane_id not in self._surfaces
+                    self._surfaces[lane_id] = lane
                     road.lanes.append(lane)
+
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"First pass: {elapsed} ms")
@@ -491,6 +505,9 @@ class OpenDriveRoadNetwork(RoadMap):
         """This is the .xodr file of the OpenDRIVE map."""
         return self._xodr_file
 
+    def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
+        return self._surfaces.get(surface_id)
+
     @cached_property
     def bounding_box(self) -> BoundingBox:
         x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
@@ -506,12 +523,34 @@ class OpenDriveRoadNetwork(RoadMap):
             max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
         )
 
-    class Lane(RoadMap.Lane):
-        def __init__(self, lane_id: str, road: RoadMap.Road, index: int, length: float):
+    class Surface(RoadMap.Surface):
+        def __init__(self, surface_id: str):
+            self._surface_id = surface_id
+
+        @property
+        def surface_id(self) -> str:
+            return self._surface_id
+
+        @property
+        def is_drivable(self) -> bool:
+            # all roads on Sumo road networks are drivable
+            raise NotImplementedError
+
+    class Lane(RoadMap.Lane, Surface):
+        def __init__(
+            self,
+            lane_id: str,
+            road: RoadMap.Road,
+            index: int,
+            length: float,
+            is_drivable: bool,
+        ):
+            super().__init__(lane_id)
             self._lane_id = lane_id
             self._road = road
             self._index = index
             self._length = length
+            self._is_drivable = is_drivable
             self._incoming_lanes = []
             self._outgoing_lanes = []
             self._lanes_in_same_dir = []
@@ -523,6 +562,10 @@ class OpenDriveRoadNetwork(RoadMap):
             self._lane_to_right = None, True
             self._in_junction = None
             self._lane_widths = []
+
+        @property
+        def is_drivable(self) -> bool:
+            return self._is_drivable
 
         @property
         def lane_id(self) -> str:
@@ -560,6 +603,14 @@ class OpenDriveRoadNetwork(RoadMap):
         @outgoing_lanes.setter
         def outgoing_lanes(self, value):
             self._outgoing_lanes = value
+
+        @property
+        def entry_surfaces(self) -> List[RoadMap.Surface]:
+            return self.incoming_lanes
+
+        @property
+        def exit_surfaces(self) -> List[RoadMap.Surface]:
+            return self.outgoing_lanes
 
         @property
         def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
@@ -634,11 +685,8 @@ class OpenDriveRoadNetwork(RoadMap):
             )
             return constrain_angle(angle)
 
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
-            return buffered_shape(self._lane_polygon, width)
-
         @lru_cache(maxsize=8)
-        def point_in_lane(self, point: Point) -> bool:
+        def contains_point(self, point: Point) -> bool:
             if (
                 self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
                 and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
@@ -725,12 +773,14 @@ class OpenDriveRoadNetwork(RoadMap):
             )
         return lane
 
-    class Road(RoadMap.Road):
+    class Road(RoadMap.Road, Surface):
         def __init__(self, road_id: str, is_junction: bool, length: float):
+            super().__init__(road_id)
             self._log = logging.getLogger(self.__class__.__name__)
             self._road_id = road_id
             self._is_junction = is_junction
             self._length = length
+            self._is_drivable = False
             self._lanes = []
             self._bounding_box = []
             self._incoming_roads = []
@@ -748,6 +798,14 @@ class OpenDriveRoadNetwork(RoadMap):
         @property
         def length(self) -> float:
             return self._length
+
+        @property
+        def is_drivable(self) -> bool:
+            return self._is_drivable
+
+        @is_drivable.setter
+        def is_drivable(self, value):
+            self._is_drivable = value
 
         @property
         def incoming_roads(self) -> List[RoadMap.Road]:
@@ -790,13 +848,13 @@ class OpenDriveRoadNetwork(RoadMap):
             self._bounding_box = value
 
         @lru_cache(maxsize=8)
-        def point_on_road(self, point: Point) -> bool:
+        def contains_point(self, point: Point) -> bool:
             if (
                 self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
                 and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
             ):
                 for lane in self.lanes:
-                    if lane.point_in_lane(point):
+                    if lane.contains_point(point):
                         return True
                 return False
             return False

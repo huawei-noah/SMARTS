@@ -205,7 +205,7 @@ class RoadMap:
         @property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: left is defined as 90 degrees clockwise relative to the lane heading.
-            (I.e., positive `t` in the RefLane coordinate system.)
+            (I.e., positive `t` in the Refline coordinate system.)
             Second result is True if lane is in the same direction as this one
             In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
@@ -213,7 +213,7 @@ class RoadMap:
         @property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
-            (I.e., negative `t` in the RefLane coordinate system.)
+            (I.e., negative `t` in the Refline coordinate system.)
             Second result is True if lane is in the same direction as this one.
             In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
