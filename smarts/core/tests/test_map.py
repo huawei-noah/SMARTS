@@ -230,7 +230,7 @@ def test_od_map_junction():
     assert l2.index == -1
     assert l2.is_drivable
 
-    right_lane, direction = l2.lane_to_left
+    left_lane, direction = l2.lane_to_left
     assert left_lane
     assert not direction
     assert left_lane.lane_id == "0_0_1"
@@ -436,7 +436,10 @@ def test_od_map_lane_offset():
     assert right_lane.index == 2
 
     left_lane, direction = l0.lane_to_left
-    assert not left_lane
+    assert left_lane
+    assert not direction
+    assert left_lane.lane_id == "1_1_-1"
+    assert left_lane.index == -1
 
     further_right_lane, direction = right_lane.lane_to_right
     assert further_right_lane
