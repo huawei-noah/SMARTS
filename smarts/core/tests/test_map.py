@@ -97,7 +97,7 @@ def test_sumo_map(sumo_scenario):
     assert foes
     assert len(foes) == 3
     foe_set = set(f.lane_id for f in foes)
-    assert "edge-east-EW_0" in foe_set  # engering from east
+    assert "edge-east-EW_0" in foe_set  # entering from east
     assert "edge-north-NS_0" in foe_set  # entering from north
     assert ":junction-intersection_5_0" in foe_set  # crossing from east-to-west
 
@@ -191,10 +191,10 @@ def test_od_map_junction():
     assert right_lane.index == 2
 
     left_lane, direction = l1.lane_to_left
-    # assert left_lane
-    # assert not direction
-    # assert left_lane.lane_id == "0_0_-1"
-    # assert left_lane.index == -1
+    assert left_lane
+    assert not direction
+    assert left_lane.lane_id == "0_0_-1"
+    assert left_lane.index == -1
 
     further_right_lane, direction = right_lane.lane_to_right
     assert further_right_lane
@@ -230,11 +230,11 @@ def test_od_map_junction():
     assert l2.index == -1
     assert l2.is_drivable
 
-    left_lane, direction = l1.lane_to_right
-    # assert left_lane
-    # assert not direction
-    # assert left_lane.lane_id == "0_0_-1"
-    # assert left_lane.index == -1
+    right_lane, direction = l2.lane_to_left
+    assert left_lane
+    assert not direction
+    assert left_lane.lane_id == "0_0_1"
+    assert left_lane.index == 1
 
     l2_in_lanes = l2.incoming_lanes
     assert l2_in_lanes

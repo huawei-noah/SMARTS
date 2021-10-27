@@ -261,35 +261,33 @@ class OpenDriveRoadNetwork(RoadMap):
                     lane.lanes_in_same_direction = same_dir_lanes
 
                     # Lanes with positive lane_elem ID run on the left side of the center lane, while lanes with
-                    # lane_elem negative ID run on the right side of the center lane. This implies that lanes with
-                    # lane_elem negative ID run in the direction of increasing s or in the direction of the center lane
+                    # lane_elem negative ID run on the right side of the center lane.
+                    # OpenDRIVE's assumption is that the direction of reference line is same as direction of lanes with
+                    # lane_elem negative ID, hence for a given road -1 will be the left most lane in one direction
+                    # and 1 will be the left most lane in other direction if it exist.
+                    # If there is only one lane in a road, its index will be -1.
 
                     # Compute lane to the left
                     result = None
-                    if lane.index > 0:
-                        for other in lane.lanes_in_same_direction:
-                            if lane.index - other.index == 1:
-                                result = other
-                                break
-                    elif lane.index < 0:
-                        for other in lane.lanes_in_same_direction:
-                            if lane.index - other.index == -1:
-                                result = other
-                                break
-                    lane.lane_to_left = result, True
+                    direction = True
+                    if lane.index == -1:
+                        result = road.lane_at_index(1)
+                        direction = False
+                    elif lane.index == 1:
+                        result = road.lane_at_index(-1)
+                        direction = False
+                    elif lane.index > 1:
+                        result = road.lane_at_index(lane.index - 1)
+                    elif lane.index < -1:
+                        result = road.lane_at_index(lane.index + 1)
+                    lane.lane_to_left = result, direction
 
                     # Compute lane to right
                     result = None
                     if lane.index > 0:
-                        for other in lane.lanes_in_same_direction:
-                            if lane.index - other.index == -1:
-                                result = other
-                                break
+                        result = road.lane_at_index(lane.index + 1)
                     elif lane.index < 0:
-                        for other in lane.lanes_in_same_direction:
-                            if lane.index - other.index == 1:
-                                result = other
-                                break
+                        result = road.lane_at_index(lane.index - 1)
                     lane.lane_to_right = result, True
 
                     # Compute lane foes
