@@ -430,7 +430,6 @@ class AgentManager:
             scenario.tire_parameters_filepath,
             trainable,
             scenario.surface_patches,
-            scenario.controller_parameters_filepath,
             agent_model.initial_speed,
             boid=boid,
         )
