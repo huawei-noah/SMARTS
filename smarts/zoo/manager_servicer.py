@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,19 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import grpc
 import logging
 import os
 import pathlib
 import subprocess
 import sys
-import time
-
-import cloudpickle
-import grpc
 
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import manager_pb2, manager_pb2_grpc
-from smarts.zoo import worker as zoo_worker
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(f"manager_servicer.py - pid({os.getpid()})")

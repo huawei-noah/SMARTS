@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
-from typing import NamedTuple, List, Sequence, Tuple
+from typing import NamedTuple, List, Set, Sequence, Tuple
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -61,7 +61,10 @@ class RoadMap:
         return 1.0
 
     def to_glb(self, at_path):
-        """ build a glb file for camera rendering and envision """
+        """build a glb file for camera rendering and envision"""
+        raise NotImplementedError()
+
+    def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         raise NotImplementedError()
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
@@ -91,7 +94,7 @@ class RoadMap:
         via: Sequence[RoadMap.Road] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
-        """ Routes will be returned in order of increasing length """
+        """Routes will be returned in order of increasing length"""
         raise NotImplementedError()
 
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
@@ -113,14 +116,64 @@ class RoadMap:
         Constrains paths to the supplied route if specified."""
         raise NotImplementedError()
 
-    class Lane:
+    class Surface:
+        @property
+        def surface_id(self) -> str:
+            """Unique identifier for a surface."""
+            raise NotImplementedError()
+
+        @property
+        def is_drivable(self) -> bool:
+            """Returns true iff this surface is legally and physically drivable."""
+            raise NotImplementedError()
+
+        @property
+        def entry_surfaces(self) -> List[RoadMap.Surface]:
+            """Surfaces by which one might enter this surface."""
+            raise NotImplementedError()
+
+        @property
+        def exit_surfaces(self) -> List[RoadMap.Surface]:
+            """Surfaces by which one might exit this surface."""
+            raise NotImplementedError()
+
+        @property
+        def features(self) -> List[RoadMap.Feature]:
+            raise NotImplementedError()
+
+        def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
+            raise NotImplementedError()
+
+        def shape(self, buffer_width: float = 0.0) -> Polygon:
+            """Returns a convex polygon, buffered by width (which must be non-negative), around this surface."""
+            raise NotImplementedError()
+
+        def contains_point(self, point: Point) -> bool:
+            """Returns True iff this point is fully contained by this surface."""
+            raise NotImplementedError()
+
+    class Lane(Surface):
         @property
         def lane_id(self) -> str:
+            """Unique identifier for a Lane."""
             raise NotImplementedError()
 
         @property
         def road(self) -> RoadMap.Road:
             raise NotImplementedError()
+
+        @property
+        def composite_lane(self) -> RoadMap.Lane:
+            """Return an abstract Lane composed of one or more RoadMap.Lane segments
+            that has been inferred to correspond to one continuous real-world lane.
+            May return same object as self."""
+            return self
+
+        @property
+        def is_composite(self) -> bool:
+            """Returns True if this Lane object was inferred
+            and composed out of subordinate Lane objects."""
+            return False
 
         @property
         def speed_limit(self) -> float:
@@ -152,7 +205,7 @@ class RoadMap:
         @property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: left is defined as 90 degrees clockwise relative to the lane heading.
-            (I.e., positive `t` in the RefLane coordinate system.)
+            (I.e., positive `t` in the Refline coordinate system.)
             Second result is True if lane is in the same direction as this one
             In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
@@ -160,7 +213,7 @@ class RoadMap:
         @property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
-            (I.e., negative `t` in the RefLane coordinate system.)
+            (I.e., negative `t` in the Refline coordinate system.)
             Second result is True if lane is in the same direction as this one.
             In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
@@ -219,6 +272,13 @@ class RoadMap:
             raise NotImplementedError()
 
         def width_at_offset(self, offset: float) -> float:
+            raise NotImplementedError()
+
+        def project_along(
+            self, start_offset: float, distance: float
+        ) -> Set[Tuple[RoadMap.Lane, float]]:
+            """Starting at start_offset along the lane, project locations (lane, offset tuples)
+            reachable within distance, not including lane changes."""
             raise NotImplementedError()
 
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
@@ -283,7 +343,7 @@ class RoadMap:
                 prev_heading_rad = heading_rad
             return lookahead / heading_deltas if heading_deltas else math.inf
 
-    class Road:
+    class Road(Surface):
         """This is akin to a 'road segment' in real life.
         Many of these might correspond to a single named road in reality."""
 
@@ -298,6 +358,19 @@ class RoadMap:
         @property
         def type_as_str(self) -> str:
             raise NotImplementedError()
+
+        @property
+        def composite_road(self) -> RoadMap.Road:
+            """Return an abstract Road composed of one or more RoadMap.Road segments
+            that has been inferred to correspond to one continuous real-world road.
+            May return same object as self."""
+            return self
+
+        @property
+        def is_composite(self) -> bool:
+            """Returns True if this Road object was inferred
+            and composed out of subordinate Road objects."""
+            return False
 
         @property
         def is_junction(self) -> bool:
@@ -363,7 +436,7 @@ class RoadMap:
     class Route:
         @property
         def roads(self) -> List[RoadMap.Road]:
-            """An (unordered) list of roads that this route covers"""
+            """A possibly-unordered list of roads that this route covers"""
             return []
 
         @property
@@ -376,16 +449,23 @@ class RoadMap:
             return []
 
         def distance_between(self, start: Point, end: Point) -> float:
-            """ Distance along route between two points.  """
+            """Distance along route between two points."""
+            raise NotImplementedError()
+
+        def project_along(
+            self, start: Point, distance: float
+        ) -> Set[Tuple[RoadMap.Lane, float]]:
+            """Starting at point on the route, returns a set of possible
+            locations (lane and offset pairs) further along the route that
+            are distance away, not including lane changes."""
             raise NotImplementedError()
 
 
 @dataclass(frozen=True)
 class Waypoint:
-    """Dynamic, based on map and vehicle.  Waypoints
-    start abreast of a vehicle's present location in the nearest Lane
-    and are then interpolated such that they're evenly spaced.
-    These are returned through a vehicle's sensors."""
+    """Dynamic, based on map and vehicle.  Waypoints start abreast of
+    (or near) a vehicle's present location in the nearest Lane and
+    are evenly spaced.  These are returned through a vehicle's sensors."""
 
     # XXX: consider renaming lane_id, lane_index, lane_width
     #      to nearest_lane_id, nearest_lane_index, nearest_lane_width

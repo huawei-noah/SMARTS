@@ -18,7 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections.abc as collections_abc
+from ctypes import c_int64
+import hashlib
 import logging
+import pickle
 import random
 from dataclasses import dataclass, field
 from sys import maxsize
@@ -39,6 +42,14 @@ from smarts.core.coordinates import RefLinePoint
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_around_point
+
+
+def _pickle_hash(obj) -> int:
+    pickle_bytes = pickle.dumps(obj, protocol=4)
+    hasher = hashlib.md5()
+    hasher.update(pickle_bytes)
+    val = int(hasher.hexdigest(), 16)
+    return c_int64(val).value
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -146,7 +157,7 @@ class Actor:
     pass
 
 
-@dataclass(frozen=True, unsafe_hash=True)
+@dataclass(frozen=True)
 class TrafficActor(Actor):
     """Used as a description/spec for traffic actors (e.x. Vehicles, Pedestrians,
     etc). The defaults provided are for a car, but the name is not set to make it
@@ -181,6 +192,9 @@ class TrafficActor(Actor):
         default_factory=LaneChangingModel, hash=False
     )
     junction_model: JunctionModel = field(default_factory=JunctionModel, hash=False)
+
+    def __hash__(self) -> int:
+        return _pickle_hash(self)
 
     @property
     def id(self) -> str:
@@ -265,7 +279,7 @@ class Route:
         return "route-{}-{}-{}-".format(
             "_".join(map(str, self.begin)),
             "_".join(map(str, self.end)),
-            hash(self),
+            _pickle_hash(self),
         )
 
     @property
@@ -307,13 +321,14 @@ class Flow:
     @property
     def id(self) -> str:
         return "flow-{}-{}-".format(
-            self.route.id, str(hash(frozenset(self.actors.items())))
+            self.route.id,
+            str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
         )
 
     def __hash__(self):
         # Custom hash since self.actors is not hashable, here we first convert to a
         # frozenset.
-        return hash((self.route, self.rate, frozenset(self.actors.items())))
+        return _pickle_hash((self.route, self.rate, frozenset(self.actors.items())))
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -564,7 +579,7 @@ class MapZone(Zone):
             lane_offset += buffer_from_ends
 
             width = lane.width_at_offset(lane_offset)
-            lane_shape = lane.buffered_shape(width + 0.3)
+            lane_shape = lane.shape(width + 0.3)
 
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)

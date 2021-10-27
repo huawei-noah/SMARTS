@@ -55,7 +55,6 @@ def constrain_angle(angle):
 
 def batches(list_, n):
     """Split an indexable container into `n` batches.
-
     Args:
       list_:
         The iterable to split into parts
@@ -68,10 +67,8 @@ def batches(list_, n):
 
 def yaw_from_quaternion(quaternion) -> float:
     """Converts a quaternion to the yaw value.
-
     Args:
       np.narray: np.array([x, y, z, w])
-
     Returns:
       A float angle in radians.
     """
@@ -89,10 +86,8 @@ def yaw_from_quaternion(quaternion) -> float:
 
 def fast_quaternion_from_angle(angle: float) -> np.ndarray:
     """Converts a float to a quaternion.
-
     Args:
       angle: An angle in radians.
-
     Returns:
       np.ndarray: np.array([x, y, z, w])
     """
@@ -138,7 +133,6 @@ def clip(val, min_val, max_val):
 
 def squared_dist(a, b) -> float:
     """Computes the squared distance between a and b.
-
     Args:
       a, b: same dimension numpy.array([..])
     Returns:
@@ -150,11 +144,9 @@ def squared_dist(a, b) -> float:
 
 def signed_dist_to_line(point, line_point, line_dir_vec) -> float:
     """Computes the signed distance to a directed line
-
     The signed of the distance is:
       - negative if point is on the right of the line
       - positive if point is on the left of the line
-
     >>> import numpy as np
     >>> signed_dist_to_line(np.array([2, 0]), np.array([0, 0]), np.array([0, 1.]))
     -2.0
@@ -184,7 +176,6 @@ def vec_2d(v) -> np.ndarray:
 
 def sign(x) -> int:
     """Finds the sign of a numeric type.
-
     Args:
         x: A signed numeric type
     Returns:
@@ -196,9 +187,7 @@ def sign(x) -> int:
 
 def lerp(a, b, p):
     """Linear interpolation between a and b with p
-
     .. math:: a * (1.0 - p) + b * p
-
     Args:
         a, b: interpolated values
         p: [0..1] float describing the weight of a to b
@@ -357,7 +346,6 @@ def position_to_ego_frame(position, ego_position, ego_heading):
         position: [x,y,z]
         ego_position: Ego vehicle [x,y,z]
         ego_heading: Ego vehicle heading in radians
-
     Returns:
         new_pose: The pose [x,y,z] in egocentric view
     """
