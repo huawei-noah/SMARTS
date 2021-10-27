@@ -99,28 +99,28 @@
                 <left>
                     <lane id="4" type="none" level= "0">
                         <link>
-                            <successor id="4"/>
+                            <predecessor id="4"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="4.7000000000000002e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="none" weight="standard" color="standard" width="1.3000000000000000e-01"/>
                     </lane>
                     <lane id="3" type="sidewalk" level= "0">
                         <link>
-                            <successor id="3"/>
+                            <predecessor id="3"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="1.5000000000000000e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <height sOffset="0.0000000000000000e+00" heightInner="1.2000000000000000e-01" heightOuter="1.2000000000000000e-01"/>
                     </lane>
                     <lane id="2" type="border" level= "0">
                         <link>
-                            <successor id="2"/>
+                            <predecessor id="2"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="3.4999999999999998e-01" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="none" weight="standard" color="standard" width="1.3000000000000000e-01"/>
                     </lane>
                     <lane id="1" type="driving" level= "0">
                         <link>
-                            <successor id="1"/>
+                            <predecessor id="1"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="3.7500000000000000e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="solid" weight="standard" color="standard" width="1.3000000000000000e-01"/>
@@ -272,28 +272,28 @@
                 <left>
                     <lane id="4" type="none" level= "0">
                         <link>
-                            <successor id="4"/>
+                            <predecessor id="4"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="4.7000000000000002e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="none" weight="standard" color="standard" width="1.3000000000000000e-01"/>
                     </lane>
                     <lane id="3" type="sidewalk" level= "0">
                         <link>
-                            <successor id="3"/>
+                            <predecessor id="3"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="1.5000000000000000e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <height sOffset="0.0000000000000000e+00" heightInner="1.2000000000000000e-01" heightOuter="1.2000000000000000e-01"/>
                     </lane>
                     <lane id="2" type="border" level= "0">
                         <link>
-                            <successor id="2"/>
+                            <predecessor id="2"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="3.4999999999999998e-01" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="none" weight="standard" color="standard" width="1.3000000000000000e-01"/>
                     </lane>
                     <lane id="1" type="driving" level= "0">
                         <link>
-                            <successor id="1"/>
+                            <predecessor id="1"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="3.7500000000000000e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="solid" weight="standard" color="standard" width="1.3000000000000000e-01"/>
@@ -445,28 +445,28 @@
                 <left>
                     <lane id="4" type="none" level= "0">
                         <link>
-                            <successor id="-4"/>
+                            <predecessor id="-4"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="4.7000000000000002e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="none" weight="standard" color="standard" width="1.3000000000000000e-01"/>
                     </lane>
                     <lane id="3" type="sidewalk" level= "0">
                         <link>
-                            <successor id="-3"/>
+                            <predecessor id="-3"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="1.5000000000000000e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <height sOffset="0.0000000000000000e+00" heightInner="1.2000000000000000e-01" heightOuter="1.2000000000000000e-01"/>
                     </lane>
                     <lane id="2" type="border" level= "0">
                         <link>
-                            <successor id="-2"/>
+                            <predecessor id="-2"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="3.4999999999999998e-01" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="none" weight="standard" color="standard" width="1.3000000000000000e-01"/>
                     </lane>
                     <lane id="1" type="driving" level= "0">
                         <link>
-                            <successor id="-1"/>
+                            <predecessor id="-1"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="3.7500000000000000e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="solid" weight="standard" color="standard" width="1.3000000000000000e-01"/>
@@ -542,28 +542,28 @@
                 <left>
                     <lane id="4" type="none" level= "0">
                         <link>
-                            <successor id="-4"/>
+                            <predecessor id="-4"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="4.7000000000000002e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="none" weight="standard" color="standard" width="1.3000000000000000e-01"/>
                     </lane>
                     <lane id="3" type="sidewalk" level= "0">
                         <link>
-                            <successor id="-3"/>
+                            <predecessor id="-3"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="1.5000000000000000e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <height sOffset="0.0000000000000000e+00" heightInner="1.2000000000000000e-01" heightOuter="1.2000000000000000e-01"/>
                     </lane>
                     <lane id="2" type="border" level= "0">
                         <link>
-                            <successor id="-2"/>
+                            <predecessor id="-2"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="3.4999999999999998e-01" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="none" weight="standard" color="standard" width="1.3000000000000000e-01"/>
                     </lane>
                     <lane id="1" type="driving" level= "0">
                         <link>
-                            <successor id="-1"/>
+                            <predecessor id="-1"/>
                         </link>
                         <width sOffset="0.0000000000000000e+00" a="3.7500000000000000e+00" b="0.0000000000000000e+00" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>
                         <roadMark sOffset="0.0000000000000000e+00" type="solid" weight="standard" color="standard" width="1.3000000000000000e-01"/>

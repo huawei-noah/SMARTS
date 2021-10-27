@@ -260,32 +260,34 @@ class OpenDriveRoadNetwork(RoadMap):
                     ]
                     lane.lanes_in_same_direction = same_dir_lanes
 
+                    # Lanes with positive lane_elem ID run on the left side of the center lane, while lanes with
+                    # lane_elem negative ID run on the right side of the center lane.
+                    # OpenDRIVE's assumption is that the direction of reference line is same as direction of lanes with
+                    # lane_elem negative ID, hence for a given road -1 will be the left most lane in one direction
+                    # and 1 will be the left most lane in other direction if it exist.
+                    # If there is only one lane in a road, its index will be -1.
+
                     # Compute lane to the left
                     result = None
-                    if lane.index > 0:
-                        for other in lane.lanes_in_same_direction:
-                            if lane.index - other.index == 1:
-                                result = other
-                                break
-                    elif lane.index < 0:
-                        for other in lane.lanes_in_same_direction:
-                            if lane.index - other.index == -1:
-                                result = other
-                                break
-                    lane.lane_to_left = result, True
+                    direction = True
+                    if lane.index == -1:
+                        result = road.lane_at_index(1)
+                        direction = False
+                    elif lane.index == 1:
+                        result = road.lane_at_index(-1)
+                        direction = False
+                    elif lane.index > 1:
+                        result = road.lane_at_index(lane.index - 1)
+                    elif lane.index < -1:
+                        result = road.lane_at_index(lane.index + 1)
+                    lane.lane_to_left = result, direction
 
                     # Compute lane to right
                     result = None
                     if lane.index > 0:
-                        for other in lane.lanes_in_same_direction:
-                            if lane.index - other.index == -1:
-                                result = other
-                                break
+                        result = road.lane_at_index(lane.index + 1)
                     elif lane.index < 0:
-                        for other in lane.lanes_in_same_direction:
-                            if lane.index - other.index == 1:
-                                result = other
-                                break
+                        result = road.lane_at_index(lane.index - 1)
                     lane.lane_to_right = result, True
 
                     # Compute lane foes
@@ -434,13 +436,21 @@ class OpenDriveRoadNetwork(RoadMap):
                         else 0
                     )
                     pred_lane_id = f"{road_predecessor.element_id}_{section_index}_{lane_link.predecessorId}"
-                    lane.incoming_lanes.append(self.lane_by_id(pred_lane_id))
+                    pred_lane = self.lane_by_id(pred_lane_id)
+                    if pred_lane not in lane.incoming_lanes:
+                        lane.incoming_lanes.append(pred_lane)
+                    if lane not in pred_lane.outgoing_lanes:
+                        pred_lane.outgoing_lanes.append(lane)
             else:
                 # Otherwise, get the previous lane section of the current road
                 pred_lane_id = (
                     f"{road_elem.id}_{ls_index - 1}_{lane_link.predecessorId}"
                 )
-                lane.incoming_lanes.append(self.lane_by_id(pred_lane_id))
+                pred_lane = self.lane_by_id(pred_lane_id)
+                if pred_lane not in lane.incoming_lanes:
+                    lane.incoming_lanes.append(pred_lane)
+                if lane not in pred_lane.outgoing_lanes:
+                    pred_lane.outgoing_lanes.append(lane)
 
         if lane_link.successorId:
             ls_index = lane_elem.lane_section.idx
@@ -455,11 +465,19 @@ class OpenDriveRoadNetwork(RoadMap):
                         else 0
                     )
                     succ_lane_id = f"{road_successor.element_id}_{section_index}_{lane_link.successorId}"
-                    lane.outgoing_lanes.append(self.lane_by_id(succ_lane_id))
+                    succ_lane = self.lane_by_id(succ_lane_id)
+                    if succ_lane not in lane.outgoing_lanes:
+                        lane.outgoing_lanes.append(succ_lane)
+                    if lane not in succ_lane.incoming_lanes:
+                        succ_lane.incoming_lanes.append(lane)
             else:
                 # Otherwise, get the next lane section in the current road
                 succ_lane_id = f"{road_elem.id}_{ls_index + 1}_{lane_link.successorId}"
-                lane.outgoing_lanes.append(self.lane_by_id(succ_lane_id))
+                succ_lane = self.lane_by_id(succ_lane_id)
+                if succ_lane not in lane.outgoing_lanes:
+                    lane.outgoing_lanes.append(succ_lane)
+                if lane not in succ_lane.incoming_lanes:
+                    succ_lane.incoming_lanes.append(lane)
 
     @staticmethod
     def _compute_lane_polygon(
@@ -694,6 +712,8 @@ class OpenDriveRoadNetwork(RoadMap):
                 lane_point = self.to_lane_coord(point)
                 width_at_offset = self.width_at_offset(lane_point.s)
                 lane_elem_id = int(self.lane_id.split("_")[2])
+                # t-direction is negative for right side and positive for left side of the
+                # inner boundary reference line, So the sign of lane_point.t and lane_elem_id should match
                 return (
                     np.sign(lane_point.t) == np.sign(lane_elem_id)
                     and abs(lane_point.t) <= width_at_offset
