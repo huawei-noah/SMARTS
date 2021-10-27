@@ -315,7 +315,6 @@ def test_od_map_figure_eight():
     assert l2_out_lanes[0].lane_id == "503_0_-1"
     assert l2_out_lanes[1].lane_id == "504_0_-1"
     assert l2_out_lanes[2].lane_id == "513_0_-1"
-    # assert l2_out_lanes[3].lane_id == "513_0_-1"
 
     l2_in_lanes = l2.incoming_lanes
     assert l2_in_lanes
