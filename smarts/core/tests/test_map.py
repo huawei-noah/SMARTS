@@ -226,8 +226,8 @@ def test_od_map_junction():
 
     # lane edges on point
     left_edge, right_edge = l1.edges_at_point(point)
-    assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (120.0, 170.0)
-    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (116.25, 170.0)
+    assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (109.7, 170.0)
+    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (120.0, 170.0)
 
     # road edges on point
     road_left_edge, road_right_edge = r0.edges_at_point(point)

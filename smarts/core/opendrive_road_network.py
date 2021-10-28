@@ -896,6 +896,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+            # left and right edge follows the central reference line system of road
             leftmost_lane, rightmost_lane = None, None
             min_index, max_index = float("inf"), float("-inf")
             for lane in self.lanes:
@@ -905,13 +906,12 @@ class OpenDriveRoadNetwork(RoadMap):
                 if lane.index > max_index:
                     max_index = lane.index
                     rightmost_lane = lane
-            _, left_edge = leftmost_lane.edges_at_point(point)
+            _, right_edge = leftmost_lane.edges_at_point(point)
             if min_index == max_index:
-                right_edge, _ = rightmost_lane.edges_at_point(point)
-                return right_edge, left_edge
+                left_edge, _ = rightmost_lane.edges_at_point(point)
             else:
-                _, right_edge = rightmost_lane.edges_at_point(point)
-                return left_edge, right_edge
+                _, left_edge = rightmost_lane.edges_at_point(point)
+            return left_edge, right_edge
 
         def lane_at_index(self, index: int) -> RoadMap.Lane:
             lanes_with_index = [lane for lane in self.lanes if lane.index == index]
