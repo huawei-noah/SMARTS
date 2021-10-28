@@ -768,7 +768,7 @@ class OpenDriveRoadNetwork(RoadMap):
                     if right_edge_shape[i] == point:
                         break
                     right_offset += euclidean_distance(right_edge_shape[i], right_edge_shape[i + 1])
-            x, y = position_at_shape_offset(right_edge_shape, right_offset.s)
+            x, y = position_at_shape_offset(right_edge_shape, right_offset)
             right_edge = Point(x, y)
             return left_edge, right_edge
 
