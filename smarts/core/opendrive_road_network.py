@@ -754,9 +754,12 @@ class OpenDriveRoadNetwork(RoadMap):
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             offset = self.offset_along_lane(point)
             width = self.width_at_offset(offset)
-            # left and right edges are with respect to the lane heading
+            lane_elem_id = int(self.lane_id.split("_")[2])
             left_edge = RefLinePoint(s=offset, t=0)
-            right_edge = RefLinePoint(s=offset, t=width)
+            if lane_elem_id > 0:
+                right_edge = RefLinePoint(s=offset, t=width)
+            else:
+                right_edge = RefLinePoint(s=offset, t=-width)
             return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
 
         @lru_cache(8)
