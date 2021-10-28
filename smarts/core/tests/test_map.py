@@ -233,7 +233,7 @@ def test_od_map_junction():
     offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.75
     assert l1.curvature_radius_at_offset(offset) == math.inf
-    assert l1.contains_point(point)
+    assert not l1.contains_point(point)
     assert l1.road.contains_point(point)
 
     l2 = road_map.lane_by_id("0_0_-1")
