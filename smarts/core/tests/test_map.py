@@ -364,7 +364,7 @@ def test_od_map_figure_eight():
     # edges on curved part
     left_edge, right_edge = l1.edges_at_point(point)
     assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (162.63, 74.36)
-    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (116.25, 170.0)
+    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (164.63, 77.53)
 
     # point not on lane but on road
     point = (163.48, 71.80, 0)
