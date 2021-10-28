@@ -10,8 +10,9 @@ attributes = {"id": 1, "name": "polygon", "valid": True}
 centerline = Centerline(polygon1, **attributes)
 print(centerline.geoms)
 p1 = gpd.GeoSeries(polygon1)
+p2 = gpd.GeoSeries(centerline.geoms)
 p1.plot()
-
+p2.plot()
 plt.show()
 
 
