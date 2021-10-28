@@ -275,6 +275,17 @@ def position_at_offset(p1, p2, offset):
     )
 
 
+def offset_along_shape(point, shape) -> float:
+    if point not in shape:
+        return polygon_offset_with_minimum_distance_to_point(point, shape)
+    offset = 0
+    for i in range(len(shape) - 1):
+        if shape[i] == point:
+            break
+        offset += euclidean_distance(shape[i], shape[i + 1])
+    return offset
+
+
 def position_at_shape_offset(shape, offset):
     seenLength = 0
     curr = shape[0]

@@ -44,9 +44,9 @@ from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
     CubicPolynomial,
     constrain_angle,
-    polygon_offset_with_minimum_distance_to_point,
     euclidean_distance,
     position_at_shape_offset,
+    offset_along_shape,
 )
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 
@@ -726,14 +726,7 @@ class OpenDriveRoadNetwork(RoadMap):
             reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
             shape = self._lane_polygon[:reference_line_vertices_len]
             point = world_point[:2]
-            if point not in shape:
-                return polygon_offset_with_minimum_distance_to_point(point, shape)
-            offset = 0
-            for i in range(len(shape) - 1):
-                if shape[i] == point:
-                    break
-                offset += euclidean_distance(shape[i], shape[i + 1])
-            return offset
+            return offset_along_shape(point, shape)
 
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
@@ -760,14 +753,7 @@ class OpenDriveRoadNetwork(RoadMap):
             # right_edge
             reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
             right_edge_shape = self._lane_polygon[reference_line_vertices_len:len(self._lane_polygon) - 1]
-            if point not in right_edge_shape:
-                right_offset = polygon_offset_with_minimum_distance_to_point(point, right_edge_shape)
-            else:
-                right_offset = 0
-                for i in range(len(right_edge_shape) - 1):
-                    if right_edge_shape[i] == point:
-                        break
-                    right_offset += euclidean_distance(right_edge_shape[i], right_edge_shape[i + 1])
+            right_offset = offset_along_shape(point[:2], right_edge_shape)
             x, y = position_at_shape_offset(right_edge_shape, right_offset)
             right_edge = Point(x, y)
             return left_edge, right_edge
