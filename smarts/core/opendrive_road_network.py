@@ -750,9 +750,14 @@ class OpenDriveRoadNetwork(RoadMap):
         def center_at_point(self, point: Point) -> Point:
             return super().center_at_point(point)
 
-        # @lru_cache(8)
-        # def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-        #     return super().edges_at_point(point)
+        @lru_cache(8)
+        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+            offset = self.offset_along_lane(point)
+            width = self.width_at_offset(offset)
+            # left and right edges are with respect to the lane heading
+            left_edge = RefLinePoint(s=offset, t=0)
+            right_edge = RefLinePoint(s=offset, t=width)
+            return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
 
         @lru_cache(8)
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
