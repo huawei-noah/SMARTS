@@ -286,7 +286,7 @@ def test_od_map_junction():
     r5 = road_map.road_by_id("5_0")
     road_left_edge, road_right_edge = r5.edges_at_point(point)
     assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (115.23, 121.22)
-    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (130.3, 170.0)
+    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (117.02, 117.92)
 
 
 def test_od_map_figure_eight():
