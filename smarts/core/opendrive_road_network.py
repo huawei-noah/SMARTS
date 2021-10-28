@@ -752,15 +752,23 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lru_cache(8)
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            offset = self.offset_along_lane(point)
-            edge = RefLinePoint(s=offset, t=0)
             # left_edge
-            left_edge = self.from_lane_coord(edge)
+            left_offset = self.offset_along_lane(point)
+            left_lane_edge = RefLinePoint(s=left_offset, t=0)
+            left_edge = self.from_lane_coord(left_lane_edge)
 
             # right_edge
             reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
-            shape = self._lane_polygon[reference_line_vertices_len:len(self._lane_polygon) - 1]
-            x, y = position_at_shape_offset(shape, edge.s)
+            right_edge_shape = self._lane_polygon[reference_line_vertices_len:len(self._lane_polygon) - 1]
+            if point not in right_edge_shape:
+                right_offset = polygon_offset_with_minimum_distance_to_point(point, right_edge_shape)
+            else:
+                right_offset = 0
+                for i in range(len(right_edge_shape) - 1):
+                    if right_edge_shape[i] == point:
+                        break
+                    right_offset += euclidean_distance(right_edge_shape[i], right_edge_shape[i + 1])
+            x, y = position_at_shape_offset(right_edge_shape, right_offset.s)
             right_edge = Point(x, y)
             return left_edge, right_edge
 
