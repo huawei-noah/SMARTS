@@ -753,14 +753,16 @@ class OpenDriveRoadNetwork(RoadMap):
         @lru_cache(8)
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             offset = self.offset_along_lane(point)
-            width = self.width_at_offset(offset)
-            lane_elem_id = int(self.lane_id.split("_")[2])
-            left_edge = RefLinePoint(s=offset, t=0)
-            if lane_elem_id > 0:
-                right_edge = RefLinePoint(s=offset, t=width)
-            else:
-                right_edge = RefLinePoint(s=offset, t=-width)
-            return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
+            edge = RefLinePoint(s=offset, t=0)
+            # left_edge
+            left_edge = self.from_lane_coord(edge)
+
+            # right_edge
+            reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
+            shape = self._lane_polygon[reference_line_vertices_len:len(self._lane_polygon) - 1]
+            x, y = position_at_shape_offset(shape, edge.s)
+            right_edge = Point(x, y)
+            return left_edge, right_edge
 
         @lru_cache(8)
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
