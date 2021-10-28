@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import geopandas as gpd
 
 
-polygon1 = Polygon([[0, 0], [0, 4], [4, 4], [4, 0]])
+polygon1 = Polygon([[0, 0], [0, 4], [4, 4], [4, 0], [0, 0]])
 attributes = {"id": 1, "name": "polygon", "valid": True}
 
 centerline = Centerline(polygon1, **attributes)
