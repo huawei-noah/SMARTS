@@ -515,8 +515,7 @@ class OpenDriveRoadNetwork(RoadMap):
             ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
 
         assert len(xs) == len(ys)
-        for i in range(len(xs)):
-            lane.lane_polygon.append((xs[i], ys[i]))
+        lane.lane_polygon = list(zip(xs, ys))
 
     @property
     def source(self) -> str:
@@ -752,7 +751,9 @@ class OpenDriveRoadNetwork(RoadMap):
 
             # right_edge
             reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
-            right_edge_shape = self._lane_polygon[reference_line_vertices_len:len(self._lane_polygon) - 1]
+            right_edge_shape = self._lane_polygon[
+                reference_line_vertices_len : len(self._lane_polygon) - 1
+            ]
             right_offset = offset_along_shape(point[:2], right_edge_shape)
             x, y = position_at_shape_offset(right_edge_shape, right_offset)
             right_edge = Point(x, y)
