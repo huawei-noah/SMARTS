@@ -361,6 +361,11 @@ def test_od_map_figure_eight():
     assert l1.contains_point(point)
     assert l1.road.contains_point(point)
 
+    # edges on curved part
+    left_edge, right_edge = l1.edges_at_point(point)
+    assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (120.0, 170.0)
+    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (116.25, 170.0)
+
     # point not on lane but on road
     point = (163.48, 71.80, 0)
     refline_pt = l1.to_lane_coord(point)
