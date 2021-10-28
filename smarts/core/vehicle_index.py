@@ -22,18 +22,15 @@ from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
 from typing import FrozenSet, NamedTuple
-import importlib.resources as pkg_resources
-import yaml
-import os
 
 import numpy as np
 import tableprint as tp
 
 from smarts.core import gen_id
+from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
 
-from . import models
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .sensors import SensorState
@@ -682,13 +679,7 @@ class VehicleIndex:
         return self._controller_states[vehicle_id]
 
     def load_controller_params(self, controller_filepath: str):
-        if (controller_filepath is None) or not os.path.exists(controller_filepath):
-            with pkg_resources.path(
-                models, "controller_parameters.yaml"
-            ) as controller_path:
-                controller_filepath = str(controller_path.absolute())
-        with open(controller_filepath, "r") as controller_file:
-            self._controller_params = yaml.safe_load(controller_file)
+        self._controller_params = resources.load_controller_params(controller_filepath)
 
     def controller_params_for_vehicle_type(self, vehicle_type: str):
         assert self._controller_params, "Controller params have not been loaded"
