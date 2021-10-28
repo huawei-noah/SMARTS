@@ -281,7 +281,7 @@ def test_od_map_junction():
     assert "7_0_-1" in foe_set
     assert "5_0_-1" in foe_set
 
-    # road edges on point
+    # road edges on point for a road with one lane
     point = (115.55, 120.63)
     r5 = road_map.road_by_id("5_0")
     road_left_edge, road_right_edge = r5.edges_at_point(point)
