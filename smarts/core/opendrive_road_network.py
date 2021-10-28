@@ -849,6 +849,16 @@ class OpenDriveRoadNetwork(RoadMap):
             self._outgoing_roads = value
 
         @property
+        def entry_surfaces(self) -> List[RoadMap.Surface]:
+            # TAI:  also include lanes here?
+            return self.incoming_roads
+
+        @property
+        def exit_surfaces(self) -> List[RoadMap.Surface]:
+            # TAI:  also include lanes here?
+            return self.outgoing_roads
+
+        @property
         def parallel_roads(self) -> List[RoadMap.Road]:
             return self._parallel_roads
 
@@ -883,6 +893,25 @@ class OpenDriveRoadNetwork(RoadMap):
                         return True
                 return False
             return False
+
+        @lru_cache(maxsize=8)
+        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+            leftmost_lane, rightmost_lane = None, None
+            min_index, max_index = float("inf"), float("-inf")
+            for lane in self.lanes:
+                if lane.index < min_index:
+                    min_index = lane.index
+                    leftmost_lane = lane
+                if lane.index > max_index:
+                    max_index = lane.index
+                    rightmost_lane = lane
+            _, left_edge = leftmost_lane.edges_at_point(point)
+            if min_index == max_index:
+                right_edge, _ = rightmost_lane.edges_at_point(point)
+                return right_edge, left_edge
+            else:
+                _, right_edge = rightmost_lane.edges_at_point(point)
+                return left_edge, right_edge
 
         def lane_at_index(self, index: int) -> RoadMap.Lane:
             lanes_with_index = [lane for lane in self.lanes if lane.index == index]

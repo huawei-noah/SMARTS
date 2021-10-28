@@ -228,6 +228,10 @@ def test_od_map_junction():
     assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (120.0, 170.0)
     assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (116.25, 170.0)
 
+    road_left_edge, road_right_edge = r0.edges_at_point(point)
+    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (120.0, 170.0)
+    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (116.25, 170.0)
+
     # point not on lane but on road
     point = (122.0, 170.0, 0)
     refline_pt = l1.to_lane_coord(point)
