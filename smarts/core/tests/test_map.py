@@ -216,7 +216,7 @@ def test_od_map_junction():
     point = (118.0, 170.0, 0)
     refline_pt = l1.to_lane_coord(point)
     assert round(refline_pt.s, 2) == 33.0
-    assert round(refline_pt.t, 2) == 2.0
+    assert round(refline_pt.t, 2) == -2.0
 
     offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.75
