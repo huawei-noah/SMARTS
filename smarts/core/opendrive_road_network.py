@@ -39,12 +39,12 @@ from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
     PlanView as PlanViewElement,
 )
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
+from shapely.geometry import LineString, Polygon
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
     CubicPolynomial,
     constrain_angle,
-    euclidean_distance,
     position_at_shape_offset,
     offset_along_shape,
 )
@@ -790,6 +790,12 @@ class OpenDriveRoadNetwork(RoadMap):
             t_inner = inner_boundary.calc_t(ds)
             return abs(t_outer - t_inner)
 
+        @lru_cache(maxsize=4)
+        def shape(self, buffer_width: float = 0.0) -> Polygon:
+            # TODO: Handle width manipulation
+            assert buffer_width >= 0.0
+            return Polygon(self._lane_polygon)
+
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
         if not lane:
@@ -902,16 +908,69 @@ class OpenDriveRoadNetwork(RoadMap):
             for lane in self.lanes:
                 if lane.index < min_index:
                     min_index = lane.index
-                    leftmost_lane = lane
+                    rightmost_lane = lane
                 if lane.index > max_index:
                     max_index = lane.index
-                    rightmost_lane = lane
-            _, right_edge = leftmost_lane.edges_at_point(point)
+                    leftmost_lane = lane
+            _, right_edge = rightmost_lane.edges_at_point(point)
             if min_index == max_index:
-                left_edge, _ = rightmost_lane.edges_at_point(point)
+                assert rightmost_lane == leftmost_lane
+                left_edge, _ = leftmost_lane.edges_at_point(point)
             else:
-                _, left_edge = rightmost_lane.edges_at_point(point)
+                _, left_edge = leftmost_lane.edges_at_point(point)
             return left_edge, right_edge
+
+        @lru_cache(maxsize=4)
+        def shape(self, buffer_width: float = 0.0) -> Polygon:
+            # TODO: Handle width manipulation
+            assert buffer_width >= 0.0
+            leftmost_lane, rightmost_lane = None, None
+            min_index, max_index = float("inf"), float("-inf")
+            for lane in self.lanes:
+                if lane.index < min_index:
+                    min_index = lane.index
+                    rightmost_lane = lane
+                if lane.index > max_index:
+                    max_index = lane.index
+                    leftmost_lane = lane
+
+            # Right edge
+            rightmost_edge_vertices_len = int(
+                (len(rightmost_lane.lane_polygon) - 1) / 2
+            )
+            rightmost_edge_shape = rightmost_lane.lane_polygon[
+                rightmost_edge_vertices_len : len(rightmost_lane.lane_polygon) - 1
+            ]
+
+            # Left edge
+            if min_index == max_index:
+                assert leftmost_lane == rightmost_lane
+                leftmost_edge_shape = rightmost_lane.lane_polygon[
+                    :rightmost_edge_vertices_len
+                ]
+            else:
+                leftmost_edge_vertices_len = int(
+                    (len(leftmost_lane.lane_polygon) - 1) / 2
+                )
+                leftmost_edge_shape = leftmost_lane.lane_polygon[
+                    leftmost_edge_vertices_len : len(leftmost_lane.lane_polygon) - 1
+                ]
+
+            # To add intermediate vertices for more accurate shape of the road polygon
+            # top_edge_vertices = []
+            # bottom_edge_vertices = []
+            # for i in range(max_index, min_index, -1):
+            #     if i == 0:
+            #         pass
+            #     lane = self.lane_at_index(i)
+            #     top_edge_vertices.append(lane.lane_polygon[int((len(lane.lane_polygon) - 1) / 2)])
+            #     bottom_edge_vertices.append(lane.lane_polygon[len(lane.lane_polygon) - 2])
+            # road_polygon = leftmost_edge_shape + top_edge_vertices + rightmost_edge_shape + bottom_edge_vertices + [leftmost_edge_shape[0]]
+
+            road_polygon = (
+                leftmost_edge_shape + rightmost_edge_shape + [leftmost_edge_shape[0]]
+            )
+            return Polygon(road_polygon)
 
         def lane_at_index(self, index: int) -> RoadMap.Lane:
             lanes_with_index = [lane for lane in self.lanes if lane.index == index]
