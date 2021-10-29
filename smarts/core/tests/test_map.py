@@ -297,9 +297,7 @@ def test_od_map_junction():
 
 def test_od_map_figure_eight():
     root = path.join(Path(__file__).parent.absolute(), "maps")
-    road_map = OpenDriveRoadNetwork.from_file(
-        path.join(root, "Figure-Eight_Altered.xodr")
-    )
+    road_map = OpenDriveRoadNetwork.from_file(path.join(root, "Figure-Eight.xodr"))
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
     # Expected properties for all roads and lanes
