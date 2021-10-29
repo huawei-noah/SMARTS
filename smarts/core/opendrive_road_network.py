@@ -173,64 +173,52 @@ class OpenDriveRoadNetwork(RoadMap):
             for section_elem in road_elem.lanes.lane_sections:
                 road_id = OpenDriveRoadNetwork._elem_id(section_elem)
                 road = self._roads[road_id]
-
-                # Compute road's incoming and outgoing roads
-                self._compute_road_connections(od, road, road_elem)
-
-                road_plan_view = road_elem.planView
-
-                # Compute left lanes connections and polygon
-                inner_boundary = LaneBoundary(road_plan_view, None, None)
-                right_lanes_iteration = False
                 road.bounding_box = [
                     (float("inf"), float("inf")),
                     (float("-inf"), float("-inf")),
                 ]
-                for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
-                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
-                    lane = self._lanes[lane_id]
+                self._compute_road_connections(od, road, road_elem)
 
-                    # Compute lane's incoming and outgoing lanes
-                    self._compute_lane_connections(od, lane, lane_elem, road_elem)
+                # Lanes - incoming/outgoing lanes, geometry, bounding box
+                for lane_list in [section_elem.leftLanes, section_elem.rightLanes]:
+                    inner_boundary = LaneBoundary(road_elem.planView, None, None)
+                    for lane_elem in lane_list:
+                        lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
+                        lane = self._lanes[lane_id]
 
-                    # Reset inner_boundary if rightLane iteration begins
-                    if (
-                        lane_elem in section_elem.rightLanes
-                        and not right_lanes_iteration
-                    ):
-                        inner_boundary = LaneBoundary(road_plan_view, None, None)
-                        right_lanes_iteration = True
+                        self._compute_lane_connections(od, lane, lane_elem, road_elem)
 
-                    # Computer lane's boundary
-                    lane.lane_widths = lane_elem.widths
-                    for width in lane.lane_widths:
-                        poly = CubicPolynomial.from_list(width.polynomial_coefficients)
-                        outer_boundary = LaneBoundary(None, inner_boundary, poly)
-                        lane.lane_boundaries.append((inner_boundary, outer_boundary))
-                        inner_boundary = outer_boundary
+                        lane.lane_widths = lane_elem.widths
+                        for width in lane.lane_widths:
+                            poly = CubicPolynomial.from_list(
+                                width.polynomial_coefficients
+                            )
+                            outer_boundary = LaneBoundary(None, inner_boundary, poly)
+                            lane.lane_boundaries.append(
+                                (inner_boundary, outer_boundary)
+                            )
+                            inner_boundary = outer_boundary
 
-                    # Compute lane's polygon
-                    OpenDriveRoadNetwork._compute_lane_polygon(
-                        lane, lane_elem, road_plan_view
-                    )
+                        OpenDriveRoadNetwork._compute_lane_polygon(
+                            lane, lane_elem, road_elem.planView
+                        )
 
-                    # Compute lane's bounding box
-                    x_coordinates, y_coordinates = zip(*lane.lane_polygon)
-                    lane.bounding_box = [
-                        (min(x_coordinates), min(y_coordinates)),
-                        (max(x_coordinates), max(y_coordinates)),
-                    ]
+                        x_coordinates, y_coordinates = zip(*lane.lane_polygon)
+                        lane.bounding_box = [
+                            (min(x_coordinates), min(y_coordinates)),
+                            (max(x_coordinates), max(y_coordinates)),
+                        ]
 
-                    road.bounding_box = [
-                        (
-                            min(road.bounding_box[0][0], lane.bounding_box[0][0]),
-                            min(road.bounding_box[0][1], lane.bounding_box[0][1]),
-                        ),
-                        (
-                            max(road.bounding_box[1][0], lane.bounding_box[1][0]),
-                            max(road.bounding_box[1][1], lane.bounding_box[1][1]),
-                        ),
-                    ]
+                        road.bounding_box = [
+                            (
+                                min(road.bounding_box[0][0], lane.bounding_box[0][0]),
+                                min(road.bounding_box[0][1], lane.bounding_box[0][1]),
+                            ),
+                            (
+                                max(road.bounding_box[1][0], lane.bounding_box[1][0]),
+                                max(road.bounding_box[1][1], lane.bounding_box[1][1]),
+                            ),
+                        ]
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
