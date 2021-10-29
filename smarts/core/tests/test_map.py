@@ -185,7 +185,7 @@ def test_od_map_junction():
     assert len(l1.lanes_in_same_direction) == 3
     assert l1.length == 103
     assert l1.is_drivable
-    assert len(l1.shape().exterior.coords) == 10831
+    assert len(l1.shape().exterior.coords) == 5
 
     right_lane, direction = l1.lane_to_right
     assert right_lane
@@ -331,7 +331,7 @@ def test_od_map_figure_eight():
     assert l1.road.road_id == "508_0"
     assert l1.index == -1
     assert l1.is_drivable
-    assert len(l1.shape().exterior.coords) == 21
+    assert len(l1.shape().exterior.coords) == 10831
 
     assert len(l1.lanes_in_same_direction) == 3
     assert round(l1.length, 2) == 541.50
