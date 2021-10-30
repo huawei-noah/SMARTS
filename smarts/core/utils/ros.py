@@ -2,6 +2,9 @@ import logging
 import rospy
 
 
+# Note:  use of these utilities may require installing the SMARTS package with the "[ros]" extentions.
+
+
 class LogToROSHandler(logging.Handler):
     """
      Logging Handler that converts python logging levels to rospy logger levels.
@@ -44,12 +47,12 @@ def log_everything_to_ROS(level=None):
     NOTE:  In order to avoid an infinite recursion, the `propagate` property
     will be set to `False` on any existing loggers whose name starts with "ros".
     (All of the rospy loggers start with this string.)
-
     """
     root = logging.getLogger(None)
     for logger_name, logger in root.manager.loggerDict.items():
         if logger_name.startswith("ros"):
             logger.propagate = False
+    ros_handler = LogToROSHandler()
     if level is not None:
-        root.setLevel(level)
-    root.addHandler(LogToROSHandler())
+        ros_handler.setLevel(level)
+    root.addHandler(ros_handler)
