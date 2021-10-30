@@ -57,6 +57,13 @@ class Dimensions:
     def as_lwh(self):
         return (self.length, self.width, self.height)
 
+    def equal_if_defined(self, length: float, width: float, height: float) -> bool:
+        return (
+            (not self.length or self.length == -1 or self.length == length)
+            and (not self.width or self.width == -1 or self.width == width)
+            and (not self.height or self.height == -1 or self.height == height)
+        )
+
 
 class Point(NamedTuple):
     x: float

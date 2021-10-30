@@ -541,11 +541,7 @@ class Vehicle:
         ) or not np.allclose(self._chassis.velocity_vectors[1], state.angular_velocity):
             linear_velocity = state.linear_velocity
             angular_velocity = state.angular_velocity
-        if (
-            state.dimensions.length != self.length
-            or state.dimensions.width != self.width
-            or state.dimensions.height != self.height
-        ):
+        if not state.dimensions.equal_if_defined(self.length, self.width, self.height):
             self._log.warning(
                 "Unable to change a vehicle's dimensions via external_state_update()."
             )
