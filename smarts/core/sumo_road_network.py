@@ -180,7 +180,7 @@ class SumoRoadNetwork(RoadMap):
 
     @property
     def source(self) -> str:
-        """ This is the net.xml file that corresponds with our possibly-offset coordinates. """
+        """This is the net.xml file that corresponds with our possibly-offset coordinates."""
         return self._net_file
 
     @cached_property
@@ -197,7 +197,7 @@ class SumoRoadNetwork(RoadMap):
         return self._default_lane_width / SumoRoadNetwork.DEFAULT_LANE_WIDTH
 
     def to_glb(self, at_path):
-        """ build a glb file for camera rendering and envision """
+        """build a glb file for camera rendering and envision"""
         polys = self._compute_road_polygons()
         glb = self._make_glb_from_polys(polys)
         glb.write_glb(at_path)
@@ -385,10 +385,11 @@ class SumoRoadNetwork(RoadMap):
             )
 
         @lru_cache(maxsize=4)
-        def shape(self, buffer_width: float = 0.0) -> Polygon:
-            assert buffer_width >= 0.0
-            if buffer_width > 0:
-                return buffered_shape(self._sumo_lane.getShape(), buffer_width)
+        def shape(self, width: float = 0.0, buffer_width: float = 0.0) -> Polygon:
+            new_width = width + buffer_width
+            assert new_width >= 0.0
+            if new_width > 0:
+                return buffered_shape(self._sumo_lane.getShape(), new_width)
             line = self._sumo_lane.getShape()
             bline = buffered_shape(line, 0.0)
             return line if bline.is_empty else bline
@@ -425,23 +426,7 @@ class SumoRoadNetwork(RoadMap):
         def project_along(
             self, start_offset: float, distance: float
         ) -> Set[Tuple[RoadMap.Lane, float]]:
-            result = set()
-            path_stack = {(self, self.length - start_offset)}
-            for lane in self.lanes_in_same_direction:
-                path_stack.add((lane, lane.length - start_offset))
-            while len(path_stack):
-                new_stack = set()
-                for lane, dist in path_stack:
-                    if dist > distance:
-                        offset = lane.length + (distance - dist)
-                        result.add((lane, offset))
-                        continue
-                    for out_lane in lane.outgoing_lanes:
-                        new_stack.add((out_lane, dist + out_lane.length))
-                        for adj_lane in out_lane.lanes_in_same_direction:
-                            new_stack.add((adj_lane, dist + adj_lane.length))
-                path_stack = new_stack
-            return result
+            return super().project_along(start_offset, distance)
 
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
@@ -580,10 +565,11 @@ class SumoRoadNetwork(RoadMap):
             return left_edge, right_edge
 
         @lru_cache(maxsize=4)
-        def shape(self, buffer_width: float = 0.0) -> Polygon:
-            assert buffer_width >= 0.0
-            if buffer_width > 0:
-                return buffered_shape(self._sumo_edge.getShape(), buffer_width)
+        def shape(self, width: float = 0.0, buffer_width: float = 0.0) -> Polygon:
+            new_width = width + buffer_width
+            assert new_width >= 0.0
+            if new_width > 0:
+                return buffered_shape(self._sumo_edge.getShape(), new_width)
             line = self._sumo_edge.getShape()
             bline = buffered_shape(line, 0.0)
             return line if bline.is_empty else bline
