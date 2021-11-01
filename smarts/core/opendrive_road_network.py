@@ -469,7 +469,10 @@ class OpenDriveRoadNetwork(RoadMap):
 
     @staticmethod
     def _compute_lane_polygon(
-        lane, lane_elem: LaneElement, road_planview: PlanViewElement
+        lane,
+        lane_elem: LaneElement,
+        road_planview: PlanViewElement,
+        width_offset: float = 0.0,
     ):
         xs, ys = [], []
         section: LaneSectionElement = lane_elem.lane_section
@@ -495,10 +498,10 @@ class OpenDriveRoadNetwork(RoadMap):
                 t_outer = outer_boundary.calc_t(ds)
                 (x_ref, y_ref), heading = road_planview.calc(s)
                 angle = lane.t_angle(heading)
-                xs_inner.append(x_ref + t_inner * math.cos(angle))
-                ys_inner.append(y_ref + t_inner * math.sin(angle))
-                xs_outer.append(x_ref + t_outer * math.cos(angle))
-                ys_outer.append(y_ref + t_outer * math.sin(angle))
+                xs_inner.append(x_ref + (t_inner - width_offset) * math.cos(angle))
+                ys_inner.append(y_ref + (t_inner - width_offset) * math.sin(angle))
+                xs_outer.append(x_ref + (t_outer + width_offset) * math.cos(angle))
+                ys_outer.append(y_ref + (t_outer + width_offset) * math.sin(angle))
             xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
             ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
 
@@ -943,42 +946,6 @@ class OpenDriveRoadNetwork(RoadMap):
                 leftmost_edge_shape = leftmost_lane.lane_polygon[
                     leftmost_edge_vertices_len : len(leftmost_lane.lane_polygon) - 1
                 ]
-
-            # To add intermediate vertices for more accurate shape of the road polygon
-            # top_edge_vertices = []
-            # bottom_edge_vertices = []
-            # for i in range(max_index - 1, min_index - 1, -1):
-            #     if i == 0:
-            #         pass
-            #     lane = self.lane_at_index(i)
-            #     if lane:
-            #         # top_edge_point
-            #         top_edge_point = lane.lane_polygon[
-            #             int((len(lane.lane_polygon) - 1) / 2)
-            #         ]
-            #         if top_edge_point not in top_edge_vertices:
-            #             top_edge_vertices.append(top_edge_point)
-            #
-            #         # bottom_edge_point
-            #         bottom_edge_point = lane.lane_polygon[len(lane.lane_polygon) - 2]
-            #         if bottom_edge_point not in bottom_edge_vertices:
-            #             bottom_edge_vertices.append(bottom_edge_point)
-            # if np.sign(min_index) != np.sign(max_index):
-            #     road_polygon = (
-            #         leftmost_edge_shape[::-1]
-            #         + top_edge_vertices
-            #         + rightmost_edge_shape
-            #         + bottom_edge_vertices[::-1]
-            #         + [leftmost_edge_shape[-1]]
-            #     )
-            # else:
-            #     road_polygon = (
-            #         leftmost_edge_shape
-            #         + top_edge_vertices
-            #         + rightmost_edge_shape
-            #         + bottom_edge_vertices[::-1]
-            #         + [leftmost_edge_shape[0]]
-            #     )
 
             if np.sign(min_index) == np.sign(max_index):
                 road_polygon = (
