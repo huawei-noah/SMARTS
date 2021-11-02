@@ -261,15 +261,31 @@ class RoadMap:
         def width_at_offset(self, offset: float) -> float:
             raise NotImplementedError()
 
+        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
+            raise NotImplementedError()
+
         def project_along(
             self, start_offset: float, distance: float
         ) -> Set[Tuple[RoadMap.Lane, float]]:
             """Starting at start_offset along the lane, project locations (lane, offset tuples)
             reachable within distance, not including lane changes."""
-            raise NotImplementedError()
-
-        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            raise NotImplementedError()
+            result = set()
+            path_stack = {(self, self.length - start_offset)}
+            for lane in self.lanes_in_same_direction:
+                path_stack.add((lane, lane.length - start_offset))
+            while len(path_stack):
+                new_stack = set()
+                for lane, dist in path_stack:
+                    if dist > distance:
+                        offset = lane.length + (distance - dist)
+                        result.add((lane, offset))
+                        continue
+                    for out_lane in lane.outgoing_lanes:
+                        new_stack.add((out_lane, dist + out_lane.length))
+                        for adj_lane in out_lane.lanes_in_same_direction:
+                            new_stack.add((adj_lane, dist + adj_lane.length))
+                path_stack = new_stack
+            return result
 
         ## The next 6 methods are "reference" implementations for convenience.
         ## Derived classes may want to extend as well as add a cache.
