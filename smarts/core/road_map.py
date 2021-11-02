@@ -255,19 +255,6 @@ class RoadMap:
             Constrains paths to the supplied route if specified."""
             raise NotImplementedError()
 
-        @property
-        def features(self) -> List[RoadMap.Feature]:
-            raise NotImplementedError()
-
-        def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
-            raise NotImplementedError()
-
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
-            raise NotImplementedError()
-
-        def point_in_lane(self, point: Point) -> bool:
-            raise NotImplementedError()
-
         def offset_along_lane(self, world_point: Point) -> float:
             raise NotImplementedError()
 
@@ -306,7 +293,7 @@ class RoadMap:
             width = self.width_at_offset(offset)
             left_edge = RefLinePoint(s=offset, t=width / 2)
             right_edge = RefLinePoint(s=offset, t=-width / 2)
-            return (self.from_lane_coord(left_edge), self.from_lane_coord(right_edge))
+            return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
             add_offset = 1  # a little further down the lane
@@ -407,13 +394,7 @@ class RoadMap:
         def lane_at_index(self, index: int) -> RoadMap.Lane:
             raise NotImplementedError()
 
-        def point_on_road(self, point: Point) -> bool:
-            raise NotImplementedError()
-
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            raise NotImplementedError()
-
-        def buffered_shape(self, width: float = 1.0) -> Polygon:
             raise NotImplementedError()
 
     class Feature:
