@@ -344,20 +344,6 @@ def test_od_map_figure_eight():
     assert len(l1_in_lanes) == 1
     assert l1_in_lanes[0].lane_id == "516_0_-1"
 
-    l2 = road_map.lane_by_id("501_0_1")
-
-    l2_out_lanes = l2.outgoing_lanes
-    assert l2_out_lanes
-    assert len(l2_out_lanes) == 3
-    assert l2_out_lanes[0].lane_id == "503_0_-1"
-    assert l2_out_lanes[1].lane_id == "504_0_-1"
-    assert l2_out_lanes[2].lane_id == "513_0_-1"
-
-    l2_in_lanes = l2.incoming_lanes
-    assert l2_in_lanes
-    assert len(l2_in_lanes) == 1
-    assert l2_in_lanes[0].lane_id == "508_0_-1"
-
     # point on straight part of the lane
     point = (13.0, -17.0, 0)
     refline_pt = l1.to_lane_coord(point)
@@ -396,6 +382,20 @@ def test_od_map_figure_eight():
     assert not l1.contains_point(point)
     assert l1.road.contains_point(point)
 
+    l2 = road_map.lane_by_id("501_0_1")
+
+    l2_out_lanes = l2.outgoing_lanes
+    assert l2_out_lanes
+    assert len(l2_out_lanes) == 3
+    assert l2_out_lanes[0].lane_id == "503_0_-1"
+    assert l2_out_lanes[1].lane_id == "504_0_-1"
+    assert l2_out_lanes[2].lane_id == "513_0_-1"
+
+    l2_in_lanes = l2.incoming_lanes
+    assert l2_in_lanes
+    assert len(l2_in_lanes) == 1
+    assert l2_in_lanes[0].lane_id == "508_0_-1"
+
     # point not on lane, not on road
     l3 = road_map.lane_by_id("508_0_-4")
     assert not l3.is_drivable
@@ -408,6 +408,20 @@ def test_od_map_figure_eight():
 
     assert not l3.contains_point(point)
     assert not l3.road.contains_point(point)
+
+    l4 = road_map.lane_by_id("516_0_1")
+
+    l4_out_lanes = l4.outgoing_lanes
+    assert l4_out_lanes
+    assert len(l4_out_lanes) == 3
+    assert l4_out_lanes[0].lane_id == "505_0_-1"
+    assert l4_out_lanes[1].lane_id == "512_0_-1"
+    assert l4_out_lanes[2].lane_id == "517_0_-1"
+
+    l4_in_lanes = l4.incoming_lanes
+    assert l4_in_lanes
+    assert len(l4_in_lanes) == 1
+    assert l4_in_lanes[0].lane_id == "508_0_1"
 
 
 def test_od_map_lane_offset():
