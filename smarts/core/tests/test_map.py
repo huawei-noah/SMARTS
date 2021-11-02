@@ -414,9 +414,9 @@ def test_od_map_figure_eight():
     l4_out_lanes = l4.outgoing_lanes
     assert l4_out_lanes
     assert len(l4_out_lanes) == 3
-    assert l4_out_lanes[0].lane_id == "505_0_-1"
-    assert l4_out_lanes[1].lane_id == "512_0_-1"
-    assert l4_out_lanes[2].lane_id == "517_0_-1"
+    assert l4_out_lanes[0].lane_id == "517_0_-1"
+    assert l4_out_lanes[1].lane_id == "505_0_-1"
+    assert l4_out_lanes[2].lane_id == "512_0_-1"
 
     l4_in_lanes = l4.incoming_lanes
     assert l4_in_lanes
