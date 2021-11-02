@@ -468,8 +468,8 @@ def test_od_map_lane_offset():
     assert l0.index == 1
     assert l0.is_drivable
 
-    assert set([lane.lane_id for lane in l0.incoming_lanes]) == {"1_0_1"}
-    assert set([lane.lane_id for lane in l0.outgoing_lanes]) == set()
+    assert set([lane.lane_id for lane in l0.incoming_lanes]) == set()
+    assert set([lane.lane_id for lane in l0.outgoing_lanes]) == {"1_0_1"}
 
     right_lane, direction = l0.lane_to_right
     assert right_lane

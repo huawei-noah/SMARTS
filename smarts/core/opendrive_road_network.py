@@ -406,66 +406,74 @@ class OpenDriveRoadNetwork(RoadMap):
             out_road = self.road_by_id(succ_road_id)
             road.outgoing_roads.append(out_road)
 
-    def _compute_lane_connections(self, od, lane, lane_elem, road_elem):
+    def _compute_lane_connections(
+        self,
+        od: OpenDriveElement,
+        lane: RoadMap.Lane,
+        lane_elem: LaneElement,
+        road_elem: RoadElement,
+    ):
         if lane.in_junction:
             return
 
         lane_link = lane_elem.link
+        ls_index = lane_elem.lane_section.idx
+
         if lane_link.predecessorId:
-            ls_index = lane_elem.lane_section.idx
-            if ls_index == 0:
-                # This is the first lane section, so get the last lane section of the incoming road
+            if lane_elem.lane_section.idx == 0:
+                # This is the first lane section, so get the first/last lane section of the predecssor road
                 road_predecessor = road_elem.link.predecessor
                 if road_predecessor and road_predecessor.elementType == "road":
-                    pred_road_elem = od.getRoad(road_predecessor.element_id)
-                    section_index = (
+                    road_id = road_predecessor.element_id
+                    pred_road_elem = od.getRoad(road_id)
+                    section_id = (
                         pred_road_elem.lanes.getLastLaneSectionIdx()
                         if road_predecessor.contactPoint == "end"
                         else 0
                     )
-                    pred_lane_id = f"{road_predecessor.element_id}_{section_index}_{lane_link.predecessorId}"
-                    pred_lane = self.lane_by_id(pred_lane_id)
-                    if pred_lane not in lane.incoming_lanes:
-                        lane.incoming_lanes.append(pred_lane)
-                    if lane not in pred_lane.outgoing_lanes:
-                        pred_lane.outgoing_lanes.append(lane)
             else:
                 # Otherwise, get the previous lane section of the current road
-                pred_lane_id = (
-                    f"{road_elem.id}_{ls_index - 1}_{lane_link.predecessorId}"
-                )
-                pred_lane = self.lane_by_id(pred_lane_id)
+                road_id = road_elem.id
+                section_id = lane_elem.lane_section.idx - 1
+
+            pred_lane_id = f"{road_id}_{section_id}_{lane_link.predecessorId}"
+            pred_lane = self.lane_by_id(pred_lane_id)
+            if lane.index < 0:
+                # Direction of lane is the same as the reference line
                 if pred_lane not in lane.incoming_lanes:
                     lane.incoming_lanes.append(pred_lane)
-                if lane not in pred_lane.outgoing_lanes:
-                    pred_lane.outgoing_lanes.append(lane)
+            else:
+                # Direction of lane is opposite the refline, so this is actually an outgoing lane
+                if pred_lane not in lane.outgoing_lanes:
+                    lane.outgoing_lanes.append(pred_lane)
 
         if lane_link.successorId:
-            ls_index = lane_elem.lane_section.idx
             if ls_index == len(road_elem.lanes.lane_sections) - 1:
-                # This is the last lane section, so get the first lane section of the outgoing road
+                # This is the last lane section, so get the first/last lane section of the successor road
                 road_successor = road_elem.link.successor
                 if road_successor and road_successor.elementType == "road":
-                    succ_road_elem = od.getRoad(road_successor.element_id)
-                    section_index = (
+                    road_id = road_successor.element_id
+                    succ_road_elem = od.getRoad(road_id)
+                    section_id = (
                         succ_road_elem.lanes.getLastLaneSectionIdx()
                         if road_successor.contactPoint == "end"
                         else 0
                     )
-                    succ_lane_id = f"{road_successor.element_id}_{section_index}_{lane_link.successorId}"
-                    succ_lane = self.lane_by_id(succ_lane_id)
-                    if succ_lane not in lane.outgoing_lanes:
-                        lane.outgoing_lanes.append(succ_lane)
-                    if lane not in succ_lane.incoming_lanes:
-                        succ_lane.incoming_lanes.append(lane)
             else:
                 # Otherwise, get the next lane section in the current road
-                succ_lane_id = f"{road_elem.id}_{ls_index + 1}_{lane_link.successorId}"
-                succ_lane = self.lane_by_id(succ_lane_id)
+                road_id = road_elem.id
+                section_id = ls_index + 1
+
+            succ_lane_id = f"{road_id}_{section_id}_{lane_link.successorId}"
+            succ_lane = self.lane_by_id(succ_lane_id)
+            if lane.index < 0:
+                # Direction of lane is the same as the reference line
                 if succ_lane not in lane.outgoing_lanes:
                     lane.outgoing_lanes.append(succ_lane)
-                if lane not in succ_lane.incoming_lanes:
-                    succ_lane.incoming_lanes.append(lane)
+            else:
+                # Direction of lane is opposite the refline, so this is actually an incoming lane
+                if succ_lane not in lane.incoming_lanes:
+                    lane.incoming_lanes.append(succ_lane)
 
     @staticmethod
     def _compute_lane_polygon(
