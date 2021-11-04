@@ -223,7 +223,7 @@ def test_od_map_junction():
 
     offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.75
-    assert l1.curvature_radius_at_offset(offset) == 93824992368853.4
+    assert l1.curvature_radius_at_offset(offset) == math.inf
     assert l1.contains_point(point)
     assert l1.road.contains_point(point)
 
@@ -352,7 +352,7 @@ def test_od_map_figure_eight():
 
     offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.75
-    assert l1.curvature_radius_at_offset(offset) == math.inf
+    assert l1.curvature_radius_at_offset(offset) == 93824992368853.4
     assert l1.contains_point(point)
     assert l1.road.contains_point(point)
 
