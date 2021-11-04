@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 import logging
 import time
-from typing import Dict, List, Tuple, Set, Optional
+from typing import Dict, List, Tuple, Set
 from dataclasses import dataclass
 import math
 import numpy as np
@@ -45,7 +45,7 @@ from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
     PlanView as PlanViewElement,
 )
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import Polygon
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
@@ -409,6 +409,9 @@ class OpenDriveRoadNetwork(RoadMap):
                     road_elem.lanes.lane_sections[0].leftLanes
                     + road_elem.lanes.lane_sections[0].rightLanes
                 ):
+                    # Assume lanes in junction will always have negative id (or all lanes for a road in
+                    # junction are in same direction)
+                    assert lane_elem.id < 0
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                     lane = self.lane_by_id(lane_id)
 
@@ -488,6 +491,7 @@ class OpenDriveRoadNetwork(RoadMap):
         ls_index = lane_elem.lane_section.idx
 
         if lane_link.predecessorId:
+            road_id, section_id = None, None
             if lane_elem.lane_section.idx == 0:
                 # This is the first lane section, so get the first/last lane section of the predecessor road
                 road_predecessor = road_elem.link.predecessor
@@ -503,19 +507,20 @@ class OpenDriveRoadNetwork(RoadMap):
                 # Otherwise, get the previous lane section of the current road
                 road_id = road_elem.id
                 section_id = lane_elem.lane_section.idx - 1
-
-            pred_lane_id = f"{road_id}_{section_id}_{lane_link.predecessorId}"
-            pred_lane = self.lane_by_id(pred_lane_id)
-            if lane.index < 0:
-                # Direction of lane is the same as the reference line
-                if pred_lane not in lane.incoming_lanes:
-                    lane.incoming_lanes.append(pred_lane)
-            else:
-                # Direction of lane is opposite the refline, so this is actually an outgoing lane
-                if pred_lane not in lane.outgoing_lanes:
-                    lane.outgoing_lanes.append(pred_lane)
+            if road_id and section_id:
+                pred_lane_id = f"{road_id}_{section_id}_{lane_link.predecessorId}"
+                pred_lane = self.lane_by_id(pred_lane_id)
+                if lane.index < 0:
+                    # Direction of lane is the same as the reference line
+                    if pred_lane not in lane.incoming_lanes:
+                        lane.incoming_lanes.append(pred_lane)
+                else:
+                    # Direction of lane is opposite the refline, so this is actually an outgoing lane
+                    if pred_lane not in lane.outgoing_lanes:
+                        lane.outgoing_lanes.append(pred_lane)
 
         if lane_link.successorId:
+            road_id, section_id = None, None
             if ls_index == len(road_elem.lanes.lane_sections) - 1:
                 # This is the last lane section, so get the first/last lane section of the successor road
                 road_successor = road_elem.link.successor
@@ -532,16 +537,17 @@ class OpenDriveRoadNetwork(RoadMap):
                 road_id = road_elem.id
                 section_id = ls_index + 1
 
-            succ_lane_id = f"{road_id}_{section_id}_{lane_link.successorId}"
-            succ_lane = self.lane_by_id(succ_lane_id)
-            if lane.index < 0:
-                # Direction of lane is the same as the reference line
-                if succ_lane not in lane.outgoing_lanes:
-                    lane.outgoing_lanes.append(succ_lane)
-            else:
-                # Direction of lane is opposite the refline, so this is actually an incoming lane
-                if succ_lane not in lane.incoming_lanes:
-                    lane.incoming_lanes.append(succ_lane)
+            if road_id and section_id:
+                succ_lane_id = f"{road_id}_{section_id}_{lane_link.successorId}"
+                succ_lane = self.lane_by_id(succ_lane_id)
+                if lane.index < 0:
+                    # Direction of lane is the same as the reference line
+                    if succ_lane not in lane.outgoing_lanes:
+                        lane.outgoing_lanes.append(succ_lane)
+                else:
+                    # Direction of lane is opposite the refline, so this is actually an incoming lane
+                    if succ_lane not in lane.incoming_lanes:
+                        lane.incoming_lanes.append(succ_lane)
 
     @property
     def source(self) -> str:

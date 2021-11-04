@@ -323,7 +323,7 @@ def line_offset_with_minimum_distance_to_point(point, line_start, line_end):
 
 
 def polygon_offset_with_minimum_distance_to_point(point, polygon):
-    """ "Return the offset and the distance from the polygon start where the distance to the point is minimal"""
+    """Return the offset and the distance from the polygon start where the distance to the point is minimal"""
     p = point
     s = polygon
     seen = 0
