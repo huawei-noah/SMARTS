@@ -336,10 +336,10 @@ class RoadMap:
                 return math.inf
             prev_heading_rad = None
             heading_deltas = 0.0
-            for i in range(lookahead):
+            for i in range(lookahead + 1):
                 vec = self.vector_at_offset(offset + i)[:2]
                 heading_rad = vec_to_radians(vec[:2])
-                if prev_heading_rad:
+                if prev_heading_rad is not None:
                     heading_deltas += min_angles_difference_signed(
                         heading_rad, prev_heading_rad
                     )

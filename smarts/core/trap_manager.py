@@ -275,7 +275,6 @@ class TrapManager:
             sim.scenario.tire_parameters_filepath,
             True,
             sim.scenario.surface_patches,
-            sim.scenario.controller_parameters_filepath,
             initial_speed=initial_speed,
             boid=False,
         )

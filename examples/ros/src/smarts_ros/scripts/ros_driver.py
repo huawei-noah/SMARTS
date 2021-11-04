@@ -3,6 +3,7 @@
 from collections import deque
 import os
 import json
+import logging
 import math
 import rospy
 import sys
@@ -41,6 +42,7 @@ from smarts.core.utils.math import (
     vec_to_radians,
     yaw_from_quaternion,
 )
+from smarts.core.utils.ros import log_everything_to_ROS
 from smarts.core.vehicle import VehicleState
 from smarts.zoo import registry
 
@@ -65,6 +67,7 @@ class ROSDriver:
         self._state_publisher = None
         self._agents_publisher = None
         self._most_recent_state_sent = None
+        self._warned_about_freq = False
         with self._state_lock:
             self._recent_state = deque(maxlen=3)
         with self._reset_lock:
@@ -120,6 +123,8 @@ class ROSDriver:
         if target_freq:
             assert target_freq > 0.0
             self._target_freq = target_freq
+
+        log_everything_to_ROS(level=logging.WARNING)
 
     def setup_smarts(
         self, headless: bool = True, seed: int = 42, time_ratio: float = 1.0
@@ -583,6 +588,7 @@ class ROSDriver:
                 self._last_step_time = None
                 self._recent_state = deque(maxlen=3)
                 self._most_recent_state_sent = None
+                self._warned_about_freq = False
                 return self._smarts.reset(Scenario(self._scenario_path))
         return None
 
@@ -640,9 +646,13 @@ class ROSDriver:
 
                 if self._target_freq:
                     if rate.remaining().to_sec() <= 0.0:
-                        rospy.logwarn(
-                            f"SMARTS unable to maintain requested target_freq of {self._target_freq} Hz."
-                        )
+                        msg = f"SMARTS unable to maintain requested target_freq of {self._target_freq} Hz."
+                        if self._warned_about_freq:
+                            rospy.loginfo(msg)
+                        else:
+                            rospy.logwarn(msg)
+                            self._warned_about_freq = True
+
                     rate.sleep()
 
         except rospy.ROSInterruptException:
