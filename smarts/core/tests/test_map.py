@@ -288,10 +288,10 @@ def test_od_map_junction():
     point = (115.55, 120.63)
     r5 = road_map.road_by_id("5_0")
     road_left_edge, road_right_edge = r5.edges_at_point(point)
-    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (115.23, 121.22)
+    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (115.24, 121.23)
     assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (
-        117.02,
-        117.92,
+        116.99,
+        117.91,
     )
 
 
@@ -321,7 +321,7 @@ def test_od_map_figure_eight():
     r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
     assert r0_in_road_ids == {"516_0"}
     assert r0_out_road_ids == {"501_0"}
-    assert len(r0.shape().exterior.coords) == 10831
+    assert len(r0.shape().exterior.coords) == 1603
 
     # Lane tests
     l1 = road_map.lane_by_id("508_0_-1")
@@ -329,7 +329,7 @@ def test_od_map_figure_eight():
     assert l1.road.road_id == "508_0"
     assert l1.index == -1
     assert l1.is_drivable
-    assert len(l1.shape().exterior.coords) == 10831
+    assert len(l1.shape().exterior.coords) == 1603
 
     assert len(l1.lanes_in_same_direction) == 3
     assert round(l1.length, 2) == 541.50
@@ -371,7 +371,7 @@ def test_od_map_figure_eight():
     # edges on curved part
     left_edge, right_edge = l1.edges_at_point(point)
     assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (162.63, 74.36)
-    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (164.63, 77.53)
+    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (164.62, 77.53)
 
     # point not on lane but on road
     point = (163.48, 71.80, 0)

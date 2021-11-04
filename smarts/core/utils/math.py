@@ -131,6 +131,15 @@ def clip(val, min_val, max_val):
     return min_val if val < min_val else max_val if val > max_val else val
 
 
+def get_linear_segments_for_range(s_start: float, s_end: float, segment_size: float):
+    """Given a range from s_start to s_end, give a linear segment of size segment_size"""
+    s_vals = []
+    num_segments = int((s_end - s_start) / segment_size)
+    for seg in range(num_segments):
+        s_vals.append(s_start + seg * segment_size)
+    return s_vals
+
+
 def squared_dist(a, b) -> float:
     """Computes the squared distance between a and b.
     Args:

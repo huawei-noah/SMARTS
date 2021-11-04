@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 import logging
 import time
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple, Set, Optional
 from dataclasses import dataclass
 import math
 import numpy as np
@@ -35,6 +35,12 @@ from opendrive2lanelet.opendriveparser.elements.roadLanes import Lane as LaneEle
 from opendrive2lanelet.opendriveparser.elements.roadLanes import (
     LaneSection as LaneSectionElement,
 )
+from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+    LaneOffset as LaneOffsetElement,
+)
+from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+    LaneWidth as LaneWidthElement,
+)
 from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
     PlanView as PlanViewElement,
 )
@@ -47,6 +53,7 @@ from smarts.core.utils.math import (
     constrain_angle,
     position_at_shape_offset,
     offset_along_shape,
+    get_linear_segments_for_range,
 )
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 
@@ -55,37 +62,91 @@ from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 class LaneBoundary:
     refline: PlanViewElement
     inner: "LaneBoundary"
-    poly: CubicPolynomial
+    lane_widths: List[LaneWidthElement]
+    lane_offsets: List[LaneOffsetElement]
 
-    def refline_to_linear_segments(self, s_start: float, s_end: float) -> List[float]:
+    def refline_to_linear_segments(self, s_start: float) -> List[float]:
         s_vals = []
+        geom_start = s_start
         for geom in self.refline._geometries:
+            geom_end = geom_start + geom.length
             if type(geom) == LineGeometry:
-                s_vals.extend([s_start, s_end])
+                s_vals.extend([geom_start, geom_end])
             else:
-                num_segments = int((s_end - s_start) / 0.1)
-                for seg in range(num_segments):
-                    s_vals.append(seg * 0.1)
-        return sorted(s_vals)
+                s_vals.extend(get_linear_segments_for_range(geom_start, geom_end, 0.5))
+            geom_start = geom_start + geom.length
+        return s_vals
 
-    def calc_t(self, ds: float) -> float:
-        if not self.inner:
+    def get_lane_offset(self, s: float) -> float:
+        if len(self.lane_offsets) == 0:
             return 0
-        return self.poly.eval(ds) + self.inner.calc_t(ds)
+        i = 0
+        if s < self.lane_offsets[0].start_pos:
+            return 0
+        while i < len(self.lane_offsets) - 1:
+            if (
+                self.lane_offsets[i].start_pos
+                <= s
+                <= self.lane_offsets[i + 1].start_pos
+            ):
+                break
+            i += 1
+
+        poly = CubicPolynomial.from_list(self.lane_offsets[i].polynomial_coefficients)
+        ds = s - self.lane_offsets[i].start_pos
+        offset = poly.eval(ds)
+        return offset
+
+    def lane_width_at_offset(self, offset: float) -> LaneWidthElement:
+        i = 0
+        while i < len(self.lane_widths) - 1:
+            if (
+                self.lane_widths[i].start_offset
+                <= offset
+                <= self.lane_widths[i + 1].start_offset
+            ):
+                break
+            i += 1
+
+        return self.lane_widths[i]
+
+    def calc_t(self, s: float, section_s_start, lane_id) -> float:
+        # Find the lateral shift of lane reference line with road reference line (known as laneOffset in OpenDRIVE)
+        lane_offset = self.get_lane_offset(s)
+
+        if not self.inner:
+            return np.sign(lane_id) * lane_offset
+
+        width = self.lane_width_at_offset(s - section_s_start)
+        poly = CubicPolynomial.from_list(width.polynomial_coefficients)
+
+        return poly.eval(s - section_s_start - width.start_offset) + self.inner.calc_t(
+            s, section_s_start, lane_id
+        )
 
     def to_linear_segments(self, s_start: float, s_end: float):
         if self.inner:
             inner_s_vals = self.inner.to_linear_segments(s_start, s_end)
         else:
-            return self.refline_to_linear_segments(s_start, s_end)
+            if self.lane_offsets:
+                return get_linear_segments_for_range(s_start, s_end, 0.5)
+            return self.refline_to_linear_segments(s_start)
 
-        if self.poly.c == 0 and self.poly.d == 0:
-            outer_s_vals = [s_start, s_end]
-        else:
-            num_segments = int((s_end - s_start) / 0.1)
-            outer_s_vals = []
-            for seg in range(num_segments):
-                outer_s_vals.append(seg * 0.1)
+        outer_s_vals = []
+        curr_s_start = s_start
+        for width in self.lane_widths:
+            poly = CubicPolynomial.from_list(width.polynomial_coefficients)
+            if poly.c == 0 and poly.d == 0:
+                # Special case - only 2 vertices required
+                outer_s_vals.extend([curr_s_start, curr_s_start + width.length])
+            else:
+                outer_s_vals.extend(
+                    get_linear_segments_for_range(
+                        curr_s_start, curr_s_start + width.length, 0.5
+                    )
+                )
+            curr_s_start += width.length
+
         return sorted(set(inner_s_vals + outer_s_vals))
 
 
@@ -131,6 +192,7 @@ class OpenDriveRoadNetwork(RoadMap):
         start = time.time()
         for road_elem in od.roads:
             road_elem: RoadElement = road_elem
+
             for section_elem in road_elem.lanes.lane_sections:
                 section_elem: LaneSectionElement = section_elem
                 road_id = OpenDriveRoadNetwork._elem_id(section_elem)
@@ -183,24 +245,30 @@ class OpenDriveRoadNetwork(RoadMap):
 
                 # Lanes - incoming/outgoing lanes, geometry, bounding box
                 for lane_list in [section_elem.leftLanes, section_elem.rightLanes]:
-                    inner_boundary = LaneBoundary(road_elem.planView, None, None)
+                    inner_boundary = LaneBoundary(
+                        road_elem.planView, None, [], road_elem.lanes.laneOffsets
+                    )
                     for lane_elem in lane_list:
                         lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                         lane = self._lanes[lane_id]
 
+                        # Compute Lane connections
                         self._compute_lane_connections(od, lane, lane_elem, road_elem)
 
+                        # Set lane's widths
                         lane.lane_widths = lane_elem.widths
-                        for width in lane.lane_widths:
-                            poly = CubicPolynomial.from_list(
-                                width.polynomial_coefficients
-                            )
-                            outer_boundary = LaneBoundary(None, inner_boundary, poly)
-                            lane.lane_boundaries.append(
-                                (inner_boundary, outer_boundary)
-                            )
-                            inner_boundary = outer_boundary
 
+                        # Set lane's outer and inner boundary
+                        outer_boundary = LaneBoundary(
+                            None,
+                            inner_boundary,
+                            lane_elem.widths,
+                            road_elem.lanes.laneOffsets,
+                        )
+                        lane.lane_boundaries = (inner_boundary, outer_boundary)
+                        inner_boundary = outer_boundary
+
+                        # Compute lane's polygon
                         lane.lane_polygon = lane.compute_lane_polygon()
 
                         x_coordinates, y_coordinates = zip(*lane.lane_polygon)
@@ -421,7 +489,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         if lane_link.predecessorId:
             if lane_elem.lane_section.idx == 0:
-                # This is the first lane section, so get the first/last lane section of the predecssor road
+                # This is the first lane section, so get the first/last lane section of the predecessor road
                 road_predecessor = road_elem.link.predecessor
                 if road_predecessor and road_predecessor.elementType == "road":
                     road_id = road_predecessor.element_id
@@ -533,7 +601,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._outgoing_lanes = []
             self._lanes_in_same_dir = []
             self._foes = []
-            self._lane_boundaries = []
+            self._lane_boundaries = tuple()
             self._lane_polygon = []
             self._bounding_box = []
             self._lane_to_left = None, True
@@ -623,7 +691,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._foes = value
 
         @property
-        def lane_boundaries(self) -> List[Tuple[LaneBoundary, LaneBoundary]]:
+        def lane_boundaries(self) -> Tuple[LaneBoundary, LaneBoundary]:
             return self._lane_boundaries
 
         @lane_boundaries.setter
@@ -672,30 +740,28 @@ class OpenDriveRoadNetwork(RoadMap):
             section_s_start = self.road.s_pos
             section_s_end = section_s_start + section_len
 
-            for i in range(len(self.lane_widths)):
-                (inner_boundary, outer_boundary) = self.lane_boundaries[i]
-                inner_s_vals = inner_boundary.to_linear_segments(
-                    section_s_start, section_s_end
-                )
-                outer_s_vals = outer_boundary.to_linear_segments(
-                    section_s_start, section_s_end
-                )
-                s_vals = sorted(set(inner_s_vals + outer_s_vals))
+            inner_boundary, outer_boundary = self._lane_boundaries
+            inner_s_vals = inner_boundary.to_linear_segments(
+                section_s_start, section_s_end
+            )
+            outer_s_vals = outer_boundary.to_linear_segments(
+                section_s_start, section_s_end
+            )
+            s_vals = sorted(set(inner_s_vals + outer_s_vals))
 
-                xs_inner, ys_inner = [], []
-                xs_outer, ys_outer = [], []
-                for s in s_vals:
-                    ds = s - self.lane_widths[i].start_offset
-                    t_inner = inner_boundary.calc_t(ds)
-                    t_outer = outer_boundary.calc_t(ds)
-                    (x_ref, y_ref), heading = self._plan_view.calc(s)
-                    angle = self.t_angle(heading)
-                    xs_inner.append(x_ref + (t_inner - width_offset) * math.cos(angle))
-                    ys_inner.append(y_ref + (t_inner - width_offset) * math.sin(angle))
-                    xs_outer.append(x_ref + (t_outer + width_offset) * math.cos(angle))
-                    ys_outer.append(y_ref + (t_outer + width_offset) * math.sin(angle))
-                xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
-                ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
+            xs_inner, ys_inner = [], []
+            xs_outer, ys_outer = [], []
+            for s in s_vals:
+                t_inner = inner_boundary.calc_t(s, section_s_start, self.index)
+                t_outer = outer_boundary.calc_t(s, section_s_start, self.index)
+                (x_ref, y_ref), heading = self._plan_view.calc(s)
+                angle = self.t_angle(heading)
+                xs_inner.append(x_ref + (t_inner - width_offset) * math.cos(angle))
+                ys_inner.append(y_ref + (t_inner - width_offset) * math.sin(angle))
+                xs_outer.append(x_ref + (t_outer + width_offset) * math.cos(angle))
+                ys_outer.append(y_ref + (t_outer + width_offset) * math.sin(angle))
+            xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
+            ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
 
             assert len(xs) == len(ys)
             return list(zip(xs, ys))
@@ -777,21 +843,10 @@ class OpenDriveRoadNetwork(RoadMap):
         ) -> float:
             return super().curvature_radius_at_offset(offset, lookahead)
 
-        def width_at_offset(self, offset: float) -> float:
-            i = 0
-            while i < len(self._lane_widths) - 1:
-                if (
-                    self._lane_widths[i].start_offset
-                    <= offset
-                    <= self._lane_widths[i + 1].start_offset
-                ):
-                    break
-                i += 1
-
-            inner_boundary, outer_boundary = self._lane_boundaries[i]
-            ds = offset - self._lane_widths[i].start_offset
-            t_outer = outer_boundary.calc_t(ds)
-            t_inner = inner_boundary.calc_t(ds)
+        def width_at_offset(self, lane_point_s: float) -> float:
+            inner_boundary, outer_boundary = self._lane_boundaries
+            t_outer = outer_boundary.calc_t(lane_point_s, self.road.s_pos, self.index)
+            t_inner = inner_boundary.calc_t(lane_point_s, self.road.s_pos, self.index)
             return abs(t_outer - t_inner)
 
         @lru_cache(maxsize=4)
@@ -811,7 +866,11 @@ class OpenDriveRoadNetwork(RoadMap):
 
     class Road(RoadMap.Road, Surface):
         def __init__(
-            self, road_id: str, is_junction: bool, length: float, s_pos: float
+            self,
+            road_id: str,
+            is_junction: bool,
+            length: float,
+            s_pos: float,
         ):
             super().__init__(road_id)
             self._log = logging.getLogger(self.__class__.__name__)
