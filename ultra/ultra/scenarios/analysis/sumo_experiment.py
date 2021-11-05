@@ -33,8 +33,8 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import traci #isort:skip
-import traci.constants as tc #isort:skip
+import traci  # isort:skip
+import traci.constants as tc  # isort:skip
 
 from ultra.scenarios.generate_scenarios import build_scenarios
 
