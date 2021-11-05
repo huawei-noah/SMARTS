@@ -255,9 +255,6 @@ class OpenDriveRoadNetwork(RoadMap):
                         # Compute Lane connections
                         self._compute_lane_connections(od, lane, lane_elem, road_elem)
 
-                        # Set lane's widths
-                        lane.add_lane_widths(lane_elem.widths)
-
                         # Set lane's outer and inner boundary
                         outer_boundary = LaneBoundary(
                             None,
@@ -613,7 +610,6 @@ class OpenDriveRoadNetwork(RoadMap):
             self._lane_to_left = None, True
             self._lane_to_right = None, True
             self._in_junction = None
-            self._lane_widths = []
 
         @property
         def is_drivable(self) -> bool:
@@ -690,9 +686,6 @@ class OpenDriveRoadNetwork(RoadMap):
 
         def add_lane_boundaries(self, inner: LaneBoundary, outer: LaneBoundary):
             self._lane_boundaries = (inner, outer)
-
-        def add_lane_widths(self, lane_widths):
-            self._lane_widths = lane_widths
 
         @property
         def lane_polygon(self) -> List[Tuple[float, float]]:
