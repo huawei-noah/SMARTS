@@ -6424,7 +6424,7 @@ subject to the following restrictions:
 */
 
 License: zlib                                                        
-The files in this repository are licensed under the zlib license, except for the files under 'Extras' and examples/ThirdPartyLibs.
+The files in this repository are licensed under the zlib license, except for the files under 'Extras' and smarts/examples/ThirdPartyLibs.
 
 Bullet Continuous Collision Detection and Physics Library
 http://bulletphysics.org

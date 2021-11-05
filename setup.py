@@ -13,7 +13,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.4.18",
-    packages=find_packages(exclude=("tests", "examples")),
+    packages=find_packages(exclude=("tests", "smarts.examples")),
     include_package_data=True,
     zip_safe=True,
     python_requires=">=3.7",

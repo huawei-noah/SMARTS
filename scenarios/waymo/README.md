@@ -62,7 +62,7 @@ This example will create `.pkl` files storing the observations of each vehicle i
 Run with:
 
 ```bash
-python examples/observation_collection_for_imitation_learning.py scenarios/waymo
+python smarts/examples/observation_collection_for_imitation_learning.py scenarios/waymo
 ```
 
 ### Example: history vehicle replacement
@@ -72,6 +72,6 @@ This example queries the SQLite database for trajectory data to control the soci
 Run with:
 
 ```bash
-python examples/history_vehicles_replacement_for_imitation_learning.py --episodes=1 scenarios/waymo
+python smarts/examples/history_vehicles_replacement_for_imitation_learning.py --episodes=1 scenarios/waymo
 ```
 

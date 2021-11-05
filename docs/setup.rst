@@ -54,7 +54,7 @@ We use the `scl` command line to run SMARTS together with it's supporting proces
     scl scenario build --clean scenarios/loop
 
     # run an experiment
-    scl run --envision examples/single_agent.py scenarios/loop
+    scl run --envision smarts/examples/single_agent.py scenarios/loop
 
 
 You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment. See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
@@ -62,10 +62,10 @@ You need to add the `--envision` flag to run the Envision server where you can s
 After executing the above command, visit http://localhost:8081/ in your browser to view your experiment.
 
 
-Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
+Several example scripts are provided under [`SMARTS/examples`](./smarts/examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
 .. code-block:: bash
-    scl run --envision <examples/script_path> <scenarios/path>
+    scl run --envision <smarts/examples/script_path> <scenarios/path>
 
 
 Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.

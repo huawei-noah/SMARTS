@@ -30,9 +30,9 @@ from pathlib import Path
 from ray import tune
 from ray.rllib.models import ModelCatalog
 
-from examples.rllib_agent import TrainingModel, rllib_agent
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+from smarts.examples.rllib_agent import TrainingModel, rllib_agent
 
 HORIZON = 5000
 

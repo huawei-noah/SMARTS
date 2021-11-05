@@ -2,8 +2,6 @@ import argparse
 import logging
 import multiprocessing
 import random
-from datetime import timedelta
-from os import stat
 from pathlib import Path
 from typing import Dict
 
@@ -22,14 +20,14 @@ try:
     from ray.rllib.utils.typing import PolicyID
     from ray.tune.schedulers import PopulationBasedTraining
 except Exception as e:
-    from examples import RayException
+    from smarts.examples import RayException
 
     raise RayException.required_to("rllib.py")
 
 import smarts
-from examples.rllib_agent import TrainingModel, rllib_agent
 from smarts.core.utils.file import copy_tree
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+from smarts.examples.rllib_agent import TrainingModel, rllib_agent
 
 logging.basicConfig(level=logging.INFO)
 
