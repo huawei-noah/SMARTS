@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 from os import path
+
 from setuptools import find_packages, setup
 
 this_dir = path.abspath(path.dirname(__file__))

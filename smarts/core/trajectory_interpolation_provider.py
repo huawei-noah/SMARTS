@@ -17,14 +17,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Sequence, Set, Dict
 import math
+from typing import Dict, Sequence, Set
+
 import numpy as np
 
 from smarts.core.controllers import ActionSpaceType
+from smarts.core.coordinates import Heading, Pose
 from smarts.core.provider import ProviderState
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
-from smarts.core.coordinates import Heading, Pose
 
 
 class TrajectoryWithTime:

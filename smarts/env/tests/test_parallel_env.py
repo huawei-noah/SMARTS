@@ -25,11 +25,11 @@ import gym
 gym.logger.set_level(40)
 import pytest
 
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import RGB, AgentInterface
+from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.parallel_env import ParallelEnv
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, RGB
-from smarts.core.controllers import ActionSpaceType
 
 
 @pytest.fixture(scope="module")

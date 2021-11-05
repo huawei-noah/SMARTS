@@ -18,9 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import gym
 import logging
 import warnings
+from typing import Dict, Sequence
+
+import gym
 
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
@@ -28,9 +30,8 @@ from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.visdom_client import VisdomClient
 from smarts.core.utils.logging import timeit
-from typing import Dict, Sequence
+from smarts.core.utils.visdom_client import VisdomClient
 
 
 class HiWayEnv(gym.Env):

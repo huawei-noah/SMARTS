@@ -18,8 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import cloudpickle
 import logging
+from typing import Dict, Set, Tuple
+
+import cloudpickle
+
 from envision.types import format_actor_id
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
@@ -29,7 +32,6 @@ from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
 from smarts.zoo.registry import make as make_social_agent
-from typing import Dict, Set, Tuple
 
 
 class AgentManager:
