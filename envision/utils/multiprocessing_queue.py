@@ -25,6 +25,7 @@
 # Please refer to https://eli.thegreenplace.net/pages/about for more info about the author
 
 import multiprocessing
+from multiprocessing.queues import Queue as MultiprocessingQueue
 
 
 class SharedCounter(object):
@@ -53,7 +54,7 @@ class SharedCounter(object):
         return self.count.value
 
 
-class Queue(multiprocessing.queues.Queue):
+class Queue(MultiprocessingQueue):
     """A portable implementation of multiprocessing.Queue.
     Because of multithreading / multiprocessing semantics, Queue.qsize() may
     raise the NotImplementedError exception on Unix platforms like Mac OS X
