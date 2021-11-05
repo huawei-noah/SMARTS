@@ -64,6 +64,7 @@ class LaneBoundary:
     inner: "LaneBoundary"
     lane_widths: List[LaneWidthElement]
     lane_offsets: List[LaneOffsetElement]
+    segment_size: float = 0.5
 
     def refline_to_linear_segments(self, s_start: float) -> List[float]:
         s_vals = []
@@ -73,7 +74,7 @@ class LaneBoundary:
             if type(geom) == LineGeometry:
                 s_vals.extend([geom_start, geom_end])
             else:
-                s_vals.extend(get_linear_segments_for_range(geom_start, geom_end, 0.5))
+                s_vals.extend(get_linear_segments_for_range(geom_start, geom_end, self.segment_size))
             geom_start = geom_start + geom.length
         return s_vals
 
@@ -129,7 +130,7 @@ class LaneBoundary:
             inner_s_vals = self.inner.to_linear_segments(s_start, s_end)
         else:
             if self.lane_offsets:
-                return get_linear_segments_for_range(s_start, s_end, 0.5)
+                return get_linear_segments_for_range(s_start, s_end, self.segment_size)
             return self.refline_to_linear_segments(s_start)
 
         outer_s_vals = []
@@ -142,7 +143,7 @@ class LaneBoundary:
             else:
                 outer_s_vals.extend(
                     get_linear_segments_for_range(
-                        curr_s_start, curr_s_start + width.length, 0.5
+                        curr_s_start, curr_s_start + width.length, self.segment_size
                     )
                 )
             curr_s_start += width.length
@@ -173,10 +174,9 @@ class OpenDriveRoadNetwork(RoadMap):
     def _elem_id(elem):
         if type(elem) == LaneSectionElement:
             return f"{elem.parentRoad.id}_{elem.idx}"
-        elif type(elem) == LaneElement:
-            return f"{elem.parentRoad.id}_{elem.lane_section.idx}_{elem.id}"
         else:
-            return None
+            assert type(elem) == LaneElement
+            return f"{elem.parentRoad.id}_{elem.lane_section.idx}_{elem.id}"
 
     def load(self):
         # Parse the xml definition into an initial representation
@@ -256,7 +256,7 @@ class OpenDriveRoadNetwork(RoadMap):
                         self._compute_lane_connections(od, lane, lane_elem, road_elem)
 
                         # Set lane's widths
-                        lane.lane_widths = lane_elem.widths
+                        lane.add_lane_widths(lane_elem.widths)
 
                         # Set lane's outer and inner boundary
                         outer_boundary = LaneBoundary(
@@ -265,7 +265,7 @@ class OpenDriveRoadNetwork(RoadMap):
                             lane_elem.widths,
                             road_elem.lanes.laneOffsets,
                         )
-                        lane.lane_boundaries = (inner_boundary, outer_boundary)
+                        lane.add_lane_boundaries(inner_boundary, outer_boundary)
                         inner_boundary = outer_boundary
 
                         # Compute lane's polygon
@@ -644,17 +644,9 @@ class OpenDriveRoadNetwork(RoadMap):
         def incoming_lanes(self) -> List[RoadMap.Lane]:
             return self._incoming_lanes
 
-        @incoming_lanes.setter
-        def incoming_lanes(self, value):
-            self._incoming_lanes = value
-
         @property
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
             return self._outgoing_lanes
-
-        @outgoing_lanes.setter
-        def outgoing_lanes(self, value):
-            self._outgoing_lanes = value
 
         @property
         def entry_surfaces(self) -> List[RoadMap.Surface]:
@@ -696,21 +688,11 @@ class OpenDriveRoadNetwork(RoadMap):
         def foes(self, value):
             self._foes = value
 
-        @property
-        def lane_boundaries(self) -> Tuple[LaneBoundary, LaneBoundary]:
-            return self._lane_boundaries
+        def add_lane_boundaries(self, inner: LaneBoundary, outer: LaneBoundary):
+            self._lane_boundaries = (inner, outer)
 
-        @lane_boundaries.setter
-        def lane_boundaries(self, value):
-            self._lane_boundaries = value
-
-        @property
-        def lane_widths(self):
-            return self._lane_widths
-
-        @lane_widths.setter
-        def lane_widths(self, value):
-            self._lane_widths = value
+        def add_lane_widths(self, lane_widths):
+            self._lane_widths = lane_widths
 
         @property
         def lane_polygon(self) -> List[Tuple[float, float]]:
@@ -920,17 +902,9 @@ class OpenDriveRoadNetwork(RoadMap):
         def incoming_roads(self) -> List[RoadMap.Road]:
             return self._incoming_roads
 
-        @incoming_roads.setter
-        def incoming_roads(self, value):
-            self._incoming_roads = value
-
         @property
         def outgoing_roads(self) -> List[RoadMap.Road]:
             return self._outgoing_roads
-
-        @outgoing_roads.setter
-        def outgoing_roads(self, value):
-            self._outgoing_roads = value
 
         @property
         def entry_surfaces(self) -> List[RoadMap.Surface]:
@@ -946,17 +920,9 @@ class OpenDriveRoadNetwork(RoadMap):
         def parallel_roads(self) -> List[RoadMap.Road]:
             return self._parallel_roads
 
-        @parallel_roads.setter
-        def parallel_roads(self, value):
-            self._parallel_roads = value
-
         @property
         def lanes(self) -> List[RoadMap.Lane]:
             return self._lanes
-
-        @lanes.setter
-        def lanes(self, value):
-            self._lanes = value
 
         @property
         def bounding_box(self) -> List[Tuple[float, float]]:
@@ -975,7 +941,6 @@ class OpenDriveRoadNetwork(RoadMap):
                 for lane in self.lanes:
                     if lane.contains_point(point):
                         return True
-                return False
             return False
 
         @lru_cache(maxsize=8)

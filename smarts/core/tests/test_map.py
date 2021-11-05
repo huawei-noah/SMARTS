@@ -24,6 +24,7 @@ from os import path
 from pathlib import Path
 
 import pytest
+from smarts.core.coordinates import Point
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.core.scenario import Scenario
 from smarts.core.default_map_factory import create_road_map
@@ -434,10 +435,12 @@ def test_od_map_figure_eight():
 
 def test_od_map_lane_offset():
     root = path.join(Path(__file__).parent.absolute(), "maps")
-    road_map = OpenDriveRoadNetwork.from_file(
-        path.join(root, "Ex_Simple-LaneOffset.xodr")
-    )
+    file_path = path.join(root, "Ex_Simple-LaneOffset.xodr")
+    road_map = OpenDriveRoadNetwork.from_file(file_path)
     assert isinstance(road_map, OpenDriveRoadNetwork)
+    assert road_map.source == file_path
+    assert road_map.bounding_box.max_pt == Point(x=100.0, y=8.0, z=0)
+    assert road_map.bounding_box.min_pt == Point(x=0.0, y=-5.250000000000002, z=0)
 
     # Expected properties for all roads and lanes
     for road_id, road in road_map._roads.items():
@@ -451,37 +454,37 @@ def test_od_map_lane_offset():
             assert lane.length is not None
             assert lane.length >= 0
 
+    # Nonexistent road/lane tests
+    assert road_map.road_by_id("") is None
+    assert road_map.lane_by_id("") is None
+
+    # Surface tests
+    surface = road_map.surface_by_id("1_1")
+    assert surface.surface_id == "1_1"
+
     # Road tests
     r0 = road_map.road_by_id("1_1")
     assert r0
     assert len(r0.lanes) == 6
     assert not r0.is_junction
-
-    r0_in_road_ids = set([r.road_id for r in r0.incoming_roads])
-    r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
-
-    assert r0_in_road_ids == {"1_0"}
-    assert r0_out_road_ids == {"1_2"}
+    assert set([r.road_id for r in r0.incoming_roads]) == {"1_0"}
+    assert set([r.road_id for r in r0.outgoing_roads]) == {"1_2"}
+    assert set([r.road_id for r in r0.entry_surfaces]) == {"1_0"}
+    assert set([r.road_id for r in r0.exit_surfaces]) == {"1_2"}
 
     r1 = road_map.road_by_id("1_0")
     assert r1
     assert len(r1.lanes) == 5
     assert not r1.is_junction
-
-    r1_in_road_ids = set([r.road_id for r in r1.incoming_roads])
-    r1_out_road_ids = set([r.road_id for r in r1.outgoing_roads])
-    assert len(r1_in_road_ids) == 0
-    assert r1_out_road_ids == {"1_1"}
+    assert set([r.road_id for r in r1.incoming_roads]) == set()
+    assert set([r.road_id for r in r1.outgoing_roads]) == {"1_1"}
 
     r2 = road_map.road_by_id("1_2")
     assert r2
     assert len(r2.lanes) == 5
     assert not r2.is_junction
-
-    r2_in_road_ids = set([r.road_id for r in r2.incoming_roads])
-    r2_out_road_ids = set([r.road_id for r in r2.outgoing_roads])
-    assert r2_in_road_ids == {"1_1"}
-    assert len(r2_out_road_ids) == 0
+    assert set([r.road_id for r in r2.incoming_roads]) == {"1_1"}
+    assert set([r.road_id for r in r2.outgoing_roads]) == set()
 
     # Lane tests
     l0 = road_map.lane_by_id("1_1_1")
@@ -492,6 +495,8 @@ def test_od_map_lane_offset():
 
     assert set([lane.lane_id for lane in l0.incoming_lanes]) == set()
     assert set([lane.lane_id for lane in l0.outgoing_lanes]) == {"1_0_1"}
+    assert set([lane.lane_id for lane in l0.entry_surfaces]) == set()
+    assert set([lane.lane_id for lane in l0.exit_surfaces]) == {"1_0_1"}
 
     right_lane, direction = l0.lane_to_right
     assert right_lane
@@ -547,7 +552,7 @@ def test_od_map_lane_offset():
 
     # check for locations (lane, offset tuples) within distance at this offset
     candidates = l0.project_along(offset, 20)
-    assert(len(candidates)) == 3
+    assert (len(candidates)) == 3
 
     l1 = road_map.lane_by_id("1_1_-2")
     assert l1
