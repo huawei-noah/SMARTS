@@ -36,6 +36,7 @@ from smarts.core.utils.episodes import episodes
 logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "Agent-007"
+NOTEBOOK_NAME = "test_notebook.ipynb"
 
 
 class KeepLaneAgent(Agent):
@@ -91,9 +92,7 @@ def notebook():
     with open(tmppath, "w") as handle:
         import smarts.core.tests
 
-        handle.write(
-            importlib_resources.read_text(smarts.core.tests, "test_notebook.ipynb")
-        )
+        handle.write(importlib_resources.read_text(smarts.core.tests, NOTEBOOK_NAME))
     yield tmppath
     os.remove(tmppath)
 
@@ -102,8 +101,12 @@ def test_notebook1(nb_regression: nb.NBRegressionFixture, notebook):
 
     ## Generate from the un-run notebook
     nb_regression.force_regen = True
-    nb_regression.check(notebook, False)
-
+    try:
+        nb_regression.check(notebook, False)
+    except TimeoutError as te:
+        assert (
+            False
+        ), f"pynotebook `{NOTEBOOK_NAME}` timed out during test: {te}.\nFor more details see: https://jupyterbook.org/content/execute.html#setting-execution-timeout"
     ## Run notebook against generated
     ## ignore output for now
     nb_regression.diff_ignore = ("/cells/*/outputs/*/text",)

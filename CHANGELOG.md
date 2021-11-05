@@ -33,6 +33,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
     - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
 ### Fixed
+- Prevent `test_notebook.ipynb` test cell from timing out by increasing time to 5 minutes maximum. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout".
 - Stop `multiprocessing.queues.Queue` from throwing an error by importing `multiprocessing.queues` and then `Queue`.
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
 - Prevent `TrapManager`from trapping vehicles in Bubble airlocks.  See Issue #1064.
