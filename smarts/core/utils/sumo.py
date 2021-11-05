@@ -37,5 +37,5 @@ if tools_path not in sys.path:
 # Intentionally making this available
 SUMO_PATH = sumo_path
 
-import sumolib # isort:skip
-import traci # isort:skip
+import sumolib  # isort:skip
+import traci  # isort:skip

@@ -39,9 +39,10 @@ from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
-from smarts.core.utils.sumo import SUMO_PATH, traci # isort:skip
-from traci.exceptions import FatalTraCIError, TraCIException # isort:skip
-import traci.constants as tc # isort:skip
+from smarts.core.utils.sumo import SUMO_PATH, traci  # isort:skip
+from traci.exceptions import FatalTraCIError, TraCIException  # isort:skip
+import traci.constants as tc  # isort:skip
+
 
 class SumoTrafficSimulation(Provider):
     """
