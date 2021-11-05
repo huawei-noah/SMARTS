@@ -49,6 +49,7 @@ jobs:
             --forked \
             --dist=no \
             -n auto \
+            --ignore-glob="**/ros.py" \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_benchmark.py \
