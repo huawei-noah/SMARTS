@@ -19,11 +19,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from functools import partial
 import glob
 import importlib
 import os
 import pickle
+from functools import partial
 from typing import Sequence, Tuple
 
 # Set environment to better support Ray
@@ -32,10 +32,9 @@ import argparse
 
 import dill
 import gym
+import ray
 import torch
 import yaml
-
-import ray
 from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.analysis.experiment_analysis import ExperimentAnalysis

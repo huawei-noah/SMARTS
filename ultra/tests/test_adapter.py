@@ -20,12 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import random
-from typing import Any, Callable, Dict, Tuple
 import unittest
+from typing import Any, Callable, Dict, Tuple
 
 import gym
 import numpy as np
 
+import ultra.adapters as adapters
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
 from smarts.core.controllers import ActionSpaceType
@@ -34,7 +35,6 @@ from smarts.core.events import Events
 from smarts.core.road_map import Waypoint
 from smarts.core.scenario import PositionalGoal, Start
 from smarts.core.sensors import Observation
-import ultra.adapters as adapters
 from ultra.env.ultra_env import UltraEnv
 
 AGENT_ID = "001"

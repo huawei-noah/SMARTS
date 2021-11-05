@@ -20,15 +20,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # Do not make any change to this file when merging. Just use my version.
+import copy
+import random
 from collections import deque, namedtuple
-import numpy as np
-import random, copy
-import torch
-from ultra import adapters
-from ultra.utils.common import normalize_im
 from collections.abc import Iterable
 
-from torch.utils.data import Dataset, Sampler, DataLoader
+import numpy as np
+import torch
+from torch.utils.data import DataLoader, Dataset, Sampler
+
+from ultra import adapters
+from ultra.utils.common import normalize_im
 
 Transition = namedtuple(
     "Transition",

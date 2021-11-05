@@ -33,10 +33,12 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+from ultra.scenarios.generate_scenarios import build_scenarios
+
 import traci  # isort:skip
 import traci.constants as tc  # isort:skip
 
-from ultra.scenarios.generate_scenarios import build_scenarios
 
 # sumo -c  --remote-port=8813
 # sumo -n map.net.xml -r traffic/all.rou.xml --remote-port=8813

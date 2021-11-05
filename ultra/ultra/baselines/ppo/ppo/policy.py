@@ -20,21 +20,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # some parts of this implementation is inspired by https://github.com/Khrylx/PyTorch-RL
-import torch, os, yaml
-import numpy as np
-import ultra.adapters as adapters
-from ultra.baselines.ppo.ppo.network import PPONetwork
-from smarts.core.agent import Agent
-import pathlib
 import os
+import pathlib
+
+import numpy as np
+import torch
+import yaml
+
+import ultra.adapters as adapters
+from smarts.core.agent import Agent
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.ppo.ppo.network import PPONetwork
 from ultra.utils.common import (
     compute_sum_aux_losses,
     normalize_im,
-    to_3d_action,
     to_2d_action,
+    to_3d_action,
 )
-from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 
 
 class PPOPolicy(Agent):
