@@ -492,7 +492,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         if lane_link.predecessorId:
             road_id, section_id = None, None
-            if lane_elem.lane_section.idx == 0:
+            if ls_index == 0:
                 # This is the first lane section, so get the first/last lane section of the predecessor road
                 road_predecessor = road_elem.link.predecessor
                 if road_predecessor and road_predecessor.elementType == "road":
@@ -506,8 +506,8 @@ class OpenDriveRoadNetwork(RoadMap):
             else:
                 # Otherwise, get the previous lane section of the current road
                 road_id = road_elem.id
-                section_id = lane_elem.lane_section.idx - 1
-            if road_id and section_id:
+                section_id = ls_index - 1
+            if road_id is not None and section_id is not None:
                 pred_lane_id = f"{road_id}_{section_id}_{lane_link.predecessorId}"
                 pred_lane = self.lane_by_id(pred_lane_id)
                 if lane.index < 0:
@@ -537,7 +537,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 road_id = road_elem.id
                 section_id = ls_index + 1
 
-            if road_id and section_id:
+            if road_id is not None and section_id is not None:
                 succ_lane_id = f"{road_id}_{section_id}_{lane_link.successorId}"
                 succ_lane = self.lane_by_id(succ_lane_id)
                 if lane.index < 0:
