@@ -161,10 +161,8 @@ def test_od_map_junction():
     assert r0.lane_at_index(1).road.road_id == "0_0"
     assert len(r0.shape().exterior.coords) == 5
 
-    r0_in_road_ids = set([r.road_id for r in r0.incoming_roads])
-    r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
-    assert r0_in_road_ids == {"5_0", "7_0", "9_0"}
-    assert r0_out_road_ids == {"3_0", "8_0", "15_0"}
+    assert set([r.road_id for r in r0.incoming_roads]) == {"5_0", "7_0", "9_0"}
+    assert set([r.road_id for r in r0.outgoing_roads]) == {"3_0", "8_0", "15_0"}
 
     r13 = road_map.road_by_id("13_0")
     assert r13
@@ -173,10 +171,8 @@ def test_od_map_junction():
     assert len(r13.lanes) == 8
     assert r13.lane_at_index(0) is None
     assert r13.lane_at_index(1).road.road_id == "13_0"
-    r13_in_road_ids = set([r.road_id for r in r13.incoming_roads])
-    r13_out_road_ids = set([r.road_id for r in r13.outgoing_roads])
-    assert r13_in_road_ids == {"10_0", "12_0", "15_0"}
-    assert r13_out_road_ids == {"9_0", "11_0", "14_0"}
+    assert set([r.road_id for r in r13.incoming_roads]) == {"10_0", "12_0", "15_0"}
+    assert set([r.road_id for r in r13.outgoing_roads]) == {"9_0", "11_0", "14_0"}
 
     # Lane tests
     l1 = road_map.lane_by_id("0_0_1")
@@ -322,10 +318,8 @@ def test_od_map_figure_eight():
     assert r0
     assert not r0.is_junction
     assert len(r0.lanes) == 8
-    r0_in_road_ids = set([r.road_id for r in r0.incoming_roads])
-    r0_out_road_ids = set([r.road_id for r in r0.outgoing_roads])
-    assert r0_in_road_ids == {"516_0"}
-    assert r0_out_road_ids == {"501_0"}
+    assert set([r.road_id for r in r0.incoming_roads]) == {"501_0", "516_0"}
+    assert set([r.road_id for r in r0.outgoing_roads]) == {"501_0", "516_0"}
     assert len(r0.shape().exterior.coords) == 1603
 
     # Lane tests
@@ -467,16 +461,16 @@ def test_od_map_lane_offset():
     assert r0
     assert len(r0.lanes) == 6
     assert not r0.is_junction
-    assert set([r.road_id for r in r0.incoming_roads]) == {"1_0"}
-    assert set([r.road_id for r in r0.outgoing_roads]) == {"1_2"}
-    assert set([r.road_id for r in r0.entry_surfaces]) == {"1_0"}
-    assert set([r.road_id for r in r0.exit_surfaces]) == {"1_2"}
+    assert set([r.road_id for r in r0.incoming_roads]) == {"1_0", "1_2"}
+    assert set([r.road_id for r in r0.outgoing_roads]) == {"1_0", "1_2"}
+    assert set([r.road_id for r in r0.entry_surfaces]) == {"1_0", "1_2"}
+    assert set([r.road_id for r in r0.exit_surfaces]) == {"1_0", "1_2"}
 
     r1 = road_map.road_by_id("1_0")
     assert r1
     assert len(r1.lanes) == 5
     assert not r1.is_junction
-    assert set([r.road_id for r in r1.incoming_roads]) == set()
+    assert set([r.road_id for r in r1.incoming_roads]) == {"1_1"}
     assert set([r.road_id for r in r1.outgoing_roads]) == {"1_1"}
 
     r2 = road_map.road_by_id("1_2")
@@ -484,7 +478,7 @@ def test_od_map_lane_offset():
     assert len(r2.lanes) == 5
     assert not r2.is_junction
     assert set([r.road_id for r in r2.incoming_roads]) == {"1_1"}
-    assert set([r.road_id for r in r2.outgoing_roads]) == set()
+    assert set([r.road_id for r in r2.outgoing_roads]) == {"1_1"}
 
     # Lane tests
     l0 = road_map.lane_by_id("1_1_1")

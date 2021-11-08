@@ -241,7 +241,6 @@ class OpenDriveRoadNetwork(RoadMap):
                     (float("inf"), float("inf")),
                     (float("-inf"), float("-inf")),
                 ]
-                self._compute_road_connections(od, road, road_elem)
 
                 # Lanes - incoming/outgoing lanes, geometry, bounding box
                 for lane_list in [section_elem.leftLanes, section_elem.rightLanes]:
@@ -284,6 +283,19 @@ class OpenDriveRoadNetwork(RoadMap):
                                 max(road.bounding_box[1][1], lane.bounding_box[1][1]),
                             ),
                         ]
+
+                # Compute incoming/outgoing roads based on lane connections
+                in_roads = set()
+                out_roads = set()
+                for lane in road.lanes:
+                    for in_lane in lane.incoming_lanes:
+                        if in_lane.road.road_id != road.road_id:
+                            in_roads.add(in_lane.road)
+                    for out_lane in lane.outgoing_lanes:
+                        if out_lane.road.road_id != road.road_id:
+                            out_roads.add(out_lane.road)
+                road.incoming_roads.extend(list(in_roads))
+                road.outgoing_roads.extend(list(out_roads))
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -427,52 +439,6 @@ class OpenDriveRoadNetwork(RoadMap):
 
                         succ_lane.incoming_lanes.append(lane)
                         lane.outgoing_lanes.append(succ_lane)
-
-    def _compute_road_connections(self, od, road, road_elem):
-        if road.is_junction:
-            return
-
-        lane_section_idx = int(road.road_id.split("_")[1])
-        # Incoming roads
-        # For OpenDRIVE lane sections with idx = 0
-        if lane_section_idx == 0:
-            # Incoming roads - simple case
-            predecessor = road_elem.link.predecessor
-            if predecessor and predecessor.elementType == "road":
-                pred_road_elem = od.getRoad(predecessor.element_id)
-                section_index = (
-                    pred_road_elem.lanes.getLastLaneSectionIdx()
-                    if predecessor.contactPoint == "end"
-                    else 0
-                )
-                in_road = self.road_by_id(
-                    f"{road_elem.link.predecessor.element_id}_{section_index}"
-                )
-                road.incoming_roads.append(in_road)
-        else:
-            pred_road_id = f"{road_elem.id}_{lane_section_idx - 1}"
-            in_road = self.road_by_id(pred_road_id)
-            road.incoming_roads.append(in_road)
-
-        # Outgoing roads
-        # For OpenDRIVE lane sections with last idx
-        if lane_section_idx == road_elem.lanes.getLastLaneSectionIdx():
-            # Outgoing roads - simple case
-            successor = road_elem.link.successor
-            if successor and successor.elementType == "road":
-                succ_road_elem = od.getRoad(successor.element_id)
-                section_index = (
-                    succ_road_elem.lanes.getLastLaneSectionIdx()
-                    if successor.contactPoint == "end"
-                    else 0
-                )
-                out_road = self.road_by_id(f"{successor.element_id}_{section_index}")
-                road.outgoing_roads.append(out_road)
-
-        else:
-            succ_road_id = f"{road_elem.id}_{lane_section_idx + 1}"
-            out_road = self.road_by_id(succ_road_id)
-            road.outgoing_roads.append(out_road)
 
     def _compute_lane_connections(
         self,
