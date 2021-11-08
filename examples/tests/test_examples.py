@@ -5,18 +5,11 @@ from pathlib import Path
 
 import pytest
 
-examples_dir = str(Path(__file__).parents[1])  # Get one directory up
-if examples_dir not in sys.path:
-    sys.path.append(examples_dir)
+from smarts.core.utils import import_utils
 
-examples_name = "smarts_examples"
-
-spec = importlib.util.spec_from_file_location(
-    examples_name, f"{examples_dir}/__init__.py"
+import_utils.import_module_from_file(
+    "smarts_examples", Path(__file__).parents[1] / "__init__.py"
 )
-module = importlib.util.module_from_spec(spec)
-sys.modules[examples_name] = module
-spec.loader.exec_module(module)
 
 
 @pytest.mark.parametrize(

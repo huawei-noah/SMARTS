@@ -30,17 +30,21 @@ from pathlib import Path
 from ray import tune
 from ray.rllib.models import ModelCatalog
 
+from smarts.core.utils import import_utils
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 
-from ..rllib_agent import TrainingModel, rllib_agent
-
 HORIZON = 5000
 
-ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
+import_utils.import_module_from_file(
+    "examples", Path(__file__).parents[1] / "__init__.py"
+)
 
 
 def test_learning_regression_rllib():
+    from examples.rllib_agent import TrainingModel, rllib_agent
+
+    ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
     rllib_policies = {
         "policy": (
             None,
