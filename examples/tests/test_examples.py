@@ -1,22 +1,23 @@
-import tempfile
-import importlib
-import pytest
-import sys
-
 import importlib.util
-
+import sys
+import tempfile
 from pathlib import Path
 
-examples_dir = str(Path(__file__).parents[1]) # Get one directory up
+import pytest
+
+examples_dir = str(Path(__file__).parents[1])  # Get one directory up
 if examples_dir not in sys.path:
     sys.path.append(examples_dir)
 
 examples_name = "smarts_examples"
 
-spec = importlib.util.spec_from_file_location(examples_name, f"{examples_dir}/__init__.py")
+spec = importlib.util.spec_from_file_location(
+    examples_name, f"{examples_dir}/__init__.py"
+)
 module = importlib.util.module_from_spec(spec)
 sys.modules[examples_name] = module
 spec.loader.exec_module(module)
+
 
 @pytest.mark.parametrize(
     "example",
@@ -43,6 +44,7 @@ def test_examples(example):
 
 def test_multi_instance_example():
     from smarts_examples import multi_instance
+
     main = multi_instance.main
     main(
         training_scenarios=["scenarios/loop"],
@@ -56,6 +58,7 @@ def test_multi_instance_example():
 
 def test_rllib_example():
     from smarts_examples import rllib
+
     main = rllib.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
         main(

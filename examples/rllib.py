@@ -48,6 +48,7 @@ except Exception as e:
 import smarts
 from smarts.core.utils.file import copy_tree
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+
 from .rllib_agent import TrainingModel, rllib_agent
 
 logging.basicConfig(level=logging.INFO)

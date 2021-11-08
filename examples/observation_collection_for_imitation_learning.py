@@ -33,6 +33,7 @@ from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.math import radians_to_vec
+
 from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
