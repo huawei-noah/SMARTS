@@ -61,7 +61,7 @@ jobs:
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_benchmark.py \
-            --ignore=./smarts/env/tests/test_learning.py \
+            --ignore=./examples/tests/test_learning.py \
             --ignore=./smarts/env/tests/test_frame_stack.py \
             --ignore=./smarts/env/tests/test_determinism.py \
             --ignore=./smarts/core/tests/test_renderers.py \

@@ -32,7 +32,8 @@ from ray.rllib.models import ModelCatalog
 
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-from examples.rllib_agent import TrainingModel, rllib_agent
+
+from ..rllib_agent import TrainingModel, rllib_agent
 
 HORIZON = 5000
 
@@ -50,7 +51,7 @@ def test_learning_regression_rllib():
     }
 
     # XXX: We should be able to simply provide "scenarios/loop"?
-    scenario_path = Path(__file__).parent / "../../../scenarios/loop"
+    scenario_path = Path(__file__).parents[2] / "scenarios/loop"
     scenario_path = str(scenario_path.absolute())
 
     tune_confg = {

@@ -12,7 +12,7 @@ test: build-all-scenarios
 		./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests ./examples/tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
-		--ignore=./smarts/env/tests/test_learning.py \
+		--ignore=./examples/tests/test_learning.py \
 		-k 'not test_long_determinism'
 	rm -f .coverage.*
 	rm -f .coverage*
@@ -37,7 +37,7 @@ sanity-test: build-all-scenarios
 
 .PHONY: test-learning
 test-learning: build-all-scenarios
-	pytest -v -s -o log_cli=1 -o log_cli_level=INFO ./smarts/env/tests/test_learning.py
+	pytest -v -s -o log_cli=1 -o log_cli_level=INFO ./examples/tests/test_learning.py
 
 .PHONY: test-memory-growth
 test-memory-growth: build-all-scenarios
