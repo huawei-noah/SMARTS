@@ -24,7 +24,7 @@ import gym
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
-from examples.argument_parser import default_argument_parser
+from . import argument_parser
 
 N_AGENTS = 4
 AGENT_IDS = ["Agent %i" % i for i in range(N_AGENTS)]
@@ -77,7 +77,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("multi-agent-example")
+    parser = argument_parser.default_argument_parser("multi-agent-example")
     args = parser.parse_args()
 
     main(

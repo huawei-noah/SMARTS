@@ -8,7 +8,7 @@ test: build-all-scenarios
 		--forked \
 		--dist=loadscope \
 		-n `nproc --ignore 2` \
-		./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests \
+		./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests ./examples/tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
 		--ignore=./smarts/env/tests/test_learning.py \
@@ -30,8 +30,8 @@ sanity-test: build-all-scenarios
 		./smarts/core/tests/test_dynamics_backend.py::test_set_pose \
 		./smarts/core/tests/test_sensors.py::test_waypoints_sensor \
 		./smarts/core/tests/test_smarts.py::test_smarts_doesnt_leak_tasks_after_reset \
-		./tests/test_examples.py::test_examples[multi_agent] \
-		./tests/test_examples.py::test_multi_instance_example \
+		./examples/tests/test_examples.py::test_examples[multi_agent] \
+		./examples/tests/test_examples.py::test_multi_instance_example \
 		./smarts/env/tests/test_social_agent.py::test_social_agents
 
 .PHONY: test-learning
