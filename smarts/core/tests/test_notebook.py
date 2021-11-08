@@ -89,10 +89,10 @@ def run_scenario(
 @pytest.fixture(scope="module")
 def notebook():
     _, tmppath = tempfile.mkstemp(suffix=".ipynb")
-    with open(tmppath, "w") as handle:
+    with open(tmppath, "w") as f:
         import smarts.core.tests
 
-        handle.write(importlib_resources.read_text(smarts.core.tests, NOTEBOOK_NAME))
+        f.write(importlib_resources.read_text(smarts.core.tests, NOTEBOOK_NAME))
     yield tmppath
     os.remove(tmppath)
 
@@ -106,7 +106,7 @@ def test_notebook1(nb_regression: nb.NBRegressionFixture, notebook):
     except TimeoutError as te:
         assert (
             False
-        ), f"pynotebook `{NOTEBOOK_NAME}` timed out during test: {te}.\nFor more details see: https://jupyterbook.org/content/execute.html#setting-execution-timeout"
+        ), f"pynotebook `{NOTEBOOK_NAME}` timed out after {nb_regression.exec_timeout}s during test: {te}.\nFor more details see: https://jupyterbook.org/content/execute.html#setting-execution-timeout"
     ## Run notebook against generated
     ## ignore output for now
     nb_regression.diff_ignore = ("/cells/*/outputs/*/text",)
