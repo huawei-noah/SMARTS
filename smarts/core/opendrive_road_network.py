@@ -63,9 +63,9 @@ class LaneBoundary:
     lane_offsets: List[LaneOffsetElement]
     segment_size: float = 0.5
 
-    def refline_to_linear_segments(self, s_start: float) -> List[float]:
+    def refline_to_linear_segments(self, s_start: float, s_end: float) -> List[float]:
         s_vals = []
-        geom_start = s_start
+        geom_start = 0
         for geom in self.refline._geometries:
             geom_end = geom_start + geom.length
             if type(geom) == LineGeometry:
@@ -73,7 +73,7 @@ class LaneBoundary:
             else:
                 s_vals.extend(get_linear_segments_for_range(geom_start, geom_end, self.segment_size))
             geom_start = geom_start + geom.length
-        return s_vals
+        return [s for s in s_vals if s_start <= s <= s_end]
 
     def get_lane_offset(self, s: float) -> float:
         if len(self.lane_offsets) == 0:
@@ -128,7 +128,7 @@ class LaneBoundary:
         else:
             if self.lane_offsets:
                 return get_linear_segments_for_range(s_start, s_end, self.segment_size)
-            return self.refline_to_linear_segments(s_start)
+            return self.refline_to_linear_segments(s_start, s_end)
 
         outer_s_vals = []
         curr_s_start = s_start
@@ -415,9 +415,7 @@ class OpenDriveRoadNetwork(RoadMap):
                     road_elem.lanes.lane_sections[0].leftLanes
                     + road_elem.lanes.lane_sections[0].rightLanes
                 ):
-                    # Assume lanes in junction will always have negative id (or all lanes for a road in
-                    # junction are in same direction)
-                    assert lane_elem.id < 0
+                    # Assume all lanes for a road in a junction are in the same direction
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                     lane = self.lane_by_id(lane_id)
 

@@ -612,3 +612,51 @@ def test_od_map_lane_offset():
     end = road_map.road_by_id("1_2")
     route = road_map.generate_routes(start, end)
     assert [r.road_id for r in route[0].roads] == ["1_0", "1_1", "1_2"]
+
+
+def test_od_map_motorway():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    file_path = path.join(root, "UC_Motorway-Exit-Entry.xodr")
+    road_map = OpenDriveRoadNetwork.from_file(file_path)
+    assert isinstance(road_map, OpenDriveRoadNetwork)
+    assert road_map.source == file_path
+
+    # Expected properties for all roads and lanes
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        assert road.parallel_roads == []
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
+
+    # route generation
+    route_6_to_5 = road_map.generate_routes(
+        road_map.road_by_id("6_0"), road_map.road_by_id("5_0")
+    )
+    assert [r.road_id for r in route_6_to_5[0].roads] == [
+        "6_0",
+        "18_1",
+        "18_0",
+        "28_0",
+        "42_0",
+        "43_0",
+        "5_0",
+    ]
+
+    route_4_to_6 = road_map.generate_routes(
+        road_map.road_by_id("4_0"), road_map.road_by_id("6_0")
+    )
+    assert [r.road_id for r in route_4_to_6[0].roads] == [
+        "4_0",
+        "13_0",
+        "21_0",
+        "21_1",
+        "35_0",
+        "18_0",
+        "18_1",
+        "6_0",
+    ]
