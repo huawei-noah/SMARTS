@@ -8,6 +8,7 @@ test: build-all-scenarios
 		--forked \
 		--dist=loadscope \
 		-n `nproc --ignore 2` \
+		--nb-exec-timeout -1 \
 		./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests ./examples/tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
