@@ -295,6 +295,16 @@ def test_od_map_junction():
         117.91,
     )
 
+    # route generation
+    road_0 = road_map.road_by_id("0_0")
+    road_13 = road_map.road_by_id("13_0")
+
+    route_0_to_13 = road_map.generate_routes(road_0, road_13)
+    assert [r.road_id for r in route_0_to_13[0].roads] == ["0_0", "15_0", "13_0"]
+
+    route_13_to_0 = road_map.generate_routes(road_13, road_0)
+    assert [r.road_id for r in route_13_to_0[0].roads] == ["13_0", "9_0", "0_0"]
+
 
 def test_od_map_figure_eight():
     root = path.join(Path(__file__).parent.absolute(), "maps")
@@ -596,3 +606,9 @@ def test_od_map_lane_offset():
     # check for locations (lane, offset tuples) within distance at this offset
     candidates = l3.project_along(offset, 50)
     assert (len(candidates)) == 3
+
+    # route generation
+    start = road_map.road_by_id("1_0")
+    end = road_map.road_by_id("1_2")
+    route = road_map.generate_routes(start, end)
+    assert [r.road_id for r in route[0].roads] == ["1_0", "1_1", "1_2"]

@@ -18,44 +18,41 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-import time
-from typing import Dict, List, Tuple, Set
-from dataclasses import dataclass
 import math
-import numpy as np
-from lxml import etree
+import time
+from dataclasses import dataclass
 from functools import lru_cache
+from queue import Queue
+from typing import Dict, List, Sequence, Set, Tuple
+
+import numpy as np
 from cached_property import cached_property
-from opendrive2lanelet.opendriveparser.elements.opendrive import (
-    OpenDrive as OpenDriveElement,
-)
-from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
+from lxml import etree
+from opendrive2lanelet.opendriveparser.elements.geometry import \
+    Line as LineGeometry
+from opendrive2lanelet.opendriveparser.elements.opendrive import \
+    OpenDrive as OpenDriveElement
 from opendrive2lanelet.opendriveparser.elements.road import Road as RoadElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import Lane as LaneElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import (
-    LaneSection as LaneSectionElement,
-)
-from opendrive2lanelet.opendriveparser.elements.roadLanes import (
-    LaneOffset as LaneOffsetElement,
-)
-from opendrive2lanelet.opendriveparser.elements.roadLanes import (
-    LaneWidth as LaneWidthElement,
-)
-from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
-    PlanView as PlanViewElement,
-)
+from opendrive2lanelet.opendriveparser.elements.roadLanes import \
+    Lane as LaneElement
+from opendrive2lanelet.opendriveparser.elements.roadLanes import \
+    LaneOffset as LaneOffsetElement
+from opendrive2lanelet.opendriveparser.elements.roadLanes import \
+    LaneSection as LaneSectionElement
+from opendrive2lanelet.opendriveparser.elements.roadLanes import \
+    LaneWidth as LaneWidthElement
+from opendrive2lanelet.opendriveparser.elements.roadPlanView import \
+    PlanView as PlanViewElement
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 from shapely.geometry import Polygon
 
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.math import (
-    CubicPolynomial,
-    constrain_angle,
-    position_at_shape_offset,
-    offset_along_shape,
-    get_linear_segments_for_range,
-)
-from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from smarts.core.utils.math import (CubicPolynomial, constrain_angle,
+                                    get_linear_segments_for_range,
+                                    offset_along_shape,
+                                    position_at_shape_offset)
+
+from .coordinates import BoundingBox, Point, Pose, RefLinePoint
 
 
 @dataclass
@@ -1000,3 +997,87 @@ class OpenDriveRoadNetwork(RoadMap):
                 f"OpenDriveRoadNetwork got request for unknown road_id '{road_id}'"
             )
         return road
+    
+    @staticmethod
+    def _shortest_path(start: RoadMap.Road, end: RoadMap.Road) -> List[RoadMap.Road]:
+        frontier = Queue()
+        frontier.put(start)
+        came_from = dict()
+        came_from[start] = None
+
+        # Breadth-first search
+        while not frontier.empty():
+            current: RoadMap.Road = frontier.get()
+            if current == end:
+                break
+            for out_road in current.outgoing_roads:
+                if out_road not in came_from:
+                    frontier.put(out_road)
+                    came_from[out_road] = current
+
+        # Reconstruct path
+        current = end
+        path = []
+        while current != start: 
+            path.append(current)
+            current = came_from[current]
+        path.append(start)
+        path.reverse()
+        return path
+
+    def generate_routes(
+        self,
+        start_road: RoadMap.Road,
+        end_road: RoadMap.Road,
+        via: Sequence[RoadMap.Road] = None,
+        max_to_gen: int = 1,
+    ) -> List[RoadMap.Route]:
+        assert max_to_gen == 1, "multiple route generation not yet supported for OpenDRIVE"
+        newroute = OpenDriveRoadNetwork.Route(self)
+        result = [newroute]
+
+        roads = [start_road]
+        if via:
+            roads += via
+        if end_road != start_road:
+            roads.append(end_road)
+
+        route_roads = []
+        for cur_road, next_road in zip(roads, roads[1:] + [None]):
+            if not next_road:
+                route_roads.append(cur_road)
+                break
+            sub_route = (
+                OpenDriveRoadNetwork._shortest_path(cur_road, next_road)
+                or []
+            )
+            if len(sub_route) < 2:
+                self._log.warning(
+                    f"Unable to find valid path between {(cur_road.road_id, next_road.road_id)}."
+                )
+                return result
+            # The sub route includes the boundary roads (cur_road, next_road).
+            # We clip the latter to prevent duplicates
+            route_roads.extend(sub_route[:-1])
+
+        for road in route_roads:
+            newroute.add_road(road)
+        return result
+
+    class Route(RoadMap.Route):
+        def __init__(self, road_map):
+            self._roads = []
+            self._length = 0
+            self._map = road_map
+
+        @property
+        def roads(self) -> List[RoadMap.Road]:
+            return self._roads
+
+        @property
+        def road_length(self) -> float:
+            return self._length
+
+        def add_road(self, road: RoadMap.Road):
+            self._length += road.length
+            self._roads.append(road)
