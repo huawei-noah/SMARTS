@@ -32,7 +32,7 @@ try:
     from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
     from ray.rllib.utils import try_import_tf
 except Exception as e:
-    from smarts.examples import RayException
+    from examples import RayException
 
     raise RayException.required_to("rllib_agent.py")
 

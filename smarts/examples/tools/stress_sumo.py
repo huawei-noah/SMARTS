@@ -22,7 +22,7 @@
 try:
     import ray
 except Exception as e:
-    from smarts.examples import RayException
+    from examples import RayException
 
     raise RayException.required_to("stress_sumo.py")
 

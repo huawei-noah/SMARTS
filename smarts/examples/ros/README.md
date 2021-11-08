@@ -27,7 +27,7 @@ Setup your environment:
 source /opt/ros/kinetic/setup.bash
 ```
 ```bash
-cd smarts/examples/ros
+cd examples/ros
 catkin_make
 catkin_make install
 source install/setup.bash
@@ -58,7 +58,7 @@ which will run one in the background.
 
 Alternatively, if you have parameters that you want to override on a regular basis,
 create a custom [roslaunch](http://wiki.ros.org/roslaunch) file in your package's launch folder,
-like the one in [smarts/examples/ros/src/smarts_ros/launch/ros_driver.launch](smarts/examples/ros/src/smarts_ros/launch/ros_driver.launch).
+like the one in [examples/ros/src/smarts_ros/launch/ros_driver.launch](examples/ros/src/smarts_ros/launch/ros_driver.launch).
 And then, if you called it `my_ros_driver.launch`:
 ```bash
 roslaunch smarts_ros launch/my_ros_driver.launch

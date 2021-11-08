@@ -9,7 +9,7 @@ import pytest
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
 def test_examples(example):
-    main = importlib.import_module(f"smarts.examples.{example}").main
+    main = importlib.import_module(f"examples.{example}").main
     main(
         scenarios=["scenarios/loop"],
         sim_name=None,
@@ -21,7 +21,7 @@ def test_examples(example):
 
 
 def test_multi_instance_example():
-    main = importlib.import_module("smarts.examples.multi_instance").main
+    main = importlib.import_module("examples.multi_instance").main
     main(
         training_scenarios=["scenarios/loop"],
         evaluation_scenarios=["scenarios/loop"],
@@ -33,7 +33,7 @@ def test_multi_instance_example():
 
 
 def test_rllib_example():
-    main = importlib.import_module("smarts.examples.rllib").main
+    main = importlib.import_module("examples.rllib").main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
         main(
             scenario="scenarios/loop",

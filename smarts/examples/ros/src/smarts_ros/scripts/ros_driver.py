@@ -69,7 +69,7 @@ from smarts.zoo import registry
 
 class ROSDriver:
     """Wraps SMARTS as a ROS (v1) node.
-    See the README.md in `smarts/examples/ros` for
+    See the README.md in `examples/ros` for
     instructions on how to setup and run."""
 
     def __init__(self):

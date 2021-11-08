@@ -15,7 +15,7 @@ To run the default example simply build a scenario and run the following command
     scl scenario build --clean scenarios/loop
 
     # run an experiment
-    scl run --envision smarts/examples/single_agent.py scenarios/loop
+    scl run --envision examples/single_agent.py scenarios/loop
 
 You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment.
 

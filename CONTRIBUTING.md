@@ -111,5 +111,5 @@ Things inevitably become slow, when this happens, Flame Graph is a great tool to
 # You will need python-flamegraph to generate flamegraphs
 pip install git+https://github.com/asokoloski/python-flamegraph.git
 
-make flamegraph scenario=scenarios/loop script=smarts/examples/single_agent.py
+make flamegraph scenario=scenarios/loop script=examples/single_agent.py
 ```

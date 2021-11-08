@@ -97,17 +97,17 @@ We use the `scl` command line to run SMARTS together with it's supporting proces
 scl scenario build --clean scenarios/loop
 
 # run an experiment 
-scl run --envision smarts/examples/single_agent.py scenarios/loop 
+scl run --envision examples/single_agent.py scenarios/loop 
 ```
 
 You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment. See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
 
 After executing the above command, visit http://localhost:8081/ in your browser to view your experiment.
 
-Several example scripts are provided under [`SMARTS/examples`](./smarts/examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
+Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
 ```bash
-scl run --envision <smarts/examples/script_path> <scenarios/path> 
+scl run --envision <examples/script_path> <scenarios/path> 
 ```
 
 Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
@@ -163,7 +163,7 @@ scl scenario clean scenarios/loop
 
 ## Interfacing with Gym
 
-See the provided ready-to-go scripts under the [examples/](./smarts/examples) directory.
+See the provided ready-to-go scripts under the [examples/](./examples) directory.
 
 ## Contributing
 
@@ -236,7 +236,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-python smarts/examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 5
+python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 5
 ```
 
 ### Using Docker
@@ -259,7 +259,7 @@ $ scl scenario build scenarios/loop --clean
 
 # Run an example
 # add --headless if you do not need visualisation
-$ python smarts/examples/single_agent.py scenarios/loop
+$ python examples/single_agent.py scenarios/loop
 
 # On your host machine visit http://localhost:8081 to see the running simulation in Envision.
 ```
@@ -293,13 +293,13 @@ Singularity> exit
 # 1. Run container in interactive mode.
 $ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
 # Inside the container
-Singularity> python3.7 /src/smarts/examples/single_agent.py /src/scenarios/loop/ --headless
+Singularity> python3.7 /src/examples/single_agent.py /src/scenarios/loop/ --headless
 
 # 2. Run commands within the container from the host system.
-$ singularity exec --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif python3.7 /src/smarts/examples/single_agent.py /src/scenarios/loop/ --headless
+$ singularity exec --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif python3.7 /src/examples/single_agent.py /src/scenarios/loop/ --headless
 
 # 3. Run container instance in the background.
-$ singularity instance start --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif smarts_train /src/smarts/examples/single_agent.py /src/scenarios/loop/ --headless
+$ singularity instance start --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif smarts_train /src/examples/single_agent.py /src/scenarios/loop/ --headless
 ```
 
 ### Troubleshooting

@@ -32,7 +32,7 @@ from smarts.core.sensors import Observation
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.parallel_env import ParallelEnv
-from smarts.examples.argument_parser import default_argument_parser
+from examples.argument_parser import default_argument_parser
 
 
 class ChaseViaPointsAgent(Agent):
