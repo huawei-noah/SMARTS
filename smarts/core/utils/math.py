@@ -19,8 +19,9 @@
 # THE SOFTWARE.
 import math
 from math import factorial
-import numpy as np
 from typing import Callable
+
+import numpy as np
 
 
 def batches(list_, n):

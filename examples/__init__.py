@@ -8,3 +8,6 @@ class RayException(Exception):
                You may not have installed the [train] or [test] dependencies required to run the ray dependent example.
                Install them first using the command `pip install -e .[train, test]` at the source directory to install the package ray[rllib]==1.0.1.post1"""
         )
+
+
+from . import argument_parser as argument_parser

@@ -23,14 +23,13 @@ from __future__ import annotations
 
 import math
 import queue
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, NamedTuple, Sequence
 
 import numpy as np
-
-import warnings
 
 with warnings.catch_warnings():
     from smarts.core.utils.file import suppress_pkg_resources

@@ -47,16 +47,16 @@ from .controllers import ActionSpaceType, Controllers
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
-from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .provider import Provider, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensors import Collision
 from .traffic_history_provider import TrafficHistoryProvider
+from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
-from .utils.math import rounder_for_dt
 from .utils.id import Id
+from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import VehicleState

@@ -21,14 +21,15 @@
 # to allow for typing to refer to class being defined (TrafficHistory)
 from __future__ import annotations
 
-from cached_property import cached_property
-from contextlib import nullcontext, closing
-from functools import lru_cache
 import logging
 import os
 import random
 import sqlite3
+from contextlib import closing, nullcontext
+from functools import lru_cache
 from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar
+
+from cached_property import cached_property
 
 T = TypeVar("T")
 

@@ -23,6 +23,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 import numpy as np
+
 from smarts.core.utils.episodes import EpisodeLog
 
 

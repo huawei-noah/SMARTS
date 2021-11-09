@@ -19,34 +19,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-from os import path
-
-from setuptools import find_packages, setup
-
-this_dir = path.abspath(path.dirname(__file__))
-with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
-    long_description = f.read()
+import importlib.util
+import sys
+from pathlib import Path
 
 
-""" Modified setup.py to include option for changing SMARTS version or, by default,
-the latest stable version SMARTS will used """
-setup(
-    name="marl_benchmark",
-    description="Multi-Agent Reinforcement Learning Benchmarks",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    version="0.1.0",
-    packages=find_packages(exclude=["tests"]),
-    include_package_data=True,
-    zip_safe=True,
-    python_requires=">=3.7",
-    install_requires=[
-        "smarts[train]==0.4.16",
-        "setuptools>=41.0.0,!=50.0",
-        "dill",
-        "black==20.8b1",
-        "opencv-python",
-        "gym",
-    ],
-)
+def import_module_from_file(module_name, path: Path):
+    path = str(path)  # Get one directory up
+    if path not in sys.path:
+        sys.path.append(path)
+
+    spec = importlib.util.spec_from_file_location(module_name, f"{path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)

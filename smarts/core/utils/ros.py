@@ -21,8 +21,8 @@
 # THE SOFTWARE.
 
 import logging
-import rospy
 
+import rospy
 
 # Note:  use of these utilities may require installing the SMARTS package with the "[ros]" extentions.
 

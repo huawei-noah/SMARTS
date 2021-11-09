@@ -22,8 +22,8 @@
 from pathlib import Path
 
 import gym
-
 from benchmark.agents import load_config
+
 from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
 

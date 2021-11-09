@@ -2,15 +2,17 @@ import gym
 
 gym.logger.set_level(40)
 
-from examples.argument_parser import default_argument_parser
+from typing import Dict, Sequence, Tuple
+
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.sensors import Observation
 from smarts.env.hiway_env import HiWayEnv
-from smarts.env.wrappers.parallel_env import ParallelEnv
 from smarts.env.wrappers.frame_stack import FrameStack
-from typing import Dict, Tuple, Sequence
+from smarts.env.wrappers.parallel_env import ParallelEnv
+
+from .argument_parser import default_argument_parser
 
 
 class ChaseViaPointsAgent(Agent):

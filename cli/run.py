@@ -18,10 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
-import time
-import sys
 import signal
 import subprocess
+import sys
+import time
 import webbrowser
 from contextlib import contextmanager
 

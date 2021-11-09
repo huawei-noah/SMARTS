@@ -20,13 +20,13 @@
 import logging
 import time
 from concurrent import futures
+from typing import Tuple
 
 import cloudpickle
 import grpc
 
 from smarts.core.agent import AgentSpec
 from smarts.zoo import manager_pb2, manager_pb2_grpc, worker_pb2, worker_pb2_grpc
-from typing import Tuple
 
 
 class RemoteAgentException(Exception):

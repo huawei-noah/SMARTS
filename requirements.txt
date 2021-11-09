@@ -67,8 +67,8 @@ jedi==0.18.0
 Jinja2==3.0.2
 joblib==1.1.0
 jsonpatch==1.32
-jsonpointer==2.1
-jsonschema==4.1.2
+jsonpointer==2.2
+jsonschema==4.2.0
 jupyter-client==6.1.12
 jupyter-core==4.9.1
 jupyter-server==1.11.2
@@ -107,11 +107,11 @@ pickleshare==0.7.5
 Pillow==8.2.0
 pluggy==1.0.0
 prometheus-client==0.12.0
-prompt-toolkit==3.0.21
+prompt-toolkit==3.0.22
 protobuf==3.19.1
 psutil==5.8.0
 ptyprocess==0.7.0
-py==1.10.0
+py==1.11.0
 py-cpuinfo==8.0.0
 py-spy==0.3.10
 pyasn1==0.4.8

@@ -21,9 +21,9 @@
 # to allow for typing to refer to class being defined (RoadMap)
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
-from typing import NamedTuple, List, Set, Sequence, Tuple
+from dataclasses import dataclass
+from typing import List, NamedTuple, Sequence, Set, Tuple
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -35,7 +35,6 @@ from .utils.math import (
     signed_dist_to_line,
     vec_to_radians,
 )
-
 
 # TODO:
 # - also consider Esri, QGIS and Google Maps formats
