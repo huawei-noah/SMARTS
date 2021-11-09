@@ -35,5 +35,6 @@ jobs:
       - name: Test pip packages
         run: |
           cd $GITHUB_WORKSPACE
-          . ./utils/setup/test_pip_packages.sh || true
+          . ./utils/setup/test_pip_packages.sh
+        continue-on-error: true
 
