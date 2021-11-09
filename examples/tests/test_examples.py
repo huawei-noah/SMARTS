@@ -8,7 +8,7 @@ import pytest
 from smarts.core.utils import import_utils
 
 import_utils.import_module_from_file(
-    "smarts_examples", Path(__file__).parents[1] / "__init__.py"
+    "examples", Path(__file__).parents[1] / "__init__.py"
 )
 
 
@@ -19,11 +19,11 @@ import_utils.import_module_from_file(
 )
 def test_examples(example):
     if example == "egoless":
-        from smarts_examples import egoless as current_example
+        from examples import egoless as current_example
     if example == "single_agent":
-        from smarts_examples import single_agent as current_example
+        from examples import single_agent as current_example
     if example == "multi_agent":
-        from smarts_examples import multi_agent as current_example
+        from examples import multi_agent as current_example
     main = current_example.main
     main(
         scenarios=["scenarios/loop"],
@@ -36,7 +36,7 @@ def test_examples(example):
 
 
 def test_multi_instance_example():
-    from smarts_examples import multi_instance
+    from examples import multi_instance
 
     main = multi_instance.main
     main(
@@ -50,7 +50,7 @@ def test_multi_instance_example():
 
 
 def test_rllib_example():
-    from smarts_examples import rllib
+    from examples import rllib
 
     main = rllib.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
