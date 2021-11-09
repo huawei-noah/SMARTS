@@ -322,12 +322,29 @@ def test_od_map_junction():
     # route generation
     road_0 = road_map.road_by_id("0_0")
     road_13 = road_map.road_by_id("13_0")
+    road_15 = road_map.road_by_id("15_0")
 
     route_0_to_13 = road_map.generate_routes(road_0, road_13)
     assert [r.road_id for r in route_0_to_13[0].roads] == ["0_0", "15_0", "13_0"]
+    assert (
+        route_0_to_13[0].road_length == road_0.length + road_13.length + road_15.length
+    )
 
     route_13_to_0 = road_map.generate_routes(road_13, road_0)
     assert [r.road_id for r in route_13_to_0[0].roads] == ["13_0", "9_0", "0_0"]
+
+
+def test_od_map_junction_invalid_route():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    road_map = OpenDriveRoadNetwork.from_file(
+        path.join(root, "UC_Simple-X-Junction-Edited.xodr")
+    )
+    assert isinstance(road_map, OpenDriveRoadNetwork)
+
+    invalid_route = road_map.generate_routes(
+        road_map.road_by_id("13_0"), road_map.road_by_id("1_0")
+    )
+    assert [r.road_id for r in invalid_route[0].roads] == []
 
 
 def test_od_map_figure_eight():
@@ -681,6 +698,12 @@ def test_od_map_motorway():
             assert lane.length >= 0
 
     # route generation
+    empty_route = road_map.empty_route()
+    assert empty_route
+
+    random_route = road_map.random_route(10)
+    assert random_route.roads
+
     route_6_to_40 = road_map.generate_routes(
         road_map.road_by_id("6_0"), road_map.road_by_id("40_0")
     )
@@ -696,6 +719,29 @@ def test_od_map_motorway():
         "5_2",
         "8_0",
         "40_0",
+    ]
+
+    route_6_to_34_via_19 = road_map.generate_routes(
+        road_map.road_by_id("6_0"),
+        road_map.road_by_id("34_0"),
+        [road_map.road_by_id("19_0"), road_map.road_by_id("17_0")],
+    )
+    assert [r.road_id for r in route_6_to_34_via_19[0].roads] == [
+        "6_0",
+        "18_1",
+        "18_0",
+        "11_0",
+        "19_2",
+        "19_1",
+        "19_0",
+        "27_0",
+        "17_0",
+        "12_0",
+        "33_0",
+        "33_1",
+        "33_2",
+        "39_0",
+        "34_0",
     ]
 
     route_34_to_6 = road_map.generate_routes(

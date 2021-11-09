@@ -20,6 +20,7 @@
 import heapq
 import logging
 import math
+import random
 import time
 from dataclasses import dataclass
 from functools import lru_cache
@@ -1070,7 +1071,7 @@ class OpenDriveRoadNetwork(RoadMap):
         return None
 
     @staticmethod
-    def _shortest_path(start: RoadMap.Road, end: RoadMap.Road) -> List[RoadMap.Road]:
+    def _shortest_route(start: RoadMap.Road, end: RoadMap.Road) -> List[RoadMap.Road]:
         queue = [(start.length, start.road_id, start)]
         came_from = dict()
         came_from[start] = None
@@ -1089,6 +1090,10 @@ class OpenDriveRoadNetwork(RoadMap):
                     cost_so_far[out_road] = new_cost
                     came_from[out_road] = current
                     heapq.heappush(queue, (new_cost, out_road.road_id, out_road))
+
+        # This means we couldn't find a valid route since the queue is empty
+        if current != end:
+            return []
 
         # Reconstruct path
         current = end
@@ -1124,7 +1129,7 @@ class OpenDriveRoadNetwork(RoadMap):
             if not next_road:
                 route_roads.append(cur_road)
                 break
-            sub_route = OpenDriveRoadNetwork._shortest_path(cur_road, next_road) or []
+            sub_route = OpenDriveRoadNetwork._shortest_route(cur_road, next_road) or []
             if len(sub_route) < 2:
                 self._log.warning(
                     f"Unable to find valid path between {(cur_road.road_id, next_road.road_id)}."
@@ -1137,6 +1142,15 @@ class OpenDriveRoadNetwork(RoadMap):
         for road in route_roads:
             newroute.add_road(road)
         return result
+
+    def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
+        route = OpenDriveRoadNetwork.Route(self)
+        next_roads = list(self._roads.values())
+        while next_roads and len(route.roads) < max_route_len:
+            cur_road = random.choice(next_roads)
+            route.add_road(cur_road)
+            next_roads = list(cur_road.outgoing_roads)
+        return route
 
     def empty_route(self) -> RoadMap.Route:
         return OpenDriveRoadNetwork.Route(self)
