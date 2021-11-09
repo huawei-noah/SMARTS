@@ -520,11 +520,7 @@ class SumoRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=16)
         def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
-            result = []
-            for lane in self.lanes:
-                offset = lane.to_lane_coord(point).s
-                result += [ol.road for ol in lane.oncoming_lanes_at_offset(offset)]
-            return result
+            return super().oncoming_roads_at_point(point)
 
         @cached_property
         def parallel_roads(self) -> List[RoadMap.Road]:
