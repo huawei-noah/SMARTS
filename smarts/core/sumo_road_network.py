@@ -19,28 +19,25 @@
 # THE SOFTWARE.
 import logging
 import math
-import numpy as np
 import os
 import random
+from functools import lru_cache
+from subprocess import check_output
+from typing import List, Sequence, Set, Tuple
+
+import numpy as np
 import trimesh
 import trimesh.scene
 from cached_property import cached_property
-from functools import lru_cache
 from shapely.geometry import LineString, Polygon
 from shapely.ops import snap, triangulate
-from subprocess import check_output
 from trimesh.exchange import gltf
-from typing import List, Set, Sequence, Tuple
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap, Waypoint
 from .sumo_lanepoints import LinkedLanePoint, SumoLanePoints
 from .utils.geometry import buffered_shape
-from .utils.math import (
-    inplace_unwrap,
-    radians_to_vec,
-    vec_2d,
-)
+from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
 from sumolib.net.edge import Edge  # isort:skip

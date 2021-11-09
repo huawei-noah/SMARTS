@@ -19,9 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import unittest, ray, os, sys
-from ultra.rllib_train import train
+import os
 import shutil
+import sys
+import unittest
+
+import ray
+
+from ultra.rllib_train import train
 
 AGENT_ID = "001"
 seed = 2

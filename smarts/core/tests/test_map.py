@@ -418,6 +418,14 @@ def test_od_map_figure_eight():
     assert l1.contains_point(point)
     assert l1.road.contains_point(point)
 
+    # oncoming lanes at this point
+    on_lanes = l1.oncoming_lanes_at_offset(offset)
+    assert on_lanes
+    assert len(on_lanes) == 3
+    assert on_lanes[0].lane_id == "508_0_1"
+    assert on_lanes[1].lane_id == "508_0_2"
+    assert on_lanes[2].lane_id == "508_0_3"
+
     # edges on curved part
     left_edge, right_edge = l1.edges_at_point(point)
     assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (162.63, 74.36)
@@ -652,6 +660,13 @@ def test_od_map_lane_offset():
     assert round(l3.curvature_radius_at_offset(offset), 2) == 353.86
     assert l3.contains_point(point)
     assert l3.road.contains_point(point)
+
+    # oncoming lanes at this point
+    on_lanes = l3.oncoming_lanes_at_offset(offset)
+    assert on_lanes
+    assert len(on_lanes) == 2
+    assert on_lanes[0].lane_id == "1_1_1"
+    assert on_lanes[1].lane_id == "1_1_2"
 
     # check for locations (lane, offset tuples) within distance at this offset
     candidates = l3.project_along(offset, 50)

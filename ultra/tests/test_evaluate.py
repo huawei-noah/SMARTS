@@ -34,7 +34,7 @@ import ray
 from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.sac.sac.policy import SACPolicy
-from ultra.evaluate import evaluate, evaluation_check, collect_evaluations
+from ultra.evaluate import collect_evaluations, evaluate, evaluation_check
 from ultra.utils.episode import episodes
 
 seed = 2

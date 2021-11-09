@@ -20,15 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import cloudpickle
-import gym
 import multiprocessing as mp
 import sys
 import traceback
 import warnings
-
 from enum import Enum
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
+
+import cloudpickle
+import gym
 
 __all__ = ["ParallelEnv"]
 

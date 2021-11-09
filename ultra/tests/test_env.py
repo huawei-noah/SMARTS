@@ -19,22 +19,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from collections import deque
-from smarts.core.sensors import TopDownRGB
 import unittest
+from collections import deque
 
 import gym
 import numpy as np
 import ray
 
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import (
+    RGB,
     AgentInterface,
     NeighborhoodVehicles,
-    RGB,
     Waypoints,
 )
-from smarts.core.agent import Agent, AgentSpec
 from smarts.core.controllers import ActionSpaceType
+from smarts.core.sensors import TopDownRGB
 from smarts.zoo.registry import make
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.ppo.ppo.policy import PPOPolicy

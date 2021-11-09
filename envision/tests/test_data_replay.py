@@ -28,12 +28,12 @@ import pytest
 import websocket
 
 from envision.client import Client as Envision
+from envision.utils.multiprocessing_queue import Queue
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from envision.utils.multiprocessing_queue import Queue
 
 AGENT_ID = "Agent-007"
 NUM_EPISODES = 3
