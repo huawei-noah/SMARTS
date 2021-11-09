@@ -24,6 +24,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `ParallelEnv` class and a corresponding example to simulate multiple SMARTS environments in parallel, with synchronous or asynchronous episodes.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
 ### Changed
+- `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
 - Made changes to log sections of the scenario step in `smarts.py` to help evaluate smarts performance problems. See Issue #661.
 - Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
