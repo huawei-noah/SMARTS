@@ -67,7 +67,7 @@ jobs:
             --ignore=./smarts/core/tests/test_smarts.py \
             --ignore=./smarts/core/tests/test_observations.py
 
-  test-requirements-mac:
+  check-requirements-change-mac:
     runs-on: macos-11
     steps:
       - name: Checkout
@@ -92,3 +92,4 @@ jobs:
         run: |
           . ${{env.venv_dir}}/bin/activate
           pip freeze | grep -v -E '^smarts' | grep -v 'pkg-resources==0.0.0' | diff -u utils/setup/mac_requirements.txt -
+        continue-on-error: true
