@@ -634,10 +634,10 @@ def test_od_map_motorway():
             assert lane.length >= 0
 
     # route generation
-    route_6_to_5 = road_map.generate_routes(
-        road_map.road_by_id("6_0"), road_map.road_by_id("5_0")
+    route_6_to_40 = road_map.generate_routes(
+        road_map.road_by_id("6_0"), road_map.road_by_id("40_0")
     )
-    assert [r.road_id for r in route_6_to_5[0].roads] == [
+    assert [r.road_id for r in route_6_to_40[0].roads] == [
         "6_0",
         "18_1",
         "18_0",
@@ -645,12 +645,20 @@ def test_od_map_motorway():
         "42_0",
         "43_0",
         "5_0",
+        "5_1",
+        "5_2",
+        "8_0",
+        "40_0",
     ]
 
-    route_4_to_6 = road_map.generate_routes(
-        road_map.road_by_id("4_0"), road_map.road_by_id("6_0")
+    route_34_to_6 = road_map.generate_routes(
+        road_map.road_by_id("34_0"), road_map.road_by_id("6_0")
     )
-    assert [r.road_id for r in route_4_to_6[0].roads] == [
+    assert [r.road_id for r in route_34_to_6[0].roads] == [
+        "34_0",
+        "38_0",
+        "36_1",
+        "36_0",
         "4_0",
         "13_0",
         "21_0",
