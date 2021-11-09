@@ -19,7 +19,7 @@ jobs:
         tests:
           - ./envision
           - ./smarts/contrib
-          - ./tests
+          - ./examples/tests --ignore=./examples/tests/test_learning.py
           - ./smarts/sstudio
           - ./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/core
@@ -61,7 +61,6 @@ jobs:
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_benchmark.py \
-            --ignore=./examples/tests/test_learning.py \
             --ignore=./smarts/env/tests/test_frame_stack.py \
             --ignore=./smarts/env/tests/test_determinism.py \
             --ignore=./smarts/core/tests/test_renderers.py \
