@@ -741,7 +741,6 @@ class OpenDriveRoadNetwork(RoadMap):
             ):
                 lane_point = self.to_lane_coord(point)
                 width_at_offset = self.width_at_offset(lane_point.s)
-                lane_elem_id = self._index
                 # t-direction is negative for right side and positive for left side of the inner boundary reference
                 # line of lane, So the sign of lane_point.t should be -ve for a point to lie in a lane
                 return (
@@ -772,7 +771,8 @@ class OpenDriveRoadNetwork(RoadMap):
             for lane, _ in nearby_lanes:
                 if lane == self:
                     continue
-                lv = lane.vector_at_offset(offset)
+                lane_refline_pt = lane.to_lane_coord(pt)
+                lv = lane.vector_at_offset(lane_refline_pt.s)
                 lane_angle = np.dot(my_vect, lv) / (my_norm * np.linalg.norm(lv))
                 if lane_angle < threshold:
                     result.append(lane)
