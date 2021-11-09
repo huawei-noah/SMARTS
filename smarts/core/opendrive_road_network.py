@@ -20,6 +20,7 @@
 import logging
 import math
 import time
+import heapq
 from dataclasses import dataclass
 from functools import lru_cache
 from queue import Queue
@@ -998,20 +999,24 @@ class OpenDriveRoadNetwork(RoadMap):
     
     @staticmethod
     def _shortest_path(start: RoadMap.Road, end: RoadMap.Road) -> List[RoadMap.Road]:
-        frontier = Queue()
-        frontier.put(start)
+        queue = [(start.length, start.road_id, start)]
         came_from = dict()
         came_from[start] = None
+        cost_so_far = dict()
+        cost_so_far[start] = start.length
 
-        # Breadth-first search
-        while not frontier.empty():
-            current: RoadMap.Road = frontier.get()
+        # Dijkstra’s Algorithm
+        while queue:
+            (_, _, current) = heapq.heappop(queue)
+            current: RoadMap.Road
             if current == end:
                 break
             for out_road in current.outgoing_roads:
-                if out_road not in came_from:
-                    frontier.put(out_road)
+                new_cost = cost_so_far[current] + out_road.length
+                if out_road not in cost_so_far or new_cost < cost_so_far[out_road]:
+                    cost_so_far[out_road] = new_cost
                     came_from[out_road] = current
+                    heapq.heappush(queue, (new_cost, out_road.road_id, out_road))
 
         # Reconstruct path
         current = end
