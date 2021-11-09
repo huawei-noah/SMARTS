@@ -20,39 +20,45 @@
 import logging
 import math
 import time
+from typing import Dict, List, Tuple, Set, Sequence
 from dataclasses import dataclass
+import math
+import numpy as np
+from lxml import etree
 from functools import lru_cache
 from queue import Queue
-from typing import Dict, List, Sequence, Set, Tuple
-
-import numpy as np
 from cached_property import cached_property
-from lxml import etree
-from opendrive2lanelet.opendriveparser.elements.geometry import \
-    Line as LineGeometry
-from opendrive2lanelet.opendriveparser.elements.opendrive import \
-    OpenDrive as OpenDriveElement
+from opendrive2lanelet.opendriveparser.elements.opendrive import (
+    OpenDrive as OpenDriveElement,
+)
+from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
 from opendrive2lanelet.opendriveparser.elements.road import Road as RoadElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import \
-    Lane as LaneElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import \
-    LaneOffset as LaneOffsetElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import \
-    LaneSection as LaneSectionElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import \
-    LaneWidth as LaneWidthElement
-from opendrive2lanelet.opendriveparser.elements.roadPlanView import \
-    PlanView as PlanViewElement
+from opendrive2lanelet.opendriveparser.elements.roadLanes import Lane as LaneElement
+from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+    LaneSection as LaneSectionElement,
+)
+from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+    LaneOffset as LaneOffsetElement,
+)
+from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+    LaneWidth as LaneWidthElement,
+)
+from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
+    PlanView as PlanViewElement,
+)
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 from shapely.geometry import Polygon
 
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.math import (CubicPolynomial, constrain_angle,
-                                    get_linear_segments_for_range,
-                                    offset_along_shape,
-                                    position_at_shape_offset)
-
-from .coordinates import BoundingBox, Point, Pose, RefLinePoint
+from smarts.core.utils.math import (
+    CubicPolynomial,
+    constrain_angle,
+    position_at_shape_offset,
+    offset_along_shape,
+    get_linear_segments_for_range,
+    distance_point_to_polygon,
+)
+from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 
 
 @dataclass
@@ -71,7 +77,11 @@ class LaneBoundary:
             if type(geom) == LineGeometry:
                 s_vals.extend([geom_start, geom_end])
             else:
-                s_vals.extend(get_linear_segments_for_range(geom_start, geom_end, self.segment_size))
+                s_vals.extend(
+                    get_linear_segments_for_range(
+                        geom_start, geom_end, self.segment_size
+                    )
+                )
             geom_start = geom_start + geom.length
         return [s for s in s_vals if s_start <= s <= s_end]
 
@@ -149,10 +159,17 @@ class LaneBoundary:
 
 
 class OpenDriveRoadNetwork(RoadMap):
-    def __init__(self, xodr_file: str):
+    DEFAULT_LANE_WIDTH = 3.2
+
+    def __init__(self, xodr_file: str, default_lane_width=None):
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(logging.INFO)
         self._xodr_file = xodr_file
+        self._default_lane_width = (
+            default_lane_width
+            if default_lane_width is not None
+            else OpenDriveRoadNetwork.DEFAULT_LANE_WIDTH
+        )
         self._surfaces: Dict[str, OpenDriveRoadNetwork.Surface] = {}
         self._roads: Dict[str, OpenDriveRoadNetwork.Road] = {}
         self._lanes: Dict[str, OpenDriveRoadNetwork.Lane] = {}
@@ -207,6 +224,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 for lane_elem in section_elem.leftLanes + section_elem.rightLanes:
                     lane_id = OpenDriveRoadNetwork._elem_id(lane_elem)
                     lane = OpenDriveRoadNetwork.Lane(
+                        self,
                         lane_id,
                         road,
                         lane_elem.id,
@@ -546,6 +564,7 @@ class OpenDriveRoadNetwork(RoadMap):
     class Lane(RoadMap.Lane, Surface):
         def __init__(
             self,
+            road_map,
             lane_id: str,
             road: RoadMap.Road,
             index: int,
@@ -554,11 +573,11 @@ class OpenDriveRoadNetwork(RoadMap):
             road_plan_view: PlanViewElement,
         ):
             super().__init__(lane_id)
+            self._map = road_map
             self._lane_id = lane_id
             self._road = road
             self._index = index
             self._length = length
-            self._lane_elem = index
             self._plan_view = road_plan_view
             self._is_drivable = is_drivable
             self._incoming_lanes = []
@@ -702,8 +721,13 @@ class OpenDriveRoadNetwork(RoadMap):
                 ys_inner.append(y_ref + (t_inner - width_offset) * math.sin(angle))
                 xs_outer.append(x_ref + (t_outer + width_offset) * math.cos(angle))
                 ys_outer.append(y_ref + (t_outer + width_offset) * math.sin(angle))
-            xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
-            ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
+
+            if self.index < 0:
+                xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
+                ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
+            else:
+                xs.extend(xs_inner[::-1] + xs_outer + [xs_inner[len(xs_inner) - 1]])
+                ys.extend(ys_inner[::-1] + ys_outer + [ys_inner[len(ys_inner) - 1]])
 
             assert len(xs) == len(ys)
             return list(zip(xs, ys))
@@ -723,10 +747,10 @@ class OpenDriveRoadNetwork(RoadMap):
                 lane_point = self.to_lane_coord(point)
                 width_at_offset = self.width_at_offset(lane_point.s)
                 lane_elem_id = self._index
-                # t-direction is negative for right side and positive for left side of the
-                # inner boundary reference line, So the sign of lane_point.t and lane_elem_id should match
+                # t-direction is negative for right side and positive for left side of the inner boundary reference
+                # line of lane, So the sign of lane_point.t should be -ve for a point to lie in a lane
                 return (
-                    np.sign(lane_point.t) == np.sign(lane_elem_id)
+                    np.sign(lane_point.t) < 0
                     and abs(lane_point.t) <= width_at_offset
                     and 0 <= lane_point.s < self.length
                 )
@@ -738,6 +762,26 @@ class OpenDriveRoadNetwork(RoadMap):
             shape = self._lane_polygon[:reference_line_vertices_len]
             point = world_point[:2]
             return offset_along_shape(point, shape)
+
+        @lru_cache(maxsize=16)
+        def oncoming_lanes_at_offset(self, offset: float) -> List[RoadMap.Lane]:
+            result = []
+            radius = 1.1 * self.width_at_offset(offset)
+            pt = self.from_lane_coord(RefLinePoint(offset))
+            nearby_lanes = self._map.nearest_lanes(pt, radius=radius)
+            if not nearby_lanes:
+                return result
+            my_vect = self.vector_at_offset(offset)
+            my_norm = np.linalg.norm(my_vect)
+            threshold = -0.995562  # cos(175*pi/180)
+            for lane, _ in nearby_lanes:
+                if lane == self:
+                    continue
+                lv = lane.vector_at_offset(offset)
+                lane_angle = np.dot(my_vect, lv) / (my_norm * np.linalg.norm(lv))
+                if lane_angle < threshold:
+                    result.append(lane)
+            return result
 
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
@@ -786,7 +830,10 @@ class OpenDriveRoadNetwork(RoadMap):
             return super().curvature_radius_at_offset(offset, lookahead)
 
         def width_at_offset(self, lane_point_s: float) -> float:
-            road_offset = lane_point_s + self.road.s_pos
+            if self.index < 0:
+                road_offset = lane_point_s + self.road.s_pos
+            else:
+                road_offset = (self._length - lane_point_s) + self.road.s_pos
             inner_boundary, outer_boundary = self._lane_boundaries
             t_outer = outer_boundary.calc_t(road_offset, self.road.s_pos, self.index)
             t_inner = inner_boundary.calc_t(road_offset, self.road.s_pos, self.index)
@@ -917,6 +964,10 @@ class OpenDriveRoadNetwork(RoadMap):
                 _, left_edge = leftmost_lane.edges_at_point(point)
             return left_edge, right_edge
 
+        @lru_cache(maxsize=16)
+        def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
+            return super().oncoming_roads_at_point(point)
+
         @lru_cache(maxsize=4)
         def shape(self, width: float = 0.0, buffer_width: float = 0.0) -> Polygon:
             leftmost_lane, rightmost_lane = None, None
@@ -963,19 +1014,9 @@ class OpenDriveRoadNetwork(RoadMap):
                     leftmost_edge_vertices_len : len(leftmost_lane_buffered_polygon) - 1
                 ]
 
-            if np.sign(min_index) == np.sign(max_index):
-                road_polygon = (
-                    leftmost_edge_shape
-                    + rightmost_edge_shape
-                    + [leftmost_edge_shape[0]]
-                )
-
-            else:
-                road_polygon = (
-                    leftmost_edge_shape[::-1]
-                    + rightmost_edge_shape
-                    + [leftmost_edge_shape[-1]]
-                )
+            road_polygon = (
+                leftmost_edge_shape + rightmost_edge_shape + [leftmost_edge_shape[0]]
+            )
             return Polygon(road_polygon)
 
         def lane_at_index(self, index: int) -> RoadMap.Lane:
@@ -995,7 +1036,44 @@ class OpenDriveRoadNetwork(RoadMap):
                 f"OpenDriveRoadNetwork got request for unknown road_id '{road_id}'"
             )
         return road
-    
+
+    def _get_neighboring_lanes(self, x, y, r=0.1):
+        lanes = []
+        for road_id in self._roads:
+            road = self._roads[road_id]
+            for lane in road.lanes:
+                d = distance_point_to_polygon((x, y), lane.lane_polygon)
+                if d < r:
+                    lanes.append((lane, d))
+        return lanes
+
+    @lru_cache(maxsize=16)
+    def nearest_lanes(
+        self, point: Point, radius: float = None, include_junctions=True
+    ) -> List[Tuple[RoadMap.Lane, float]]:
+        if radius is None:
+            radius = max(10, 2 * self._default_lane_width)
+        candidate_lanes = self._get_neighboring_lanes(point[0], point[1], r=radius)
+        candidate_lanes.sort(key=lambda lane_dist_tup: lane_dist_tup[1])
+        return candidate_lanes
+
+    def nearest_lane(
+        self, point: Point, radius: float = None, include_junctions=True
+    ) -> RoadMap.Lane:
+        nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
+        for lane, dist in nearest_lanes:
+            if lane.contains_point(point):
+                return lane
+        return nearest_lanes[0][0] if nearest_lanes else None
+
+    @lru_cache(maxsize=16)
+    def road_with_point(self, point: Point) -> RoadMap.Road:
+        radius = max(5, 2 * self._default_lane_width)
+        for nl, dist in self.nearest_lanes(point, radius):
+            if nl.contains_point(point):
+                return nl.road
+        return None
+
     @staticmethod
     def _shortest_path(start: RoadMap.Road, end: RoadMap.Road) -> List[RoadMap.Road]:
         frontier = Queue()
@@ -1016,7 +1094,7 @@ class OpenDriveRoadNetwork(RoadMap):
         # Reconstruct path
         current = end
         path = []
-        while current != start: 
+        while current != start:
             path.append(current)
             current = came_from[current]
         path.append(start)
@@ -1030,7 +1108,9 @@ class OpenDriveRoadNetwork(RoadMap):
         via: Sequence[RoadMap.Road] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
-        assert max_to_gen == 1, "multiple route generation not yet supported for OpenDRIVE"
+        assert (
+            max_to_gen == 1
+        ), "multiple route generation not yet supported for OpenDRIVE"
         newroute = OpenDriveRoadNetwork.Route(self)
         result = [newroute]
 
@@ -1045,10 +1125,7 @@ class OpenDriveRoadNetwork(RoadMap):
             if not next_road:
                 route_roads.append(cur_road)
                 break
-            sub_route = (
-                OpenDriveRoadNetwork._shortest_path(cur_road, next_road)
-                or []
-            )
+            sub_route = OpenDriveRoadNetwork._shortest_path(cur_road, next_road) or []
             if len(sub_route) < 2:
                 self._log.warning(
                     f"Unable to find valid path between {(cur_road.road_id, next_road.road_id)}."
@@ -1061,6 +1138,9 @@ class OpenDriveRoadNetwork(RoadMap):
         for road in route_roads:
             newroute.add_road(road)
         return result
+
+    def empty_route(self) -> RoadMap.Route:
+        return OpenDriveRoadNetwork.Route(self)
 
     class Route(RoadMap.Route):
         def __init__(self, road_map):

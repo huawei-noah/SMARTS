@@ -307,7 +307,9 @@ def position_at_shape_offset(shape, offset):
     return shape[-1]
 
 
-def line_offset_with_minimum_distance_to_point(point, line_start, line_end):
+def line_offset_with_minimum_distance_to_point(
+    point, line_start, line_end, perpendicular=False
+):
     """Return the offset from line (line_start, line_end) where the distance to
     point is minimal"""
     p = point
@@ -316,6 +318,8 @@ def line_offset_with_minimum_distance_to_point(point, line_start, line_end):
     d = euclidean_distance(p1, p2)
     u = ((p[0] - p1[0]) * (p2[0] - p1[0])) + ((p[1] - p1[1]) * (p2[1] - p1[1]))
     if d == 0.0 or u < 0.0 or u > d * d:
+        if perpendicular:
+            return -1
         if u < 0.0:
             return 0.0
         return d
@@ -341,6 +345,41 @@ def polygon_offset_with_minimum_distance_to_point(point, polygon):
             minOffset = pos + seen
         seen += euclidean_distance(s[i], s[i + 1])
     return minOffset
+
+
+def distance_point_to_line(point, line_start, line_end, perpendicular=False):
+    """Return the minimum distance between point and the line (line_start, line_end)"""
+    p1 = line_start
+    p2 = line_end
+    offset = line_offset_with_minimum_distance_to_point(
+        point, line_start, line_end, perpendicular
+    )
+    if offset == -1:
+        return -1
+    if offset == 0:
+        return euclidean_distance(point, p1)
+    u = offset / euclidean_distance(line_start, line_end)
+    intersection = (p1[0] + u * (p2[0] - p1[0]), p1[1] + u * (p2[1] - p1[1]))
+    return euclidean_distance(point, intersection)
+
+
+def distance_point_to_polygon(point, polygon, perpendicular=False):
+    """Return the minimum distance between point and polygon"""
+    p = point
+    s = polygon
+    minDist = None
+    for i in range(0, len(s) - 1):
+        dist = distance_point_to_line(p, s[i], s[i + 1], perpendicular)
+        if dist == -1 and perpendicular and i != 0:
+            # distance to inner corner
+            dist = euclidean_distance(point, s[i])
+        if dist != -1:
+            if minDist is None or dist < minDist:
+                minDist = dist
+    if minDist is not None:
+        return minDist
+    else:
+        return -1
 
 
 def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
