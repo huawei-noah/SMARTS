@@ -20,11 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import cloudpickle
-import grpc
 import logging
 import os
 import time
+
+import cloudpickle
+import grpc
 
 from smarts.zoo import worker_pb2, worker_pb2_grpc
 

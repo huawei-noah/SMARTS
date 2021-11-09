@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 
-from collections import deque
-import os
 import json
 import logging
 import math
-import rospy
+import os
 import sys
 import time
+from collections import deque
 from threading import Lock
 from typing import Any, Dict, List, Sequence, Tuple
 
 import numpy as np
-
+import rospy
 from smarts_ros.msg import (
     AgentReport,
     AgentSpec,
@@ -21,18 +20,18 @@ from smarts_ros.msg import (
     EntityState,
     SmartsReset,
 )
-from smarts_ros.srv import SmartsInfo, SmartsInfoResponse, SmartsInfoRequest
+from smarts_ros.srv import SmartsInfo, SmartsInfoRequest, SmartsInfoResponse
 
 from envision.client import Client as Envision
 from smarts.core.agent import Agent
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.plan import (
-    default_entry_tactic,
     EndlessGoal,
     Mission,
     PositionalGoal,
     Start,
     VehicleSpec,
+    default_entry_tactic,
 )
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation

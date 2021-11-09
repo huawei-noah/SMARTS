@@ -33,11 +33,10 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.coordinates import Heading, Dimensions, Pose, RefLinePoint
+from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.data_model import SocialAgent
 from smarts.core.default_map_factory import create_road_map
 from smarts.core.plan import (
-    default_entry_tactic,
     EndlessGoal,
     LapMission,
     Mission,
@@ -46,6 +45,7 @@ from smarts.core.plan import (
     TraverseGoal,
     VehicleSpec,
     Via,
+    default_entry_tactic,
 )
 from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory

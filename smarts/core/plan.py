@@ -21,19 +21,19 @@
 # to allow for typing to refer to class being defined (Mission)...
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from functools import lru_cache
 import math
 import random
+from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import List, Optional, Tuple
 
 import numpy as np
 
+from smarts.sstudio.types import EntryTactic, TrapEntryTactic
+
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap
 from .utils.math import min_angles_difference_signed, vec_to_radians
-
-from smarts.sstudio.types import EntryTactic, TrapEntryTactic
 
 
 class PlanningError(Exception):

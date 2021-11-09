@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 import math
 from math import factorial
-import numpy as np
 from typing import Callable
 from dataclasses import dataclass
 from typing import List
@@ -51,6 +50,8 @@ def constrain_angle(angle):
     if angle > math.pi:
         angle -= 2 * math.pi
     return angle
+
+import numpy as np
 
 
 def batches(list_, n):

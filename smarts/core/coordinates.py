@@ -19,11 +19,11 @@
 # THE SOFTWARE.
 import enum
 import math
-from cached_property import cached_property
 from dataclasses import dataclass
 from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
+from cached_property import cached_property
 from typing_extensions import SupportsIndex
 
 from smarts.core.utils.math import (

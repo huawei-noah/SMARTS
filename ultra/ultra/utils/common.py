@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import datetime
 import json
 import math
 import os
@@ -34,8 +35,6 @@ from scipy.spatial.distance import euclidean
 from skimage.transform import resize
 
 import ultra.utils.geometry as geometry
-from scipy.spatial.distance import euclidean
-import math, datetime
 
 
 def agent_pool_value(agent_name, value_name):

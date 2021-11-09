@@ -1,7 +1,7 @@
 try:
     import ray
 except Exception as e:
-    from examples import RayException
+    from .. import RayException
 
     raise RayException.required_to("stress_sumo.py")
 

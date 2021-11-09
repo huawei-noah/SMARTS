@@ -22,7 +22,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `ros` extension rule to `setup.py`.
 - Added a `-y` option to `utils/setup/install_deps.sh` to accept installation by default. See issue #1081.
 - Added `ParallelEnv` class and a corresponding example to simulate multiple SMARTS environments in parallel, with synchronous or asynchronous episodes.
+- Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
 ### Changed
+- `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
+- Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
 - Made changes to log sections of the scenario step in `smarts.py` to help evaluate smarts performance problems. See Issue #661.
 - Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
   and allow for (eventually) supporting other map formats.  See Issue #830 and PR #1048.
@@ -32,6 +35,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
     - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
 ### Fixed
+- Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=-1` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout -1` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
+- Stop `multiprocessing.queues.Queue` from throwing an error by importing `multiprocessing.queues` in `envision/utils/multiprocessing_queue.py`.
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
 - Prevent `TrapManager`from trapping vehicles in Bubble airlocks.  See Issue #1064.
 - Social-agent-buffer is instantiated only if the scenario requires social agents

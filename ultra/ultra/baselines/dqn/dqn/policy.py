@@ -19,18 +19,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import copy
+import os
+import pathlib
+
+import numpy as np
 import torch
 from torch import nn
-import numpy as np
-from smarts.core.agent import Agent
-from ultra.utils.common import merge_discrete_action_spaces, to_3d_action, to_2d_action
-import pathlib, os, copy
+
 import ultra.adapters as adapters
-from ultra.baselines.dqn.dqn.explore import EpsilonExplore
-from ultra.baselines.dqn.dqn.network import DQNCNN, DQNWithSocialEncoder
+from smarts.core.agent import Agent
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.dqn.dqn.explore import EpsilonExplore
+from ultra.baselines.dqn.dqn.network import DQNCNN, DQNWithSocialEncoder
+from ultra.utils.common import merge_discrete_action_spaces, to_2d_action, to_3d_action
 
 
 class DQNPolicy(Agent):

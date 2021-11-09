@@ -23,27 +23,27 @@
 #  1- https://github.com/udacity/deep-reinforcement-learning
 #  2- https://github.com/sfujim/TD3/blob/master/TD3.py
 #
-import pathlib, os, copy
+import copy
+import os
+import pathlib
+import random
+
+import numpy as np
 import torch
 import torch.nn.functional as F
-import random
-import numpy as np
 import torch.optim as optim
 
+import ultra.adapters as adapters
+from smarts.core.agent import Agent
+from ultra.baselines.common.replay_buffer import ReplayBuffer
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.baselines.common.yaml_loader import load_yaml
 from ultra.baselines.td3.td3.cnn_models import ActorNetwork as CNNActorNetwork
 from ultra.baselines.td3.td3.cnn_models import CriticNetwork as CNNCriticNetwork
 from ultra.baselines.td3.td3.fc_model import ActorNetwork as FCActorNetwork
 from ultra.baselines.td3.td3.fc_model import CriticNetwork as FCCrtiicNetwork
-from smarts.core.agent import Agent
-from ultra.baselines.td3.td3.noise import (
-    OrnsteinUhlenbeckProcess,
-    LinearSchedule,
-)
-from ultra.utils.common import compute_sum_aux_losses, to_3d_action, to_2d_action
-import ultra.adapters as adapters
-from ultra.baselines.common.replay_buffer import ReplayBuffer
-from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.td3.td3.noise import LinearSchedule, OrnsteinUhlenbeckProcess
+from ultra.utils.common import compute_sum_aux_losses, to_2d_action, to_3d_action
 
 
 class TD3Policy(Agent):

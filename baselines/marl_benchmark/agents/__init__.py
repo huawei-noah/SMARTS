@@ -23,11 +23,11 @@ from pathlib import Path
 
 import gym
 import yaml
-
-from benchmark import common
 from benchmark.metrics import basic_handler as metrics
 from benchmark.utils import format
 from benchmark.wrappers import rllib as rllib_wrappers
+
+from benchmark import common
 from smarts.core.agent_interface import (
     OGM,
     RGB,

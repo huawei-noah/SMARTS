@@ -11,7 +11,7 @@ try:
     from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
     from ray.rllib.utils import try_import_tf
 except Exception as e:
-    from examples import RayException
+    from . import RayException
 
     raise RayException.required_to("rllib_agent.py")
 

@@ -20,9 +20,9 @@
 
 import os
 from typing import Tuple
+
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import file_md5_hash
-
 
 # The idea here is that anything in SMARTS that needs to use a RoadMap
 # can call this factory to create one of default type.
