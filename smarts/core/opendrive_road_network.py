@@ -29,30 +29,36 @@ from typing import Dict, List, Sequence, Set, Tuple
 import numpy as np
 from cached_property import cached_property
 from lxml import etree
-from opendrive2lanelet.opendriveparser.elements.geometry import \
-    Line as LineGeometry
-from opendrive2lanelet.opendriveparser.elements.opendrive import \
-    OpenDrive as OpenDriveElement
+from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
+from opendrive2lanelet.opendriveparser.elements.opendrive import (
+    OpenDrive as OpenDriveElement,
+)
 from opendrive2lanelet.opendriveparser.elements.road import Road as RoadElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import \
-    Lane as LaneElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import \
-    LaneOffset as LaneOffsetElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import \
-    LaneSection as LaneSectionElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import \
-    LaneWidth as LaneWidthElement
-from opendrive2lanelet.opendriveparser.elements.roadPlanView import \
-    PlanView as PlanViewElement
+from opendrive2lanelet.opendriveparser.elements.roadLanes import Lane as LaneElement
+from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+    LaneOffset as LaneOffsetElement,
+)
+from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+    LaneSection as LaneSectionElement,
+)
+from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+    LaneWidth as LaneWidthElement,
+)
+from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
+    PlanView as PlanViewElement,
+)
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 from shapely.geometry import Polygon
 
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.math import (CubicPolynomial, constrain_angle,
-                                    distance_point_to_polygon,
-                                    get_linear_segments_for_range,
-                                    offset_along_shape,
-                                    position_at_shape_offset)
+from smarts.core.utils.math import (
+    CubicPolynomial,
+    constrain_angle,
+    distance_point_to_polygon,
+    get_linear_segments_for_range,
+    offset_along_shape,
+    position_at_shape_offset,
+)
 
 from .coordinates import BoundingBox, Point, Pose, RefLinePoint
 
@@ -208,8 +214,11 @@ class OpenDriveRoadNetwork(RoadMap):
                 section_elem: LaneSectionElement = section_elem
 
                 # Create new roads so that all lanes for each road are in same direction
-                for sub_road, suffix in [(section_elem.leftLanes, "L"), (section_elem.rightLanes, "R")]:
-                    
+                for sub_road, suffix in [
+                    (section_elem.leftLanes, "L"),
+                    (section_elem.rightLanes, "R"),
+                ]:
+
                     # Skip if there are no lanes
                     if not sub_road:
                         continue
@@ -256,8 +265,11 @@ class OpenDriveRoadNetwork(RoadMap):
         for road_elem in od.roads:
             for section_elem in road_elem.lanes.lane_sections:
                 # Lanes - incoming/outgoing lanes, geometry, bounding box
-                for sub_road, suffix in [(section_elem.leftLanes, "L"), (section_elem.rightLanes, "R")]:
-                    
+                for sub_road, suffix in [
+                    (section_elem.leftLanes, "L"),
+                    (section_elem.rightLanes, "R"),
+                ]:
+
                     # Skip if there are no lanes
                     if not sub_road:
                         continue
@@ -330,8 +342,11 @@ class OpenDriveRoadNetwork(RoadMap):
         start = time.time()
         for road_elem in od.roads:
             for section_elem in road_elem.lanes.lane_sections:
-                for sub_road, suffix in [(section_elem.leftLanes, "L"), (section_elem.rightLanes, "R")]:
-                    
+                for sub_road, suffix in [
+                    (section_elem.leftLanes, "L"),
+                    (section_elem.rightLanes, "R"),
+                ]:
+
                     # Skip if there are no lanes
                     if not sub_road:
                         continue
@@ -408,11 +423,8 @@ class OpenDriveRoadNetwork(RoadMap):
 
                 left_lanes = road_elem.lanes.lane_sections[0].leftLanes
                 right_lanes = road_elem.lanes.lane_sections[0].rightLanes
-                assert (len(left_lanes) == len(left_lanes + right_lanes) or len(right_lanes) == len(left_lanes + right_lanes)), "All lanes for a road in a junction must be in the same direction"
-
                 pred_road_id = None
                 succ_road_id = None
-                suffix = "L" if left_lanes else "R"
 
                 if road_elem.link.predecessor:
                     road_predecessor = road_elem.link.predecessor
@@ -432,47 +444,51 @@ class OpenDriveRoadNetwork(RoadMap):
                         succ_ls_index = 0
                     succ_road_id = f"{road_successor.element_id}_{succ_ls_index}"
 
-                for lane_elem in left_lanes + right_lanes:
-                    lane_id = OpenDriveRoadNetwork._elem_id(lane_elem, suffix)
-                    lane = self.lane_by_id(lane_id)
+                for sub_road in [left_lanes, right_lanes]:
+                    for lane_elem in sub_road:
+                        suffix = "L" if lane_elem.id > 0 else "R"
+                        lane_id = OpenDriveRoadNetwork._elem_id(lane_elem, suffix)
+                        lane = self.lane_by_id(lane_id)
 
-                    if lane_elem.link.predecessorId:
-                        assert pred_road_id
-                        pred_suffix = "L" if lane_elem.link.predecessorId > 0 else "R"
-                        pred_lane_id = f"{pred_road_id}_{pred_suffix}_{lane_elem.link.predecessorId}"
-                        pred_lane = self.lane_by_id(pred_lane_id)
+                        if lane_elem.link.predecessorId:
+                            assert pred_road_id
+                            pred_suffix = (
+                                "L" if lane_elem.link.predecessorId > 0 else "R"
+                            )
+                            pred_lane_id = f"{pred_road_id}_{pred_suffix}_{lane_elem.link.predecessorId}"
+                            pred_lane = self.lane_by_id(pred_lane_id)
 
-                        if lane.index < 0:
-                            # Direction of lane is the same as the reference line
-                            if pred_lane not in lane.incoming_lanes:
-                                lane.incoming_lanes.append(pred_lane)
-                            if lane not in pred_lane.outgoing_lanes:
-                                pred_lane.outgoing_lanes.append(lane)
-                        else:
-                            # Direction of lane is opposite the refline, so this is actually an outgoing lane
-                            if pred_lane not in lane.outgoing_lanes:
-                                lane.outgoing_lanes.append(pred_lane)
-                            if lane not in pred_lane.incoming_lanes:
-                                pred_lane.incoming_lanes.append(lane)
+                            if lane.index < 0:
+                                # Direction of lane is the same as the reference line
+                                if pred_lane not in lane.incoming_lanes:
+                                    lane.incoming_lanes.append(pred_lane)
+                                if lane not in pred_lane.outgoing_lanes:
+                                    pred_lane.outgoing_lanes.append(lane)
+                            else:
+                                # Direction of lane is opposite the refline, so this is actually an outgoing lane
+                                if pred_lane not in lane.outgoing_lanes:
+                                    lane.outgoing_lanes.append(pred_lane)
+                                if lane not in pred_lane.incoming_lanes:
+                                    pred_lane.incoming_lanes.append(lane)
 
-                    if lane_elem.link.successorId:
-                        assert succ_road_id
-                        succ_suffix = "L" if lane_elem.link.successorId > 0 else "R"
-                        succ_lane_id = f"{succ_road_id}_{succ_suffix}_{lane_elem.link.successorId}"
-                        succ_lane = self.lane_by_id(succ_lane_id)
+                        if lane_elem.link.successorId:
+                            assert succ_road_id
+                            succ_suffix = "L" if lane_elem.link.successorId > 0 else "R"
+                            succ_lane_id = f"{succ_road_id}_{succ_suffix}_{lane_elem.link.successorId}"
+                            succ_lane = self.lane_by_id(succ_lane_id)
 
-                        if lane.index < 0:
-                            # Direction of lane is the same as the reference line
-                            if succ_lane not in lane.outgoing_lanes:
-                                lane.outgoing_lanes.append(succ_lane)
-                            if lane not in succ_lane.incoming_lanes:
-                                succ_lane.incoming_lanes.append(lane)
-                        else:
-                            # Direction of lane is opposite the refline, so this is actually an incoming lane
-                            if succ_lane not in lane.incoming_lanes:
-                                lane.incoming_lanes.append(succ_lane)
-                            if lane not in succ_lane.outgoing_lanes:
-                                succ_lane.outgoing_lanes.append(lane)
+                            if lane.index < 0:
+                                # Direction of lane is the same as the reference line
+                                if succ_lane not in lane.outgoing_lanes:
+                                    lane.outgoing_lanes.append(succ_lane)
+                                if lane not in succ_lane.incoming_lanes:
+                                    succ_lane.incoming_lanes.append(lane)
+                            else:
+                                # Direction of lane is opposite the refline, so this is actually an incoming lane
+                                if succ_lane not in lane.incoming_lanes:
+                                    lane.incoming_lanes.append(succ_lane)
+                                if lane not in succ_lane.outgoing_lanes:
+                                    succ_lane.outgoing_lanes.append(lane)
 
     def _compute_lane_connections(
         self,
@@ -505,8 +521,12 @@ class OpenDriveRoadNetwork(RoadMap):
                 road_id = road_elem.id
                 section_id = ls_index - 1
             if road_id is not None and section_id is not None:
-                pred_lane_id = f"{road_id}_{section_id}_{lane_link.predecessorId}"
+                pred_suffix = "L" if lane_link.predecessorId > 0 else "R"
+                pred_lane_id = (
+                    f"{road_id}_{section_id}_{pred_suffix}_{lane_link.predecessorId}"
+                )
                 pred_lane = self.lane_by_id(pred_lane_id)
+
                 if lane.index < 0:
                     # Direction of lane is the same as the reference line
                     if pred_lane not in lane.incoming_lanes:
@@ -535,8 +555,12 @@ class OpenDriveRoadNetwork(RoadMap):
                 section_id = ls_index + 1
 
             if road_id is not None and section_id is not None:
-                succ_lane_id = f"{road_id}_{section_id}_{lane_link.successorId}"
+                succ_suffix = "L" if lane_link.successorId > 0 else "R"
+                succ_lane_id = (
+                    f"{road_id}_{section_id}_{succ_suffix}_{lane_link.successorId}"
+                )
                 succ_lane = self.lane_by_id(succ_lane_id)
+
                 if lane.index < 0:
                     # Direction of lane is the same as the reference line
                     if succ_lane not in lane.outgoing_lanes:
