@@ -296,11 +296,7 @@ def test_od_map_junction():
     assert l3.is_drivable
 
     foes = l3.foes
-    assert foes
-    assert len(foes) == 2
-    foe_set = set(f.lane_id for f in foes)
-    assert "7_0_R_-1" in foe_set
-    assert "5_0_R_-1" in foe_set
+    assert set(f.lane_id for f in foes) == {"5_0_R_-1", "7_0_R_-1"}
 
     # road edges on point for a road with one lane
     point = (115.55, 120.63)

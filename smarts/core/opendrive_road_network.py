@@ -259,7 +259,6 @@ class OpenDriveRoadNetwork(RoadMap):
 
         # Second pass: compute road and lane connections, compute lane boundaries and polygon
         start = time.time()
-        self._precompute_junction_connections(od)
         for road_elem in od.roads:
             for section_elem in road_elem.lanes.lane_sections:
                 for sub_road, suffix in [
@@ -271,7 +270,7 @@ class OpenDriveRoadNetwork(RoadMap):
                         continue
 
                     road_id = OpenDriveRoadNetwork._elem_id(section_elem, suffix)
-                    road = self._roads[road_id]
+                    road: RoadMap.Road = self._roads[road_id]
                     road.bounding_box = [
                         (float("inf"), float("inf")),
                         (float("-inf"), float("-inf")),
@@ -325,21 +324,6 @@ class OpenDriveRoadNetwork(RoadMap):
                             result = road.lane_at_index(lane.index - 1)
                         lane.lane_to_right = result, True
 
-                        # Compute lane foes
-                        result = [
-                            incoming
-                            for outgoing in lane.outgoing_lanes
-                            for incoming in outgoing.incoming_lanes
-                            if incoming != lane
-                        ]
-                        if lane.in_junction:
-                            in_roads = set(il.road for il in lane.incoming_lanes)
-                            for foe in lane.road.lanes:
-                                foe_in_roads = set(il.road for il in foe.incoming_lanes)
-                                if not bool(in_roads & foe_in_roads):
-                                    result.append(foe)
-                        lane.foes = list(set(result))
-
                         # Compute Lane connections
                         self._compute_lane_connections(od, lane, lane_elem, road_elem)
 
@@ -372,98 +356,44 @@ class OpenDriveRoadNetwork(RoadMap):
                                 max(road.bounding_box[1][1], lane.bounding_box[1][1]),
                             ),
                         ]
-
-                    # Compute incoming/outgoing roads based on lane connections
-                    in_roads = set()
-                    out_roads = set()
-                    for lane in road.lanes:
-                        for in_lane in lane.incoming_lanes:
-                            if in_lane.road.road_id != road.road_id:
-                                in_roads.add(in_lane.road)
-                        for out_lane in lane.outgoing_lanes:
-                            if out_lane.road.road_id != road.road_id:
-                                out_roads.add(out_lane.road)
-                    road.incoming_roads.extend(list(in_roads))
-                    road.outgoing_roads.extend(list(out_roads))
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
 
-    def _precompute_junction_connections(self, od: OpenDriveElement):
-        for road_elem in od.roads:
-            if road_elem.junction:
-                assert (
-                    len(road_elem.lanes.lane_sections) == 1
-                ), "Junction connecting roads must have a single lane section"
+        # Third pass: everything that depends on lane connections
+        start = time.time()
+        for road in list(self._roads.values()):
+            # Compute incoming/outgoing roads based on lane connections
+            in_roads = set()
+            out_roads = set()
+            for lane in road.lanes:
+                for in_lane in lane.incoming_lanes:
+                    if in_lane.road.road_id != road.road_id:
+                        in_roads.add(in_lane.road)
+                for out_lane in lane.outgoing_lanes:
+                    if out_lane.road.road_id != road.road_id:
+                        out_roads.add(out_lane.road)
+            road.incoming_roads.extend(list(in_roads))
+            road.outgoing_roads.extend(list(out_roads))
 
-                left_lanes = road_elem.lanes.lane_sections[0].leftLanes
-                right_lanes = road_elem.lanes.lane_sections[0].rightLanes
-                pred_road_id = None
-                succ_road_id = None
-
-                if road_elem.link.predecessor:
-                    road_predecessor = road_elem.link.predecessor
-                    if road_predecessor.contactPoint == "end":
-                        pred_road_elem = od.getRoad(road_predecessor.element_id)
-                        pred_ls_index = pred_road_elem.lanes.getLastLaneSectionIdx()
-                    else:
-                        pred_ls_index = 0
-                    pred_road_id = f"{road_predecessor.element_id}_{pred_ls_index}"
-
-                if road_elem.link.successor:
-                    road_successor = road_elem.link.successor
-                    if road_successor.contactPoint == "end":
-                        succ_road_elem = od.getRoad(road_successor.element_id)
-                        succ_ls_index = succ_road_elem.lanes.getLastLaneSectionIdx()
-                    else:
-                        succ_ls_index = 0
-                    succ_road_id = f"{road_successor.element_id}_{succ_ls_index}"
-
-                for sub_road in [left_lanes, right_lanes]:
-                    for lane_elem in sub_road:
-                        suffix = "L" if lane_elem.id > 0 else "R"
-                        lane_id = OpenDriveRoadNetwork._elem_id(lane_elem, suffix)
-                        lane = self.lane_by_id(lane_id)
-
-                        if lane_elem.link.predecessorId:
-                            assert pred_road_id
-                            pred_suffix = (
-                                "L" if lane_elem.link.predecessorId > 0 else "R"
-                            )
-                            pred_lane_id = f"{pred_road_id}_{pred_suffix}_{lane_elem.link.predecessorId}"
-                            pred_lane = self.lane_by_id(pred_lane_id)
-
-                            if lane.index < 0:
-                                # Direction of lane is the same as the reference line
-                                if pred_lane not in lane.incoming_lanes:
-                                    lane.incoming_lanes.append(pred_lane)
-                                if lane not in pred_lane.outgoing_lanes:
-                                    pred_lane.outgoing_lanes.append(lane)
-                            else:
-                                # Direction of lane is opposite the refline, so this is actually an outgoing lane
-                                if pred_lane not in lane.outgoing_lanes:
-                                    lane.outgoing_lanes.append(pred_lane)
-                                if lane not in pred_lane.incoming_lanes:
-                                    pred_lane.incoming_lanes.append(lane)
-
-                        if lane_elem.link.successorId:
-                            assert succ_road_id
-                            succ_suffix = "L" if lane_elem.link.successorId > 0 else "R"
-                            succ_lane_id = f"{succ_road_id}_{succ_suffix}_{lane_elem.link.successorId}"
-                            succ_lane = self.lane_by_id(succ_lane_id)
-
-                            if lane.index < 0:
-                                # Direction of lane is the same as the reference line
-                                if succ_lane not in lane.outgoing_lanes:
-                                    lane.outgoing_lanes.append(succ_lane)
-                                if lane not in succ_lane.incoming_lanes:
-                                    succ_lane.incoming_lanes.append(lane)
-                            else:
-                                # Direction of lane is opposite the refline, so this is actually an incoming lane
-                                if succ_lane not in lane.incoming_lanes:
-                                    lane.incoming_lanes.append(succ_lane)
-                                if lane not in succ_lane.outgoing_lanes:
-                                    succ_lane.outgoing_lanes.append(lane)
+            for lane in road.lanes:
+                # Compute lane foes
+                result = [
+                    incoming
+                    for outgoing in lane.outgoing_lanes
+                    for incoming in outgoing.incoming_lanes
+                    if incoming != lane
+                ]
+                if lane.in_junction:
+                    in_roads = set(il.road for il in lane.incoming_lanes)
+                    for foe in lane.road.lanes:
+                        foe_in_roads = set(il.road for il in foe.incoming_lanes)
+                        if not bool(in_roads & foe_in_roads):
+                            result.append(foe)
+                lane.foes = list(set(result))
+        end = time.time()
+        elapsed = round((end - start) * 1000.0, 3)
+        self._log.info(f"Third pass: {elapsed} ms")
 
     def _compute_lane_connections(
         self,
@@ -472,9 +402,6 @@ class OpenDriveRoadNetwork(RoadMap):
         lane_elem: LaneElement,
         road_elem: RoadElement,
     ):
-        if lane.in_junction:
-            return
-
         lane_link = lane_elem.link
         ls_index = lane_elem.lane_section.idx
 
@@ -506,10 +433,14 @@ class OpenDriveRoadNetwork(RoadMap):
                     # Direction of lane is the same as the reference line
                     if pred_lane not in lane.incoming_lanes:
                         lane.incoming_lanes.append(pred_lane)
+                    if lane not in pred_lane.outgoing_lanes:
+                        pred_lane.outgoing_lanes.append(lane)
                 else:
                     # Direction of lane is opposite the refline, so this is actually an outgoing lane
                     if pred_lane not in lane.outgoing_lanes:
                         lane.outgoing_lanes.append(pred_lane)
+                    if lane not in pred_lane.incoming_lanes:
+                        pred_lane.incoming_lanes.append(lane)
 
         if lane_link.successorId:
             road_id, section_id = None, None
@@ -540,10 +471,14 @@ class OpenDriveRoadNetwork(RoadMap):
                     # Direction of lane is the same as the reference line
                     if succ_lane not in lane.outgoing_lanes:
                         lane.outgoing_lanes.append(succ_lane)
+                    if lane not in succ_lane.incoming_lanes:
+                        succ_lane.incoming_lanes.append(lane)
                 else:
                     # Direction of lane is opposite the refline, so this is actually an incoming lane
                     if succ_lane not in lane.incoming_lanes:
                         lane.incoming_lanes.append(succ_lane)
+                    if lane not in succ_lane.outgoing_lanes:
+                        succ_lane.outgoing_lanes.append(lane)
 
     @property
     def source(self) -> str:
