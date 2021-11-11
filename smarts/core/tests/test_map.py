@@ -375,14 +375,22 @@ def test_od_map_figure_eight():
             assert lane.length is not None
             assert lane.length >= 0
 
-    # # Road tests
-    # r0 = road_map.road_by_id("508_0")
-    # assert r0
-    # assert not r0.is_junction
-    # assert len(r0.lanes) == 8
-    # assert set([r.road_id for r in r0.incoming_roads]) == {"501_0", "516_0"}
-    # assert set([r.road_id for r in r0.outgoing_roads]) == {"501_0", "516_0"}
-    # assert len(r0.shape().exterior.coords) == 1603
+    # Road tests
+    r_508_0_R = road_map.road_by_id("508_0_R")
+    assert r_508_0_R
+    assert not r_508_0_R.is_junction
+    assert len(r_508_0_R.lanes) == 4
+    assert set([r.road_id for r in r_508_0_R.incoming_roads]) == {"516_0_R"}
+    assert set([r.road_id for r in r_508_0_R.outgoing_roads]) == {"501_0_L"}
+    assert len(r_508_0_R.shape().exterior.coords) == 1603
+
+    r_508_0_L = road_map.road_by_id("508_0_L")
+    assert r_508_0_L
+    assert not r_508_0_L.is_junction
+    assert len(r_508_0_L.lanes) == 4
+    assert set([r.road_id for r in r_508_0_L.incoming_roads]) == {"501_0_R"}
+    assert set([r.road_id for r in r_508_0_L.outgoing_roads]) == {"516_0_L"}
+    assert len(r_508_0_L.shape().exterior.coords) == 1603
 
     # # Lane tests
     # l1 = road_map.lane_by_id("508_0_-1")
