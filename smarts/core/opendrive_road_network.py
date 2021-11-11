@@ -218,7 +218,6 @@ class OpenDriveRoadNetwork(RoadMap):
                     (section_elem.leftLanes, "L"),
                     (section_elem.rightLanes, "R"),
                 ]:
-
                     # Skip if there are no lanes
                     if not sub_road:
                         continue
@@ -254,7 +253,6 @@ class OpenDriveRoadNetwork(RoadMap):
                         assert lane_id not in self._surfaces
                         self._surfaces[lane_id] = lane
                         road.lanes.append(lane)
-
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"First pass: {elapsed} ms")
@@ -264,12 +262,10 @@ class OpenDriveRoadNetwork(RoadMap):
         self._precompute_junction_connections(od)
         for road_elem in od.roads:
             for section_elem in road_elem.lanes.lane_sections:
-                # Lanes - incoming/outgoing lanes, geometry, bounding box
                 for sub_road, suffix in [
                     (section_elem.leftLanes, "L"),
                     (section_elem.rightLanes, "R"),
                 ]:
-
                     # Skip if there are no lanes
                     if not sub_road:
                         continue
@@ -287,6 +283,62 @@ class OpenDriveRoadNetwork(RoadMap):
                     for lane_elem in sub_road:
                         lane_id = OpenDriveRoadNetwork._elem_id(lane_elem, suffix)
                         lane = self._lanes[lane_id]
+
+                        # Compute lanes in same direction
+                        lane.lanes_in_same_direction = [
+                            l for l in road.lanes if l.lane_id != lane.lane_id
+                        ]
+
+                        # Lanes with positive lane_elem ID run on the left side of the center lane, while lanes with
+                        # lane_elem negative ID run on the right side of the center lane.
+                        # OpenDRIVE's assumption is that the direction of reference line is same as direction of lanes with
+                        # lane_elem negative ID, hence for a given road -1 will be the left most lane in one direction
+                        # and 1 will be the left most lane in other direction if it exist.
+                        # If there is only one lane in a road, its index will be -1.
+
+                        # Compute lane to the left
+                        result = None
+                        direction = True
+                        if lane.index == -1:
+                            left_road_id = road.road_id.replace("R", "L")
+                            if left_road_id in self._roads:
+                                road_to_left = self._roads[left_road_id]
+                                result = road_to_left.lane_at_index(1)
+                                direction = False
+                        elif lane.index == 1:
+                            left_road_id = road.road_id.replace("L", "R")
+                            if left_road_id in self._roads:
+                                road_to_left = self._roads[left_road_id]
+                                result = road_to_left.lane_at_index(-1)
+                                direction = False
+                        elif lane.index > 1:
+                            result = road.lane_at_index(lane.index - 1)
+                        elif lane.index < -1:
+                            result = road.lane_at_index(lane.index + 1)
+                        lane.lane_to_left = result, direction
+
+                        # Compute lane to right
+                        result = None
+                        if lane.index > 0:
+                            result = road.lane_at_index(lane.index + 1)
+                        elif lane.index < 0:
+                            result = road.lane_at_index(lane.index - 1)
+                        lane.lane_to_right = result, True
+
+                        # Compute lane foes
+                        result = [
+                            incoming
+                            for outgoing in lane.outgoing_lanes
+                            for incoming in outgoing.incoming_lanes
+                            if incoming != lane
+                        ]
+                        if lane.in_junction:
+                            in_roads = set(il.road for il in lane.incoming_lanes)
+                            for foe in lane.road.lanes:
+                                foe_in_roads = set(il.road for il in foe.incoming_lanes)
+                                if not bool(in_roads & foe_in_roads):
+                                    result.append(foe)
+                        lane.foes = list(set(result))
 
                         # Compute Lane connections
                         self._compute_lane_connections(od, lane, lane_elem, road_elem)
@@ -333,95 +385,9 @@ class OpenDriveRoadNetwork(RoadMap):
                                 out_roads.add(out_lane.road)
                     road.incoming_roads.extend(list(in_roads))
                     road.outgoing_roads.extend(list(out_roads))
-
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
-
-        # Third pass: fill in remaining properties
-        start = time.time()
-        for road_elem in od.roads:
-            for section_elem in road_elem.lanes.lane_sections:
-                for sub_road, suffix in [
-                    (section_elem.leftLanes, "L"),
-                    (section_elem.rightLanes, "R"),
-                ]:
-
-                    # Skip if there are no lanes
-                    if not sub_road:
-                        continue
-
-                    road_id = OpenDriveRoadNetwork._elem_id(section_elem, suffix)
-                    road = self._roads[road_id]
-                    for lane_elem in sub_road:
-                        lane_id = OpenDriveRoadNetwork._elem_id(lane_elem, suffix)
-                        lane = self._lanes[lane_id]
-
-                        # Compute lanes in same direction
-                        same_dir_lanes = [
-                            self._lanes[OpenDriveRoadNetwork._elem_id(elem, suffix)]
-                            for elem in sub_road
-                            if elem.id != lane_elem.id
-                        ]
-                        lane.lanes_in_same_direction = same_dir_lanes
-
-                        # Lanes with positive lane_elem ID run on the left side of the center lane, while lanes with
-                        # lane_elem negative ID run on the right side of the center lane.
-                        # OpenDRIVE's assumption is that the direction of reference line is same as direction of lanes with
-                        # lane_elem negative ID, hence for a given road -1 will be the left most lane in one direction
-                        # and 1 will be the left most lane in other direction if it exist.
-                        # If there is only one lane in a road, its index will be -1.
-
-                        # Compute lane to the left
-                        result = None
-                        direction = True
-                        if lane.index == -1:
-                            left_road_id = OpenDriveRoadNetwork._elem_id(
-                                section_elem, "L"
-                            )
-                            if left_road_id in self._roads:
-                                road_to_left = self._roads[left_road_id]
-                                result = road_to_left.lane_at_index(1)
-                                direction = False
-                        elif lane.index == 1:
-                            left_road_id = OpenDriveRoadNetwork._elem_id(
-                                section_elem, "R"
-                            )
-                            if left_road_id in self._roads:
-                                road_to_left = self._roads[left_road_id]
-                                result = road_to_left.lane_at_index(-1)
-                                direction = False
-                        elif lane.index > 1:
-                            result = road.lane_at_index(lane.index - 1)
-                        elif lane.index < -1:
-                            result = road.lane_at_index(lane.index + 1)
-                        lane.lane_to_left = result, direction
-
-                        # Compute lane to right
-                        result = None
-                        if lane.index > 0:
-                            result = road.lane_at_index(lane.index + 1)
-                        elif lane.index < 0:
-                            result = road.lane_at_index(lane.index - 1)
-                        lane.lane_to_right = result, True
-
-                        # Compute lane foes
-                        result = [
-                            incoming
-                            for outgoing in lane.outgoing_lanes
-                            for incoming in outgoing.incoming_lanes
-                            if incoming != lane
-                        ]
-                        if lane.in_junction:
-                            in_roads = set(il.road for il in lane.incoming_lanes)
-                            for foe in lane.road.lanes:
-                                foe_in_roads = set(il.road for il in foe.incoming_lanes)
-                                if not bool(in_roads & foe_in_roads):
-                                    result.append(foe)
-                        lane.foes = list(set(result))
-        end = time.time()
-        elapsed = round((end - start) * 1000.0, 3)
-        self._log.info(f"Third pass: {elapsed} ms")
 
     def _precompute_junction_connections(self, od: OpenDriveElement):
         for road_elem in od.roads:
