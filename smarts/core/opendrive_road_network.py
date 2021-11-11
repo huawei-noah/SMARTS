@@ -372,16 +372,25 @@ class OpenDriveRoadNetwork(RoadMap):
                         # and 1 will be the left most lane in other direction if it exist.
                         # If there is only one lane in a road, its index will be -1.
 
-                        # TODO
                         # Compute lane to the left
                         result = None
                         direction = True
                         if lane.index == -1:
-                            result = road.lane_at_index(1)
-                            direction = False
+                            left_road_id = OpenDriveRoadNetwork._elem_id(
+                                section_elem, "L"
+                            )
+                            if left_road_id in self._roads:
+                                road_to_left = self._roads[left_road_id]
+                                result = road_to_left.lane_at_index(1)
+                                direction = False
                         elif lane.index == 1:
-                            result = road.lane_at_index(-1)
-                            direction = False
+                            left_road_id = OpenDriveRoadNetwork._elem_id(
+                                section_elem, "R"
+                            )
+                            if left_road_id in self._roads:
+                                road_to_left = self._roads[left_road_id]
+                                result = road_to_left.lane_at_index(-1)
+                                direction = False
                         elif lane.index > 1:
                             result = road.lane_at_index(lane.index - 1)
                         elif lane.index < -1:
@@ -991,22 +1000,19 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            # left and right edge follows the central reference line system of road
+            # left and right edge follow the lane reference line system or direction of that road
             leftmost_lane, rightmost_lane = None, None
             min_index, max_index = float("inf"), float("-inf")
             for lane in self.lanes:
-                if lane.index < min_index:
-                    min_index = lane.index
-                    rightmost_lane = lane
-                if lane.index > max_index:
-                    max_index = lane.index
+                if abs(lane.index) < min_index:
+                    min_index = abs(lane.index)
                     leftmost_lane = lane
+                if abs(lane.index) > max_index:
+                    max_index = abs(lane.index)
+                    rightmost_lane = lane
             _, right_edge = rightmost_lane.edges_at_point(point)
-            if min_index == max_index:
-                assert rightmost_lane == leftmost_lane
-                left_edge, _ = leftmost_lane.edges_at_point(point)
-            else:
-                _, left_edge = leftmost_lane.edges_at_point(point)
+            left_edge, _ = leftmost_lane.edges_at_point(point)
+
             return left_edge, right_edge
 
         @lru_cache(maxsize=16)
@@ -1018,20 +1024,25 @@ class OpenDriveRoadNetwork(RoadMap):
             leftmost_lane, rightmost_lane = None, None
             min_index, max_index = float("inf"), float("-inf")
             for lane in self.lanes:
-                if lane.index < min_index:
-                    min_index = lane.index
+                if abs(lane.index) < min_index:
+                    min_index = abs(lane.index)
                     rightmost_lane = lane
-                if lane.index > max_index:
-                    max_index = lane.index
+                if abs(lane.index) > max_index:
+                    max_index = abs(lane.index)
                     leftmost_lane = lane
 
-            # Right edge
             if buffer_width == 0.0:
                 rightmost_lane_buffered_polygon = rightmost_lane.lane_polygon
+                leftmost_lane_buffered_polygon = leftmost_lane.lane_polygon
             else:
                 rightmost_lane_buffered_polygon = rightmost_lane.compute_lane_polygon(
                     buffer_width
                 )
+                leftmost_lane_buffered_polygon = leftmost_lane.compute_lane_polygon(
+                    buffer_width
+                )
+
+            # Right edge
             rightmost_edge_vertices_len = int(
                 (len(rightmost_lane_buffered_polygon) - 1) / 2
             )
@@ -1040,24 +1051,12 @@ class OpenDriveRoadNetwork(RoadMap):
             ]
 
             # Left edge
-            if min_index == max_index:
-                assert leftmost_lane == rightmost_lane
-                leftmost_edge_shape = rightmost_lane_buffered_polygon[
-                    :rightmost_edge_vertices_len
-                ]
-            else:
-                if buffer_width == 0.0:
-                    leftmost_lane_buffered_polygon = leftmost_lane.lane_polygon
-                else:
-                    leftmost_lane_buffered_polygon = leftmost_lane.compute_lane_polygon(
-                        buffer_width
-                    )
-                leftmost_edge_vertices_len = int(
-                    (len(leftmost_lane_buffered_polygon) - 1) / 2
-                )
-                leftmost_edge_shape = leftmost_lane_buffered_polygon[
-                    leftmost_edge_vertices_len : len(leftmost_lane_buffered_polygon) - 1
-                ]
+            leftmost_edge_vertices_len = int(
+                (len(leftmost_lane_buffered_polygon) - 1) / 2
+            )
+            leftmost_edge_shape = leftmost_lane_buffered_polygon[
+                leftmost_edge_vertices_len : len(leftmost_lane_buffered_polygon) - 1
+            ]
 
             road_polygon = (
                 leftmost_edge_shape + rightmost_edge_shape + [leftmost_edge_shape[0]]
@@ -1126,6 +1125,7 @@ class OpenDriveRoadNetwork(RoadMap):
         came_from[start] = None
         cost_so_far = dict()
         cost_so_far[start] = start.length
+        current = None
 
         # Dijkstra’s Algorithm
         while queue:

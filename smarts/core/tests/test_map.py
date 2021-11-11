@@ -237,11 +237,11 @@ def test_od_map_junction():
     assert further_right_lane.lane_id == "0_0_L_3"
     assert further_right_lane.index == 3
 
-    # left_lane, direction = l1.lane_to_left
-    # assert left_lane
-    # assert not direction
-    # assert left_lane.lane_id == "0_0_R_-1"
-    # assert left_lane.index == -1
+    left_lane, direction = l1.lane_to_left
+    assert left_lane
+    assert not direction
+    assert left_lane.lane_id == "0_0_R_-1"
+    assert left_lane.index == -1
 
     # point on lane
     point = (118.0, 170.0, 0)
@@ -263,15 +263,15 @@ def test_od_map_junction():
     assert on_lanes[1].lane_id == "0_0_R_-2"
     assert on_lanes[2].lane_id == "0_0_R_-3"
 
-    # # lane edges on point
-    # left_edge, right_edge = l1.edges_at_point(point)
-    # assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (120.0, 170.0)
-    # assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (116.25, 170.0)
+    # lane edges on point
+    left_edge, right_edge = l1.edges_at_point(point)
+    assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (120.0, 170.0)
+    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (116.25, 170.0)
 
-    # # road edges on point
-    # road_left_edge, road_right_edge = r_0_L.edges_at_point(point)
-    # assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (109.7, 170.0)
-    # assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (130.3, 170.0)
+    # road edges on point
+    road_left_edge, road_right_edge = r_0_L.edges_at_point(point)
+    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (120.0, 170.0)
+    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (109.7, 170.0)
 
     # check for locations (lane, offset tuples) within distance at this offset
     candidates = l1.project_along(offset, 70)
@@ -558,11 +558,11 @@ def test_od_map_lane_offset():
     assert right_lane.lane_id == "1_1_L_2"
     assert right_lane.index == 2
 
-    # left_lane, direction = l0.lane_to_left
-    # assert left_lane
-    # assert not direction
-    # assert left_lane.lane_id == "1_1_R_-1"
-    # assert left_lane.index == -1
+    left_lane, direction = l0.lane_to_left
+    assert left_lane
+    assert not direction
+    assert left_lane.lane_id == "1_1_R_-1"
+    assert left_lane.index == -1
 
     further_right_lane, direction = right_lane.lane_to_right
     assert further_right_lane
@@ -582,15 +582,15 @@ def test_od_map_lane_offset():
     assert l0.contains_point(point)
     assert l0.road.contains_point(point)
 
-    # # lane edges on point
-    # left_edge, right_edge = l0.edges_at_point(point)
-    # assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (31.08, 0.13)
-    # assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (31.0, 3.25)
+    # lane edges on point
+    left_edge, right_edge = l0.edges_at_point(point)
+    assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (31.08, 0.13)
+    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (31.0, 3.25)
 
-    # # road edges on point
-    # road_left_edge, road_right_edge = r_1_1_R.edges_at_point(point)
-    # assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (31.0, 8.0)
-    # assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (31.0, -5.25)
+    # road edges on point
+    road_left_edge, road_right_edge = r_1_1_R.edges_at_point(point)
+    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (31.08, 0.13)
+    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (31.0, -5.25)
 
     # point not on lane but on road
     point = (31.0, 4.5, 0)
