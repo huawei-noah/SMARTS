@@ -927,10 +927,10 @@ class OpenDriveRoadNetwork(RoadMap):
             for lane in self.lanes:
                 if abs(lane.index) < min_index:
                     min_index = abs(lane.index)
-                    rightmost_lane = lane
+                    leftmost_lane = lane
                 if abs(lane.index) > max_index:
                     max_index = abs(lane.index)
-                    leftmost_lane = lane
+                    rightmost_lane = lane
 
             if buffer_width == 0.0:
                 rightmost_lane_buffered_polygon = rightmost_lane.lane_polygon
@@ -956,7 +956,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 (len(leftmost_lane_buffered_polygon) - 1) / 2
             )
             leftmost_edge_shape = leftmost_lane_buffered_polygon[
-                leftmost_edge_vertices_len : len(leftmost_lane_buffered_polygon) - 1
+                :leftmost_edge_vertices_len
             ]
 
             road_polygon = (
