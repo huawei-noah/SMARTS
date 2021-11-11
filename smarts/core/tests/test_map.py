@@ -342,6 +342,15 @@ def test_od_map_junction():
         == r_0_0_L.length + r_13_0_R.length + r_15_0_R.length
     )
 
+    # distance between points along route
+    start_point = Point(x=118.0, y=150.0, z=0.0)
+    end_point = Point(x=190.0, y=118.0, z=0.0)
+    assert round(route_0_to_13[0].distance_between(start_point, end_point), 2) == 95.93
+
+    # project along route
+    candidates = route_0_to_13[0].project_along(start_point, 100)
+    assert len(candidates) == 4
+
     r_13_0_L = road_map.road_by_id("13_0_L")
     r_9_0_R = road_map.road_by_id("9_0_R")
     r_0_0_R = road_map.road_by_id("0_0_R")
@@ -352,6 +361,16 @@ def test_od_map_junction():
         == r_13_0_L.length + r_9_0_R.length + r_0_0_R.length
     )
 
+    # distance between points along route
+    start_point = Point(x=150.0, y=121.0, z=0.0)
+    end_point = Point(x=122.0, y=180.0, z=0.0)
+    assert round(route_13_to_0[0].distance_between(start_point, end_point), 2) == 84.44
+
+    # project along route
+    candidates = route_13_to_0[0].project_along(start_point, 100)
+    assert len(candidates) == 4
+
+    # Invalid route generation
     invalid_route = road_map.generate_routes(
         road_map.road_by_id("13_0_L"), road_map.road_by_id("1_0_L")
     )
@@ -628,6 +647,14 @@ def test_od_map_lane_offset():
     route = road_map.generate_routes(start, end)
     assert [r.road_id for r in route[0].roads] == ["1_0_R", "1_1_R", "1_2_R"]
 
+    # distance between points along route
+    start_point = Point(x=17.56, y=-1.67, z=0.0)
+    end_point = Point(x=89.96, y=2.15, z=0.0)
+    assert round(route[0].distance_between(start_point, end_point), 2) == 72.4
+    # project along route
+    candidates = route[0].project_along(start_point, 70)
+    assert len(candidates) == 3
+
 
 def test_od_map_motorway():
     root = path.join(Path(__file__).parent.absolute(), "maps")
@@ -672,6 +699,15 @@ def test_od_map_motorway():
         "40_0_R",
     ]
 
+    # distance between points along route
+    start_point = Point(x=222.09, y=998.12, z=0.0)
+    end_point = Point(x=492.62, y=428.18, z=0.0)
+    assert round(route_6_to_40[0].distance_between(start_point, end_point), 2) == 761.66
+
+    # project along route
+    candidates = route_6_to_40[0].project_along(start_point, 600)
+    assert len(candidates) == 6
+
     route_6_to_34_via_19 = road_map.generate_routes(
         road_map.road_by_id("6_0_L"),
         road_map.road_by_id("34_0_R"),
@@ -695,9 +731,21 @@ def test_od_map_motorway():
         "34_0_R",
     ]
 
+    # distance between points along route
+    start_point = Point(x=222.09, y=998.12, z=0.0)
+    end_point = Point(x=507.40, y=1518.31, z=0.0)
+    assert (
+        round(route_6_to_34_via_19[0].distance_between(start_point, end_point), 2)
+        == 971.71
+    )
+    # project along route
+    candidates = route_6_to_34_via_19[0].project_along(start_point, 600)
+    assert len(candidates) == 3
+
     route_34_to_6 = road_map.generate_routes(
         road_map.road_by_id("34_0_L"), road_map.road_by_id("6_0_R")
     )
+
     assert [r.road_id for r in route_34_to_6[0].roads] == [
         "34_0_L",
         "38_0_R",
@@ -712,3 +760,11 @@ def test_od_map_motorway():
         "18_1_R",
         "6_0_R",
     ]
+
+    # distance between points along route
+    start_point = Point(x=493.70, y=1528.79, z=0.0)
+    end_point = Point(x=192.60, y=1001.47, z=0.0)
+    assert round(route_34_to_6[0].distance_between(start_point, end_point), 2) == 1114.0
+    # project along route
+    candidates = route_34_to_6[0].project_along(start_point, 600)
+    assert len(candidates) == 4
