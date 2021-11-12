@@ -25,16 +25,39 @@ jobs:
           black --check .
           npx prettier --check envision/web/src
 
-  check-requirements-change-linux:
+  # check-requirements-change-linux:
+  #   runs-on: ubuntu-18.04
+  #   if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+  #   container: huaweinoah/smarts:v0.4.18-minimal
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #     - name: Test pip packages
+  #       run: |
+  #         cd $GITHUB_WORKSPACE
+  #         . ./utils/setup/test_pip_packages.sh
+  #       continue-on-error: true
+
+  add-requirements-linux:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Test pip packages
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Create requirements.txt file
         run: |
           cd $GITHUB_WORKSPACE
-          . ./utils/setup/test_pip_packages.sh
-        continue-on-error: true
-
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip
+          pip install .[test,train,camera-obs]
+          rm requirements.txt || true
+          pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements.txt
+      - name: Add requirements.txt file
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update requirements.txt
+          file_pattern: *.txt
