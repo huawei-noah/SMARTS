@@ -32,13 +32,12 @@ jobs:
     steps:
       - name: Install git
         run: |
-          apt-get update && \
-            add-apt-repository -y ppa:git-core/ppa && \
+          add-apt-repository -y ppa:git-core/ppa && \
             apt-get update && \
             apt-get install -y git
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Create new requirements.txt
+      - name: Update requirements
         run: |
           cd $GITHUB_WORKSPACE
           python3.7 -m venv ${{env.venv_dir}}
