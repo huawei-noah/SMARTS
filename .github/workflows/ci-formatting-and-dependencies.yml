@@ -38,7 +38,7 @@ jobs:
             apt-get install -y git
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Create requirements.txt file
+      - name: Create new requirements.txt
         run: |
           cd $GITHUB_WORKSPACE
           python3.7 -m venv ${{env.venv_dir}}
@@ -46,7 +46,9 @@ jobs:
           python3.7 -m pip install --upgrade pip
           python3.7 -m pip install .[test,train,camera-obs]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
-          if [cmp requirements.txt requirements_new.txt]
+      - name: Check for updates
+        run: |
+          if [ cmp requirements.txt requirements_new.txt ]
           then
             rm requirements_new.txt 
           else
