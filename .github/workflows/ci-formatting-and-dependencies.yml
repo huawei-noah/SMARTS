@@ -69,8 +69,13 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
     steps:
-      - name: Install git
-        run: apt-get update && apt-get install -y git
+      - name: Force Install GIT latest
+        run: |
+          apt-get install -y software-properties-common \
+          && apt-get update \
+          && add-apt-repository -y ppa:git-core/ppa \
+          && apt-get update \
+          && apt-get install -y git
       - name: Checkout
         uses: actions/checkout@v2
         with:
