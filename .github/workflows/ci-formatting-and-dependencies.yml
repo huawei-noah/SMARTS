@@ -41,7 +41,6 @@ jobs:
   add-requirements-linux:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    # container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -52,8 +51,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           python3 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
-          pip install --upgrade pip
-          pip install --no-cache-dir .[test,train,camera-obs]
+          pip install --use-deprecated=legacy-resolver .[test,train,camera-obs]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
           cmp requirements.txt requirements_new.txt || (rm requirements.txt && mv requirements_new.txt requirements.txt)
       - name: Add requirements.txt file
