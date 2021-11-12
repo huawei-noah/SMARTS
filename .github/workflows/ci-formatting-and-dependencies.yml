@@ -61,7 +61,7 @@ jobs:
       - name: Add requirements.txt file
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          repository: ${{GITHUB_WORKSPACE}}
+          repository: $GITHUB_WORKSPACE
           commit_message: 'Update requirements.txt'
           file_pattern: '*.txt'
 
@@ -90,4 +90,4 @@ jobs:
         with:
           message: 'Update requirements.txt'
           add: '*.txt'
-          cwd: ${{GITHUB_WORKSPACE}}
+          cwd: $GITHUB_WORKSPACE
