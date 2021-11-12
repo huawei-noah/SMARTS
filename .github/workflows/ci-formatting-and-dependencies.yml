@@ -56,7 +56,7 @@ jobs:
           python3.7 -m pip install .[test,train,camera-obs]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
           cmp requirements.txt requirements_new.txt || (rm requirements.txt && mv requirements_new.txt requirements.txt)
-      - run: apt-get update and apt-get install -y git
+      - run: apt-get update && apt-get install -y git
       - name: Add requirements.txt file
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
