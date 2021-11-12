@@ -61,7 +61,6 @@ jobs:
       - name: Add requirements.txt file
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          repository: $GITHUB_WORKSPACE
           commit_message: 'Update requirements.txt'
           file_pattern: '*.txt'
 
@@ -85,9 +84,9 @@ jobs:
           cmp requirements.txt requirements_new.txt || (rm requirements.txt && mv requirements_new.txt requirements.txt)
       - name: Install git
         run: apt-get update && apt-get install -y git
+      - run: echo $GITHUB_WORKSPACE  
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
           message: 'Update requirements.txt'
           add: '*.txt'
-          cwd: $GITHUB_WORKSPACE
