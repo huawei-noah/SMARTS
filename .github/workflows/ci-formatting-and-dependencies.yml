@@ -32,10 +32,10 @@ jobs:
     steps:
       - name: Install git
         run: |
-          apt-get update \
-          && add-apt-repository -y ppa:git-core/ppa \
-          && apt-get update \
-          && apt-get install -y git
+          apt-get update && \
+            add-apt-repository -y ppa:git-core/ppa && \
+            apt-get update && \
+            apt-get install -y git
       - name: Checkout
         uses: actions/checkout@v2
       - name: Create requirements.txt file
@@ -46,7 +46,13 @@ jobs:
           python3.7 -m pip install --upgrade pip
           python3.7 -m pip install .[test,train,camera-obs]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
-          cmp requirements.txt requirements_new.txt || (rm requirements.txt && mv requirements_new.txt requirements.txt)
+          if [cmp requirements.txt requirements_new.txt]
+          then
+            rm requirements_new.txt 
+          else
+            rm requirements.txt && \
+              mv requirements_new.txt requirements.txt
+          fi
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
