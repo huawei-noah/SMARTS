@@ -45,16 +45,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           python3.7 -m pip install --upgrade pip
           python3.7 -m pip install .[test,train,camera-obs]
-          pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
-      - name: Check for updates
-        run: |
-          if [ cmp requirements.txt requirements_new.txt ]
-          then
-            rm requirements_new.txt 
-          else
-            rm requirements.txt && \
-              mv requirements_new.txt requirements.txt
-          fi
+          pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements.txt
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
