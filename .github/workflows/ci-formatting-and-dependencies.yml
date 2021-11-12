@@ -49,9 +49,14 @@ jobs:
       - name: Create requirements.txt file
         run: |
           cd $GITHUB_WORKSPACE
-          python3 -m venv ${{env.venv_dir}}
+          apt-get update && apt-get install -y \
+            python3.7 \
+            python3.7-dev \
+            python3.7-venv
+          python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
-          pip install --use-deprecated=legacy-resolver .[test,train,camera-obs]
+          pip install --upgrade pip
+          pip install .[test,train,camera-obs]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
           cmp requirements.txt requirements_new.txt || (rm requirements.txt && mv requirements_new.txt requirements.txt)
       - name: Add requirements.txt file
