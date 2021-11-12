@@ -50,7 +50,7 @@ jobs:
       - name: Create requirements.txt file
         run: |
           cd $GITHUB_WORKSPACE
-          python3.7 -m venv ${{env.venv_dir}}
+          python -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install .[test,train,camera-obs]
