@@ -41,7 +41,7 @@ jobs:
   add-requirements-linux:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.18-minimal
+    # container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -50,11 +50,10 @@ jobs:
       - name: Create requirements.txt file
         run: |
           cd $GITHUB_WORKSPACE
-          python3.7 -m venv ${{env.venv_dir}}
+          python3 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
-          apt-get update && apt-get install -y git
           pip install --upgrade pip
-          pip install -e .[test,train,camera-obs]
+          pip install .[test,train,camera-obs]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
           cmp requirements.txt requirements_new.txt || (rm requirements.txt && mv requirements_new.txt requirements.txt)
       - name: Add requirements.txt file
@@ -62,3 +61,29 @@ jobs:
         with:
           commit_message: Update requirements.txt
           file_pattern: '*.txt'
+
+  # add-requirements-linux-2:
+  #   runs-on: ubuntu-18.04
+  #   if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+  #   container: huaweinoah/smarts:v0.4.18-minimal
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #       with:
+  #         ref: ${{ github.head_ref }}
+  #     - name: Create requirements.txt file
+  #       run: |
+  #         cd $GITHUB_WORKSPACE
+  #         python3.7 -m venv ${{env.venv_dir}}
+  #         . ${{env.venv_dir}}/bin/activate
+  #         apt-get update && apt-get install -y git
+  #         pip install --upgrade pip
+  #         pip install .[test,train,camera-obs]
+  #         pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
+  #         cmp requirements.txt requirements_new.txt || (rm requirements.txt && mv requirements_new.txt requirements.txt)
+  #     - name: Add requirements.txt file
+  #       uses: EndBug/add-and-commit@v7 
+  #       with:
+  #         default_author: github_actions
+  #         message: Update requirements.txt
+  #         file_pattern: '*.txt'
