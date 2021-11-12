@@ -38,31 +38,31 @@ jobs:
   #         . ./utils/setup/test_pip_packages.sh
   #       continue-on-error: true
 
-  add-requirements-linux:
-    runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.18-minimal
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
-      - name: Create requirements.txt file
-        run: |
-          cd $GITHUB_WORKSPACE
-          python3.7 -m venv ${{env.venv_dir}}
-          . ${{env.venv_dir}}/bin/activate
-          python3.7 -m pip install --upgrade pip
-          python3.7 -m pip install .[test,train,camera-obs]
-          pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
-          cmp requirements.txt requirements_new.txt || (rm requirements.txt && mv requirements_new.txt requirements.txt)
-      - name: Install git
-        run: apt-get update && apt-get install -y git
-      - name: Add requirements.txt file
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: 'Update requirements.txt'
-          file_pattern: '*.txt'
+  # add-requirements-linux:
+  #   runs-on: ubuntu-18.04
+  #   if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+  #   container: huaweinoah/smarts:v0.4.18-minimal
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #       with:
+  #         ref: ${{ github.head_ref }}
+  #     - name: Create requirements.txt file
+  #       run: |
+  #         cd $GITHUB_WORKSPACE
+  #         python3.7 -m venv ${{env.venv_dir}}
+  #         . ${{env.venv_dir}}/bin/activate
+  #         python3.7 -m pip install --upgrade pip
+  #         python3.7 -m pip install .[test,train,camera-obs]
+  #         pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
+  #         cmp requirements.txt requirements_new.txt || (rm requirements.txt && mv requirements_new.txt requirements.txt)
+  #     - name: Install git
+  #       run: apt-get update && apt-get install -y git
+  #     - name: Add requirements.txt file
+  #       uses: stefanzweifel/git-auto-commit-action@v4
+  #       with:
+  #         commit_message: 'Update requirements.txt'
+  #         file_pattern: '*.txt'
 
   add-requirements-linux-2:
     runs-on: ubuntu-18.04
@@ -85,6 +85,9 @@ jobs:
       - name: Install git
         run: apt-get update && apt-get install -y git
       - run: echo $GITHUB_WORKSPACE  
+      - run: |
+          cd $GITHUB_WORKSPACE
+          ls -a
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
