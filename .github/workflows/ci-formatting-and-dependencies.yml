@@ -52,7 +52,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
-          apt-get install -y git
+          apt-get update && apt-get install -y git
           pip install --upgrade pip
           pip install -e .[test,train,camera-obs]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements_new.txt
