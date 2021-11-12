@@ -1,5 +1,5 @@
 absl-py==1.0.0
-aiohttp==3.7.0
+aiohttp==3.8.0
 aiohttp-cors==0.7.0
 aioredis==2.0.0
 aiosignal==1.2.0
@@ -186,4 +186,3 @@ yarl==1.7.2
 yattag==1.14.0
 zipp==3.6.0
 zope.interface==5.4.0
-dummy==0.0.0
