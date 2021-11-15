@@ -48,6 +48,6 @@ jobs:
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
-          message: 'Update requirements.txt'
-          add: '*.txt'
+          message: 'GitHub Actions: Update requirements.txt'
+          add: 'requirements.txt'
           default_author: user_info 
