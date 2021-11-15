@@ -247,21 +247,21 @@ def test_od_map_junction():
     point = (118.0, 170.0, 0)
     refline_pt = l1.to_lane_coord(point)
     assert round(refline_pt.s, 2) == 70.0
-    assert round(refline_pt.t, 2) == -2.0
+    assert round(refline_pt.t, 2) == -0.12
 
     offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.75
     assert l1.curvature_radius_at_offset(offset) == math.inf
     assert l1.contains_point(point)
     assert l1.road.contains_point(point)
+    central_point = l1.center_at_point(point)
+    assert (round(central_point.x, 2), round(central_point.y, 2)) == (118.12, 170.0)
 
     # oncoming lanes at this point
     on_lanes = l1.oncoming_lanes_at_offset(offset)
     assert on_lanes
-    assert len(on_lanes) == 3
+    assert len(on_lanes) == 1
     assert on_lanes[0].lane_id == "0_0_R_-1"
-    assert on_lanes[1].lane_id == "0_0_R_-2"
-    assert on_lanes[2].lane_id == "0_0_R_-3"
 
     # lane edges on point
     left_edge, right_edge = l1.edges_at_point(point)
@@ -281,7 +281,7 @@ def test_od_map_junction():
     point = (112.0, 170.0, 0)
     refline_pt = l1.to_lane_coord(point)
     assert round(refline_pt.s, 2) == 70.0
-    assert round(refline_pt.t, 2) == -8.0
+    assert round(refline_pt.t, 2) == -6.12
 
     offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.75
@@ -425,31 +425,31 @@ def test_od_map_figure_eight():
     point = (13.0, -17.0, 0)
     refline_pt = l1.to_lane_coord(point)
     assert round(refline_pt.s, 2) == 7.21
-    assert round(refline_pt.t, 2) == -2.83
+    assert round(refline_pt.t, 2) == -0.95
+    central_point = l1.center_at_point(point)
+    assert (round(central_point.x, 2), round(central_point.y, 2)) == (13.67, -16.33)
 
     offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.75
-    assert l1.curvature_radius_at_offset(offset) == 938249922368853.4
+    assert l1.curvature_radius_at_offset(offset) == 1407374883553280.0
     assert l1.contains_point(point)
     assert l1.road.contains_point(point)
 
     # point on curved part of the lane
     point = (163.56, 75.84, 0)
     refline_pt = l1.to_lane_coord(point)
-    assert round(refline_pt.s, 2) == 358.08
-    assert round(refline_pt.t, 2) == -1.75
+    assert round(refline_pt.s, 2) == 364.39
+    assert round(refline_pt.t, 2) == 0.13
 
     offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.75
-    assert round(l1.curvature_radius_at_offset(offset), 2) == 80.0
+    assert round(l1.curvature_radius_at_offset(offset), 2) == 81.87
     assert l1.contains_point(point)
     assert l1.road.contains_point(point)
 
     # oncoming lanes at this point
     assert set([l.lane_id for l in l1.oncoming_lanes_at_offset(offset)]) == {
-        "508_0_L_1",
-        "508_0_L_2",
-        "508_0_L_3",
+        "508_0_L_1"
     }
 
     # edges on curved part
@@ -464,8 +464,8 @@ def test_od_map_figure_eight():
     # point not on lane but on road
     point = (163, 82, 0)
     refline_pt = l1.to_lane_coord(point)
-    assert round(refline_pt.s, 2) == 361.57
-    assert round(refline_pt.t, 2) == -6.74
+    assert round(refline_pt.s, 2) == 367.96
+    assert round(refline_pt.t, 2) == -4.87
     assert not l1.contains_point(point)
     assert l1.road.contains_point(point)
 
@@ -600,12 +600,12 @@ def test_od_map_lane_offset():
     # point on lane
     point = (31.0, 2.0, 0)
     refline_pt = l0.to_lane_coord(point)
-    assert round(refline_pt.s, 2) == 43.54
-    assert round(refline_pt.t, 2) == -1.87
+    assert round(refline_pt.s, 2) == 43.52
+    assert round(refline_pt.t, 2) == -0.31
 
     offset = refline_pt.s
     assert round(l0.width_at_offset(offset), 2) == 3.1
-    assert round(l0.curvature_radius_at_offset(offset), 2) == -146.35
+    assert round(l0.curvature_radius_at_offset(offset), 2) == -291.53
     assert l0.contains_point(point)
     assert l0.road.contains_point(point)
 
@@ -622,12 +622,12 @@ def test_od_map_lane_offset():
     # point not on lane but on road
     point = (31.0, 4.5, 0)
     refline_pt = l0.to_lane_coord(point)
-    assert round(refline_pt.s, 2) == 43.44
-    assert round(refline_pt.t, 2) == -4.37
+    assert round(refline_pt.s, 2) == 43.47
+    assert round(refline_pt.t, 2) == -2.81
 
     offset = refline_pt.s
     assert round(l0.width_at_offset(offset), 2) == 3.1
-    assert round(l0.curvature_radius_at_offset(offset), 2) == -147.07
+    assert round(l0.curvature_radius_at_offset(offset), 2) == -292.24
     assert not l0.contains_point(point)
     assert l0.road.contains_point(point)
 
