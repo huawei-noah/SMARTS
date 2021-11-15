@@ -145,11 +145,11 @@ class TrapManager:
                 if sim.scenario.traffic_history is not None:
                     break
 
-                vehicle = vehicles[v_id]
-                point = Point(vehicle.position)
-
                 if not trap.includes(v_id):
                     continue
+
+                vehicle = vehicles[v_id]
+                point = Point(vehicle.position)
 
                 if not point.within(trap.geometry):
                     continue

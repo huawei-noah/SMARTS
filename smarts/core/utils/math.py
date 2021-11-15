@@ -198,7 +198,7 @@ def low_pass_filter(
 def radians_to_vec(radians) -> np.ndarray:
     # +y = 0 rad.
     angle = (radians + math.pi * 0.5) % (2 * math.pi)
-    return np.array([math.cos(angle), math.sin(angle)])
+    return np.array((math.cos(angle), math.sin(angle)))
 
 
 def vec_to_radians(v) -> float:

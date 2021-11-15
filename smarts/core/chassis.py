@@ -246,10 +246,11 @@ class BoxChassis(Chassis):
             linear_velocity = np.array((vh[0], vh[1], 0.0)) * self._speed
         else:
             linear_velocity = None
-        angular_velocity = np.array((0.0, 0.0, 0.0))
         if self._last_dt and self._last_dt > 0:
-            angular_velocity = vh - radians_to_vec(self._last_heading)
-            angular_velocity = np.append(angular_velocity / self._last_dt, 0.0)
+            av = (vh - radians_to_vec(self._last_heading)) / self._last_dt
+            angular_velocity = np.array((av[0], av[1], 0.0))
+        else:
+            angular_velocity = np.array((0.0, 0.0, 0.0))
         return (linear_velocity, angular_velocity)
 
     @speed.setter
