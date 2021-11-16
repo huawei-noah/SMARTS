@@ -685,12 +685,15 @@ class OpenDriveRoadNetwork(RoadMap):
                 xs_outer.append(x_ref + (t_outer + width_offset) * math.cos(angle))
                 ys_outer.append(y_ref + (t_outer + width_offset) * math.sin(angle))
 
-            if self.index < 0:
-                xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
-                ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
-            else:
-                xs.extend(xs_inner[::-1] + xs_outer + [xs_inner[len(xs_inner) - 1]])
-                ys.extend(ys_inner[::-1] + ys_outer + [ys_inner[len(ys_inner) - 1]])
+            xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
+            ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
+
+            # if self.index < 0:
+            #     xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
+            #     ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
+            # else:
+            #     xs.extend(xs_inner[::-1] + xs_outer + [xs_inner[len(xs_inner) - 1]])
+            #     ys.extend(ys_inner[::-1] + ys_outer + [ys_inner[len(ys_inner) - 1]])
 
             assert len(xs) == len(ys)
             return list(zip(xs, ys))
