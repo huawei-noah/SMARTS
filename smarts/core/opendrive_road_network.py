@@ -333,11 +333,9 @@ class OpenDriveRoadNetwork(RoadMap):
                             lane_elem.widths,
                             road_elem.lanes.laneOffsets,
                         )
-                        lane.add_lane_boundaries(inner_boundary, outer_boundary)
-                        inner_boundary = outer_boundary
 
-                        # Compute lane's polygon
-                        lane.lane_polygon = lane.compute_lane_polygon()
+                        lane.cache_geometry(inner_boundary, outer_boundary)
+                        inner_boundary = outer_boundary
 
                         x_coordinates, y_coordinates = zip(*lane.lane_polygon)
                         lane.bounding_box = [
@@ -539,6 +537,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._outgoing_lanes = []
             self._lanes_in_same_dir = []
             self._foes = []
+            self._ref_coords = {}
             self._lane_boundaries = tuple()
             self._lane_polygon = []
             self._bounding_box = []
@@ -619,9 +618,6 @@ class OpenDriveRoadNetwork(RoadMap):
         def foes(self, value):
             self._foes = value
 
-        def add_lane_boundaries(self, inner: LaneBoundary, outer: LaneBoundary):
-            self._lane_boundaries = (inner, outer)
-
         @property
         def lane_polygon(self) -> List[Tuple[float, float]]:
             return self._lane_polygon
@@ -647,25 +643,49 @@ class OpenDriveRoadNetwork(RoadMap):
             )
             return constrain_angle(angle)
 
-        def _compute_lane_ref_coordinates(self) -> Dict[float, Tuple[float, float]]:
+        def cache_geometry(
+            self, inner_boundary: LaneBoundary, outer_boundary: LaneBoundary
+        ):
+            # Set inner/outer boundaries
+            self._lane_boundaries = (inner_boundary, outer_boundary)
+
+            # Compute ref coords (s values to sample for polygon & centerline)
             section_len = self._length
             section_s_start = self.road.s_pos
             section_s_end = section_s_start + section_len
 
-            inner_boundary, outer_boundary = self._lane_boundaries
             inner_s_vals = inner_boundary.to_linear_segments(
                 section_s_start, section_s_end
             )
             outer_s_vals = outer_boundary.to_linear_segments(
                 section_s_start, section_s_end
             )
+
+            # Cache centerline & ref coords
+            center_xs, center_ys = [], []
             s_vals = sorted(set(inner_s_vals + outer_s_vals))
-            reference_coordinates = {}
             for s in s_vals:
                 t_inner = inner_boundary.calc_t(s, section_s_start, self.index)
                 t_outer = outer_boundary.calc_t(s, section_s_start, self.index)
-                reference_coordinates[s] = (t_inner, t_outer)
-            return reference_coordinates
+                (x_ref, y_ref), heading = self._plan_view.calc(s)
+                angle = self.t_angle(heading)
+                width_at_offset = t_outer - t_inner
+                center_xs.append(
+                    x_ref + (t_inner + (width_at_offset / 2)) * math.cos(angle)
+                )
+                center_ys.append(
+                    y_ref + (t_inner + (width_at_offset / 2)) * math.sin(angle)
+                )
+                self._ref_coords[s] = (t_inner, t_outer)
+
+            # For lanes left of the refline, reverse the order of centerline points to be in order of increasing s
+            if self.index > 0:
+                center_xs = center_xs[::-1]
+                center_ys = center_ys[::-1]
+            self._centerline_points = list(zip(center_xs, center_ys))
+
+            # Cache lane polygon (normal size, with no buffer)
+            self._lane_polygon = self.compute_lane_polygon()
 
         def compute_lane_polygon(
             self,
@@ -674,48 +694,17 @@ class OpenDriveRoadNetwork(RoadMap):
             xs, ys = [], []
             xs_inner, ys_inner = [], []
             xs_outer, ys_outer = [], []
-            reference_coordinates = self._compute_lane_ref_coordinates()
-            s_vals = sorted(reference_coordinates.keys())
+            s_vals = sorted(self._ref_coords.keys())
             for s in s_vals:
-                t_inner, t_outer = reference_coordinates[s]
+                t_inner, t_outer = self._ref_coords[s]
                 (x_ref, y_ref), heading = self._plan_view.calc(s)
                 angle = self.t_angle(heading)
                 xs_inner.append(x_ref + (t_inner - width_offset) * math.cos(angle))
                 ys_inner.append(y_ref + (t_inner - width_offset) * math.sin(angle))
                 xs_outer.append(x_ref + (t_outer + width_offset) * math.cos(angle))
                 ys_outer.append(y_ref + (t_outer + width_offset) * math.sin(angle))
-
             xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
             ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
-
-            # if self.index < 0:
-            #     xs.extend(xs_inner + xs_outer[::-1] + [xs_inner[0]])
-            #     ys.extend(ys_inner + ys_outer[::-1] + [ys_inner[0]])
-            # else:
-            #     xs.extend(xs_inner[::-1] + xs_outer + [xs_inner[len(xs_inner) - 1]])
-            #     ys.extend(ys_inner[::-1] + ys_outer + [ys_inner[len(ys_inner) - 1]])
-
-            assert len(xs) == len(ys)
-            return list(zip(xs, ys))
-
-        @cached_property
-        def compute_lane_central_line(self) -> List[Tuple[float, float]]:
-            xs, ys = [], []
-            reference_coordinates = self._compute_lane_ref_coordinates()
-            s_vals = sorted(reference_coordinates.keys())
-            for s in s_vals:
-                t_inner, t_outer = reference_coordinates[s]
-                (x_ref, y_ref), heading = self._plan_view.calc(s)
-                angle = self.t_angle(heading)
-                width_at_offset = t_outer - t_inner
-                xs.append(x_ref + (t_inner + (width_at_offset / 2)) * math.cos(angle))
-                ys.append(y_ref + (t_inner + (width_at_offset / 2)) * math.sin(angle))
-
-            if self.index > 0:
-                xs = xs[::-1]
-                ys = ys[::-1]
-
-            assert len(xs) == len(ys)
             return list(zip(xs, ys))
 
         @lru_cache(maxsize=8)
@@ -743,8 +732,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def offset_along_lane(self, world_point: Point) -> float:
-            central_line_shape = self.compute_lane_central_line
-            return offset_along_shape(world_point[:2], central_line_shape)
+            return offset_along_shape(world_point[:2], self._centerline_points)
 
         @lru_cache(maxsize=16)
         def oncoming_lanes_at_offset(self, offset: float) -> List[RoadMap.Lane]:
@@ -769,8 +757,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            central_line_shape = self.compute_lane_central_line
-            x, y = position_at_shape_offset(central_line_shape, lane_point.s)
+            x, y = position_at_shape_offset(self._centerline_points, lane_point.s)
             return Point(x=x, y=y)
 
         @lru_cache(maxsize=8)
