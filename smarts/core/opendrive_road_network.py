@@ -309,18 +309,21 @@ class OpenDriveRoadNetwork(RoadMap):
                                 road_to_left = self._roads[left_road_id]
                                 result = road_to_left.lane_at_index(-1)
                                 direction = False
-                        elif lane.index > 1:
-                            result = road.lane_at_index(lane.index - 1)
-                        elif lane.index < -1:
-                            result = road.lane_at_index(lane.index + 1)
+                        else:
+                            assert lane.index != 0
+                            result = road.lane_at_index(
+                                lane.index - np.sign(lane.index)
+                            )
                         lane.lane_to_left = result, direction
 
                         # Compute lane to right
                         result = None
-                        if lane.index > 0:
-                            result = road.lane_at_index(lane.index + 1)
-                        elif lane.index < 0:
-                            result = road.lane_at_index(lane.index - 1)
+                        assert abs(lane.index <= len(road.lanes))
+                        if abs(lane.index) < len(road.lanes):
+                            assert lane.index != 0
+                            result = road.lane_at_index(
+                                lane.index + np.sign(lane.index)
+                            )
                         lane.lane_to_right = result, True
 
                         # Compute Lane connections
