@@ -375,11 +375,14 @@ class BubbleManager:
         )
         cursors = set()
         for _, vehicle in index_new.vehicleitems():
+            active_bubbles = self._active_bubbles()
+            if not active_bubbles:
+                continue
             # XXX: Turns out Point(...) creation is very expensive (~0.02ms) which
             #      when inside of a loop x large number of vehicles makes a big
             #      performance hit.
             point = Point(vehicle.position)
-            for bubble in self._active_bubbles():
+            for bubble in active_bubbles:
                 cursors.add(
                     Cursor.from_pos(
                         pos=point,
