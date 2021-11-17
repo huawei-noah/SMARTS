@@ -25,7 +25,9 @@ import time
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Dict, List, Sequence, Set, Tuple
-
+import trimesh
+import trimesh.scene
+from trimesh.exchange import gltf
 import numpy as np
 from cached_property import cached_property
 from lxml import etree
@@ -61,6 +63,35 @@ from smarts.core.utils.math import (
 )
 
 from .coordinates import BoundingBox, Point, Pose, RefLinePoint
+from smarts.core.utils.geometry import generate_mesh_from_polygons
+
+
+def _convert_camera(camera):
+    result = {
+        "name": camera.name,
+        "type": "perspective",
+        "perspective": {
+            "aspectRatio": camera.fov[0] / camera.fov[1],
+            "yfov": np.radians(camera.fov[1]),
+            "znear": float(camera.z_near),
+            # HACK: The trimesh gltf export doesn't include a zfar which Panda3D GLB
+            #       loader expects. Here we override to make loading possible.
+            "zfar": float(camera.z_near + 100),
+        },
+    }
+    return result
+
+
+gltf._convert_camera = _convert_camera
+
+
+class _GLBData:
+    def __init__(self, bytes_):
+        self._bytes = bytes_
+
+    def write_glb(self, output_path):
+        with open(output_path, "wb") as f:
+            f.write(self._bytes)
 
 
 @dataclass
@@ -503,6 +534,75 @@ class OpenDriveRoadNetwork(RoadMap):
             min_pt=Point(x=min(x_mins), y=min(y_mins)),
             max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
         )
+
+    def to_glb(self, at_path):
+        """build a glb file for camera rendering and envision"""
+        glb = self._make_glb_from_polys()
+        glb.write_glb(at_path)
+
+    def _make_glb_from_polys(self):
+        scene = trimesh.Scene()
+        polygons = []
+        for lane_id in self._lanes:
+            lane = self._lanes[lane_id]
+            polygons.append(lane.shape())
+
+        mesh = generate_mesh_from_polygons(polygons)
+
+        # Attach additional information for rendering as metadata in the map glb
+        # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
+        # which describe x-minimum, y-minimum, x-maximum, and y-maximum
+        metadata = {
+            "bounding_box": (
+                self.bounding_box.min_pt.x,
+                self.bounding_box.min_pt.y,
+                self.bounding_box.max_pt.x,
+                self.bounding_box.max_pt.y,
+            )
+        }
+
+        # lane markings information
+        lane_dividers, road_dividers = self._compute_traffic_dividers()
+        metadata["lane_dividers"] = lane_dividers
+        metadata["edge_dividers"] = road_dividers
+
+        mesh.visual = trimesh.visual.TextureVisuals(
+            material=trimesh.visual.material.PBRMaterial()
+        )
+
+        scene.add_geometry(mesh)
+        return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
+
+    def _compute_traffic_dividers(self, threshold=1):
+        lane_dividers = []  # divider between lanes with same traffic direction
+        road_dividers = []  # divider between roads with opposite traffic direction
+        dividers_checked = []
+        for road_id in self._roads:
+            road = self._roads[road_id]
+            road_left_border = None
+            for lane in road.lanes:
+                left_border_vertices_len = int((len(lane.lane_polygon) - 1) / 2)
+                left_side = lane.lane_polygon[:left_border_vertices_len]
+                if lane.index not in [1, -1]:
+                    lane_dividers.append(left_side)
+                else:
+                    road_left_border = left_side
+
+            assert road_left_border
+
+            # The road borders that overlapped in positions form an edge divider
+            id_split = road_id.split("_")
+            parent_road_id = f"{id_split[0]}_{id_split[1]}"
+            if parent_road_id not in dividers_checked:
+                dividers_checked.append(parent_road_id)
+                if "R" in road.road_id:
+                    adjacent_road_id = road.road_id.replace("R", "L")
+                else:
+                    adjacent_road_id = road.road_id.replace("L", "R")
+                if adjacent_road_id in self._roads:
+                    road_dividers.append(road_left_border)
+
+        return lane_dividers, road_dividers
 
     class Surface(RoadMap.Surface):
         def __init__(self, surface_id: str):

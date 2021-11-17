@@ -30,13 +30,13 @@ import trimesh
 import trimesh.scene
 from cached_property import cached_property
 from shapely.geometry import LineString, Polygon
-from shapely.ops import snap, triangulate
+from shapely.ops import snap
 from trimesh.exchange import gltf
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap, Waypoint
 from .sumo_lanepoints import LinkedLanePoint, SumoLanePoints
-from .utils.geometry import buffered_shape
+from .utils.geometry import buffered_shape, generate_mesh_from_polygons
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
@@ -1000,55 +1000,14 @@ class SumoRoadNetwork(RoadMap):
                         lane_shape = Polygon(snap(lane_shape, nl_shape, snap_threshold))
             lane_to_poly[lane_id] = lane_shape
 
-    @staticmethod
-    def _triangulate(polygon):
-        return [
-            tri_face
-            for tri_face in triangulate(polygon)
-            if tri_face.centroid.within(polygon)
-        ]
-
     def _make_glb_from_polys(self, polygons):
         scene = trimesh.Scene()
-        vertices, faces = [], []
-        point_dict = dict()
-        current_point_index = 0
-
-        # Trimesh's API require a list of vertices and a list of faces, where each
-        # face contains three indexes into the vertices list. Ideally, the vertices
-        # are all unique and the faces list references the same indexes as needed.
-        # TODO: Batch the polygon processing.
-        for poly in polygons:
-            # Collect all the points on the shape to reduce checks by 3 times
-            for x, y in poly.exterior.coords:
-                p = (x, y, 0)
-                if p not in point_dict:
-                    vertices.append(p)
-                    point_dict[p] = current_point_index
-                    current_point_index += 1
-            triangles = SumoRoadNetwork._triangulate(poly)
-            for triangle in triangles:
-                face = np.array(
-                    [point_dict.get((x, y, 0), -1) for x, y in triangle.exterior.coords]
-                )
-                # Add face if not invalid
-                if -1 not in face:
-                    faces.append(face)
-
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
-
-        # Trimesh doesn't support a coordinate-system="z-up" configuration, so we
-        # have to apply the transformation manually.
-        mesh.apply_transform(
-            trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
-        )
-
+        mesh = generate_mesh_from_polygons(polygons)
         # Attach additional information for rendering as metadata in the map glb
-        metadata = {}
+        metadata = {"bounding_box": self._graph.getBoundary()}
 
         # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
         # which describe x-minimum, y-minimum, x-maximum, and y-maximum
-        metadata["bounding_box"] = self._graph.getBoundary()
 
         # lane markings information
         lane_dividers, edge_dividers = self._compute_traffic_dividers()
