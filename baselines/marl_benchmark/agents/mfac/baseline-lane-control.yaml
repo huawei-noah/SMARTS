@@ -36,7 +36,7 @@ policy:
           activation: relu
           hiddens: [512, 256, 128]
   trainer:
-    path: cases.marl_benchmark.agents.mfac.tf_policy
+    path: baselines.marl_benchmark.agents.mfac.tf_policy
     name: MFACTrainer
 
 run:

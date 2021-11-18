@@ -25,7 +25,7 @@ interface:
 policy:
   framework: rllib
   trainer:
-    path: cases.marl_benchmark.agents.maddpg.maddpg
+    path: baselines.marl_benchmark.agents.maddpg.maddpg
     name: MADDPGTrainer
 
 run:

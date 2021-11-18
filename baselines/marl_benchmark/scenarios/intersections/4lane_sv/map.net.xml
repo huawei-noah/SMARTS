@@ -4,11 +4,11 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <sumo-net-file value="/home/ming/Gitlab/corl_smarts/marl_benchmark/scenarios/intersections/4lane/map.net.xml"/>
+        <sumo-net-file value="/home/ming/Gitlab/corl_smarts/baselines/marl_benchmark/scenarios/intersections/4lane/map.net.xml"/>
     </input>
 
     <output>
-        <output-file value="/home/ming/Gitlab/corl_smarts/marl_benchmark/scenarios/intersections/4lane/map2.net.xml"/>
+        <output-file value="/home/ming/Gitlab/corl_smarts/baselines/marl_benchmark/scenarios/intersections/4lane/map2.net.xml"/>
     </output>
 
     <processing>

@@ -31,11 +31,6 @@ pip install -e .
 
 ## Running
 
-If you have not already, it is suggested you checkout the benchmark branch.
-```bash
-$ git checkout marl_benchmark
-```
-
 To run the training procedure,
 
 ```bash

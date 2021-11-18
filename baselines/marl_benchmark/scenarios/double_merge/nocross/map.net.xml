@@ -4,11 +4,11 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <sumo-net-file value="/home/ming/Projects/smarts/marl_benchmark/scenarios/double_merge/nocross/map.net.xml"/>
+        <sumo-net-file value="/home/ming/Projects/smarts/baselines/marl_benchmark/scenarios/double_merge/nocross/map.net.xml"/>
     </input>
 
     <output>
-        <output-file value="/home/ming/Projects/smarts/marl_benchmark/scenarios/double_merge/nocross/map.net.xml"/>
+        <output-file value="/home/ming/Projects/smarts/baselines/marl_benchmark/scenarios/double_merge/nocross/map.net.xml"/>
     </output>
 
     <processing>
