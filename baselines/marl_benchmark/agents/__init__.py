@@ -23,11 +23,11 @@ from pathlib import Path
 
 import gym
 import yaml
-from benchmark import common
-from benchmark.metrics import basic_handler as metrics
-from benchmark.utils import format
-from benchmark.wrappers import rllib as rllib_wrappers
+from baselines.marl_benchmark.metrics import basic_handler as metrics
+from baselines.marl_benchmark.utils import format
+from baselines.marl_benchmark.wrappers import rllib as rllib_wrappers
 
+from baselines.marl_benchmark import common
 from smarts.core.agent_interface import (
     OGM,
     RGB,
@@ -146,7 +146,7 @@ def load_config(config_file, mode="training", framework="rllib"):
         ),
         list("-+0123456789."),
     )
-    base_dir = Path(__file__).absolute().parent.parent.parent
+    base_dir = Path(__file__).absolute().parent.parent
     with open(base_dir / config_file, "r") as f:
         raw_config = yaml.safe_load(f)
 
