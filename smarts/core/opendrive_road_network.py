@@ -643,6 +643,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._ref_coords = {}
             self._lane_boundaries = tuple()
             self._lane_polygon = []
+            self._centerline_points = []
             self._bounding_box = []
             self._lane_to_left = None, True
             self._lane_to_right = None, True
@@ -725,9 +726,10 @@ class OpenDriveRoadNetwork(RoadMap):
         def lane_polygon(self) -> List[Tuple[float, float]]:
             return self._lane_polygon
 
-        @lane_polygon.setter
-        def lane_polygon(self, value):
-            self._lane_polygon = value
+        # Central Reference line of the lane, (For vector and heading computation)
+        @property
+        def centerline_points(self) -> List[Tuple[float, float]]:
+            return self._centerline_points
 
         @property
         def bounding_box(self) -> List[Tuple[float, float]]:
