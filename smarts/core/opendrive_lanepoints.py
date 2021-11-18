@@ -28,7 +28,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, NamedTuple, Sequence, Tuple
-
 import numpy as np
 
 with warnings.catch_warnings():
@@ -40,6 +39,7 @@ with warnings.catch_warnings():
         # aggressive
         from sklearn.neighbors import KDTree
 
+from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
@@ -114,7 +114,7 @@ class OpenDriveLanePoints:
         )
 
     def _shape_lanepoints(self) -> List[LinkedLanePoint]:
-        """Computes the lane shape (start/shape/end) lanepoints for all drivable lanes in
+        """Computes the lane shape (start/shape/end) lanepoints for all lanes in
         the network, the result of this function can be used to interpolate
         lanepoints along lanes to the desired granularity.
         """
@@ -135,21 +135,21 @@ class OpenDriveLanePoints:
         return shape_lanepoints
 
     def _shape_lanepoints_along_lane(
-        self, lane: RoadMap.Lane, lanepoint_by_lane_memo: dict
+        self, lane: OpenDriveRoadNetwork.Lane, lanepoint_by_lane_memo: dict
     ) -> Tuple[LinkedLanePoint, List[LinkedLanePoint]]:
         lane_queue = queue.Queue()
         lane_queue.put((lane, None))
         shape_lanepoints = []
         initial_lanepoint = None
         while not lane_queue.empty():
-            lane, previous_lp = lane_queue.get()
-            first_lanepoint = lanepoint_by_lane_memo.get(lane.lane_id)
+            curr_lane, previous_lp = lane_queue.get()
+            first_lanepoint = lanepoint_by_lane_memo.get(curr_lane.lane_id)
             if first_lanepoint:
                 if previous_lp:
                     previous_lp.nexts.append(first_lanepoint)
                 continue
 
-            lane_shape = [np.array(p) for p in lane.centerline_points]
+            lane_shape = [np.array(p) for p in curr_lane.centerline_points]
 
             assert len(lane_shape) >= 2, repr(lane_shape)
 
@@ -159,7 +159,7 @@ class OpenDriveLanePoints:
 
             first_lanepoint = LinkedLanePoint(
                 lp=LanePoint(
-                    lane=self._road_map.lane_by_id(lane.lane_id),
+                    lane=curr_lane,
                     pose=Pose(position=lane_shape[0], orientation=orientation),
                 ),
                 nexts=[],
@@ -172,7 +172,7 @@ class OpenDriveLanePoints:
             if initial_lanepoint is None:
                 initial_lanepoint = first_lanepoint
 
-            lanepoint_by_lane_memo[lane.lane_id] = first_lanepoint
+            lanepoint_by_lane_memo[curr_lane.lane_id] = first_lanepoint
             shape_lanepoints.append(first_lanepoint)
             curr_lanepoint = first_lanepoint
 
@@ -182,7 +182,7 @@ class OpenDriveLanePoints:
                 orientation_ = fast_quaternion_from_angle(heading_)
                 linked_lanepoint = LinkedLanePoint(
                     lp=LanePoint(
-                        lane=self._road_map.lane_by_id(lane.lane_id),
+                        lane=self._road_map.lane_by_id(curr_lane.lane_id),
                         pose=Pose(position=p1, orientation=orientation_),
                     ),
                     nexts=[],
@@ -210,7 +210,8 @@ class OpenDriveLanePoints:
             curr_lanepoint.nexts.append(last_linked_lanepoint)
             curr_lanepoint = last_linked_lanepoint
 
-            for out_lane in lane.outgoing_lanes:
-                lane_queue.put((out_lane, curr_lanepoint))
+            for out_lane in curr_lane.outgoing_lanes:
+                if out_lane.is_drivable:
+                    lane_queue.put((out_lane, curr_lanepoint))
 
         return initial_lanepoint, shape_lanepoints
