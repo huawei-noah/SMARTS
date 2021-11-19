@@ -674,6 +674,8 @@ class SMARTS:
             for vehicle in self._vehicle_index.vehicles:
                 vehicle.chassis.reapply_last_control()
             self._bullet_client.stepSimulation()
+        for vehicle in self._vehicle_index.vehicles:
+            vehicle.step(self._elapsed_sim_time)
 
     def _pybullet_provider_step(self, agent_actions) -> ProviderState:
         self._perform_agent_actions(agent_actions)
@@ -697,7 +699,6 @@ class SMARTS:
                 continue
 
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            vehicle.step(self._elapsed_sim_time)
             provider_state.vehicles.append(
                 VehicleState(
                     vehicle_id=vehicle.id,
@@ -735,7 +736,6 @@ class SMARTS:
 
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             assert isinstance(vehicle.chassis, BoxChassis)
-            vehicle.step(self._elapsed_sim_time)
             provider_state.vehicles.append(
                 VehicleState(
                     vehicle_id=vehicle.id,

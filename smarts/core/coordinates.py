@@ -24,6 +24,7 @@ from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
 from cached_property import cached_property
+from shapely.geometry import Point as SPoint
 from typing_extensions import SupportsIndex
 
 from smarts.core.utils.math import (
@@ -65,10 +66,22 @@ class Dimensions:
         )
 
 
+_shapely_points = {}
+
+
 class Point(NamedTuple):
     x: float
     y: float
     z: Optional[float] = 0
+
+    @property
+    def as_shapely(self) -> SPoint:
+        # Shapley Point construction is expensive!
+        return _shapely_points.setdefault(self, SPoint((self.x, self.y, self.z)))
+
+    def __del__(self):
+        if self in _shapely_points:
+            del _shapely_points[self]
 
 
 class RefLinePoint(NamedTuple):
