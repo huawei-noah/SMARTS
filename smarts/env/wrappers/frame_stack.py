@@ -30,12 +30,12 @@ from smarts.core import sensors
 
 
 class FrameStack(gym.Wrapper):
-    """Wrapper stacks num_stack (default=3) consecutive frames, in a moving-window fashion,
-    and returns the stacked_frames.
+    """Wrapper stacks num_stack (default=3) consecutive frames, in a moving-window
+    fashion, and returns the stacked_frames.
 
     Note:
-        Wrapper returns a deepcopy of the stacked frames, which may be expensive for large
-        frames and large num_stack values.
+        Wrapper returns a deepcopy of the stacked frames, which may be expensive
+        for large frames and large num_stack values.
     """
 
     def __init__(self, env: gym.Env, num_stack: int = 3):
