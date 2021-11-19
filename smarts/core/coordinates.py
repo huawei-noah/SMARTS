@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
-from cached_property import cached_property
+from cached_property import threaded_cached_property
 from shapely.geometry import Point as SPoint
 from typing_extensions import SupportsIndex
 
@@ -77,6 +77,13 @@ class Point(NamedTuple):
     @property
     def as_shapely(self) -> SPoint:
         # Shapley Point construction is expensive!
+        # Note that in before python3.8, @cached_property was not thread safe,
+        # nor can it be used in a NamedTuple (which doesn't have a __dict__).
+        # (Points can be used by multi-threaded client code, even when
+        # SMARTS is still single-threaded, so we want to be safe here.)
+        # So we use the private global _shapely_points as a cache instead.
+        # Here we are relying on CPython's implementation fo dict and setdefault
+        # to be thread-safe, which is apparently the case right now.
         return _shapely_points.setdefault(self, SPoint((self.x, self.y, self.z)))
 
     def __del__(self):
@@ -221,7 +228,10 @@ class Pose:
     def __hash__(self):
         return hash((*self.position, *self.orientation))
 
-    @cached_property
+    # Pose objects can be used by multi-threaded client code, even when
+    # SMARTS is still single-threaded, so we want to be safe here.
+    # Prior to python3.8, @cached_property was not thread-safe.
+    @threaded_cached_property
     def point(self) -> Point:
         return Point(*self.position)
 
