@@ -284,7 +284,15 @@ class OpenDriveRoadNetwork(RoadMap):
                             road,
                             lane_elem.id,
                             section_elem.length,
-                            lane_elem.type == "driving",
+                            lane_elem.type.lower()
+                            in [
+                                "driving",
+                                "exit",
+                                "entry",
+                                "offramp",
+                                "onramp",
+                                "connectingramp",
+                            ],
                             road_elem.planView,
                         )
                         # Set road as drivable if it has at least one lane drivable
