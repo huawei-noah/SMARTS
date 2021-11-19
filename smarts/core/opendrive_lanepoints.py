@@ -71,6 +71,7 @@ class LinkedLanePoint(NamedTuple):
 
 class OpenDriveLanePoints:
     def __init__(self, road_map: RoadMap, spacing: float, debug: bool = True):
+        from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
         assert isinstance(road_map, OpenDriveRoadNetwork)
         self._road_map = road_map
         self.spacing = spacing
