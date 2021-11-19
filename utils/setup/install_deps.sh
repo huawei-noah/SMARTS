@@ -10,9 +10,9 @@ function check_python_version_gte_3_7 {
 
 function install_python_3_7 {
     echo "Installing python3.7"
-    sudo apt-get install software-properties-common
-    sudo add-apt-repository ppa:deadsnakes/ppa
-    sudo apt-get install python3.7 python3.7-dev python3.7-tk python3.7-venv
+    sudo apt-get install $1 software-properties-common
+    sudo add-apt-repository $1 ppa:deadsnakes/ppa
+    sudo apt-get install $1 python3.7 python3.7-dev python3.7-tk python3.7-venv
 }
 
 function set_SUMO_HOME {
@@ -27,9 +27,9 @@ function set_SUMO_HOME {
 
 function do_install_for_linux {
     echo "Installing sumo (used for traffic simulation and road network)"
-    sudo add-apt-repository "$1" ppa:sumo/stable
+    sudo add-apt-repository $1 ppa:sumo/stable
     sudo apt-get update
-    sudo apt-get install "$1"\
+    sudo apt-get install $1 \
          libspatialindex-dev \
          sumo sumo-tools sumo-doc \
          build-essential cmake
@@ -37,8 +37,8 @@ function do_install_for_linux {
     #only a problem for linux
     if ! check_python_version_gte_3_7; then
          echo "A >=3.7 python version not found"
-         if  [[ "$1" = "-y" ]]; then
-              install_python_3_7
+         if  [[ $1 = "-y" ]]; then
+              install_python_3_7 "$1"
          else
               read -p "Install python3.7? [Yn]" should_add_python_3_7
               if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then
@@ -76,7 +76,7 @@ function do_install_for_macos {
     echo ""
     echo "-- dependencies have been installed --"
     echo ""
-    if  [[ "$1" = "-y" ]]; then
+    if  [[ $1 = "-y" ]]; then
          set_SUMO_HOME
     else
          read -p "Add SUMO_HOME to ~/.bash_profile? [Yn]" should_add_SUMO_HOME
