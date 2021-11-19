@@ -60,6 +60,7 @@ class LinkedLanePoint(NamedTuple):
     lp: LanePoint = None
     is_inferred: bool = True
     nexts: List[LinkedLanePoint] = []  # list of next immediate LanePoint(s)
+
     # it's a list of LanePoints because a path may branch at junctions
 
     def __hash__(self):
@@ -72,6 +73,7 @@ class LinkedLanePoint(NamedTuple):
 class OpenDriveLanePoints:
     def __init__(self, road_map: RoadMap, spacing: float, debug: bool = True):
         from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+
         assert isinstance(road_map, OpenDriveRoadNetwork)
         self._road_map = road_map
         self.spacing = spacing
@@ -346,3 +348,147 @@ class OpenDriveLanePoints:
             newly_created_lanepoints.append(linked_lanepoint)
             dist_into_lane_seg += spacing
         return curr_lanepoint
+
+    @staticmethod
+    def _closest_linked_lp_in_kd_tree_batched(
+        points, linked_lps, tree: KDTree, k: int = 1
+    ):
+        p2ds = np.array([vec_2d(p) for p in points])
+        closest_indices = tree.query(
+            p2ds, k=min(k, len(linked_lps)), return_distance=False
+        )
+        return [[linked_lps[idx] for idx in idxs] for idxs in closest_indices]
+
+    @staticmethod
+    def _closest_linked_lp_in_kd_tree_with_pose_batched(
+        poses,
+        lanepoints,
+        tree,
+        within_radius: float,
+        k: int = 10,
+    ):
+        linked_lanepoints = OpenDriveLanePoints._closest_linked_lp_in_kd_tree_batched(
+            [pose.position[:2] for pose in poses], lanepoints, tree, k=k
+        )
+
+        linked_lanepoints = [
+            sorted(
+                l_lps,
+                key=lambda _llp: squared_dist(
+                    poses[idx].position[:2], _llp.lp.pose.position
+                ),
+            )
+            for idx, l_lps in enumerate(linked_lanepoints)
+        ]
+        # exclude those outside radius except closest
+        if within_radius is not None:
+            radius_sq = within_radius * within_radius
+            linked_lanepoints = [
+                [
+                    _llp
+                    for i, _llp in enumerate(_llps)
+                    if squared_dist(poses[idx].position[:2], _llp.lp.pose.position)
+                    <= radius_sq
+                    or i == 0
+                ]
+                for idx, _llps in enumerate(linked_lanepoints)
+            ]
+        # Get the nearest point for the points where the radius check failed
+        unfound_lanepoints = [
+            (i, poses[i])
+            for i, group in enumerate(linked_lanepoints)
+            if len(group) == 0
+        ]
+        if len(unfound_lanepoints) > 0:
+            remaining_linked_lps = (
+                OpenDriveLanePoints._closest_linked_lp_in_kd_tree_batched(
+                    [pose.position[:2] for _, pose in unfound_lanepoints],
+                    lanepoints,
+                    tree=tree,
+                    k=k,
+                )
+            )
+            # Replace the empty lanepoint locations
+            for (i, _), lps in [
+                g for g in zip(unfound_lanepoints, remaining_linked_lps)
+            ]:
+                linked_lanepoints[i] = [lps]
+
+        return [
+            sorted(
+                l_lps,
+                key=lambda _llp: squared_dist(
+                    poses[idx].position[:2], _llp.lp.pose.position
+                )
+                + abs(poses[idx].heading.relative_to(_llp.lp.pose.heading)),
+            )
+            for idx, l_lps in enumerate(linked_lanepoints)
+        ]
+
+    def closest_lanepoints(
+        self,
+        poses: Sequence[Pose],
+        within_radius: float = 10,
+        on_lane_id: str = None,
+        maximum_count: int = 10,
+    ) -> List[LanePoint]:
+        if on_lane_id is None:
+            lanepoints = self._linked_lanepoints
+            kd_tree = self._lanepoints_kd_tree
+        else:
+            lanepoints = self._lanepoints_by_lane_id[on_lane_id]
+            kd_tree = self._lanepoints_kd_tree_by_lane_id[on_lane_id]
+        linked_lanepoints = (
+            OpenDriveLanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
+                poses,
+                lanepoints,
+                kd_tree,
+                within_radius=within_radius,
+                k=maximum_count,
+            )
+        )
+        return [l_lps[0].lp for l_lps in linked_lanepoints]
+
+    def closest_lanepoint_on_lane_to_point(self, point, lane_id: str) -> LanePoint:
+        return self.closest_linked_lanepoint_on_lane_to_point(point, lane_id).lp
+
+    def closest_linked_lanepoint_on_lane_to_point(
+        self, point, lane_id: str
+    ) -> LinkedLanePoint:
+        lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
+        return OpenDriveLanePoints._closest_linked_lp_in_kd_tree_batched(
+            [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree
+        )[0][0]
+
+    def closest_linked_lanepoint_on_road(self, point, road_id: str) -> LinkedLanePoint:
+        return OpenDriveLanePoints._closest_linked_lp_in_kd_tree_batched(
+            [point],
+            self._lanepoints_by_road_id[road_id],
+            self._lanepoints_kd_tree_by_road_id[road_id],
+        )[0][0]
+
+    @lru_cache(maxsize=32)
+    def paths_starting_at_lanepoint(
+        self, lanepoint: LinkedLanePoint, lookahead: int, filter_road_ids: tuple
+    ) -> List[List[LinkedLanePoint]]:
+        lanepoint_paths = [[lanepoint]]
+        for _ in range(lookahead):
+            next_lanepoint_paths = []
+            for path in lanepoint_paths:
+                branching_paths = []
+                for next_lp in path[-1].nexts:
+                    # Filter only the roads we're interested in
+                    road_id = next_lp.lp.lane.road.road_id
+                    if filter_road_ids and road_id not in filter_road_ids:
+                        continue
+                    new_path = path + [next_lp]
+                    branching_paths.append(new_path)
+
+                if len(branching_paths) == 0:
+                    branching_paths = [path]
+
+                next_lanepoint_paths += branching_paths
+
+            lanepoint_paths = next_lanepoint_paths
+
+        return lanepoint_paths
