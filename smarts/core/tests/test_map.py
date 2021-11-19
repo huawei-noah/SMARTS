@@ -792,13 +792,11 @@ def visualize():
     fig, ax = plt.subplots()
 
     root = path.join(Path(__file__).parent.absolute(), "maps")
-    filename = "Ex_Simple-LaneOffset.xodr"
+    filename = "UC_Simple-X-Junction.xodr"
     filepath = path.join(root, filename)
     road_map = OpenDriveRoadNetwork.from_file(filepath, lanepoint_spacing=0.5)
 
     roads = road_map._roads
-    lanepoint_by_lane_memo = {}
-    shape_lanepoints = []
 
     for road_id in roads:
         road = roads[road_id]
@@ -809,12 +807,9 @@ def visualize():
                 ys.append(y)
             plt.plot(xs, ys, "k-")
             if lane.is_drivable:
-                _, new_lps = road_map._lanepoints._shape_lanepoints_along_lane(
-                    lane, lanepoint_by_lane_memo
-                )
-                shape_lanepoints += new_lps
-                xs, ys = lp_points(new_lps)
-                plt.scatter(xs, ys, s=1, c="r")
+                linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
+                xlp, ylp = lp_points(linked_lps)
+                plt.scatter(xlp, ylp, s=1, c="r")
 
     ax.set_title(filename)
     ax.axis("equal")
