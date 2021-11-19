@@ -39,7 +39,6 @@ with warnings.catch_warnings():
         # aggressive
         from sklearn.neighbors import KDTree
 
-from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
@@ -135,7 +134,7 @@ class OpenDriveLanePoints:
         return shape_lanepoints
 
     def _shape_lanepoints_along_lane(
-        self, lane: OpenDriveRoadNetwork.Lane, lanepoint_by_lane_memo: dict
+        self, lane: RoadMap.Lane, lanepoint_by_lane_memo: dict
     ) -> Tuple[LinkedLanePoint, List[LinkedLanePoint]]:
         lane_queue = queue.Queue()
         lane_queue.put((lane, None))

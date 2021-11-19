@@ -23,6 +23,7 @@ import math
 from os import path
 from pathlib import Path
 import pytest
+from shapely.geometry.polygon import Polygon
 from smarts.core.coordinates import Point
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.core.scenario import Scenario
@@ -776,3 +777,58 @@ def test_od_map_motorway():
     # project along route
     candidates = route_34_to_6[0].project_along(start_point, 600)
     assert len(candidates) == 4
+
+
+def lane_points(lane):
+    polygon: Polygon = lane.shape()
+    xs, ys = [], []
+    for x, y in polygon.exterior.coords:
+        xs.append(x)
+        ys.append(y)
+    return xs, ys
+
+
+def lp_points(lps):
+    xs, ys = [], []
+    for lp in lps:
+        xs.append(lp.lp.pose.position[0])
+        ys.append(lp.lp.pose.position[1])
+    return xs, ys
+
+
+def visualize():
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    filename = "Ex_Simple-LaneOffset.xodr"
+    filepath = path.join(root, filename)
+    road_map = OpenDriveRoadNetwork.from_file(filepath, lanepoint_spacing=0.5)
+
+    roads = road_map._roads
+    lanepoint_by_lane_memo = {}
+    shape_lanepoints = []
+
+    for road_id in roads:
+        road = roads[road_id]
+        for lane in road.lanes:
+            xs, ys = lane_points(lane)
+            plt.plot(xs, ys, "k-")
+            if lane.is_drivable:
+                _, new_lps = road_map._lanepoints._shape_lanepoints_along_lane(
+                    lane, lanepoint_by_lane_memo
+                )
+                shape_lanepoints += new_lps
+                xs, ys = lp_points(new_lps)
+                plt.scatter(xs, ys, s=1, c="r")
+
+    ax.set_title(filename)
+    ax.axis("equal")
+    mng = plt.get_current_fig_manager()
+    mng.resize(*mng.window.maxsize())
+    plt.show()
+
+
+if __name__ == "__main__":
+    visualize()

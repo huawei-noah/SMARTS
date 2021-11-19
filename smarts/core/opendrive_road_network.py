@@ -51,6 +51,7 @@ from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
 )
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 from shapely.geometry import Polygon
+from smarts.core.opendrive_lanepoints import OpenDriveLanePoints
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
@@ -194,7 +195,7 @@ class LaneBoundary:
 class OpenDriveRoadNetwork(RoadMap):
     DEFAULT_LANE_WIDTH = 3.2
 
-    def __init__(self, xodr_file: str, default_lane_width=None):
+    def __init__(self, xodr_file: str, default_lane_width=None, lanepoint_spacing=None):
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(logging.INFO)
         self._xodr_file = xodr_file
@@ -208,13 +209,24 @@ class OpenDriveRoadNetwork(RoadMap):
         self._lanes: Dict[str, OpenDriveRoadNetwork.Lane] = {}
         self._lanepoints = None
 
+        self.load()
+
+        if lanepoint_spacing is not None:
+            assert lanepoint_spacing > 0
+            self._lanepoints = OpenDriveLanePoints(self, spacing=lanepoint_spacing)
+
     @classmethod
     def from_file(
         cls,
         xodr_file,
+        default_lane_width=None,
+        lanepoint_spacing=None,
     ):
-        od_map = cls(xodr_file)
-        od_map.load()
+        od_map = cls(
+            xodr_file,
+            default_lane_width=default_lane_width,
+            lanepoint_spacing=lanepoint_spacing,
+        )
         return od_map
 
     @staticmethod
