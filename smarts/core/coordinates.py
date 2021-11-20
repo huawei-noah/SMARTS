@@ -229,7 +229,12 @@ class Pose:
         return hash((*self.position, *self.orientation))
 
     def reset_with(self, position, heading: Heading):
+        if self.position.dtype is not np.dtype(np.float64):
+            self.position = np.float64(self.position)
         self.position[:] = position
+        if "point" in self.__dict__:
+            # clear the cached_property
+            del self.__dict__["point"]
         if heading != self.heading_:
             self.orientation = fast_quaternion_from_angle(heading)
             self.heading_ = heading
