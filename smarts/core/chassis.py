@@ -461,16 +461,19 @@ class AckermannChassis(Chassis):
     def pose(self) -> Pose:
         pos, orn = self._client.getBasePositionAndOrientation(self._bullet_id)
         heading = Heading(yaw_from_quaternion(orn))
-
-        pose = Pose.from_explicit_offset(
-            [0, 0, 0],
-            np.array(pos),
-            heading,
-            local_heading=Heading(0),
-        )
-        return pose
+        if not self._pose:
+            self._pose = Pose.from_explicit_offset(
+                [0, 0, 0],
+                np.array(pos),
+                heading,
+                local_heading=Heading(0),
+            )
+        else:
+            self._pose.reset_with(pos, heading)
+        return self._pose
 
     def set_pose(self, pose: Pose):
+        self._pose = pose
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id, position, orientation
@@ -653,7 +656,7 @@ class AckermannChassis(Chassis):
         # on brake such that, the reverse torque is only applied after
         # a threshold is passed for vehicle velocity.
         # Thus, brake is applied if: vehicle speed > 1/36 (m/s)
-        if self.longitudinal_lateral_speed[0] < 1 / 36:
+        if brake > 0 and self.longitudinal_lateral_speed[0] < 1 / 36:
             brake = 0
 
         self._apply_steering(steering)
@@ -667,9 +670,11 @@ class AckermannChassis(Chassis):
                 self.bullet_client,
                 [(1 / self._max_torque) * np.array(throttle_list), brake, steering],
             )
+            self._clear_step_cache()
             return
         self._apply_throttle(throttle_list)
         self._apply_brake(brake)
+        self._clear_step_cache()
 
     def reapply_last_control(self):
         assert self._last_control
@@ -710,7 +715,6 @@ class AckermannChassis(Chassis):
             pybullet.TORQUE_CONTROL,
             forces=throttle_list,
         )
-        self._clear_step_cache()
 
     def _apply_brake(self, brake):
         self._client.setJointMotorControlArray(
@@ -727,7 +731,6 @@ class AckermannChassis(Chassis):
             pybullet.TORQUE_CONTROL,
             forces=[-brake * self._max_btorque] * 4,
         )
-        self._clear_step_cache()
 
     def _apply_steering(self, steering):
         # Apply steering (following Ackermann steering geometry)
@@ -748,7 +751,6 @@ class AckermannChassis(Chassis):
                 -steering * self._max_steering * (1 / self._steering_gear_ratio),
             ],
         )
-        self._clear_step_cache()
 
     def _log_states(self):
         wheel_joint_states = self._joint_states(

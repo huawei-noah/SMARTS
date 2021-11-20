@@ -228,6 +228,12 @@ class Pose:
     def __hash__(self):
         return hash((*self.position, *self.orientation))
 
+    def reset_with(self, position, heading: Heading):
+        self.position[:] = position
+        if heading != self.heading_:
+            self.orientation = fast_quaternion_from_angle(heading)
+            self.heading_ = heading
+
     # Pose objects can be used by multi-threaded client code, even when
     # SMARTS is still single-threaded, so we want to be safe here.
     # Prior to python3.8, @cached_property was not thread-safe.
