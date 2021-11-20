@@ -67,6 +67,9 @@ class MotionPlannerProvider(Provider):
         assert self._is_setup
         self._update_membership(target_poses_at_t)
 
+        if not self._vehicle_id_to_index:
+            return ProviderState()
+
         target_poses_at_t = np.array(
             [
                 self._normalize_target_pose(v_index, target_poses_at_t, dt)
