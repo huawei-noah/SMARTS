@@ -21,7 +21,7 @@ import_utils.import_module_from_file(
 
 
 def test_learning_regression_rllib():
-    from examples.rllib_agent import TrainingModel, rllib_agent
+    from examples.rllib.rllib_agent import TrainingModel, rllib_agent
 
     ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
     rllib_policies = {

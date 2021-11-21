@@ -23,7 +23,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.custom_observations import lane_ttc_observation_adapter
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 
-from ..rllib_agent import TrainingModel
+from ..rllib.rllib_agent import TrainingModel
 
 HORIZON = 5000
 

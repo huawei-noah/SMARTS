@@ -13,7 +13,7 @@ try:
 except Exception as e:
     from . import RayException
 
-    raise RayException.required_to("multi_instance.py")
+    raise RayException.required_to("ray_multi_instance.py")
 
 
 from smarts.core.agent import Agent, AgentSpec
