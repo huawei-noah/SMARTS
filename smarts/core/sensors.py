@@ -252,7 +252,7 @@ class Sensors:
 
         ego_vehicle_observation = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
-            position=ego_vehicle_state.pose.position,
+            position=np.array(ego_vehicle_state.pose.position),
             bounding_box=ego_vehicle_state.dimensions,
             heading=ego_vehicle_state.pose.heading,
             speed=ego_vehicle_state.speed,
