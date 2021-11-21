@@ -77,12 +77,12 @@ class Point(NamedTuple):
     @property
     def as_shapely(self) -> SPoint:
         # Shapley Point construction is expensive!
-        # Note that in before python3.8, @cached_property was not thread safe,
+        # Note that before python3.8, @cached_property was not thread safe,
         # nor can it be used in a NamedTuple (which doesn't have a __dict__).
         # (Points can be used by multi-threaded client code, even when
         # SMARTS is still single-threaded, so we want to be safe here.)
         # So we use the private global _shapely_points as a cache instead.
-        # Here we are relying on CPython's implementation fo dict and setdefault
+        # Here we are relying on CPython's implementation of dict and setdefault
         # to be thread-safe, which is apparently the case right now.
         return _shapely_points.setdefault(self, SPoint((self.x, self.y, self.z)))
 
@@ -230,6 +230,9 @@ class Pose:
 
     def reset_with(self, position, heading: Heading):
         if self.position.dtype is not np.dtype(np.float64):
+            # The slice assignment below doesn't change self.position's dtype,
+            # which can be a problem if it was initialized with ints and
+            # now we are assigning it floats, so we just cast it...
             self.position = np.float64(self.position)
         self.position[:] = position
         if "point" in self.__dict__:
