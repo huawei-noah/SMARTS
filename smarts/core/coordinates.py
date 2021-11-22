@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
-from cached_property import threaded_cached_property
+from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from typing_extensions import SupportsIndex
 
@@ -242,10 +242,7 @@ class Pose:
             self.orientation = fast_quaternion_from_angle(heading)
             self.heading_ = heading
 
-    # Pose objects can be used by multi-threaded client code, even when
-    # SMARTS is still single-threaded, so we want to be safe here.
-    # Prior to python3.8, @cached_property was not thread-safe.
-    @threaded_cached_property
+    @cached_property
     def point(self) -> Point:
         return Point(*self.position)
 
