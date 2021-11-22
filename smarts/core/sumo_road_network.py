@@ -1001,6 +1001,7 @@ class SumoRoadNetwork(RoadMap):
                                 p = np  # !!!! :)
                                 # allow vertices to snap to more than one thing, but
                                 # try to avoid infinite loops and making things worse instead of better here...
+                                # (so reduce snap dist threshold by an arbitrary amount each pass.)
                                 moved = True
                                 snapped_to.add(nl)
                                 thresh *= 0.75
@@ -1056,6 +1057,7 @@ class SumoRoadNetwork(RoadMap):
                                 p = np  # !!!! :)
                                 # allow vertices to snap to more than one thing, but
                                 # try to avoid infinite loops and making things worse instead of better here...
+                                # (so reduce snap dist threshold by an arbitrary amount each pass.)
                                 moved = True
                                 snapped_to.add(nl)
                                 thresh *= 0.75
