@@ -15,6 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - SMARTS reset now has a start time option which will skip simulation.
 
 ### Fixed
+- Restructured `baselines/marl_benchmark` folder to resolve path issue during setup steps. See PR #1126. 
 - Unpack utility now unpacks dataclass attributes.
 - Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
