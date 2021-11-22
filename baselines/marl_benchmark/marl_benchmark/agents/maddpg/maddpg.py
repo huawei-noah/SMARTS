@@ -29,7 +29,7 @@ from ray.rllib.agents.trainer import COMMON_CONFIG, with_common_config
 from ray.rllib.policy.sample_batch import MultiAgentBatch, SampleBatch
 from ray.rllib.utils import merge_dicts
 
-from baselines.marl_benchmark.agents.maddpg.tf_policy import MADDPG2TFPolicy
+from marl_benchmark.agents.maddpg.tf_policy import MADDPG2TFPolicy
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

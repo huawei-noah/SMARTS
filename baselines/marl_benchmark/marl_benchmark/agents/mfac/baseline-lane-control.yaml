@@ -1,9 +1,9 @@
-name: maddpg-baseline-lane-controller
+name: mfac-baseline-lane-controller
 
 agent:
   state:
     wrapper:
-      name: EarlyDone
+      name: FrameStack
       num_stack: 3
     features:
       goal_relative_pos: True
@@ -24,9 +24,20 @@ interface:
 
 policy:
   framework: rllib
+  config:
+    model:
+      custom_model_config:
+        critic_mode: mean
+        agent_number: 4
+        action_model:
+          activation: relu
+          hiddens: [256, 128, 64]
+        value_model:
+          activation: relu
+          hiddens: [512, 256, 128]
   trainer:
-    path: baselines.marl_benchmark.agents.maddpg.maddpg
-    name: MADDPGTrainer
+    path: marl_benchmark.agents.mfac.tf_policy
+    name: MFACTrainer
 
 run:
   checkpoint_freq: 40
@@ -37,11 +48,8 @@ run:
   stop:
     time_total_s: 14400
   config:
-    log_level: ERROR
+    log_level: WARN
     num_workers: 1
     num_gpus: 0
     horizon: 1000
     # learning
-    learning_starts: 1024
-    # buffer_size: 1024
-    train_batch_size: 1024

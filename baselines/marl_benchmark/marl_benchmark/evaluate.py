@@ -24,9 +24,9 @@ import os
 
 import ray
 
-from baselines.marl_benchmark import gen_config
-from baselines.marl_benchmark.metrics import basic_handler
-from baselines.marl_benchmark.utils.rollout import rollout
+from marl_benchmark import gen_config
+from marl_benchmark.metrics import basic_handler
+from marl_benchmark.utils.rollout import rollout
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 

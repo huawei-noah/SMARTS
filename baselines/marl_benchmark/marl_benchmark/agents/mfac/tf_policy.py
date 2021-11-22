@@ -32,16 +32,15 @@ from ray.rllib.agents.trainer_template import build_trainer
 from ray.rllib.evaluation.postprocessing import Postprocessing, compute_advantages
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.modelv2 import ModelV2
-from ray.rllib.models.preprocessors import Preprocessor
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.policy.tf_policy import TFPolicy
 from ray.rllib.policy.tf_policy_template import build_tf_policy
 from ray.rllib.utils import try_import_tf
 from ray.rllib.utils.tf_ops import explained_variance, make_tf_callable
 
-from baselines.marl_benchmark.networks import CentralizedActorCriticModel
+from marl_benchmark.networks import CentralizedActorCriticModel
 
-tf1, tf, tfv = try_import_tf()
+tf = try_import_tf()
 
 
 class CentralizedValueMixin:
@@ -66,26 +65,17 @@ def build_cac_model(
         name="cac",
     )
 
+    policy.target_model = ModelCatalog.get_model_v2(
+        obs_space=obs_space,
+        action_space=action_space,
+        num_outputs=np.product(action_space.shape),
+        model_config=config["model"],
+        framework="tf",
+        default_model=CentralizedActorCriticModel,
+        name="target_cac",
+    )
+
     return policy.model
-
-
-def get_action_buffer(
-    action_space: spaces.Space,
-    action_preprocessor: Preprocessor,
-    batch: SampleBatch,
-    copy_length: int,
-):
-    if isinstance(action_space, spaces.Discrete):
-        buffer_action = np.eye(action_preprocessor.size)[
-            batch[SampleBatch.ACTIONS][:copy_length]
-        ]
-    elif isinstance(action_space, spaces.Box):
-        buffer_action = batch[SampleBatch.ACTIONS][:copy_length]
-    else:
-        raise NotImplementedError(
-            f"Do not support such an action space yet: {action_space}"
-        )
-    return buffer_action
 
 
 def postprocess_trajectory(
@@ -93,48 +83,60 @@ def postprocess_trajectory(
 ):
     last_r = 0.0
     batch_length = len(sample_batch[SampleBatch.CUR_OBS])
-    critic_preprocessor = policy.model.critic_preprocessor
     action_preprocessor = policy.model.act_preprocessor
     obs_preprocessor = policy.model.obs_preprocessor
-    critic_obs_array = np.zeros((batch_length,) + critic_preprocessor.shape)
 
-    offset_slot = action_preprocessor.size + obs_preprocessor.size
+    mean_action = np.zeros((batch_length,) + action_preprocessor.shape)
+    own_action = np.zeros((batch_length,) + action_preprocessor.shape)
+    own_obs = np.zeros((batch_length,) + obs_preprocessor.shape)
 
     if policy.loss_initialized():
+        sample_batch[SampleBatch.DONES][-1] = 1
         # ordered by agent keys
         other_agent_batches = OrderedDict(other_agent_batches)
         for i, (other_id, (other_policy, batch)) in enumerate(
             other_agent_batches.items()
         ):
-            offset = (i + 1) * offset_slot
             copy_length = min(batch_length, batch[SampleBatch.CUR_OBS].shape[0])
 
             # TODO(ming): check the action type
-            buffer_action = get_action_buffer(
-                policy.action_space, action_preprocessor, batch, copy_length
-            )
-            oppo_features = np.concatenate(
-                [batch[SampleBatch.CUR_OBS][:copy_length], buffer_action], axis=-1
-            )
-            assert oppo_features.shape[-1] == offset_slot
-            critic_obs_array[
-                :copy_length, offset : offset + offset_slot
-            ] = oppo_features
+            if isinstance(policy.action_space, spaces.Discrete):
+                buffer_action = np.eye(action_preprocessor.size)[
+                    batch[SampleBatch.ACTIONS][:copy_length]
+                ]
+            elif isinstance(policy.action_space, spaces.Box):
+                buffer_action = batch[SampleBatch.ACTIONS][:copy_length]
+            else:
+                raise NotImplementedError(
+                    f"Do not support such an action space yet:{type(policy.action_space)}"
+                )
 
+            mean_action[:copy_length] += buffer_action
         # fill my features to critic_obs_array
-        buffer_action = get_action_buffer(
-            policy.action_space, action_preprocessor, sample_batch, batch_length
-        )
-        critic_obs_array[:batch_length, 0:offset_slot] = np.concatenate(
-            [sample_batch[SampleBatch.CUR_OBS], buffer_action], axis=-1
-        )
+        if isinstance(policy.action_space, spaces.Box):
+            buffer_action = sample_batch[SampleBatch.ACTIONS]
+        elif isinstance(policy.action_space, spaces.Discrete):
+            buffer_action = np.eye(action_preprocessor.size)[
+                sample_batch[SampleBatch.ACTIONS][:batch_length]
+            ]
+        else:
+            raise NotImplementedError(
+                f"Do not support such an action space yte: {type(policy.action_space)}"
+            )
+        own_action[:batch_length] = buffer_action
+        own_obs[:] = sample_batch[SampleBatch.CUR_OBS]
+        mean_action /= max(1, len(other_agent_batches))
 
-        sample_batch[CentralizedActorCriticModel.CRITIC_OBS] = critic_obs_array
+        sample_batch[CentralizedActorCriticModel.CRITIC_OBS] = np.concatenate(
+            [own_obs, own_action, mean_action], axis=-1
+        )
         sample_batch[SampleBatch.VF_PREDS] = policy.compute_central_vf(
             sample_batch[CentralizedActorCriticModel.CRITIC_OBS]
         )
     else:
-        sample_batch[CentralizedActorCriticModel.CRITIC_OBS] = critic_obs_array
+        sample_batch[CentralizedActorCriticModel.CRITIC_OBS] = np.concatenate(
+            [own_obs, own_action, mean_action], axis=-1
+        )
         sample_batch[SampleBatch.VF_PREDS] = np.zeros_like(
             (batch_length,), dtype=np.float32
         )
@@ -151,15 +153,15 @@ def postprocess_trajectory(
 
 def ac_loss_func(policy, model, dist_class, train_batch):
     """Predefined actor-critic loss reuse."""
-    logits, _ = policy.model.from_batch(train_batch)
-    action_dist = dist_class(logits, policy.model)
+    logits, _ = model.from_batch(train_batch)
+    action_dist = dist_class(logits, model)
 
     policy.loss = A3CLoss(
         action_dist,
         train_batch[SampleBatch.ACTIONS],
         train_batch[Postprocessing.ADVANTAGES],
         train_batch[Postprocessing.VALUE_TARGETS],
-        policy.model.central_value_function(
+        model.central_value_function(
             train_batch[CentralizedActorCriticModel.CRITIC_OBS]
         ),
         policy.config["vf_loss_coeff"],
@@ -169,50 +171,33 @@ def ac_loss_func(policy, model, dist_class, train_batch):
     return policy.loss.total_loss
 
 
-def setup_mixins(policy, obs_space, action_space, config):
-    CentralizedValueMixin.__init__(policy)
-
-
-def stats(policy, train_batch):
-    return {
-        "policy_loss": policy.loss.pi_loss,
-        "policy_entropy": policy.loss.entropy,
-        "vf_loss": policy.loss.vf_loss,
-    }
-
-
 def central_vf_stats(policy, train_batch, grads):
     # Report the explained variance of the central value function.
     return {
-        "grad_gnorm": tf.linalg.global_norm(grads),
         "vf_explained_var": explained_variance(
-            train_batch[Postprocessing.VALUE_TARGETS], policy.model.value_function()
-        ),
+            train_batch[Postprocessing.VALUE_TARGETS], policy.central_value_out
+        )
     }
+
+
+def setup_mixins(policy, obs_space, action_space, config):
+    CentralizedValueMixin.__init__(policy)
 
 
 DEFAULT_CONFIG = with_common_config(
     {
         "gamma": 0.95,
-        "lambda": 1.0,  # if gae=true, work for it.
+        "lambda": 0.0,
         "use_gae": False,
         "vf_loss_coeff": 0.5,
-        "entropy_coeff": 0.01,
+        "entropy_coeff": 0.1,
         "truncate_episodes": True,
-        "use_critic": True,
-        "grad_clip": 40.0,
-        "lr": 0.0001,
-        "min_iter_time_s": 5,
-        "sample_async": True,
-        "lr_schedule": None,
     }
 )
 
 
-CA2CTFPolicy = build_tf_policy(
-    name="CA2CTFPolicy",
-    stats_fn=stats,
-    grad_stats_fn=central_vf_stats,
+MFACTFPolicy = build_tf_policy(
+    name="MFACTFPolicy",
     loss_fn=ac_loss_func,
     postprocess_fn=postprocess_trajectory,
     before_loss_init=setup_mixins,
@@ -222,6 +207,6 @@ CA2CTFPolicy = build_tf_policy(
 )
 
 
-CA2CTrainer = build_trainer(
-    name="CA2C", default_policy=CA2CTFPolicy, default_config=DEFAULT_CONFIG
+MFACTrainer = build_trainer(
+    name="MFAC", default_policy=MFACTFPolicy, default_config=DEFAULT_CONFIG
 )

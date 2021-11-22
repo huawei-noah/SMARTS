@@ -22,7 +22,7 @@
 from pathlib import Path
 
 import gym
-from baselines.marl_benchmark.agents import load_config
+from marl_benchmark.agents import load_config
 
 from smarts.core.scenario import Scenario
 from smarts.zoo.agent_spec import AgentSpec

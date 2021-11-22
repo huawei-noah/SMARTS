@@ -25,8 +25,8 @@ from pathlib import Path
 import ray
 from ray import tune
 
-from baselines.marl_benchmark import gen_config
-from baselines.marl_benchmark.common import SimpleCallbacks
+from marl_benchmark import gen_config
+from marl_benchmark.common import SimpleCallbacks
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 RUN_NAME = Path(__file__).stem

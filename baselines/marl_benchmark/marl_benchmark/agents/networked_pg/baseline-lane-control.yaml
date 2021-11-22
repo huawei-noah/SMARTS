@@ -25,7 +25,7 @@ interface:
 policy:
   framework: rllib
   trainer:
-    path: baselines.marl_benchmark.agents.networked_pg.tf_policy
+    path: marl_benchmark.agents.networked_pg.tf_policy
     name: NetworkedPGTrainer
 
 run:

@@ -30,8 +30,8 @@ from ray.rllib.models.preprocessors import get_preprocessor
 from ray.rllib.utils.annotations import override
 from scipy.spatial import distance
 
-from baselines.marl_benchmark.common import ActionAdapter, cal_obs
-from baselines.marl_benchmark.wrappers.rllib.wrapper import Wrapper
+from marl_benchmark.common import ActionAdapter, cal_obs
+from marl_benchmark.wrappers.rllib.wrapper import Wrapper
 
 
 def _get_preprocessor(space: gym.spaces.Space):

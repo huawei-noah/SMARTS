@@ -1,4 +1,4 @@
-name: mfac-baseline-lane-controller
+name: maac-baseline-lane-controller
 
 agent:
   state:
@@ -27,7 +27,7 @@ policy:
   config:
     model:
       custom_model_config:
-        critic_mode: mean
+        critic_mode: global
         agent_number: 4
         action_model:
           activation: relu
@@ -36,11 +36,11 @@ policy:
           activation: relu
           hiddens: [512, 256, 128]
   trainer:
-    path: baselines.marl_benchmark.agents.mfac.tf_policy
-    name: MFACTrainer
+    path: marl_benchmark.agents.maac.tf_policy
+    name: CA2CTrainer
 
 run:
-  checkpoint_freq: 40
+  checkpoint_freq: 4
   checkpoint_at_end: True
   max_failures: 1000
   resume: False
@@ -53,3 +53,6 @@ run:
     num_gpus: 0
     horizon: 1000
     # learning
+
+checkpoint:
+    ./log/results/run/4lane-4/CA2C_FrameStack_0_2021-01-25_17-07-05b3z4dh58/checkpoint_4/checkpoint-4

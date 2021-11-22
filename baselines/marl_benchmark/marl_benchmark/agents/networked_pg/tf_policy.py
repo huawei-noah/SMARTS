@@ -22,7 +22,7 @@ from ray.rllib.agents.pg.pg_tf_policy import pg_tf_loss
 from ray.rllib.agents.trainer_template import build_trainer
 from ray.rllib.policy.tf_policy_template import build_tf_policy
 
-from baselines.marl_benchmark.networks.communicate import (
+from marl_benchmark.networks.communicate import (
     NetworkedMixin,
     postprocess_trajectory,
 )
