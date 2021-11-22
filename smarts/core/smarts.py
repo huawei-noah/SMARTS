@@ -1082,8 +1082,8 @@ class SMARTS:
                     name=self._agent_manager.agent_name(agent_id),
                     actor_type=actor_type,
                     vehicle_type=envision_types.VehicleType.Car,
-                    position=v.pose.position,
-                    heading=v.pose.heading,
+                    position=tuple(v.pose.position),
+                    heading=float(v.pose.heading),
                     speed=v.speed,
                     actor_id=envision_types.format_actor_id(
                         agent_id,
@@ -1097,8 +1097,8 @@ class SMARTS:
                     mission_route_geometry=mission_route_geometry,
                 )
                 speed[agent_id] = v.speed
-                position[agent_id] = v.pose.position[:2]
-                heading[agent_id] = v.pose.heading
+                position[agent_id] = tuple(v.pose.position[:2])
+                heading[agent_id] = float(v.pose.heading)
                 if (
                     vehicle_obs.waypoint_paths
                     and len(vehicle_obs.waypoint_paths[0]) > 0
@@ -1112,8 +1112,8 @@ class SMARTS:
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     actor_type=envision_types.TrafficActorType.SocialVehicle,
                     vehicle_type=veh_type,
-                    position=list(v.pose.position),
-                    heading=v.pose.heading,
+                    position=tuple(v.pose.position),
+                    heading=float(v.pose.heading),
                     speed=v.speed,
                 )
 
