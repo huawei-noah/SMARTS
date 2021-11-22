@@ -25,6 +25,7 @@
 # Please refer to https://eli.thegreenplace.net/pages/about for more info about the author
 
 import multiprocessing
+import multiprocessing.queues
 
 
 class SharedCounter(object):

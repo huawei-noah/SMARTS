@@ -19,11 +19,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import numpy as np
 import torch
+import torch.nn.functional as F
 from torch import nn
 from torch.distributions.normal import Normal
-import numpy as np
-import torch.nn.functional as F
 
 
 class SACNetwork(nn.Module):

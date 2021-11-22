@@ -40,10 +40,10 @@ from adapters import (
 from config import HyperParameters
 from prioritized_replay import Buffer
 from soc_mt_ac_network import SocMtActorNetwork, SocMtCriticNetwork
-from utils import get_split_batch
 
 from smarts.core.agent import AgentSpec
 from smarts.core.utils.episodes import episodes
+from utils import get_split_batch
 
 warnings.filterwarnings("ignore")
 

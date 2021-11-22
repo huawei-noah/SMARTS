@@ -1,5 +1,3 @@
-# MIT License
-#
 # Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,34 +17,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import importlib.resources as pkg_resources
+import os
 
-from os import path
+import yaml
 
-from setuptools import find_packages, setup
-
-this_dir = path.abspath(path.dirname(__file__))
-with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
-    long_description = f.read()
+from .. import models
 
 
-""" Modified setup.py to include option for changing SMARTS version or, by default,
-the latest stable version SMARTS will used """
-setup(
-    name="marl_benchmark",
-    description="Multi-Agent Reinforcement Learning Benchmarks",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    version="0.1.0",
-    packages=find_packages(exclude=["tests"]),
-    include_package_data=True,
-    zip_safe=True,
-    python_requires=">=3.7",
-    install_requires=[
-        "smarts[train]==0.4.16",
-        "setuptools>=41.0.0,!=50.0",
-        "dill",
-        "black==20.8b1",
-        "opencv-python",
-        "gym",
-    ],
-)
+def load_controller_params(controller_filepath: str):
+    if (controller_filepath is None) or not os.path.exists(controller_filepath):
+        with pkg_resources.path(
+            models, "controller_parameters.yaml"
+        ) as controller_path:
+            controller_filepath = str(controller_path.absolute())
+    with open(controller_filepath, "r") as controller_file:
+        return yaml.safe_load(controller_file)

@@ -24,7 +24,6 @@ import numpy as np
 
 from smarts.core.controllers import ActionSpaceType
 
-
 # The space of the adapted action.
 gym_space: gym.Space = gym.spaces.Box(
     low=np.array([0.0, 0.0, -1.0]),

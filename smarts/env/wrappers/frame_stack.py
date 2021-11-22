@@ -21,9 +21,11 @@
 # THE SOFTWARE.
 
 import copy
-import gym
 from collections import deque
 from typing import Dict, List, Tuple, Union
+
+import gym
+
 from smarts.core import sensors
 
 

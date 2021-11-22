@@ -18,8 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
 
 from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Pose

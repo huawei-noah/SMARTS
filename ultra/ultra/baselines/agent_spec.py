@@ -19,14 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import inspect
 import json
-import numpy as np
-import torch, yaml, os, inspect, dill
+import os
 
+import dill
+import numpy as np
+import torch
+import yaml
+
+import ultra.adapters as adapters
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface
 from ultra.baselines.common.yaml_loader import load_yaml
-import ultra.adapters as adapters
 
 
 class BaselineAgentSpec(AgentSpec):

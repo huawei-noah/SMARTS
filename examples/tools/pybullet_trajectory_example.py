@@ -1,18 +1,17 @@
 import math
 from pathlib import Path
-from unittest import mock
+
 import matplotlib.pyplot as plt
 
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.core.coordinates import Pose, Heading
-from smarts.core.vehicle import Vehicle
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
     TrajectoryTrackingControllerState,
 )
-
+from smarts.core.coordinates import Heading, Pose
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.core.vehicle import Vehicle
 
 TIMESTEP_SEC = 1 / 240
 (vel, tim, axx, des, head, xdes, ydes, xx, yy) = ([] for i in range(9))

@@ -19,11 +19,11 @@
 # THE SOFTWARE.
 import enum
 import math
-from cached_property import cached_property
 from dataclasses import dataclass
 from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
+from cached_property import cached_property
 from typing_extensions import SupportsIndex
 
 from smarts.core.utils.math import (
@@ -56,6 +56,13 @@ class Dimensions:
     @property
     def as_lwh(self):
         return (self.length, self.width, self.height)
+
+    def equal_if_defined(self, length: float, width: float, height: float) -> bool:
+        return (
+            (not self.length or self.length == -1 or self.length == length)
+            and (not self.width or self.width == -1 or self.width == width)
+            and (not self.height or self.height == -1 or self.height == height)
+        )
 
 
 class Point(NamedTuple):
