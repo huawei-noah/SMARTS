@@ -51,6 +51,7 @@ from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
 )
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 from shapely.geometry import Polygon
+import rtree
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
@@ -209,6 +210,11 @@ class OpenDriveRoadNetwork(RoadMap):
         self._lanes: Dict[str, OpenDriveRoadNetwork.Lane] = {}
         self._lanepoints = None
 
+        # Reference to lanes' R tree
+        self._lane_rtree = None
+        # To preserve a specific order of lanes for building R tree
+        self._all_lanes = []
+
         self.load()
 
         if lanepoint_spacing is not None:
@@ -302,6 +308,7 @@ class OpenDriveRoadNetwork(RoadMap):
                             road.is_drivable = lane_elem.type == "driving"
 
                         self._lanes[lane_id] = lane
+                        self._all_lanes.append(lane)
                         assert lane_id not in self._surfaces
                         self._surfaces[lane_id] = lane
                         road.lanes.append(lane)
@@ -1125,15 +1132,32 @@ class OpenDriveRoadNetwork(RoadMap):
             )
         return road
 
+    def _build_lane_r_tree(self):
+        result = rtree.index.Index()
+        result.interleaved = True
+        for index, lane in enumerate(self._all_lanes):
+            bounding_box = (
+                lane.bounding_box[0][0],
+                lane.bounding_box[0][1],
+                lane.bounding_box[1][0],
+                lane.bounding_box[1][1],
+            )
+            result.add(index, bounding_box)
+        return result
+
     def _get_neighboring_lanes(self, x, y, r=0.1):
-        lanes = []
-        for road_id in self._roads:
-            road = self._roads[road_id]
-            for lane in road.lanes:
-                d = distance_point_to_polygon((x, y), lane.lane_polygon)
-                if d < r:
-                    lanes.append((lane, d))
-        return lanes
+        neighboring_lanes = []
+
+        if self._lane_rtree is None:
+            self._lane_rtree = self._build_lane_r_tree()
+
+        assert len(self._all_lanes) != 0
+        for i in self._lane_rtree.intersection((x - r, y - r, x + r, y + r)):
+            lane = self._all_lanes[i]
+            d = distance_point_to_polygon((x, y), lane.lane_polygon)
+            if d < r:
+                neighboring_lanes.append((lane, d))
+        return neighboring_lanes
 
     @lru_cache(maxsize=16)
     def nearest_lanes(
