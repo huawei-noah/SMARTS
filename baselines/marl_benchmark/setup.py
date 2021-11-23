@@ -47,6 +47,6 @@ setup(
         "dill",
         "black==20.8b1",
         "opencv-python",
-        "gym",
+        "gym==0.18.3",
     ],
 )

@@ -31,6 +31,14 @@ pip install -e .
 
 ## Running
 
+Build the scenario we want to run the procedure on,
+
+```bash
+# from baselines/marl_benchmark/marl_benchmark/
+scl scenario build --clean <scenario_path>
+# E.x. scl scenario build --clean scenarios/intersections/4lane
+```
+
 To run the training procedure,
 
 ```bash
