@@ -51,7 +51,6 @@ from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
 )
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 from shapely.geometry import Polygon
-from smarts.core.opendrive_lanepoints import OpenDriveLanePoints
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
@@ -63,6 +62,7 @@ from smarts.core.utils.math import (
     position_at_shape_offset,
 )
 
+from .lanepoints import LinkedLanePoint, LanePoints
 from .coordinates import BoundingBox, Point, Pose, RefLinePoint
 from smarts.core.utils.geometry import generate_mesh_from_polygons
 
@@ -213,7 +213,9 @@ class OpenDriveRoadNetwork(RoadMap):
 
         if lanepoint_spacing is not None:
             assert lanepoint_spacing > 0
-            self._lanepoints = OpenDriveLanePoints(self, spacing=lanepoint_spacing)
+            self._lanepoints = LanePoints.from_opendrive(
+                self, spacing=lanepoint_spacing
+            )
 
     @classmethod
     def from_file(

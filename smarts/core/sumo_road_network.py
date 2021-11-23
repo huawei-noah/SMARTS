@@ -35,7 +35,7 @@ from trimesh.exchange import gltf
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap, Waypoint
-from .sumo_lanepoints import LinkedLanePoint, SumoLanePoints
+from .lanepoints import LinkedLanePoint, LanePoints
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
 
@@ -96,8 +96,8 @@ class SumoRoadNetwork(RoadMap):
         self._lanepoints = None
         if lanepoint_spacing is not None:
             assert lanepoint_spacing > 0
-            # XXX: this should be last here since SumoLanePoints() calls road_network methods immediately
-            self._lanepoints = SumoLanePoints(self, spacing=lanepoint_spacing)
+            # XXX: this should be last here since LanePoints() calls road_network methods immediately
+            self._lanepoints = LanePoints.from_sumo(self, spacing=lanepoint_spacing)
 
     @staticmethod
     def _check_net_origin(bbox):
