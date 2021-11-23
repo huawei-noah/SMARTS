@@ -133,7 +133,7 @@ def test_sumo_map(sumo_scenario):
 def test_od_map_junction():
     root = path.join(Path(__file__).parent.absolute(), "maps")
     road_map = OpenDriveRoadNetwork.from_file(
-        path.join(root, "UC_Simple-X-Junction.xodr")
+        path.join(root, "UC_Simple-X-Junction.xodr"), lanepoint_spacing=0.5
     )
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
@@ -326,6 +326,30 @@ def test_od_map_junction():
     assert l5.road.contains_point(point)
     assert l5.is_drivable
 
+    # Lanepoints
+    lanepoints = road_map._lanepoints
+
+    point = (112.0, 170.0, 0)
+    l1_lane_point = lanepoints.closest_lanepoint_on_lane_to_point(point, l1.lane_id)
+    assert (
+        round(l1_lane_point.pose.position[0], 2),
+        round(l1_lane_point.pose.position[1], 2),
+    ) == (118.12, 170.0)
+
+    point = (115.55, 120.63)
+    r5_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(
+        point, r5.road_id
+    )
+    assert r5_linked_lane_point.lp.lane.lane_id == "5_0_R_-1"
+    assert (
+        round(r5_linked_lane_point.lp.pose.position[0], 2),
+        round(r5_linked_lane_point.lp.pose.position[1], 2),
+    ) == (116.31, 119.67)
+
+    r5_lp_path = lanepoints.paths_starting_at_lanepoint(r5_linked_lane_point, 5, ())
+    assert len(r5_lp_path) == 1
+    assert [llp.lp.lane.lane_id for llp in r5_lp_path[0]].count("5_0_R_-1") == 6
+
     # route generation
     r_0_0_L = road_map.road_by_id("0_0_L")
     r_13_0_R = road_map.road_by_id("13_0_R")
@@ -375,7 +399,9 @@ def test_od_map_junction():
 
 def test_od_map_figure_eight():
     root = path.join(Path(__file__).parent.absolute(), "maps")
-    road_map = OpenDriveRoadNetwork.from_file(path.join(root, "Figure-Eight.xodr"))
+    road_map = OpenDriveRoadNetwork.from_file(
+        path.join(root, "Figure-Eight.xodr"), lanepoint_spacing=0.5
+    )
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
     # Expected properties for all roads and lanes
@@ -478,11 +504,32 @@ def test_od_map_figure_eight():
     assert l5.road.contains_point(point)
     assert l5.is_drivable
 
+    # Lanepoints
+    lanepoints = road_map._lanepoints
+    point = (1.89, 0.79, 0)
+    l5_lane_point = lanepoints.closest_lanepoint_on_lane_to_point(point, l5.lane_id)
+    assert (
+        round(l5_lane_point.pose.position[0], 2),
+        round(l5_lane_point.pose.position[1], 2),
+    ) == (1.94, 2.04)
+
+    point = (163.56, 75.84, 0)
+    r1_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(point, "508_0_R")
+    assert r1_linked_lane_point.lp.lane.lane_id == "508_0_R_-1"
+    assert (
+        round(r1_linked_lane_point.lp.pose.position[0], 2),
+        round(r1_linked_lane_point.lp.pose.position[1], 2),
+    ) == (163.63, 75.94)
+
+    r1_lp_path = lanepoints.paths_starting_at_lanepoint(r1_linked_lane_point, 5, ())
+    assert len(r1_lp_path) == 1
+    assert [llp.lp.lane.lane_id for llp in r1_lp_path[0]].count("508_0_R_-1") == 6
+
 
 def test_od_map_lane_offset():
     root = path.join(Path(__file__).parent.absolute(), "maps")
     file_path = path.join(root, "Ex_Simple-LaneOffset.xodr")
-    road_map = OpenDriveRoadNetwork.from_file(file_path)
+    road_map = OpenDriveRoadNetwork.from_file(file_path, lanepoint_spacing=0.5)
     assert isinstance(road_map, OpenDriveRoadNetwork)
     assert road_map.source == file_path
     assert road_map.bounding_box.max_pt == Point(x=100.0, y=8.0, z=0)
@@ -663,11 +710,33 @@ def test_od_map_lane_offset():
     candidates = route[0].project_along(start_point, 70)
     assert len(candidates) == 3
 
+    # Lanepoints
+    lanepoints = road_map._lanepoints
+
+    point = (48.39, 0.4, 0)
+    l1_lane_point = lanepoints.closest_lanepoint_on_lane_to_point(point, "1_1_R_-1")
+    assert (
+        round(l1_lane_point.pose.position[0], 2),
+        round(l1_lane_point.pose.position[1], 2),
+    ) == (48.5, -0.15)
+
+    point = (20.0, 1.3, 0)
+    r0_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(point, "1_0_L")
+    assert r0_linked_lane_point.lp.lane.lane_id == "1_0_L_1"
+    assert (
+        round(r0_linked_lane_point.lp.pose.position[0], 2),
+        round(r0_linked_lane_point.lp.pose.position[1], 2),
+    ) == (20.0, 1.62)
+
+    r0_lp_path = lanepoints.paths_starting_at_lanepoint(r0_linked_lane_point, 5, ())
+    assert len(r0_lp_path) == 1
+    assert [llp.lp.lane.lane_id for llp in r0_lp_path[0]].count("1_0_L_1") == 6
+
 
 def test_od_map_motorway():
     root = path.join(Path(__file__).parent.absolute(), "maps")
     file_path = path.join(root, "UC_Motorway-Exit-Entry.xodr")
-    road_map = OpenDriveRoadNetwork.from_file(file_path)
+    road_map = OpenDriveRoadNetwork.from_file(file_path, lanepoint_spacing=0.5)
     assert isinstance(road_map, OpenDriveRoadNetwork)
     assert road_map.source == file_path
 
@@ -773,9 +842,29 @@ def test_od_map_motorway():
     start_point = Point(x=493.70, y=1528.79, z=0.0)
     end_point = Point(x=192.60, y=1001.47, z=0.0)
     assert round(route_34_to_6[0].distance_between(start_point, end_point), 2) == 1114.0
+
     # project along route
     candidates = route_34_to_6[0].project_along(start_point, 600)
     assert len(candidates) == 4
+
+    # Lanepoints
+    lanepoints = road_map._lanepoints
+
+    point = (493.70, 1528.79, 0)
+    r34l_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(
+        point, "34_0_L"
+    )
+    assert r34l_linked_lane_point.lp.lane.lane_id == "34_0_L_3"
+    assert (
+        round(r34l_linked_lane_point.lp.pose.position[0], 2),
+        round(r34l_linked_lane_point.lp.pose.position[1], 2),
+    ) == (492.75, 1529.0)
+
+    r34l_lp_path = lanepoints.paths_starting_at_lanepoint(
+        r34l_linked_lane_point, 10, ()
+    )
+    assert len(r34l_lp_path) == 1
+    assert [llp.lp.lane.lane_id for llp in r34l_lp_path[0]].count("34_0_L_3") == 11
 
 
 def lp_points(lps):
