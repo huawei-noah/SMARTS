@@ -82,9 +82,14 @@ class Point(NamedTuple):
         # (Points can be used by multi-threaded client code, even when
         # SMARTS is still single-threaded, so we want to be safe here.)
         # So we use the private global _shapely_points as a cache instead.
-        # Here we are relying on CPython's implementation of dict and setdefault
-        # to be thread-safe, which is apparently the case right now.
-        return _shapely_points.setdefault(self, SPoint((self.x, self.y, self.z)))
+        # Here we are relying on CPython's implementation of dict
+        # to be thread-safe.
+        cached = _shapely_points.get(self)
+        if cached:
+            return cached
+        spt = SPoint((self.x, self.y, self.z))
+        _shapely_points[self] = spt
+        return spt
 
     def __del__(self):
         if self in _shapely_points:
