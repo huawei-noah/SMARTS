@@ -30,7 +30,7 @@ with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
 
 
 """ Modified setup.py to include option for changing SMARTS version or, by default,
-the latest stable version SMARTS will used """
+the latest stable version of SMARTS will be used """
 setup(
     name="marl_benchmark",
     description="Multi-Agent Reinforcement Learning Benchmarks",
@@ -49,5 +49,6 @@ setup(
         "black==20.8b1",
         "opencv-python",
         "gym==0.18.3",
+        "numpy==1.19.5",
     ],
 )
