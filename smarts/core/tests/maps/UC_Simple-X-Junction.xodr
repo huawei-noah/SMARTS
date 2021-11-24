@@ -6,7 +6,9 @@
         <link>
             <predecessor elementType="junction" elementId="1" />
         </link>
-        <type s="0.0000000000000000e+00" type="town" country="DE"/>
+        <type s="0.0000000000000000e+00" type="town" country="DE">
+            <speed max="20"/>
+        </type>
         <planView>
             <geometry s="0.0000000000000000e+00" x="1.2000000000004981e+02" y="1.3700000000000000e+02" hdg="1.5707963267987357e+00" length="1.0300000000000000e+02">
                 <line/>

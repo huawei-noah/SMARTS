@@ -40,10 +40,6 @@ with warnings.catch_warnings():
         # aggressive
         from sklearn.neighbors import KDTree
 
-from smarts.core.utils.sumo import sumolib  # isort:skip
-from sumolib.net.edge import Edge  # isort:skip
-from sumolib.net.lane import Lane  # isort:skip
-
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
@@ -115,6 +111,9 @@ class LanePoints:
         the network, the result of this function can be used to interpolate
         lanepoints along lanes to the desired granularity.
         """
+        from smarts.core.utils.sumo import sumolib  # isort:skip
+        from sumolib.net.edge import Edge  # isort:skip
+        from sumolib.net.lane import Lane  # isort:skip
         from .sumo_road_network import SumoRoadNetwork
 
         assert type(sumo_road_network) == SumoRoadNetwork
