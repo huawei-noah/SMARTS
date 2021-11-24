@@ -53,7 +53,7 @@ from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 from shapely.geometry import Polygon
 import rtree
 
-from smarts.core.road_map import RoadMap
+from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.utils.math import (
     CubicPolynomial,
     constrain_angle,
@@ -61,6 +61,7 @@ from smarts.core.utils.math import (
     get_linear_segments_for_range,
     offset_along_shape,
     position_at_shape_offset,
+    vec_2d,
 )
 
 from .lanepoints import LinkedLanePoint, LanePoints
@@ -195,11 +196,23 @@ class LaneBoundary:
 
 class OpenDriveRoadNetwork(RoadMap):
     DEFAULT_LANE_WIDTH = 3.2
+    DEFAULT_LANE_SPEED = 16.67  # in m/s
 
-    def __init__(self, xodr_file: str, default_lane_width=None, lanepoint_spacing=None):
+    def __init__(
+        self,
+        xodr_file: str,
+        default_lane_speed=None,
+        default_lane_width=None,
+        lanepoint_spacing=None,
+    ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(logging.INFO)
         self._xodr_file = xodr_file
+        self._default_lane_speed = (
+            default_lane_speed
+            if default_lane_speed is not None
+            else OpenDriveRoadNetwork.DEFAULT_LANE_SPEED
+        )
         self._default_lane_width = (
             default_lane_width
             if default_lane_width is not None
@@ -259,6 +272,16 @@ class OpenDriveRoadNetwork(RoadMap):
         for road_elem in od.roads:
             road_elem: RoadElement = road_elem
 
+            # Set road speed
+            if (
+                road_elem.types
+                and road_elem.types[0].speed
+                and road_elem.types[0].speed.max
+            ):
+                road_elem_speed = float(road_elem.types[0].speed.max)
+            else:
+                road_elem_speed = self._default_lane_speed
+
             # Create new road for each lane section
             for section_elem in road_elem.lanes.lane_sections:
                 section_elem: LaneSectionElement = section_elem
@@ -301,6 +324,7 @@ class OpenDriveRoadNetwork(RoadMap):
                                 "onramp",
                                 "connectingramp",
                             ],
+                            road_elem_speed,
                             road_elem.planView,
                         )
                         # Set road as drivable if it has at least one lane drivable
@@ -655,6 +679,7 @@ class OpenDriveRoadNetwork(RoadMap):
             index: int,
             length: float,
             is_drivable: bool,
+            speed_limit: float,
             road_plan_view: PlanViewElement,
         ):
             super().__init__(lane_id)
@@ -663,6 +688,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._road = road
             self._index = index
             self._length = length
+            self._speed_limit = speed_limit
             self._plan_view = road_plan_view
             self._is_drivable = is_drivable
             self._incoming_lanes = []
@@ -693,6 +719,10 @@ class OpenDriveRoadNetwork(RoadMap):
         @property
         def length(self) -> float:
             return self._length
+
+        @property
+        def speed_limit(self) -> float:
+            return self._speed_limit
 
         @property
         def in_junction(self) -> bool:

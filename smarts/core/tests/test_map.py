@@ -148,6 +148,7 @@ def test_od_map_junction():
             assert lane.in_junction is not None
             assert lane.length is not None
             assert lane.length >= 0
+            assert lane.speed_limit >= 0
 
     # Road tests
     r_0_R = road_map.road_by_id("0_0_R")
@@ -217,7 +218,7 @@ def test_od_map_junction():
     assert l1.length == 103
     assert l1.is_drivable
     assert len(l1.shape().exterior.coords) == 5
-
+    assert l1.speed_limit == 20
     assert [l.lane_id for l in l1.incoming_lanes] == []
     assert [l.lane_id for l in l1.outgoing_lanes] == [
         "3_0_R_-1",
@@ -314,6 +315,7 @@ def test_od_map_junction():
     assert l4.lane_id == "0_0_L_4"
     assert l4.road.road_id == "0_0_L"
     assert l4.index == 4
+    assert l4.speed_limit == 20
     assert not l4.road.contains_point(point)
     assert not l4.is_drivable
 
@@ -415,6 +417,7 @@ def test_od_map_figure_eight():
             assert lane.in_junction is not None
             assert lane.length is not None
             assert lane.length >= 0
+            assert lane.speed_limit == 16.67
 
     # Road tests
     r_508_0_R = road_map.road_by_id("508_0_R")
@@ -546,6 +549,7 @@ def test_od_map_lane_offset():
             assert lane.in_junction is not None
             assert lane.length is not None
             assert lane.length >= 0
+            assert lane.speed_limit == 16.67
 
     # Nonexistent road/lane tests
     assert road_map.road_by_id("") is None
@@ -751,6 +755,7 @@ def test_od_map_motorway():
             assert lane.in_junction is not None
             assert lane.length is not None
             assert lane.length >= 0
+            assert lane.speed_limit == 16.67
 
     # route generation
     empty_route = road_map.empty_route()
