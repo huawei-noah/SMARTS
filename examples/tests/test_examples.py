@@ -1,5 +1,3 @@
-import importlib.util
-import sys
 import tempfile
 from pathlib import Path
 
@@ -35,10 +33,10 @@ def test_examples(example):
     )
 
 
-def test_multi_instance_example():
-    from examples import multi_instance
+def test_ray_multi_instance_example():
+    from examples import ray_multi_instance
 
-    main = multi_instance.main
+    main = ray_multi_instance.main
     main(
         training_scenarios=["scenarios/loop"],
         evaluation_scenarios=["scenarios/loop"],
@@ -50,7 +48,7 @@ def test_multi_instance_example():
 
 
 def test_rllib_example():
-    from examples import rllib
+    from examples.rllib import rllib
 
     main = rllib.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
