@@ -51,13 +51,12 @@ class FrameStack(gym.Wrapper):
             key: deque(maxlen=self._num_stack) for key in self.env.agent_specs.keys()
         }
 
-        if self.observation_space:
-            self.observation_space = gym.spaces.Dict(
-                {
-                    agent_id: gym.spaces.Tuple([space] * self._num_stack)
-                    for agent_id, space in self.observation_space.items()
-                }
-            )
+        self.observation_space = gym.spaces.Dict(
+            {
+                agent_id: gym.spaces.Tuple([space] * self._num_stack)
+                for agent_id, space in self.observation_space.spaces.items()
+            }
+        )
 
     def _get_observations(
         self, frame: sensors.Observation
