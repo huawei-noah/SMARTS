@@ -156,9 +156,8 @@ def test_od_map_junction():
     assert not r_0_R.is_junction
     assert r_0_R.length == 103
     assert len(r_0_R.lanes) == 4
-    assert r_0_R.lane_at_index(0) is None
-    assert r_0_R.lane_at_index(1) is None
-    assert r_0_R.lane_at_index(-1).road.road_id == "0_0_R"
+    assert r_0_R.lane_at_index(-1) is None
+    assert r_0_R.lane_at_index(3).road.road_id == "0_0_R"
     assert len(r_0_R.shape().exterior.coords) == 5
     assert set([r.road_id for r in r_0_R.incoming_roads]) == {"5_0_R", "7_0_R", "9_0_R"}
     assert set([r.road_id for r in r_0_R.outgoing_roads]) == set()
@@ -168,9 +167,7 @@ def test_od_map_junction():
     assert not r_0_L.is_junction
     assert r_0_L.length == 103
     assert len(r_0_L.lanes) == 4
-    assert r_0_L.lane_at_index(0) is None
-    assert r_0_L.lane_at_index(-1) is None
-    assert r_0_L.lane_at_index(1).road.road_id == "0_0_L"
+    assert r_0_L.lane_at_index(3).road.road_id == "0_0_L"
     assert len(r_0_L.shape().exterior.coords) == 5
     assert set([r.road_id for r in r_0_L.incoming_roads]) == set()
     assert set([r.road_id for r in r_0_L.outgoing_roads]) == {
@@ -184,9 +181,8 @@ def test_od_map_junction():
     assert not r_13_R.is_junction
     assert r_13_R.length == 103
     assert len(r_13_R.lanes) == 4
-    assert r_13_R.lane_at_index(0) is None
-    assert r_13_R.lane_at_index(1) is None
-    assert r_13_R.lane_at_index(-1).road.road_id == "13_0_R"
+    assert r_13_R.lane_at_index(-1) is None
+    assert r_13_R.lane_at_index(0).road.road_id == "13_0_R"
     assert set([r.road_id for r in r_13_R.incoming_roads]) == {
         "10_0_R",
         "12_0_R",
@@ -199,9 +195,7 @@ def test_od_map_junction():
     assert not r_13_L.is_junction
     assert r_13_L.length == 103
     assert len(r_13_L.lanes) == 4
-    assert r_13_L.lane_at_index(0) is None
-    assert r_13_L.lane_at_index(-1) is None
-    assert r_13_L.lane_at_index(1).road.road_id == "13_0_L"
+    assert r_13_L.lane_at_index(0).road.road_id == "13_0_L"
     assert set([r.road_id for r in r_13_L.incoming_roads]) == set()
     assert set([r.road_id for r in r_13_L.outgoing_roads]) == {
         "9_0_R",
@@ -213,7 +207,8 @@ def test_od_map_junction():
     l1 = road_map.lane_by_id("0_0_L_1")
     assert l1
     assert l1.road.road_id == "0_0_L"
-    assert l1.index == 1
+    # leftmost lane
+    assert l1.index == 3
     assert len(l1.lanes_in_same_direction) == 3
     assert l1.length == 103
     assert l1.is_drivable
@@ -236,13 +231,13 @@ def test_od_map_junction():
     assert further_right_lane
     assert direction
     assert further_right_lane.lane_id == "0_0_L_3"
-    assert further_right_lane.index == 3
+    assert further_right_lane.index == 1
 
     left_lane, direction = l1.lane_to_left
     assert left_lane
     assert not direction
     assert left_lane.lane_id == "0_0_R_-1"
-    assert left_lane.index == -1
+    assert left_lane.index == 3
 
     # point on lane
     point = (118.0, 170.0, 0)
@@ -293,7 +288,7 @@ def test_od_map_junction():
     l3 = road_map.lane_by_id("9_0_R_-1")
     assert l3
     assert l3.road.road_id == "9_0_R"
-    assert l3.index == -1
+    assert l3.index == 2
     assert l3.is_drivable
 
     foes = l3.foes
@@ -314,7 +309,7 @@ def test_od_map_junction():
     l4 = road_map.nearest_lane(point)
     assert l4.lane_id == "0_0_L_4"
     assert l4.road.road_id == "0_0_L"
-    assert l4.index == 4
+    assert l4.index == 0
     assert l4.speed_limit == 20
     assert not l4.road.contains_point(point)
     assert not l4.is_drivable
@@ -324,7 +319,7 @@ def test_od_map_junction():
     l5 = road_map.nearest_lane(point)
     assert l5.lane_id == "0_0_L_1"
     assert l5.road.road_id == "0_0_L"
-    assert l5.index == 1
+    assert l5.index == 3
     assert l5.road.contains_point(point)
     assert l5.is_drivable
 
@@ -440,7 +435,7 @@ def test_od_map_figure_eight():
     l1 = road_map.lane_by_id("508_0_R_-1")
     assert l1
     assert l1.road.road_id == "508_0_R"
-    assert l1.index == -1
+    assert l1.index == 3
     assert l1.is_drivable
     assert len(l1.shape().exterior.coords) == 1603
 
@@ -503,7 +498,7 @@ def test_od_map_figure_eight():
     l5 = road_map.nearest_lane(point)
     assert l5.lane_id == "510_0_R_-1"
     assert l5.road.road_id == "510_0_R"
-    assert l5.index == -1
+    assert l5.index == 0
     assert l5.road.contains_point(point)
     assert l5.is_drivable
 
@@ -610,7 +605,7 @@ def test_od_map_lane_offset():
     l0 = road_map.lane_by_id("1_1_L_1")
     assert l0
     assert l0.road.road_id == "1_1_L"
-    assert l0.index == 1
+    assert l0.index == 2
     assert l0.is_drivable
 
     assert set([lane.lane_id for lane in l0.incoming_lanes]) == set()
@@ -622,31 +617,31 @@ def test_od_map_lane_offset():
     assert right_lane
     assert direction
     assert right_lane.lane_id == "1_1_L_2"
-    assert right_lane.index == 2
+    assert right_lane.index == 1
 
     left_lane, direction = l0.lane_to_left
     assert left_lane
     assert not direction
     assert left_lane.lane_id == "1_1_R_-1"
-    assert left_lane.index == -1
+    assert left_lane.index == 2
 
     further_right_lane, direction = right_lane.lane_to_right
     assert further_right_lane
     assert direction
     assert further_right_lane.lane_id == "1_1_L_3"
-    assert further_right_lane.index == 3
+    assert further_right_lane.index == 0
 
     l1 = road_map.lane_by_id("1_1_R_-1")
     assert l1
     assert l1.road.road_id == "1_1_R"
-    assert l1.index == -1
+    assert l1.index == 2
     assert l1.is_drivable
 
     left_lane, direction = l1.lane_to_left
     assert left_lane
     assert not direction
     assert left_lane.lane_id == "1_1_L_1"
-    assert left_lane.index == 1
+    assert left_lane.index == 2
 
     # point on lane
     point = (31.0, 2.0, 0)
@@ -691,7 +686,7 @@ def test_od_map_lane_offset():
     l4 = road_map.nearest_lane(point)
     assert l4.lane_id == "1_1_R_-2"
     assert l4.road.road_id == "1_1_R"
-    assert l4.index == -2
+    assert l4.index == 1
     assert l4.road.contains_point(point)
     assert l4.is_drivable
 
