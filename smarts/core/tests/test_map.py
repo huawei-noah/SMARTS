@@ -460,7 +460,7 @@ def test_od_map_figure_eight():
 
     offset = refline_pt.s
     assert l1.width_at_offset(offset) == 3.75
-    assert l1.curvature_radius_at_offset(offset) == 1407374883553280.0
+    assert l1.curvature_radius_at_offset(offset) == 1250999896491804.5
     assert l1.contains_point(point)
     assert l1.road.contains_point(point)
 
