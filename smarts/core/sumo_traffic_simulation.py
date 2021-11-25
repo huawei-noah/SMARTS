@@ -33,7 +33,7 @@ from shapely.geometry import box as shapely_box
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose
-from smarts.core.provider import Provider, ProviderState
+from smarts.core.provider import EmptyProvider, Provider, ProviderState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
@@ -117,6 +117,9 @@ class SumoTrafficSimulation(Provider):
         self._current_reload_count = 0
         # /TODO
 
+        self._traci_exceptions = (TraCIException, FatalTraCIError)
+        self._empty_provider = EmptyProvider()
+
     def __repr__(self):
         return f"""SumoTrafficSim(
   _scenario={repr(self._scenario)},
@@ -191,19 +194,20 @@ class SumoTrafficSimulation(Provider):
                     logging.debug("Connection closed. Retrying...")
                     self._close_traci_and_pipes()
                     continue
+                except TraCIException as e:
+                    logging.debug(f"Unknown connection issue has occured: {e}")
+                    self._close_traci_and_pipes()
             except ConnectionRefusedError:
                 logging.debug(
                     "Connection refused. Tried to connect to unpaired TraCI client."
                 )
                 self._close_traci_and_pipes()
                 continue
-
-            # It is mandatory to set order when using multiple clients.
-            self._traci_conn.setOrder(0)
-
             break
 
         try:
+            # It is mandatory to set order when using multiple clients.
+            self._traci_conn.setOrder(0)
             self._traci_conn.getVersion()
         except Exception as e:
             logging.error(
@@ -214,6 +218,7 @@ class SumoTrafficSimulation(Provider):
                 numbers to all SUMO processes.
                 Check {self._log_file} for hints"""
             )
+            self._handle_traci_disconnect(e)
             raise e
 
         self._log.debug("Finished starting sumo process")
@@ -260,6 +265,7 @@ class SumoTrafficSimulation(Provider):
         # restart sumo process only when map file changes
         restart_sumo = (
             not self._scenario
+            or self.connected == False
             or self._scenario.road_map_hash != next_scenario.road_map_hash
             or self._current_reload_count >= self._reload_count
         )
@@ -271,16 +277,21 @@ class SumoTrafficSimulation(Provider):
         ), "SumoTrafficSimulation requires a SumoRoadNetwork"
         self._log_file = next_scenario.unique_sumo_log_file()
 
-        if restart_sumo:
-            self._initialize_traci_conn()
-        elif self._allow_reload:
-            self._traci_conn.load(self._base_sumo_load_params())
+        try:
+            if restart_sumo:
+                self._initialize_traci_conn()
+            elif self._allow_reload:
+                self._traci_conn.load(self._base_sumo_load_params())
 
-        assert self._traci_conn is not None, "No active traci conn"
+            assert self._traci_conn is not None, "No active traci conn"
 
-        self._traci_conn.simulation.subscribe(
-            [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
-        )
+            self._traci_conn.simulation.subscribe(
+                [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
+            )
+        except self._traci_exceptions as e:
+            self._handle_traci_disconnect(e)
+            return self._empty_provider.setup(next_scenario)
+
 
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
@@ -300,6 +311,10 @@ class SumoTrafficSimulation(Provider):
         if self._traci_conn:
             self._traci_conn.close()
             self._traci_conn = None
+
+    def _handle_traci_disconnect(self, e):
+        logging.error(f"TraCI has disconnected with: {e}")
+        self._close_traci_and_pipes()
 
     def _remove_vehicles(self):
         vehicles_to_remove = None
@@ -321,7 +336,11 @@ class SumoTrafficSimulation(Provider):
 
         assert self._is_setup
 
-        self._remove_vehicles()
+        try:
+            self._remove_vehicles()
+        except self._traci_exceptions as e:
+            self._handle_traci_disconnect(e)
+
         if self._allow_reload:
             self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
@@ -330,6 +349,10 @@ class SumoTrafficSimulation(Provider):
         self._num_dynamic_ids_used = 0
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
+
+    @property
+    def connected(self):
+        return self._traci_conn != None
 
     @property
     def action_spaces(self):
@@ -347,6 +370,16 @@ class SumoTrafficSimulation(Provider):
         Returns:
             ProviderState representing the state of the SUMO simulation
         """
+        if not self.connected:
+            return self._empty_provider.step(provider_actions, dt, elapsed_sim_time)
+        try:
+            ps = self._step(dt)
+        except self._traci_exceptions as e:
+            self._handle_traci_disconnect(e)
+            return self._empty_provider.step(provider_actions, dt, elapsed_sim_time)
+        return ps
+
+    def _step(self, dt):
         # we tell SUMO to step through dt more seconds of the simulation
         self._cumulative_sim_seconds += dt
         self._traci_conn.simulationStep(self._cumulative_sim_seconds)
@@ -354,6 +387,16 @@ class SumoTrafficSimulation(Provider):
         return self._compute_provider_state()
 
     def sync(self, provider_state: ProviderState):
+        if not self.connected:
+            return self._empty_provider.sync(provider_state)
+        try:
+            ps = self._sync(provider_state)
+        except self._traci_exceptions as e:
+            self._handle_traci_disconnect(e)
+            return self._empty_provider.sync(provider_state)
+        return ps
+
+    def _sync(self, provider_state: ProviderState):
         provider_vehicles = {v.vehicle_id: v for v in provider_state.vehicles}
         external_vehicles = [v for v in provider_state.vehicles if v.source != "SUMO"]
         external_vehicle_ids = {v.vehicle_id for v in external_vehicles}
@@ -491,7 +534,12 @@ class SumoTrafficSimulation(Provider):
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
     def update_route_for_vehicle(self, vehicle_id, new_route_edges):
-        self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
+        if not self.connected:
+            return
+        try:
+            self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
+        except self._traci_exceptions as e:
+            self._handle_traci_disconnect(e)
 
     def _create_vehicle(self, vehicle_id, dimensions):
         assert (
@@ -692,13 +740,15 @@ class SumoTrafficSimulation(Provider):
             new_route_edges = route_edges[-1:] + route_edges
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
-    def _unique_id(self):
-        route_id = "hiway_id_%s" % self._num_dynamic_ids_used
-        self._num_dynamic_ids_used += 1
-        return route_id
-
     def vehicle_route(self, vehicle_id) -> Sequence[str]:
-        return self._traci_conn.vehicle.getRoute(vehicle_id)
+        if not self.connected:
+            return []
+        try:
+            route = self._traci_conn.vehicle.getRoute(vehicle_id)
+        except self._traci_exceptions as e:
+            self._handle_traci_disconnect(e)
+            return []
+        return route 
 
     def reserve_traffic_location_for_vehicle(
         self,
@@ -714,7 +764,12 @@ class SumoTrafficSimulation(Provider):
         self._reserved_areas[vehicle_id] = reserved_location
 
     def remove_traffic_vehicle(self, vehicle_id: str):
-        self._traci_conn.vehicle.remove(vehicle_id)
+        if not self.connected:
+            return
+        try:
+            self._traci_conn.vehicle.remove(vehicle_id)
+        except self._traci_exceptions as e:
+            self._handle_traci_disconnect(e)
         self._sumo_vehicle_ids.remove(vehicle_id)
 
     def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):
