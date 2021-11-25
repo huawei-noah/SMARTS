@@ -198,7 +198,7 @@ def low_pass_filter(
 def radians_to_vec(radians) -> np.ndarray:
     # +y = 0 rad.
     angle = (radians + math.pi * 0.5) % (2 * math.pi)
-    return np.array([math.cos(angle), math.sin(angle)])
+    return np.array((math.cos(angle), math.sin(angle)))
 
 
 def vec_to_radians(v) -> float:
@@ -208,26 +208,14 @@ def vec_to_radians(v) -> float:
     x, y = v
     r = math.atan2(abs(y), abs(x))
 
-    quad = 0
+    # Adjust angle based on quadrant where +y = 0 rad.
     if x < 0:
         if y < 0:
-            quad = 3
-        else:
-            quad = 2
-    else:
-        if y < 0:
-            quad = 4
-
-    # Adjust angle based on quadrant
-    if 2 == quad:
-        r = math.pi - r
-    elif 3 == quad:
-        r = math.pi + r
-    elif 4 == quad:
-        r = 2 * math.pi - r
-
-    # +y = 0 rad.
-    return (r - (math.pi) * 0.5) % (2 * math.pi)
+            return (r + 0.5 * math.pi) % (2 * math.pi)  # quad 3
+        return (0.5 * math.pi - r) % (2 * math.pi)  # quad 2
+    elif y < 0:
+        return (1.5 * math.pi - r) % (2 * math.pi)  # quad 4
+    return (r - 0.5 * math.pi) % (2 * math.pi)  # quad 1
 
 
 def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
