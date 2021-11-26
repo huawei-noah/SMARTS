@@ -97,7 +97,7 @@ class EmptyProvider(Provider):
         return
 
     def create_vehicle(self, provider_vehicle: VehicleState):
-        return VehicleState()
+        return
 
     def reset(self):
         return
@@ -105,5 +105,6 @@ class EmptyProvider(Provider):
     def teardown(self):
         return
 
+    @property
     def connected(self):
         return False
