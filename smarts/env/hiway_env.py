@@ -108,12 +108,12 @@ class HiWayEnv(gym.Env):
 
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
-            list(self._agent_specs.keys()),
+            list(agent_specs.keys()),
             shuffle_scenarios,
         )
 
         agent_interfaces = {
-            agent_id: agent.interface for agent_id, agent in self._agent_specs.items()
+            agent_id: agent.interface for agent_id, agent in agent_specs.items()
         }
 
         envision_client = None
@@ -143,11 +143,6 @@ class HiWayEnv(gym.Env):
             visdom=visdom_client,
             fixed_timestep_sec=fixed_timestep_sec,
             zoo_addrs=zoo_addrs,
-        )
-
-        # TODO: See issue https://github.com/huawei-noah/SMARTS/issues/548
-        self.observation_space = gym.spaces.Dict(
-            {agent_id: gym.Space() for agent_id in self._agent_specs.keys()}
         )
 
     @property
