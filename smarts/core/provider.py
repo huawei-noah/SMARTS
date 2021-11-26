@@ -81,8 +81,8 @@ class Provider:
     def connected(self):
         return True
 
-class EmptyProvider(Provider):
 
+class EmptyProvider(Provider):
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return {}
@@ -92,7 +92,7 @@ class EmptyProvider(Provider):
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
         return ProviderState([])
-    
+
     def sync(self, provider_state: ProviderState):
         return
 

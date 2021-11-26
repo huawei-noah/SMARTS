@@ -292,7 +292,6 @@ class SumoTrafficSimulation(Provider):
             self._handle_traci_disconnect(e)
             return self._empty_provider.setup(next_scenario)
 
-
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
         #      as zero will step according to a default (non-zero) step-size.
@@ -748,7 +747,7 @@ class SumoTrafficSimulation(Provider):
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
             return []
-        return route 
+        return route
 
     def reserve_traffic_location_for_vehicle(
         self,

@@ -554,10 +554,7 @@ class BubbleManager:
             goal = PositionalGoal.from_road(route[-1], sim.scenario.road_map)
         else:
             goal = EndlessGoal()
-        mission = Mission(
-            start=Start(vehicle.position[:2], vehicle.heading),
-            goal=goal
-        )
+        mission = Mission(start=Start(vehicle.position[:2], vehicle.heading), goal=goal)
         plan.create_route(mission)
 
     def _start_social_agent(
