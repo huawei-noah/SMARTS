@@ -875,18 +875,26 @@ def lp_points(lps):
     return xs, ys
 
 
+def wp_points(wps):
+    xs, ys = [], []
+    for wp in wps:
+        xs.append(wp.pos[0])
+        ys.append(wp.pos[1])
+    return xs, ys
+
+
 def visualize():
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots()
 
     root = path.join(Path(__file__).parent.absolute(), "maps")
-    filename = "UC_Simple-X-Junction.xodr"
+    filename = "Ex_Simple-LaneOffset.xodr"
     filepath = path.join(root, filename)
     road_map = OpenDriveRoadNetwork.from_file(filepath, lanepoint_spacing=0.5)
 
+    # Plot map
     roads = road_map._roads
-
     for road_id in roads:
         road = roads[road_id]
         for lane in road.lanes:
@@ -895,10 +903,47 @@ def visualize():
                 xs.append(x)
                 ys.append(y)
             plt.plot(xs, ys, "k-")
-            if lane.is_drivable:
-                linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
-                xlp, ylp = lp_points(linked_lps)
-                plt.scatter(xlp, ylp, s=1, c="r")
+
+    # Motorway map route (take lane id: "6_0_L_1" for pose)
+    # route_6_to_34_via_19 = road_map.generate_routes(
+    #     road_map.road_by_id("6_0_L"),
+    #     road_map.road_by_id("34_0_R"),
+    #     [road_map.road_by_id("19_0_L"), road_map.road_by_id("17_0_R")],
+    # )
+
+    # Junction map route (take lane id: "13_0_L_1" for pose)
+    # r_13_0_L = road_map.road_by_id("13_0_L")
+    # r_0_0_R = road_map.road_by_id("0_0_R")
+    # route_13_to_0 = road_map.generate_routes(r_13_0_L, r_0_0_R)
+
+    # LaneOffset map route
+    start = road_map.road_by_id("1_0_R")
+    end = road_map.road_by_id("1_2_R")
+    route_lo = road_map.generate_routes(start, end)
+
+    lp_1_0_R = road_map._lanepoints._lanepoints_by_lane_id["1_0_R_-1"]
+    lp_pose = lp_1_0_R[0].lp.pose
+
+    # Plot waypoints on a given route
+    waypoints_for_route = road_map.waypoint_paths(lp_pose, 500, route=route_lo[0])
+    for waypoints in waypoints_for_route:
+        xwp, ywp = wp_points(waypoints)
+        plt.scatter(xwp, ywp, s=1, c="b")
+
+    # Plot waypoints on nearest lanes of road for a given lanepoint
+    # waypoints_path = road_map.waypoint_paths(lp_pose, 100)
+    # for waypoints in waypoints_path:
+    #     xwp, ywp = wp_points(waypoints)
+    #     plt.scatter(xwp, ywp, s=1, c="r")
+
+    # Plot all lanepoints
+    # for road_id in roads:
+    #     road = roads[road_id]
+    #     for lane in road.lanes:
+    #         if lane.is_drivable:
+    #             linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
+    #             xlp, ylp = lp_points(linked_lps)
+    #             plt.scatter(xlp, ylp, s=1, c="r")
 
     ax.set_title(filename)
     ax.axis("equal")

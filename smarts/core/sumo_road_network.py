@@ -34,7 +34,7 @@ from shapely.ops import snap
 from trimesh.exchange import gltf
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
-from .road_map import RoadMap, Waypoint
+from .road_map import RoadMap, Waypoint, WaypointsCache
 from .lanepoints import LinkedLanePoint, LanePoints
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
@@ -92,7 +92,7 @@ class SumoRoadNetwork(RoadMap):
         self._surfaces = {}
         self._lanes = {}
         self._roads = {}
-        self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
+        self._waypoints_cache = WaypointsCache()
         self._lanepoints = None
         if lanepoint_spacing is not None:
             assert lanepoint_spacing > 0
@@ -1083,53 +1083,6 @@ class SumoRoadNetwork(RoadMap):
         connection_lane = self._graph.getLane(connection_lane_id)
 
         return connection_lane.getEdge().getID()
-
-    class _WaypointsCache:
-        def __init__(self):
-            self.lookahead = 0
-            self.point = (0, 0, 0)
-            self.filter_road_ids = ()
-            self._starts = {}
-
-        # XXX:  all vehicles share this cache now (as opposed to before
-        # when it was in Plan.py and each vehicle had its own cache).
-        # TODO: probably need to add vehicle_id to the key somehow (or just make it bigger)
-        def _match(self, lookahead, point, filter_road_ids) -> bool:
-            return (
-                lookahead <= self.lookahead
-                and point[0] == self.point[0]
-                and point[1] == self.point[1]
-                and filter_road_ids == self.filter_road_ids
-            )
-
-        def update(
-            self,
-            lookahead: int,
-            point: Tuple[float, float, float],
-            filter_road_ids: tuple,
-            llp: LinkedLanePoint,
-            paths: List[List[Waypoint]],
-        ):
-            if not self._match(lookahead, point, filter_road_ids):
-                self.lookahead = lookahead
-                self.point = point
-                self.filter_road_ids = filter_road_ids
-                self._starts = {}
-            self._starts[llp.lp.lane.index] = paths
-
-        def query(
-            self,
-            lookahead: int,
-            point: Tuple[float, float, float],
-            filter_road_ids: tuple,
-            llp: LinkedLanePoint,
-        ) -> List[List[Waypoint]]:
-            if self._match(lookahead, point, filter_road_ids):
-                hit = self._starts.get(llp.lp.lane.index, None)
-                if hit:
-                    # consider just returning all of them (not slicing)?
-                    return [path[: (lookahead + 1)] for path in hit]
-            return None
 
     def _waypoints_starting_at_lanepoint(
         self,
