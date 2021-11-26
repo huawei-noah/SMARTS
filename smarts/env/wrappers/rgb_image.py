@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 
 
-from typing import Any, Dict
+from typing import Any, Dict, Sequence
 
 import gym
 import numpy as np
@@ -74,8 +74,17 @@ class RGBImage(gym.ObservationWrapper):
     def observation(self, obs: Dict[str, Any]) -> Dict[str, np.ndarray]:
         wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
-            if self._num_stack == 1:
+            if isinstance(agent_obs, Sequence):
+                true_num_stack = len(agent_obs)
+            else:
+                true_num_stack = 1
                 agent_obs = [agent_obs]
+
+            assert self._num_stack == true_num_stack, (
+                f"User supplied `num_stack` (={self._num_stack}) argument to "
+                f"`RGBImage` wrapper does not match the number of frames "
+                f"stacked (={true_num_stack}) in the underlying base env."
+            )
 
             images = []
             for agent_ob in agent_obs:
