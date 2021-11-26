@@ -833,7 +833,7 @@ class SumoRoadNetwork(RoadMap):
             return [
                 list(
                     road.shape(
-                        sum([lane._width for lane in road.lanes]), 1.0
+                        sum([lane._width for lane in road.lanes])
                     ).exterior.coords
                 )
                 for road in self.roads
