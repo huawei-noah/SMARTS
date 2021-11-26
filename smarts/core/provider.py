@@ -81,6 +81,10 @@ class Provider:
     def connected(self):
         return True
 
+    @property
+    def required(self):
+        return False
+
 
 class EmptyProvider(Provider):
     @property
@@ -107,4 +111,8 @@ class EmptyProvider(Provider):
 
     @property
     def connected(self):
+        return False
+
+    @property
+    def required(self):
         return False
