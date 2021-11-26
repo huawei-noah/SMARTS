@@ -354,6 +354,10 @@ class SumoTrafficSimulation(Provider):
         return self._traci_conn != None
 
     @property
+    def required(self):
+        return True
+
+    @property
     def action_spaces(self):
         # Unify interfaces with other providers
         return {}
