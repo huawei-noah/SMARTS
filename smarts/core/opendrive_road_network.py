@@ -379,13 +379,6 @@ class OpenDriveRoadNetwork(RoadMap):
                             l for l in road.lanes if l.lane_id != lane.lane_id
                         ]
 
-                        # Lanes with positive lane_elem ID run on the left side of the center lane, while lanes with
-                        # lane_elem negative ID run on the right side of the center lane.
-                        # OpenDRIVE's assumption is that the direction of reference line is same as direction of lanes with
-                        # lane_elem negative ID, hence for a given road -1 will be the left most lane in one direction
-                        # and 1 will be the left most lane in other direction if it exist.
-                        # If there is only one lane in a road, its index will be -1.
-
                         # Compute lane to the left
                         result = None
                         direction = True
