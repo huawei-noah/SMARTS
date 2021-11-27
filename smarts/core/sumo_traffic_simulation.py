@@ -33,7 +33,7 @@ from shapely.geometry import box as shapely_box
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose
-from smarts.core.provider import EmptyProvider, Provider, ProviderState
+from smarts.core.provider import EmptyProvider, Provider, ProviderSeverity, ProviderState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
@@ -354,8 +354,8 @@ class SumoTrafficSimulation(Provider):
         return self._traci_conn != None
 
     @property
-    def required(self):
-        return True
+    def severity(self) -> ProviderSeverity:
+        return ProviderSeverity.EPISODE_REQUIRED | ProviderSeverity.ATTEMPT_RECOVERY
 
     @property
     def action_spaces(self):
@@ -366,6 +366,11 @@ class SumoTrafficSimulation(Provider):
         # Unify interfaces with other providers
         pass
 
+    def recover(self, scenario, elapsed_sim_time: float, error: Exception) -> bool:
+        if isinstance(error, (TraCIException, FatalTraCIError)):
+            self._handle_traci_disconnect(error)
+        return False
+
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
         """
         Args:
@@ -375,12 +380,7 @@ class SumoTrafficSimulation(Provider):
         """
         if not self.connected:
             return self._empty_provider.step(provider_actions, dt, elapsed_sim_time)
-        try:
-            ps = self._step(dt)
-        except self._traci_exceptions as e:
-            self._handle_traci_disconnect(e)
-            return self._empty_provider.step(provider_actions, dt, elapsed_sim_time)
-        return ps
+        return self._step(dt)
 
     def _step(self, dt):
         # we tell SUMO to step through dt more seconds of the simulation
@@ -392,12 +392,7 @@ class SumoTrafficSimulation(Provider):
     def sync(self, provider_state: ProviderState):
         if not self.connected:
             return self._empty_provider.sync(provider_state)
-        try:
-            ps = self._sync(provider_state)
-        except self._traci_exceptions as e:
-            self._handle_traci_disconnect(e)
-            return self._empty_provider.sync(provider_state)
-        return ps
+        return self._sync(provider_state)
 
     def _sync(self, provider_state: ProviderState):
         provider_vehicles = {v.vehicle_id: v for v in provider_state.vehicles}

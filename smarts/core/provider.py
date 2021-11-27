@@ -18,11 +18,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass, field
+from enum import IntFlag
 from typing import List, Optional, Set
 
 from .controllers import ActionSpaceType
 from .scenario import Scenario
 from .vehicle import VehicleState
+
+
+class ProviderSeverity(IntFlag):
+    NOT_REQUIRED            = 0x00000000
+    """Not needed for the current step. Error causes skip."""
+    EPISODE_REQUIRED        = 0x00000010
+    """Needed for the current episode. Results in episode ending."""
+    EXPERIMENT_REQUIRED     = 0x00000100
+    """Needed for the experiment. Results in exception if an error is thrown."""
+    ATTEMPT_RECOVERY        = 0x00001000
 
 
 @dataclass
@@ -77,13 +88,20 @@ class Provider:
     def teardown(self):
         raise NotImplementedError
 
+    def recover(self, scenario, elapsed_sim_time: float, error: Exception) -> bool:
+        return False
+
     @property
     def connected(self):
+        """Determine if the provider is still responsive. (e.g. the case that the provider is 
+        sending provider state over the internet and has stopped responding)
+        """
         return True
 
     @property
-    def required(self):
-        return False
+    def severity(self) -> ProviderSeverity:
+        """If this provider must respond each step for an episode to continue."""
+        return ProviderSeverity.EXPERIMENT_REQUIRED
 
 
 class EmptyProvider(Provider):
@@ -110,9 +128,9 @@ class EmptyProvider(Provider):
         return
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         return False
 
     @property
-    def required(self):
-        return False
+    def severity(self):
+        return ProviderSeverity.NOT_REQUIRED
