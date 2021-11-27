@@ -162,7 +162,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
 
         for done in dones.values():
             self._dones_registered += 1 if done else 0
-        dones["__all__"] = self._dones_registered == len(self._agent_specs)
+        dones["__all__"] = self._dones_registered >= len(self._agent_specs)
 
         return observations, rewards, dones, infos
 

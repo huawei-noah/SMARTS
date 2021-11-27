@@ -48,7 +48,7 @@ from .controllers import ActionSpaceType, Controllers
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
-from .provider import Provider, ProviderState
+from .provider import Provider, ProviderSeverity, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensors import Collision
@@ -97,6 +97,7 @@ class SMARTS:
         self._visdom: Optional[VisdomClient] = visdom
         self._traffic_sim = traffic_sim
         self._external_provider = None
+        self._reset_required = False
 
         assert fixed_timestep_sec is None or fixed_timestep_sec > 0
         self.fixed_timestep_sec = fixed_timestep_sec
@@ -339,6 +340,7 @@ class SMARTS:
         self._total_sim_time += self._elapsed_sim_time
         self._elapsed_sim_time = 0
         self._step_count = 0
+        self._reset_required = False
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
         observations, _, _, _ = self._agent_manager.observe(self)
@@ -808,7 +810,10 @@ class SMARTS:
 
     def _harmonize_providers(self, provider_state: ProviderState):
         for provider in self.providers:
-            provider.sync(provider_state)
+            try:
+                provider.sync(provider_state)
+            except Exception as provider_error:
+                self._handle_provider(provider, provider_error)
         self._pybullet_provider_sync(provider_state)
         if self._renderer:
             self._sync_vehicles_to_renderer()
@@ -816,6 +821,21 @@ class SMARTS:
     def _reset_providers(self):
         for provider in self.providers:
             provider.reset()
+
+    def _handle_provider(self, provider: Provider, provider_error):
+        provider_problem = bool(provider_error or not provider.connected)
+        if not provider_problem:
+            return
+
+        recovered = False
+        if provider.severity & ProviderSeverity.ATTEMPT_RECOVERY:
+            recovered = provider.recover(self._scenario, self.elapsed_sim_time)
+
+        if not recovered:  
+            if provider.severity & ProviderSeverity.EPISODE_REQUIRED:
+                self._reset_required = True
+            elif provider.severity & ProviderSeverity.EXPERIMENT_REQUIRED:
+                raise provider_error
 
     def _step_providers(self, actions) -> ProviderState:
         accumulated_provider_state = ProviderState()
@@ -867,7 +887,12 @@ class SMARTS:
                 )
 
         for provider in self.providers:
-            provider_state = self._step_provider(provider, actions)
+            try:
+                provider_state = self._step_provider(provider, actions)
+            except Exception as provider_error:
+                self._handle_provider(provider, provider_error)
+                provider_state = ProviderState()
+
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
                 provider_state.filter(self._vehicle_index.agent_vehicle_ids())
@@ -908,6 +933,10 @@ class SMARTS:
             provider_actions, self._last_dt, self._elapsed_sim_time
         )
         return provider_state
+
+    @property
+    def should_reset(self):
+        return self._reset_required
 
     @property
     def scenario(self):
