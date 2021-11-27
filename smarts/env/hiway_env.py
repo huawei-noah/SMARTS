@@ -184,9 +184,7 @@ class HiWayEnv(gym.Env):
         }
         observations, rewards, dones, extras = None, None, None, None
         with timeit("SMARTS Simulation/Scenario Step", self._log):
-            observations, rewards, dones, extras = self._smarts.step(
-                agent_actions
-            )
+            observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         infos = {
             agent_id: {"score": value, "env_obs": observations[agent_id]}

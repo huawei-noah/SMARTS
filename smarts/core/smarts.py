@@ -831,7 +831,7 @@ class SMARTS:
         if provider.severity & ProviderSeverity.ATTEMPT_RECOVERY:
             recovered = provider.recover(self._scenario, self.elapsed_sim_time)
 
-        if not recovered:  
+        if not recovered:
             if provider.severity & ProviderSeverity.EPISODE_REQUIRED:
                 self._reset_required = True
             elif provider.severity & ProviderSeverity.EXPERIMENT_REQUIRED:

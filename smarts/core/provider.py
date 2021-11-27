@@ -27,13 +27,13 @@ from .vehicle import VehicleState
 
 
 class ProviderSeverity(IntFlag):
-    NOT_REQUIRED            = 0x00000000
+    NOT_REQUIRED = 0x00000000
     """Not needed for the current step. Error causes skip."""
-    EPISODE_REQUIRED        = 0x00000010
+    EPISODE_REQUIRED = 0x00000010
     """Needed for the current episode. Results in episode ending."""
-    EXPERIMENT_REQUIRED     = 0x00000100
+    EXPERIMENT_REQUIRED = 0x00000100
     """Needed for the experiment. Results in exception if an error is thrown."""
-    ATTEMPT_RECOVERY        = 0x00001000
+    ATTEMPT_RECOVERY = 0x00001000
 
 
 @dataclass
@@ -93,7 +93,7 @@ class Provider:
 
     @property
     def connected(self):
-        """Determine if the provider is still responsive. (e.g. the case that the provider is 
+        """Determine if the provider is still responsive. (e.g. the case that the provider is
         sending provider state over the internet and has stopped responding)
         """
         return True
