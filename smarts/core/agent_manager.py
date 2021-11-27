@@ -218,6 +218,7 @@ class AgentManager:
                 agent_id: True
                 for agent_id in self.agent_ids
             }
+            dones["__sim__"] = True
 
         return observations, rewards, scores, dones
 
