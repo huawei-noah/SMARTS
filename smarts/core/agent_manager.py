@@ -214,10 +214,7 @@ class AgentManager:
                 scores[agent_id] = vehicle.trip_meter_sensor()
 
         if sim.should_reset:
-            dones = {
-                agent_id: True
-                for agent_id in self.agent_ids
-            }
+            dones = {agent_id: True for agent_id in self.agent_ids}
             dones["__sim__"] = True
 
         return observations, rewards, scores, dones
