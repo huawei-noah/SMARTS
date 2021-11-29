@@ -48,7 +48,7 @@ from .controllers import ActionSpaceType, Controllers
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
-from .provider import Provider, ProviderSeverity, ProviderState
+from .provider import Provider, ProviderRecoveryOptions, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensors import Collision
@@ -828,13 +828,15 @@ class SMARTS:
             return
 
         recovered = False
-        if provider.severity & ProviderSeverity.ATTEMPT_RECOVERY:
+        if provider.recovery_options & ProviderRecoveryOptions.ATTEMPT_RECOVERY:
             recovered = provider.recover(self._scenario, self.elapsed_sim_time)
 
         if not recovered:
-            if provider.severity & ProviderSeverity.EPISODE_REQUIRED:
+            if provider.recovery_options & ProviderRecoveryOptions.EPISODE_REQUIRED:
                 self._reset_required = True
-            elif provider.severity & ProviderSeverity.EXPERIMENT_REQUIRED:
+            elif (
+                provider.recovery_options & ProviderRecoveryOptions.EXPERIMENT_REQUIRED
+            ):
                 raise provider_error
 
     def _step_providers(self, actions) -> ProviderState:
