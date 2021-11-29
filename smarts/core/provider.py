@@ -36,6 +36,7 @@ class ProviderRecoveryOptions(IntFlag):
     ATTEMPT_RECOVERY = 0x00001000
     """Provider should attempt to recover from the exception or disconnection."""
 
+
 @dataclass
 class ProviderState:
     vehicles: List[VehicleState] = field(default_factory=list)
@@ -99,7 +100,7 @@ class Provider:
         return True
 
     @property
-    def severity(self) -> ProviderRecoveryOptions:
+    def recovery_options(self) -> ProviderRecoveryOptions:
         """If this provider must respond each step for an episode to continue."""
         return ProviderRecoveryOptions.EXPERIMENT_REQUIRED
 
@@ -132,5 +133,5 @@ class EmptyProvider(Provider):
         return False
 
     @property
-    def severity(self):
+    def recovery_options(self):
         return ProviderRecoveryOptions.NOT_REQUIRED
