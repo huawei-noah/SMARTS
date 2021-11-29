@@ -360,7 +360,10 @@ class SumoTrafficSimulation(Provider):
 
     @property
     def recovery_options(self) -> ProviderRecoveryOptions:
-        return ProviderRecoveryOptions.EPISODE_REQUIRED | ProviderRecoveryOptions.ATTEMPT_RECOVERY
+        return (
+            ProviderRecoveryOptions.EPISODE_REQUIRED
+            | ProviderRecoveryOptions.ATTEMPT_RECOVERY
+        )
 
     @property
     def action_spaces(self):
