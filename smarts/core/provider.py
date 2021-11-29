@@ -26,7 +26,7 @@ from .scenario import Scenario
 from .vehicle import VehicleState
 
 
-class ProviderSeverity(IntFlag):
+class ProviderRecoveryOptions(IntFlag):
     NOT_REQUIRED = 0x00000000
     """Not needed for the current step. Error causes skip."""
     EPISODE_REQUIRED = 0x00000010
@@ -34,7 +34,7 @@ class ProviderSeverity(IntFlag):
     EXPERIMENT_REQUIRED = 0x00000100
     """Needed for the experiment. Results in exception if an error is thrown."""
     ATTEMPT_RECOVERY = 0x00001000
-
+    """Provider should attempt to recover from the exception or disconnection."""
 
 @dataclass
 class ProviderState:
@@ -99,9 +99,9 @@ class Provider:
         return True
 
     @property
-    def severity(self) -> ProviderSeverity:
+    def severity(self) -> ProviderRecoveryOptions:
         """If this provider must respond each step for an episode to continue."""
-        return ProviderSeverity.EXPERIMENT_REQUIRED
+        return ProviderRecoveryOptions.EXPERIMENT_REQUIRED
 
 
 class EmptyProvider(Provider):
@@ -133,4 +133,4 @@ class EmptyProvider(Provider):
 
     @property
     def severity(self):
-        return ProviderSeverity.NOT_REQUIRED
+        return ProviderRecoveryOptions.NOT_REQUIRED

@@ -36,7 +36,7 @@ from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.provider import (
     EmptyProvider,
     Provider,
-    ProviderSeverity,
+    ProviderRecoveryOptions,
     ProviderState,
 )
 from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -359,8 +359,8 @@ class SumoTrafficSimulation(Provider):
         return self._traci_conn != None
 
     @property
-    def severity(self) -> ProviderSeverity:
-        return ProviderSeverity.EPISODE_REQUIRED | ProviderSeverity.ATTEMPT_RECOVERY
+    def recovery_options(self) -> ProviderRecoveryOptions:
+        return ProviderRecoveryOptions.EPISODE_REQUIRED | ProviderRecoveryOptions.ATTEMPT_RECOVERY
 
     @property
     def action_spaces(self):
@@ -374,6 +374,8 @@ class SumoTrafficSimulation(Provider):
     def recover(self, scenario, elapsed_sim_time: float, error: Exception) -> bool:
         if isinstance(error, (TraCIException, FatalTraCIError)):
             self._handle_traci_disconnect(error)
+        elif isinstance(error, BaseException):
+            raise error
         return False
 
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
