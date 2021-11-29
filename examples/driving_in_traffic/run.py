@@ -10,8 +10,8 @@ import warnings
 from datetime import datetime
 
 import dreamerv2 as dv2
-import dreamerv2.agent as agent
 import dreamerv2.api as api
+import dreamerv2.agent as agent
 import dreamerv2.common as common
 import numpy as np
 import rich.traceback

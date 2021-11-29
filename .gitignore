@@ -117,6 +117,7 @@ shifted_map-AUTOGEN.net.xml
 *.blend1
 
 # run logs
+**/examples/**/logs
 _run_logs
 results
 supervisord.log

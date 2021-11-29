@@ -43,8 +43,7 @@ RUN pip install --trusted-host pypi.python.org --trusted-host files.pythonhosted
 # Copy source files and install SMARTS
 COPY . /src
 WORKDIR /src
-RUN pip install --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --trusted-host pypi.org --no-cache-dir -e . && \
-    cp -r /src/smarts.egg-info /media/smarts.egg-info
+RUN pip install --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --trusted-host pypi.org --no-cache-dir -e ./examples/driving_in_traffic
 
 # Build scenarios and maps
 RUN scl scenario build-all --clean ./scenarios/loop
@@ -55,11 +54,7 @@ EXPOSE 8081
 # Optimizing compiler for machine learning. See https://www.tensorflow.org/xla .
 ENV TF_XLA_FLAGS="--tf_xla_enable_xla_devices --tf_xla_auto_jit=2"
 
-# Suppress message of missing /dev/input folder and copy smarts.egg-info if not there
-RUN echo "mkdir -p /dev/input\n" \
-         "if [[ ! -d /src/smarts.egg-info ]]; then" \
-         "   cp -r /media/smarts.egg-info /src/smarts.egg-info;" \
-         "   chmod -R 777 /src/smarts.egg-info;" \
-         "fi" >> ~/.bashrc
+# Suppress message of missing /dev/input folder
+RUN echo "mkdir -p /dev/input\n" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]
