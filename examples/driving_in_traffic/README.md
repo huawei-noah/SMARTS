@@ -4,7 +4,7 @@ This example illustrates the training of an ego agent to drive in traffic using 
 Ego agent earns rewards based on the distance travelled and is penalised for colliding with other vehicles and for going off-road.
 
 ## Trained agent driving in traffic
-
+![](./docs/_static/driving_in_traffic.gif)
 
 ## Setup
 ```bash

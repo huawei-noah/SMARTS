@@ -38,12 +38,12 @@ RUN pip install --upgrade pip
 
 # Install requirements.txt
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --trusted-host pypi.org --no-cache-dir -r /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install SMARTS
 COPY . /src
 WORKDIR /src
-RUN pip install --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --trusted-host pypi.org --no-cache-dir -e ./examples/driving_in_traffic
+RUN pip install --no-cache-dir -e ./examples/driving_in_traffic
 
 # Build scenarios and maps
 RUN scl scenario build-all --clean ./scenarios/loop
