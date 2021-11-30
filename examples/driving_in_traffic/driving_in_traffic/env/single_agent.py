@@ -18,7 +18,7 @@ def gen_env(config: Dict, seed: int):
         base_seed += 1
 
 
-def make_env(config: Dict, seed: int, env_name:str=None):
+def make_env(config: Dict, seed: int, env_name: str = None):
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
         max_episode_steps=config["max_episode_steps"],
