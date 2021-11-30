@@ -95,10 +95,10 @@ class BulletBoxShape:
     def __init__(self, bbox, bullet_client):
         self._client = bullet_client
 
-        width, length, height = bbox
+        length, width, height = bbox
         collision_box = bullet_client.createCollisionShape(
             shapeType=pybullet.GEOM_BOX,
-            halfExtents=(length * 0.5, width * 0.5, height * 0.5),
+            halfExtents=(width * 0.5, length * 0.5, height * 0.5),
         )
 
         self._height = height
