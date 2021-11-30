@@ -34,7 +34,6 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 ENV VIRTUAL_ENV=/opt/.venv
 RUN python3.7 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip config set global.trusted-host "pypi.python.org files.pythonhosted.org pypi.org"
 RUN pip install --upgrade pip
 
 # Install requirements.txt
@@ -47,7 +46,7 @@ WORKDIR /src
 RUN pip install --no-cache-dir -e ./examples/driving_in_traffic
 
 # Build scenarios and maps
-RUN scl scenario build-all --clean ./scenarios/loop
+RUN scl scenario build-all --clean ./examples/driving_in_traffic/scenarios/loop
 
 # For Envision
 EXPOSE 8081

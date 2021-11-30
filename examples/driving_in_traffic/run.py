@@ -66,7 +66,7 @@ def main(args):
 
     # Create SMARTS env
     config_env["scenarios_dir"] = (
-        pathlib.Path(__file__).absolute().parents[2] / "scenarios"
+        pathlib.Path(__file__).absolute().parents[0] / "scenarios"
     )
     gen_env = single_agent.gen_env(config_env, config_env["seed"])
 

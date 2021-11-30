@@ -14,6 +14,7 @@ $ python3.7 -m venv ./.venv
 $ source ./.venv/bin/activate
 $ pip install --upgrade pip
 $ pip install -e .
+$ scl scenario build-all --clean ./scenarios/loop
 ```
 
 ## Train
@@ -28,7 +29,7 @@ $ pip install -e .
 1. Evaluate
     ```bash
     $ cd <path>/SMARTS/examples/driving_in_traffic
-    $ scl envision start -s ../../scenarios &
+    $ scl envision start -s ./scenarios &
     $ python3.7 run.py --mode=evaluate --logdir="<path>/SMARTS/examples/driving_in_traffic/logs/<folder_name>" --head
     ```
 1. Go to `localhost:8081` to view the simulation in Envision.
