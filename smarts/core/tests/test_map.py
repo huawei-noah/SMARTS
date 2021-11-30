@@ -359,6 +359,15 @@ def test_od_map_junction():
         == r_0_0_L.length + r_13_0_R.length + r_15_0_R.length
     )
 
+    # waypoints generation along route
+    lp_0_0_L = road_map._lanepoints._lanepoints_by_lane_id["0_0_L_1"]
+    lp_pose = lp_0_0_L[0].lp.pose
+    waypoints_for_route = road_map.waypoint_paths(lp_pose, 500, route=route_0_to_13[0])
+    assert len(waypoints_for_route) == 1
+    assert len(waypoints_for_route[0]) == 467
+    lane_ids_under_wps = set([wp.lane_id for wp in waypoints_for_route[0]])
+    assert lane_ids_under_wps == {"0_0_L_1", "15_0_R_-1", "13_0_R_-1"}
+
     # distance between points along route
     start_point = Point(x=118.0, y=150.0, z=0.0)
     end_point = Point(x=190.0, y=118.0, z=0.0)
@@ -377,6 +386,15 @@ def test_od_map_junction():
         route_13_to_0[0].road_length
         == r_13_0_L.length + r_9_0_R.length + r_0_0_R.length
     )
+
+    # waypoints generation along route
+    lp_13_0_L = road_map._lanepoints._lanepoints_by_lane_id["13_0_L_1"]
+    lp_pose = lp_13_0_L[0].lp.pose
+    waypoints_for_route = road_map.waypoint_paths(lp_pose, 500, route=route_13_to_0[0])
+    assert len(waypoints_for_route) == 1
+    assert len(waypoints_for_route[0]) == 467
+    lane_ids_under_wps = set([wp.lane_id for wp in waypoints_for_route[0]])
+    assert lane_ids_under_wps == {"13_0_L_1", "9_0_R_-1", "0_0_R_-1"}
 
     # distance between points along route
     start_point = Point(x=150.0, y=121.0, z=0.0)
@@ -701,6 +719,15 @@ def test_od_map_lane_offset():
     route = road_map.generate_routes(start, end)
     assert [r.road_id for r in route[0].roads] == ["1_0_R", "1_1_R", "1_2_R"]
 
+    # waypoints generation along route
+    lp_1_0_R = road_map._lanepoints._lanepoints_by_lane_id["1_0_R_-1"]
+    lp_pose = lp_1_0_R[0].lp.pose
+    waypoints_for_route = road_map.waypoint_paths(lp_pose, 200, route=route[0])
+    assert len(waypoints_for_route) == 1
+    assert len(waypoints_for_route[0]) == 201
+    lane_ids_under_wps = set([wp.lane_id for wp in waypoints_for_route[0]])
+    assert lane_ids_under_wps == {"1_0_R_-1", "1_1_R_-1", "1_2_R_-1"}
+
     # distance between points along route
     start_point = Point(x=17.56, y=-1.67, z=0.0)
     end_point = Point(x=89.96, y=2.15, z=0.0)
@@ -751,6 +778,10 @@ def test_od_map_motorway():
             assert lane.length is not None
             assert lane.length >= 0
             assert lane.speed_limit == 16.67
+
+    # Lane tests
+    # l0 = road_map.lane_by_id("18_0_L_2")
+    # assert [l.lane_id for l in l0.incoming_lanes] == ["18_1_L_1"]
 
     # route generation
     empty_route = road_map.empty_route()
