@@ -17,14 +17,15 @@ $ pip install -e .
 ```
 
 ## Train
-1. Train and save the trained model into `<path>/SMARTS/examples/driving_in_traffic/logs/<folder_name>` folder.
+1. Train
     ```bash
     $ cd <path>/SMARTS/examples/driving_in_traffic
     $ python3.7 run.py 
     ```
+1. Trained model is saved into `<path>/SMARTS/examples/driving_in_traffic/logs/<folder_name>` folder.
 
 ## Evaluate
-1. Execute
+1. Evaluate
     ```bash
     $ cd <path>/SMARTS/examples/driving_in_traffic
     $ scl envision start -s ../../scenarios &
