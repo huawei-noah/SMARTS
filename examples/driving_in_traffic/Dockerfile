@@ -10,6 +10,7 @@ RUN apt-get update --fix-missing && \
     add-apt-repository -y ppa:sumo/stable && \
     apt-get update && \
     apt-get install -y \
+        git \
         ffmpeg \
         libspatialindex-dev \
         python3.7 \
@@ -40,7 +41,7 @@ RUN pip install --upgrade pip
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy source files and install SMARTS
+# Copy source files and install
 COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e ./examples/driving_in_traffic
