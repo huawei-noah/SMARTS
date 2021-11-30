@@ -1,6 +1,5 @@
 smarts:
   seed: 42
-  headless: True
   visdom: False
   rgb_meters: 64 # Height and width (meters) of RGB image in SMARTS observation
   rgb_pixels: 64 # Height and width (pixels) of RGB image in SMARTS observation  

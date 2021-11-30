@@ -1,4 +1,7 @@
-from typing import Dict
+from functools import partial
+from typing import Dict, List, Sequence
+
+from driving_in_traffic.env import action, adapter
 
 from smarts.core import agent as smarts_agent
 from smarts.core import agent_interface as smarts_agent_interface
@@ -7,17 +10,15 @@ from smarts.env import hiway_env as smarts_hiway_env
 from smarts.env.wrappers import rgb_image as smarts_rgb_image
 from smarts.env.wrappers import single_agent as smarts_single_agent
 
-from driving_in_traffic.env import action, adapter
-
 
 def gen_env(config: Dict, seed: int):
     base_seed = seed
     while True:
-        yield make_env(config, base_seed)
+        yield partial(make_env, config=config, seed=base_seed)
         base_seed += 1
 
 
-def make_env(config: Dict, seed: int):
+def make_env(config: Dict, seed: int, env_name:str=None):
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
         max_episode_steps=config["max_episode_steps"],
@@ -61,6 +62,7 @@ def make_env(config: Dict, seed: int):
         headless=config["headless"],
         visdom=config["visdom"],
         seed=seed,
+        sim_name=env_name,
     )
 
     # Wrap env with ActionWrapper

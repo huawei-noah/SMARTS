@@ -9,10 +9,6 @@ import re
 import warnings
 from datetime import datetime
 
-import dreamerv2 as dv2
-import dreamerv2.api as api
-import dreamerv2.agent as agent
-import dreamerv2.common as common
 import numpy as np
 import rich.traceback
 import tensorflow as tf
@@ -20,12 +16,17 @@ from driving_in_traffic import seed
 from driving_in_traffic.env import single_agent
 from ruamel.yaml import YAML
 
+import dreamerv2 as dv2  # isort: skip
+import dreamerv2.api as api  # isort:skip
+import dreamerv2.agent as agent  # isort:skip
+import dreamerv2.common as common  # isort:skip
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Silence the TF logs
 logging.getLogger().setLevel("ERROR")
 warnings.filterwarnings("ignore", ".*box bound precision lowered.*")
 rich.traceback.install()
 yaml = YAML(typ="safe")
-seed(123)
+seed(42)
 
 
 def main(args):
@@ -37,6 +38,7 @@ def main(args):
     config_env = config_env[name]
     config_env["mode"] = args.mode
     config_env["logdir"] = args.logdir
+    config_env["headless"] = not args.head
 
     # Load dreamerv2 config
     config_dv2 = dv2.api.defaults
@@ -71,10 +73,12 @@ def main(args):
     # Train or evaluate
     config_dv2 = config_dv2.update(
         {
+            "log_every": 1e4,
+            "eval_every": 1e5,
+            "prefill": 10000,
             "replay.minlen": 20,
             "replay.maxlen": 20,
             "dataset.length": 20,
-            "prefill": 10000,
         }
     )
     if config_env["mode"] == "train":
@@ -89,9 +93,8 @@ def main(args):
     elif config_env["mode"] == "evaluate":
         config_dv2 = config_dv2.update(
             {
-                "logdir": config_env["logdir_evaluate"],
-                "log_every": 1e8,  # No logging needed
-                "eval_eps": 1e8,  # Evaluate forever
+                "logdir": config_env["logdir"],
+                "eval_eps": 1e8,
             }
         )
     else:
@@ -166,24 +169,23 @@ def run(config, gen_env, mode):
         logger.write()
 
     print("Create envs.")
-    if config.envs_parallel == "none":
-        train_envs = [wrap_env(next(gen_env), config)]
-        eval_envs = [wrap_env(next(gen_env), config)]
-    else:
-        raise KeyError(f"Unsupported config.envs_parallel = {config.envs_parallel}.")
-    act_space = train_envs[0].act_space
-    obs_space = train_envs[0].obs_space
-    train_driver = dv2.common.Driver(train_envs)
-    train_driver.on_episode(lambda ep: per_episode(ep, mode="train"))
-    train_driver.on_step(lambda tran, worker: step.increment())
-    train_driver.on_step(train_replay.add_step)
-    train_driver.on_reset(train_replay.add_step)
+    train_envs = []
+    if mode == "train":
+        train_envs = [wrap_env(next(gen_env)(env_name="train"), config)]
+        train_driver = dv2.common.Driver(train_envs)
+        train_driver.on_episode(lambda ep: per_episode(ep, mode="train"))
+        train_driver.on_step(lambda tran, worker: step.increment())
+        train_driver.on_step(train_replay.add_step)
+        train_driver.on_reset(train_replay.add_step)
+    eval_envs = [wrap_env(next(gen_env)(env_name="eval"), config)]
+    act_space = eval_envs[0].act_space
+    obs_space = eval_envs[0].obs_space
     eval_driver = dv2.common.Driver(eval_envs)
     eval_driver.on_episode(lambda ep: per_episode(ep, mode="eval"))
     eval_driver.on_episode(eval_replay.add_episode)
 
     prefill = max(0, config.prefill - train_replay.stats["total_steps"])
-    if prefill:
+    if prefill and mode == "train":
         print(f"Prefill dataset ({prefill} steps).")
         random_agent = dv2.common.RandomAgent(act_space)
         train_driver(random_agent, steps=prefill, episodes=1)
@@ -221,7 +223,8 @@ def run(config, gen_env, mode):
             logger.add(agnt.report(next(report_dataset)), prefix="train")
             logger.write(fps=True)
 
-    train_driver.on_step(train_step)
+    if mode == "train":
+        train_driver.on_step(train_step)
 
     while step < config.steps:
         logger.write()
@@ -252,6 +255,9 @@ if __name__ == "__main__":
         help="Directory path to saved RL model. Required if `--mode=evaluate`, else optional.",
         type=str,
         default=None,
+    )
+    parser.add_argument(
+        "--head", help="Run the simulation with display.", action="store_true"
     )
     args = parser.parse_args()
 
