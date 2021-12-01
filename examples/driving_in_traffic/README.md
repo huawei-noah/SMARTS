@@ -33,3 +33,13 @@ $ scl scenario build-all --clean ./scenarios/loop
     $ python3.7 run.py --mode=evaluate --logdir="<path>/SMARTS/examples/driving_in_traffic/logs/<folder_name>" --head
     ```
 1. Go to `localhost:8081` to view the simulation in Envision.
+
+## Docker
+1. Build and train inside docker container
+    ```bash
+    $ cd <path>/SMARTS
+    $ docker build --file=<path>/SMARTS/examples/driving_in_traffic/Dockerfile --network=host --tag=driving_in_traffic <path>/SMARTS
+    $ docker run --rm -it --network=host driving_in_traffic
+    (container) $ cd /src/examples/driving_in_traffic
+    (container) $ python3.7 run.py
+    ```

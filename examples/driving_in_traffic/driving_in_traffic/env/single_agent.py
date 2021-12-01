@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Dict, List, Sequence
+from typing import Dict
 
 from driving_in_traffic.env import action, adapter
 

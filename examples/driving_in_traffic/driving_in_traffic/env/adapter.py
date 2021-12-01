@@ -14,7 +14,7 @@ def reward_adapter(obs, env_reward):
         reward -= 200
         return np.float32(reward)
 
-    # Reward for colliding
+    # Penalty for colliding
     if len(obs.events.collisions) > 0:
         reward -= 200
         return np.float32(reward)
