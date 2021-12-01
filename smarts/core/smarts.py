@@ -712,11 +712,11 @@ class SMARTS:
         return provider_state
 
     def _nondynamic_provider_step(
-        self, agent_actions, step_pybullet: bool
+        self, agent_actions, stepped_pybullet: bool
     ) -> ProviderState:
         self._perform_agent_actions(agent_actions)
 
-        if step_pybullet:
+        if not stepped_pybullet:
             self._step_pybullet()
 
         self._process_collisions()

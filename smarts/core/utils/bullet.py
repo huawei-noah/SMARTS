@@ -102,6 +102,7 @@ class BulletBoxShape:
         )
 
         self._height = height
+        # XXX: we might want to give these more mass...
         self._bullet_id = self._client.createMultiBody(1, collision_box)
 
     def reset_pose(self, pose: Pose):
