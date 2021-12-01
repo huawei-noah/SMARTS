@@ -58,6 +58,7 @@ def create_road_map(
             if i == len(supported_maps) - 1:
                 raise Exception(f"Unable to find map in map_source={map_source}.")
 
+    road_map = None
     if map_path.endswith("map.net.xml"):
         # Keep this a conditional import so Sumo does not have to be
         # imported if not necessary:
@@ -73,8 +74,11 @@ def create_road_map(
 
         road_map = OpenDriveRoadNetwork.from_file(
             map_path,
+            default_lane_width=default_lane_width,
+            lanepoint_spacing=lanepoint_spacing,
         )
-
-    road_map_hash = file_md5_hash(road_map.source)
-
+    if road_map:
+        road_map_hash = file_md5_hash(road_map.source)
+    else:
+        road_map_hash = None
     return road_map, road_map_hash

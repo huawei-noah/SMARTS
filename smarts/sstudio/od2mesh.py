@@ -18,18 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
-from pathlib import Path
 
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
 
-def generate_glb_from_opendrive_network(scenario):
-    scenario_root = Path(scenario)
-    map_xodr = str(scenario_root / "UC_Motorway-Exit-Entry.xodr")
-    road_map = OpenDriveRoadNetwork.from_file(map_xodr)
-    assert isinstance(road_map, OpenDriveRoadNetwork)
-    map_glb = map_xodr + "_map.glb"
-    road_map.to_glb(map_glb)
+def generate_glb_from_opendrive_network(od_xodr_file, out_glb_file, road_network=None):
+    if not road_network:
+        road_network = OpenDriveRoadNetwork.from_file(xodr_file=od_xodr_file)
+    road_network.to_glb(out_glb_file)
 
 
 if __name__ == "__main__":
@@ -37,9 +33,8 @@ if __name__ == "__main__":
         "od2mesh.py",
         description="Utility to export opendrive road networks to mesh files.",
     )
-    parser.add_argument(
-        "scenario_path", help="path to opendrive xodr file (*.xodr)", type=str
-    )
+    parser.add_argument("xodr", help="openDRIVE xodr file (*.xodr) path", type=str)
+    parser.add_argument("output_path", help="where to write the mesh file", type=str)
     args = parser.parse_args()
 
-    generate_glb_from_opendrive_network(args.scenario_path)
+    generate_glb_from_opendrive_network(args.xodr, args.output_path)

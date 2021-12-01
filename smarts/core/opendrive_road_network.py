@@ -622,7 +622,7 @@ class OpenDriveRoadNetwork(RoadMap):
         scene.add_geometry(mesh)
         return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
 
-    def _compute_traffic_dividers(self, threshold=1):
+    def _compute_traffic_dividers(self):
         lane_dividers = []  # divider between lanes with same traffic direction
         road_dividers = []  # divider between roads with opposite traffic direction
         dividers_checked = []
@@ -632,7 +632,7 @@ class OpenDriveRoadNetwork(RoadMap):
             for lane in road.lanes:
                 left_border_vertices_len = int((len(lane.lane_polygon) - 1) / 2)
                 left_side = lane.lane_polygon[:left_border_vertices_len]
-                if lane.index not in [1, -1]:
+                if lane.index != road.total_lanes - 1:
                     lane_dividers.append(left_side)
                 else:
                     road_left_border = left_side

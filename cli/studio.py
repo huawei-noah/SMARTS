@@ -27,6 +27,7 @@ from threading import Thread
 import click
 
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
 
 @click.group(name="scenario")
@@ -42,6 +43,9 @@ def scenario_cli():
     help="Clean previously generated artifacts first",
 )
 @click.option(
+    "--is-opendrive", is_flag=True, default=False, help="Is the scenario of OpenDRIVE?"
+)
+@click.option(
     "--allow-offset-map",
     is_flag=True,
     default=False,
@@ -50,13 +54,14 @@ def scenario_cli():
     ),
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build_scenario(clean, allow_offset_map, scenario):
-    _build_single_scenario(clean, allow_offset_map, scenario)
+def build_scenario(clean, is_opendrive, allow_offset_map, scenario):
+    if is_opendrive:
+        _build_single_od_scenario(clean, scenario)
+    else:
+        _build_single_sumo_scenario(clean, allow_offset_map, scenario)
 
 
-def _build_single_scenario(clean, allow_offset_map, scenario):
-    import importlib.resources as pkg_resources
-
+def _build_single_sumo_scenario(clean, allow_offset_map, scenario):
     from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
 
     click.echo(f"build-scenario {scenario}")
@@ -75,6 +80,37 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
         )
     map_glb = scenario_root / "map.glb"
     generate_glb_from_sumo_network(map_net, str(map_glb))
+
+    _install_requirements(scenario_root)
+
+    scenario_py = scenario_root / "scenario.py"
+    if scenario_py.exists():
+        subprocess.check_call([sys.executable, scenario_py])
+
+
+def _build_single_od_scenario(clean, scenario):
+    from smarts.sstudio.od2mesh import generate_glb_from_opendrive_network
+
+    click.echo(f"build-scenario {scenario}")
+    if clean:
+        _clean(scenario)
+
+    scenario_root = Path(scenario)
+    map_xodr = str(scenario_root / "map.xodr")
+    od_road_network = OpenDriveRoadNetwork.from_file(map_xodr)
+
+    map_glb = scenario_root / "map.glb"
+    generate_glb_from_opendrive_network(map_xodr, str(map_glb), od_road_network)
+
+    _install_requirements(scenario_root)
+
+    scenario_py = scenario_root / "scenario.py"
+    if scenario_py.exists():
+        subprocess.check_call([sys.executable, scenario_py])
+
+
+def _install_requirements(scenario_root):
+    import importlib.resources as pkg_resources
 
     requirements_txt = scenario_root / "requirements.txt"
     if requirements_txt.exists():
@@ -109,10 +145,6 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
                 pip_index_proc.terminate()
                 pip_index_proc.wait()
 
-    scenario_py = scenario_root / "scenario.py"
-    if scenario_py.exists():
-        subprocess.check_call([sys.executable, scenario_py])
-
 
 @scenario_cli.command(
     name="build-all",
@@ -125,6 +157,12 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     help="Clean previously generated artifacts first",
 )
 @click.option(
+    "--is-opendrive",
+    is_flag=True,
+    default=False,
+    help="Are the scenarios of OpenDRIVE?",
+)
+@click.option(
     "--allow-offset-maps",
     is_flag=True,
     default=False,
@@ -133,23 +171,35 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     ),
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all_scenarios(clean, allow_offset_maps, scenarios):
+def build_all_scenarios(clean, is_opendrive, allow_offset_maps, scenarios):
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
         # if scenarios is not given, set /scenarios as default
         scenarios = ["scenarios"]
     builder_threads = {}
-    for scenarios_path in scenarios:
-        path = Path(scenarios_path)
-        for p in path.rglob("*.net.xml"):
-            scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
-            if scenario == f"{scenarios_path}/waymo":
-                continue
-            builder_thread = Thread(
-                target=_build_single_scenario, args=(clean, allow_offset_maps, scenario)
-            )
-            builder_thread.start()
-            builder_threads[p] = builder_thread
+    if is_opendrive:
+        for scenarios_path in scenarios:
+            path = Path(scenarios_path)
+            for p in path.rglob("*.xodr"):
+                scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
+                builder_thread = Thread(
+                    target=_build_single_od_scenario, args=(clean, scenario)
+                )
+                builder_thread.start()
+                builder_threads[p] = builder_thread
+    else:
+        for scenarios_path in scenarios:
+            path = Path(scenarios_path)
+            for p in path.rglob("*.net.xml"):
+                scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
+                if scenario == f"{scenarios_path}/waymo":
+                    continue
+                builder_thread = Thread(
+                        target=_build_single_sumo_scenario,
+                        args=(clean, allow_offset_maps, scenario),
+                )
+                builder_thread.start()
+                builder_threads[p] = builder_thread
 
     for scenario_path, builder_thread in builder_threads.items():
         click.echo(f"Waiting on {scenario_path} ...")
