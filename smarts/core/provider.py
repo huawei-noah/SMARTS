@@ -89,13 +89,23 @@ class Provider:
     def teardown(self):
         raise NotImplementedError
 
-    def recover(self, scenario, elapsed_sim_time: float, error: Exception) -> bool:
+    def recover(self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None) -> bool:
+        """Attempt to reconnect the provider.
+        Args:
+            scenario (Scenario): The scenario of the current episode.
+            elapsed_sim_time (float): The current elapsed simulation time. 
+            error (Optional[Exception]): An exception if an exception was thrown.
+        Returns:
+            bool: The success/failure of the attempt to reconnect.
+        """
         return False
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         """Determine if the provider is still responsive. (e.g. the case that the provider is
         sending provider state over the internet and has stopped responding)
+        Returns:
+            bool: The connection state of the provider.
         """
         return True
 
