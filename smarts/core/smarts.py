@@ -23,7 +23,7 @@ import math
 import os
 import warnings
 from collections import defaultdict
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 import numpy as np
 
@@ -48,7 +48,7 @@ from .controllers import ActionSpaceType, Controllers
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
-from .provider import Provider, ProviderRecoveryOptions, ProviderState
+from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensors import Collision
@@ -110,16 +110,28 @@ class SMARTS:
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
         self._trajectory_interpolation_provider = TrajectoryInterpolationProvider()
-        self._providers = [
+        self._provider_recovery_flags: Dict[Provider, ProviderRecoveryFlags] = {}
+        self._providers: List[Provider] = []
+
+        self.add_provider(
             self._motion_planner_provider,
+        )
+        self.add_provider(
             self._traffic_history_provider,
+        )
+        self.add_provider(
             self._trajectory_interpolation_provider,
-        ]
+        )
         if self._traffic_sim:
-            self._providers.insert(0, self._traffic_sim)
+            self._insert_provider(
+                0,
+                self._traffic_sim,
+                recovery_flags=ProviderRecoveryFlags.EPISODE_REQUIRED
+                | ProviderRecoveryFlags.ATTEMPT_RECOVERY,
+            )
         if external_provider:
             self._external_provider = ExternalProvider(self)
-            self._providers.insert(0, self._external_provider)
+            self._insert_provider(0, self._external_provider)
 
         # We buffer provider state between steps to compensate for TRACI's timestep delay
         self._last_provider_state = None
@@ -377,9 +389,24 @@ class SMARTS:
 
         self._is_setup = True
 
-    def add_provider(self, provider):
+    def add_provider(
+        self,
+        provider: Provider,
+        recovery_flags: ProviderRecoveryFlags = ProviderRecoveryFlags.EXPERIMENT_REQUIRED,
+    ):
         assert isinstance(provider, Provider)
         self._providers.append(provider)
+        self._provider_recovery_flags[provider] = recovery_flags
+
+    def _insert_provider(
+        self,
+        index: int,
+        provider: Provider,
+        recovery_flags: ProviderRecoveryFlags = ProviderRecoveryFlags.EXPERIMENT_REQUIRED,
+    ):
+        assert isinstance(provider, Provider)
+        self._providers.insert(index, provider)
+        self._provider_recovery_flags[provider] = recovery_flags
 
     def switch_ego_agents(self, agent_interfaces):
         self._agent_manager.switch_initial_agents(agent_interfaces)
@@ -827,16 +854,17 @@ class SMARTS:
         if not provider_problem:
             return
 
+        recovery_flags = self._provider_recovery_flags.get(
+            provider, ProviderRecoveryFlags.EXPERIMENT_REQUIRED
+        )
         recovered = False
-        if provider.recovery_options & ProviderRecoveryOptions.ATTEMPT_RECOVERY:
+        if recovery_flags & ProviderRecoveryFlags.ATTEMPT_RECOVERY:
             recovered = provider.recover(self._scenario, self.elapsed_sim_time)
 
         if not recovered:
-            if provider.recovery_options & ProviderRecoveryOptions.EPISODE_REQUIRED:
+            if recovery_flags & ProviderRecoveryFlags.EPISODE_REQUIRED:
                 self._reset_required = True
-            elif (
-                provider.recovery_options & ProviderRecoveryOptions.EXPERIMENT_REQUIRED
-            ):
+            elif recovery_flags & ProviderRecoveryFlags.EXPERIMENT_REQUIRED:
                 raise provider_error
 
     def _step_providers(self, actions) -> ProviderState:
