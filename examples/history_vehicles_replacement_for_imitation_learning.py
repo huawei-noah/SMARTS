@@ -141,6 +141,7 @@ def main(
             agents = {}
             dones = {}
             ego_missions = {}
+            sample = {}
 
             if scenario.traffic_history.dataset_source == "Waymo":
                 # For Waymo, we only hijack the vehicle that was autonomous in the dataset
