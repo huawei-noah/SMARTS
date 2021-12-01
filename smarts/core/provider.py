@@ -26,7 +26,7 @@ from .scenario import Scenario
 from .vehicle import VehicleState
 
 
-class ProviderRecoveryOptions(IntFlag):
+class ProviderRecoveryFlags(IntFlag):
     NOT_REQUIRED = 0x00000000
     """Not needed for the current step. Error causes skip."""
     EPISODE_REQUIRED = 0x00000010
@@ -89,11 +89,13 @@ class Provider:
     def teardown(self):
         raise NotImplementedError
 
-    def recover(self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None) -> bool:
+    def recover(
+        self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
+    ) -> bool:
         """Attempt to reconnect the provider.
         Args:
             scenario (Scenario): The scenario of the current episode.
-            elapsed_sim_time (float): The current elapsed simulation time. 
+            elapsed_sim_time (float): The current elapsed simulation time.
             error (Optional[Exception]): An exception if an exception was thrown.
         Returns:
             bool: The success/failure of the attempt to reconnect.
@@ -108,11 +110,6 @@ class Provider:
             bool: The connection state of the provider.
         """
         return True
-
-    @property
-    def recovery_options(self) -> ProviderRecoveryOptions:
-        """If this provider must respond each step for an episode to continue."""
-        return ProviderRecoveryOptions.EXPERIMENT_REQUIRED
 
 
 class EmptyProvider(Provider):
@@ -141,7 +138,3 @@ class EmptyProvider(Provider):
     @property
     def connected(self) -> bool:
         return False
-
-    @property
-    def recovery_options(self):
-        return ProviderRecoveryOptions.NOT_REQUIRED

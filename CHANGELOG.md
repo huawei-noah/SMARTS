@@ -28,7 +28,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
 - Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
 - Added a "ReplayAgent" wrapper to allow users to rerun an agent previously run by saving its configurations and inputs. See Issue #971.
-- Added `smarts.core.provider.ProviderRecoveryOptions` as flags to determine how `SMARTS` should handle failures in providers. They are as follows:
+- Added `smarts.core.provider.ProviderRecoveryFlags` as flags to determine how `SMARTS` should handle failures in providers. They are as follows:
   - `NOT_REQUIRED`: Not needed for the current step. Error causes skip of provider if it should recover but cannot or should not recover.
   - `EPISODE_REQUIRED`: Needed for the current episode. Results in episode ending if it should recover but cannot or should not recover.
   - `EXPERIMENT_REQUIRED`: Needed for the experiment. Results in exception if it should recover but cannot or should not recover.
@@ -37,7 +37,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added recovery options for providers in `smarts.core.provider.Provider`. These include:
   - Add `recover()` method to providers to attempt to recover from errors and disconnection.
   - Add `connected` property to providers to check if the provider is still connected.
-  - Add `recovery_options` flags property to providers to check the recovery options if the provider disconnects or throws an exception.
+- Added recovery options to `smarts.core.smarts.SMARTS.add_provider()`
+  - Add `recovery_flags` argument to configure the recovery options if the provider disconnects or throws an exception.
 
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
