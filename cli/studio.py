@@ -195,8 +195,8 @@ def build_all_scenarios(clean, is_opendrive, allow_offset_maps, scenarios):
                 if scenario == f"{scenarios_path}/waymo":
                     continue
                 builder_thread = Thread(
-                        target=_build_single_sumo_scenario,
-                        args=(clean, allow_offset_maps, scenario),
+                    target=_build_single_sumo_scenario,
+                    args=(clean, allow_offset_maps, scenario),
                 )
                 builder_thread.start()
                 builder_threads[p] = builder_thread
