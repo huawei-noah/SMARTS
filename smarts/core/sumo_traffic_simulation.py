@@ -270,7 +270,7 @@ class SumoTrafficSimulation(Provider):
         # restart sumo process only when map file changes
         restart_sumo = (
             not self._scenario
-            or self.connected == False
+            or not self.connected
             or self._scenario.road_map_hash != next_scenario.road_map_hash
             or self._current_reload_count >= self._reload_count
         )
@@ -356,7 +356,7 @@ class SumoTrafficSimulation(Provider):
 
     @property
     def connected(self):
-        return self._traci_conn != None
+        return self._traci_conn is not None
 
     @property
     def action_spaces(self):
