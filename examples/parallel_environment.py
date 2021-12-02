@@ -59,8 +59,8 @@ def main(
         for agent_id in agent_ids
     }
 
-    # Create a callable env constructor. Here, for illustration purposes, each 
-    # environment is wrapped with a FrameStack wrapper which returns stacked 
+    # Create a callable env constructor. Here, for illustration purposes, each
+    # environment is wrapped with a FrameStack wrapper which returns stacked
     # observations for each environment.
     env_frame_stack = lambda env: FrameStack(
         env=env,
@@ -76,7 +76,9 @@ def main(
             headless=headless,
         )
     )
-    env_constructors = [lambda : env_constructor(sim_name+f"_{ind}") for ind in num_env]
+    env_constructors = [
+        lambda: env_constructor(sim_name + f"_{ind}") for ind in num_env
+    ]
 
     # Build multiple agents
     agents = {

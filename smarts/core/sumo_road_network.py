@@ -29,11 +29,9 @@ import numpy as np
 import trimesh
 import trimesh.scene
 from cached_property import cached_property
-from functools import lru_cache
-from shapely.geometry import Polygon
 from shapely.geometry import Point as shPoint
+from shapely.geometry import Polygon
 from shapely.ops import nearest_points, snap, triangulate
-from subprocess import check_output
 from trimesh.exchange import gltf
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
