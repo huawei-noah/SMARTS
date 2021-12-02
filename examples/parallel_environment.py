@@ -59,12 +59,15 @@ def main(
         for agent_id in agent_ids
     }
 
-    # Create a callable env constructor. Here, for illustration purposes, each environment is
-    # wrapped with a FrameStack wrapper which returns stacked observations for each environment.
+    # Create a callable env constructor. Here, for illustration purposes, each 
+    # environment is wrapped with a FrameStack wrapper which returns stacked 
+    # observations for each environment.
     env_frame_stack = lambda env: FrameStack(
         env=env,
         num_stack=num_stack,
     )
+    # Unique `sim_name` is required by each HiWayEnv in order to be displayed
+    # in Envision.
     env_constructor = lambda sim_name: env_frame_stack(
         HiWayEnv(
             scenarios=scenarios,
@@ -73,6 +76,7 @@ def main(
             headless=headless,
         )
     )
+    env_constructors = [lambda : env_constructor(sim_name+f"_{ind}") for ind in num_env]
 
     # Build multiple agents
     agents = {
@@ -82,8 +86,7 @@ def main(
 
     # Create parallel environments
     env = ParallelEnv(
-        env_constructors=[env_constructor] * num_env,
-        sim_name=sim_name,
+        env_constructors=env_constructors,
         auto_reset=auto_reset,
         seed=seed,
     )
