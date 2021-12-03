@@ -2,7 +2,10 @@ import gym
 
 gym.logger.set_level(40)
 
+from functools import partial
 from typing import Dict, Sequence, Tuple
+
+from argument_parser import default_argument_parser
 
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
@@ -11,13 +14,6 @@ from smarts.core.sensors import Observation
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.parallel_env import ParallelEnv
-
-# The following ugliness was made necessary because the `aiohttp` #
-# dependency has an "examples" module too.  (See PR #1120.)
-if __name__ == "__main__":
-    from argument_parser import default_argument_parser
-else:
-    from .argument_parser import default_argument_parser
 
 
 class ChaseViaPointsAgent(Agent):
@@ -78,7 +74,7 @@ def main(
     )
     # A list of env constructors of type `Callable[[], gym.Env]`
     env_constructors = [
-        lambda ind=ind: env_constructor(f"{sim_name}_{ind}") for ind in range(num_env)
+        partial(env_constructor, sim_name=f"{sim_name}_{ind}") for ind in range(num_env)
     ]
 
     # Build multiple agents
@@ -221,7 +217,7 @@ if __name__ == "__main__":
     if not args.sim_name:
         args.sim_name = "par_env"
 
-    print("\nParallel environments with asynchronous episodes.\n")
+    print("\nParallel environments with asynchronous episodes.")
     main(
         scenarios=args.scenarios,
         sim_name=args.sim_name,
@@ -241,7 +237,7 @@ if __name__ == "__main__":
         sim_name=args.sim_name,
         headless=args.headless,
         seed=args.seed,
-        num_agents=args.num_agents,
+        num_agents=args.num_agents + 1,
         num_stack=args.num_stack,
         num_env=args.num_env,
         auto_reset=False,
