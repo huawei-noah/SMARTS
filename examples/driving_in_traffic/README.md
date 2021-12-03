@@ -39,7 +39,7 @@ $ scl scenario build-all --clean ./scenarios/loop
     ```bash
     $ cd <path>/SMARTS
     $ docker build --file=<path>/SMARTS/examples/driving_in_traffic/Dockerfile --network=host --tag=driving_in_traffic <path>/SMARTS
-    $ docker run --rm -it --network=host driving_in_traffic
+    $ docker run --rm -it --network=host --gpus=all driving_in_traffic
     (container) $ cd /src/examples/driving_in_traffic
     (container) $ python3.7 run.py
     ```

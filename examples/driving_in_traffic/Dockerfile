@@ -34,7 +34,7 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 ENV VIRTUAL_ENV=/opt/.venv
 RUN python3.7 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip wheel
 
 # Install requirements.txt
 COPY requirements.txt /tmp/requirements.txt
@@ -58,8 +58,3 @@ ENV TF_XLA_FLAGS="--tf_xla_enable_xla_devices --tf_xla_auto_jit=2"
 RUN echo "mkdir -p /dev/input\n" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]
-
-
-# docker build --file=/home/adai/workspaces/SMARTS/examples/driving_in_traffic/Dockerfile --network=host --tag=driving_in_traffic /home/adai/workspaces/SMARTS
-# docker run --rm -it --network=host driving_in_traffic
-# python3.7 /src/examples/driving_in_traffic/run.py
