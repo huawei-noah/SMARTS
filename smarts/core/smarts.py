@@ -675,27 +675,17 @@ class SMARTS:
                 vehicle.chassis.reapply_last_control()
             self._bullet_client.stepSimulation()
 
-    def _pybullet_provider_step(self, agent_actions) -> ProviderState:
-        self._perform_agent_actions(agent_actions)
-
-        self._check_ground_plane()
-
-        self._step_pybullet()
-
-        self._process_collisions()
-
-        provider_state = ProviderState()
-        pybullet_agent_ids = {
+    def _get_provider_state(self, source: str, action_space_pred) -> ProviderState:
+        agent_ids = {
             agent_id
             for agent_id, interface in self._agent_manager.agent_interfaces.items()
-            if interface.action_space in self._dynamic_action_spaces
+            if action_space_pred(interface.action_space)
         }
-
+        provider_state = ProviderState()
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-            if agent_id not in pybullet_agent_ids:
+            if agent_id not in agent_ids:
                 continue
-
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             vehicle.step(self._elapsed_sim_time)
             provider_state.vehicles.append(
@@ -705,48 +695,9 @@ class SMARTS:
                     pose=vehicle.pose,
                     dimensions=vehicle.chassis.dimensions,
                     speed=vehicle.speed,
-                    source="PYBULLET",
+                    source=source,
                 )
             )
-
-        return provider_state
-
-    def _nondynamic_provider_step(
-        self, agent_actions, step_pybullet: bool
-    ) -> ProviderState:
-        self._perform_agent_actions(agent_actions)
-
-        if step_pybullet:
-            self._step_pybullet()
-
-        self._process_collisions()
-
-        provider_state = ProviderState()
-        nondynamic_agent_ids = {
-            agent_id
-            for agent_id, interface in self._agent_manager.agent_interfaces.items()
-            if interface.action_space not in self._dynamic_action_spaces
-        }
-
-        for vehicle_id in self._vehicle_index.agent_vehicle_ids():
-            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-            if agent_id not in nondynamic_agent_ids:
-                continue
-
-            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            assert isinstance(vehicle.chassis, BoxChassis)
-            vehicle.step(self._elapsed_sim_time)
-            provider_state.vehicles.append(
-                VehicleState(
-                    vehicle_id=vehicle.id,
-                    vehicle_config_type="passenger",
-                    pose=vehicle.pose,
-                    dimensions=vehicle.chassis.dimensions,
-                    speed=vehicle.speed,
-                    source="OTHER",
-                )
-            )
-
         return provider_state
 
     @property
@@ -818,14 +769,26 @@ class SMARTS:
             elif matches_no_provider_action_space(agent_id):
                 other_actions[agent_id] = action
 
-        if pybullet_actions:
-            accumulated_provider_state.merge(
-                self._pybullet_provider_step(pybullet_actions)
-            )
-        if other_actions:
-            accumulated_provider_state.merge(
-                self._nondynamic_provider_step(other_actions, bool(pybullet_actions))
-            )
+        if pybullet_actions or other_actions:
+            self._perform_agent_actions(pybullet_actions)
+            self._perform_agent_actions(other_actions)
+            self._check_ground_plane()
+            self._step_pybullet()
+            self._process_collisions()
+            if pybullet_actions:
+                as_pred = (
+                    lambda action_space: action_space in self._dynamic_action_spaces
+                )
+                accumulated_provider_state.merge(
+                    self._get_provider_state("PYBULLET", as_pred)
+                )
+            if other_actions:
+                as_pred = (
+                    lambda action_space: action_space not in self._dynamic_action_spaces
+                )
+                accumulated_provider_state.merge(
+                    self._get_provider_state("OTHER", as_pred)
+                )
 
         for provider in self.providers:
             provider_state = self._step_provider(provider, actions)
@@ -1004,22 +967,22 @@ class SMARTS:
 
     def _check_ground_plane(self):
         rescale_plane = False
-        map_min = np.array(self._map_bb.min_pt) if self._map_bb else None
-        map_max = np.array(self._map_bb.max_pt) if self._map_bb else None
+        map_min = np.array(self._map_bb.min_pt[:2]) if self._map_bb else None
+        map_max = np.array(self._map_bb.max_pt[:2]) if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            map_spot = np.array(vehicle.pose.position)
+            map_spot = np.array(vehicle.pose.position[:2])
             if map_min is None:
-                map_min = np.array(map_spot)
+                map_min = map_spot
                 rescale_plane = True
             elif any(map_spot < map_min):
-                map_min = np.minimum(np.array(map_spot), map_min)
+                map_min = np.minimum(map_spot, map_min)
                 rescale_plane = True
             if map_max is None:
-                map_max = np.array(map_spot)
+                map_max = map_spot
                 rescale_plane = True
             elif any(map_spot > map_max):
-                map_max = np.maximum(np.array(map_spot), map_max)
+                map_max = np.maximum(map_spot, map_max)
                 rescale_plane = True
         if rescale_plane:
             MIN_DIM = 500.0
