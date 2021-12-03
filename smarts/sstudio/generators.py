@@ -120,7 +120,14 @@ class TrafficGenerator:
         self._scenario = scenario_dir
         self._overwrite = overwrite
         self._duarouter = sh.Command(sumolib.checkBinary("duarouter"))
-        self._road_network_path = os.path.join(self._scenario, "map.net.xml")
+
+        sumo_road_network_path = os.path.join(self._scenario, "map.net.xml")
+        od_road_network_path = os.path.join(self._scenario, "map.xodr")
+        if os.path.exists(sumo_road_network_path):
+            self._road_network_path = sumo_road_network_path
+        elif os.path.exists(od_road_network_path):
+            self._road_network_path = od_road_network_path
+
         self._road_network = None
         self._random_route_generator = None
         self._log_dir = self._resolve_log_dir(log_dir)
@@ -251,13 +258,20 @@ class TrafficGenerator:
 
     def _cache_road_network(self):
         if not self._road_network:
-            from smarts.core.sumo_road_network import SumoRoadNetwork
+            if self._road_network_path.endswith(".net.xml"):
+                from smarts.core.sumo_road_network import SumoRoadNetwork
 
-            self._road_network = SumoRoadNetwork.from_file(self._road_network_path)
+                self._road_network = SumoRoadNetwork.from_file(self._road_network_path)
+            elif self._road_network_path.endswith(".net.xml"):
+                from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+
+                self._road_network = OpenDriveRoadNetwork.from_file(
+                    self._road_network_path
+                )
 
     def resolve_edge_length(self, edge_id, lane_idx):
         self._cache_road_network()
-        lane = self._road_network.edge_by_id(edge_id).lanes[lane_idx]
+        lane = self._road_network.road_by_id(edge_id).lanes[lane_idx]
         return lane.length
 
     def resolve_route(self, route):
