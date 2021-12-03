@@ -76,8 +76,9 @@ def main(
             headless=headless,
         )
     )
+    # A list of env constructors of type `Callable[[], gym.Env]`
     env_constructors = [
-        lambda: env_constructor(sim_name + f"_{ind}") for ind in num_env
+        lambda ind=ind: env_constructor(f"{sim_name}_{ind}") for ind in range(num_env)
     ]
 
     # Build multiple agents
@@ -113,8 +114,6 @@ def parallel_env_async(
         num_steps (int): Number of steps to step the environment.
     """
 
-    tot_scores = {agent_id: 0 for agent_id in agents.keys()}
-
     batched_dones = [{"__all__": False} for _ in range(num_env)]
     batched_observations = env.reset()
 
@@ -137,26 +136,6 @@ def parallel_env_async(
             batched_actions
         )
 
-        # Sum the scores
-        for dones, infos in zip(batched_dones, batched_infos):
-            for agent_id, val in infos.items():
-                if dones[agent_id]:
-                    tot_scores[agent_id] += val["score"]
-
-    # Add the score of not-done agents
-    for dones, infos in zip(batched_dones, batched_infos):
-        for agent_id, val in infos.items():
-            if not dones[agent_id]:
-                tot_scores[agent_id] += val["score"]
-
-    # Print average episode score of each agent
-    ave_scores = {
-        agent_id: score / (num_steps * num_env)
-        for agent_id, score in tot_scores.items()
-    }
-    print("Average step score:")
-    print(f"{ave_scores}")
-
     env.close()
 
 
@@ -174,8 +153,6 @@ def parallel_env_sync(
         num_env (int): Number of parallel environments.
         num_episodes (int): Number of episodes.
     """
-
-    tot_scores = {agent_id: 0 for agent_id in agents.keys()}
 
     for _ in range(num_episodes):
         batched_dones = [{"__all__": False} for _ in range(num_env)]
@@ -200,20 +177,6 @@ def parallel_env_sync(
                 batched_dones,
                 batched_infos,
             ) = env.step(batched_actions)
-
-            # Sum the scores
-            for dones, infos in zip(batched_dones, batched_infos):
-                for agent_id, val in infos.items():
-                    if dones[agent_id]:
-                        tot_scores[agent_id] += val["score"]
-
-    # Print average episode score of each agent
-    ave_scores = {
-        agent_id: score / (num_episodes * num_env)
-        for agent_id, score in tot_scores.items()
-    }
-    print("Average episode score:")
-    print(f"{ave_scores}")
 
     env.close()
 
@@ -251,6 +214,12 @@ if __name__ == "__main__":
         help="Total number of steps to simulate per environment in parallel asynchronous simulation.",
     )
     args = parser.parse_args()
+
+    if not args.scenarios:
+        args.scenarios = ["./scenarios/figure_eight"]
+
+    if not args.sim_name:
+        args.sim_name = "par_env"
 
     print("\nParallel environments with asynchronous episodes.\n")
     main(
