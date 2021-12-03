@@ -1,5 +1,5 @@
 # Driving in Traffic
-This example illustrates the training of an ego agent to drive in traffic using DreamerV2 (https://github.com/danijar/dreamerv2) reinforcement-learning algorithm.
+This example illustrates the training of an ego agent to drive, as fast and as far as possible, in traffic using DreamerV2 (https://github.com/danijar/dreamerv2) reinforcement-learning algorithm.
 
 Ego agent earns rewards based on the distance travelled and is penalised for colliding with other vehicles and for going off-road.
 

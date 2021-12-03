@@ -10,6 +10,8 @@ RUN apt-get update --fix-missing && \
     add-apt-repository -y ppa:sumo/stable && \
     apt-get update && \
     apt-get install -y \
+        ffmpeg \ 
+        git \
         libspatialindex-dev \
         python3.7 \
         python3.7-dev \
@@ -32,15 +34,7 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 ENV VIRTUAL_ENV=/opt/.venv
 RUN python3.7 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip config set global.trusted-host "pypi.python.org files.pythonhosted.org pypi.org"
 RUN pip install --upgrade pip
-
-# Install ffmpeg and git
-RUN apt-get update --fix-missing && \
-    apt-get install -y ffmpeg git && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
-RUN git config --global http.sslVerify false
 
 # Install requirements.txt
 COPY requirements.txt /tmp/requirements.txt
@@ -66,6 +60,6 @@ RUN echo "mkdir -p /dev/input\n" >> ~/.bashrc
 SHELL ["/bin/bash", "-c", "-l"]
 
 
-# docker build --file=/home/kyber/workspaces/SMARTS/examples/driving_in_traffic/Dockerfile --network=host --tag=driving_in_traffic /home/kyber/workspaces/SMARTS
+# docker build --file=/home/adai/workspaces/SMARTS/examples/driving_in_traffic/Dockerfile --network=host --tag=driving_in_traffic /home/adai/workspaces/SMARTS
 # docker run --rm -it --network=host driving_in_traffic
 # python3.7 /src/examples/driving_in_traffic/run.py
