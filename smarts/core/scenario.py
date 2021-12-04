@@ -155,23 +155,15 @@ class Scenario:
                 scenario_root, agents_to_be_briefed
             )
             agent_missions = [dict(zip(agents_to_be_briefed, agent_missions))]
-            social_agent_infos = Scenario._discover_social_agents_info(scenario_root)
-            social_agents = [
-                {
-                    agent_id: (agent.to_agent_spec(), (agent, mission))
-                    for agent_id, (
-                        agent,
-                        mission,
-                    ) in per_episode_social_agent_infos.items()
-                }
-                for per_episode_social_agent_infos in social_agent_infos
-            ]
+            social_agent_infos_and_missions = Scenario._discover_social_agents_info(
+                scenario_root
+            )
 
             # `or [None]` so that product(...) will not return an empty result
             # but insted a [(..., `None`), ...].
             routes = Scenario.discover_routes(scenario_root) or [None]
             agent_missions = agent_missions or [None]
-            social_agents = social_agents or [None]
+            social_agent_infos_and_missions = social_agent_infos_and_missions or [None]
             traffic_histories = Scenario.discover_traffic_histories(scenario_root) or [
                 None
             ]
@@ -180,13 +172,13 @@ class Scenario:
             roll_agent_missions = 0
             roll_social_agents = 0
             roll_traffic_histories = 0
-
             if shuffle_scenarios:
                 roll_routes = random.randint(0, len(routes))
                 roll_agent_missions = random.randint(0, len(agent_missions))
-                roll_social_agents = random.randint(0, len(social_agents))
+                roll_social_agents = random.randint(
+                    0, len(social_agent_infos_and_missions)
+                )
                 roll_traffic_histories = 0  # random.randint(0, len(traffic_histories))
-
             for (
                 concrete_route,
                 concrete_agent_missions,
@@ -195,22 +187,20 @@ class Scenario:
             ) in product(
                 np.roll(routes, roll_routes, 0),
                 np.roll(agent_missions, roll_agent_missions, 0),
-                np.roll(social_agents, roll_social_agents, 0),
+                np.roll(social_agent_infos_and_missions, roll_social_agents, 0),
                 np.roll(traffic_histories, roll_traffic_histories, 0),
             ):
+                if concrete_social_agents is None or len(concrete_social_agents) == 0:
+                    concrete_social_agents = []
                 concrete_social_agent_missions = {
                     agent_id: mission
-                    for agent_id, (_, (_, mission)) in (
-                        concrete_social_agents or {}
-                    ).items()
+                    for (agent_id, _), mission in (zip(*concrete_social_agents))
                 }
 
                 # Filter out mission
                 concrete_social_agents = {
-                    agent_id: (_agent_spec, social_agent)
-                    for agent_id, (_agent_spec, (social_agent, _)) in (
-                        concrete_social_agents or {}
-                    ).items()
+                    agent_id: (social_agent.to_agent_spec(), social_agent)
+                    for (agent_id, social_agent), _ in (zip(*concrete_social_agents))
                 }
 
                 yield Scenario(
@@ -301,7 +291,7 @@ class Scenario:
     @lru_cache(maxsize=16)
     def _discover_social_agents_info(
         scenario,
-    ) -> Sequence[Dict[str, SocialAgent]]:
+    ) -> Sequence[Tuple[Sequence[Tuple[str, SocialAgent]], Sequence[Mission]]]:
         """Loops through the social agent mission pickles, instantiating corresponding
         implementations for the given types. The output is a list of
         {agent_id: (mission, locator)}, where each dictionary corresponds to the
@@ -363,15 +353,18 @@ class Scenario:
                         extracted_mission,
                     )
                 )
-                count += 1
+            count += 1
 
-        social_agents_info = []
+        items = []
         for l in agent_bucketer:
-            social_agents_info.append(
-                {agent.id: (agent, mission) for agent, mission in l}
-            )
+            social_agent_infos = []
+            social_agent_missions = []
+            for agent, mission in l:
+                social_agent_infos.append((agent.id, agent))
+                social_agent_missions.append(mission)
+            items.append((social_agent_infos, social_agent_missions))
 
-        return social_agents_info
+        return items
 
     @staticmethod
     def discover_scenarios(scenario_or_scenarios_dir):
