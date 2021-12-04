@@ -194,13 +194,13 @@ class Scenario:
                     concrete_social_agents = []
                 concrete_social_agent_missions = {
                     agent_id: mission
-                    for (agent_id, _), mission in (zip(*concrete_social_agents))
+                    for (agent_id, _), mission in zip(*concrete_social_agents)
                 }
 
                 # Filter out mission
                 concrete_social_agents = {
                     agent_id: (social_agent.to_agent_spec(), social_agent)
-                    for (agent_id, social_agent), _ in (zip(*concrete_social_agents))
+                    for (agent_id, social_agent), _ in zip(*concrete_social_agents)
                 }
 
                 yield Scenario(
