@@ -190,7 +190,7 @@ class Scenario:
                 np.roll(social_agent_infos_and_missions, roll_social_agents, 0),
                 np.roll(traffic_histories, roll_traffic_histories, 0),
             ):
-                if concrete_social_agents is None or len(concrete_social_agents) == 0:
+                if concrete_social_agents is None:
                     concrete_social_agents = []
                 concrete_social_agent_missions = {
                     agent_id: mission
