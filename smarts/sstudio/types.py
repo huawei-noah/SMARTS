@@ -715,12 +715,6 @@ class RoadSurfacePatch:
 
 
 @dataclass(frozen=True)
-class _ActorAndMission:
-    actor: Actor
-    mission: Union[Mission, EndlessMission, LapMission]
-
-
-@dataclass(frozen=True)
 class Scenario:
     traffic: Optional[Dict[str, Traffic]] = None
     ego_missions: Optional[Sequence[Mission]] = None

@@ -173,10 +173,10 @@ class Scenario:
             roll_social_agents = 0
             roll_traffic_histories = 0
             if shuffle_scenarios:
-                roll_routes = random.randint(0, len(routes))
-                roll_agent_missions = random.randint(0, len(agent_missions))
+                roll_routes = random.randint(1, len(routes))
+                roll_agent_missions = random.randint(1, len(agent_missions))
                 roll_social_agents = random.randint(
-                    0, len(social_agent_infos_and_missions)
+                    1, len(social_agent_infos_and_missions)
                 )
                 roll_traffic_histories = 0  # random.randint(0, len(traffic_histories))
             for (
@@ -241,12 +241,9 @@ class Scenario:
         missions_file = os.path.join(scenario_root, "missions.pkl")
         if os.path.exists(missions_file):
             with open(missions_file, "rb") as f:
-                missions = pickle.load(f)
+                _, missions = pickle.load(f)
 
-            missions = [
-                Scenario._extract_mission(actor_and_mission.mission, road_map)
-                for actor_and_mission in missions
-            ]
+            missions = [Scenario._extract_mission(m, road_map) for m in missions]
 
         if not missions:
             missions = [None for _ in range(len(agents_to_be_briefed))]
@@ -307,61 +304,33 @@ class Scenario:
         if not os.path.exists(social_agents_path):
             return []
 
-        # [ ( missions_file, agent_actor, Mission ) ]
-        agent_bucketer = []
-
-        # like dict.setdefault
-        def setdefault(l: Sequence[Any], index: int, default):
-            while len(l) < index + 1:
-                l.append([])
-            return l[index]
-
         file_match = os.path.join(social_agents_path, "*.pkl")
+        items = []
         for missions_file_path in glob.glob(file_match):
             with open(missions_file_path, "rb") as missions_file:
-                count = 0
-                missions = pickle.load(missions_file)
+                actors, missions = pickle.load(missions_file)
+            namespace = os.path.basename(missions_file_path)
+            namespace = os.path.splitext(namespace)[0]
 
-            for mission_and_actor in missions:
-                # Each pickle file will contain a list of actor/mission pairs. The pairs
-                # will most likely be generated in an M:N fashion
-                # (i.e. A1: M1, A1: M2, A2: M1, A2: M2). The desired behavior is to have
-                # a single pair per concrete Scenario (which would translate to
-                # "per episode" when swapping)
-                assert isinstance(
-                    mission_and_actor.actor, sstudio_types.SocialAgentActor
-                )
-
-                actor = mission_and_actor.actor
-                extracted_mission = Scenario._extract_mission(
-                    mission_and_actor.mission, road_map
-                )
-                namespace = os.path.basename(missions_file_path)
-                namespace = os.path.splitext(namespace)[0]
-
-                setdefault(agent_bucketer, count, []).append(
-                    (
-                        SocialAgent(
-                            id=SocialAgentId.new(actor.name, group=namespace),
-                            name=actor.name,
-                            is_boid=False,
-                            is_boid_keep_alive=False,
-                            agent_locator=actor.agent_locator,
-                            policy_kwargs=actor.policy_kwargs,
-                            initial_speed=actor.initial_speed,
-                        ),
-                        extracted_mission,
+            social_agent_infos = [
+                (agent.id, agent)
+                for agent in (
+                    SocialAgent(
+                        id=SocialAgentId.new(actor.name, group=namespace),
+                        name=actor.name,
+                        is_boid=False,
+                        is_boid_keep_alive=False,
+                        agent_locator=actor.agent_locator,
+                        policy_kwargs=actor.policy_kwargs,
+                        initial_speed=actor.initial_speed,
                     )
+                    for actor in actors
                 )
-            count += 1
+            ]
+            social_agent_missions = [
+                Scenario._extract_mission(mission, road_map) for mission in missions
+            ]
 
-        items = []
-        for l in agent_bucketer:
-            social_agent_infos = []
-            social_agent_missions = []
-            for agent, mission in l:
-                social_agent_infos.append((agent.id, agent))
-                social_agent_missions.append(mission)
             items.append((social_agent_infos, social_agent_missions))
 
         return items
