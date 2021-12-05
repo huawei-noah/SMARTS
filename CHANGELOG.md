@@ -33,7 +33,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
   - `EPISODE_REQUIRED`: Needed for the current episode. Results in episode ending if it should recover but cannot or should not recover.
   - `EXPERIMENT_REQUIRED`: Needed for the experiment. Results in exception if it should recover but cannot or should not recover.
   - `ATTEMPT_RECOVERY`: Provider should attempt to recover from the exception or disconnection.
-
 - Added recovery options for providers in `smarts.core.provider.Provider`. These include:
   - Add `recover()` method to providers to attempt to recover from errors and disconnection.
   - Add `connected` property to providers to check if the provider is still connected.
@@ -66,6 +65,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Updated deprecated Shapely functionality.
 - Fixed the type of `position` (pose) fields emitted to envision to match the existing type hints of `tuple`.
 - Properly detect whether waypoint is present in mission route, while computing distance travelled by agents with missions in TripMeterSensor.
+- Fixed `test_notebook` timeout by setting `pytest --nb-exec-timeout 65536`. 
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.
