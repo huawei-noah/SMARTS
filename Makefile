@@ -7,7 +7,7 @@ test: build-all-scenarios
 		--doctest-modules \
 		--forked \
 		--dist=loadscope \
-		-n $$(( `nproc`<40 ? `nproc`/2 : 20 )) \
+		-n `nproc --ignore 2` \
 		--nb-exec-timeout 65536 \
 		./examples/tests ./smarts/env ./envision ./smarts/contrib ./smarts/core ./smarts/sstudio ./tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
@@ -26,7 +26,7 @@ sanity-test: build-all-scenarios
 		--forked \
 		--dist=loadscope \
 		--junitxml="sanity_test_result.xml" \
-		-n $$(( `nproc`<40 ? `nproc`/2 : 20 )) \
+		-n `nproc --ignore 2` \
 		./smarts/core/tests/test_python_version.py::test_python_version \
 		./smarts/core/tests/test_sumo_version.py::test_sumo_version \
 		./smarts/core/tests/test_dynamics_backend.py::test_set_pose \
@@ -45,7 +45,7 @@ test-memory-growth: build-all-scenarios
 		--cov=smarts \
 		--forked \
 		--dist=loadscope \
-		-n $$(( `nproc`<40 ? `nproc`/2 : 20 )) \
+		-n `nproc --ignore 1` \
 		./smarts/core/tests/test_smarts_memory_growth.py
 	rm -f .coverage.*
 	rm -f .coverage*
