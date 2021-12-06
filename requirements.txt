@@ -150,7 +150,7 @@ Send2Trash==1.8.0
 sh==1.14.2
 Shapely==1.8.0
 six==1.15.0
-sklearn==0.0
+scikit-learn==1.0.1
 smmap==5.0.0
 sniffio==1.2.0
 soupsieve==2.3.1
