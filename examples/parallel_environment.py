@@ -220,7 +220,7 @@ if __name__ == "__main__":
     print("\nParallel environments with asynchronous episodes.")
     main(
         scenarios=args.scenarios,
-        sim_name=args.sim_name,
+        sim_name=f"{args.sim_name}_async",
         headless=args.headless,
         seed=args.seed,
         num_agents=args.num_agents,
@@ -234,10 +234,10 @@ if __name__ == "__main__":
     print("\nParallel environments with synchronous episodes.\n")
     main(
         scenarios=args.scenarios,
-        sim_name=args.sim_name,
+        sim_name=f"{args.sim_name}_sync",
         headless=args.headless,
         seed=args.seed,
-        num_agents=args.num_agents + 1,
+        num_agents=args.num_agents,
         num_stack=args.num_stack,
         num_env=args.num_env,
         auto_reset=False,
