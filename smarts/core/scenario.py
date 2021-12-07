@@ -598,7 +598,7 @@ class Scenario:
         # just make sure we can load the map
         try:
             road_map, _ = create_road_map(scenario_root)
-        except:
+        except FileNotFoundError:
             return False
         return road_map is not None
 

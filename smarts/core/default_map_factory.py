@@ -48,7 +48,7 @@ def create_road_map(
     if not os.path.isfile(map_path):
         map_path = os.path.join(map_source, "map.net.xml")
         if not os.path.exists(map_path):
-            raise Exception(f"Unable to find map in map_source={map_source}.")
+            raise FileNotFoundError(f"Unable to find map in map_source={map_source}.")
 
     # Keep this a conditional import so Sumo does not have to be
     # imported if not necessary:
