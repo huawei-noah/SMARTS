@@ -633,7 +633,12 @@ class OpenDriveRoadNetwork(RoadMap):
                 left_border_vertices_len = int((len(lane.lane_polygon) - 1) / 2)
                 left_side = lane.lane_polygon[:left_border_vertices_len]
                 if lane.index != road.total_lanes - 1:
-                    lane_dividers.append(left_side)
+                    lane_to_left, _ = lane.lane_to_left
+                    assert lane_to_left
+                    if lane.is_drivable and lane_to_left.is_drivable:
+                        lane_dividers.append(left_side)
+                    else:
+                        road_dividers.append(left_side)
                 else:
                     road_left_border = left_side
 
