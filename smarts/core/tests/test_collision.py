@@ -24,6 +24,7 @@ import math
 import time
 from pathlib import Path
 
+import numpy as np
 import pytest
 from helpers.scenario import temp_scenario
 
@@ -67,6 +68,17 @@ def step_with_vehicle_commands(
     collisions = []
     for _ in range(steps):
         bv.control(throttle, brake, steering)
+        bv._client.stepSimulation()
+        collisions.extend(bv.contact_points)
+    return collisions
+
+
+def step_with_pose_delta(bv: BoxChassis, steps, pose_delta: np.ndarray, speed: float):
+    collisions = []
+    for _ in range(steps):
+        cur_pose = bv.pose
+        new_pose = Pose.from_center(cur_pose.position + pose_delta, cur_pose.heading)
+        bv.control(new_pose, speed)
         bv._client.stepSimulation()
         collisions.extend(bv.contact_points)
     return collisions
@@ -131,6 +143,43 @@ def test_collision_collide_with_standing_vehicle(bullet_client: bc.BulletClient)
     collided_bullet_ids = set([c.bullet_id for c in collisions])
     GROUND_ID = 0
     assert len(collisions) > 0
+    assert b_chassis.bullet_id in collided_bullet_ids
+    assert chassis.bullet_id not in collided_bullet_ids
+    assert GROUND_ID not in collided_bullet_ids
+
+
+def test_box_chassis_collision(bullet_client: bc.BulletClient):
+    """Spawn overlap to check for the most basic BoxChassis collision"""
+
+    # This is required to ensure that the bullet move_to constraint
+    # actually moves the vehicle the correct amount
+    bullet_client.setPhysicsEngineParameter(
+        fixedTimeStep=0.1,
+        numSubSteps=24,
+        numSolverIterations=10,
+        solverResidualThreshold=0.001,
+    )
+
+    chassis = BoxChassis(
+        Pose.from_center([0, 0, 0], Heading(-0.5 * math.pi)),
+        speed=10,
+        dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
+        bullet_client=bullet_client,
+    )
+
+    b_chassis = BoxChassis(
+        Pose.from_center([0, 0, 0], Heading(0.5 * math.pi)),
+        speed=0,
+        dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
+        bullet_client=chassis._client,
+    )
+
+    collisions = step_with_pose_delta(
+        chassis, steps=10, pose_delta=np.array((1.0, 0, 0)), speed=10
+    )
+    assert len(collisions) == 3
+    collided_bullet_ids = set([c.bullet_id for c in collisions])
+    GROUND_ID = 0
     assert b_chassis.bullet_id in collided_bullet_ids
     assert chassis.bullet_id not in collided_bullet_ids
     assert GROUND_ID not in collided_bullet_ids

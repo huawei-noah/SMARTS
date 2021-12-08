@@ -406,7 +406,9 @@ class NGSIM(_TrajectoryDataset):
 
         map_width = self._dataset_spec["map_net"].get("width")
         if map_width:
-            valid_x = (df["position_x"] * self.scale).between(0, map_width)
+            valid_x = (df["position_x"] * self.scale).between(
+                df["length"] / 2, map_width - df["length"] / 2
+            )
             df = df[valid_x]
 
         return df

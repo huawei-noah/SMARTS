@@ -20,7 +20,7 @@ try:
     from ray.rllib.utils.typing import PolicyID
     from ray.tune.schedulers import PopulationBasedTraining
 except Exception as e:
-    from . import RayException
+    from .. import RayException
 
     raise RayException.required_to("rllib.py")
 

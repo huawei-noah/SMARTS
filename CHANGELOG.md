@@ -23,6 +23,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a `-y` option to `utils/setup/install_deps.sh` to accept installation by default. See issue #1081.
 - Added `ParallelEnv` class and a corresponding example to simulate multiple SMARTS environments in parallel, with synchronous or asynchronous episodes.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
+- Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
+- Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
@@ -36,6 +38,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
 - Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).
 ### Fixed
+- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992.
 - Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=-1` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout -1` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
 - Stop `multiprocessing.queues.Queue` from throwing an error by importing `multiprocessing.queues` in `envision/utils/multiprocessing_queue.py`.
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
