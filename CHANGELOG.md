@@ -45,6 +45,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Social-agent-buffer is instantiated only if the scenario requires social agents
 - Mapped Polygon object output of Route.geometry() to sequence of coordinates.
 - Updated deprecated Shapely functionality.
+- Properly detect whether waypoint is present in mission route, while computing distance travelled by agents with missions in TripMeterSensor.
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.
