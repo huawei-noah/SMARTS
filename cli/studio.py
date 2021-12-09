@@ -27,6 +27,7 @@ from threading import Thread
 import click
 
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
 
 @click.group(name="scenario")
@@ -81,6 +82,13 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
                 )
             )
         generate_glb_from_sumo_network(map_net, str(map_glb))
+    else:
+        click.echo(
+            "FILENOTFOUND: no reference to network file was found in {}.  "
+            "Please make sure the path passed is a valid Scenario with RoadNetwork file (map.net.xml or map.xodr) required "
+            "for scenario building.".format(str(scenario_root))
+        )
+        return
 
     _install_requirements(scenario_root)
 
@@ -125,10 +133,6 @@ def _install_requirements(scenario_root):
                 pip_index_proc.terminate()
                 pip_index_proc.wait()
 
-    scenario_py = scenario_root / "scenario.py"
-    if scenario_py.exists():
-        subprocess.check_call([sys.executable, scenario_py])
-
 
 @scenario_cli.command(
     name="build-all",
@@ -167,7 +171,7 @@ def build_all_scenarios(clean, allow_offset_maps, scenarios):
 
     for scenarios_path in scenarios:
         path = Path(scenarios_path)
-        for p in path.rglob("*.net.xml"):
+        for p in path.rglob("*map.net.xml"):
             scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
             if scenario == f"{scenarios_path}/waymo":
                 continue

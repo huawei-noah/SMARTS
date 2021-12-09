@@ -313,9 +313,19 @@ class LanePoints:
                 curr_lanepoint.nexts.append(last_linked_lanepoint)
                 curr_lanepoint = last_linked_lanepoint
 
+                outgoing_roads_added = []
                 for out_lane in curr_lane.outgoing_lanes:
                     if out_lane.is_drivable:
                         lane_queue.put((out_lane, curr_lanepoint))
+                    outgoing_road = out_lane.road
+                    if out_lane.road not in outgoing_roads_added:
+                        outgoing_roads_added.append(outgoing_road)
+                        for next_lane in outgoing_road.lanes:
+                            if (
+                                next_lane.is_drivable
+                                and next_lane not in curr_lane.outgoing_lanes
+                            ):
+                                lane_queue.put((next_lane, curr_lanepoint))
 
             return initial_lanepoint, shape_lanepoints
 
@@ -326,7 +336,7 @@ class LanePoints:
         for road_id in roads:
             road = roads[road_id]
             for lane in road.lanes:
-                # Ignore lanes in OpenDRIVE not drivable
+                # Ignore non drivable lanes in OpenDRIVE
                 if lane.is_drivable:
                     _, new_lps = _shape_lanepoints_along_lane(
                         od_road_network, lane, lanepoint_by_lane_memo
@@ -596,8 +606,18 @@ class LanePoints:
                 for next_lp in path[-1].nexts:
                     # TODO: This could be a problem for SUMO. What about internal lanes?
                     # Filter only the edges we're interested in
-                    edge_id = next_lp.lp.lane.road.road_id
+                    next_lane = next_lp.lp.lane
+                    edge_id = next_lane.road.road_id
                     if filter_edge_ids and edge_id not in filter_edge_ids:
+                        continue
+                    if (
+                        filter_edge_ids
+                        and edge_id != filter_edge_ids[-1]
+                        and all(
+                            out_lane.road.road_id not in filter_edge_ids
+                            for out_lane in next_lane.outgoing_lanes
+                        )
+                    ):
                         continue
                     new_path = path + [next_lp]
                     branching_paths.append(new_path)

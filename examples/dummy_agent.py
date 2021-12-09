@@ -1,12 +1,9 @@
 import logging
 
-import gym
-from envision.tests.test_data_replay import scenarios_iterator
 from envision.client import Client as Envision
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 
 from examples.argument_parser import default_argument_parser
