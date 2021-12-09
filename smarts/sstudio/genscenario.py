@@ -196,7 +196,6 @@ def gen_social_agent_missions(
         output_dir=output_dir,
         seed=seed,
         overwrite=overwrite,
-        use_product=False,
     )
 
     if saved:
@@ -320,7 +319,6 @@ def _gen_missions(
     output_dir: str,
     seed: int = 42,
     overwrite: bool = False,
-    use_product: bool = True,
 ):
     """Generates a route file to represent missions (a route per mission). Will
     create the output_dir if it doesn't exist already.
@@ -350,13 +348,8 @@ def _gen_missions(
 
     _validate_missions(missions)
 
-    op = itertools.product if use_product else zip
-    missions = [
-        types._ActorAndMission(actor=actor, mission=resolve_mission(mission))
-        for actor, mission in op(actors, missions)
-    ]
     with open(output_path, "wb") as f:
-        pickle.dump(missions, f)
+        pickle.dump((actors, [resolve_mission(mission) for mission in missions]), f)
 
     return True
 

@@ -47,16 +47,21 @@ def scenario_root():
             for speed in [10, 30, 80]
         ]
 
-        for name, (edge_start, edge_end) in [
-            ("group-1", ("edge-north-NS", "edge-south-NS")),
-            ("group-2", ("edge-west-WE", "edge-east-WE")),
-            ("group-3", ("edge-east-EW", "edge-west-EW")),
-            ("group-4", ("edge-south-SN", "edge-north-SN")),
+        route_edges = [
+            ("edge-north-NS", "edge-south-NS"),
+            ("edge-west-WE", "edge-east-WE"),
+            ("edge-east-EW", "edge-west-EW"),
+        ]
+        for name in [
+            "group-1",
+            "group-2",
+            "group-3",
+            "group-4",
         ]:
-            route = Route(
-                begin=("edge-north-NS", 1, 0), end=("edge-south-NS", 1, "max")
-            )
-            missions = [Mission(route=route)] * 2  # double up
+            missions = []
+            for edge_start, edge_end in route_edges:
+                route = Route(begin=(edge_start, 1, 0), end=(edge_end, 1, "max"))
+                missions += [Mission(route=route)]
             gen_social_agent_missions(
                 scenario_root,
                 social_agent_actor=actors,
@@ -81,10 +86,10 @@ def test_scenario_variations_of_social_agents(scenario_root):
     )
     scenarios = list(iterator)
 
-    assert len(scenarios) == 6, "3 social agents x 2 missions each "
+    assert len(scenarios) == 4, "4 scenarios should be specified"
     for s in scenarios:
-        assert len(s.social_agents) == 4, "4 social agents"
-        assert len(s.missions) == 5, "4 missions for social agents + 1 for ego"
+        assert len(s.social_agents) == 3, "3 social agents"
+        assert len(s.missions) == 4, "3 missions for social agents + 1 for ego"
 
     # Ensure correct social agents are being spawned
     all_social_agent_ids = set()
