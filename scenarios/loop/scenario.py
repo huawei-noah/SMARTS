@@ -1,4 +1,3 @@
-import random
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
