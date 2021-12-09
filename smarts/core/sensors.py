@@ -795,6 +795,7 @@ class TripMeterSensor(Sensor):
         self._vehicle = vehicle
         self._sim = sim
         self._plan = plan
+        self._route_roads = [road.road_id for road in self._plan.route.roads]
         self._wps_for_distance = []
         self._dist_travelled = 0.0
         self._last_dist_travelled = 0.0
@@ -818,7 +819,7 @@ class TripMeterSensor(Sensor):
             # if we do not have a fixed route, we count all waypoints we accumulate
             not self._plan.mission.has_fixed_route
             # if we have a route to follow, only count wps on route
-            or wp_road in self._plan.route.roads
+            or wp_road in self._route_roads
         )
 
         if not self._wps_for_distance:
