@@ -413,6 +413,9 @@ class Mission:
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
 
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and hash(self) == hash(other)
+
 
 @dataclass(frozen=True)
 class EndlessMission:

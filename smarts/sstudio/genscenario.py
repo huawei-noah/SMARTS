@@ -145,10 +145,9 @@ def gen_traffic(
         logger.debug(f"Generated traffic for scenario={scenario}")
 
 
-def gen_social_agent_missions(
+def gen_social_agents(
     scenario: str,
-    missions: Sequence[types.Mission],
-    social_agent_actor: Union[types.SocialAgentActor, Sequence[types.SocialAgentActor]],
+    social_agent_actor_mission_pairs: Sequence[Tuple[types.SocialAgentActor, types.Mission]],
     name: str,
     seed: int = 42,
     overwrite: bool = False,
@@ -172,6 +171,71 @@ def gen_social_agent_missions(
     """
 
     # For backwards compatibility we support both a single value and a sequence
+    social_agent_actor_mission_pairs = social_agent_actor_mission_pairs
+    if not isinstance(social_agent_actor_mission_pairs, collections.abc.Sequence):
+        raise ValueError(
+            f"{list(social_agent_actor_mission_pairs)}"
+        )
+
+    ActorMissionPairs = Sequence[Tuple[types.SocialAgentActor, types.Mission]]
+    actors: ActorMissionPairs = [a for a, _ in social_agent_actor_mission_pairs]
+    missions: Sequence[types.Mission] = [m for _, m in social_agent_actor_mission_pairs]
+    # This doesn't support BoidAgentActor. Here we make that explicit
+    if any(isinstance(actor, types.BoidAgentActor) for actor in actors):
+        raise ValueError(
+            f"{gen_social_agents.__name__}(...) can't be called with BoidAgentActor, got:"
+            f"{social_agent_actor_mission_pairs}"
+        )
+
+    actor_names = [a.name for a in actors]
+    if len(actor_names) != len(set(actor_names)):
+        raise ValueError(f"Actor names={actor_names} must not contain duplicates")
+    if len(missions) != len(set(missions)):
+        raise ValueError(f"Supplied Missions must be unique.")
+
+    output_dir = os.path.join(scenario, "social_agents")
+    saved = _gen_missions(
+        scenario=scenario,
+        missions=missions,
+        actors=actors,
+        name=name,
+        output_dir=output_dir,
+        seed=seed,
+        overwrite=overwrite,
+    )
+
+    if saved:
+        logger.debug(f"Generated social agent missions for scenario={scenario}")
+
+
+def gen_social_agent_missions(
+    scenario: str,
+    missions: Sequence[types.Mission],
+    social_agent_actor: Union[types.SocialAgentActor, Sequence[types.SocialAgentActor]],
+    name: str,
+    seed: int = 42,
+    overwrite: bool = False,
+):
+    """[DEPRECATED] Generates the social agent missions for the given scenario.
+
+    Args:
+        scenario:
+            The scenario directory
+        missions:
+            A sequence of missions for social agents to perform
+        social_agent_actor(s):
+            The actor(s) to use
+        name:
+            A short name for this grouping of social agents. Is also used as the name
+            of the social agent traffic file
+        seed:
+            The random seed to use when generating behaviour
+        overwrite:
+            If to forcefully write over the previous existing output file
+    """
+
+    logger.warn(DeprecationWarning(f"`{gen_social_agent_missions.__name__}` has been deprecated. Please use `{gen_social_agents.__name__}`"))
+    # For backwards compatibility we support both a single value and a sequence
     actors = social_agent_actor
     if not isinstance(actors, collections.abc.Sequence):
         actors = [actors]
@@ -179,7 +243,7 @@ def gen_social_agent_missions(
     # This doesn't support BoidAgentActor. Here we make that explicit
     if any(isinstance(actor, types.BoidAgentActor) for actor in actors):
         raise ValueError(
-            "gen_social_agent_missions(...) can't be called with BoidAgentActor, got:"
+        f"{gen_social_agent_missions.__name__}(...) can't be called with {types.BoidAgentActor.__name__}, got:"
             f"{actors}"
         )
 
