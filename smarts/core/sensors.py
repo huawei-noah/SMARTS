@@ -54,7 +54,7 @@ class VehicleObservation(NamedTuple):
 
 class EgoVehicleObservation(NamedTuple):
     id: str
-    position: Tuple[float, float, float]
+    position: np.ndarray
     bounding_box: Dimensions
     heading: Heading
     speed: float
@@ -252,9 +252,9 @@ class Sensors:
 
         ego_vehicle_observation = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
-            position=ego_vehicle_state.pose.position,
+            position=np.array(ego_vehicle_state.pose.position),
             bounding_box=ego_vehicle_state.dimensions,
-            heading=ego_vehicle_state.pose.heading,
+            heading=Heading(ego_vehicle_state.pose.heading),
             speed=ego_vehicle_state.speed,
             steering=ego_vehicle_state.steering,
             yaw_rate=ego_vehicle_state.yaw_rate,
