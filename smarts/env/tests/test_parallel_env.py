@@ -58,10 +58,10 @@ def single_env_actions(agent_specs):
 
 @pytest.fixture(scope="module")
 def env_constructor(agent_specs):
-    env_constructor = lambda sim_name: HiWayEnv(
+    env_constructor = lambda: HiWayEnv(
         scenarios=["scenarios/loop"],
         agent_specs=agent_specs,
-        sim_name=sim_name,
+        sim_name="Test_env",
         headless=True,
     )
     return env_constructor
@@ -69,8 +69,8 @@ def env_constructor(agent_specs):
 
 def test_non_callable_env_constructors(env_constructor):
     env_constructed = [
-        env_constructor(sim_name="Test"),
-        env_constructor(sim_name="Test"),
+        env_constructor(),
+        env_constructor(),
     ]
     with pytest.raises(TypeError):
         env = ParallelEnv(env_constructors=env_constructed, auto_reset=True)
@@ -88,7 +88,7 @@ def _make_parallel_env(env_constructor, num_env, auto_reset=True, seed=42):
 
 @pytest.mark.parametrize("num_env", [2])
 def test_spaces(env_constructor, num_env):
-    single_env = env_constructor(sim_name="Test")
+    single_env = env_constructor()
     env = _make_parallel_env(env_constructor, num_env)
 
     assert env.batch_size == num_env
@@ -123,7 +123,7 @@ def _compare_observations(num_env, batched_observations, single_observations):
 
 @pytest.mark.parametrize("num_env", [2])
 def test_reset(env_constructor, num_env):
-    single_env = env_constructor(sim_name="Test")
+    single_env = env_constructor()
     single_observations = single_env.reset()
     single_env.close()
 
@@ -137,7 +137,7 @@ def test_reset(env_constructor, num_env):
 @pytest.mark.parametrize("num_env", [2])
 @pytest.mark.parametrize("auto_reset", [True])
 def test_step(env_constructor, single_env_actions, num_env, auto_reset):
-    single_env = env_constructor(sim_name="Test")
+    single_env = env_constructor()
     single_env.reset()
     single_observations, _, _, _ = single_env.step(single_env_actions)
     single_env.close()

@@ -27,7 +27,6 @@ from threading import Thread
 import click
 
 from smarts.core.sumo_road_network import SumoRoadNetwork
-from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
 
 @click.group(name="scenario")
@@ -126,6 +125,10 @@ def _install_requirements(scenario_root):
                 pip_index_proc.terminate()
                 pip_index_proc.wait()
 
+    scenario_py = scenario_root / "scenario.py"
+    if scenario_py.exists():
+        subprocess.check_call([sys.executable, scenario_py])
+
 
 @scenario_cli.command(
     name="build-all",
@@ -201,6 +204,7 @@ def _clean(scenario):
         "traffic/*",
         "history_mission.pkl",
         "*.shf",
+        "*-AUTOGEN.net.xml",
     ]
     p = Path(scenario)
     for file_name in to_be_removed:

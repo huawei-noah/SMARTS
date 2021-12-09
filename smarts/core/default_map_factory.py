@@ -56,7 +56,7 @@ def create_road_map(
             if os.path.exists(map_path):
                 break
             if i == len(supported_maps) - 1:
-                raise Exception(f"Unable to find map in map_source={map_source}.")
+                raise FileNotFoundError(f"Unable to find map in map_source={map_source}.")
 
     road_map = None
     if map_path.endswith("map.net.xml"):
