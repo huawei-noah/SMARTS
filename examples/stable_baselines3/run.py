@@ -11,6 +11,7 @@ import env.adapter as adapter
 import env.action as action
 
 from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.evaluation import evaluate_policy
 
 scenarios = ['scenarios/loop']
 
@@ -58,15 +59,9 @@ env = action.Action(env=env)
 env = smarts_single_agent.SingleAgent(env)
 check_env(env, warn=True)
 
-model = PPO("MlpPolicy", env, verbose=1)
+model = PPO("CnnPolicy", env, verbose=1)
+before_mean_reward, before_std_reward = evaluate_policy(model, env, n_eval_episodes=10)
 model.learn(total_timesteps=100)
-
-obs = env.reset()
-for i in range(10):
-    action, _states = model.predict(obs, deterministic=True)
-    obs, reward, done, info = env.step(action)
-    env.render()
-    if done:
-      obs = env.reset()
-
-env.close()
+mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10)
+print(f"before_mean_reward:{before_mean_reward:.2f} +/- {before_std_reward:.2f}")
+print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
