@@ -461,19 +461,16 @@ class AckermannChassis(Chassis):
     def pose(self) -> Pose:
         pos, orn = self._client.getBasePositionAndOrientation(self._bullet_id)
         heading = Heading(yaw_from_quaternion(orn))
-        if not self._pose:
-            self._pose = Pose.from_explicit_offset(
-                [0, 0, 0],
-                np.array(pos),
-                heading,
-                local_heading=Heading(0),
-            )
-        else:
-            self._pose.reset_with(pos, heading)
-        return self._pose
+        # NOTE: we're inefficiently creating a new Pose object on every call here,
+        # but it's too risky to change this because our clients now rely on this behavior.
+        return Pose.from_explicit_offset(
+            [0, 0, 0],
+            np.array(pos),
+            heading,
+            local_heading=Heading(0),
+        )
 
     def set_pose(self, pose: Pose):
-        self._pose = pose
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id, position, orientation

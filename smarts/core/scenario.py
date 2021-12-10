@@ -504,7 +504,7 @@ class Scenario:
                         lane_id=lane.lane_id,
                         lane_index=via.lane_index,
                         road_id=via.road_id,
-                        position=tuple(via_position),
+                        position=tuple(via_position[:2]),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
                     )
