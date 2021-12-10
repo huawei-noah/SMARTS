@@ -41,7 +41,7 @@ setup(
         # The following are for Scenario Studio
         "yattag>=1.14.0",
         # The following are for /envision
-        "cloudpickle>=1.3.0",
+        "cloudpickle>=1.3.0,<1.4.0",
         "tornado>=6.1",
         "websocket-client>=1.2.1",
         # The following is used for imitation learning and envision
