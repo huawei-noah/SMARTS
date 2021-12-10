@@ -290,9 +290,13 @@ class RoadMap:
         ## Derived classes may want to extend as well as add a cache.
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
-            add_offset = 1  # a little further down the lane
-            end_offset = start_offset + add_offset
-            p1 = self.from_lane_coord(RefLinePoint(s=start_offset))
+            if start_offset >= self.length:
+                s_offset = self.length - 1
+                end_offset = self.length
+            else:
+                s_offset = start_offset
+                end_offset = start_offset + 1  # a little further down the lane
+            p1 = self.from_lane_coord(RefLinePoint(s=s_offset))
             p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
             return np.array(p2) - np.array(p1)
 

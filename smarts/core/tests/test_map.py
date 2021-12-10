@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+import numpy as np
 from os import path
 from pathlib import Path
 import pytest
@@ -669,6 +670,11 @@ def test_od_map_lane_offset():
 
     l2 = road_map.lane_by_id("1_1_R_-2")
     assert [l.lane_id for l in l2.incoming_lanes] == []
+
+    # Test for lane vector when lane offset is outside lane
+    l0_vector = l0.vector_at_offset(50.01)
+    l0_vector = l0_vector.tolist()
+    assert l0_vector == [-0.9999973500028005, -0.0020437969740241257, 0.0]
 
     # point on lane
     point = (31.0, 2.0, 0)
