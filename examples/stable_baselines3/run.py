@@ -1,4 +1,5 @@
 import gym
+import pathlib
 import numpy as np
 from stable_baselines3 import PPO
 from smarts.core import agent as smarts_agent
@@ -13,21 +14,23 @@ import env.action as action
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 from examples.argument_parser import default_argument_parser
+from ruamel.yaml import YAML
 
 scenarios = ['examples/stable_baselines3/scenarios/loop']
+yaml = YAML(typ="safe")
 
-def create_env():
+def create_env(config_env):
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
-        max_episode_steps=300,
+        max_episode_steps=config_env["max_episode_steps"],
         rgb=smarts_agent_interface.RGB(
-            width=64,
-            height=64,
-            resolution=1,
+            width=config_env["rgb_pixels"],
+            height=config_env["rgb_pixels"],
+            resolution=config_env["rgb_meters"] / config_env["rgb_pixels"],
         ),
         action=getattr(
             smarts_controllers.ActionSpaceType,
-            "Continuous",
+            config_env["action_space_type"],
         ),
         done_criteria=smarts_agent_interface.DoneCriteria(
             collision=True,
@@ -52,8 +55,8 @@ def create_env():
         scenarios=scenarios,
         agent_specs=agent_specs,
         headless=False,
-        visdom=False,
-        seed=42,
+        visdom=config_env["visdom"],
+        seed=config_env["seed"],
         sim_name="env",
     )
 
@@ -64,11 +67,19 @@ def create_env():
 
     return env
 
-def main(evaluate=False, model_path=None):
+def main(args):
 
-    if evaluate:
-        model = PPO.load(model_path)
-        env = create_env()
+    name = "smarts"
+    config_env = yaml.load(
+        (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
+    )
+    config_env = config_env[name]
+    config_env["headless"] = not args.head
+    print(config_env)
+
+    if args.mode == 'evaluate':
+        model = PPO.load(args.logdir)
+        env = create_env(config_env)
         mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10, deterministic=True)
         print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
     else:
@@ -89,20 +100,22 @@ def main(evaluate=False, model_path=None):
 
 if __name__ == "__main__":
 
-    parser = default_argument_parser("single-agent-example")
+    parser = default_argument_parser("stable-baselines-3")
     parser.add_argument(
-        "--evaluate",
-        help="Evaluate a trained model",
-        action="store_true",
+        "--mode",
+        help="`train` or `evaluate`. Default is `train`.",
+        type=str,
+        default="train",
     )
     parser.add_argument(
-        "--model-path",
-        help="Path of trained model",
-        type=str
+        "--logdir",
+        help="Directory path to saved RL model. Required if `--mode=evaluate`, else optional.",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--head", help="Run the simulation with display.", action="store_true"
     )
     args = parser.parse_args()
     
-    main(
-        evaluate=args.evaluate,
-        model_path=args.model_path,
-    )
+    main(args)
