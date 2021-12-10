@@ -301,6 +301,7 @@ class RoadMap:
             else:
                 s_offset = start_offset
                 end_offset = start_offset + 1  # a little further down the lane
+            s_offset = max(s_offset, 0)
             p1 = self.from_lane_coord(RefLinePoint(s=s_offset))
             p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
             return np.array(p2) - np.array(p1)
