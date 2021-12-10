@@ -25,6 +25,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
 - Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
 - Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
+- Added `smarts.sstudio.gen_social_agents(...)` to enforce actor to agent paring.
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
@@ -36,6 +37,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Removed the `AgentBehavior` class and the `agent_behavior` parameter to `AgentInterface`.
     - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
     - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
+- `smarts.sstudio.types.Scenario`'s attribute `social_agent_missions` renamed to `social_agents`.
+    - `social_agent` attribute modified to enforce actor to mission pairing.
+- Social actor pairings to their missions are now explicit and no longer expanded into permutations. 
 ### Fixed
 - Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992. 
 - Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=-1` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout -1` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
@@ -45,9 +49,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Social-agent-buffer is instantiated only if the scenario requires social agents
 - Mapped Polygon object output of Route.geometry() to sequence of coordinates.
 - Updated deprecated Shapely functionality.
+- Logic fixes to reasonably define multiple social agents by explicitly matching social actors to missions.
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.
+- Deprecated `smarts.sstudio.gen_social_agent_missions(...)` in favor of `smarts.sstudio.gen_social_agents(...)` to enforce actor to mission pairings.
 ### Removed
 
 ## [0.4.18] - 2021-07-22
