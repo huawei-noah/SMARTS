@@ -722,10 +722,10 @@ class Scenario:
     traffic: Optional[Dict[str, Traffic]] = None
     ego_missions: Optional[Sequence[Mission]] = None
     # e.g. { "turning_agents": ([actors], [missions]), ... }
-    social_agent_missions: Optional[
-        Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]
+    social_agents: Optional[
+        Dict[str, Sequence[Tuple[SocialAgentActor, Mission]]]
     ] = None
-    """Every dictionary item {group: (actors, missions)} gets run simultaneously. If
+    """Values in a dictionary item {group: actor_mission_pairs} get run simultaneously. If
     actors > 1 and missions = 0 or actors = 1 and missions > 0 we cycle through them
     every episode. Otherwise actors must be the same length as missions.
     """

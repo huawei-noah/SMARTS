@@ -69,8 +69,11 @@ static_bubbles = [
 gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
-        social_agent_missions={
-            "all": ([laner_actor, open_agent_actor], [t.Mission(route=t.RandomRoute())])
+        social_agents={
+            "all": [
+                (a, t.Mission(route=t.RandomRoute()))
+                for a in [laner_actor, open_agent_actor]
+            ]
         },
         bubbles=[*travelling_bubbles, *static_bubbles],
     ),

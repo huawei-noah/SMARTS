@@ -58,10 +58,10 @@ def scenario_root():
             "group-3",
             "group-4",
         ]:
-            missions = []
-            for edge_start, edge_end in route_edges:
-                route = Route(begin=(edge_start, 1, 0), end=(edge_end, 1, "max"))
-                missions += [Mission(route=route)]
+            missions = [
+                Mission(route=Route(begin=(edge_start, 1, 0), end=(edge_end, 1, "max")))
+                for edge_start, edge_end in route_edges
+            ]
             gen_social_agent_missions(
                 scenario_root,
                 social_agent_actor=actors,

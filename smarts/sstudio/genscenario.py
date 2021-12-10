@@ -90,19 +90,15 @@ def gen_scenario(
                 overwrite=overwrite,
             )
 
-    if scenario.social_agent_missions:
-        for name, (actors, missions) in scenario.social_agent_missions.items():
-            if not (
-                isinstance(actors, collections.abc.Sequence)
-                and isinstance(missions, collections.abc.Sequence)
-            ):
-                raise ValueError("Actors and missions must be sequences")
+    if scenario.social_agents:
+        for name, actor_mission_pairs in scenario.social_agents.items():
+            if not (isinstance(actor_mission_pairs, collections.abc.Sequence)):
+                raise ValueError("Actor-mission pairs must be sequences")
 
-            gen_social_agent_missions(
+            gen_social_agents(
                 name=name,
                 scenario=output_dir,
-                social_agent_actor=actors,
-                missions=missions,
+                social_agent_actor_mission_pairs=actor_mission_pairs,
             )
 
     if scenario.bubbles:
@@ -147,7 +143,9 @@ def gen_traffic(
 
 def gen_social_agents(
     scenario: str,
-    social_agent_actor_mission_pairs: Sequence[Tuple[types.SocialAgentActor, types.Mission]],
+    social_agent_actor_mission_pairs: Sequence[
+        Tuple[types.SocialAgentActor, types.Mission]
+    ],
     name: str,
     seed: int = 42,
     overwrite: bool = False,
@@ -173,9 +171,7 @@ def gen_social_agents(
     # For backwards compatibility we support both a single value and a sequence
     social_agent_actor_mission_pairs = social_agent_actor_mission_pairs
     if not isinstance(social_agent_actor_mission_pairs, collections.abc.Sequence):
-        raise ValueError(
-            f"{list(social_agent_actor_mission_pairs)}"
-        )
+        raise ValueError(f"{list(social_agent_actor_mission_pairs)}")
 
     ActorMissionPairs = Sequence[Tuple[types.SocialAgentActor, types.Mission]]
     actors: ActorMissionPairs = [a for a, _ in social_agent_actor_mission_pairs]
@@ -234,7 +230,11 @@ def gen_social_agent_missions(
             If to forcefully write over the previous existing output file
     """
 
-    logger.warn(DeprecationWarning(f"`{gen_social_agent_missions.__name__}` has been deprecated. Please use `{gen_social_agents.__name__}`"))
+    logger.warn(
+        DeprecationWarning(
+            f"`{gen_social_agent_missions.__name__}` has been deprecated. Please use `{gen_social_agents.__name__}`"
+        )
+    )
     # For backwards compatibility we support both a single value and a sequence
     actors = social_agent_actor
     if not isinstance(actors, collections.abc.Sequence):
@@ -243,7 +243,7 @@ def gen_social_agent_missions(
     # This doesn't support BoidAgentActor. Here we make that explicit
     if any(isinstance(actor, types.BoidAgentActor) for actor in actors):
         raise ValueError(
-        f"{gen_social_agent_missions.__name__}(...) can't be called with {types.BoidAgentActor.__name__}, got:"
+            f"{gen_social_agent_missions.__name__}(...) can't be called with {types.BoidAgentActor.__name__}, got:"
             f"{actors}"
         )
 

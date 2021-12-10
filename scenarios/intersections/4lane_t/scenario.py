@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Sequence
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
@@ -48,28 +49,24 @@ ego_missions = [
     )
 ]
 
-social_agent_missions = {
-    "all": (
-        [
-            t.SocialAgentActor(
-                name="open-agent", agent_locator="open_agent:open_agent-v0"
-            ),
-            t.SocialAgentActor(name="rl-agent", agent_locator="rl_agent:rl-agent-v1"),
-        ],
-        [
-            t.Mission(
-                t.Route(begin=("edge-west-WE", 1, 10), end=("edge-east-WE", 1, "max"))
-            )
-        ],
-    ),
-}
+actors: Sequence[t.SocialAgentActor] = [
+    t.SocialAgentActor(name="open-agent", agent_locator="open_agent:open_agent-v0"),
+    t.SocialAgentActor(name="rl-agent", agent_locator="rl_agent:rl-agent-v1"),
+]
+
+reused_mission: Sequence[t.Mission] = t.Mission(
+    t.Route(begin=("edge-west-WE", 1, 10), end=("edge-east-WE", 1, "max"))
+)
+
+
+social_agents = {actor.name: [(actor, reused_mission)] for actor in actors}
 
 gen_scenario(
     scenario=t.Scenario(
         traffic={"basic": traffic},
         bubbles=bubbles,
         ego_missions=ego_missions,
-        social_agent_missions=social_agent_missions,
+        social_agents=social_agents,
     ),
     output_dir=Path(__file__).parent,
 )
