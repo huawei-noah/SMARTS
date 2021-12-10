@@ -471,7 +471,6 @@ class AckermannChassis(Chassis):
         )
 
     def set_pose(self, pose: Pose):
-        self._pose = pose
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id, position, orientation
