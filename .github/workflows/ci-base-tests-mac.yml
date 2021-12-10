@@ -1,9 +1,10 @@
 name: SMARTS CI Base Tests Mac
 
 on:
-  schedule:
-    - cron: '0 23 * * 1'
-      # Runs at 11.00pm, UTC, every Monday
+  workflow_run:
+    workflows: ["SMARTS CI Dependencies Mac"]
+    types:
+      - completed
   workflow_dispatch:
 
 env:
