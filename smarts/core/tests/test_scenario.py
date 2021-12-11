@@ -103,5 +103,5 @@ def test_scenario_variations_of_social_agents(scenario_root):
     }
 
     assert (
-        len(all_social_agent_ids - expected_social_agent_ids) == 0
+        len(all_social_agent_ids) == len(expected_social_agent_ids)
     ), "All the correct social agent IDs were used"
