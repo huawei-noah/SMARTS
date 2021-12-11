@@ -102,6 +102,6 @@ def test_scenario_variations_of_social_agents(scenario_root):
         for group, speed in itertools.product(groups, speeds)
     }
 
-    assert len(all_social_agent_ids) == len(
+    assert (len(all_social_agent_ids & expected_social_agent_ids)) == len(
         expected_social_agent_ids
     ), "All the correct social agent IDs were used"
