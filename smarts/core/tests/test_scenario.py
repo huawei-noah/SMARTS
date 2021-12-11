@@ -65,7 +65,7 @@ def scenario_root():
             gen_social_agents(
                 scenario_root,
                 name=name,
-                social_actor_mission_pairs=list(zip(actors, missions))
+                social_actor_mission_pairs=list(zip(actors, missions)),
             )
 
         gen_missions(
@@ -102,6 +102,6 @@ def test_scenario_variations_of_social_agents(scenario_root):
         for group, speed in itertools.product(groups, speeds)
     }
 
-    assert (
-        len(all_social_agent_ids) == len(expected_social_agent_ids)
+    assert len(all_social_agent_ids) == len(
+        expected_social_agent_ids
     ), "All the correct social agent IDs were used"

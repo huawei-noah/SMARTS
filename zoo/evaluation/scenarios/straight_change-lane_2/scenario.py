@@ -12,5 +12,10 @@ with open(os.environ["SOCIAL_AGENT_PATH"], "rb") as f:
 gen_social_agents(
     scenario,
     name=f"s-agent-{social_agent.name}",
-    social_actor_mission_pairs=[(social_agent, t.Mission(t.Route(begin=("E3l-3", 1, 80), end=("E3l-3", 1, "max"))),)]
+    social_actor_mission_pairs=[
+        (
+            social_agent,
+            t.Mission(t.Route(begin=("E3l-3", 1, 80), end=("E3l-3", 1, "max"))),
+        )
+    ],
 )

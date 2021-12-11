@@ -17,11 +17,21 @@ buddha_agent = SocialAgentActor(
 gen_social_agents(
     scenario,
     name=f"s-agent-{laner_agent.name}",
-    social_actor_mission_pairs=[(laner_agent, Mission(Route(begin=("edge-east-EW", 0, 5), end=("edge-west-EW", 0, 5))))]
+    social_actor_mission_pairs=[
+        (
+            laner_agent,
+            Mission(Route(begin=("edge-east-EW", 0, 5), end=("edge-west-EW", 0, 5))),
+        )
+    ],
 )
 
 gen_social_agents(
     scenario,
     name=f"s-agent-{buddha_agent.name}",
-    social_actor_mission_pairs=[(buddha_agent, Mission(Route(begin=("edge-west-WE", 0, 5), end=("edge-east-WE", 0, 5))))]
+    social_actor_mission_pairs=[
+        (
+            buddha_agent,
+            Mission(Route(begin=("edge-west-WE", 0, 5), end=("edge-east-WE", 0, 5))),
+        )
+    ],
 )

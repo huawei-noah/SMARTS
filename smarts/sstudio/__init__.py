@@ -24,6 +24,6 @@ from .genscenario import (
     gen_missions,
     gen_scenario,
     gen_social_agents,
-    gen_social_agent_missions, #Deprecated
+    gen_social_agent_missions,  # Deprecated
     gen_traffic,
 )

@@ -86,7 +86,7 @@ social_agent2 = SocialAgentActor(
 gen_social_agents(
     scenario,
     name=f"s-agent-{social_agent2.name}",
-    social_actor_mission_pairs=[(social_agent2,Mission(RandomRoute()))]
+    social_actor_mission_pairs=[(social_agent2, Mission(RandomRoute()))],
 )
 
 gen_social_agents(
@@ -94,8 +94,11 @@ gen_social_agents(
     name=f"s-agent-{social_agent1.name}",
     social_actor_mission_pairs=[
         (social_agent1, EndlessMission(begin=("edge-south-SN", 0, 30))),
-        (social_agent2, Mission(Route(begin=("edge-west-WE", 0, 10), end=("edge-east-WE", 0, 10))))
-    ]
+        (
+            social_agent2,
+            Mission(Route(begin=("edge-west-WE", 0, 10), end=("edge-east-WE", 0, 10))),
+        ),
+    ],
 )
 
 # Agent Missions

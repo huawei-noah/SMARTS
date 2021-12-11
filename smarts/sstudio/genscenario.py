@@ -143,9 +143,7 @@ def gen_traffic(
 
 def gen_social_agents(
     scenario: str,
-    social_actor_mission_pairs: Sequence[
-        Tuple[types.SocialAgentActor, types.Mission]
-    ],
+    social_actor_mission_pairs: Sequence[Tuple[types.SocialAgentActor, types.Mission]],
     name: str,
     seed: int = 42,
     overwrite: bool = False,
