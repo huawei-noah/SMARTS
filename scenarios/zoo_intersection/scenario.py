@@ -2,6 +2,7 @@ import os
 import random
 
 from smarts.sstudio import gen_missions, gen_social_agent_missions, gen_traffic
+from smarts.sstudio.genscenario import gen_social_agents
 from smarts.sstudio.types import (
     Distribution,
     EndlessMission,
@@ -82,21 +83,19 @@ social_agent2 = SocialAgentActor(
     initial_speed=20,
 )
 
-gen_social_agent_missions(
+gen_social_agents(
     scenario,
-    social_agent_actor=social_agent2,
     name=f"s-agent-{social_agent2.name}",
-    missions=[Mission(RandomRoute())],
+    social_actor_mission_pairs=[(social_agent2,Mission(RandomRoute()))]
 )
 
-gen_social_agent_missions(
+gen_social_agents(
     scenario,
-    social_agent_actor=social_agent1,
     name=f"s-agent-{social_agent1.name}",
-    missions=[
-        EndlessMission(begin=("edge-south-SN", 0, 30)),
-        Mission(Route(begin=("edge-west-WE", 0, 10), end=("edge-east-WE", 0, 10))),
-    ],
+    social_actor_mission_pairs=[
+        (social_agent1, EndlessMission(begin=("edge-south-SN", 0, 30))),
+        (social_agent2, Mission(Route(begin=("edge-west-WE", 0, 10), end=("edge-east-WE", 0, 10))))
+    ]
 )
 
 # Agent Missions

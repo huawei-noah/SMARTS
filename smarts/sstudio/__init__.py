@@ -23,6 +23,7 @@ from .genscenario import (
     gen_group_laps,
     gen_missions,
     gen_scenario,
-    gen_social_agent_missions,
+    gen_social_agents,
+    gen_social_agent_missions, #Deprecated
     gen_traffic,
 )

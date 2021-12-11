@@ -98,7 +98,7 @@ def gen_scenario(
             gen_social_agents(
                 name=name,
                 scenario=output_dir,
-                social_agent_actor_mission_pairs=actor_mission_pairs,
+                social_actor_mission_pairs=actor_mission_pairs,
             )
 
     if scenario.bubbles:
@@ -143,7 +143,7 @@ def gen_traffic(
 
 def gen_social_agents(
     scenario: str,
-    social_agent_actor_mission_pairs: Sequence[
+    social_actor_mission_pairs: Sequence[
         Tuple[types.SocialAgentActor, types.Mission]
     ],
     name: str,
@@ -169,18 +169,18 @@ def gen_social_agents(
     """
 
     # For backwards compatibility we support both a single value and a sequence
-    social_agent_actor_mission_pairs = social_agent_actor_mission_pairs
-    if not isinstance(social_agent_actor_mission_pairs, collections.abc.Sequence):
-        raise ValueError(f"{list(social_agent_actor_mission_pairs)}")
+    social_actor_mission_pairs = social_actor_mission_pairs
+    if not isinstance(social_actor_mission_pairs, collections.abc.Sequence):
+        raise ValueError(f"{list(social_actor_mission_pairs)}")
 
     ActorMissionPairs = Sequence[Tuple[types.SocialAgentActor, types.Mission]]
-    actors: ActorMissionPairs = [a for a, _ in social_agent_actor_mission_pairs]
-    missions: Sequence[types.Mission] = [m for _, m in social_agent_actor_mission_pairs]
+    actors: ActorMissionPairs = [a for a, _ in social_actor_mission_pairs]
+    missions: Sequence[types.Mission] = [m for _, m in social_actor_mission_pairs]
     # This doesn't support BoidAgentActor. Here we make that explicit
     if any(isinstance(actor, types.BoidAgentActor) for actor in actors):
         raise ValueError(
             f"{gen_social_agents.__name__}(...) can't be called with BoidAgentActor, got:"
-            f"{social_agent_actor_mission_pairs}"
+            f"{social_actor_mission_pairs}"
         )
 
     actor_names = [a.name for a in actors]

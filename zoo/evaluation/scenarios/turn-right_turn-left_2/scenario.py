@@ -1,7 +1,7 @@
 import os
 import pickle
 
-from smarts.sstudio import gen_social_agent_missions
+from smarts.sstudio import gen_social_agents
 from smarts.sstudio import types as t
 
 scenario = os.path.dirname(os.path.realpath(__file__))
@@ -9,31 +9,8 @@ scenario = os.path.dirname(os.path.realpath(__file__))
 with open(os.environ["SOCIAL_AGENT_PATH"], "rb") as f:
     social_agent = pickle.load(f)
 
-gen_social_agent_missions(
+gen_social_agents(
     scenario,
-    social_agent_actor=social_agent,
     name=f"s-agent-{social_agent.name}",
-    missions=[
-        t.Mission(t.Route(begin=("E3s-3", 0, 180), end=("E3-35", 1, 40))),
-    ],
+    social_actor_mission_pairs=[(social_agent, t.Mission(t.Route(begin=("E3s-3", 0, 180), end=("E3-35", 1, 40))),)]
 )
-"""
-from pathlib import Path
-
-from smarts.sstudio import gen_missions
-from smarts.sstudio.types import (
-    Route,
-    Mission,  
-)
-
-
-scenario = str(Path(__file__).parent)
-
-
-gen_missions(
-    scenario=scenario,
-    missions=[
-        Mission(Route(begin=("E3s-3", 0, 180), end=("E3-35", 1, 40))),
-    ],
-)
-"""

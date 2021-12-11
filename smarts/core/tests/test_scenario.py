@@ -26,7 +26,7 @@ from helpers.scenario import temp_scenario
 
 from smarts.core.scenario import Scenario
 from smarts.core.utils.id import SocialAgentId
-from smarts.sstudio import gen_missions, gen_social_agent_missions
+from smarts.sstudio import gen_missions, gen_social_agents
 from smarts.sstudio.types import Mission, Route, SocialAgentActor
 
 AGENT_ID = "Agent-007"
@@ -62,11 +62,10 @@ def scenario_root():
                 Mission(route=Route(begin=(edge_start, 1, 0), end=(edge_end, 1, "max")))
                 for edge_start, edge_end in route_edges
             ]
-            gen_social_agent_missions(
+            gen_social_agents(
                 scenario_root,
-                social_agent_actor=actors,
                 name=name,
-                missions=missions,
+                social_actor_mission_pairs=list(zip(actors, missions))
             )
 
         gen_missions(
