@@ -1,6 +1,6 @@
-
 def info_adapter(obs, reward, info):
     return info
+
 
 def reward_adapter(obs, env_reward):
     ego = obs.ego_vehicle_state

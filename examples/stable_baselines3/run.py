@@ -20,6 +20,7 @@ from examples.argument_parser import default_argument_parser
 
 yaml = YAML(typ="safe")
 
+
 def create_env(config):
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
@@ -77,6 +78,7 @@ def create_env(config):
 
     return env
 
+
 def main(args):
 
     name = "smarts"
@@ -89,26 +91,36 @@ def main(args):
         pathlib.Path(__file__).absolute().parents[0] / "scenarios"
     )
 
-    if args.mode == 'evaluate':
+    if args.mode == "evaluate":
         model = PPO.load(args.logdir)
         env = create_env(config_env)
-        mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10, deterministic=True)
+        mean_reward, std_reward = evaluate_policy(
+            model, env, n_eval_episodes=10, deterministic=True
+        )
         print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
     else:
-        env = create_env()
+        env = create_env(config_env)
         model = PPO("CnnPolicy", env, verbose=1)
 
-        before_mean_reward, before_std_reward = evaluate_policy(model, env, n_eval_episodes=10, deterministic=True)
-        model.learn(total_timesteps=20000)
-        mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10, deterministic=True)
-        print(f"before_mean_reward:{before_mean_reward:.2f} +/- {before_std_reward:.2f}")
+        before_mean_reward, before_std_reward = evaluate_policy(
+            model, env, n_eval_episodes=10, deterministic=True
+        )
+        model.learn(total_timesteps=1000000)
+        mean_reward, std_reward = evaluate_policy(
+            model, env, n_eval_episodes=10, deterministic=True
+        )
+        print(
+            f"before_mean_reward:{before_mean_reward:.2f} +/- {before_std_reward:.2f}"
+        )
         print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
 
         # save trained model
         from datetime import datetime
+
         date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        save_path = 'examples/stable_baselines3/logs/' + date_time
+        save_path = "examples/stable_baselines3/logs/" + date_time
         model.save(save_path)
+
 
 if __name__ == "__main__":
 
@@ -129,5 +141,5 @@ if __name__ == "__main__":
         "--head", help="Run the simulation with display.", action="store_true"
     )
     args = parser.parse_args()
-    
+
     main(args)
