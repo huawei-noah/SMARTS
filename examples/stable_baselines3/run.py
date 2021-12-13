@@ -118,7 +118,7 @@ def main(args):
         from datetime import datetime
 
         date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        save_path = "examples/stable_baselines3/logs/" + date_time
+        save_path = pathlib.Path(__file__).absolute().parents[0] / "logs" / date_time
         model.save(save_path)
 
 
