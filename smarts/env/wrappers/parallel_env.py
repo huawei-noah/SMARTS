@@ -33,7 +33,7 @@ import gym
 __all__ = ["ParallelEnv"]
 
 
-EnvConstructor = Callable[[str], gym.Env]
+EnvConstructor = Callable[[], gym.Env]
 
 
 class _Message(Enum):
@@ -60,7 +60,6 @@ class ParallelEnv(object):
         self,
         env_constructors: Sequence[EnvConstructor],
         auto_reset: bool,
-        sim_name: Optional[str] = None,
         seed: int = 42,
     ):
         """The environments can be different but must use the same action and
@@ -69,7 +68,6 @@ class ParallelEnv(object):
         Args:
             env_constructors (Sequence[EnvConstructor]): List of callables that create environments.
             auto_reset (bool): Automatically resets an environment when episode ends.
-            sim_name (Optional[str], optional): Simulation name prefix. Defaults to None.
             seed (int, optional): Seed for the first environment. Defaults to 42.
 
         Raises:
@@ -108,8 +106,6 @@ class ParallelEnv(object):
                 target=_worker,
                 name=f"Worker-<{type(self).__name__}>-<{idx}>",
                 args=(
-                    idx,
-                    sim_name,
                     cloudpickle.dumps(env_constructor),
                     auto_reset,
                     child_pipe,
@@ -270,8 +266,6 @@ class ParallelEnv(object):
 
 
 def _worker(
-    index: int,
-    sim_name: str,
     env_constructor: bytes,
     auto_reset: bool,
     pipe: mp.connection.Connection,
@@ -282,8 +276,6 @@ def _worker(
     the environment, and returns the observations.
 
     Args:
-        index (int): Environment index number.
-        sim_name (str): Simulation name.
         env_constructor (bytes): Cloudpickled callable which constructs the environment.
         auto_reset (bool): If True, auto resets environment when episode ends.
         pipe (mp.connection.Connection): Child's end of the pipe.
@@ -292,10 +284,7 @@ def _worker(
     Raises:
         KeyError: If unknown message type is received.
     """
-    name = f"env_{index}"
-    if sim_name:
-        name = sim_name + "_" + name
-    env = cloudpickle.loads(env_constructor)(sim_name=name)
+    env = cloudpickle.loads(env_constructor)()
     pipe.send((_Message.RESULT, None))
 
     try:

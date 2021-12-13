@@ -37,8 +37,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Removed the `AgentBehavior` class and the `agent_behavior` parameter to `AgentInterface`.
     - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
     - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
+- Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).
+- Raised a warning message for building scenarios without `map.net.xml` file. See PR #1161.
 ### Fixed
-- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992. 
+- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992.
 - Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=-1` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout -1` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
 - Stop `multiprocessing.queues.Queue` from throwing an error by importing `multiprocessing.queues` in `envision/utils/multiprocessing_queue.py`.
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
@@ -46,6 +48,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Social-agent-buffer is instantiated only if the scenario requires social agents
 - Mapped Polygon object output of Route.geometry() to sequence of coordinates.
 - Updated deprecated Shapely functionality.
+- Fixed the type of `position` (pose) fields emitted to envision to match the existing type hints of `tuple`.
+- Properly detect whether waypoint is present in mission route, while computing distance travelled by agents with missions in TripMeterSensor.
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.
@@ -95,6 +99,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an args count error caused by `websocket.on_close()` sending a variable number of args.
 - Fixed the multi-instance display of `envision`. See Issue #784.
 - Caught abrupt terminate signals, in order to shutdown zoo manager and zoo workers.
+- Include tire model in package by moving `tire_parameters.yaml` from `./examples/tools` to `./smarts/core/models`. See Issue #1140
 ### Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.

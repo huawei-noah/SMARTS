@@ -251,7 +251,7 @@ if __name__ == "__main__":
                 chassis=AckermannChassis(
                     pose=pose,
                     bullet_client=client,
-                    tire_parameters_filepath="/home/kyber/MainProjectSMARTS/SMARTS/tools/tire_parameters.yaml",
+                    tire_parameters_filepath="../../smarts/core/models/tire_parameters.yaml",
                 ),
             )
 

@@ -378,10 +378,10 @@ class BubbleManager:
             active_bubbles = self._active_bubbles()
             if not active_bubbles:
                 continue
-            # XXX: Turns out Point(...) creation is very expensive (~0.02ms) which
+            # XXX: Turns out Shapely Point(...) creation is very expensive (~0.02ms) which
             #      when inside of a loop x large number of vehicles makes a big
             #      performance hit.
-            point = Point(vehicle.position)
+            point = vehicle.pose.point.as_shapely
             for bubble in active_bubbles:
                 cursors.add(
                     Cursor.from_pos(

@@ -149,7 +149,7 @@ class TrapManager:
                     continue
 
                 vehicle = vehicles[v_id]
-                point = Point(vehicle.position)
+                point = vehicle.pose.point.as_shapely
 
                 if not point.within(trap.geometry):
                     continue

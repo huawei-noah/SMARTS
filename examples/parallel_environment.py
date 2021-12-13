@@ -2,7 +2,10 @@ import gym
 
 gym.logger.set_level(40)
 
+from functools import partial
 from typing import Dict, Sequence, Tuple
+
+from argument_parser import default_argument_parser
 
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
@@ -11,8 +14,6 @@ from smarts.core.sensors import Observation
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.parallel_env import ParallelEnv
-
-from .argument_parser import default_argument_parser
 
 
 class ChaseViaPointsAgent(Agent):
@@ -54,12 +55,15 @@ def main(
         for agent_id in agent_ids
     }
 
-    # Create a callable env constructor. Here, for illustration purposes, each environment is
-    # wrapped with a FrameStack wrapper which returns stacked observations for each environment.
+    # Create a callable env constructor. Here, for illustration purposes, each
+    # environment is wrapped with a FrameStack wrapper which returns stacked
+    # observations for each environment.
     env_frame_stack = lambda env: FrameStack(
         env=env,
         num_stack=num_stack,
     )
+    # Unique `sim_name` is required by each HiWayEnv in order to be displayed
+    # in Envision.
     env_constructor = lambda sim_name: env_frame_stack(
         HiWayEnv(
             scenarios=scenarios,
@@ -68,6 +72,10 @@ def main(
             headless=headless,
         )
     )
+    # A list of env constructors of type `Callable[[], gym.Env]`
+    env_constructors = [
+        partial(env_constructor, sim_name=f"{sim_name}_{ind}") for ind in range(num_env)
+    ]
 
     # Build multiple agents
     agents = {
@@ -77,8 +85,7 @@ def main(
 
     # Create parallel environments
     env = ParallelEnv(
-        env_constructors=[env_constructor] * num_env,
-        sim_name=sim_name,
+        env_constructors=env_constructors,
         auto_reset=auto_reset,
         seed=seed,
     )
@@ -103,8 +110,6 @@ def parallel_env_async(
         num_steps (int): Number of steps to step the environment.
     """
 
-    tot_scores = {agent_id: 0 for agent_id in agents.keys()}
-
     batched_dones = [{"__all__": False} for _ in range(num_env)]
     batched_observations = env.reset()
 
@@ -127,26 +132,6 @@ def parallel_env_async(
             batched_actions
         )
 
-        # Sum the scores
-        for dones, infos in zip(batched_dones, batched_infos):
-            for agent_id, val in infos.items():
-                if dones[agent_id]:
-                    tot_scores[agent_id] += val["score"]
-
-    # Add the score of not-done agents
-    for dones, infos in zip(batched_dones, batched_infos):
-        for agent_id, val in infos.items():
-            if not dones[agent_id]:
-                tot_scores[agent_id] += val["score"]
-
-    # Print average episode score of each agent
-    ave_scores = {
-        agent_id: score / (num_steps * num_env)
-        for agent_id, score in tot_scores.items()
-    }
-    print("Average step score:")
-    print(f"{ave_scores}")
-
     env.close()
 
 
@@ -164,8 +149,6 @@ def parallel_env_sync(
         num_env (int): Number of parallel environments.
         num_episodes (int): Number of episodes.
     """
-
-    tot_scores = {agent_id: 0 for agent_id in agents.keys()}
 
     for _ in range(num_episodes):
         batched_dones = [{"__all__": False} for _ in range(num_env)]
@@ -190,20 +173,6 @@ def parallel_env_sync(
                 batched_dones,
                 batched_infos,
             ) = env.step(batched_actions)
-
-            # Sum the scores
-            for dones, infos in zip(batched_dones, batched_infos):
-                for agent_id, val in infos.items():
-                    if dones[agent_id]:
-                        tot_scores[agent_id] += val["score"]
-
-    # Print average episode score of each agent
-    ave_scores = {
-        agent_id: score / (num_episodes * num_env)
-        for agent_id, score in tot_scores.items()
-    }
-    print("Average episode score:")
-    print(f"{ave_scores}")
 
     env.close()
 
@@ -242,10 +211,16 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    print("\nParallel environments with asynchronous episodes.\n")
+    if not args.scenarios:
+        args.scenarios = ["./scenarios/figure_eight"]
+
+    if not args.sim_name:
+        args.sim_name = "par_env"
+
+    print("\nParallel environments with asynchronous episodes.")
     main(
         scenarios=args.scenarios,
-        sim_name=args.sim_name,
+        sim_name=f"{args.sim_name}_async",
         headless=args.headless,
         seed=args.seed,
         num_agents=args.num_agents,
@@ -259,7 +234,7 @@ if __name__ == "__main__":
     print("\nParallel environments with synchronous episodes.\n")
     main(
         scenarios=args.scenarios,
-        sim_name=args.sim_name,
+        sim_name=f"{args.sim_name}_sync",
         headless=args.headless,
         seed=args.seed,
         num_agents=args.num_agents,

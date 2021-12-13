@@ -24,6 +24,7 @@ from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
 from cached_property import cached_property
+from shapely.geometry import Point as SPoint
 from typing_extensions import SupportsIndex
 
 from smarts.core.utils.math import (
@@ -65,10 +66,34 @@ class Dimensions:
         )
 
 
+_shapely_points = {}
+
+
 class Point(NamedTuple):
     x: float
     y: float
     z: Optional[float] = 0
+
+    @property
+    def as_shapely(self) -> SPoint:
+        # Shapley Point construction is expensive!
+        # Note that before python3.8, @cached_property was not thread safe,
+        # nor can it be used in a NamedTuple (which doesn't have a __dict__).
+        # (Points can be used by multi-threaded client code, even when
+        # SMARTS is still single-threaded, so we want to be safe here.)
+        # So we use the private global _shapely_points as a cache instead.
+        # Here we are relying on CPython's implementation of dict
+        # to be thread-safe.
+        cached = _shapely_points.get(self)
+        if cached:
+            return cached
+        spt = SPoint((self.x, self.y, self.z))
+        _shapely_points[self] = spt
+        return spt
+
+    def __del__(self):
+        if self in _shapely_points:
+            del _shapely_points[self]
 
 
 class RefLinePoint(NamedTuple):
@@ -207,6 +232,20 @@ class Pose:
 
     def __hash__(self):
         return hash((*self.position, *self.orientation))
+
+    def reset_with(self, position, heading: Heading):
+        if self.position.dtype is not np.dtype(np.float64):
+            # The slice assignment below doesn't change self.position's dtype,
+            # which can be a problem if it was initialized with ints and
+            # now we are assigning it floats, so we just cast it...
+            self.position = np.float64(self.position)
+        self.position[:] = position
+        if "point" in self.__dict__:
+            # clear the cached_property
+            del self.__dict__["point"]
+        if heading != self.heading_:
+            self.orientation = fast_quaternion_from_angle(heading)
+            self.heading_ = heading
 
     @cached_property
     def point(self) -> Point:

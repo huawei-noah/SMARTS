@@ -8,7 +8,12 @@ from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
 
-from .argument_parser import default_argument_parser
+# The following ugliness was made necessary because the `aiohttp` #
+# dependency has an "examples" module too.  (See PR #1120.)
+if __name__ == "__main__":
+    from argument_parser import default_argument_parser
+else:
+    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,7 +24,7 @@ class ChaseViaPointsAgent(Agent):
     def act(self, obs: Observation):
         if (
             len(obs.via_data.near_via_points) < 1
-            or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
+            or obs.ego_vehicle_state.road_id != obs.via_data.near_via_points[0].road_id
         ):
             return (obs.waypoint_paths[0][0].speed_limit, 0)
 
