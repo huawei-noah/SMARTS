@@ -26,7 +26,7 @@ $ scl scenario build-all --clean ./scenarios/loop
 ## Evaluate
 1. Evaluate
     ```bash
-    $ cd <path>/SMARTS/examples/driving_in_traffic
+    $ cd <path>/SMARTS/examples/stable_baselines3
     $ scl envision start -s ./scenarios &
     $ python3.7 run.py --mode=evaluate --logdir="<path>/SMARTS/examples/stable_baselines3/logs/<folder_name>" --head
     ```
