@@ -56,10 +56,10 @@ class RandomRouteGenerator:
         Args:
             net_file: The path to a '\\*.net.xml' file (generally 'map.net.xml')
         """
-        from smarts.core.default_map_factory import create_road_map
+        from smarts.core.default_map_factory import get_road_map
 
         # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
-        road_map, _ = create_road_map(net_file, lanepoint_spacing=2.0)
+        road_map, _ = get_road_map(net_file, lanepoint_spacing=2.0)
         return cls(road_map)
 
     def __iter__(self):

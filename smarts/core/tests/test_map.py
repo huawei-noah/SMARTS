@@ -23,7 +23,6 @@ import math
 
 import pytest
 
-from smarts.core.default_map_factory import create_road_map
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
 

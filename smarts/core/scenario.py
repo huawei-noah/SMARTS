@@ -35,7 +35,7 @@ from cached_property import cached_property
 
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.data_model import SocialAgent
-from smarts.core.default_map_factory import create_road_map
+from smarts.core.default_map_factory import get_road_map
 from smarts.core.plan import (
     EndlessGoal,
     LapMission,
@@ -97,7 +97,7 @@ class Scenario:
             self._traffic_history = None
             default_lane_width = None
 
-        self._road_map, self._road_map_hash = create_road_map(
+        self._road_map, self._road_map_hash = get_road_map(
             self._root, 1.0, default_lane_width
         )
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
@@ -245,7 +245,7 @@ class Scenario:
         len(missions)`. In this case a list of one dictionary is returned.
         """
 
-        road_map, _ = create_road_map(scenario_root)
+        road_map, _ = get_road_map(scenario_root)
 
         missions = []
         missions_file = os.path.join(scenario_root, "missions.pkl")
@@ -311,7 +311,7 @@ class Scenario:
         scenario_root = (
             scenario.root_filepath if isinstance(scenario, Scenario) else scenario
         )
-        road_map, _ = create_road_map(scenario_root)
+        road_map, _ = get_road_map(scenario_root)
 
         social_agents_path = os.path.join(scenario_root, "social_agents")
         if not os.path.exists(social_agents_path):
@@ -597,7 +597,7 @@ class Scenario:
         """
         # just make sure we can load the map
         try:
-            road_map, _ = create_road_map(scenario_root)
+            road_map, _ = get_road_map(scenario_root)
         except FileNotFoundError:
             return False
         return road_map is not None

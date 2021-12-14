@@ -25,24 +25,40 @@ from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import file_md5_hash
 
 # The idea here is that anything in SMARTS that needs to use a RoadMap
-# can call this factory to create one of default type.
+# can call this factory to get or create one of default type.
 #
 # Downstream developers who want to extend SMARTS to support other
 # map formats (by extending the RoadMap base class) can replace this
 # file with their own version and shouldn't have to change much else.
 
 
-def create_road_map(
+_road_map_cache = {}
+
+
+def get_road_map(
     map_source: str,
     lanepoint_spacing: float = None,
     default_lane_width: float = None,
+    no_cache: bool = False,
 ) -> Tuple[RoadMap, str]:
     """@return a RoadMap object and a hash
     that uniquely identifies it. Changes to the hash
     should signify that the map is different enough
-    that map-related caches should be reloaded."""
+    that map-related caches should be reloaded.
+
+    The RoadMap object may be cached here and re-used
+    unless the no_cache parameter is True, in which case
+    a new object will always be created.
+    """
 
     assert map_source, "A road map source must be specified"
+
+    if not no_cache:
+        existing = _road_map_cache.get(
+            (map_source, lanepoint_spacing, default_lane_width)
+        )
+        if existing:
+            return existing[0], existing[1]
 
     map_path = map_source
     if not os.path.isfile(map_path):
@@ -61,5 +77,11 @@ def create_road_map(
     )
 
     road_map_hash = file_md5_hash(road_map.source)
+
+    if not no_cache:
+        _road_map_cache[(map_source, lanepoint_spacing, default_lane_width)] = (
+            road_map,
+            road_map_hash,
+        )
 
     return road_map, road_map_hash
