@@ -324,16 +324,19 @@ class SumoRoadNetwork(RoadMap):
             if not nearby_lanes:
                 return result
             my_vect = self.vector_at_offset(offset)
-            my_norm = max(np.linalg.norm(my_vect), 1e-6)
+            my_norm = np.linalg.norm(my_vect)
+            if my_norm == 0:
+                return result
             threshold = -0.995562  # cos(175*pi/180)
             for lane, _ in nearby_lanes:
                 if lane == self:
                     continue
                 lane_refline_pt = lane.to_lane_coord(pt)
                 lv = lane.vector_at_offset(lane_refline_pt.s)
-                if np.array_equal(lv, np.array([0.0, 0.0, 0.0])):
+                lv_norm = np.linalg.norm(lv)
+                if lv_norm == 0:
                     continue
-                lane_angle = np.dot(my_vect, lv) / (my_norm * np.linalg.norm(lv))
+                lane_angle = np.dot(my_vect, lv) / (my_norm * lv_norm)
                 if lane_angle < threshold:
                     result.append(lane)
             return result
