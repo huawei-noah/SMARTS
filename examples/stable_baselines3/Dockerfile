@@ -45,7 +45,7 @@ RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
     pip install --upgrade pip
 
 # Install requirements.txt
-COPY ./requirements.txt /tmp/requirements.txt
+COPY ../../requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install SMARTS
