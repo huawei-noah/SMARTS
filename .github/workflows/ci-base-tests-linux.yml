@@ -1,4 +1,4 @@
-name: SMARTS CI Base Tests
+name: SMARTS CI Base Tests Linux
 
 on:
   push:
@@ -16,7 +16,7 @@ env:
   venv_dir: .venv
 
 jobs:
-  linux:
+  base-tests-linux:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
@@ -29,7 +29,7 @@ jobs:
           - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/sstudio
-          - ./tests
+          - ./examples/tests --ignore=./examples/tests/test_learning.py
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -49,8 +49,9 @@ jobs:
             --forked \
             --dist=no \
             -n auto \
+            --ignore-glob="**/ros.py" \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_benchmark.py \
-            --ignore=./smarts/env/tests/test_learning.py \
+            --ignore=./examples/tests/test_learning.py \
             -k 'not test_long_determinism'

@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # The author of this file is: https://github.com/mg2015started
-# The following was modified from examples/multi_instance.py
+# The following was modified from examples/ray_multi_instance.py
 
 import argparse
 import logging
@@ -40,10 +40,10 @@ from adapters import (
 from config import HyperParameters
 from prioritized_replay import Buffer
 from soc_mt_ac_network import SocMtActorNetwork, SocMtCriticNetwork
-from utils import get_split_batch
 
 from smarts.core.agent import AgentSpec
 from smarts.core.utils.episodes import episodes
+from utils import get_split_batch
 
 warnings.filterwarnings("ignore")
 

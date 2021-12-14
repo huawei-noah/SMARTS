@@ -20,10 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+
+import numpy as np
 import pytest
 
-from smarts.core.scenario import Scenario
 from smarts.core.default_map_factory import create_road_map
+from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
 
@@ -41,7 +43,10 @@ def test_sumo_map(scenario):
     assert lane.lane_id == "edge-north-NS_0"
     assert lane.road.road_id == "edge-north-NS"
     assert lane.index == 0
-    assert lane.road.point_on_road(point)
+    assert lane.road.contains_point(point)
+    assert lane.is_drivable
+    assert len(lane.shape()) >= 2
+    assert lane.length == 55.6
 
     right_lane, direction = lane.lane_to_right
     assert not right_lane
@@ -80,24 +85,29 @@ def test_sumo_map(scenario):
     out_lanes = lane.outgoing_lanes
     assert out_lanes
     assert len(out_lanes) == 2
-    assert out_lanes[0].lane_id == "edge-west-EW_0"
-    assert out_lanes[1].lane_id == "edge-south-NS_0"
+    assert out_lanes[0].lane_id == ":junction-intersection_0_0"
+    assert out_lanes[1].lane_id == ":junction-intersection_1_0"
 
-    foes = lane.foes
+    foes = out_lanes[0].foes
     assert foes
-    assert len(foes) == 6
+    assert len(foes) == 3
     foe_set = set(f.lane_id for f in foes)
-    assert "edge-west-WE_0" in foe_set
-    assert "edge-east-EW_0" in foe_set
-    assert ":junction-intersection_0_0" in foe_set
-    assert ":junction-intersection_1_0" in foe_set
-    assert ":junction-intersection_5_0" in foe_set
-    assert ":junction-intersection_12_0" in foe_set
+    assert "edge-east-EW_0" in foe_set  # engering from east
+    assert "edge-north-NS_0" in foe_set  # entering from north
+    assert ":junction-intersection_5_0" in foe_set  # crossing from east-to-west
+
+    # Test the lane vector for a refline point outside lane
+    lane_heading_at_offset = lane.vector_at_offset(55.7)
+    assert np.array_equal(lane_heading_at_offset, np.array([0.0, -1.0, 0.0]))
 
     r1 = road_map.road_by_id("edge-north-NS")
     assert r1
+    assert r1.is_drivable
+    assert len(r1.shape()) >= 2
     r2 = road_map.road_by_id("edge-east-WE")
     assert r2
+    assert r2.is_drivable
+    assert len(r2.shape()) >= 2
 
     routes = road_map.generate_routes(r1, r2)
     assert routes
@@ -106,3 +116,15 @@ def test_sumo_map(scenario):
     route = routes[0]
     db = route.distance_between(point, (198, 65.20, 0))
     assert db == 134.01
+
+    cands = route.project_along(point, 134.01)
+    for r2lane in r2.lanes:
+        assert (r2lane, 53.6) in cands
+
+    cands = left_lane.project_along(offset, 134.01)
+    assert len(cands) == 6
+    for r2lane in r2.lanes:
+        if r2lane.index == 1:
+            assert any(
+                r2lane == cand[0] and math.isclose(cand[1], 53.6) for cand in cands
+            )

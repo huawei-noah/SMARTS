@@ -27,6 +27,7 @@ import numpy as np
 import tableprint as tp
 
 from smarts.core import gen_id
+from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
 
@@ -86,6 +87,9 @@ class VehicleIndex:
 
         # {vehicle_id (fixed-length): <SensorState>}
         self._sensor_states = {}
+
+        # Loaded from yaml file on scenario reset
+        self._controller_params = {}
 
     @classmethod
     def identity(cls):
@@ -501,7 +505,6 @@ class VehicleIndex:
             #      trainable field below always assumes trainable=True
             True,
             sim.scenario.surface_patches,
-            sim.scenario.controller_parameters_filepath,
         )
 
         # Apply the physical values from the old vehicle chassis to the new one
@@ -541,7 +544,6 @@ class VehicleIndex:
         tire_filepath,
         trainable,
         surface_patches,
-        controller_filepath,
         initial_speed=None,
         boid=False,
     ):
@@ -555,7 +557,6 @@ class VehicleIndex:
             tire_filepath,
             trainable,
             surface_patches,
-            controller_filepath,
             initial_speed,
         )
 
@@ -676,6 +677,13 @@ class VehicleIndex:
     def controller_state_for_vehicle_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
         return self._controller_states[vehicle_id]
+
+    def load_controller_params(self, controller_filepath: str):
+        self._controller_params = resources.load_controller_params(controller_filepath)
+
+    def controller_params_for_vehicle_type(self, vehicle_type: str):
+        assert self._controller_params, "Controller params have not been loaded"
+        return self._controller_params[vehicle_type]
 
     @staticmethod
     def _build_empty_controlled_by():

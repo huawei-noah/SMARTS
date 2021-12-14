@@ -26,13 +26,13 @@ import os
 import sqlite3
 import struct
 import sys
+from typing import Dict, Generator, Union
 
 import ijson
 import numpy as np
 import pandas as pd
 import yaml
 from numpy.lib.stride_tricks import as_strided as stride
-from typing import Dict, Generator, Union
 
 try:
     from waymo_open_dataset.protos import scenario_pb2
@@ -406,7 +406,9 @@ class NGSIM(_TrajectoryDataset):
 
         map_width = self._dataset_spec["map_net"].get("width")
         if map_width:
-            valid_x = (df["position_x"] * self.scale).between(0, map_width)
+            valid_x = (df["position_x"] * self.scale).between(
+                df["length"] / 2, map_width - df["length"] / 2
+            )
             df = df[valid_x]
 
         return df

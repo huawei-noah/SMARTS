@@ -48,16 +48,16 @@ from .controllers import ActionSpaceType, Controllers
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
-from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .provider import Provider, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensors import Collision
 from .traffic_history_provider import TrafficHistoryProvider
+from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
-from .utils.math import rounder_for_dt
 from .utils.id import Id
+from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import Vehicle, VehicleState
@@ -364,6 +364,9 @@ class SMARTS:
             self._renderer.setup(scenario)
         self._setup_bullet_client(self._bullet_client)
         provider_state = self._setup_providers(self._scenario)
+        self._vehicle_index.load_controller_params(
+            scenario.controller_parameters_filepath
+        )
         self._agent_manager.setup_agents(self)
 
         self._harmonize_providers(provider_state)
@@ -745,30 +748,21 @@ class SMARTS:
             for vehicle in self._vehicle_index.vehicles:
                 vehicle.chassis.reapply_last_control()
             self._bullet_client.stepSimulation()
+        for vehicle in self._vehicle_index.vehicles:
+            vehicle.step(self._elapsed_sim_time)
 
-    def _pybullet_provider_step(self, agent_actions) -> ProviderState:
-        self._perform_agent_actions(agent_actions)
-
-        self._check_ground_plane()
-
-        self._step_pybullet()
-
-        self._process_collisions()
-
-        provider_state = ProviderState()
-        pybullet_agent_ids = {
+    def _get_provider_state(self, source: str, action_space_pred) -> ProviderState:
+        agent_ids = {
             agent_id
             for agent_id, interface in self._agent_manager.agent_interfaces.items()
-            if interface.action_space in self._dynamic_action_spaces
+            if action_space_pred(interface.action_space)
         }
-
+        provider_state = ProviderState()
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-            if agent_id not in pybullet_agent_ids:
+            if agent_id not in agent_ids:
                 continue
-
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            vehicle.step(self._elapsed_sim_time)
             provider_state.vehicles.append(
                 VehicleState(
                     vehicle_id=vehicle.id,
@@ -776,48 +770,9 @@ class SMARTS:
                     pose=vehicle.pose,
                     dimensions=vehicle.chassis.dimensions,
                     speed=vehicle.speed,
-                    source="PYBULLET",
+                    source=source,
                 )
             )
-
-        return provider_state
-
-    def _nondynamic_provider_step(
-        self, agent_actions, step_pybullet: bool
-    ) -> ProviderState:
-        self._perform_agent_actions(agent_actions)
-
-        if step_pybullet:
-            self._step_pybullet()
-
-        self._process_collisions()
-
-        provider_state = ProviderState()
-        nondynamic_agent_ids = {
-            agent_id
-            for agent_id, interface in self._agent_manager.agent_interfaces.items()
-            if interface.action_space not in self._dynamic_action_spaces
-        }
-
-        for vehicle_id in self._vehicle_index.agent_vehicle_ids():
-            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-            if agent_id not in nondynamic_agent_ids:
-                continue
-
-            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            assert isinstance(vehicle.chassis, BoxChassis)
-            vehicle.step(self._elapsed_sim_time)
-            provider_state.vehicles.append(
-                VehicleState(
-                    vehicle_id=vehicle.id,
-                    vehicle_config_type="passenger",
-                    pose=vehicle.pose,
-                    dimensions=vehicle.chassis.dimensions,
-                    speed=vehicle.speed,
-                    source="OTHER",
-                )
-            )
-
         return provider_state
 
     @property
@@ -889,14 +844,26 @@ class SMARTS:
             elif matches_no_provider_action_space(agent_id):
                 other_actions[agent_id] = action
 
-        if pybullet_actions:
-            accumulated_provider_state.merge(
-                self._pybullet_provider_step(pybullet_actions)
-            )
-        if other_actions:
-            accumulated_provider_state.merge(
-                self._nondynamic_provider_step(other_actions, bool(pybullet_actions))
-            )
+        if pybullet_actions or other_actions:
+            self._perform_agent_actions(pybullet_actions)
+            self._perform_agent_actions(other_actions)
+            self._check_ground_plane()
+            self._step_pybullet()
+            self._process_collisions()
+            if pybullet_actions:
+                as_pred = (
+                    lambda action_space: action_space in self._dynamic_action_spaces
+                )
+                accumulated_provider_state.merge(
+                    self._get_provider_state("PYBULLET", as_pred)
+                )
+            if other_actions:
+                as_pred = (
+                    lambda action_space: action_space not in self._dynamic_action_spaces
+                )
+                accumulated_provider_state.merge(
+                    self._get_provider_state("OTHER", as_pred)
+                )
 
         for provider in self.providers:
             provider_state = self._step_provider(provider, actions)
@@ -1075,22 +1042,22 @@ class SMARTS:
 
     def _check_ground_plane(self):
         rescale_plane = False
-        map_min = np.array(self._map_bb.min_pt) if self._map_bb else None
-        map_max = np.array(self._map_bb.max_pt) if self._map_bb else None
+        map_min = np.array(self._map_bb.min_pt[:2]) if self._map_bb else None
+        map_max = np.array(self._map_bb.max_pt[:2]) if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            map_spot = np.array(vehicle.pose.position)
+            map_spot = np.array(vehicle.pose.position[:2])
             if map_min is None:
-                map_min = np.array(map_spot)
+                map_min = map_spot
                 rescale_plane = True
             elif any(map_spot < map_min):
-                map_min = np.minimum(np.array(map_spot), map_min)
+                map_min = np.minimum(map_spot, map_min)
                 rescale_plane = True
             if map_max is None:
-                map_max = np.array(map_spot)
+                map_max = map_spot
                 rescale_plane = True
             elif any(map_spot > map_max):
-                map_max = np.maximum(np.array(map_spot), map_max)
+                map_max = np.maximum(map_spot, map_max)
                 rescale_plane = True
         if rescale_plane:
             MIN_DIM = 500.0
@@ -1153,8 +1120,8 @@ class SMARTS:
                     name=self._agent_manager.agent_name(agent_id),
                     actor_type=actor_type,
                     vehicle_type=envision_types.VehicleType.Car,
-                    position=v.pose.position,
-                    heading=v.pose.heading,
+                    position=tuple(v.pose.position),
+                    heading=float(v.pose.heading),
                     speed=v.speed,
                     actor_id=envision_types.format_actor_id(
                         agent_id,
@@ -1168,8 +1135,8 @@ class SMARTS:
                     mission_route_geometry=mission_route_geometry,
                 )
                 speed[agent_id] = v.speed
-                position[agent_id] = v.pose.position[:2]
-                heading[agent_id] = v.pose.heading
+                position[agent_id] = tuple(v.pose.position[:2])
+                heading[agent_id] = float(v.pose.heading)
                 if (
                     vehicle_obs.waypoint_paths
                     and len(vehicle_obs.waypoint_paths[0]) > 0
@@ -1183,8 +1150,8 @@ class SMARTS:
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     actor_type=envision_types.TrafficActorType.SocialVehicle,
                     vehicle_type=veh_type,
-                    position=list(v.pose.position),
-                    heading=v.pose.heading,
+                    position=tuple(v.pose.position),
+                    heading=float(v.pose.heading),
                     speed=v.speed,
                 )
 

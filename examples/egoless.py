@@ -2,8 +2,14 @@ import logging
 
 import gym
 
-from examples.argument_parser import default_argument_parser
 from smarts.core.utils.episodes import episodes
+
+# The following ugliness was made necessary because the `aiohttp` #
+# dependency has an "examples" module too.  (See PR #1120.)
+if __name__ == "__main__":
+    from argument_parser import default_argument_parser
+else:
+    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 

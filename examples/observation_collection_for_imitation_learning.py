@@ -1,18 +1,24 @@
 import logging
-import pickle
 import os
+import pickle
 from typing import Any, Dict, Sequence
 
 from envision.client import Client as Envision
-from examples.argument_parser import default_argument_parser
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.controllers import ControllerOutOfLaneException
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.math import radians_to_vec
-from smarts.core.controllers import ControllerOutOfLaneException
+
+# The following ugliness was made necessary because the `aiohttp` #
+# dependency has an "examples" module too.  (See PR #1120.)
+if __name__ == "__main__":
+    from argument_parser import default_argument_parser
+else:
+    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 

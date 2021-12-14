@@ -335,7 +335,6 @@ class Vehicle:
         tire_filepath,
         trainable,
         surface_patches,
-        controller_filepath,
         initial_speed=None,
     ):
         mission = plan.mission
@@ -367,15 +366,9 @@ class Vehicle:
             with pkg_resources.path(models, urdf_name + ".urdf") as path:
                 vehicle_filepath = str(path.absolute())
 
-        if (controller_filepath is None) or not os.path.exists(controller_filepath):
-            with pkg_resources.path(
-                models, "controller_parameters.yaml"
-            ) as controller_path:
-                controller_filepath = str(controller_path.absolute())
-        with open(controller_filepath, "r") as controller_file:
-            controller_parameters = yaml.safe_load(controller_file)[
-                agent_interface.vehicle_type
-            ]
+        controller_parameters = sim.vehicle_index.controller_params_for_vehicle_type(
+            agent_interface.vehicle_type
+        )
 
         chassis = None
         # change this to dynamic_action_spaces later when pr merged
@@ -548,11 +541,7 @@ class Vehicle:
         ) or not np.allclose(self._chassis.velocity_vectors[1], state.angular_velocity):
             linear_velocity = state.linear_velocity
             angular_velocity = state.angular_velocity
-        if (
-            state.dimensions.length != self.length
-            or state.dimensions.width != self.width
-            or state.dimensions.height != self.height
-        ):
+        if not state.dimensions.equal_if_defined(self.length, self.width, self.height):
             self._log.warning(
                 "Unable to change a vehicle's dimensions via external_state_update()."
             )

@@ -4,22 +4,23 @@
 # import roslib
 # roslib.load_manifest(PKG)
 
-import os
 import json
-import rospy
+import os
 import sys
 from unittest import TestCase
 
+import rospy
 from smarts_ros.msg import (
-    AgentTask,
     AgentReport,
     AgentSpec,
     AgentsStamped,
+    AgentTask,
     EntitiesStamped,
     EntityState,
     SmartsReset,
 )
 from smarts_ros.srv import SmartsInfo
+
 from smarts.core.coordinates import fast_quaternion_from_angle
 
 

@@ -33,12 +33,10 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.agent import AgentSpec
-from smarts.core.coordinates import Heading, Dimensions, Point, RefLinePoint
+from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.data_model import SocialAgent
 from smarts.core.default_map_factory import create_road_map
 from smarts.core.plan import (
-    default_entry_tactic,
     EndlessGoal,
     LapMission,
     Mission,
@@ -47,6 +45,7 @@ from smarts.core.plan import (
     TraverseGoal,
     VehicleSpec,
     Via,
+    default_entry_tactic,
 )
 from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory
@@ -553,7 +552,7 @@ class Scenario:
                         lane_id=lane.lane_id,
                         lane_index=via.lane_index,
                         road_id=via.road_id,
-                        position=tuple(via_position),
+                        position=tuple(via_position[:2]),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
                     )
@@ -647,7 +646,7 @@ class Scenario:
         # just make sure we can load the map
         try:
             road_map, _ = create_road_map(scenario_root)
-        except:
+        except FileNotFoundError:
             return False
         return road_map is not None
 

@@ -27,7 +27,7 @@ import numpy as np
 from shapely.geometry import Point, Polygon
 
 from smarts.core.coordinates import Point as MapPoint
-from smarts.core.plan import default_entry_tactic, Mission, Start, Plan
+from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import Vehicle, VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic
@@ -145,11 +145,11 @@ class TrapManager:
                 if sim.scenario.traffic_history is not None:
                     break
 
-                vehicle = vehicles[v_id]
-                point = Point(vehicle.position)
-
                 if not trap.includes(v_id):
                     continue
+
+                vehicle = vehicles[v_id]
+                point = vehicle.pose.point.as_shapely
 
                 if not point.within(trap.geometry):
                     continue
@@ -237,7 +237,6 @@ class TrapManager:
             sim.scenario.tire_parameters_filepath,
             True,
             sim.scenario.surface_patches,
-            sim.scenario.controller_parameters_filepath,
             initial_speed=initial_speed,
             boid=False,
         )
