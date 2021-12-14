@@ -625,37 +625,53 @@ class OpenDriveRoadNetwork(RoadMap):
     def _compute_traffic_dividers(self):
         lane_dividers = []  # divider between lanes with same traffic direction
         road_dividers = []  # divider between roads with opposite traffic direction
+        road_borders = []
         dividers_checked = []
         for road_id in self._roads:
             road = self._roads[road_id]
             road_left_border = None
-            for lane in road.lanes:
-                left_border_vertices_len = int((len(lane.lane_polygon) - 1) / 2)
-                left_side = lane.lane_polygon[:left_border_vertices_len]
-                if lane.index != road.total_lanes - 1:
-                    lane_to_left, _ = lane.lane_to_left
-                    assert lane_to_left
-                    if lane.is_drivable and lane_to_left.is_drivable:
-                        lane_dividers.append(left_side)
+            if not road.is_junction:
+                leftmost_edge_shape, rightmost_edge_shape = road._shape(0)
+                road_borders.extend([leftmost_edge_shape, rightmost_edge_shape])
+                for lane in road.lanes:
+                    left_border_vertices_len = int((len(lane.lane_polygon) - 1) / 2)
+                    left_side = lane.lane_polygon[:left_border_vertices_len]
+                    if lane.index != road.total_lanes - 1:
+                        lane_to_left, _ = lane.lane_to_left
+                        assert lane_to_left
+                        if lane.is_drivable and lane_to_left.is_drivable:
+                            lane_dividers.append(left_side)
+                        else:
+                            road_dividers.append(left_side)
                     else:
-                        road_dividers.append(left_side)
-                else:
-                    road_left_border = left_side
+                        road_left_border = left_side
 
-            assert road_left_border
+                assert road_left_border
 
-            # The road borders that overlapped in positions form an edge divider
-            id_split = road_id.split("_")
-            parent_road_id = f"{id_split[0]}_{id_split[1]}"
-            if parent_road_id not in dividers_checked:
-                dividers_checked.append(parent_road_id)
-                if "R" in road.road_id:
-                    adjacent_road_id = road.road_id.replace("R", "L")
-                else:
-                    adjacent_road_id = road.road_id.replace("L", "R")
-                if adjacent_road_id in self._roads:
-                    road_dividers.append(road_left_border)
+                # The road borders that overlapped in positions form a road divider
+                id_split = road_id.split("_")
+                parent_road_id = f"{id_split[0]}_{id_split[1]}"
+                if parent_road_id not in dividers_checked:
+                    dividers_checked.append(parent_road_id)
+                    if "R" in road.road_id:
+                        adjacent_road_id = road.road_id.replace("R", "L")
+                    else:
+                        adjacent_road_id = road.road_id.replace("L", "R")
+                    if adjacent_road_id in self._roads:
+                        road_dividers.append(road_left_border)
 
+        for i in range(len(road_borders) - 1):
+            for j in range(i + 1, len(road_borders)):
+                edge_border_i = np.array(
+                    [road_borders[i][0], road_borders[i][-1]]
+                )  # start and end position
+                edge_border_j = np.array(
+                    [road_borders[j][-1], road_borders[j][0]]
+                )  # start and end position with reverse traffic direction
+
+                # The edge borders of two lanes do not always overlap perfectly, thus relax the tolerance threshold to 1
+                if np.linalg.norm(edge_border_i - edge_border_j) < 1:
+                    road_dividers.append(road_borders[i])
         return lane_dividers, road_dividers
 
     class Surface(RoadMap.Surface):
@@ -961,13 +977,18 @@ class OpenDriveRoadNetwork(RoadMap):
                 return result
             my_vect = self.vector_at_offset(offset)
             my_norm = np.linalg.norm(my_vect)
+            if my_norm == 0:
+                return []
             threshold = -0.995562  # cos(175*pi/180)
             for lane, _ in nearby_lanes:
                 if lane == self:
                     continue
                 lane_refline_pt = lane.to_lane_coord(pt)
                 lv = lane.vector_at_offset(lane_refline_pt.s)
-                lane_angle = np.dot(my_vect, lv) / (my_norm * np.linalg.norm(lv))
+                lv_norm = np.linalg.norm(lv)
+                if lv_norm == 0:
+                    return []
+                lane_angle = np.dot(my_vect, lv) / (my_norm * lv_norm)
                 if lane_angle < threshold:
                     result.append(lane)
             return result
@@ -1157,8 +1178,7 @@ class OpenDriveRoadNetwork(RoadMap):
         def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
             return super().oncoming_roads_at_point(point)
 
-        @lru_cache(maxsize=4)
-        def shape(self, width: float = 0.0, buffer_width: float = 0.0) -> Polygon:
+        def _shape(self, buffer_width: float = 0.0):
             leftmost_lane = self.lane_at_index(self.total_lanes - 1)
             rightmost_lane = self.lane_at_index(0)
 
@@ -1189,6 +1209,11 @@ class OpenDriveRoadNetwork(RoadMap):
                 :leftmost_edge_vertices_len
             ]
 
+            return leftmost_edge_shape, rightmost_edge_shape
+
+        @lru_cache(maxsize=4)
+        def shape(self, width: float = 0.0, buffer_width: float = 0.0) -> Polygon:
+            leftmost_edge_shape, rightmost_edge_shape = self._shape(buffer_width)
             road_polygon = (
                 leftmost_edge_shape + rightmost_edge_shape + [leftmost_edge_shape[0]]
             )
@@ -1455,7 +1480,7 @@ class OpenDriveRoadNetwork(RoadMap):
             if route.roads:
                 road_ids = [road.road_id for road in route.roads]
             else:
-                road_ids = self._resolve_in_junction(pose)
+                road_ids = []
             if road_ids:
                 return self._waypoint_paths_along_route(
                     pose.position, lookahead, road_ids
@@ -1468,26 +1493,6 @@ class OpenDriveRoadNetwork(RoadMap):
         for lane in closest_lane.road.lanes:
             waypoint_paths += lane._waypoint_paths_at(pose.position, lookahead)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
-
-    def _resolve_in_junction(self, pose: Pose) -> List[str]:
-        # This is so that the waypoints don't jump between connections
-        # when we don't know which lane we're on in a junction.
-        # We take the 10 closest lanepoints then filter down to that which has
-        # the closest heading. This way we get the lanepoint on our lane instead of
-        # a potentially closer lane that is on a different junction connection.
-        closest_lps = self._lanepoints.closest_lanepoints([pose], within_radius=None)
-        closest_lps.sort(key=lambda lp: abs(pose.heading - lp.pose.heading))
-        lane = closest_lps[0].lane
-        if not lane.in_junction:
-            return []
-        road_ids = [lane.road.road_id]
-        next_roads = lane.road.outgoing_roads
-        assert (
-            len(next_roads) <= 1
-        ), "A junction is expected to have <= 1 outgoing roads"
-        if next_roads:
-            road_ids.append(next_roads[0].road_id)
-        return road_ids
 
     def _waypoint_paths_along_route(
         self, point, lookahead: int, route: Sequence[str]
@@ -1516,8 +1521,8 @@ class OpenDriveRoadNetwork(RoadMap):
 
         return sorted(waypoint_paths, key=len, reverse=True)
 
-    @staticmethod
-    def _waypoints_path(
+    def _equally_spaced_path(
+        self,
         path: Sequence[LinkedLanePoint],
         point: Tuple[float, float, float],
         lp_spacing: float,
@@ -1538,19 +1543,46 @@ class OpenDriveRoadNetwork(RoadMap):
         ref_lanepoints_coordinates = {
             parameter: [] for parameter in (continuous_variables + discrete_variables)
         }
+        curr_lane_id = None
+        skip_lanepoints = False
+        index_skipped = []
         for idx, lanepoint in enumerate(path):
 
             if lanepoint.is_inferred and 0 < idx < len(path) - 1:
                 continue
 
-            # Compute the lane's width at lanepoint's position
+            if curr_lane_id is None:
+                curr_lane_id = lanepoint.lp.lane.lane_id
+
+            # Compute the lane offset for the lanepoint position
             position = Point(
                 x=lanepoint.lp.pose.position[0], y=lanepoint.lp.pose.position[1], z=0.0
             )
             lane_coord = lanepoint.lp.lane.to_lane_coord(position)
+            # Skip one-third of lanepoints for next lanes not outgoing to previous lane
+            if skip_lanepoints:
+                if lane_coord.s > (lanepoint.lp.lane.length / 3):
+                    skip_lanepoints = False
+                else:
+                    index_skipped.append(idx)
+                    continue
+
+            if lanepoint.lp.lane.lane_id != curr_lane_id:
+                previous_lane = self._lanes[curr_lane_id]
+                curr_lane_id = lanepoint.lp.lane.lane_id
+                # if the current lane is not outgoing to previous lane, start skipping one third of its lanepoints
+                if lanepoint.lp.lane not in previous_lane.outgoing_lanes:
+                    skip_lanepoints = True
+                    index_skipped.append(idx)
+                    continue
+
+            # Compute the lane's width at lanepoint's position
             width_at_offset = lanepoint.lp.lane.width_at_offset(lane_coord.s)
+
             if idx != 0 and width_threshold and width_at_offset < width_threshold:
+                index_skipped.append(idx)
                 continue
+
             ref_lanepoints_coordinates["positions_x"].append(
                 lanepoint.lp.pose.position[0]
             )
@@ -1610,21 +1642,66 @@ class OpenDriveRoadNetwork(RoadMap):
                 )
             ]
 
+        evenly_spaced_cumulative_path_dist = np.linspace(
+            0, cumulative_path_dist[-1], len(path)
+        )
+
+        evenly_spaced_coordinates = {}
+        for variable in continuous_variables:
+            evenly_spaced_coordinates[variable] = np.interp(
+                evenly_spaced_cumulative_path_dist,
+                cumulative_path_dist,
+                ref_lanepoints_coordinates[variable],
+            )
+
+        for variable in discrete_variables:
+            ref_coordinates = ref_lanepoints_coordinates[variable]
+            evenly_spaced_coordinates[variable] = []
+            jdx = 0
+            for idx in range(len(path)):
+                if idx in index_skipped:
+                    position = Point(
+                        x=evenly_spaced_coordinates["positions_x"][idx],
+                        y=evenly_spaced_coordinates["positions_y"][idx],
+                        z=0.0,
+                    )
+
+                    nearest_lane = self.nearest_lane(position)
+                    if nearest_lane:
+                        if variable == "lane_id":
+                            evenly_spaced_coordinates[variable].append(
+                                nearest_lane.lane_id
+                            )
+                        else:
+                            evenly_spaced_coordinates[variable].append(
+                                nearest_lane.index
+                            )
+                else:
+                    while (
+                        jdx + 1 < len(cumulative_path_dist)
+                        and evenly_spaced_cumulative_path_dist[idx]
+                        > cumulative_path_dist[jdx + 1]
+                    ):
+                        jdx += 1
+                    evenly_spaced_coordinates[variable].append(ref_coordinates[jdx])
+
+            evenly_spaced_coordinates[variable].append(ref_coordinates[-1])
+
         waypoint_path = []
-        for idx in range(len(ref_lanepoints_coordinates["positions_x"])):
+        for idx in range(len(path)):
             waypoint_path.append(
                 Waypoint(
                     pos=np.array(
                         [
-                            ref_lanepoints_coordinates["positions_x"][idx],
-                            ref_lanepoints_coordinates["positions_y"][idx],
+                            evenly_spaced_coordinates["positions_x"][idx],
+                            evenly_spaced_coordinates["positions_y"][idx],
                         ]
                     ),
-                    heading=Heading(ref_lanepoints_coordinates["headings"][idx]),
-                    lane_width=ref_lanepoints_coordinates["lane_width"][idx],
-                    speed_limit=ref_lanepoints_coordinates["speed_limit"][idx],
-                    lane_id=ref_lanepoints_coordinates["lane_id"][idx],
-                    lane_index=ref_lanepoints_coordinates["lane_index"][idx],
+                    heading=Heading(evenly_spaced_coordinates["headings"][idx]),
+                    lane_width=evenly_spaced_coordinates["lane_width"][idx],
+                    speed_limit=evenly_spaced_coordinates["speed_limit"][idx],
+                    lane_id=evenly_spaced_coordinates["lane_id"][idx],
+                    lane_index=evenly_spaced_coordinates["lane_index"][idx],
                 )
             )
 
@@ -1652,9 +1729,7 @@ class OpenDriveRoadNetwork(RoadMap):
             lanepoint, lookahead, filter_road_ids
         )
         result = [
-            OpenDriveRoadNetwork._waypoints_path(
-                path, point, self._lanepoints.spacing, 1.85
-            )
+            self._equally_spaced_path(path, point, self._lanepoints.spacing, 1.85)
             for path in lanepoint_paths
         ]
 

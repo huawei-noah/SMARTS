@@ -365,7 +365,7 @@ def test_od_map_junction():
     lp_pose = lp_0_0_L[0].lp.pose
     waypoints_for_route = road_map.waypoint_paths(lp_pose, 500, route=route_0_to_13[0])
     assert len(waypoints_for_route) == 1
-    assert len(waypoints_for_route[0]) == 49
+    assert len(waypoints_for_route[0]) == 469
     lane_ids_under_wps = []
     for wp in waypoints_for_route[0]:
         if wp.lane_id not in lane_ids_under_wps:
@@ -396,7 +396,7 @@ def test_od_map_junction():
     lp_pose = lp_13_0_L[0].lp.pose
     waypoints_for_route = road_map.waypoint_paths(lp_pose, 500, route=route_13_to_0[0])
     assert len(waypoints_for_route) == 1
-    assert len(waypoints_for_route[0]) == 63
+    assert len(waypoints_for_route[0]) == 469
     lane_ids_under_wps = []
     for wp in waypoints_for_route[0]:
         if wp.lane_id not in lane_ids_under_wps:
@@ -740,14 +740,20 @@ def test_od_map_lane_offset():
     waypoints_for_route = road_map.waypoint_paths(lp_pose, 200, route=route[0])
     assert len(waypoints_for_route) == 4
     assert len(waypoints_for_route[0]) == 201
-    lane_ids_under_wps_0 = set([wp.lane_id for wp in waypoints_for_route[0]])
-    lane_ids_under_wps_1 = set([wp.lane_id for wp in waypoints_for_route[1]])
-    lane_ids_under_wps_2 = set([wp.lane_id for wp in waypoints_for_route[2]])
-    lane_ids_under_wps_3 = set([wp.lane_id for wp in waypoints_for_route[3]])
-    assert lane_ids_under_wps_0 == {"1_0_R_-1", "1_1_R_-1", "1_2_R_-1"}
-    assert lane_ids_under_wps_1 == {"1_0_R_-1", "1_1_R_-1", "1_2_R_-2"}
-    assert lane_ids_under_wps_2 == {"1_0_R_-1", "1_1_R_-2", "1_2_R_-2"}
-    assert lane_ids_under_wps_3 == {"1_0_R_-1", "1_1_R_-2", "1_2_R_-1"}
+    lane_ids_under_wps = [
+        set([wp.lane_id for wp in waypoints_for_route[i]])
+        for i in range(len(waypoints_for_route))
+    ]
+    assert {
+        "1_0_R_-1",
+        "1_1_R_-1",
+        "1_1_R_-2",
+        "1_2_R_-1",
+        "1_2_R_-2",
+    } in lane_ids_under_wps
+    assert {"1_0_R_-1", "1_1_R_-1", "1_1_R_-2", "1_2_R_-2"} in lane_ids_under_wps
+    assert {"1_0_R_-1", "1_1_R_-1", "1_2_R_-1", "1_2_R_-2"} in lane_ids_under_wps
+    assert {"1_0_R_-1", "1_1_R_-1", "1_2_R_-1"} in lane_ids_under_wps
 
     # distance between points along route
     start_point = Point(x=17.56, y=-1.67, z=0.0)
@@ -801,8 +807,8 @@ def test_od_map_motorway():
             assert lane.speed_limit == 16.67
 
     # Lane tests
-    # l0 = road_map.lane_by_id("18_0_L_2")
-    # assert [l.lane_id for l in l0.incoming_lanes] == ["18_1_L_1"]
+    l0 = road_map.lane_by_id("18_0_L_2")
+    assert "18_1_L_1" not in [l.lane_id for l in l0.incoming_lanes]
 
     # route generation
     empty_route = road_map.empty_route()
@@ -830,10 +836,10 @@ def test_od_map_motorway():
 
     # waypoints generation along route
     lp_6_0_L = road_map._lanepoints._lanepoints_by_lane_id["6_0_L_1"]
-    lp_pose = lp_6_0_L[0].lp.pose
-    waypoints_for_route = road_map.waypoint_paths(lp_pose, 2840, route=route_6_to_40[0])
-    assert len(waypoints_for_route) == 50
-    assert len(waypoints_for_route[0]) == 671
+    lp_pose = lp_6_0_L[-1].lp.pose
+    waypoints_for_route = road_map.waypoint_paths(lp_pose, 900, route=route_6_to_40[0])
+    assert len(waypoints_for_route) == 3
+    assert len(waypoints_for_route[0]) == 901
     lane_ids_under_wps = []
     for wp in waypoints_for_route[0]:
         if wp.lane_id not in lane_ids_under_wps:
@@ -841,16 +847,33 @@ def test_od_map_motorway():
     assert lane_ids_under_wps == [
         "6_0_L_1",
         "18_1_L_1",
+        "18_0_L_1",
         "18_0_L_2",
         "28_0_R_-1",
         "42_0_R_-1",
+        "3_2_R_-5",
         "43_0_R_-1",
-        "5_0_R_-2",
-        "5_1_R_-3",
-        "5_2_R_-2",
-        "8_0_R_-3",
-        "40_0_R_-2",
+        "5_0_R_-4",
     ]
+
+    # Path checked for lookahead 2840
+    # assert lane_ids_under_wps == [
+    #     '6_0_L_1',
+    #     '18_1_L_1',
+    #     '18_0_L_1',
+    #     '18_0_L_2',
+    #     '28_0_R_-1',
+    #     '42_0_R_-1',
+    #     '43_0_R_-1',
+    #     '5_0_R_-4',
+    #     '5_0_R_-2',
+    #     '5_1_R_-2',
+    #     '5_1_R_-3',
+    #     '5_2_R_-3',
+    #     '5_2_R_-2',
+    #     '8_0_R_-3',
+    #     '40_0_R_-3',
+    # ]
 
     # distance between points along route
     start_point = Point(x=222.09, y=998.12, z=0.0)
@@ -886,13 +909,13 @@ def test_od_map_motorway():
 
     # waypoints generation along route
     lp_6_0_L = road_map._lanepoints._lanepoints_by_lane_id["6_0_L_1"]
-    lp_pose = lp_6_0_L[0].lp.pose
+    lp_pose = lp_6_0_L[-1].lp.pose
     waypoints_for_route = road_map.waypoint_paths(
-        lp_pose, 3500, route=route_6_to_34_via_19[0]
+        lp_pose, 1000, route=route_6_to_34_via_19[0]
     )
-    assert len(waypoints_for_route) == 102
+    assert len(waypoints_for_route) == 4
 
-    assert len(max(waypoints_for_route, key=len)) == 1321
+    assert len(max(waypoints_for_route, key=len)) == 1001
     lane_ids_under_wps = []
     for wp in waypoints_for_route[0]:
         if wp.lane_id not in lane_ids_under_wps:
@@ -904,16 +927,44 @@ def test_od_map_motorway():
         "11_0_R_-2",
         "19_2_L_1",
         "19_1_L_3",
+        "4_0_R_-6",
+        "4_0_R_-5",
+        "4_0_R_-4",
+        "4_0_R_-3",
+        "4_0_R_-2",
+        "19_1_L_1",
+        "19_1_L_2",
         "19_0_L_1",
         "27_0_R_-1",
         "17_0_R_-1",
-        "12_0_R_-1",
-        "33_0_R_-2",
-        "33_1_R_-3",
-        "33_2_R_-2",
-        "39_0_R_-3",
-        "34_0_R_-2",
     ]
+
+    # Path checked for lookahead 3511
+    # assert lane_ids_under_wps == [
+    #     "6_0_L_1",
+    #     "18_1_L_1",
+    #     "18_0_L_1",
+    #     "11_0_R_-2",
+    #     "19_2_L_1",
+    #     "19_1_L_3",
+    #     "9_0_L_2",
+    #     "9_0_L_3",
+    #     "9_0_L_4",
+    #     "9_0_L_6",
+    #     "9_0_L_7",
+    #     "19_0_L_2",
+    #     "19_0_L_1",
+    #     "27_0_R_-1",
+    #     "17_0_R_-1",
+    #     "12_0_R_-1",
+    #     "33_0_R_-4",
+    #     "33_0_R_-2",
+    #     "33_1_R_-3",
+    #     "33_2_R_-3",
+    #     "33_2_R_-2",
+    #     "39_0_R_-3",
+    #     "34_0_R_-3",
+    # ]
 
     # distance between points along route
     start_point = Point(x=222.09, y=998.12, z=0.0)
@@ -947,10 +998,10 @@ def test_od_map_motorway():
 
     # waypoints generation along route
     lp_34_0_L = road_map._lanepoints._lanepoints_by_lane_id["34_0_L_2"]
-    lp_pose = lp_34_0_L[0].lp.pose
-    waypoints_for_route = road_map.waypoint_paths(lp_pose, 3600, route=route_34_to_6[0])
-    assert len(waypoints_for_route) == 104
-    assert len(waypoints_for_route[0]) == 793
+    lp_pose = lp_34_0_L[-1].lp.pose
+    waypoints_for_route = road_map.waypoint_paths(lp_pose, 1000, route=route_34_to_6[0])
+    assert len(waypoints_for_route) == 12
+    assert len(waypoints_for_route[0]) == 1001
     lane_ids_under_wps = []
     for wp in waypoints_for_route[0]:
         if wp.lane_id not in lane_ids_under_wps:
@@ -958,17 +1009,29 @@ def test_od_map_motorway():
     assert lane_ids_under_wps == [
         "34_0_L_2",
         "38_0_R_-3",
+        "36_1_L_3",
         "36_1_L_2",
-        "36_0_L_4",
-        "4_0_R_-4",
-        "13_0_R_-1",
-        "21_0_R_-1",
-        "21_1_R_-1",
-        "35_0_R_-1",
-        "18_0_R_-2",
-        "18_1_R_-1",
-        "6_0_R_-1",
+        "36_0_L_2",
     ]
+
+    # Path checked for lookahead 3600
+    # assert lane_ids_under_wps == [
+    #     "34_0_L_2",
+    #     "38_0_R_-3",
+    #     "36_0_L_2",
+    #     "4_0_R_-3",
+    #     "4_0_R_-4",
+    #     "13_0_R_-1",
+    #     "21_0_R_-1",
+    #     "3_0_R_-6",
+    #     "21_0_R_-2",
+    #     "3_1_R_-6",
+    #     "21_1_R_-2",
+    #     "35_0_R_-1",
+    #     "18_0_R_-2",
+    #     "18_1_R_-1",
+    #     "6_0_R_-1",
+    # ]
 
     # distance between points along route
     start_point = Point(x=493.70, y=1528.79, z=0.0)
