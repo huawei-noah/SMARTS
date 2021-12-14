@@ -1,4 +1,4 @@
-# Driving in Traffic
+# SMARTS Stable Baselines3 Example
 This example illustrates the training of an ego agent to drive, as fast and as far as possible, in traffic using the Stable Baselines3 (https://github.com/DLR-RM/stable-baselines3) reinforcement-learning algorithms.
 
 Ego agent earns rewards based on the distance travelled and is penalised for colliding with other vehicles and for going off-road.
