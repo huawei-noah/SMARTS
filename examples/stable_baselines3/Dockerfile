@@ -45,7 +45,7 @@ RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
     pip install --upgrade pip
 
 # Install requirements.txt
-COPY ../../requirements.txt /tmp/requirements.txt
+COPY ./requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install SMARTS
@@ -53,7 +53,12 @@ COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e .[train,test,dev,camera-obs] && \
     cp -r /src/smarts.egg-info /media/smarts.egg-info
-RUN pip install --no-cache-dir -e stable-baselines3
+RUN pip install --no-cache-dir stable-baselines3
+RUN pip install --no-cache-dir ruamel.yaml==0.17.17 && \
+pip install --no-cache-dir ruamel.yaml.clib==0.2.6
+
+# Build scenarios and maps
+RUN scl scenario build-all --clean ./examples/stable_baselines3/scenarios/loop
 
 # For Envision
 EXPOSE 8081
