@@ -20,6 +20,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added Base CI and dependencies requirement tests for the "darwin" platform (MacOS).
 - Extended Imitation Learning codebase to allow importing traffic histories from the Waymo motion dataset and replay in a SMARTS simulation. See PR #1060.
 - Added `ros` extension rule to `setup.py`.
+- Added a script to allow users to hijack history vehicles dynamically through a trigger event. See PR #1088.
 - Added a `-y` option to `utils/setup/install_deps.sh` to accept installation by default. See issue #1081.
 - Added `ParallelEnv` class and a corresponding example to simulate multiple SMARTS environments in parallel, with synchronous or asynchronous episodes.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
