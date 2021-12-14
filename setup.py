@@ -83,20 +83,10 @@ setup(
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
         ],
-        "camera-obs": [
-            "Panda3D==1.10.9",
-            "panda3d-gltf==0.13",
-        ],
-        "ros": [
-            "catkin_pkg",
-            "rospkg",
-        ],
-        "waymo": [
-            "waymo-open-dataset-tf-2-2-0",
-        ],
-        "extras": [
-            "pynput>=1.7.4",  # Used by HumanKeyboardAgent
-        ],
+        "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
+        "ros": ["catkin_pkg", "rospkg"],
+        "waymo": ["waymo-open-dataset-tf-2-2-0"],
+        "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
